@@ -153,11 +153,19 @@ namespace AssetManager.Infrastructure
 
         public BitmapImage LoadBitmapImage(string imagePath)
         {
-            BitmapImage image = new BitmapImage();
-            image.BeginInit();
-            image.UriSource = new Uri(imagePath);
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.EndInit();
+            BitmapImage image = null;
+
+            if (File.Exists(imagePath))
+            {
+                image = new BitmapImage();
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                image.UriSource = new Uri(imagePath);
+                image.Rotation = Rotation.Rotate0;
+                image.EndInit();
+                image.Freeze();
+            }
 
             return image;
         }
@@ -234,6 +242,20 @@ namespace AssetManager.Infrastructure
         {
             DirectoryInfo directoryInfo = new DirectoryInfo(path);
             return directoryInfo.Attributes.HasFlag(FileAttributes.Hidden);
+        }
+
+        public bool ImageExists(string path)
+        {
+            return File.Exists(path);
+        }
+
+        public bool CopyImage(string sourcePath, string destinationPath)
+        {
+            string destinationFolderPath = new FileInfo(destinationPath).Directory.FullName;
+            Directory.CreateDirectory(destinationFolderPath);
+            File.Copy(sourcePath, destinationPath);
+
+            return ImageExists(sourcePath) && ImageExists(destinationPath);
         }
     }
 }

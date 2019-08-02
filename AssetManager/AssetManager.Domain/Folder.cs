@@ -33,5 +33,10 @@ namespace AssetManager.Domain
         {
             return this.Path != null ? this.Path.GetHashCode() : base.GetHashCode();
         }
+
+        public override string ToString()
+        {
+            return this.Path;
+        }
     }
 }

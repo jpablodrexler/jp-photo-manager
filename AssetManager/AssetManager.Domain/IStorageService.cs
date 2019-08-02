@@ -27,5 +27,7 @@ namespace AssetManager.Domain
         byte[] GetJpegBitmapImage(BitmapImage thumbnailImage);
         Folder[] GetDrives();
         Folder[] GetFolders(Folder parentFolder, bool includeHidden);
+        bool ImageExists(string path);
+        bool CopyImage(string sourcePath, string destinationPath);
     }
 }

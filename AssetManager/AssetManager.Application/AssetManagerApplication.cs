@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
+using System.Windows.Media.Imaging;
 
 namespace AssetManager.Application
 {
@@ -96,6 +97,16 @@ namespace AssetManager.Application
         public string GetInitialFolder()
         {
             return this.userConfigurationService.GetInitialFolder();
+        }
+
+        public bool MoveAsset(Asset asset, Folder sourceFolder, Folder destinationFolder, bool preserveOriginalFile)
+        {
+            return this.catalogAssetsService.MoveAsset(asset, sourceFolder, destinationFolder, preserveOriginalFile);
+        }
+
+        public BitmapImage LoadBitmapImage(string imagePath)
+        {
+            return this.storageService.LoadBitmapImage(imagePath);
         }
     }
 }

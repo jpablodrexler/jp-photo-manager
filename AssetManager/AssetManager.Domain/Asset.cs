@@ -32,6 +32,7 @@ namespace AssetManager.Domain
         [JsonIgnore]
         public string FullPath => Path.Combine(this.Folder.Path, this.FileName);
 
+        [JsonIgnore]
         public string FormattedFileSize
         {
             get
@@ -71,6 +72,7 @@ namespace AssetManager.Domain
             }
         }
 
+        [JsonIgnore]
         public string FormattedPixelSize
         {
             get
@@ -90,6 +92,11 @@ namespace AssetManager.Domain
         public override int GetHashCode()
         {
             return (!string.IsNullOrEmpty(this.FolderId) ? this.FolderId.GetHashCode() : base.GetHashCode()) + (!string.IsNullOrEmpty(this.FileName) ? this.FileName.GetHashCode() : base.GetHashCode());
+        }
+
+        public override string ToString()
+        {
+            return this.FileName;
         }
     }
 }

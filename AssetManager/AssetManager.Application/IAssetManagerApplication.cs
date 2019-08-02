@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media.Imaging;
 
 namespace AssetManager.Application
 {
@@ -19,5 +20,7 @@ namespace AssetManager.Application
         Folder[] GetDrives();
         Folder[] GetFolders(Folder parentFolder, bool includeHidden);
         string GetInitialFolder();
+        bool MoveAsset(Asset asset, Folder sourceFolder, Folder destinationFolder, bool preserveOriginalFile);
+        BitmapImage LoadBitmapImage(string imagePath);
     }
 }

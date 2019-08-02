@@ -142,15 +142,15 @@ namespace AssetManager.Test
 
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset asset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset asset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 2.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset anotherAsset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset anotherAsset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 1.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 2 duplicated.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset duplicatedAsset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset duplicatedAsset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 2 duplicated.jpg");
 
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
             Assert.AreEqual(1, duplicatedAssetSets.Count);
@@ -187,11 +187,11 @@ namespace AssetManager.Test
 
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset asset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset asset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 2.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset anotherAsset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset anotherAsset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 1.jpg");
 
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
             Assert.AreEqual(0, duplicatedAssetSets.Count);
@@ -227,11 +227,11 @@ namespace AssetManager.Test
 
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset asset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset asset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 2.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset anotherAsset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset anotherAsset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 1.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Inexistent Image.jpg");
             Assert.IsFalse(File.Exists(imagePath));
@@ -290,11 +290,11 @@ namespace AssetManager.Test
 
             imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset asset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset asset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 2.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset anotherAsset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset anotherAsset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 1.jpg");
 
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
             Assert.AreEqual(0, duplicatedAssetSets.Count);
@@ -326,15 +326,15 @@ namespace AssetManager.Test
 
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset asset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset asset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 2.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset anotherAsset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset anotherAsset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 1.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 2 duplicated.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset duplicatedAsset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset duplicatedAsset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 2 duplicated.jpg");
 
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
             Assert.AreEqual(1, duplicatedAssetSets.Count);
@@ -371,11 +371,11 @@ namespace AssetManager.Test
 
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset asset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset asset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 2.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset anotherAsset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset anotherAsset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 1.jpg");
 
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
             Assert.AreEqual(0, duplicatedAssetSets.Count);

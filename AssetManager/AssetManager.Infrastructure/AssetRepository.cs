@@ -1,15 +1,19 @@
 ﻿using AssetManager.Domain;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows.Media.Imaging;
 
 namespace AssetManager.Infrastructure
 {
     public class AssetRepository : IAssetRepository
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public bool IsInitialized { get; private set; }
         private string dataDirectory;
         private string assetCatalogPath;
@@ -128,8 +132,7 @@ namespace AssetManager.Infrastructure
             }
             catch (Exception ex)
             {
-                // TODO: IMPLEMENT PROPER ERROR HANDLING
-                Console.WriteLine("GetImages: " + ex);
+                log.Error(ex);
             }
 
             return assetsList.ToArray();
