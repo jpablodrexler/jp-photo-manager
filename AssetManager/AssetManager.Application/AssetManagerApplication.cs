@@ -1,0 +1,101 @@
+﻿using AssetManager.Domain;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Threading;
+
+namespace AssetManager.Application
+{
+    public class AssetManagerApplication : IAssetManagerApplication
+    {
+        private const int ONE_HOUR = 1000 * 60 * 60;
+
+        private readonly IAssetRepository assetRepository;
+        private readonly ICatalogAssetsService catalogAssetsService;
+        private readonly IFindDuplicatedAssetsService findDuplicatedAssetsService;
+        private readonly IUserConfigurationService userConfigurationService;
+        private readonly IStorageService storageService;
+
+        public AssetManagerApplication(
+            ICatalogAssetsService catalogAssetsService,
+            IFindDuplicatedAssetsService findDuplicatedAssetsService,
+            IAssetRepository assetRepository,
+            IUserConfigurationService userConfigurationService,
+            IStorageService storageService)
+        {
+            this.catalogAssetsService = catalogAssetsService;
+            this.findDuplicatedAssetsService = findDuplicatedAssetsService;
+            this.assetRepository = assetRepository;
+            this.userConfigurationService = userConfigurationService;
+            this.storageService = storageService;
+            this.assetRepository.Initialize();
+        }
+
+        public Asset[] GetAssets(string directory)
+        {
+            if (string.IsNullOrEmpty(directory))
+            {
+                throw new ArgumentException("Directory cannot be null or empty.", directory);
+            }
+
+            if (!this.assetRepository.FolderExists(directory))
+            {
+                this.assetRepository.AddFolder(directory);
+            }
+            
+            return this.assetRepository.GetAssets(directory);
+        }
+
+        public void CatalogImages(CatalogChangeCallback callback)
+        {
+            while (true)
+            {
+                this.catalogAssetsService.CatalogImages(callback);
+                Thread.Sleep(ONE_HOUR);
+            }
+        }
+
+        public void SetAsWallpaper(Asset asset, WallpaperStyle style)
+        {
+            if (asset != null)
+            {
+                this.userConfigurationService.SetAsWallpaper(asset, style);
+            }
+        }
+
+        /// <summary>
+        /// Detects duplicated assets in the catalog.
+        /// </summary>
+        /// <returns>A list of duplicated sets of assets (corresponding to the same image),
+        /// where each item is a list of duplicated assets.</returns>
+        public List<DuplicatedAssetCollection> GetDuplicatedAssets()
+        {
+            return this.findDuplicatedAssetsService.GetDuplicatedAssets();
+        }
+
+        public void DeleteAsset(string directory, string deletedFileName, bool deleteFile)
+        {
+            this.assetRepository.DeleteAsset(directory, deletedFileName, deleteFile);
+        }
+
+        public AboutInformation GetAboutInformation(Assembly assembly)
+        {
+            return this.userConfigurationService.GetAboutInformation(assembly);
+        }
+
+        public Folder[] GetDrives()
+        {
+            return this.storageService.GetDrives();
+        }
+
+        public Folder[] GetFolders(Folder parentFolder, bool includeHidden)
+        {
+            return this.storageService.GetFolders(parentFolder, includeHidden);
+        }
+
+        public string GetInitialFolder()
+        {
+            return this.userConfigurationService.GetInitialFolder();
+        }
+    }
+}
