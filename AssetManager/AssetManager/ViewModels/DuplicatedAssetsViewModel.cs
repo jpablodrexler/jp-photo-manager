@@ -9,19 +9,14 @@ using System.Threading.Tasks;
 
 namespace AssetManager.ViewModels
 {
-    public class DuplicatedAssetsViewModel : INotifyPropertyChanged
+    public class DuplicatedAssetsViewModel : BaseViewModel<IAssetManagerApplication>
     {
-        public event PropertyChangedEventHandler PropertyChanged;
-
         private List<DuplicatedAssetCollection> _duplicatedAssetCollectionSets;
         private int _duplicatedAssetCollectionSetsPosition;
         private int _duplicatedAssetPosition;
 
-        public IAssetManagerApplication AssetApp { get; private set; }
-
-        public DuplicatedAssetsViewModel(IAssetManagerApplication assetApp)
+        public DuplicatedAssetsViewModel(IAssetManagerApplication assetApp) : base(assetApp)
         {
-            this.AssetApp = assetApp;
         }
 
         public List<DuplicatedAssetCollection> DuplicatedAssetCollectionSets
@@ -30,7 +25,7 @@ namespace AssetManager.ViewModels
             set
             {
                 this._duplicatedAssetCollectionSets = value;
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("DuplicatedAssetCollectionSets"));
+                this.NotifyPropertyChanged(nameof(DuplicatedAssetCollectionSets));
                 this.DuplicatedAssetCollectionSetsPosition = 0;
             }
         }
@@ -41,8 +36,7 @@ namespace AssetManager.ViewModels
             set
             {
                 this._duplicatedAssetCollectionSetsPosition = value;
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("DuplicatedAssetCollectionSetsPosition"));
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("CurrentDuplicatedAssetCollection"));
+                this.NotifyPropertyChanged(nameof(DuplicatedAssetCollectionSetsPosition), nameof(CurrentDuplicatedAssetCollection));
                 this.DuplicatedAssetPosition = 0;
             }
         }
@@ -53,8 +47,7 @@ namespace AssetManager.ViewModels
             set
             {
                 this._duplicatedAssetPosition = value;
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("DuplicatedAssetPosition"));
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("CurrentDuplicatedAsset"));
+                this.NotifyPropertyChanged(nameof(DuplicatedAssetPosition), nameof(CurrentDuplicatedAsset));
             }
         }
 

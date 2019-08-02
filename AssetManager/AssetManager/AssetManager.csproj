@@ -85,6 +85,9 @@
     <Compile Include="FolderNavigationControl.xaml.cs">
       <DependentUpon>FolderNavigationControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="FolderNavigationWindow.xaml.cs">
+      <DependentUpon>FolderNavigationWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="ViewModels\ApplicationViewModel.cs" />
     <Compile Include="ThumbnailsUserControl.xaml.cs">
@@ -93,7 +96,9 @@
     <Compile Include="ViewerUserControl.xaml.cs">
       <DependentUpon>ViewerUserControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ViewModels\BaseViewModel.cs" />
     <Compile Include="ViewModels\DuplicatedAssetsViewModel.cs" />
+    <Compile Include="ViewModels\FolderNavigationViewModel.cs" />
     <Page Include="AboutWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -103,6 +108,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="FolderNavigationControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="FolderNavigationWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

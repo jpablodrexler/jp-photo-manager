@@ -53,10 +53,9 @@ namespace AssetManager
 
                 if (MessageBox.Show($"Are you sure you want to delete {asset.FullPath}?", "Confirm", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                 {
-                    this.ViewModel.AssetApp.DeleteAsset(asset.Folder.Path, asset.FileName, deleteFile: true);
-                    DuplicatedAssetsViewModel viewModel = (DuplicatedAssetsViewModel)this.DataContext;
-                    var duplicates = this.ViewModel.AssetApp.GetDuplicatedAssets();
-                    viewModel.DuplicatedAssetCollectionSets = duplicates;
+                    this.ViewModel.Application.DeleteAsset(asset.Folder.Path, asset.FileName, deleteFile: true);
+                    var duplicates = this.ViewModel.Application.GetDuplicatedAssets();
+                    this.ViewModel.DuplicatedAssetCollectionSets = duplicates;
                 }
 
                 // TODO: IN THE LIST BOXES, IF THE FILENAME INCLUDES _ IT IS NOT BEING SHOWN.

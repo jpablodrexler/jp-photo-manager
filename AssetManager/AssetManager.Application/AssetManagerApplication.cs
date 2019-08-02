@@ -76,6 +76,7 @@ namespace AssetManager.Application
 
         public void DeleteAsset(string directory, string deletedFileName, bool deleteFile)
         {
+            // TODO: THE METHOD SHOULD BE CALLED ON THE CATALOG ASSET SERVICE. THE SERVICE WILL CALL THIS METHOD FROM THE REPOSITORY, AND REMOVE THE THUMBNAIL FROM THE FILE AS WELL. A UNIT TEST SHOULD VERIFY THAT.
             this.assetRepository.DeleteAsset(directory, deletedFileName, deleteFile);
         }
 

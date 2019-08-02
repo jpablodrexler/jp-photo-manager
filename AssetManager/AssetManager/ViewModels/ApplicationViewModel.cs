@@ -12,38 +12,32 @@ using System.Windows.Media.Imaging;
 
 namespace AssetManager.ViewModels
 {
-    public class ApplicationViewModel : INotifyPropertyChanged
+    public class ApplicationViewModel : BaseViewModel<IAssetManagerApplication>
     {
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        private AppModeEnum _appMode;
-        private int _viewerPosition;
-        private string _currentFolder;
-        private ObservableCollection<Asset> _files;
-        private ImageSource _currentImageSource;
-        private string _appTitle;
-        private string _statusMessage;
+        private AppModeEnum appMode;
+        private int viewerPosition;
+        private string currentFolder;
+        private ObservableCollection<Asset> files;
+        private ImageSource currentImageSource;
+        private string appTitle;
+        private string statusMessage;
 
         public string Product { get; set; }
         public string Version { get; set; }
-        public IAssetManagerApplication AssetApp { get; private set; }
-
-        public ApplicationViewModel(IAssetManagerApplication assetApp)
+        
+        public ApplicationViewModel(IAssetManagerApplication assetApp) : base(assetApp)
         {
-            this.AssetApp = assetApp;
-            var folder = this.AssetApp.GetInitialFolder();
+            var folder = this.Application.GetInitialFolder();
             this.CurrentFolder = folder;
         }
 
         public AppModeEnum AppMode
         {
-            get { return this._appMode; }
+            get { return this.appMode; }
             private set
             {
-                this._appMode = value;
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AppMode"));
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ThumbnailsVisible"));
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ViewerVisible"));
+                this.appMode = value;
+                this.NotifyPropertyChanged(nameof(AppMode), nameof(ThumbnailsVisible), nameof(ViewerVisible));
                 this.UpdateAppTitle();
             }
         }
@@ -77,71 +71,60 @@ namespace AssetManager.ViewModels
 
         public int ViewerPosition
         {
-            get { return this._viewerPosition; }
+            get { return this.viewerPosition; }
             set
             {
-                this._viewerPosition = value;
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ViewerPosition"));
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("CurrentAsset"));
+                this.viewerPosition = value;
+                this.NotifyPropertyChanged(nameof(ViewerPosition), nameof(CurrentAsset));
                 this.UpdateAppTitle();
             }
         }
 
         public string CurrentFolder
         {
-            get { return this._currentFolder; }
+            get { return this.currentFolder; }
             set
             {
-                this._currentFolder = value;
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("CurrentFolder"));
+                this.currentFolder = value;
+                this.NotifyPropertyChanged(nameof(CurrentFolder));
                 this.UpdateAppTitle();
             }
         }
 
         public ObservableCollection<Asset> Files
         {
-            get { return this._files; }
+            get { return this.files; }
             set
             {
-                this._files = value;
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Files"));
+                this.files = value;
+                this.NotifyPropertyChanged(nameof(Files));
                 this.UpdateAppTitle();
-            }
-        }
-
-        public ImageSource CurrentImageSource
-        {
-            get { return this._currentImageSource; }
-            set
-            {
-                this._currentImageSource = value;
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("CurrentImageSource"));
             }
         }
 
         public string AppTitle
         {
-            get { return this._appTitle; }
+            get { return this.appTitle; }
             set
             {
-                this._appTitle = value;
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("AppTitle"));
+                this.appTitle = value;
+                this.NotifyPropertyChanged(nameof(AppTitle));
             }
         }
 
         public string StatusMessage
         {
-            get { return this._statusMessage; }
+            get { return this.statusMessage; }
             set
             {
-                this._statusMessage = value;
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("StatusMessage"));
+                this.statusMessage = value;
+                this.NotifyPropertyChanged(nameof(StatusMessage));
             }
         }
 
         public Asset CurrentAsset
         {
-            get { return this.Files?.Count > 0 ? this.Files?[this.ViewerPosition] : null; }
+            get { return this.Files?.Count > 0 && this.ViewerPosition >= 0 ? this.Files?[this.ViewerPosition] : null; }
         }
 
         private void AddAsset(Asset asset)
@@ -149,16 +132,16 @@ namespace AssetManager.ViewModels
             if (this.Files != null)
             {
                 this.Files.Add(asset);
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Files"));
+                this.NotifyPropertyChanged(nameof(Files));
             }
         }
 
-        private void RemoveAsset(Asset asset)
+        public void RemoveAsset(Asset asset)
         {
             if (this.Files != null)
             {
                 this.Files.Remove(asset);
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Files"));
+                this.NotifyPropertyChanged(nameof(Files));
             }
         }
 
@@ -192,11 +175,6 @@ namespace AssetManager.ViewModels
                 int position = this.Files.IndexOf(targetAsset);
                 this.ChangeAppMode(newAppMode);
                 this.ViewerPosition = position;
-
-                if (this.AppMode == AppModeEnum.Viewer)
-                {
-                    this.ShowImage();
-                }
             }
         }
 
@@ -205,7 +183,6 @@ namespace AssetManager.ViewModels
             if (this.ViewerPosition > 0)
             {
                 this.ViewerPosition--;
-                this.ShowImage();
             }
         }
 
@@ -214,16 +191,6 @@ namespace AssetManager.ViewModels
             if (this.ViewerPosition < (this.Files.Count - 1))
             {
                 this.ViewerPosition++;
-                this.ShowImage();
-            }
-        }
-
-        private void ShowImage()
-        {
-            if (File.Exists(this.CurrentAsset.FullPath))
-            {
-                ImageSource source = new BitmapImage(new Uri(this.CurrentAsset.FullPath));
-                this.CurrentImageSource = source;
             }
         }
 
@@ -239,7 +206,7 @@ namespace AssetManager.ViewModels
                         // If the files list is empty or belongs to other directory
                         if ((this.Files.Count == 0 || this.Files[0].Folder.Path != this.CurrentFolder) && e.CataloguedAssets != null)
                         {
-                            this.Files = new ObservableCollection<Asset>(e.CataloguedAssets);
+                            this.Files = new ObservableCollection<Asset>(e.CataloguedAssets.Where(a => a.ImageData != null).ToList());
                         }
                         else
                         {

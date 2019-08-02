@@ -1,4 +1,5 @@
-﻿using AssetManager.Domain;
+﻿using AssetManager.Application;
+using AssetManager.Domain;
 using AssetManager.ViewModels;
 using log4net;
 using System;
@@ -36,16 +37,16 @@ namespace AssetManager
             InitializeComponent();
         }
 
-        public ApplicationViewModel ViewModel
+        public BaseViewModel<IAssetManagerApplication> ViewModel
         {
-            get { return (ApplicationViewModel)this.DataContext; }
+            get { return (BaseViewModel<IAssetManagerApplication>)this.DataContext; }
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                Folder[] drives = this.ViewModel.AssetApp.GetDrives();
+                Folder[] drives = this.ViewModel.Application.GetDrives();
 
                 foreach (Folder drive in drives)
                 {
@@ -75,7 +76,7 @@ namespace AssetManager
             {
                 item.Items.Clear();
 
-                Folder[] folders = this.ViewModel.AssetApp.GetFolders((Folder)item.Tag, includeHidden);
+                Folder[] folders = this.ViewModel.Application.GetFolders((Folder)item.Tag, includeHidden);
 
                 foreach (Folder folder in folders)
                 {

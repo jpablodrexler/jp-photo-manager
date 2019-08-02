@@ -238,6 +238,8 @@ namespace AssetManager.Domain
             var folder = this.assetRepository.GetFolderByPath(destinationFolder.Path);
 
             // If the folder is null, it means is not present in the catalog.
+            // TODO: THE TESTS SHOULD VALIDATE WHAT HAPPENS WHEN THE DESTINATION FOLDER IS NOT IN THE CATALOG.
+            // TODO: ALSO, IF THE DESTINATION FOLDER IS NEW, THE FOLDER NAVIGATION CONTROL SHOULD DISPLAY IT WHEN THE USER GOES BACK TO THE MAIN WINDOW.
             isDestinationFolderInCatalog = folder != null;
 
             if (isDestinationFolderInCatalog)

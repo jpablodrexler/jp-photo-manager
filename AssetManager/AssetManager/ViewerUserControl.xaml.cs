@@ -72,5 +72,22 @@ namespace AssetManager
                 log.Error(ex);
             }
         }
+
+        public void ShowImage()
+        {
+            if (this.ViewModel.ViewerPosition >= 0)
+            {
+                var source = this.ViewModel.Application.LoadBitmapImage(this.ViewModel.CurrentAsset.FullPath);
+
+                if (source != null)
+                {
+                    this.image.Source = source;
+                }
+            }
+            else
+            {
+                this.image.Source = null;
+            }
+        }
     }
 }
