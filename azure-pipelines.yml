@@ -37,6 +37,14 @@ steps:
     Contents: '**'
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
+- task: ArchiveFiles@2
+  inputs:
+    rootFolderOrFile: '$(Build.BinariesDirectory)'
+    includeRootFolder: true
+    archiveType: 'zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/asset-manager.zip'
+    replaceExistingArchive: true
+
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
@@ -53,3 +61,4 @@ steps:
     tag: '$(Version)'
     title: '$(Version)'
     isDraft: true
+    assets: '$(Build.ArtifactStagingDirectory)/asset-manager.zip'
