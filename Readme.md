@@ -1,6 +1,6 @@
 # Asset Manager
 
-[![Build Status](https://dev.azure.com/jpablodrexler/AssetManager/_apis/build/status/AssetManager-.NET%20Desktop-CI?branchName=master)](https://dev.azure.com/jpablodrexler/AssetManager/_build/latest?definitionId=7&branchName=master)
+[![Build Status](https://dev.azure.com/jpablodrexler/AssetManager/_apis/build/status/jpablodrexler.asset-manager?branchName=master)](https://dev.azure.com/jpablodrexler/AssetManager/_build/latest?definitionId=9&branchName=master)
 
 Asset Manager is a desktop application that allows:
 * Visualization of image galleries
