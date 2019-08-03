@@ -42,7 +42,7 @@ steps:
     rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/AssetManager/AssetManager/bin/Release'
     includeRootFolder: false
     archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/asset-manager.zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/asset-manager-$(Version).zip'
     replaceExistingArchive: true
 
 - task: PublishBuildArtifacts@1
@@ -61,4 +61,4 @@ steps:
     tag: '$(Version)'
     title: '$(Version)'
     isDraft: false
-    assets: '$(Build.ArtifactStagingDirectory)/asset-manager.zip'
+    assets: '$(Build.ArtifactStagingDirectory)/asset-manager-$(Version).zip'
