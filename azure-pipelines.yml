@@ -60,5 +60,5 @@ steps:
     tagSource: 'manual'
     tag: '$(Version)'
     title: '$(Version)'
-    isDraft: true
+    isDraft: false
     assets: '$(Build.ArtifactStagingDirectory)/asset-manager.zip'
