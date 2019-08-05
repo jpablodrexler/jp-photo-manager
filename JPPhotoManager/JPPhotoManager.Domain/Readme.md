@@ -1,4 +1,4 @@
 # JPPhotoManager.Domain project
 
-Domain Layer for the Asset Manager application.
+Domain Layer for the JPPhotoManager application.
 .NET Class Library.
