@@ -1,24 +1,25 @@
-# Asset Manager
+# JPPhotoManager
 
 [![Build Status](https://dev.azure.com/jpablodrexler/jp-photo-manager/_apis/build/status/jpablodrexler.jp-photo-manager?branchName=master)](https://dev.azure.com/jpablodrexler/jp-photo-manager/_build/latest?definitionId=10&branchName=master)
 
-Asset Manager is a desktop application that allows:
+JPPhotoManager is a desktop application that allows:
 * Visualization of image galleries
-* Copy/move images
+* Change Windows wallpaper
 * Find duplicates
 
 Soon will allow to:
+* Copy/move images
 * Import images from game screenshots folder
 * Add your own metadata to the images
 * Search images
 
 ## Run the application
-Open the solution file `AssetManager/AssetManager.sln` and run the `AssetManager/AssetManager/AssetManager.csproj` project.
+Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoManager/JPPhotoManager/JPPhotoManager.csproj` project.
 
 ## Installation instructions
 * Unzip the content of the zip file to a new folder.
-* Run `AssetManager.exe`.
-* The application builds the catalog files in the following folder: `C:\Users\{username}\AppData\Local\AssetManager`.
+* Run `JPPhotoManager.exe`.
+* The application builds the catalog files in the following folder: `C:\Users\{username}\AppData\Local\JPPhotoManager`.
 
 ## Technologies used
 * Windows Presentation Foundation
