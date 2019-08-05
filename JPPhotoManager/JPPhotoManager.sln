@@ -1,0 +1,54 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29009.5
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JPPhotoManager", "JPPhotoManager\JPPhotoManager.csproj", "{4D3EE89A-CE1A-486D-8633-1AE4A03D7DD5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JPPhotoManager.Test", "JPPhotoManager.Test\JPPhotoManager.Test.csproj", "{53762186-659B-45A2-A51C-97EE450BDD5E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1A68F02F-7C9F-46BB-918F-A03E2E50E8AB}"
+	ProjectSection(SolutionItems) = preProject
+		Readme.txt = Readme.txt
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JPPhotoManager.Domain", "JPPhotoManager.Domain\JPPhotoManager.Domain.csproj", "{C63DD1B9-3DF5-48C2-B892-661E54835802}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JPPhotoManager.Infrastructure", "JPPhotoManager.Infrastructure\JPPhotoManager.Infrastructure.csproj", "{9A0CADAA-A731-4CA5-82D6-DF5E19AB42BE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JPPhotoManager.Application", "JPPhotoManager.Application\JPPhotoManager.Application.csproj", "{0C28298F-6790-40AF-B005-C8413C6C5BB4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4D3EE89A-CE1A-486D-8633-1AE4A03D7DD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D3EE89A-CE1A-486D-8633-1AE4A03D7DD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D3EE89A-CE1A-486D-8633-1AE4A03D7DD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D3EE89A-CE1A-486D-8633-1AE4A03D7DD5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53762186-659B-45A2-A51C-97EE450BDD5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53762186-659B-45A2-A51C-97EE450BDD5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53762186-659B-45A2-A51C-97EE450BDD5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53762186-659B-45A2-A51C-97EE450BDD5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C63DD1B9-3DF5-48C2-B892-661E54835802}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C63DD1B9-3DF5-48C2-B892-661E54835802}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C63DD1B9-3DF5-48C2-B892-661E54835802}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C63DD1B9-3DF5-48C2-B892-661E54835802}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9A0CADAA-A731-4CA5-82D6-DF5E19AB42BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9A0CADAA-A731-4CA5-82D6-DF5E19AB42BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9A0CADAA-A731-4CA5-82D6-DF5E19AB42BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9A0CADAA-A731-4CA5-82D6-DF5E19AB42BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C28298F-6790-40AF-B005-C8413C6C5BB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C28298F-6790-40AF-B005-C8413C6C5BB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C28298F-6790-40AF-B005-C8413C6C5BB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C28298F-6790-40AF-B005-C8413C6C5BB4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3D2EED28-E476-40AA-B3BC-1A55692C9EB0}
+	EndGlobalSection
+EndGlobal
