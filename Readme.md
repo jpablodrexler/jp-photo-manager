@@ -1,6 +1,6 @@
 # Asset Manager
 
-[![Build Status](https://dev.azure.com/jpablodrexler/AssetManager/_apis/build/status/jpablodrexler.asset-manager?branchName=master)](https://dev.azure.com/jpablodrexler/AssetManager/_build/latest?definitionId=9&branchName=master)
+[![Build Status](https://dev.azure.com/jpablodrexler/JPPhotoManager/_apis/build/status/jpablodrexler.jp-photo-manager?branchName=master)](https://dev.azure.com/jpablodrexler/JPPhotoManager/_build/latest?definitionId=10&branchName=master)
 
 Asset Manager is a desktop application that allows:
 * Visualization of image galleries
