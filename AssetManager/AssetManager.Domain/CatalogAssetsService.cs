@@ -213,7 +213,9 @@ namespace AssetManager.Domain
         private string[] GetNewFileNames(string[] fileNames, List<Asset> cataloguedAssets)
         {
             return fileNames.Except(cataloguedAssets.Select(ca => ca.FileName))
-                            .Where(f => f.EndsWith(".jpg") || f.EndsWith(".png") || f.EndsWith(".gif"))
+                            .Where(f => f.EndsWith(".jpg", StringComparison.InvariantCultureIgnoreCase)
+                                || f.EndsWith(".png", StringComparison.InvariantCultureIgnoreCase)
+                                || f.EndsWith(".gif", StringComparison.InvariantCultureIgnoreCase))
                             .ToArray();
         }
 
