@@ -12,7 +12,7 @@ using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.ViewModels
 {
-    public class ApplicationViewModel : BaseViewModel<IAssetManagerApplication>
+    public class ApplicationViewModel : BaseViewModel<IJPPhotoManagerApplication>
     {
         private AppModeEnum appMode;
         private int viewerPosition;

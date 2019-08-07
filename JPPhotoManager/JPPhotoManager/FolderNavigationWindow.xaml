@@ -1,9 +1,9 @@
-﻿<Window x:Class="AssetManager.FolderNavigationWindow"
+﻿<Window x:Class="JPPhotoManager.FolderNavigationWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:AssetManager"
+        xmlns:local="clr-namespace:JPPhotoManager"
         mc:Ignorable="d"
         Title="Select destination folder" Height="400" Width="500">
     <Grid>

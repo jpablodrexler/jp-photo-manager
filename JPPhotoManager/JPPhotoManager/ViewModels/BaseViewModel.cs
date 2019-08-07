@@ -1,4 +1,4 @@
-﻿using AssetManager.Application;
+﻿using JPPhotoManager.Application;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AssetManager.ViewModels
+namespace JPPhotoManager.ViewModels
 {
     public abstract class BaseViewModel<T> : INotifyPropertyChanged
     {

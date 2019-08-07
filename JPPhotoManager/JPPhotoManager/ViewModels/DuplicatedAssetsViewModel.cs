@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 
 namespace JPPhotoManager.ViewModels
 {
-    public class DuplicatedAssetsViewModel : BaseViewModel<IAssetManagerApplication>
+    public class DuplicatedAssetsViewModel : BaseViewModel<IJPPhotoManagerApplication>
     {
         private List<DuplicatedAssetCollection> _duplicatedAssetCollectionSets;
         private int _duplicatedAssetCollectionSetsPosition;
         private int _duplicatedAssetPosition;
 		
-		public DuplicatedAssetsViewModel(IAssetManagerApplication assetApp) : base(assetApp)
+		public DuplicatedAssetsViewModel(IJPPhotoManagerApplication assetApp) : base(assetApp)
 		{
 		}
 

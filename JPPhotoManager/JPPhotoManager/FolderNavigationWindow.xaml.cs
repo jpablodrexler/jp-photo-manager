@@ -1,4 +1,4 @@
-﻿using AssetManager.ViewModels;
+﻿using JPPhotoManager.ViewModels;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace AssetManager
+namespace JPPhotoManager
 {
     /// <summary>
     /// Interaction logic for FolderNavigationWindow.xaml

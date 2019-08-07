@@ -1,3 +1,4 @@
+using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.ViewModels;
 using log4net;
@@ -36,9 +37,9 @@ namespace JPPhotoManager
             InitializeComponent();
         }
 
-        public BaseViewModel<IAssetManagerApplication> ViewModel
+        public BaseViewModel<IJPPhotoManagerApplication> ViewModel
         {
-            get { return (BaseViewModel<IAssetManagerApplication>)this.DataContext; }
+            get { return (BaseViewModel<IJPPhotoManagerApplication>)this.DataContext; }
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)

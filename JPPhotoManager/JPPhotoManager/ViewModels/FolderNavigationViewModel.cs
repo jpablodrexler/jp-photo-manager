@@ -1,5 +1,5 @@
-﻿using AssetManager.Application;
-using AssetManager.Domain;
+﻿using JPPhotoManager.Application;
+using JPPhotoManager.Domain;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,13 +7,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AssetManager.ViewModels
+namespace JPPhotoManager.ViewModels
 {
-    public class FolderNavigationViewModel : BaseViewModel<IAssetManagerApplication>
+    public class FolderNavigationViewModel : BaseViewModel<IJPPhotoManagerApplication>
     {
         private Folder selectedFolder;
 
-        public FolderNavigationViewModel(IAssetManagerApplication assetApp, Folder sourceFolder): base(assetApp)
+        public FolderNavigationViewModel(IJPPhotoManagerApplication assetApp, Folder sourceFolder): base(assetApp)
         {
             this.SourceFolder = sourceFolder;
         }
