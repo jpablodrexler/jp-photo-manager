@@ -1,0 +1,47 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:JPPhotoManager"
+        x:Name="window" x:Class="JPPhotoManager.MainWindow"
+        mc:Ignorable="d"
+        Title="{Binding AppTitle}" Height="600" Width="800" Foreground="White" Background="Black" WindowState="Maximized"
+        Loaded="Window_Loaded" KeyDown="Window_KeyDown">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="Set as _Wallpaper">
+                    <MenuItem Header="_Center" Click="SetAsWallpaperCenter_Click"/>
+                    <MenuItem Header="_Fill" Click="SetAsWallpaperFill_Click"/>
+                    <MenuItem Header="_Fit" Click="SetAsWallpaperFit_Click"/>
+                    <MenuItem Header="S_pan" Click="SetAsWallpaperSpan_Click"/>
+                    <MenuItem Header="_Stretch" Click="SetAsWallpaperStretch_Click"/>
+                    <MenuItem Header="_Tile" Click="SetAsWallpaperTile_Click"/>
+                </MenuItem>
+                <MenuItem Header="Find _Duplicates..." Click="FindDuplicates_Click"/>
+                <MenuItem Header="Copy File..." Click="CopyFile_Click"/>
+                <MenuItem Header="Move File..." Click="MoveFile_Click"/>
+                <Separator/>
+                <MenuItem Header="_Exit" />
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="About JPPhotoManager..." Click="About_Click"/>
+            </MenuItem>
+        </Menu>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="30" />
+            </Grid.RowDefinitions>
+            <local:FolderNavigationControl x:Name="folderTreeView" Grid.Column="0" Grid.Row="0" FolderSelected="FolderTreeView_FolderSelected" Visibility="{Binding ThumbnailsVisible}"/>
+            <local:ViewerUserControl x:Name="viewerUserControl" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" ThumbnailSelected="ViewerUserControl_ThumbnailSelected" Visibility="{Binding ViewerVisible}"/>
+            <local:ThumbnailsUserControl x:Name="thumbnailsUserControl" Grid.Column="1" Grid.Row="0" ThumbnailSelected="ThumbnailsUserControl_ThumbnailSelected" Visibility="{Binding ThumbnailsVisible}"/>
+            <Label x:Name="statusLabel" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" Foreground="#FFFFFFFF" Background="#FF3C3C3C" Content="{Binding StatusMessage}"/>
+        </Grid>
+    </DockPanel>
+</Window>

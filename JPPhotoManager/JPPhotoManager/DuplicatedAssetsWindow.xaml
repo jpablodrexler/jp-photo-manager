@@ -1,0 +1,55 @@
+﻿<Window x:Class="JPPhotoManager.DuplicatedAssetsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:JPPhotoManager"
+        mc:Ignorable="d"
+        Title="Find Duplicates"
+        WindowState="Maximized"
+        WindowStyle="SingleBorderWindow"
+        Height="450"
+        Width="800"
+        Background="#FF3C3C3C">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="24"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Label Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Foreground="#FFFFFFFF" Content="{Binding DuplicatedAssetCollectionSets.Count}" ContentStringFormat="Duplicated sets: {0}"/>
+        <ListBox Grid.Row="1" Grid.RowSpan="2" Grid.Column="0" Background="#FF3C3C3C" ItemsSource="{Binding DuplicatedAssetCollectionSets}" SelectedIndex="{Binding DuplicatedAssetCollectionSetsPosition}">
+            <ListBox.ItemTemplate>
+                <ItemContainerTemplate>
+                    <Label Foreground="#FFFFFFFF" Content="{Binding Description}" />
+                </ItemContainerTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <ListBox Grid.Row="1" Grid.Column="1" Background="#FF3C3C3C" ItemsSource="{Binding CurrentDuplicatedAssetCollection}" SelectedIndex="{Binding DuplicatedAssetPosition}">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <DockPanel HorizontalAlignment="Stretch">
+                        <Label x:Name="deleteLabel" Foreground="#FFFFFFFF" DockPanel.Dock="Right" Padding="5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown">
+                            <TextBlock TextDecorations="Underline" Cursor="Hand">Delete</TextBlock>
+                        </Label>
+                        <Label Foreground="#FFFFFFFF" Content="{Binding FullPath}" />
+                    </DockPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <StackPanel Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
+            <Image HorizontalAlignment="Center" Source="{ Binding CurrentDuplicatedAsset.ImageData }" MaxWidth="200" MaxHeight="150"/>
+            <Label Foreground="#FFFFFFFF" Content="{ Binding CurrentDuplicatedAsset.FormattedPixelSize }" HorizontalAlignment="Center" />
+            <Label Foreground="#FFFFFFFF" Content="{ Binding CurrentDuplicatedAsset.FormattedFileSize }" HorizontalAlignment="Center" />
+        </StackPanel>
+    </Grid>
+</Window>
