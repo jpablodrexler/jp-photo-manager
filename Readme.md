@@ -6,9 +6,9 @@ JPPhotoManager is a desktop application that allows:
 * Visualization of image galleries
 * Change Windows wallpaper
 * Find duplicates
+* Copy/move images
 
 Soon will allow to:
-* Copy/move images
 * Import images from game screenshots folder
 * Add your own metadata to the images
 * Search images
