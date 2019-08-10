@@ -13,6 +13,7 @@ variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
+  version: 'v0.5.0.0a'
 
 steps:
 - task: NuGetToolInstaller@1
@@ -43,7 +44,7 @@ steps:
     rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager/bin/Release'
     includeRootFolder: false
     archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(Version).zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(version).zip'
     replaceExistingArchive: true
 
 - task: PublishBuildArtifacts@1
@@ -60,7 +61,7 @@ steps:
     action: 'create'
     target: '$(Build.SourceVersion)'
     tagSource: 'manual'
-    tag: '$(Version)'
-    title: '$(Version)'
+    tag: '$(version)'
+    title: '$(version)'
     isDraft: false
-    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(Version).zip'
+    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(version).zip'
