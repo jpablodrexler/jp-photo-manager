@@ -21,7 +21,6 @@ namespace JPPhotoManager.Infrastructure
             this.userConfigurationService = userConfigurationService;
         }
 
-        // TODO: IMPLEMENT UNIT TEST
         public string GetParentDirectory(string directoryPath)
         {
             return new DirectoryInfo(directoryPath).Parent.FullName;
@@ -38,7 +37,6 @@ namespace JPPhotoManager.Infrastructure
             return Path.Combine(dataDirectory, ASSET_CATALOG_FILENAME);
         }
 
-        // TODO: IMPLEMENT UNIT TEST
         public string ResolveThumbnailsFilePath(string dataDirectory, string thumbnailsFileName)
         {
             return Path.Combine(dataDirectory, thumbnailsFileName);
@@ -49,7 +47,6 @@ namespace JPPhotoManager.Infrastructure
             Directory.CreateDirectory(directory);
         }
 
-        // TODO: IMPLEMENT UNIT TEST
         public T ReadObjectFromJson<T>(string jsonFilePath)
         {
             T result = default(T);
@@ -68,7 +65,6 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
-        // TODO: IMPLEMENT UNIT TEST
         public void WriteObjectToJson(object anObject, string jsonFilePath)
         {
             string json = JsonConvert.SerializeObject(anObject, Formatting.Indented);
@@ -79,7 +75,6 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        // TODO: IMPLEMENT UNIT TEST
         public object ReadObjectFromBinaryFile(string binaryFilePath)
         {
             object result = null;
@@ -89,14 +84,13 @@ namespace JPPhotoManager.Infrastructure
                 using (FileStream fileStream = new FileStream(binaryFilePath, FileMode.Open))
                 {
                     BinaryFormatter binaryFormatter = new BinaryFormatter();
-                    result = (Dictionary<string, byte[]>)binaryFormatter.Deserialize(fileStream);
+                    result = binaryFormatter.Deserialize(fileStream);
                 }
             }
 
             return result;
         }
 
-        // TODO: IMPLEMENT UNIT TEST
         public void WriteObjectToBinaryFile(object anObject, string binaryFilePath)
         {
             using (FileStream fileStream = new FileStream(binaryFilePath, FileMode.Create))
@@ -106,7 +100,6 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        // TODO: IMPLEMENT UNIT TEST
         public void DeleteFile(string directory, string fileName)
         {
             string fullPath = Path.Combine(directory, fileName);
@@ -117,7 +110,6 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        // TODO: IMPLEMENT UNIT TEST
         public string[] GetFileNames(string directory)
         {
             string[] files = Directory.GetFiles(directory);
@@ -153,11 +145,19 @@ namespace JPPhotoManager.Infrastructure
 
         public BitmapImage LoadBitmapImage(string imagePath)
         {
-            BitmapImage image = new BitmapImage();
-            image.BeginInit();
-            image.UriSource = new Uri(imagePath);
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.EndInit();
+            BitmapImage image = null;
+
+            if (File.Exists(imagePath))
+            {
+                image = new BitmapImage();
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                image.UriSource = new Uri(imagePath);
+                image.Rotation = Rotation.Rotate0;
+                image.EndInit();
+                image.Freeze();
+            }
 
             return image;
         }
@@ -234,6 +234,26 @@ namespace JPPhotoManager.Infrastructure
         {
             DirectoryInfo directoryInfo = new DirectoryInfo(path);
             return directoryInfo.Attributes.HasFlag(FileAttributes.Hidden);
+        }
+
+        public bool ImageExists(Asset asset, Folder folder)
+        {
+            string fullPath = Path.Combine(folder.Path, asset.FileName);
+            return File.Exists(fullPath);
+        }
+
+        public bool ImageExists(string fullPath)
+        {
+            return File.Exists(fullPath);
+        }
+
+        public bool CopyImage(string sourcePath, string destinationPath)
+        {
+            string destinationFolderPath = new FileInfo(destinationPath).Directory.FullName;
+            Directory.CreateDirectory(destinationFolderPath);
+            File.Copy(sourcePath, destinationPath);
+
+            return ImageExists(sourcePath) && ImageExists(destinationPath);
         }
     }
 }

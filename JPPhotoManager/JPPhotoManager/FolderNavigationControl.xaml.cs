@@ -1,4 +1,5 @@
-﻿using JPPhotoManager.Domain;
+using JPPhotoManager.Application;
+using JPPhotoManager.Domain;
 using JPPhotoManager.ViewModels;
 using log4net;
 using System;
@@ -26,7 +27,7 @@ namespace JPPhotoManager
     public partial class FolderNavigationControl : UserControl
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private object dummyNode = null;
+        private object placeholderNode = null;
         public event EventHandler FolderSelected;
         public string SelectedPath { get; set; }
         private bool isInitializing = true;
@@ -36,16 +37,16 @@ namespace JPPhotoManager
             InitializeComponent();
         }
 
-        public ApplicationViewModel ViewModel
+        public BaseViewModel<IJPPhotoManagerApplication> ViewModel
         {
-            get { return (ApplicationViewModel)this.DataContext; }
+            get { return (BaseViewModel<IJPPhotoManagerApplication>)this.DataContext; }
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                Folder[] drives = this.ViewModel.AssetApp.GetDrives();
+                Folder[] drives = this.ViewModel.Application.GetDrives();
 
                 foreach (Folder drive in drives)
                 {
@@ -55,7 +56,7 @@ namespace JPPhotoManager
                         Tag = drive
                     };
 
-                    item.Items.Add(dummyNode);
+                    item.Items.Add(placeholderNode);
                     item.Expanded += new RoutedEventHandler(Item_Expanded);
                     foldersTreeView.Items.Add(item);
                 }
@@ -75,7 +76,7 @@ namespace JPPhotoManager
             {
                 item.Items.Clear();
 
-                Folder[] folders = this.ViewModel.AssetApp.GetFolders((Folder)item.Tag, includeHidden);
+                Folder[] folders = this.ViewModel.Application.GetFolders((Folder)item.Tag, includeHidden);
 
                 foreach (Folder folder in folders)
                 {
@@ -85,7 +86,7 @@ namespace JPPhotoManager
                         Tag = folder
                     };
 
-                    subitem.Items.Add(dummyNode);
+                    subitem.Items.Add(placeholderNode);
                     subitem.Expanded += new RoutedEventHandler(Item_Expanded);
                     item.Items.Add(subitem);
                 }
@@ -112,7 +113,7 @@ namespace JPPhotoManager
 
         private bool LacksSubItems(TreeViewItem item)
         {
-            return item.Items.Count == 1 && item.Items[0] == dummyNode;
+            return item.Items.Count == 1 && item.Items[0] == placeholderNode;
         }
 
         private void FoldersTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

@@ -106,7 +106,7 @@ namespace JPPhotoManager.Domain
                         Folder = folder
                     };
 
-                    this.assetRepository.DeleteAsset(directory, fileName, deleteFile: false);
+                    this.assetRepository.DeleteAsset(directory, fileName);
 
                     callback?.Invoke(new CatalogChangeCallbackEventArgs
                     {
@@ -142,70 +142,70 @@ namespace JPPhotoManager.Domain
         {
             BitmapImage thumbnailImage = null;
 
-            if (!this.assetRepository.IsAssetCatalogued(directoryName, fileName))
-            {
-                this.CreateThumbnail(thumbnails, Path.Combine(directoryName, fileName));
+            this.CreateAsset(thumbnails, directoryName, fileName);
 
-                if (thumbnails.ContainsKey(fileName))
-                {
-                    thumbnailImage = this.storageService.LoadBitmapImage(thumbnails[fileName]);
-                }
+            if (thumbnails.ContainsKey(fileName))
+            {
+                thumbnailImage = this.storageService.LoadBitmapImage(thumbnails[fileName]);
             }
 
             return thumbnailImage;
         }
 
-        public Asset CreateThumbnail(Dictionary<string, byte[]> thumbnails, string imagePath)
+        public Asset CreateAsset(Dictionary<string, byte[]> thumbnails, string directoryName, string fileName)
         {
-            Asset asset;
-            var directoryName = Path.GetDirectoryName(imagePath);
-
+            Asset asset = null;
+            
             const double MAX_WIDTH = 200;
             const double MAX_HEIGHT = 150;
 
-            BitmapImage originalImage = this.storageService.LoadBitmapImage(imagePath);
-
-            double originalDecodeWidth = originalImage.PixelWidth;
-            double originalDecodeHeight = originalImage.PixelHeight;
-            double thumbnailDecodeWidth;
-            double thumbnailDecodeHeight;
-            double percentage;
-
-            // If the original image is landscape
-            if (originalDecodeWidth > originalDecodeHeight)
+            if (!this.assetRepository.IsAssetCatalogued(directoryName, fileName))
             {
-                thumbnailDecodeWidth = MAX_WIDTH;
-                percentage = (MAX_WIDTH * 100d / originalDecodeWidth);
-                thumbnailDecodeHeight = (percentage * originalDecodeHeight) / 100d;
+                string imagePath = Path.Combine(directoryName, fileName);
+                BitmapImage originalImage = this.storageService.LoadBitmapImage(imagePath);
+
+                double originalDecodeWidth = originalImage.PixelWidth;
+                double originalDecodeHeight = originalImage.PixelHeight;
+                double thumbnailDecodeWidth;
+                double thumbnailDecodeHeight;
+                double percentage;
+
+                // If the original image is landscape
+                if (originalDecodeWidth > originalDecodeHeight)
+                {
+                    thumbnailDecodeWidth = MAX_WIDTH;
+                    percentage = (MAX_WIDTH * 100d / originalDecodeWidth);
+                    thumbnailDecodeHeight = (percentage * originalDecodeHeight) / 100d;
+                }
+                else // If the original image is portrait
+                {
+                    thumbnailDecodeHeight = MAX_HEIGHT;
+                    percentage = (MAX_HEIGHT * 100d / originalDecodeHeight);
+                    thumbnailDecodeWidth = (percentage * originalDecodeWidth) / 100d;
+                }
+
+                byte[] imageBytes = this.storageService.GetFileBytes(imagePath);
+                BitmapImage thumbnailImage = this.storageService.LoadBitmapImage(imageBytes,
+                    Convert.ToInt32(thumbnailDecodeWidth),
+                    Convert.ToInt32(thumbnailDecodeHeight));
+                byte[] thumbnailBuffer = this.storageService.GetJpegBitmapImage(thumbnailImage);
+                thumbnails[Path.GetFileName(imagePath)] = thumbnailBuffer;
+                Folder folder = this.assetRepository.GetFolderByPath(directoryName);
+
+                asset = new Asset
+                {
+                    FileName = Path.GetFileName(imagePath),
+                    FolderId = folder.FolderId,
+                    Folder = folder,
+                    FileSize = new FileInfo(imagePath).Length,
+                    PixelWidth = Convert.ToInt32(originalDecodeWidth),
+                    PixelHeight = Convert.ToInt32(originalDecodeHeight),
+                    ThumbnailCreationDateTime = DateTime.Now,
+                    Hash = this.assetHashCalculatorService.CalculateHash(imageBytes)
+                };
+
+                this.assetRepository.AddAsset(asset);
             }
-            else // If the original image is portrait
-            {
-                thumbnailDecodeHeight = MAX_HEIGHT;
-                percentage = (MAX_HEIGHT * 100d / originalDecodeHeight);
-                thumbnailDecodeWidth = (percentage * originalDecodeWidth) / 100d;
-            }
-
-            byte[] imageBytes = this.storageService.GetFileBytes(imagePath);
-            BitmapImage thumbnailImage = this.storageService.LoadBitmapImage(imageBytes,
-                Convert.ToInt32(thumbnailDecodeWidth),
-                Convert.ToInt32(thumbnailDecodeHeight));
-            byte[] thumbnailBuffer = this.storageService.GetJpegBitmapImage(thumbnailImage);
-            thumbnails[Path.GetFileName(imagePath)] = thumbnailBuffer;
-            Folder folder = this.assetRepository.GetFolderByPath(directoryName);
-
-            asset = new Asset
-            {
-                FileName = Path.GetFileName(imagePath),
-                FolderId = folder.FolderId,
-                Folder = folder,
-                FileSize = new FileInfo(imagePath).Length,
-                PixelWidth = Convert.ToInt32(originalDecodeWidth),
-                PixelHeight = Convert.ToInt32(originalDecodeHeight),
-                ThumbnailCreationDateTime = DateTime.Now,
-                Hash = this.assetHashCalculatorService.CalculateHash(imageBytes)
-            };
-
-            this.assetRepository.AddAsset(asset);
 
             return asset;
         }
@@ -213,13 +213,113 @@ namespace JPPhotoManager.Domain
         private string[] GetNewFileNames(string[] fileNames, List<Asset> cataloguedAssets)
         {
             return fileNames.Except(cataloguedAssets.Select(ca => ca.FileName))
-                            .Where(f => f.EndsWith(".jpg") || f.EndsWith(".png") || f.EndsWith(".gif"))
+                            .Where(f => f.EndsWith(".jpg", StringComparison.InvariantCultureIgnoreCase)
+                                || f.EndsWith(".png", StringComparison.InvariantCultureIgnoreCase)
+                                || f.EndsWith(".gif", StringComparison.InvariantCultureIgnoreCase))
                             .ToArray();
         }
 
         private string[] GetDeletedFileNames(string[] fileNames, List<Asset> cataloguedAssets)
         {
             return cataloguedAssets.Select(ca => ca.FileName).Except(fileNames).ToArray();
+        }
+
+        public bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile)
+        {
+            #region Parameters validation
+
+            if (asset == null)
+            {
+                throw new ArgumentNullException(nameof(asset), "asset cannot be null.");
+            }
+
+            if (asset.Folder == null)
+            {
+                throw new ArgumentNullException(nameof(asset), "asset.Folder cannot be null.");
+            }
+
+            if (destinationFolder == null)
+            {
+                throw new ArgumentNullException(nameof(destinationFolder), "destinationFolder cannot be null.");
+            }
+
+            #endregion
+
+            bool result = false;
+            string sourcePath = asset.FullPath;
+            string destinationPath = Path.Combine(destinationFolder.Path, asset.FileName);
+            bool isDestinationFolderInCatalog;
+
+            if (!this.storageService.ImageExists(sourcePath))
+            {
+                throw new ArgumentException(sourcePath);
+            }
+
+            var folder = this.assetRepository.GetFolderByPath(destinationFolder.Path);
+
+            // If the folder is null, it means is not present in the catalog.
+            // TODO: IF THE DESTINATION FOLDER IS NEW, THE FOLDER NAVIGATION CONTROL SHOULD DISPLAY IT WHEN THE USER GOES BACK TO THE MAIN WINDOW.
+            isDestinationFolderInCatalog = folder != null;
+
+            if (isDestinationFolderInCatalog)
+            {
+                destinationFolder = folder;
+            }
+
+            if (this.storageService.ImageExists(sourcePath) && !this.storageService.ImageExists(destinationPath))
+            {
+                result = this.storageService.CopyImage(sourcePath, destinationPath);
+                
+                if (result)
+                {
+                    if (!preserveOriginalFile)
+                    {
+                        this.DeleteAsset(asset, deleteFile: true);
+                    }
+
+                    if (isDestinationFolderInCatalog)
+                    {
+                        var destinationThumbnails = this.assetRepository.GetThumbnails(destinationFolder.ThumbnailsFilename, out bool isNewFile);
+                        this.CreateAsset(destinationThumbnails, destinationFolder.Path, asset.FileName);
+                        this.assetRepository.SaveCatalog(destinationThumbnails, destinationFolder.ThumbnailsFilename);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        public void DeleteAsset(Asset asset, bool deleteFile)
+        {
+            #region Parameters validation
+
+            if (asset == null)
+            {
+                throw new ArgumentNullException(nameof(asset), "Asset cannot be null.");
+            }
+
+            if (asset.Folder == null)
+            {
+                throw new ArgumentNullException(nameof(asset), "Asset.Folder cannot be null.");
+            }
+
+            if (deleteFile && !this.storageService.ImageExists(asset, asset.Folder))
+            {
+                throw new ArgumentException("File does not exist: " + asset.FullPath);
+            }
+
+            #endregion
+
+            var sourceThumbnails = this.assetRepository.GetThumbnails(asset.Folder.ThumbnailsFilename, out bool isNewFile);
+            sourceThumbnails.Remove(asset.FileName);
+            this.assetRepository.DeleteAsset(asset.Folder.Path, asset.FileName);
+
+            if (deleteFile)
+            {
+                this.storageService.DeleteFile(asset.Folder.Path, asset.FileName);
+            }
+
+            this.assetRepository.SaveCatalog(sourceThumbnails, asset.Folder.ThumbnailsFilename);
         }
     }
 }

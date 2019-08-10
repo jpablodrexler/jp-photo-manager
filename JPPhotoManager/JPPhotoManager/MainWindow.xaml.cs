@@ -32,7 +32,7 @@ namespace JPPhotoManager
             {
                 InitializeComponent();
 
-                var aboutInformation = viewModel.AssetApp.GetAboutInformation(this.GetType().Assembly);
+                var aboutInformation = viewModel.Application.GetAboutInformation(this.GetType().Assembly);
                 viewModel.Product = aboutInformation.Product;
                 viewModel.Version = aboutInformation.Version;
                 this.DataContext = viewModel;
@@ -56,6 +56,10 @@ namespace JPPhotoManager
                 {
                     assetApp.CatalogImages((e) => Dispatcher.Invoke(() => ViewModel.NotifyCatalogChange(e)));
                 }
+                catch (TaskCanceledException)
+                {
+                    // If the application shuts down while the catalog process is running, this exception is thrown.
+                }
                 catch (Exception ex)
                 {
                     log.Error(ex);
@@ -73,10 +77,9 @@ namespace JPPhotoManager
             try
             {
                 this.ViewModel?.ChangeAppMode(AppModeEnum.Thumbnails);
-                this.thumbnailsUserControl.GoToFolderAsync(this.ViewModel.AssetApp, this.ViewModel?.CurrentFolder);
+                this.thumbnailsUserControl.GoToFolderAsync(this.ViewModel.Application, this.ViewModel?.CurrentFolder);
                 this.folderTreeView.SelectedPath = this.ViewModel?.CurrentFolder;
-                //this.folderTreeView.GoToFolder(this.ViewModel?.CurrentFolder);
-                await CatalogImagesAsync(this.ViewModel.AssetApp);
+                await CatalogImagesAsync(this.ViewModel.Application);
             }
             catch (Exception ex)
             {
@@ -93,15 +96,18 @@ namespace JPPhotoManager
                     case Key.PageUp:
                     case Key.Left:
                         this.ViewModel?.GoToPreviousImage();
+                        this.viewerUserControl.ShowImage();
                         break;
 
                     case Key.PageDown:
                     case Key.Right:
                         this.ViewModel?.GoToNextImage();
+                        this.viewerUserControl.ShowImage();
                         break;
 
                     case Key.F1:
                         this.ViewModel?.ChangeAppMode();
+                        this.viewerUserControl.ShowImage();
                         break;
                 }
             }
@@ -116,6 +122,11 @@ namespace JPPhotoManager
             try
             {
                 this.ViewModel?.GoToImage(e.Asset, AppModeEnum.Viewer);
+
+                if (this.ViewModel.AppMode == AppModeEnum.Viewer)
+                {
+                    this.viewerUserControl.ShowImage();
+                }
             }
             catch (Exception ex)
             {
@@ -128,6 +139,11 @@ namespace JPPhotoManager
             try
             {
                 this.ViewModel?.GoToImage(e.Asset, AppModeEnum.Thumbnails);
+
+                if (this.ViewModel.AppMode == AppModeEnum.Viewer)
+                {
+                    this.viewerUserControl.ShowImage();
+                }
             }
             catch (Exception ex)
             {
@@ -139,7 +155,7 @@ namespace JPPhotoManager
         {
             try
             {
-                this.thumbnailsUserControl.GoToFolderAsync(this.ViewModel.AssetApp, this.folderTreeView.SelectedPath);
+                this.thumbnailsUserControl.GoToFolderAsync(this.ViewModel.Application, this.folderTreeView.SelectedPath);
             }
             catch (Exception ex)
             {
@@ -151,7 +167,7 @@ namespace JPPhotoManager
         {
             try
             {
-                this.ViewModel.AssetApp.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Center);
+                this.ViewModel.Application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Center);
             }
             catch (Exception ex)
             {
@@ -163,7 +179,7 @@ namespace JPPhotoManager
         {
             try
             {
-                this.ViewModel.AssetApp.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Fill);
+                this.ViewModel.Application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Fill);
             }
             catch (Exception ex)
             {
@@ -175,7 +191,7 @@ namespace JPPhotoManager
         {
             try
             {
-                this.ViewModel.AssetApp.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Fit);
+                this.ViewModel.Application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Fit);
             }
             catch (Exception ex)
             {
@@ -187,7 +203,7 @@ namespace JPPhotoManager
         {
             try
             {
-                this.ViewModel.AssetApp.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Span);
+                this.ViewModel.Application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Span);
             }
             catch (Exception ex)
             {
@@ -199,7 +215,7 @@ namespace JPPhotoManager
         {
             try
             {
-                this.ViewModel.AssetApp.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Stretch);
+                this.ViewModel.Application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Stretch);
             }
             catch (Exception ex)
             {
@@ -211,7 +227,7 @@ namespace JPPhotoManager
         {
             try
             {
-                this.ViewModel.AssetApp.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Tile);
+                this.ViewModel.Application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Tile);
             }
             catch (Exception ex)
             {
@@ -223,11 +239,11 @@ namespace JPPhotoManager
         {
             try
             {
-                var duplicates = this.ViewModel.AssetApp.GetDuplicatedAssets();
+                var duplicates = this.ViewModel.Application.GetDuplicatedAssets();
 
                 if (duplicates.Count > 0)
                 {
-                    DuplicatedAssetsViewModel viewModel = new DuplicatedAssetsViewModel(this.ViewModel.AssetApp) { DuplicatedAssetCollectionSets = duplicates };
+                    DuplicatedAssetsViewModel viewModel = new DuplicatedAssetsViewModel(this.ViewModel.Application) { DuplicatedAssetCollectionSets = duplicates };
                     DuplicatedAssetsWindow duplicatedAssetsWindow = new DuplicatedAssetsWindow(viewModel);
                     duplicatedAssetsWindow.ShowDialog();
                 }
@@ -246,9 +262,76 @@ namespace JPPhotoManager
         {
             try
             {
-                var about = this.ViewModel.AssetApp.GetAboutInformation(this.GetType().Assembly);
+                var about = this.ViewModel.Application.GetAboutInformation(this.GetType().Assembly);
                 AboutWindow duplicatedAssetsWindow = new AboutWindow(about);
                 duplicatedAssetsWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void CopyFile_Click(object sender, RoutedEventArgs e)
+        {
+            MoveAsset(preserveOriginalFile: true);
+        }
+
+        private void MoveFile_Click(object sender, RoutedEventArgs e)
+        {
+            MoveAsset(preserveOriginalFile: false);
+        }
+
+        private void MoveAsset(bool preserveOriginalFile)
+        {
+            try
+            {
+                var asset = this.ViewModel.CurrentAsset;
+
+                if (asset != null)
+                {
+                    FolderNavigationViewModel viewModel = new FolderNavigationViewModel(this.ViewModel.Application, asset.Folder);
+                    FolderNavigationWindow folderNavigationWindow = new FolderNavigationWindow(viewModel);
+
+                    if (folderNavigationWindow.ShowDialog().Value)
+                    {
+                        Folder destinationFolder = viewModel.SelectedFolder;
+                        bool result = this.ViewModel.Application.MoveAsset(asset, destinationFolder, preserveOriginalFile);
+
+                        if (!preserveOriginalFile && result)
+                        {
+                            this.ViewModel.RemoveAsset(asset);
+                            
+                            if (this.ViewModel.AppMode == AppModeEnum.Viewer)
+                            {
+                                this.viewerUserControl.ShowImage();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void DeleteFile_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var asset = this.ViewModel.CurrentAsset;
+
+                if (asset != null)
+                {
+                    this.ViewModel.Application.DeleteAsset(asset, deleteFile: true);
+                    this.ViewModel.RemoveAsset(asset);
+
+                    if (this.ViewModel.AppMode == AppModeEnum.Viewer)
+                    {
+                        this.viewerUserControl.ShowImage();
+                    }
+                }
             }
             catch (Exception ex)
             {

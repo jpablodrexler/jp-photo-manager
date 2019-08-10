@@ -32,7 +32,7 @@ namespace JPPhotoManager.Test
             };
 
             string result = asset.FormattedFileSize;
-            Assert.AreEqual("17.3 KB", result);
+            Assert.AreEqual(17.3 + " KB", result);
         }
 
         [TestMethod]
@@ -44,7 +44,7 @@ namespace JPPhotoManager.Test
             };
 
             string result = asset.FormattedFileSize;
-            Assert.AreEqual("20.0 KB", result);
+            Assert.AreEqual(20.ToString("0.0") + " KB", result);
         }
 
         [TestMethod]
@@ -56,7 +56,7 @@ namespace JPPhotoManager.Test
             };
 
             string result = asset.FormattedFileSize;
-            Assert.AreEqual("549.5 KB", result);
+            Assert.AreEqual(549.5 + " KB", result);
         }
 
         [TestMethod]
@@ -68,7 +68,7 @@ namespace JPPhotoManager.Test
             };
 
             string result = asset.FormattedFileSize;
-            Assert.AreEqual("552.0 KB", result);
+            Assert.AreEqual(552.ToString("0.0") + " KB", result);
         }
 
         [TestMethod]
@@ -80,7 +80,7 @@ namespace JPPhotoManager.Test
             };
 
             string result = asset.FormattedFileSize;
-            Assert.AreEqual("52.2 MB", result);
+            Assert.AreEqual(52.2 + " MB", result);
         }
 
         [TestMethod]
@@ -92,7 +92,7 @@ namespace JPPhotoManager.Test
             };
 
             string result = asset.FormattedFileSize;
-            Assert.AreEqual("52.4 MB", result);
+            Assert.AreEqual(52.4 + " MB", result);
         }
 
         [TestMethod]
@@ -104,7 +104,7 @@ namespace JPPhotoManager.Test
             };
 
             string result = asset.FormattedFileSize;
-            Assert.AreEqual("1.6 GB", result);
+            Assert.AreEqual(1.6 + " GB", result);
         }
 
         [TestMethod]
@@ -116,7 +116,7 @@ namespace JPPhotoManager.Test
             };
 
             string result = asset.FormattedFileSize;
-            Assert.AreEqual("1.6 GB", result);
+            Assert.AreEqual(1.6 + " GB", result);
         }
 
         [TestMethod]
@@ -128,7 +128,7 @@ namespace JPPhotoManager.Test
             };
 
             string result = asset.FormattedFileSize;
-            Assert.AreEqual("23.3 GB", result);
+            Assert.AreEqual(23.3 + " GB", result);
         }
 
         [TestMethod]
@@ -140,7 +140,7 @@ namespace JPPhotoManager.Test
             };
 
             string result = asset.FormattedFileSize;
-            Assert.AreEqual("23.4 GB", result);
+            Assert.AreEqual(23.4 + " GB", result);
         }
 
         [TestMethod]

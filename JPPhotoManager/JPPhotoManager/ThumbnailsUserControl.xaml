@@ -9,7 +9,6 @@
         <DataTemplate x:Key="ThumbnailDataTemplate">
             <ContentControl MouseDown="ContentControl_MouseDown" MouseDoubleClick="ContentControl_MouseDoubleClick" Margin="10">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="200">
-                    <!-- TODO: Must recalculate maxwidth when the window is resized -->
                     <Image HorizontalAlignment="Center" Source="{ Binding ImageData }" MaxWidth="200" MaxHeight="150"></Image>
                 </StackPanel>
             </ContentControl>

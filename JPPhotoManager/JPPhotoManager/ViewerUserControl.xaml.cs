@@ -42,6 +42,7 @@ namespace JPPhotoManager
             try
             {
                 this.ViewModel?.GoToNextImage();
+                this.ShowImage();
             }
             catch (Exception ex)
             {
@@ -54,6 +55,7 @@ namespace JPPhotoManager
             try
             {
                 this.ViewModel?.GoToPreviousImage();
+                this.ShowImage();
             }
             catch (Exception ex)
             {
@@ -70,6 +72,23 @@ namespace JPPhotoManager
             catch (Exception ex)
             {
                 log.Error(ex);
+            }
+        }
+
+        public void ShowImage()
+        {
+            if (this.ViewModel.ViewerPosition >= 0)
+            {
+                var source = this.ViewModel.Application.LoadBitmapImage(this.ViewModel.CurrentAsset.FullPath);
+
+                if (source != null)
+                {
+                    this.image.Source = source;
+                }
+            }
+            else
+            {
+                this.image.Source = null;
             }
         }
     }
