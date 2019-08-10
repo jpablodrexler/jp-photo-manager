@@ -309,9 +309,12 @@ namespace JPPhotoManager.Test
             repository.Initialize(dataDirectory);
             repository.AddFolder(dataDirectory);
 
+            Mock<IAssetHashCalculatorService> hashCalculator = new Mock<IAssetHashCalculatorService>();
+            hashCalculator.Setup(h => h.CalculateHash(It.IsAny<byte[]>())).Returns("abcd1234");
+
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
                     repository,
-                    new AssetHashCalculatorService(),
+                    hashCalculator.Object,
                     new StorageService(userConfigurationService),
                     new UserConfigurationService());
 
@@ -354,9 +357,12 @@ namespace JPPhotoManager.Test
             repository.Initialize(dataDirectory);
             repository.AddFolder(dataDirectory);
 
+            Mock<IAssetHashCalculatorService> hashCalculator = new Mock<IAssetHashCalculatorService>();
+            hashCalculator.Setup(h => h.CalculateHash(It.IsAny<byte[]>())).Returns("abcd1234");
+
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
                     repository,
-                    new AssetHashCalculatorService(),
+                    hashCalculator.Object,
                     new StorageService(userConfigurationService),
                     new UserConfigurationService());
 

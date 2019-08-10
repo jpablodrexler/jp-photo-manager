@@ -72,18 +72,26 @@
     <Compile Include="AssetTests.cs" />
     <Compile Include="CatalogAssetsServiceTest.cs" />
     <Compile Include="MockAssetRepository.cs" />
-    <Compile Include="MockAssetHashCalculator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ApplicationViewModelTest.cs" />
     <Compile Include="StorageServiceTest.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="TestFiles\IMAGE_WITH_UPPERCASE_NAME.JPG">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="app.config" />
     <None Include="packages.config" />
     <Content Include="TestFiles\Image 4.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="TestFiles\Image 5.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\Image 6.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\Image 7.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="TestFiles\Image.pptx" />

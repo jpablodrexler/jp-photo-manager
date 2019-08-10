@@ -53,7 +53,7 @@ namespace JPPhotoManager
 
                 if (MessageBox.Show($"Are you sure you want to delete {asset.FullPath}?", "Confirm", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                 {
-                    this.ViewModel.Application.DeleteAsset(asset.Folder.Path, asset.FileName, deleteFile: true);
+                    this.ViewModel.Application.DeleteAsset(asset, deleteFile: true);
                     var duplicates = this.ViewModel.Application.GetDuplicatedAssets();
                     this.ViewModel.DuplicatedAssetCollectionSets = duplicates;
                 }

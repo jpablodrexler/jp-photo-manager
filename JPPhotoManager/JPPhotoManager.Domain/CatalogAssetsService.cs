@@ -106,7 +106,7 @@ namespace JPPhotoManager.Domain
                         Folder = folder
                     };
 
-                    this.assetRepository.DeleteAsset(directory, fileName, deleteFile: false);
+                    this.assetRepository.DeleteAsset(directory, fileName);
 
                     callback?.Invoke(new CatalogChangeCallbackEventArgs
                     {
@@ -224,12 +224,30 @@ namespace JPPhotoManager.Domain
             return cataloguedAssets.Select(ca => ca.FileName).Except(fileNames).ToArray();
         }
 
-        public bool MoveAsset(Asset asset, Folder sourceFolder, Folder destinationFolder, bool preserveOriginalFile)
+        public bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile)
         {
+            #region Parameters validation
+
+            if (asset == null)
+            {
+                throw new ArgumentNullException(nameof(asset), "asset cannot be null.");
+            }
+
+            if (asset.Folder == null)
+            {
+                throw new ArgumentNullException(nameof(asset), "asset.Folder cannot be null.");
+            }
+
+            if (destinationFolder == null)
+            {
+                throw new ArgumentNullException(nameof(destinationFolder), "destinationFolder cannot be null.");
+            }
+
+            #endregion
+
             bool result = false;
-            string sourcePath = Path.Combine(sourceFolder.Path, asset.FileName);
+            string sourcePath = asset.FullPath;
             string destinationPath = Path.Combine(destinationFolder.Path, asset.FileName);
-            bool isNewFile;
             bool isDestinationFolderInCatalog;
 
             if (!this.storageService.ImageExists(sourcePath))
@@ -240,8 +258,7 @@ namespace JPPhotoManager.Domain
             var folder = this.assetRepository.GetFolderByPath(destinationFolder.Path);
 
             // If the folder is null, it means is not present in the catalog.
-            // TODO: THE TESTS SHOULD VALIDATE WHAT HAPPENS WHEN THE DESTINATION FOLDER IS NOT IN THE CATALOG.
-            // TODO: ALSO, IF THE DESTINATION FOLDER IS NEW, THE FOLDER NAVIGATION CONTROL SHOULD DISPLAY IT WHEN THE USER GOES BACK TO THE MAIN WINDOW.
+            // TODO: IF THE DESTINATION FOLDER IS NEW, THE FOLDER NAVIGATION CONTROL SHOULD DISPLAY IT WHEN THE USER GOES BACK TO THE MAIN WINDOW.
             isDestinationFolderInCatalog = folder != null;
 
             if (isDestinationFolderInCatalog)
@@ -257,15 +274,12 @@ namespace JPPhotoManager.Domain
                 {
                     if (!preserveOriginalFile)
                     {
-                        var sourceThumbnails = this.assetRepository.GetThumbnails(sourceFolder.ThumbnailsFilename, out isNewFile);
-                        sourceThumbnails.Remove(asset.FileName);
-                        this.assetRepository.DeleteAsset(sourceFolder.Path, asset.FileName, true);
-                        this.assetRepository.SaveCatalog(sourceThumbnails, sourceFolder.ThumbnailsFilename);
+                        this.DeleteAsset(asset, deleteFile: true);
                     }
 
                     if (isDestinationFolderInCatalog)
                     {
-                        var destinationThumbnails = this.assetRepository.GetThumbnails(destinationFolder.ThumbnailsFilename, out isNewFile);
+                        var destinationThumbnails = this.assetRepository.GetThumbnails(destinationFolder.ThumbnailsFilename, out bool isNewFile);
                         this.CreateAsset(destinationThumbnails, destinationFolder.Path, asset.FileName);
                         this.assetRepository.SaveCatalog(destinationThumbnails, destinationFolder.ThumbnailsFilename);
                     }
@@ -273,6 +287,39 @@ namespace JPPhotoManager.Domain
             }
 
             return result;
+        }
+
+        public void DeleteAsset(Asset asset, bool deleteFile)
+        {
+            #region Parameters validation
+
+            if (asset == null)
+            {
+                throw new ArgumentNullException(nameof(asset), "Asset cannot be null.");
+            }
+
+            if (asset.Folder == null)
+            {
+                throw new ArgumentNullException(nameof(asset), "Asset.Folder cannot be null.");
+            }
+
+            if (deleteFile && !this.storageService.ImageExists(asset, asset.Folder))
+            {
+                throw new ArgumentException("File does not exist: " + asset.FullPath);
+            }
+
+            #endregion
+
+            var sourceThumbnails = this.assetRepository.GetThumbnails(asset.Folder.ThumbnailsFilename, out bool isNewFile);
+            sourceThumbnails.Remove(asset.FileName);
+            this.assetRepository.DeleteAsset(asset.Folder.Path, asset.FileName);
+
+            if (deleteFile)
+            {
+                this.storageService.DeleteFile(asset.Folder.Path, asset.FileName);
+            }
+
+            this.assetRepository.SaveCatalog(sourceThumbnails, asset.Folder.ThumbnailsFilename);
         }
     }
 }

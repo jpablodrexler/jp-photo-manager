@@ -74,10 +74,9 @@ namespace JPPhotoManager.Application
             return this.findDuplicatedAssetsService.GetDuplicatedAssets();
         }
 
-        public void DeleteAsset(string directory, string deletedFileName, bool deleteFile)
+        public void DeleteAsset(Asset asset, bool deleteFile)
         {
-            // TODO: THE METHOD SHOULD BE CALLED ON THE CATALOG ASSET SERVICE. THE SERVICE WILL CALL THIS METHOD FROM THE REPOSITORY, AND REMOVE THE THUMBNAIL FROM THE FILE AS WELL. A UNIT TEST SHOULD VERIFY THAT.
-            this.assetRepository.DeleteAsset(directory, deletedFileName, deleteFile);
+            this.catalogAssetsService.DeleteAsset(asset, deleteFile);
         }
 
         public AboutInformation GetAboutInformation(Assembly assembly)
@@ -100,9 +99,9 @@ namespace JPPhotoManager.Application
             return this.userConfigurationService.GetInitialFolder();
         }
 
-        public bool MoveAsset(Asset asset, Folder sourceFolder, Folder destinationFolder, bool preserveOriginalFile)
+        public bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile)
         {
-            return this.catalogAssetsService.MoveAsset(asset, sourceFolder, destinationFolder, preserveOriginalFile);
+            return this.catalogAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile);
         }
 
         public BitmapImage LoadBitmapImage(string imagePath)

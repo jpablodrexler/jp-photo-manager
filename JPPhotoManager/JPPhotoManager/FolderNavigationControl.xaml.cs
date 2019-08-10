@@ -27,7 +27,7 @@ namespace JPPhotoManager
     public partial class FolderNavigationControl : UserControl
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private object dummyNode = null;
+        private object placeholderNode = null;
         public event EventHandler FolderSelected;
         public string SelectedPath { get; set; }
         private bool isInitializing = true;
@@ -56,7 +56,7 @@ namespace JPPhotoManager
                         Tag = drive
                     };
 
-                    item.Items.Add(dummyNode);
+                    item.Items.Add(placeholderNode);
                     item.Expanded += new RoutedEventHandler(Item_Expanded);
                     foldersTreeView.Items.Add(item);
                 }
@@ -86,7 +86,7 @@ namespace JPPhotoManager
                         Tag = folder
                     };
 
-                    subitem.Items.Add(dummyNode);
+                    subitem.Items.Add(placeholderNode);
                     subitem.Expanded += new RoutedEventHandler(Item_Expanded);
                     item.Items.Add(subitem);
                 }
@@ -113,7 +113,7 @@ namespace JPPhotoManager
 
         private bool LacksSubItems(TreeViewItem item)
         {
-            return item.Items.Count == 1 && item.Items[0] == dummyNode;
+            return item.Items.Count == 1 && item.Items[0] == placeholderNode;
         }
 
         private void FoldersTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

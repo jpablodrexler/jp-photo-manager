@@ -79,7 +79,6 @@ namespace JPPhotoManager
                 this.ViewModel?.ChangeAppMode(AppModeEnum.Thumbnails);
                 this.thumbnailsUserControl.GoToFolderAsync(this.ViewModel.Application, this.ViewModel?.CurrentFolder);
                 this.folderTreeView.SelectedPath = this.ViewModel?.CurrentFolder;
-                //this.folderTreeView.GoToFolder(this.ViewModel?.CurrentFolder);
                 await CatalogImagesAsync(this.ViewModel.Application);
             }
             catch (Exception ex)
@@ -297,26 +296,40 @@ namespace JPPhotoManager
                     if (folderNavigationWindow.ShowDialog().Value)
                     {
                         Folder destinationFolder = viewModel.SelectedFolder;
-                        // TODO: ADD TESTS FOR NULL PARAMETERS
-                        bool result = this.ViewModel.Application.MoveAsset(asset, asset.Folder, destinationFolder, preserveOriginalFile);
+                        bool result = this.ViewModel.Application.MoveAsset(asset, destinationFolder, preserveOriginalFile);
 
                         if (!preserveOriginalFile && result)
                         {
-                            int position = this.ViewModel.ViewerPosition;
-                            position++;
-
                             this.ViewModel.RemoveAsset(asset);
-                            
-                            if (position < this.ViewModel.Files.Count)
-                            {
-                                this.ViewModel.ViewerPosition = position;
-                            }
                             
                             if (this.ViewModel.AppMode == AppModeEnum.Viewer)
                             {
                                 this.viewerUserControl.ShowImage();
                             }
                         }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void DeleteFile_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var asset = this.ViewModel.CurrentAsset;
+
+                if (asset != null)
+                {
+                    this.ViewModel.Application.DeleteAsset(asset, deleteFile: true);
+                    this.ViewModel.RemoveAsset(asset);
+
+                    if (this.ViewModel.AppMode == AppModeEnum.Viewer)
+                    {
+                        this.viewerUserControl.ShowImage();
                     }
                 }
             }

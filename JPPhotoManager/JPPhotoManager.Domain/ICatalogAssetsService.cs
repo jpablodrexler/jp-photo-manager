@@ -6,6 +6,7 @@ namespace JPPhotoManager.Domain
     {
         void CatalogImages(CatalogChangeCallback callback);
         Asset CreateAsset(Dictionary<string, byte[]> thumbnails, string directoryName, string fileName);
-        bool MoveAsset(Asset asset, Folder sourceFolder, Folder destinationFolder, bool preserveOriginalFile);
+        bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile);
+        void DeleteAsset(Asset asset, bool deleteFile);
     }
 }

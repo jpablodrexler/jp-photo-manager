@@ -247,13 +247,8 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
-        public void DeleteAsset(string directory, string fileName, bool deleteFile)
+        public void DeleteAsset(string directory, string fileName)
         {
-            if (deleteFile)
-            {
-                this.storageService.DeleteFile(directory, fileName);
-            }
-
             lock (this.AssetCatalog)
             {
                 Folder folder = GetFolderByPath(directory);

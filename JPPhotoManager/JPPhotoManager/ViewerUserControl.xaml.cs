@@ -42,6 +42,7 @@ namespace JPPhotoManager
             try
             {
                 this.ViewModel?.GoToNextImage();
+                this.ShowImage();
             }
             catch (Exception ex)
             {
@@ -54,6 +55,7 @@ namespace JPPhotoManager
             try
             {
                 this.ViewModel?.GoToPreviousImage();
+                this.ShowImage();
             }
             catch (Exception ex)
             {
