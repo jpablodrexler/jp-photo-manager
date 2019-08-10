@@ -77,7 +77,7 @@ namespace JPPhotoManager.Test
                     new StorageService(userConfigurationService),
                     new UserConfigurationService());
 
-            catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 1.jpg");
             Assert.IsTrue(repository.HasChanges());
         }
 
@@ -99,7 +99,7 @@ namespace JPPhotoManager.Test
                     new StorageService(userConfigurationService),
                     new UserConfigurationService());
 
-            catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 1.jpg");
             repository.SaveCatalog(null, null);
             Assert.IsFalse(repository.HasChanges());
         }
@@ -124,7 +124,7 @@ namespace JPPhotoManager.Test
             bool isCatalogued = repository.IsAssetCatalogued(dataDirectory, "Image 2.jpg");
             Assert.IsFalse(isCatalogued);
             repository.AddFolder(dataDirectory);
-            catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 2.jpg");
             isCatalogued = repository.IsAssetCatalogued(dataDirectory, "Image 2.jpg");
             Assert.IsTrue(isCatalogued);
         }
@@ -141,11 +141,11 @@ namespace JPPhotoManager.Test
             string imagePath = Path.Combine(dataDirectory, "Non Existing Image.jpg");
             Assert.IsFalse(File.Exists(imagePath));
             
-            repository.DeleteAsset(dataDirectory, "Non Existing Image.jpg", deleteFile: false);
+            repository.DeleteAsset(dataDirectory, "Non Existing Image.jpg");
             bool isCatalogued = repository.IsAssetCatalogued(dataDirectory, "Non Existing Image.jpg");
             Assert.IsFalse(isCatalogued);
             
-            repository.DeleteAsset(dataDirectory, "Non Existing Image.jpg", deleteFile: true);
+            repository.DeleteAsset(dataDirectory, "Non Existing Image.jpg");
             isCatalogued = repository.IsAssetCatalogued(dataDirectory, "Non Existing Image.jpg");
             Assert.IsFalse(isCatalogued);
         }
@@ -167,21 +167,13 @@ namespace JPPhotoManager.Test
 
             string imagePath = Path.Combine(dataDirectory, "Image 3.jpg");
             Assert.IsTrue(File.Exists(imagePath));
-            Asset asset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
+            Asset asset = catalogAssetsService.CreateAsset(thumbnails, dataDirectory, "Image 3.jpg");
 
             // The asset should no longer be catalogued, but the image should still be in the filesystem.
-            repository.DeleteAsset(dataDirectory, "Image 3.jpg", deleteFile: false);
+            repository.DeleteAsset(dataDirectory, "Image 3.jpg");
             bool isCatalogued = repository.IsAssetCatalogued(dataDirectory, "Image 3.jpg");
             Assert.IsFalse(isCatalogued);
             Assert.IsTrue(File.Exists(imagePath));
-
-            asset = catalogAssetsService.CreateThumbnail(thumbnails, imagePath);
-
-            // The asset should no longer be catalogued, and the image should no longer be in the filesystem.
-            repository.DeleteAsset(dataDirectory, "Image 3.jpg", deleteFile: true);
-            isCatalogued = repository.IsAssetCatalogued(dataDirectory, "Image 3.jpg");
-            Assert.IsFalse(isCatalogued);
-            Assert.IsFalse(File.Exists(imagePath));
         }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
+using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Application
 {
@@ -73,9 +74,9 @@ namespace JPPhotoManager.Application
             return this.findDuplicatedAssetsService.GetDuplicatedAssets();
         }
 
-        public void DeleteAsset(string directory, string deletedFileName, bool deleteFile)
+        public void DeleteAsset(Asset asset, bool deleteFile)
         {
-            this.assetRepository.DeleteAsset(directory, deletedFileName, deleteFile);
+            this.catalogAssetsService.DeleteAsset(asset, deleteFile);
         }
 
         public AboutInformation GetAboutInformation(Assembly assembly)
@@ -96,6 +97,16 @@ namespace JPPhotoManager.Application
         public string GetInitialFolder()
         {
             return this.userConfigurationService.GetInitialFolder();
+        }
+
+        public bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile)
+        {
+            return this.catalogAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile);
+        }
+
+        public BitmapImage LoadBitmapImage(string imagePath)
+        {
+            return this.storageService.LoadBitmapImage(imagePath);
         }
     }
 }

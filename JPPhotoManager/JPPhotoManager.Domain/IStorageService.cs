@@ -27,5 +27,8 @@ namespace JPPhotoManager.Domain
         byte[] GetJpegBitmapImage(BitmapImage thumbnailImage);
         Folder[] GetDrives();
         Folder[] GetFolders(Folder parentFolder, bool includeHidden);
+        bool ImageExists(Asset asset, Folder folder);
+        bool ImageExists(string path);
+        bool CopyImage(string sourcePath, string destinationPath);
     }
 }

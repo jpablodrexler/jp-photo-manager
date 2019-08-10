@@ -16,7 +16,7 @@ namespace JPPhotoManager.Domain
         List<Asset> GetCataloguedAssets();
         List<Asset> GetCataloguedAssets(string directory);
         bool IsAssetCatalogued(string directoryName, string fileName);
-        void DeleteAsset(string directory, string deletedFileName, bool deleteFile);
+        void DeleteAsset(string directory, string deletedFileName);
         bool HasChanges();
     }
 }

@@ -26,7 +26,6 @@ namespace JPPhotoManager.Infrastructure
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
 
-        // TODO: IMPLEMENT UNIT TEST
         public string GetPicturesDirectory()
         {
             return Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);

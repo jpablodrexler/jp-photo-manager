@@ -1,15 +1,19 @@
-﻿using JPPhotoManager.Domain;
+using JPPhotoManager.Domain;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Infrastructure
 {
     public class AssetRepository : IAssetRepository
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
         public bool IsInitialized { get; private set; }
         private string dataDirectory;
         private string assetCatalogPath;
@@ -128,8 +132,7 @@ namespace JPPhotoManager.Infrastructure
             }
             catch (Exception ex)
             {
-                // TODO: IMPLEMENT PROPER ERROR HANDLING
-                Console.WriteLine("GetImages: " + ex);
+                log.Error(ex);
             }
 
             return assetsList.ToArray();
@@ -244,13 +247,8 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
-        public void DeleteAsset(string directory, string fileName, bool deleteFile)
+        public void DeleteAsset(string directory, string fileName)
         {
-            if (deleteFile)
-            {
-                this.storageService.DeleteFile(directory, fileName);
-            }
-
             lock (this.AssetCatalog)
             {
                 Folder folder = GetFolderByPath(directory);
