@@ -20,7 +20,7 @@
                 </LinearGradientBrush>
             </Rectangle.Fill>
         </Rectangle>
-        <Image x:Name="icons8_identificacion_de_camara_48_png" HorizontalAlignment="Left" Height="48" Margin="76,82.268,0,0" Source="icons8-identificacion-de-camara-48.png" Stretch="Fill" VerticalAlignment="Top" Width="48" RenderTransformOrigin="1.599,0.677"/>
+        <Image x:Name="AppIcon" HorizontalAlignment="Left" Margin="40,0,0,0" Source="AppIcon.png" Stretch="Fill" VerticalAlignment="Top" Width="128" Height="128" RenderTransformOrigin="1.599,0.677"/>
         <Button x:Name="confirmButton" Click="ConfirmButton_Click" Content="Got it!" HorizontalAlignment="Right" Height="36.349" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="100"/>
 
     </Grid>
