@@ -200,7 +200,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy $(SolutionDir)Readme.txt $(TargetDir)</PostBuildEvent>
+    <PostBuildEvent>copy $(SolutionDir)Readme.txt $(TargetDir)
+copy $(SolutionDir)..\LICENSE $(TargetDir)</PostBuildEvent>
   </PropertyGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
