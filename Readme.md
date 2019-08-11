@@ -1,5 +1,7 @@
 # JPPhotoManager
 
+![JPPhotoManager](JPPhotoManager/Images/AppIcon.png)
+
 [![Build Status](https://dev.azure.com/jpablodrexler/jp-photo-manager/_apis/build/status/jpablodrexler.jp-photo-manager?branchName=master)](https://dev.azure.com/jpablodrexler/jp-photo-manager/_build/latest?definitionId=10&branchName=master)
 
 JPPhotoManager is a desktop application that allows:
