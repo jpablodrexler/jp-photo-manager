@@ -72,6 +72,8 @@ namespace JPPhotoManager.Domain
 
                 string[] newFileNames = GetNewFileNames(fileNames, cataloguedAssets);
                 string[] deletedFileNames = GetDeletedFileNames(fileNames, cataloguedAssets);
+                int batchSize = this.userConfigurationService.GetCatalogBatchSize();
+                int batchCount = 0;
 
                 foreach (var fileName in newFileNames)
                 {
@@ -95,6 +97,14 @@ namespace JPPhotoManager.Domain
                         Message = "Creating thumbnail for " + Path.Combine(directory, fileName),
                         Reason = ReasonEnum.Created
                     });
+
+                    batchCount++;
+
+                    if (batchCount >= batchSize)
+                    {
+                        this.assetRepository.SaveCatalog(folder);
+                        batchCount = 0;
+                    }
                 }
 
                 foreach (var fileName in deletedFileNames)
@@ -118,6 +128,14 @@ namespace JPPhotoManager.Domain
                         },
                         Reason = ReasonEnum.Deleted
                     });
+
+                    batchCount++;
+
+                    if (batchCount >= batchSize)
+                    {
+                        this.assetRepository.SaveCatalog(folder);
+                        batchCount = 0;
+                    }
                 }
 
                 if (this.assetRepository.HasChanges() || !folderHasThumbnails)
