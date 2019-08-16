@@ -132,7 +132,10 @@ namespace JPPhotoManager.Infrastructure
                         {
                             foreach (Asset assetRow in assetsList)
                             {
-                                assetRow.ImageData = this.storageService.LoadBitmapImage(thumbnails[assetRow.FileName]);
+                                if (thumbnails.ContainsKey(assetRow.FileName))
+                                {
+                                    assetRow.ImageData = this.storageService.LoadBitmapImage(thumbnails[assetRow.FileName]);
+                                }
                             }
                         }
                     }
