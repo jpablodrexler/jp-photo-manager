@@ -21,11 +21,13 @@ namespace JPPhotoManager.Infrastructure
         private IUserConfigurationService userConfigurationService;
 
         protected AssetCatalog AssetCatalog { get; private set; }
+        private Dictionary<string, Dictionary<string, byte[]>> thumbnails;
 
         public AssetRepository(IStorageService storageService, IUserConfigurationService userConfigurationService)
         {
             this.storageService = storageService;
             this.userConfigurationService = userConfigurationService;
+            this.thumbnails = new Dictionary<string, Dictionary<string, byte[]>>();
         }
 
         public void Initialize(string dataDirectory = "")
@@ -41,7 +43,7 @@ namespace JPPhotoManager.Infrastructure
                     this.AssetCatalog = new AssetCatalog();
                     this.storageService.CreateDirectory(this.dataDirectory);
                     this.AssetCatalog.StorageVersion = 2.0;
-                    SaveCatalog(null, null);
+                    SaveCatalog(null);
                 }
 
                 this.IsInitialized = true;
@@ -58,7 +60,7 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        public void SaveCatalog(Dictionary<string, byte[]> thumbnails, string thumbnailsFileName)
+        public void SaveCatalog(Folder folder)
         {
             lock (this.AssetCatalog)
             {
@@ -66,13 +68,19 @@ namespace JPPhotoManager.Infrastructure
                 this.AssetCatalog.HasChanges = false;
             }
 
-            if (thumbnails != null && !string.IsNullOrEmpty(thumbnailsFileName))
+            if (thumbnails != null && folder != null && thumbnails.ContainsKey(folder.Path))
             {
-                this.SaveThumbnails(thumbnails, thumbnailsFileName);
+                this.SaveThumbnails(thumbnails[folder.Path], folder.ThumbnailsFilename);
             }
         }
 
-        public virtual Dictionary<string, byte[]> GetThumbnails(string thumbnailsFileName, out bool isNewFile)
+        public bool FolderHasThumbnails(Folder folder)
+        {
+            string thumbnailsFilePath = this.storageService.ResolveThumbnailsFilePath(dataDirectory, folder.ThumbnailsFilename);
+            return File.Exists(thumbnailsFilePath);
+        }
+
+        protected virtual Dictionary<string, byte[]> GetThumbnails(string thumbnailsFileName, out bool isNewFile)
         {
             isNewFile = false;
             string thumbnailsFilePath = this.storageService.ResolveThumbnailsFilePath(dataDirectory, thumbnailsFileName);
@@ -171,7 +179,7 @@ namespace JPPhotoManager.Infrastructure
             return folder;
         }
 
-        public void AddAsset(Asset asset)
+        public void AddAsset(Asset asset, byte[] thumbnailData)
         {
             lock (this.AssetCatalog)
             {
@@ -182,6 +190,12 @@ namespace JPPhotoManager.Infrastructure
                     this.AddFolder(folder.Path);
                 }
 
+                if (!this.thumbnails.ContainsKey(asset.Folder.Path))
+                {
+                    this.thumbnails[asset.Folder.Path] = this.GetThumbnails(asset.Folder.ThumbnailsFilename, out bool isNewFile);
+                }
+
+                this.thumbnails[asset.Folder.Path][asset.FileName] = thumbnailData;
                 this.AssetCatalog.Assets.Add(asset);
                 this.AssetCatalog.HasChanges = true;
             }
@@ -257,6 +271,11 @@ namespace JPPhotoManager.Infrastructure
                 {
                     Asset deletedAsset = GetAssetByFolderIdFileName(folder.FolderId, fileName);
 
+                    if (this.thumbnails.ContainsKey(folder.Path))
+                    {
+                        this.thumbnails[folder.Path].Remove(fileName);
+                    }
+
                     if (deletedAsset != null)
                     {
                         this.AssetCatalog.Assets.Remove(deletedAsset);
@@ -305,6 +324,16 @@ namespace JPPhotoManager.Infrastructure
             }
 
             return result;
+        }
+
+        public bool ContainsThumbnail(string directoryName, string fileName)
+        {
+            return this.thumbnails.ContainsKey(directoryName) && this.thumbnails[directoryName].ContainsKey(fileName);
+        }
+
+        public BitmapImage LoadThumbnail(string directoryName, string fileName)
+        {
+            return this.storageService.LoadBitmapImage(thumbnails[directoryName][fileName]);
         }
     }
 }

@@ -16,12 +16,12 @@ namespace JPPhotoManager.Test
             this.thumbnails = thumbnails;
         }
 
-        public void AddFakeAsset(Asset asset)
+        public void AddFakeAsset(Asset asset, byte[] thumbnailData)
         {
-            base.AddAsset(asset);
+            base.AddAsset(asset, thumbnailData);
         }
 
-        public override Dictionary<string, byte[]> GetThumbnails(string thumbnailsFileName, out bool isNewFile)
+        protected override Dictionary<string, byte[]> GetThumbnails(string thumbnailsFileName, out bool isNewFile)
         {
             isNewFile = false;
             return this.thumbnails;
