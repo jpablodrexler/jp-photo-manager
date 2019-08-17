@@ -74,13 +74,18 @@ namespace JPPhotoManager
 
                 this.Dispatcher.Invoke(() =>
                 {
-                // The assets that have no image data are filtered out.
-                // If a folder is being catalogued for the first time and
-                // the GetImages method is called, since the thumbnails file is not
-                // created yet, the assets catalogued so far are returned without
-                // its thumbnails.
-                task = task.Where(a => a.ImageData != null).ToArray();
+                    // The assets that have no image data are filtered out.
+                    // If a folder is being catalogued for the first time and
+                    // the GetImages method is called, since the thumbnails file is not
+                    // created yet, the assets catalogued so far are returned without
+                    // its thumbnails.
+                    task = task.Where(a => a.ImageData != null).ToArray();
                     this.ViewModel.Files = new ObservableCollection<Asset>(task);
+
+                    if (this.thumbnailsListView.Items.Count > 0)
+                    {
+                        this.thumbnailsListView.ScrollIntoView(this.thumbnailsListView.Items[0]);
+                    }
                 });
             }
             catch (Exception ex)
@@ -112,6 +117,14 @@ namespace JPPhotoManager
             catch (Exception ex)
             {
                 log.Error(ex);
+            }
+        }
+
+        public void ShowImage()
+        {
+            if (this.thumbnailsListView.Items.Count > 0 && this.thumbnailsListView.SelectedItem != null)
+            {
+                this.thumbnailsListView.ScrollIntoView(this.thumbnailsListView.SelectedItem);
             }
         }
     }

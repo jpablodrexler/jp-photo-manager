@@ -144,6 +144,10 @@ namespace JPPhotoManager
                 {
                     this.viewerUserControl.ShowImage();
                 }
+                else
+                {
+                    this.thumbnailsUserControl.ShowImage();
+                }
             }
             catch (Exception ex)
             {
