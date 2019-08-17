@@ -84,6 +84,7 @@ namespace JPPhotoManager
 
                     if (this.thumbnailsListView.Items.Count > 0)
                     {
+                        this.ViewModel.ViewerPosition = 0;
                         this.thumbnailsListView.ScrollIntoView(this.thumbnailsListView.Items[0]);
                     }
                 });
