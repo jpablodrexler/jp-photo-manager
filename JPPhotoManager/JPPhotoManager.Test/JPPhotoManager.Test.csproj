@@ -56,6 +56,7 @@
     <Reference Include="Moq, Version=4.10.0.0, Culture=neutral, PublicKeyToken=69f491c39445e920, processorArchitecture=MSIL">
       <HintPath>..\packages\Moq.4.10.1\lib\net45\Moq.dll</HintPath>
     </Reference>
+    <Reference Include="PresentationCore" />
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -72,7 +73,6 @@
     <Compile Include="AssetRepositoryTest.cs" />
     <Compile Include="AssetTests.cs" />
     <Compile Include="CatalogAssetsServiceTest.cs" />
-    <Compile Include="MockAssetRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ApplicationViewModelTest.cs" />
     <Compile Include="StorageServiceTest.cs" />
