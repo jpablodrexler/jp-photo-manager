@@ -331,12 +331,38 @@ namespace JPPhotoManager.Infrastructure
 
         public bool ContainsThumbnail(string directoryName, string fileName)
         {
-            return this.thumbnails.ContainsKey(directoryName) && this.thumbnails[directoryName].ContainsKey(fileName);
+            bool result = false;
+
+            lock (this.AssetCatalog)
+            {
+                if (!this.thumbnails.ContainsKey(directoryName))
+                {
+                    Folder folder = GetFolderByPath(directoryName);
+                    this.thumbnails[directoryName] = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
+                }
+
+                result = this.thumbnails[directoryName].ContainsKey(fileName);
+            }
+
+            return result;
         }
 
         public BitmapImage LoadThumbnail(string directoryName, string fileName)
         {
-            return this.storageService.LoadBitmapImage(thumbnails[directoryName][fileName]);
+            BitmapImage result;
+
+            lock (this.AssetCatalog)
+            {
+                if (!this.thumbnails.ContainsKey(directoryName))
+                {
+                    Folder folder = GetFolderByPath(directoryName);
+                    this.thumbnails[directoryName] = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
+                }
+
+                result = this.storageService.LoadBitmapImage(thumbnails[directoryName][fileName]);
+            }
+
+            return result;
         }
     }
 }
