@@ -11,6 +11,9 @@
         Height="450"
         Width="800"
         Background="#FF3C3C3C">
+    <Window.Resources>
+        <local:FileSizeConverter x:Key="FileSizeConverter" />
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="24"/>
@@ -49,7 +52,7 @@
         <StackPanel Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
             <Image HorizontalAlignment="Center" Source="{ Binding CurrentDuplicatedAsset.ImageData }" MaxWidth="200" MaxHeight="150"/>
             <Label Foreground="#FFFFFFFF" Content="{ Binding CurrentDuplicatedAsset.FormattedPixelSize }" HorizontalAlignment="Center" />
-            <Label Foreground="#FFFFFFFF" Content="{ Binding CurrentDuplicatedAsset.FormattedFileSize }" HorizontalAlignment="Center" />
+            <Label Foreground="#FFFFFFFF" Content="{ Binding CurrentDuplicatedAsset.FileSize, Converter={StaticResource FileSizeConverter}}" HorizontalAlignment="Center" />
         </StackPanel>
     </Grid>
 </Window>

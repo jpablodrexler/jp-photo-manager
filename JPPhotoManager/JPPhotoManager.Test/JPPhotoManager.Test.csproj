@@ -67,6 +67,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FileSizeConverterTest.cs" />
     <Compile Include="JPPhotoManagerApplicationTest.cs" />
     <Compile Include="AssetRepositoryTest.cs" />
     <Compile Include="AssetTests.cs" />
