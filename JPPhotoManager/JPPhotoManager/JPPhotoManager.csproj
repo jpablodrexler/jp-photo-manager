@@ -81,6 +81,7 @@
     <Compile Include="DuplicatedAssetsWindow.xaml.cs">
       <DependentUpon>DuplicatedAssetsWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="FileSizeConverter.cs" />
     <Compile Include="FolderNavigationControl.xaml.cs">
       <DependentUpon>FolderNavigationControl.xaml</DependentUpon>
     </Compile>

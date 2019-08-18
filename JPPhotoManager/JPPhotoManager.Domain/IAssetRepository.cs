@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Domain
 {
@@ -6,17 +7,19 @@ namespace JPPhotoManager.Domain
     {
         void Initialize(string dataDirectory = "");
         Asset[] GetAssets(string directory);
-        void AddAsset(Asset asset);
+        void AddAsset(Asset asset, byte[] thumbnailData);
         Folder AddFolder(string path);
         bool FolderExists(string path);
         Folder[] GetFolders();
         Folder GetFolderByPath(string path);
-        Dictionary<string, byte[]> GetThumbnails(string thumbnailsFileName, out bool isNewFile);
-        void SaveCatalog(Dictionary<string, byte[]> thumbnails, string thumbnailsFileName);
+        void SaveCatalog(Folder folder);
         List<Asset> GetCataloguedAssets();
         List<Asset> GetCataloguedAssets(string directory);
         bool IsAssetCatalogued(string directoryName, string fileName);
         void DeleteAsset(string directory, string deletedFileName);
         bool HasChanges();
+        bool ContainsThumbnail(string directoryName, string fileName);
+        BitmapImage LoadThumbnail(string directoryName, string fileName);
+        bool FolderHasThumbnails(Folder folder);
     }
 }

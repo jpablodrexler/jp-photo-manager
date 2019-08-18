@@ -59,19 +59,21 @@ namespace JPPhotoManager.Domain
                 List<Asset> cataloguedAssets = null;
 
                 Folder folder = this.assetRepository.GetFolderByPath(directory);
-                var thumbnails = this.assetRepository.GetThumbnails(folder.ThumbnailsFilename, out bool isNewThumbnailsFile);
                 cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+                bool folderHasThumbnails = this.assetRepository.FolderHasThumbnails(folder);
 
-                if (isNewThumbnailsFile)
+                if (!folderHasThumbnails)
                 {
                     foreach (var asset in cataloguedAssets)
                     {
-                        asset.ImageData = LoadThumbnail(thumbnails, directory, asset.FileName);
+                        asset.ImageData = LoadThumbnail(directory, asset.FileName);
                     }
                 }
 
                 string[] newFileNames = GetNewFileNames(fileNames, cataloguedAssets);
                 string[] deletedFileNames = GetDeletedFileNames(fileNames, cataloguedAssets);
+                int batchSize = this.userConfigurationService.GetCatalogBatchSize();
+                int batchCount = 0;
 
                 foreach (var fileName in newFileNames)
                 {
@@ -80,10 +82,10 @@ namespace JPPhotoManager.Domain
                         FileName = fileName,
                         FolderId = folder.FolderId,
                         Folder = folder,
-                        ImageData = LoadThumbnail(thumbnails, directory, fileName)
+                        ImageData = LoadThumbnail(directory, fileName)
                     };
 
-                    if (isNewThumbnailsFile)
+                    if (!folderHasThumbnails)
                     {
                         cataloguedAssets.Add(newAsset);
                     }
@@ -95,6 +97,14 @@ namespace JPPhotoManager.Domain
                         Message = "Creating thumbnail for " + Path.Combine(directory, fileName),
                         Reason = ReasonEnum.Created
                     });
+
+                    batchCount++;
+
+                    if (batchCount >= batchSize)
+                    {
+                        this.assetRepository.SaveCatalog(folder);
+                        batchCount = 0;
+                    }
                 }
 
                 foreach (var fileName in deletedFileNames)
@@ -118,11 +128,19 @@ namespace JPPhotoManager.Domain
                         },
                         Reason = ReasonEnum.Deleted
                     });
+
+                    batchCount++;
+
+                    if (batchCount >= batchSize)
+                    {
+                        this.assetRepository.SaveCatalog(folder);
+                        batchCount = 0;
+                    }
                 }
 
-                if (this.assetRepository.HasChanges() || isNewThumbnailsFile)
+                if (this.assetRepository.HasChanges() || !folderHasThumbnails)
                 {
-                    this.assetRepository.SaveCatalog(thumbnails, folder.ThumbnailsFilename);
+                    this.assetRepository.SaveCatalog(folder);
                 }
             }
             catch (Exception ex)
@@ -138,21 +156,21 @@ namespace JPPhotoManager.Domain
             }
         }
 
-        private BitmapImage LoadThumbnail(Dictionary<string, byte[]> thumbnails, string directoryName, string fileName)
+        private BitmapImage LoadThumbnail(string directoryName, string fileName)
         {
             BitmapImage thumbnailImage = null;
 
-            this.CreateAsset(thumbnails, directoryName, fileName);
+            this.CreateAsset(directoryName, fileName);
 
-            if (thumbnails.ContainsKey(fileName))
+            if (this.assetRepository.ContainsThumbnail(directoryName, fileName))
             {
-                thumbnailImage = this.storageService.LoadBitmapImage(thumbnails[fileName]);
+                thumbnailImage = this.assetRepository.LoadThumbnail(directoryName, fileName);
             }
 
             return thumbnailImage;
         }
 
-        public Asset CreateAsset(Dictionary<string, byte[]> thumbnails, string directoryName, string fileName)
+        public Asset CreateAsset(string directoryName, string fileName)
         {
             Asset asset = null;
             
@@ -189,7 +207,6 @@ namespace JPPhotoManager.Domain
                     Convert.ToInt32(thumbnailDecodeWidth),
                     Convert.ToInt32(thumbnailDecodeHeight));
                 byte[] thumbnailBuffer = this.storageService.GetJpegBitmapImage(thumbnailImage);
-                thumbnails[Path.GetFileName(imagePath)] = thumbnailBuffer;
                 Folder folder = this.assetRepository.GetFolderByPath(directoryName);
 
                 asset = new Asset
@@ -204,7 +221,7 @@ namespace JPPhotoManager.Domain
                     Hash = this.assetHashCalculatorService.CalculateHash(imageBytes)
                 };
 
-                this.assetRepository.AddAsset(asset);
+                this.assetRepository.AddAsset(asset, thumbnailBuffer);
             }
 
             return asset;
@@ -279,9 +296,8 @@ namespace JPPhotoManager.Domain
 
                     if (isDestinationFolderInCatalog)
                     {
-                        var destinationThumbnails = this.assetRepository.GetThumbnails(destinationFolder.ThumbnailsFilename, out bool isNewFile);
-                        this.CreateAsset(destinationThumbnails, destinationFolder.Path, asset.FileName);
-                        this.assetRepository.SaveCatalog(destinationThumbnails, destinationFolder.ThumbnailsFilename);
+                        this.CreateAsset(destinationFolder.Path, asset.FileName);
+                        this.assetRepository.SaveCatalog(destinationFolder);
                     }
                 }
             }
@@ -310,8 +326,6 @@ namespace JPPhotoManager.Domain
 
             #endregion
 
-            var sourceThumbnails = this.assetRepository.GetThumbnails(asset.Folder.ThumbnailsFilename, out bool isNewFile);
-            sourceThumbnails.Remove(asset.FileName);
             this.assetRepository.DeleteAsset(asset.Folder.Path, asset.FileName);
 
             if (deleteFile)
@@ -319,7 +333,7 @@ namespace JPPhotoManager.Domain
                 this.storageService.DeleteFile(asset.Folder.Path, asset.FileName);
             }
 
-            this.assetRepository.SaveCatalog(sourceThumbnails, asset.Folder.ThumbnailsFilename);
+            this.assetRepository.SaveCatalog(asset.Folder);
         }
     }
 }

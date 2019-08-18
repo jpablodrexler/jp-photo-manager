@@ -14,5 +14,6 @@ namespace JPPhotoManager.Domain
         AboutInformation GetAboutInformation(Assembly assembly);
         string GetInitialFolder();
         string GetApplicationDataFolder();
+        int GetCatalogBatchSize();
     }
 }

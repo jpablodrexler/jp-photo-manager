@@ -21,6 +21,7 @@ namespace JPPhotoManager.Infrastructure
         private const string MY_PICTURES_VALUE = "{MyPictures}";
         private const string APPLICATION_DATA_DIRECTORY_KEY = "ApplicationDataDirectory";
         private const string APPLICATION_DATA_VALUE = "{ApplicationData}";
+        private const string CATALOG_BATCH_SIZE_KEY = "CatalogBatchSize";
         private const string APPLICATION_NAME = "JPPhotoManager";
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
@@ -124,6 +125,18 @@ namespace JPPhotoManager.Infrastructure
             }
 
             result = result.Replace(APPLICATION_DATA_VALUE, Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+
+            return result;
+        }
+
+        public int GetCatalogBatchSize()
+        {
+            string setting = ConfigurationManager.AppSettings[CATALOG_BATCH_SIZE_KEY];
+
+            if (string.IsNullOrEmpty(setting) || int.TryParse(setting, out int result))
+            {
+                result = 100;
+            }
 
             return result;
         }
