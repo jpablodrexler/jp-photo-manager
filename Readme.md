@@ -9,6 +9,7 @@
 ## Trello board
 https://trello.com/b/7OlQJdBw/jp-photo-manager
 
+## Features
 JPPhotoManager is a desktop application that allows:
 * Visualization of image galleries
 * Change Windows wallpaper
