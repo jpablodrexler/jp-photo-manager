@@ -4,6 +4,10 @@
 
 [![Build Status](https://dev.azure.com/jpablodrexler/jp-photo-manager/_apis/build/status/jpablodrexler.jp-photo-manager?branchName=master)](https://dev.azure.com/jpablodrexler/jp-photo-manager/_build/latest?definitionId=10&branchName=master)
 
+## Trello board
+https://trello.com/b/7OlQJdBw/jp-photo-manager
+
+## Features
 JPPhotoManager is a desktop application that allows:
 * Visualization of image galleries
 * Change Windows wallpaper
