@@ -4,8 +4,6 @@
 
 [![Build Status](https://dev.azure.com/jpablodrexler/jp-photo-manager/_apis/build/status/jpablodrexler.jp-photo-manager?branchName=master)](https://dev.azure.com/jpablodrexler/jp-photo-manager/_build/latest?definitionId=10&branchName=master)
 
-[Trello board](https://trello.com/b/7OlQJdBw/jp-photo-manager)
-
 ## Features
 JPPhotoManager is a desktop application that allows:
 * Visualization of image galleries
@@ -17,6 +15,8 @@ Soon will allow to:
 * Import images from game screenshots folder
 * Add your own metadata to the images
 * Search images
+
+For the whole roadmap for the application, please take a look at the [Trello board](https://trello.com/b/7OlQJdBw/jp-photo-manager)
 
 ## Run the application
 Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoManager/JPPhotoManager/JPPhotoManager.csproj` project.
