@@ -25,10 +25,10 @@ Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoM
 * Download the zip file with the compiled application files (`jp-photo-manager-{version}.zip`) for the latest release.
 * Unzip the content of the zip file to a new folder.
 * Run `JPPhotoManager.exe`.
-* The application builds the catalog files in the following folder: `C:\Users\{username}\AppData\Local\JPPhotoManager`.
+* The application saves the catalog files in the following folder: `C:\Users\{username}\AppData\Local\JPPhotoManager`.
 
 ## Technologies used
-* Windows Presentation Foundation
+* [Windows Presentation Foundation](https://docs.microsoft.com/en-us/dotnet/framework/wpf/)
 * [Simple Injector](https://simpleinjector.org/index.html)
 * [Newtonsoft Json.NET](https://www.newtonsoft.com/json)
 * [Moq framework for .NET](https://github.com/moq/moq4)
