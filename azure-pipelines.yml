@@ -43,7 +43,7 @@ steps:
     rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager/bin/Release'
     includeRootFolder: false
     archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(version).zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager.zip'
     replaceExistingArchive: true
 
 - task: PublishBuildArtifacts@1
@@ -57,4 +57,4 @@ steps:
   inputs:
     gitHubConnection: 'GitHub connection'
     repositoryName: '$(Build.Repository.Name)'
-    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(version).zip'
+    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager.zip'
