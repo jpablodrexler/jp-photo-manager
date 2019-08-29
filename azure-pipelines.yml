@@ -5,6 +5,7 @@
 
 trigger:
 - master
+- develop
 
 pool:
   vmImage: 'windows-latest'
@@ -43,7 +44,7 @@ steps:
     rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager/bin/Release'
     includeRootFolder: false
     archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager.zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(version).zip'
     replaceExistingArchive: true
 
 - task: PublishBuildArtifacts@1
@@ -57,4 +58,10 @@ steps:
   inputs:
     gitHubConnection: 'GitHub connection'
     repositoryName: '$(Build.Repository.Name)'
-    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager.zip'
+    action: 'create'
+    target: '$(Build.SourceVersion)'
+    tagSource: 'manual'
+    tag: '$(version)'
+    title: '$(version)'
+    isDraft: false
+    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(version).zip'
