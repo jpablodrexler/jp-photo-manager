@@ -91,24 +91,40 @@ namespace JPPhotoManager
         {
             try
             {
-                switch (e.Key)
+                if (e.KeyboardDevice.IsKeyDown(Key.LeftCtrl) || e.KeyboardDevice.IsKeyDown(Key.RightCtrl))
                 {
-                    case Key.PageUp:
-                    case Key.Left:
-                        this.ViewModel?.GoToPreviousImage();
-                        this.viewerUserControl.ShowImage();
-                        break;
+                    switch (e.Key)
+                    {
+                        case Key.C:
+                            MoveAsset(preserveOriginalFile: true);
+                            break;
 
-                    case Key.PageDown:
-                    case Key.Right:
-                        this.ViewModel?.GoToNextImage();
-                        this.viewerUserControl.ShowImage();
-                        break;
+                        case Key.M:
+                            MoveAsset(preserveOriginalFile: false);
+                            break;
+                    }
+                }
+                else
+                {
+                    switch (e.Key)
+                    {
+                        case Key.PageUp:
+                        case Key.Left:
+                            this.ViewModel?.GoToPreviousImage();
+                            ShowImage();
+                            break;
 
-                    case Key.F1:
-                        this.ViewModel?.ChangeAppMode();
-                        this.viewerUserControl.ShowImage();
-                        break;
+                        case Key.PageDown:
+                        case Key.Right:
+                            this.ViewModel?.GoToNextImage();
+                            ShowImage();
+                            break;
+
+                        case Key.F1:
+                            this.ViewModel?.ChangeAppMode();
+                            ShowImage();
+                            break;
+                    }
                 }
             }
             catch (Exception ex)
@@ -117,16 +133,24 @@ namespace JPPhotoManager
             }
         }
 
+        private void ShowImage()
+        {
+            if (this.ViewModel.AppMode == AppModeEnum.Viewer)
+            {
+                this.viewerUserControl.ShowImage();
+            }
+            else
+            {
+                this.thumbnailsUserControl.ShowImage();
+            }
+        }
+
         private void ThumbnailsUserControl_ThumbnailSelected(object sender, ThumbnailSelectedEventArgs e)
         {
             try
             {
                 this.ViewModel?.GoToImage(e.Asset, AppModeEnum.Viewer);
-
-                if (this.ViewModel.AppMode == AppModeEnum.Viewer)
-                {
-                    this.viewerUserControl.ShowImage();
-                }
+                ShowImage();
             }
             catch (Exception ex)
             {
@@ -139,15 +163,7 @@ namespace JPPhotoManager
             try
             {
                 this.ViewModel?.GoToImage(e.Asset, AppModeEnum.Thumbnails);
-
-                if (this.ViewModel.AppMode == AppModeEnum.Viewer)
-                {
-                    this.viewerUserControl.ShowImage();
-                }
-                else
-                {
-                    this.thumbnailsUserControl.ShowImage();
-                }
+                ShowImage();
             }
             catch (Exception ex)
             {
@@ -276,12 +292,12 @@ namespace JPPhotoManager
             }
         }
 
-        private void CopyFile_Click(object sender, RoutedEventArgs e)
+        private void CopyAsset_Click(object sender, RoutedEventArgs e)
         {
             MoveAsset(preserveOriginalFile: true);
         }
 
-        private void MoveFile_Click(object sender, RoutedEventArgs e)
+        private void MoveAsset_Click(object sender, RoutedEventArgs e)
         {
             MoveAsset(preserveOriginalFile: false);
         }
@@ -320,7 +336,7 @@ namespace JPPhotoManager
             }
         }
 
-        private void DeleteFile_Click(object sender, RoutedEventArgs e)
+        private void DeleteAsset()
         {
             try
             {
@@ -330,17 +346,18 @@ namespace JPPhotoManager
                 {
                     this.ViewModel.Application.DeleteAsset(asset, deleteFile: true);
                     this.ViewModel.RemoveAsset(asset);
-
-                    if (this.ViewModel.AppMode == AppModeEnum.Viewer)
-                    {
-                        this.viewerUserControl.ShowImage();
-                    }
+                    ShowImage();
                 }
             }
             catch (Exception ex)
             {
                 log.Error(ex);
             }
+        }
+
+        private void DeleteAsset_Click(object sender, RoutedEventArgs e)
+        {
+            DeleteAsset();
         }
     }
 }
