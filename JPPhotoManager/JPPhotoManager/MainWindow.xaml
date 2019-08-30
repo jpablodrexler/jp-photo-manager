@@ -20,9 +20,9 @@
                     <MenuItem Header="_Tile" Click="SetAsWallpaperTile_Click"/>
                 </MenuItem>
                 <MenuItem Header="Find _Duplicates..." Click="FindDuplicates_Click"/>
-                <MenuItem Header="Copy File..." Click="CopyFile_Click"/>
-                <MenuItem Header="Move File..." Click="MoveFile_Click"/>
-                <MenuItem Header="Delete File..." Click="DeleteFile_Click"/>
+                <MenuItem Header="Copy Asset (Ctrl+C)..." Click="CopyAsset_Click"/>
+                <MenuItem Header="Move Asset (Ctrl+M)..." Click="MoveAsset_Click"/>
+                <MenuItem Header="Delete Asset (Del)" Click="DeleteAsset_Click"/>
                 <Separator/>
                 <MenuItem Header="_Exit" />
             </MenuItem>
