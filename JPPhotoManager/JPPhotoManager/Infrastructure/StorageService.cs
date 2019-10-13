@@ -26,9 +26,9 @@ namespace JPPhotoManager.Infrastructure
             return new DirectoryInfo(directoryPath).Parent.FullName;
         }
 
-        public string ResolveDataDirectory(string dataDirectory)
+        public string ResolveDataDirectory()
         {
-            return !string.IsNullOrEmpty(dataDirectory) ? dataDirectory : userConfigurationService.GetApplicationDataFolder();
+            return userConfigurationService.GetApplicationDataFolder();
         }
 
         public string ResolveCatalogPath(string dataDirectory)

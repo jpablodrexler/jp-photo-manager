@@ -135,8 +135,8 @@ namespace JPPhotoManager.Test
         public void GetDuplicatedAssetsWithDuplicatesTest()
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
-            repository.Initialize(dataDirectory);
+            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
+            repository.Initialize();
             Folder folder = repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -168,8 +168,8 @@ namespace JPPhotoManager.Test
 
             repository.SaveCatalog(folder);
 
-            repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
-            repository.Initialize(dataDirectory);
+            repository = new AssetRepository(new StorageService(userConfigurationService));
+            repository.Initialize();
             repository.AddFolder(dataDirectory);
 
             catalogAssetsService = new CatalogAssetsService(
@@ -205,8 +205,8 @@ namespace JPPhotoManager.Test
         public void GetDuplicatedAssetsWithoutDuplicatesTest()
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
-            repository.Initialize(dataDirectory);
+            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
+            repository.Initialize();
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -244,8 +244,8 @@ namespace JPPhotoManager.Test
         public void GetDuplicatedAssetsWithInexistingImageTest1()
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
-            repository.Initialize(dataDirectory);
+            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
+            repository.Initialize();
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -295,8 +295,8 @@ namespace JPPhotoManager.Test
         public void GetDuplicatedAssetsWithInexistingImageTest2()
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
-            repository.Initialize(dataDirectory);
+            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
+            repository.Initialize();
             Folder folder = repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -341,8 +341,8 @@ namespace JPPhotoManager.Test
         public void GetDuplicatedAssetsWithDuplicatesHashCollisionWithDuplicatedTest()
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
-            repository.Initialize(dataDirectory);
+            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
+            repository.Initialize();
             Folder folder = repository.AddFolder(dataDirectory);
 
             Mock<IAssetHashCalculatorService> hashCalculator = new Mock<IAssetHashCalculatorService>();
@@ -377,8 +377,8 @@ namespace JPPhotoManager.Test
 
             repository.SaveCatalog(folder);
 
-            repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
-            repository.Initialize(dataDirectory);
+            repository = new AssetRepository(new StorageService(userConfigurationService));
+            repository.Initialize();
             repository.AddFolder(dataDirectory);
 
             catalogAssetsService = new CatalogAssetsService(
@@ -414,8 +414,8 @@ namespace JPPhotoManager.Test
         public void GetDuplicatedAssetsWithDuplicatesHashCollisionWithNoDuplicatedTest()
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
-            repository.Initialize(dataDirectory);
+            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
+            repository.Initialize();
             repository.AddFolder(dataDirectory);
 
             Mock<IAssetHashCalculatorService> hashCalculator = new Mock<IAssetHashCalculatorService>();

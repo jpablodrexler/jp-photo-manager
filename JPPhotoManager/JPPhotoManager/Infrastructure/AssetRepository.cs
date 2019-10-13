@@ -18,23 +18,21 @@ namespace JPPhotoManager.Infrastructure
         private string dataDirectory;
         private string assetCatalogPath;
         private IStorageService storageService;
-        private IUserConfigurationService userConfigurationService;
-
+        
         protected AssetCatalog AssetCatalog { get; private set; }
         private Dictionary<string, Dictionary<string, byte[]>> thumbnails;
 
-        public AssetRepository(IStorageService storageService, IUserConfigurationService userConfigurationService)
+        public AssetRepository(IStorageService storageService)
         {
             this.storageService = storageService;
-            this.userConfigurationService = userConfigurationService;
             this.thumbnails = new Dictionary<string, Dictionary<string, byte[]>>();
         }
 
-        public void Initialize(string dataDirectory = "")
+        public void Initialize()
         {
             if (!this.IsInitialized)
             {
-                this.dataDirectory = this.storageService.ResolveDataDirectory(dataDirectory);
+                this.dataDirectory = this.storageService.ResolveDataDirectory();
                 this.assetCatalogPath = this.storageService.ResolveCatalogPath(this.dataDirectory);
                 this.ReadCatalog();
 
