@@ -23,7 +23,7 @@ namespace JPPhotoManager
     /// </summary>
     public partial class App : System.Windows.Application
     {
-        private ServiceProvider serviceProvider;
+        private readonly ServiceProvider serviceProvider;
 
         public App()
         {
