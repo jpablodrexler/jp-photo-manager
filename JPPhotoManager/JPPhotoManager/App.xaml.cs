@@ -25,6 +25,9 @@ namespace JPPhotoManager
     {
         private readonly ServiceProvider serviceProvider;
 
+        // TODO: Check the assembly version.
+        // TODO: Add a global exception handler.
+        
         public App()
         {
             var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
