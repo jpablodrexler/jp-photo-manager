@@ -28,10 +28,12 @@ steps:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
 
-- task: VSTest@2
+- task: DotNetCoreCLI@2
   inputs:
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+    command: 'test'
+    projects: '**/*Test.csproj'
+    arguments: '--configuration $(buildConfiguration)'
+    nobuild: true
 
 - task: CopyFiles@2
   inputs:
@@ -41,10 +43,10 @@ steps:
 - task: ArchiveFiles@2
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
   inputs:
-    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager/bin/Release'
+    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager/bin/Release/netcoreapp3.0'
     includeRootFolder: false
     archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(version).zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(app-version).zip'
     replaceExistingArchive: true
 
 - task: PublishBuildArtifacts@1
@@ -61,7 +63,7 @@ steps:
     action: 'create'
     target: '$(Build.SourceVersion)'
     tagSource: 'manual'
-    tag: '$(version)'
-    title: '$(version)'
+    tag: '$(app-version)'
+    title: '$(app-version)'
     isDraft: false
-    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(version).zip'
+    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(app-version).zip'
