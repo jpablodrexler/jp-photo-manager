@@ -44,7 +44,7 @@ steps:
     rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager/bin/Release'
     includeRootFolder: false
     archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(version).zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(app-version).zip'
     replaceExistingArchive: true
 
 - task: PublishBuildArtifacts@1
@@ -61,7 +61,7 @@ steps:
     action: 'create'
     target: '$(Build.SourceVersion)'
     tagSource: 'manual'
-    tag: '$(version)'
-    title: '$(version)'
+    tag: '$(app-version)'
+    title: '$(app-version)'
     isDraft: false
-    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(version).zip'
+    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(app-version).zip'
