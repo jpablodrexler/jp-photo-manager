@@ -1,4 +1,3 @@
-# JPPhotoManager.Infrastructure project
+# Infrastructure
 
 Infrastructure Layer for the JPPhotoManager application.
-.NET Class Library.

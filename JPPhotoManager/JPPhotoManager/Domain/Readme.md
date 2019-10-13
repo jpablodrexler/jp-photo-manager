@@ -1,4 +1,3 @@
-# JPPhotoManager.Domain project
+# Domain
 
 Domain Layer for the JPPhotoManager application.
-.NET Class Library.

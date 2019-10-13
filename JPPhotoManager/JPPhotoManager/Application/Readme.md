@@ -1,4 +1,3 @@
-# JPPhotoManager.Application project
+# Application
 
 Application Layer for the JPPhotoManager application.
-.NET Class Library.
