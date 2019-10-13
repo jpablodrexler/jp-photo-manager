@@ -10,7 +10,7 @@ namespace JPPhotoManager.Domain
     public interface IStorageService
     {
         string GetParentDirectory(string directoryPath);
-        string ResolveDataDirectory(string dataDirectory);
+        string ResolveDataDirectory();
         string ResolveCatalogPath(string dataDirectory);
         string ResolveThumbnailsFilePath(string dataDirectory, string thumbnailsFileName);
         void CreateDirectory(string directory);
