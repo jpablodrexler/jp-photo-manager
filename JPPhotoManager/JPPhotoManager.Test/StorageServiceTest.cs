@@ -72,17 +72,12 @@ namespace JPPhotoManager.Test
         [TestMethod]
         public void ResolveCatalogPathTest1()
         {
-            Mock<IConfigurationSection> dataDirectorySectionMock = new Mock<IConfigurationSection>();
-            dataDirectorySectionMock.SetupGet(s => s.Value).Returns("{ApplicationData}\\JPPhotoManager");
-
-            Mock<IConfigurationSection> catalogBatchSizeSectionMock = new Mock<IConfigurationSection>();
-            catalogBatchSizeSectionMock.SetupGet(s => s.Value).Returns("100");
-
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
-            configurationMock.Setup(c => c.GetSection("appsettings:InitialDirectory")).Returns(dataDirectorySectionMock.Object);
-            configurationMock.Setup(c => c.GetSection("appsettings:ApplicationDataDirectory")).Returns(dataDirectorySectionMock.Object);
-            configurationMock.Setup(c => c.GetSection("appsettings:CatalogBatchSize")).Returns(catalogBatchSizeSectionMock.Object);
-
+            configurationMock
+                .MockGetValue("appsettings:InitialDirectory", "{ApplicationData}\\JPPhotoManager")
+                .MockGetValue("appsettings:ApplicationDataDirectory", "{ApplicationData}\\JPPhotoManager")
+                .MockGetValue("appsettings:CatalogBatchSize", "100");
+            
             string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPPhotoManager");
             
             IStorageService storageService = new StorageService(new UserConfigurationService(configurationMock.Object));
@@ -94,16 +89,11 @@ namespace JPPhotoManager.Test
         [TestMethod]
         public void ResolveCatalogPathTest2()
         {
-            Mock<IConfigurationSection> dataDirectorySectionMock = new Mock<IConfigurationSection>();
-            dataDirectorySectionMock.SetupGet(s => s.Value).Returns("{ApplicationData}\\JPPhotoManager");
-
-            Mock<IConfigurationSection> catalogBatchSizeSectionMock = new Mock<IConfigurationSection>();
-            catalogBatchSizeSectionMock.SetupGet(s => s.Value).Returns("100");
-
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
-            configurationMock.Setup(c => c.GetSection("appsettings:InitialDirectory")).Returns(dataDirectorySectionMock.Object);
-            configurationMock.Setup(c => c.GetSection("appsettings:ApplicationDataDirectory")).Returns(dataDirectorySectionMock.Object);
-            configurationMock.Setup(c => c.GetSection("appsettings:CatalogBatchSize")).Returns(catalogBatchSizeSectionMock.Object);
+            configurationMock
+                .MockGetValue("appsettings:InitialDirectory", "{ApplicationData}\\JPPhotoManager")
+                .MockGetValue("appsettings:ApplicationDataDirectory", "{ApplicationData}\\JPPhotoManager")
+                .MockGetValue("appsettings:CatalogBatchSize", "100");
 
             string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPPhotoManager");
             
