@@ -28,16 +28,11 @@ namespace JPPhotoManager.Test
             imageDestinationDirectory = Path.Combine(dataDirectory, "NewFolder");
             nonCataloguedImageDestinationDirectory = Path.Combine(dataDirectory, "NonCataloguedNewFolder");
 
-            Mock<IConfigurationSection> dataDirectorySectionMock = new Mock<IConfigurationSection>();
-            dataDirectorySectionMock.SetupGet(s => s.Value).Returns(dataDirectory);
-
-            Mock<IConfigurationSection> catalogBatchSizeSectionMock = new Mock<IConfigurationSection>();
-            catalogBatchSizeSectionMock.SetupGet(s => s.Value).Returns("100");
-
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
-            configurationMock.Setup(c => c.GetSection("appsettings:InitialDirectory")).Returns(dataDirectorySectionMock.Object);
-            configurationMock.Setup(c => c.GetSection("appsettings:ApplicationDataDirectory")).Returns(dataDirectorySectionMock.Object);
-            configurationMock.Setup(c => c.GetSection("appsettings:CatalogBatchSize")).Returns(catalogBatchSizeSectionMock.Object);
+            configurationMock
+                .MockGetValue("appsettings:InitialDirectory", dataDirectory)
+                .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
+                .MockGetValue("appsettings:CatalogBatchSize", "100");
 
             configuration = configurationMock.Object;
         }
