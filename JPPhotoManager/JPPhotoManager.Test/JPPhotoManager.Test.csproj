@@ -7,6 +7,50 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="TestFiles\Image 1.jpg" />
+    <None Remove="TestFiles\Image 2 duplicated.jpg" />
+    <None Remove="TestFiles\Image 2.jpg" />
+    <None Remove="TestFiles\Image 3.jpg" />
+    <None Remove="TestFiles\Image 4.jpg" />
+    <None Remove="TestFiles\Image 5.jpg" />
+    <None Remove="TestFiles\Image 6.jpg" />
+    <None Remove="TestFiles\Image 7.jpg" />
+    <None Remove="TestFiles\Image.pptx" />
+    <None Remove="TestFiles\IMAGE_WITH_UPPERCASE_NAME.JPG" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="TestFiles\Image 1.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\Image 2 duplicated.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\Image 2.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\Image 3.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\Image 4.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\Image 5.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\Image 6.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\Image 7.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\Image.pptx" />
+    <Content Include="TestFiles\IMAGE_WITH_UPPERCASE_NAME.JPG">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.3.0" />
     <PackageReference Include="Moq" Version="4.13.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="2.0.0" />
@@ -19,36 +63,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\JPPhotoManager\JPPhotoManager.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="TestFiles\Image 1.jpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="TestFiles\Image 2 duplicated.jpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="TestFiles\Image 2.jpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="TestFiles\Image 3.jpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="TestFiles\Image 4.jpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="TestFiles\Image 5.jpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="TestFiles\Image 6.jpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="TestFiles\Image 7.jpg">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="TestFiles\IMAGE_WITH_UPPERCASE_NAME.JPG">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>
