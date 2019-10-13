@@ -1,6 +1,6 @@
 ﻿using JPPhotoManager.Domain;
-using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace JPPhotoManager.Infrastructure
 {
@@ -9,8 +9,8 @@ namespace JPPhotoManager.Infrastructure
         [JsonIgnore]
         public bool HasChanges { get; set; }
         public double StorageVersion { get; set; }
-        public List<Folder> Folders { get; private set; }
-        public List<Asset> Assets { get; private set; }
+        public List<Folder> Folders { get; set; }
+        public List<Asset> Assets { get; set; }
 
         public AssetCatalog()
         {

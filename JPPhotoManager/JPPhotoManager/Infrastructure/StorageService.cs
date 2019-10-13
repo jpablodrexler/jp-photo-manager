@@ -1,11 +1,11 @@
 ﻿using JPPhotoManager.Domain;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
@@ -59,7 +59,7 @@ namespace JPPhotoManager.Infrastructure
                     json = reader.ReadToEnd();
                 }
 
-                result = JsonConvert.DeserializeObject<T>(json);
+                result = JsonSerializer.Deserialize<T>(json);
             }
             
             return result;
@@ -67,7 +67,7 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteObjectToJson(object anObject, string jsonFilePath)
         {
-            string json = JsonConvert.SerializeObject(anObject, Formatting.Indented);
+            string json = JsonSerializer.Serialize(anObject, new JsonSerializerOptions { WriteIndented = true });
 
             using (StreamWriter writer = new StreamWriter(jsonFilePath, false))
             {
