@@ -20,6 +20,7 @@ namespace JPPhotoManager.Application
         Folder[] GetDrives();
         Folder[] GetFolders(Folder parentFolder, bool includeHidden);
         string GetInitialFolder();
+        int GetCatalogCooldownMinutes();
         bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile);
         BitmapImage LoadBitmapImage(string imagePath);
     }

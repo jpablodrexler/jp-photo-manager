@@ -3,20 +3,10 @@ using JPPhotoManager.Domain;
 using JPPhotoManager.ViewModels;
 using log4net;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace JPPhotoManager
 {
@@ -56,27 +46,17 @@ namespace JPPhotoManager
             get { return (ApplicationViewModel)this.DataContext; }
         }
 
-        private async Task CatalogImagesAsync(IJPPhotoManagerApplication assetApp)
+        private Task CatalogImages(IJPPhotoManagerApplication assetApp)
         {
-            await Task.Run(() =>
-            {
-                try
-                {
-                    assetApp.CatalogImages((e) => Dispatcher.Invoke(() => ViewModel.NotifyCatalogChange(e)));
-                }
-                catch (TaskCanceledException)
-                {
-                    // If the application shuts down while the catalog process is running, this exception is thrown.
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                }
-            }).ConfigureAwait(true);
+            int minutes = assetApp.GetCatalogCooldownMinutes();
 
-            this.Dispatcher.Invoke(() =>
+            return Task.Run(() =>
             {
-                this.ViewModel.StatusMessage = "Cataloging thumbnails for " + this.ViewModel.CurrentFolder;
+                while (true)
+                {
+                    assetApp.CatalogImages(e => Dispatcher.Invoke(() => ViewModel.NotifyCatalogChange(e)));
+                    Task.Delay(1000 * 60 * minutes).Wait();
+                }
             });
         }
 
@@ -87,11 +67,18 @@ namespace JPPhotoManager
                 this.ViewModel?.ChangeAppMode(AppModeEnum.Thumbnails);
                 this.thumbnailsUserControl.GoToFolderAsync(this.ViewModel.Application, this.ViewModel?.CurrentFolder);
                 this.folderTreeView.SelectedPath = this.ViewModel?.CurrentFolder;
-                await CatalogImagesAsync(this.ViewModel.Application);
+
+                ViewModel.StatusMessage = "Cataloging thumbnails for " + ViewModel.CurrentFolder;
+
+                await this.CatalogImages(this.ViewModel.Application).ConfigureAwait(true);
             }
             catch (Exception ex)
             {
                 log.Error(ex);
+            }
+            finally
+            {
+                ViewModel.StatusMessage = "";
             }
         }
 

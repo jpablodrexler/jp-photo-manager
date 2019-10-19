@@ -22,6 +22,7 @@ namespace JPPhotoManager.Infrastructure
         private const string APPLICATION_DATA_DIRECTORY_KEY = "appsettings:ApplicationDataDirectory";
         private const string APPLICATION_DATA_VALUE = "{ApplicationData}";
         private const string CATALOG_BATCH_SIZE_KEY = "appsettings:CatalogBatchSize";
+        private const string CATALOG_COOLDOWN_MINUTES = "appsettings:CatalogCooldownMinutes";
         private const string APPLICATION_NAME = "JPPhotoManager";
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
@@ -138,14 +139,12 @@ namespace JPPhotoManager.Infrastructure
 
         public int GetCatalogBatchSize()
         {
-            string setting = this.configuration.GetValue<string>(CATALOG_BATCH_SIZE_KEY);
+            return this.configuration.GetValue<int>(CATALOG_BATCH_SIZE_KEY);
+        }
 
-            if (string.IsNullOrEmpty(setting) || int.TryParse(setting, out int result))
-            {
-                result = 100;
-            }
-
-            return result;
+        public int GetCatalogCooldownMinutes()
+        {
+            return this.configuration.GetValue<int>(CATALOG_COOLDOWN_MINUTES);
         }
     }
 }
