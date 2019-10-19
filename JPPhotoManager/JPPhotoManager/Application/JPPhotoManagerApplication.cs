@@ -9,8 +9,6 @@ namespace JPPhotoManager.Application
 {
     public class JPPhotoManagerApplication : IJPPhotoManagerApplication
     {
-        private const int ONE_HOUR = 1000 * 60 * 60;
-
         private readonly IAssetRepository assetRepository;
         private readonly ICatalogAssetsService catalogAssetsService;
         private readonly IFindDuplicatedAssetsService findDuplicatedAssetsService;
@@ -49,11 +47,7 @@ namespace JPPhotoManager.Application
 
         public void CatalogImages(CatalogChangeCallback callback)
         {
-            while (true)
-            {
-                this.catalogAssetsService.CatalogImages(callback);
-                Thread.Sleep(ONE_HOUR);
-            }
+            this.catalogAssetsService.CatalogImages(callback);
         }
 
         public void SetAsWallpaper(Asset asset, WallpaperStyle style)
@@ -97,6 +91,11 @@ namespace JPPhotoManager.Application
         public string GetInitialFolder()
         {
             return this.userConfigurationService.GetInitialFolder();
+        }
+
+        public int GetCatalogCooldownMinutes()
+        {
+            return this.userConfigurationService.GetCatalogCooldownMinutes();
         }
 
         public bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile)

@@ -140,12 +140,15 @@ namespace JPPhotoManager.ViewModels
         {
             if (this.Files != null)
             {
+                int position = this.ViewerPosition;
                 this.Files.Remove(asset);
 
-                if ((this.ViewerPosition + 1) < this.Files.Count)
+                if (position == this.Files.Count)
                 {
-                    this.ViewerPosition = (this.ViewerPosition + 1);
+                    position--;
                 }
+
+                this.ViewerPosition = position;
 
                 this.NotifyPropertyChanged(nameof(Files));
             }

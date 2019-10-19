@@ -1,8 +1,8 @@
 ﻿using JPPhotoManager.Domain;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -17,15 +17,23 @@ namespace JPPhotoManager.Infrastructure
         private const int SPI_SETDESKWALLPAPER = 20;
         private const int SPIF_UPDATEINIFILE = 0x01;
         private const int SPIF_SENDWININICHANGE = 0x02;
-        private const string INITIAL_DIRECTORY_KEY = "InitialDirectory";
+        private const string INITIAL_DIRECTORY_KEY = "appsettings:InitialDirectory";
         private const string MY_PICTURES_VALUE = "{MyPictures}";
-        private const string APPLICATION_DATA_DIRECTORY_KEY = "ApplicationDataDirectory";
+        private const string APPLICATION_DATA_DIRECTORY_KEY = "appsettings:ApplicationDataDirectory";
         private const string APPLICATION_DATA_VALUE = "{ApplicationData}";
-        private const string CATALOG_BATCH_SIZE_KEY = "CatalogBatchSize";
+        private const string CATALOG_BATCH_SIZE_KEY = "appsettings:CatalogBatchSize";
+        private const string CATALOG_COOLDOWN_MINUTES = "appsettings:CatalogCooldownMinutes";
         private const string APPLICATION_NAME = "JPPhotoManager";
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
+
+        private IConfigurationRoot configuration;
+
+        public UserConfigurationService(IConfigurationRoot configuration)
+        {
+            this.configuration = configuration;
+        }
 
         public string GetPicturesDirectory()
         {
@@ -103,7 +111,7 @@ namespace JPPhotoManager.Infrastructure
 
         public string GetInitialFolder()
         {
-            string result = ConfigurationManager.AppSettings[INITIAL_DIRECTORY_KEY];
+            string result = this.configuration.GetValue<string>(INITIAL_DIRECTORY_KEY);
 
             if (string.IsNullOrEmpty(result))
             {
@@ -117,7 +125,7 @@ namespace JPPhotoManager.Infrastructure
 
         public string GetApplicationDataFolder()
         {
-            string result = ConfigurationManager.AppSettings[APPLICATION_DATA_DIRECTORY_KEY];
+            string result = this.configuration.GetValue<string>(APPLICATION_DATA_DIRECTORY_KEY);
 
             if (string.IsNullOrEmpty(result))
             {
@@ -131,14 +139,12 @@ namespace JPPhotoManager.Infrastructure
 
         public int GetCatalogBatchSize()
         {
-            string setting = ConfigurationManager.AppSettings[CATALOG_BATCH_SIZE_KEY];
+            return this.configuration.GetValue<int>(CATALOG_BATCH_SIZE_KEY);
+        }
 
-            if (string.IsNullOrEmpty(setting) || int.TryParse(setting, out int result))
-            {
-                result = 100;
-            }
-
-            return result;
+        public int GetCatalogCooldownMinutes()
+        {
+            return this.configuration.GetValue<int>(CATALOG_COOLDOWN_MINUTES);
         }
     }
 }

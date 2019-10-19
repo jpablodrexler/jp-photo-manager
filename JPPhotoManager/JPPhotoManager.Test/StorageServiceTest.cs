@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using JPPhotoManager.Domain;
 using System.IO;
+using Microsoft.Extensions.Configuration;
+using Moq;
 
 namespace JPPhotoManager.Test
 {
@@ -14,12 +16,21 @@ namespace JPPhotoManager.Test
     public class StorageServiceTest
     {
         private static string dataDirectory;
+        private static IConfigurationRoot configuration;
 
         [ClassInitialize]
         public static void AssetRepositoryTestInitialize(TestContext testContext)
         {
             dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTest).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
+
+            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            configurationMock
+                .MockGetValue("appsettings:InitialDirectory", dataDirectory)
+                .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
+                .MockGetValue("appsettings:CatalogBatchSize", "100");
+
+            configuration = configurationMock.Object;
         }
 
         [TestMethod]
@@ -28,7 +39,7 @@ namespace JPPhotoManager.Test
             string directory = @"C:\Data\JPPhotoManager";
             string expected = @"C:\Data\JPPhotoManager\AssetCatalog.json";
 
-            IStorageService storageService = new StorageService(new UserConfigurationService());
+            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
             string result = storageService.ResolveCatalogPath(directory);
 
             Assert.AreEqual(expected, result);
@@ -40,7 +51,7 @@ namespace JPPhotoManager.Test
             string directory = "";
             string expected = "AssetCatalog.json";
 
-            IStorageService storageService = new StorageService(new UserConfigurationService());
+            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
             string result = storageService.ResolveCatalogPath(directory);
 
             Assert.AreEqual(expected, result);
@@ -52,7 +63,7 @@ namespace JPPhotoManager.Test
             string directory = null;
             string expected = "AssetCatalog.json";
 
-            IStorageService storageService = new StorageService(new UserConfigurationService());
+            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
             string result = storageService.ResolveCatalogPath(directory);
 
             Assert.AreEqual(expected, result);
@@ -61,11 +72,16 @@ namespace JPPhotoManager.Test
         [TestMethod]
         public void ResolveCatalogPathTest1()
         {
+            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            configurationMock
+                .MockGetValue("appsettings:InitialDirectory", "{ApplicationData}\\JPPhotoManager")
+                .MockGetValue("appsettings:ApplicationDataDirectory", "{ApplicationData}\\JPPhotoManager")
+                .MockGetValue("appsettings:CatalogBatchSize", "100");
+            
             string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPPhotoManager");
-            string directory = "";
-
-            IStorageService storageService = new StorageService(new UserConfigurationService());
-            string result = storageService.ResolveDataDirectory(directory);
+            
+            IStorageService storageService = new StorageService(new UserConfigurationService(configurationMock.Object));
+            string result = storageService.ResolveDataDirectory();
 
             Assert.AreEqual(expected, result);
         }
@@ -73,22 +89,16 @@ namespace JPPhotoManager.Test
         [TestMethod]
         public void ResolveCatalogPathTest2()
         {
+            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            configurationMock
+                .MockGetValue("appsettings:InitialDirectory", "{ApplicationData}\\JPPhotoManager")
+                .MockGetValue("appsettings:ApplicationDataDirectory", "{ApplicationData}\\JPPhotoManager")
+                .MockGetValue("appsettings:CatalogBatchSize", "100");
+
             string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPPhotoManager");
-            string directory = null;
-
-            IStorageService storageService = new StorageService(new UserConfigurationService());
-            string result = storageService.ResolveDataDirectory(directory);
-
-            Assert.AreEqual(expected, result);
-        }
-
-        [TestMethod]
-        public void ResolveCatalogPathTest3()
-        {
-            string expected = @"C:\Data\JPPhotoManager";
-
-            IStorageService storageService = new StorageService(new UserConfigurationService());
-            string result = storageService.ResolveDataDirectory(expected);
+            
+            IStorageService storageService = new StorageService(new UserConfigurationService(configurationMock.Object));
+            string result = storageService.ResolveDataDirectory();
 
             Assert.AreEqual(expected, result);
         }
@@ -96,7 +106,7 @@ namespace JPPhotoManager.Test
         [TestMethod]
         public void GetFileNamesTest()
         {
-            IStorageService storageService = new StorageService(new UserConfigurationService());
+            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
             string[] fileNames = storageService.GetFileNames(dataDirectory);
 
             Assert.IsTrue(fileNames.Length >= 2);
