@@ -62,6 +62,7 @@ namespace JPPhotoManager.Test
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
             userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
 
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService.Object));
             repository.Initialize();
