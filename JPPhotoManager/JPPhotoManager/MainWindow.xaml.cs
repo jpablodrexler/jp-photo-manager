@@ -50,12 +50,12 @@ namespace JPPhotoManager
         {
             int minutes = assetApp.GetCatalogCooldownMinutes();
 
-            return Task.Run(() =>
+            return Task.Run(async () =>
             {
                 while (true)
                 {
                     assetApp.CatalogImages(e => Dispatcher.Invoke(() => ViewModel.NotifyCatalogChange(e)));
-                    Task.Delay(1000 * 60 * minutes).Wait();
+                    await Task.Delay(1000 * 60 * minutes).ConfigureAwait(false);
                 }
             });
         }
@@ -65,7 +65,7 @@ namespace JPPhotoManager
             try
             {
                 this.ViewModel?.ChangeAppMode(AppModeEnum.Thumbnails);
-                this.thumbnailsUserControl.GoToFolderAsync(this.ViewModel.Application, this.ViewModel?.CurrentFolder);
+                this.thumbnailsUserControl.GoToFolder(this.ViewModel.Application, this.ViewModel?.CurrentFolder);
                 this.folderTreeView.SelectedPath = this.ViewModel?.CurrentFolder;
 
                 ViewModel.StatusMessage = "Cataloging thumbnails for " + ViewModel.CurrentFolder;
@@ -170,7 +170,7 @@ namespace JPPhotoManager
         {
             try
             {
-                this.thumbnailsUserControl.GoToFolderAsync(this.ViewModel.Application, this.folderTreeView.SelectedPath);
+                this.thumbnailsUserControl.GoToFolder(this.ViewModel.Application, this.folderTreeView.SelectedPath);
             }
             catch (Exception ex)
             {

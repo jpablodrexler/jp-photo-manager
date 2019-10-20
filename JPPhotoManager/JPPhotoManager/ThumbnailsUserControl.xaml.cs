@@ -3,7 +3,6 @@ using JPPhotoManager.Domain;
 using JPPhotoManager.ViewModels;
 using log4net;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
@@ -39,12 +38,26 @@ namespace JPPhotoManager
             get { return (ApplicationViewModel)this.DataContext; }
         }
 
-        public async void GoToFolderAsync(IJPPhotoManagerApplication assetApp, string selectedImagePath)
+        public async void GoToFolder(IJPPhotoManagerApplication assetApp, string selectedImagePath)
         {
             try
             {
                 this.ViewModel.CurrentFolder = selectedImagePath;
-                await GetImagesAsync(assetApp, this.ViewModel.CurrentFolder);
+                Asset[] assets = await GetAssets(assetApp, ViewModel.CurrentFolder).ConfigureAwait(true);
+
+                // The assets that have no image data are filtered out.
+                // If a folder is being catalogued for the first time and
+                // the GetImages method is called, since the thumbnails file is not
+                // created yet, the assets catalogued so far are returned without
+                // its thumbnails.
+                assets = assets.Where(a => a.ImageData != null).ToArray();
+                this.ViewModel.Files = new ObservableCollection<Asset>(assets);
+
+                if (this.thumbnailsListView.Items.Count > 0)
+                {
+                    this.ViewModel.ViewerPosition = 0;
+                    this.thumbnailsListView.ScrollIntoView(this.thumbnailsListView.Items[0]);
+                }
             }
             catch (Exception ex)
             {
@@ -52,47 +65,9 @@ namespace JPPhotoManager
             }
         }
 
-        private async Task GetImagesAsync(IJPPhotoManagerApplication assetApp, string folder)
+        private Task<Asset[]> GetAssets(IJPPhotoManagerApplication assetApp, string folder)
         {
-            try
-            {
-                var task = await Task.Run(() =>
-                {
-                    Asset[] result = null;
-
-                    try
-                    {
-                        result = assetApp.GetAssets(folder);
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error(ex);
-                    }
-
-                    return result;
-                }).ConfigureAwait(false);
-
-                this.Dispatcher.Invoke(() =>
-                {
-                    // The assets that have no image data are filtered out.
-                    // If a folder is being catalogued for the first time and
-                    // the GetImages method is called, since the thumbnails file is not
-                    // created yet, the assets catalogued so far are returned without
-                    // its thumbnails.
-                    task = task.Where(a => a.ImageData != null).ToArray();
-                    this.ViewModel.Files = new ObservableCollection<Asset>(task);
-
-                    if (this.thumbnailsListView.Items.Count > 0)
-                    {
-                        this.ViewModel.ViewerPosition = 0;
-                        this.thumbnailsListView.ScrollIntoView(this.thumbnailsListView.Items[0]);
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
+            return Task.Run(() => assetApp.GetAssets(folder));
         }
 
         private void ContentControl_MouseDown(object sender, MouseButtonEventArgs e)
