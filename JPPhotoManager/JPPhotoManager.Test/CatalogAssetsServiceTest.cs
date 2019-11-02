@@ -72,7 +72,7 @@ namespace JPPhotoManager.Test
                     new StorageService(userConfigurationService.Object),
                     userConfigurationService.Object);
 
-            string[] fileList = Directory.GetFiles(dataDirectory, "*.jpg")
+            string[] fileList = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
                 .Select(f => Path.GetFileName(f))
                 .ToArray();
 
