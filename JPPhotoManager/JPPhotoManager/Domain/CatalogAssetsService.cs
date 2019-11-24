@@ -27,19 +27,26 @@ namespace JPPhotoManager.Domain
 
         public void CatalogImages(CatalogChangeCallback callback)
         {
-            string myPicturesDirectoryPath = this.userConfigurationService.GetPicturesDirectory();
-            this.CatalogImages(myPicturesDirectoryPath, callback);
-
-            Folder[] folders = this.assetRepository.GetFolders();
-
-            foreach (var f in folders)
+            try
             {
-                string parentDirectory = this.storageService.GetParentDirectory(f.Path);
+                string myPicturesDirectoryPath = this.userConfigurationService.GetPicturesDirectory();
+                this.CatalogImages(myPicturesDirectoryPath, callback);
 
-                if (f.Path != myPicturesDirectoryPath && parentDirectory != myPicturesDirectoryPath)
+                Folder[] folders = this.assetRepository.GetFolders();
+
+                foreach (var f in folders)
                 {
-                    this.CatalogImages(f.Path, callback);
+                    string parentDirectory = this.storageService.GetParentDirectory(f.Path);
+
+                    if (f.Path != myPicturesDirectoryPath && parentDirectory != myPicturesDirectoryPath)
+                    {
+                        this.CatalogImages(f.Path, callback);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
             }
 
             callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
@@ -142,17 +149,17 @@ namespace JPPhotoManager.Domain
                 {
                     this.assetRepository.SaveCatalog(folder);
                 }
+
+                var subdirectories = new DirectoryInfo(directory).EnumerateDirectories();
+
+                foreach (var subdir in subdirectories)
+                {
+                    this.CatalogImages(subdir.FullName, callback);
+                }
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-            }
-
-            var subdirectories = new DirectoryInfo(directory).EnumerateDirectories();
-
-            foreach (var subdir in subdirectories)
-            {
-                this.CatalogImages(subdir.FullName, callback);
             }
         }
 
