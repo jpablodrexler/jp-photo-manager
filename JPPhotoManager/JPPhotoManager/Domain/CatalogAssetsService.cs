@@ -1,7 +1,9 @@
-﻿using System;
+﻿using log4net;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Domain
@@ -12,6 +14,8 @@ namespace JPPhotoManager.Domain
         private readonly IAssetHashCalculatorService assetHashCalculatorService;
         private readonly IStorageService storageService;
         private readonly IUserConfigurationService userConfigurationService;
+
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public CatalogAssetsService(
             IAssetRepository assetRepository,
@@ -46,7 +50,7 @@ namespace JPPhotoManager.Domain
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                log.Error(ex);
             }
 
             callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
@@ -159,7 +163,7 @@ namespace JPPhotoManager.Domain
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                log.Error(ex);
             }
         }
 
