@@ -28,7 +28,8 @@ namespace JPPhotoManager.Domain
         Folder[] GetDrives();
         Folder[] GetFolders(Folder parentFolder, bool includeHidden);
         bool ImageExists(Asset asset, Folder folder);
-        bool ImageExists(string path);
+        bool ImageExists(string fullPath);
+        bool FolderExists(string fullPath);
         bool CopyImage(string sourcePath, string destinationPath);
     }
 }

@@ -76,19 +76,17 @@ namespace JPPhotoManager.Test
                 .Select(f => Path.GetFileName(f))
                 .ToArray();
 
-            var processedAssets = new List<Asset>();
+            var statusChanges = new List<CatalogChangeCallbackEventArgs>();
+            
+            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
 
-            catalogAssetsService.CatalogImages(e =>
-            {
-                if (e.Asset != null)
-                {
-                    processedAssets.Add(e.Asset);
-                }
-            });
+            var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
+            var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
 
             var repositoryAssets = repository.GetAssets(dataDirectory);
             Assert.AreEqual(fileList.Length, processedAssets.Count);
             Assert.AreEqual(fileList.Length, repositoryAssets.Length);
+            Assert.AreEqual(0, exceptions.Count);
 
             bool allProcessedAssetsInFileList = processedAssets.All(a => fileList.Contains(a.FileName));
             bool allProcessedAssetsInRepository = processedAssets.All(a => repositoryAssets.Contains(a));
@@ -97,6 +95,33 @@ namespace JPPhotoManager.Test
             Assert.IsTrue(allProcessedAssetsInFileList);
             Assert.IsTrue(allProcessedAssetsInRepository);
             Assert.IsTrue(allRepositoryAssetsInProcessed);
+        }
+
+        [TestMethod]
+        public void CatalogNonExistentFolderTest()
+        {
+            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(Path.Combine(dataDirectory, "NonExistent"));
+
+            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService.Object));
+            repository.Initialize();
+
+            CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
+                    repository,
+                    new AssetHashCalculatorService(),
+                    new StorageService(userConfigurationService.Object),
+                    userConfigurationService.Object);
+
+            var statusChanges = new List<CatalogChangeCallbackEventArgs>();
+
+            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+
+            var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
+            var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
+
+            Assert.AreEqual(0, processedAssets.Count);
+            Assert.AreEqual(0, exceptions.Count);
         }
 
         [TestMethod]

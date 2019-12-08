@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace JPPhotoManager.Domain
 {
@@ -10,5 +11,6 @@ namespace JPPhotoManager.Domain
         public List<Asset> CataloguedAssets { get; set; }
         public ReasonEnum Reason { get; set; }
         public string Message { get; set; }
+        public Exception Exception { get; set; }
     }
 }

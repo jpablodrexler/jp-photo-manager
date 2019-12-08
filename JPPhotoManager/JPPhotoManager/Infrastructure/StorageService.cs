@@ -247,6 +247,11 @@ namespace JPPhotoManager.Infrastructure
             return File.Exists(fullPath);
         }
 
+        public bool FolderExists(string fullPath)
+        {
+            return Directory.Exists(fullPath);
+        }
+
         public bool CopyImage(string sourcePath, string destinationPath)
         {
             string destinationFolderPath = new FileInfo(destinationPath).Directory.FullName;
