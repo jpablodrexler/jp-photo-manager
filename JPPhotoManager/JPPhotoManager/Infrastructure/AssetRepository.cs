@@ -128,17 +128,6 @@ namespace JPPhotoManager.Infrastructure
 
                         if (!isNewFile)
                         {
-                            // TODO: Add pagination mechanism.
-                            // In less powerful devices, loading the whole set of assets for a folder at once is causing performance problems.
-                            // The app should provide some kind of paging mechanism, but in some way that it doesn't continue adding pages to an unique list,
-                            // since it will cause performance issues anyway after all of the assets are loaded.
-                            // The page size should be handled as an appsetting, depending on the stage in which the app is deployed.
-                            // A button can be presented after the last thumbnail, to switch to the next page.
-                            // Also, a button can be presented before the first thumbnail, to switch to the previous page.
-                            // Key shortcuts for paging navigation should be supported.
-                            
-                            //assetsList = assetsList.Count > 2000 ? assetsList.Take(2000).ToList() : assetsList;
-
                             foreach (Asset assetRow in assetsList)
                             {
                                 if (thumbnails.ContainsKey(assetRow.FileName))
