@@ -3,13 +3,21 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:JPPhotoManager"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Background="#FF3C3C3C">
     <UserControl.Resources>
+        <local:FileSizeConverter x:Key="FileSizeConverter" />
         <DataTemplate x:Key="ThumbnailDataTemplate">
             <ContentControl MouseDown="ContentControl_MouseDown" MouseDoubleClick="ContentControl_MouseDoubleClick" Margin="10">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="200">
-                    <Image HorizontalAlignment="Center" Source="{ Binding ImageData }" MaxWidth="200" MaxHeight="150"></Image>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Image HorizontalAlignment="Center" Source="{ Binding ImageData }" Width="200" Height="150"></Image>
+                    <StackPanel Orientation="Vertical" Margin="10" VerticalAlignment="Center">
+                        <Label Foreground="#FFFFFFFF" Content="{ Binding FileName }" VerticalContentAlignment="Center"/>
+                        <!-- The pixel size should be formatted by a converter -->
+                        <Label Foreground="#FFFFFFFF" Content="{ Binding FormattedPixelSize }" VerticalContentAlignment="Center"/>
+                        <Label Foreground="#FFFFFFFF" Content="{ Binding FileSize, Converter={StaticResource FileSizeConverter}}" VerticalContentAlignment="Center"/>
+                    </StackPanel>
                 </StackPanel>
             </ContentControl>
         </DataTemplate>
@@ -18,7 +26,7 @@
         <ListBox Name="thumbnailsListView" ItemsSource="{Binding Files}" ItemTemplate="{DynamicResource ThumbnailDataTemplate}" Background="{x:Null}" SelectedIndex="{Binding ViewerPosition}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
             <ListBox.ItemsPanel>
                 <ItemsPanelTemplate>
-                    <WrapPanel/>
+                    <VirtualizingStackPanel Orientation="Vertical"/>
                 </ItemsPanelTemplate>
             </ListBox.ItemsPanel>
         </ListBox>
