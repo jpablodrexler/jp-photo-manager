@@ -51,7 +51,7 @@ namespace JPPhotoManager
             {
                 Asset asset = (Asset)((TextBlock)e.Source).DataContext;
 
-                if (MessageBox.Show($"Are you sure you want to delete {asset.FullPath}?", "Confirm", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                if (MessageBox.Show($"Are you sure you want to delete {asset.FullPath}?", "Confirm", MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK)
                 {
                     this.ViewModel.Application.DeleteAsset(asset, deleteFile: true);
                     var duplicates = this.ViewModel.Application.GetDuplicatedAssets();

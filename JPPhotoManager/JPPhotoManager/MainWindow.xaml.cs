@@ -264,7 +264,7 @@ namespace JPPhotoManager
                 }
                 else
                 {
-                    MessageBox.Show("No duplicates have been found.");
+                    MessageBox.Show("No duplicates have been found.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)

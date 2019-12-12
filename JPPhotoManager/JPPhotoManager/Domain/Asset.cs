@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Text.Json.Serialization;
-using System.Threading;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Domain
@@ -24,15 +23,6 @@ namespace JPPhotoManager.Domain
 
         [JsonIgnore]
         public string FullPath => Path.Combine(this.Folder.Path, this.FileName);
-
-        [JsonIgnore]
-        public string FormattedPixelSize
-        {
-            get
-            {
-                return $"{this.PixelWidth}x{this.PixelHeight}";
-            }
-        }
 
         public override bool Equals(object obj)
         {

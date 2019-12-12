@@ -1,10 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using JPPhotoManager;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using JPPhotoManager.Converters;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading;
 
 namespace JPPhotoManager.Test

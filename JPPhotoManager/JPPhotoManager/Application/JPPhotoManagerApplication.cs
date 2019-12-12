@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Threading;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Application

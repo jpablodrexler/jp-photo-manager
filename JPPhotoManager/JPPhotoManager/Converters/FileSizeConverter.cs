@@ -2,7 +2,7 @@
 using System.Globalization;
 using System.Windows.Data;
 
-namespace JPPhotoManager
+namespace JPPhotoManager.Converters
 {
     public class FileSizeConverter : IValueConverter
     {
