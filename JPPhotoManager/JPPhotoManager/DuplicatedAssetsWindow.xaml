@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:JPPhotoManager"
+        xmlns:c="clr-namespace:JPPhotoManager.Converters"
         mc:Ignorable="d"
         Title="Find Duplicates"
         WindowState="Maximized"
@@ -12,7 +12,8 @@
         Width="800"
         Background="#FF3C3C3C">
     <Window.Resources>
-        <local:FileSizeConverter x:Key="FileSizeConverter" />
+        <c:FileSizeConverter x:Key="FileSizeConverter" />
+        <c:PixelSizeConverter x:Key="PixelSizeConverter" />
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -51,7 +52,7 @@
         </ListBox>
         <StackPanel Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
             <Image HorizontalAlignment="Center" Source="{ Binding CurrentDuplicatedAsset.ImageData }" MaxWidth="200" MaxHeight="150"/>
-            <Label Foreground="#FFFFFFFF" Content="{ Binding CurrentDuplicatedAsset.FormattedPixelSize }" HorizontalAlignment="Center" />
+            <Label Foreground="#FFFFFFFF" Content="{ Binding CurrentDuplicatedAsset, Converter={StaticResource PixelSizeConverter}}" HorizontalAlignment="Center" />
             <Label Foreground="#FFFFFFFF" Content="{ Binding CurrentDuplicatedAsset.FileSize, Converter={StaticResource FileSizeConverter}}" HorizontalAlignment="Center" />
         </StackPanel>
     </Grid>

@@ -1,12 +1,9 @@
 ﻿using JPPhotoManager.Domain;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Infrastructure
@@ -245,6 +242,11 @@ namespace JPPhotoManager.Infrastructure
         public bool ImageExists(string fullPath)
         {
             return File.Exists(fullPath);
+        }
+
+        public bool FolderExists(string fullPath)
+        {
+            return Directory.Exists(fullPath);
         }
 
         public bool CopyImage(string sourcePath, string destinationPath)
