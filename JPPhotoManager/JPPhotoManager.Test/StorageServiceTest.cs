@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using JPPhotoManager.Infrastructure;
+﻿using JPPhotoManager.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,17 +8,16 @@ using JPPhotoManager.Domain;
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Moq;
+using Xunit;
 
 namespace JPPhotoManager.Test
 {
-    [TestClass]
     public class StorageServiceTest
     {
-        private static string dataDirectory;
-        private static IConfigurationRoot configuration;
+        private string dataDirectory;
+        private IConfigurationRoot configuration;
 
-        [ClassInitialize]
-        public static void AssetRepositoryTestInitialize(TestContext testContext)
+        public StorageServiceTest()
         {
             dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTest).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
@@ -33,7 +31,7 @@ namespace JPPhotoManager.Test
             configuration = configurationMock.Object;
         }
 
-        [TestMethod]
+        [Fact]
         public void ResolveDataDirectoryTest1()
         {
             string directory = @"C:\Data\JPPhotoManager";
@@ -42,10 +40,10 @@ namespace JPPhotoManager.Test
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
             string result = storageService.ResolveCatalogPath(directory);
 
-            Assert.AreEqual(expected, result);
+            Assert.Equal(expected, result);
         }
 
-        [TestMethod]
+        [Fact]
         public void ResolveDataDirectoryTest2()
         {
             string directory = "";
@@ -54,10 +52,10 @@ namespace JPPhotoManager.Test
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
             string result = storageService.ResolveCatalogPath(directory);
 
-            Assert.AreEqual(expected, result);
+            Assert.Equal(expected, result);
         }
 
-        [TestMethod]
+        [Fact]
         public void ResolveDataDirectoryTest3()
         {
             string directory = null;
@@ -66,10 +64,10 @@ namespace JPPhotoManager.Test
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
             string result = storageService.ResolveCatalogPath(directory);
 
-            Assert.AreEqual(expected, result);
+            Assert.Equal(expected, result);
         }
 
-        [TestMethod]
+        [Fact]
         public void ResolveCatalogPathTest1()
         {
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
@@ -83,10 +81,10 @@ namespace JPPhotoManager.Test
             IStorageService storageService = new StorageService(new UserConfigurationService(configurationMock.Object));
             string result = storageService.ResolveDataDirectory();
 
-            Assert.AreEqual(expected, result);
+            Assert.Equal(expected, result);
         }
 
-        [TestMethod]
+        [Fact]
         public void ResolveCatalogPathTest2()
         {
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
@@ -100,18 +98,18 @@ namespace JPPhotoManager.Test
             IStorageService storageService = new StorageService(new UserConfigurationService(configurationMock.Object));
             string result = storageService.ResolveDataDirectory();
 
-            Assert.AreEqual(expected, result);
+            Assert.Equal(expected, result);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetFileNamesTest()
         {
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
             string[] fileNames = storageService.GetFileNames(dataDirectory);
 
-            Assert.IsTrue(fileNames.Length >= 2);
-            Assert.IsTrue(fileNames.Contains("Image 2.jpg"));
-            Assert.IsTrue(fileNames.Contains("Image 1.jpg"));
+            Assert.True(fileNames.Length >= 2);
+            Assert.True(fileNames.Contains("Image 2.jpg"));
+            Assert.True(fileNames.Contains("Image 1.jpg"));
         }
     }
 }

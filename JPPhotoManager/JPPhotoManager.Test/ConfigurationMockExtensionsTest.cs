@@ -1,16 +1,12 @@
 ﻿using Microsoft.Extensions.Configuration;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Xunit;
 
 namespace JPPhotoManager.Test
 {
-    [TestClass]
     public class ConfigurationMockExtensionsTest
     {
-        [TestMethod]
+        [Fact]
         public void ConfigurationMockTest()
         {
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
@@ -20,9 +16,9 @@ namespace JPPhotoManager.Test
                 .MockGetValue("appsettings:CatalogBatchSize", "100");
 
             IConfigurationRoot configuration = configurationMock.Object;
-            Assert.AreEqual("dataDirectory1", configuration.GetValue<string>("appsettings:InitialDirectory"));
-            Assert.AreEqual("dataDirectory2", configuration.GetValue<string>("appsettings:ApplicationDataDirectory"));
-            Assert.AreEqual("100", configuration.GetValue<string>("appsettings:CatalogBatchSize"));
+            Assert.Equal("dataDirectory1", configuration.GetValue<string>("appsettings:InitialDirectory"));
+            Assert.Equal("dataDirectory2", configuration.GetValue<string>("appsettings:ApplicationDataDirectory"));
+            Assert.Equal("100", configuration.GetValue<string>("appsettings:CatalogBatchSize"));
         }
     }
 }

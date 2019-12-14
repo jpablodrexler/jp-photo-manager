@@ -1,8 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace JPPhotoManager.Test
 {

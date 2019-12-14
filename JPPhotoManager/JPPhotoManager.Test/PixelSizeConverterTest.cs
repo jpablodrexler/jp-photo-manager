@@ -1,39 +1,26 @@
 ﻿using JPPhotoManager.Converters;
 using JPPhotoManager.Domain;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading;
+using Xunit;
 
 namespace JPPhotoManager.Test
 {
-    [TestClass]
     public class PixelSizeConverterTest
     {
-        [TestMethod]
-        public void GetFormattedPixelSizeTest1()
+        [Theory]
+        [InlineData(1920, 1080, "1920x1080 pixels")]
+        [InlineData(1024, 768, "1024x768 pixels")]
+        public void GetFormattedPixelSizeTest(int width, int height, string expected)
         {
             PixelSizeConverter converter = new PixelSizeConverter();
             Asset asset = new Asset
             {
-                PixelWidth = 1920,
-                PixelHeight = 1080
+                PixelWidth = width,
+                PixelHeight = height
             };
 
             string result = (string)converter.Convert(asset, typeof(Asset), null, Thread.CurrentThread.CurrentCulture);
-            Assert.AreEqual("1920x1080 pixels", result);
-        }
-
-        [TestMethod]
-        public void GetFormattedPixelSizeTest2()
-        {
-            PixelSizeConverter converter = new PixelSizeConverter();
-            Asset asset = new Asset
-            {
-                PixelWidth = 1024,
-                PixelHeight = 768
-            };
-
-            string result = (string)converter.Convert(asset, typeof(Asset), null, Thread.CurrentThread.CurrentCulture);
-            Assert.AreEqual("1024x768 pixels", result);
+            Assert.Equal(expected, result);
         }
     }
 }

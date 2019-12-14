@@ -26,14 +26,15 @@ namespace JPPhotoManager.Infrastructure
         {
             this.storageService = storageService;
             this.thumbnails = new Dictionary<string, Dictionary<string, byte[]>>();
+            this.assetCatalogPath = assetCatalogPath;
         }
 
-        public void Initialize()
+        public void Initialize(string assetCatalogPath = null)
         {
             if (!this.IsInitialized)
             {
                 this.dataDirectory = this.storageService.ResolveDataDirectory();
-                this.assetCatalogPath = this.storageService.ResolveCatalogPath(this.dataDirectory);
+                this.assetCatalogPath = string.IsNullOrEmpty(assetCatalogPath) ? this.storageService.ResolveCatalogPath(this.dataDirectory) : assetCatalogPath;
                 this.ReadCatalog();
 
                 if (this.AssetCatalog == null)

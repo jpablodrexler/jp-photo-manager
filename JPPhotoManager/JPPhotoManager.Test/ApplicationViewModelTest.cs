@@ -3,31 +3,30 @@ using System.Collections.ObjectModel;
 using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.ViewModels;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using Xunit;
 
 namespace JPPhotoManager.Test
 {
-    [TestClass]
     public class ApplicationViewModelTest
     {
-        [TestMethod]
+        [Fact]
         public void TestChangeAppMode()
         {
             Mock<IJPPhotoManagerApplication> mock = new Mock<IJPPhotoManagerApplication>();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
             ApplicationViewModel viewModel = new ApplicationViewModel(mock.Object);
 
-            Assert.AreEqual(AppModeEnum.Thumbnails, viewModel.AppMode);
+            Assert.Equal(AppModeEnum.Thumbnails, viewModel.AppMode);
             viewModel.ChangeAppMode();
-            Assert.AreEqual(AppModeEnum.Viewer, viewModel.AppMode);
+            Assert.Equal(AppModeEnum.Viewer, viewModel.AppMode);
             viewModel.ChangeAppMode();
-            Assert.AreEqual(AppModeEnum.Thumbnails, viewModel.AppMode);
+            Assert.Equal(AppModeEnum.Thumbnails, viewModel.AppMode);
             viewModel.ChangeAppMode(AppModeEnum.Viewer);
-            Assert.AreEqual(AppModeEnum.Viewer, viewModel.AppMode);
+            Assert.Equal(AppModeEnum.Viewer, viewModel.AppMode);
         }
 
-        [TestMethod]
+        [Fact]
         public void RemoveAssetMidElementTest()
         {
             ObservableCollection<Asset> assets = new ObservableCollection<Asset>
@@ -50,11 +49,11 @@ namespace JPPhotoManager.Test
 
             viewModel.RemoveAsset(assets[2]);
 
-            Assert.AreEqual(2, viewModel.ViewerPosition);
-            Assert.AreEqual(4, viewModel.Files.Count);
+            Assert.Equal(2, viewModel.ViewerPosition);
+            Assert.Equal(4, viewModel.Files.Count);
         }
 
-        [TestMethod]
+        [Fact]
         public void RemoveAssetFirstElementTest()
         {
             ObservableCollection<Asset> assets = new ObservableCollection<Asset>
@@ -77,11 +76,11 @@ namespace JPPhotoManager.Test
 
             viewModel.RemoveAsset(assets[0]);
 
-            Assert.AreEqual(0, viewModel.ViewerPosition);
-            Assert.AreEqual(4, viewModel.Files.Count);
+            Assert.Equal(0, viewModel.ViewerPosition);
+            Assert.Equal(4, viewModel.Files.Count);
         }
 
-        [TestMethod]
+        [Fact]
         public void RemoveAssetLastElementTest()
         {
             ObservableCollection<Asset> assets = new ObservableCollection<Asset>
@@ -104,11 +103,11 @@ namespace JPPhotoManager.Test
 
             viewModel.RemoveAsset(assets[4]);
 
-            Assert.AreEqual(3, viewModel.ViewerPosition);
-            Assert.AreEqual(4, viewModel.Files.Count);
+            Assert.Equal(3, viewModel.ViewerPosition);
+            Assert.Equal(4, viewModel.Files.Count);
         }
 
-        [TestMethod]
+        [Fact]
         public void RemoveAssetSoleElementTest()
         {
             ObservableCollection<Asset> assets = new ObservableCollection<Asset>
@@ -127,11 +126,11 @@ namespace JPPhotoManager.Test
 
             viewModel.RemoveAsset(assets[0]);
 
-            Assert.AreEqual(-1, viewModel.ViewerPosition);
-            Assert.AreEqual(0, viewModel.Files.Count);
+            Assert.Equal(-1, viewModel.ViewerPosition);
+            Assert.Empty(viewModel.Files);
         }
 
-        [TestMethod]
+        [Fact]
         public void RemoveAssetNoElementsTest()
         {
             ObservableCollection<Asset> assets = new ObservableCollection<Asset>();
@@ -147,11 +146,11 @@ namespace JPPhotoManager.Test
 
             viewModel.RemoveAsset(null);
 
-            Assert.AreEqual(-1, viewModel.ViewerPosition);
-            Assert.AreEqual(0, viewModel.Files.Count);
+            Assert.Equal(-1, viewModel.ViewerPosition);
+            Assert.Empty(viewModel.Files);
         }
 
-        [TestMethod]
+        [Fact]
         public void RemoveAssetNullCollectionTest()
         {
             Mock<IJPPhotoManagerApplication> mockApp = new Mock<IJPPhotoManagerApplication>();
@@ -165,8 +164,8 @@ namespace JPPhotoManager.Test
 
             viewModel.RemoveAsset(null);
 
-            Assert.AreEqual(-1, viewModel.ViewerPosition);
-            Assert.IsNull(viewModel.Files);
+            Assert.Equal(-1, viewModel.ViewerPosition);
+            Assert.Null(viewModel.Files);
         }
     }
 }

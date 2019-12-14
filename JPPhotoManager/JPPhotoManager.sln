@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.29409.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JPPhotoManager", "JPPhotoManager\JPPhotoManager.csproj", "{C1D4AC0F-F87F-4867-BA9D-ECFCB4B54F46}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JPPhotoManager.Test", "JPPhotoManager.Test\JPPhotoManager.Test.csproj", "{A7A8E7B8-88B5-4861-A034-4E77D51E17B0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JPPhotoManager.Test", "JPPhotoManager.Test\JPPhotoManager.Test.csproj", "{A9396E2B-92F5-4574-8B35-5FB49683880A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +17,10 @@ Global
 		{C1D4AC0F-F87F-4867-BA9D-ECFCB4B54F46}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1D4AC0F-F87F-4867-BA9D-ECFCB4B54F46}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C1D4AC0F-F87F-4867-BA9D-ECFCB4B54F46}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A7A8E7B8-88B5-4861-A034-4E77D51E17B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A7A8E7B8-88B5-4861-A034-4E77D51E17B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A7A8E7B8-88B5-4861-A034-4E77D51E17B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A7A8E7B8-88B5-4861-A034-4E77D51E17B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9396E2B-92F5-4574-8B35-5FB49683880A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9396E2B-92F5-4574-8B35-5FB49683880A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9396E2B-92F5-4574-8B35-5FB49683880A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9396E2B-92F5-4574-8B35-5FB49683880A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
