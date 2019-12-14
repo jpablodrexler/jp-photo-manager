@@ -5,7 +5,7 @@ namespace JPPhotoManager.Domain
 {
     public interface IAssetRepository
     {
-        void Initialize();
+        void Initialize(string assetCatalogPath = null);
         Asset[] GetAssets(string directory);
         void AddAsset(Asset asset, byte[] thumbnailData);
         Folder AddFolder(string path);

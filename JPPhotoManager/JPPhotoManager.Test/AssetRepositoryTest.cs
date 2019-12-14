@@ -1,30 +1,24 @@
 ﻿using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Xunit;
 
 namespace JPPhotoManager.Test
 {
-    [TestClass]
     public class AssetRepositoryTest
     {
-        private static string dataDirectory;
-        private static string assetDataSetPath;
-        private static IConfigurationRoot configuration;
+        private string dataDirectory;
+        private string assetDataSetPath;
+        private IConfigurationRoot configuration;
 
-        [ClassInitialize]
-        public static void AssetRepositoryTestInitialize(TestContext testContext)
+        public AssetRepositoryTest()
         {
             dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTest).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
-            assetDataSetPath = Path.Combine(dataDirectory, "AssetCatalog.json");
+            assetDataSetPath = Path.Combine(dataDirectory, $"AssetCatalog{Guid.NewGuid()}.json");
 
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
             configurationMock
@@ -33,51 +27,47 @@ namespace JPPhotoManager.Test
                 .MockGetValue("appsettings:CatalogBatchSize", "100");
             
             configuration = configurationMock.Object;
-        }
 
-        [TestInitialize()]
-        public void AssetRepositoryTestInitialize()
-        {
             if (File.Exists(assetDataSetPath))
             {
                 File.Delete(assetDataSetPath);
             }
         }
 
-        [TestMethod]
+        [Fact]
         public void FolderExistsTest()
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize();
+            repository.Initialize(this.assetDataSetPath);
             bool folderExists = repository.FolderExists(dataDirectory);
-            Assert.IsFalse(folderExists);
+            Assert.False(folderExists);
             repository.AddFolder(dataDirectory);
             folderExists = repository.FolderExists(dataDirectory);
-            Assert.IsTrue(folderExists);
+            Assert.True(folderExists);
         }
 
-        [TestMethod]
+        [Fact]
         public void HasChangesInitiallyFalseTest()
         {
             string imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
-            Assert.IsTrue(File.Exists(imagePath));
+            Assert.True(File.Exists(imagePath));
 
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize();
-            Assert.IsFalse(repository.HasChanges());
+            repository.Initialize(this.assetDataSetPath);
+            Assert.False(repository.HasChanges());
         }
 
-        [TestMethod]
+        [Fact]
         public void HasChangesTrueAfterChangeTest()
         {
             string imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
-            Assert.IsTrue(File.Exists(imagePath));
+            Assert.True(File.Exists(imagePath));
 
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize();
+            repository.Initialize(this.assetDataSetPath);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -87,18 +77,18 @@ namespace JPPhotoManager.Test
                     new UserConfigurationService(configuration));
 
             catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
-            Assert.IsTrue(repository.HasChanges());
+            Assert.True(repository.HasChanges());
         }
 
-        [TestMethod]
+        [Fact]
         public void HasChangesFalseAfterSaveTest()
         {
             string imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
-            Assert.IsTrue(File.Exists(imagePath));
+            Assert.True(File.Exists(imagePath));
 
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize();
+            repository.Initialize(this.assetDataSetPath);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -109,18 +99,18 @@ namespace JPPhotoManager.Test
 
             catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
             repository.SaveCatalog(null);
-            Assert.IsFalse(repository.HasChanges());
+            Assert.False(repository.HasChanges());
         }
 
-        [TestMethod]
+        [Fact]
         public void IsAssetCataloguedImageInCatalogTest()
         {
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
-            Assert.IsTrue(File.Exists(imagePath));
+            Assert.True(File.Exists(imagePath));
 
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize();
+            repository.Initialize(this.assetDataSetPath);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
                     repository,
@@ -129,39 +119,39 @@ namespace JPPhotoManager.Test
                     new UserConfigurationService(configuration));
 
             bool isCatalogued = repository.IsAssetCatalogued(dataDirectory, "Image 2.jpg");
-            Assert.IsFalse(isCatalogued);
+            Assert.False(isCatalogued);
             repository.AddFolder(dataDirectory);
             catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
             isCatalogued = repository.IsAssetCatalogued(dataDirectory, "Image 2.jpg");
-            Assert.IsTrue(isCatalogued);
+            Assert.True(isCatalogued);
         }
 
-        [TestMethod]
+        [Fact]
         public void DeleteNonExistingAssetTest()
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize();
+            repository.Initialize(this.assetDataSetPath);
             repository.AddFolder(dataDirectory);
 
             string imagePath = Path.Combine(dataDirectory, "Non Existing Image.jpg");
-            Assert.IsFalse(File.Exists(imagePath));
+            Assert.False(File.Exists(imagePath));
             
             repository.DeleteAsset(dataDirectory, "Non Existing Image.jpg");
             bool isCatalogued = repository.IsAssetCatalogued(dataDirectory, "Non Existing Image.jpg");
-            Assert.IsFalse(isCatalogued);
+            Assert.False(isCatalogued);
             
             repository.DeleteAsset(dataDirectory, "Non Existing Image.jpg");
             isCatalogued = repository.IsAssetCatalogued(dataDirectory, "Non Existing Image.jpg");
-            Assert.IsFalse(isCatalogued);
+            Assert.False(isCatalogued);
         }
 
-        [TestMethod]
+        [Fact]
         public void DeleteExistingAssetTest()
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize();
+            repository.Initialize(this.assetDataSetPath);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -171,14 +161,14 @@ namespace JPPhotoManager.Test
                     new UserConfigurationService(configuration));
 
             string imagePath = Path.Combine(dataDirectory, "Image 3.jpg");
-            Assert.IsTrue(File.Exists(imagePath));
+            Assert.True(File.Exists(imagePath));
             Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 3.jpg");
 
             // The asset should no longer be catalogued, but the image should still be in the filesystem.
             repository.DeleteAsset(dataDirectory, "Image 3.jpg");
             bool isCatalogued = repository.IsAssetCatalogued(dataDirectory, "Image 3.jpg");
-            Assert.IsFalse(isCatalogued);
-            Assert.IsTrue(File.Exists(imagePath));
+            Assert.False(isCatalogued);
+            Assert.True(File.Exists(imagePath));
         }
     }
 }

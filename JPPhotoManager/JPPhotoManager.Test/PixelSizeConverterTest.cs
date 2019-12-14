@@ -1,14 +1,13 @@
 ﻿using JPPhotoManager.Converters;
 using JPPhotoManager.Domain;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading;
+using Xunit;
 
 namespace JPPhotoManager.Test
 {
-    [TestClass]
     public class PixelSizeConverterTest
     {
-        [TestMethod]
+        [Fact]
         public void GetFormattedPixelSizeTest1()
         {
             PixelSizeConverter converter = new PixelSizeConverter();
@@ -19,10 +18,10 @@ namespace JPPhotoManager.Test
             };
 
             string result = (string)converter.Convert(asset, typeof(Asset), null, Thread.CurrentThread.CurrentCulture);
-            Assert.AreEqual("1920x1080 pixels", result);
+            Assert.Equal("1920x1080 pixels", result);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetFormattedPixelSizeTest2()
         {
             PixelSizeConverter converter = new PixelSizeConverter();
@@ -33,7 +32,7 @@ namespace JPPhotoManager.Test
             };
 
             string result = (string)converter.Convert(asset, typeof(Asset), null, Thread.CurrentThread.CurrentCulture);
-            Assert.AreEqual("1024x768 pixels", result);
+            Assert.Equal("1024x768 pixels", result);
         }
     }
 }
