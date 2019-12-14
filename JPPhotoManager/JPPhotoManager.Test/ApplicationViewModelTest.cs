@@ -127,7 +127,7 @@ namespace JPPhotoManager.Test
             viewModel.RemoveAsset(assets[0]);
 
             Assert.Equal(-1, viewModel.ViewerPosition);
-            Assert.Equal(0, viewModel.Files.Count);
+            Assert.Empty(viewModel.Files);
         }
 
         [Fact]
