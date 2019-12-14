@@ -30,7 +30,7 @@ steps:
 
 - task: DotNetCoreCLI@2
   inputs:
-    command: 'test'
+    command: 'test /p:CollectCoverage=true /p:CoverletOutput=TestResults/ /p:CoverletOutputFormat=lcov'
     projects: '**/*Test.csproj'
     arguments: '--configuration $(buildConfiguration)'
     nobuild: true
