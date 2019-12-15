@@ -189,7 +189,7 @@ namespace JPPhotoManager.Infrastructure
 
                 if (folder == null)
                 {
-                    this.AddFolder(folder.Path);
+                    this.AddFolder(asset.Folder.Path);
                 }
 
                 if (!this.thumbnails.ContainsKey(asset.Folder.Path))

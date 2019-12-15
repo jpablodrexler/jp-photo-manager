@@ -436,5 +436,45 @@ namespace JPPhotoManager.Test
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
             Assert.Empty(duplicatedAssetSets);
         }
+
+        [Fact]
+        public void AddAssetsToNonExistingFolderAddsFolderToCatalogTest()
+        {
+            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
+            repository.Initialize(this.assetDataSetPath);
+            Folder folder = new Folder { FolderId = "1", Path = "C:\\Inexistent Folder" };
+
+            CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
+                    repository,
+                    new AssetHashCalculatorService(),
+                    new StorageService(userConfigurationService),
+                    new UserConfigurationService(configuration));
+
+            JPPhotoManagerApplication app = new JPPhotoManagerApplication(
+                catalogAssetsService,
+                new FindDuplicatedAssetsService(
+                    repository,
+                    new StorageService(userConfigurationService)),
+                repository,
+                new UserConfigurationService(configuration),
+                new StorageService(userConfigurationService));
+
+            string imagePath = Path.Combine(dataDirectory, "Inexistent Image.jpg");
+            Assert.False(File.Exists(imagePath));
+
+            repository.AddAsset(new Asset
+            {
+                FileName = "Inexistent Image.jpg",
+                Folder = folder,
+                FolderId = folder.FolderId,
+                Hash = "0b6d010f85544871c307bb3a96028402f55fa29094908cdd0f74a8ec8d3fc3d4fbec995d98b89aafef3dcf5581c018fbb50481e33c7e45aef552d66c922f4078"
+            }, null);
+
+            folder = repository.GetFolderByPath("C:\\Inexistent Folder");
+            Assert.NotNull(folder);
+            Assert.Equal("C:\\Inexistent Folder", folder.Path);
+            Assert.Equal("Inexistent Folder", folder.Name);
+        }
     }
 }
