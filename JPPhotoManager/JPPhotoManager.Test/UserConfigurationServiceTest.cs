@@ -21,7 +21,8 @@ namespace JPPhotoManager.Test
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
-                .MockGetValue("appsettings:CatalogBatchSize", "100");
+                .MockGetValue("appsettings:CatalogBatchSize", "100")
+                .MockGetValue("appsettings:CatalogCooldownMinutes", "5");
 
             configuration = configurationMock.Object;
         }
@@ -40,9 +41,78 @@ namespace JPPhotoManager.Test
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AboutInformation result = userConfigurationService.GetAboutInformation(typeof(UserConfigurationService).Assembly);
             Assert.Equal("JPPhotoManager", result.Product);
-            Assert.Equal("JPPhotoManager", result.Author);
             Assert.NotEmpty(result.Version);
             Assert.StartsWith("Version ", result.Version);
+        }
+
+        [Fact]
+        public void GetCatalogBatchSizeTest()
+        {
+            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            int result = userConfigurationService.GetCatalogBatchSize();
+            Assert.Equal(100, result);
+        }
+
+        [Fact]
+        public void GetCatalogCooldownMinutesTest()
+        {
+            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            int result = userConfigurationService.GetCatalogCooldownMinutes();
+            Assert.Equal(5, result);
+        }
+
+        [Fact]
+        public void GetInitialFolderConfiguredTest()
+        {
+            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            string result = userConfigurationService.GetInitialFolder();
+            Assert.Equal(dataDirectory, result);
+        }
+
+        [Fact]
+        public void GetInitialFolderNotConfiguredTest()
+        {
+            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            configurationMock
+                .MockGetValue("appsettings:InitialDirectory", "")
+                .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
+                .MockGetValue("appsettings:CatalogBatchSize", "100")
+                .MockGetValue("appsettings:CatalogCooldownMinutes", "5");
+
+            UserConfigurationService userConfigurationService = new UserConfigurationService(configurationMock.Object);
+            string expected = userConfigurationService.GetPicturesDirectory();
+            string result = userConfigurationService.GetInitialFolder();
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void GetApplicationDataFolderConfiguredTest()
+        {
+            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            configurationMock
+                .MockGetValue("appsettings:InitialDirectory", dataDirectory)
+                .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
+                .MockGetValue("appsettings:CatalogBatchSize", "100")
+                .MockGetValue("appsettings:CatalogCooldownMinutes", "5");
+
+            UserConfigurationService userConfigurationService = new UserConfigurationService(configurationMock.Object);
+            string result = userConfigurationService.GetApplicationDataFolder();
+            Assert.NotEmpty(result);
+        }
+
+        [Fact]
+        public void GetApplicationDataFolderNotConfiguredTest()
+        {
+            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            configurationMock
+                .MockGetValue("appsettings:InitialDirectory", dataDirectory)
+                .MockGetValue("appsettings:ApplicationDataDirectory", "")
+                .MockGetValue("appsettings:CatalogBatchSize", "100")
+                .MockGetValue("appsettings:CatalogCooldownMinutes", "5");
+
+            UserConfigurationService userConfigurationService = new UserConfigurationService(configurationMock.Object);
+            string result = userConfigurationService.GetApplicationDataFolder();
+            Assert.NotEmpty(result);
         }
     }
 }
