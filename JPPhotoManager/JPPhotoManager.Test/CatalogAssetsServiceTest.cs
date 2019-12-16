@@ -645,5 +645,111 @@ namespace JPPhotoManager.Test
             Assert.Throws<ArgumentNullException>(() =>
                 catalogAssetsService.DeleteAsset(new Asset { Folder = null }, deleteFile: true));
         }
+
+        [Fact]
+        public void ImportNewImagesSourceEmptyDestinationEmptyTest()
+        {
+            string sourceDirectory = @"C:\MyGame\Screenshots";
+            string destinationDirectory = @"C:\Images\MyGame";
+
+            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
+            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+
+            CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
+                repositoryMock.Object,
+                hashCalculatorMock.Object,
+                storageServiceMock.Object,
+                userConfigurationServiceMock.Object);
+
+            catalogAssetsService.ImportNewImages(sourceDirectory, destinationDirectory);
+
+            storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public void ImportNewImagesSourceNotEmptyDestinationEmptyTest()
+        {
+            string sourceDirectory = @"C:\MyGame\Screenshots";
+            string destinationDirectory = @"C:\Images\MyGame";
+
+            string[] sourceFileNames = new string[]
+            {
+                "NewImage1.jpg",
+                "NewImage2.jpg",
+                "NewImage3.jpg"
+            };
+
+            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
+            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+
+            storageServiceMock.Setup(s => s.GetFileNames(sourceDirectory))
+                .Returns(sourceFileNames);
+
+            CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
+                repositoryMock.Object,
+                hashCalculatorMock.Object,
+                storageServiceMock.Object,
+                userConfigurationServiceMock.Object);
+
+            catalogAssetsService.ImportNewImages(sourceDirectory, destinationDirectory);
+
+            storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage3.jpg", @"C:\Images\MyGame\NewImage3.jpg"), Times.Once);
+        }
+
+        [Fact]
+        public void ImportNewImagesSourceNotEmptyDestinationNotEmptyTest()
+        {
+            string sourceDirectory = @"C:\MyGame\Screenshots";
+            string destinationDirectory = @"C:\Images\MyGame";
+
+            string[] sourceFileNames = new string[]
+            {
+                "ExistingImage1.jpg",
+                "ExistingImage2.jpg",
+                "ExistingImage3.jpg",
+                "NewImage1.jpg",
+                "NewImage2.jpg",
+                "NewImage3.jpg"
+            };
+
+            string[] destinationFileNames = new string[]
+            {
+                "ExistingImage1.jpg",
+                "ExistingImage2.jpg",
+                "ExistingImage3.jpg"
+            };
+
+            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
+            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+
+            storageServiceMock.Setup(s => s.GetFileNames(sourceDirectory))
+                .Returns(sourceFileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(destinationDirectory))
+                .Returns(destinationFileNames);
+
+            CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
+                repositoryMock.Object,
+                hashCalculatorMock.Object,
+                storageServiceMock.Object,
+                userConfigurationServiceMock.Object);
+
+            catalogAssetsService.ImportNewImages(sourceDirectory, destinationDirectory);
+
+            storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage3.jpg", @"C:\Images\MyGame\NewImage3.jpg"), Times.Once);
+        }
     }
 }

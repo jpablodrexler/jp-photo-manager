@@ -62,7 +62,6 @@ namespace JPPhotoManager.Domain
             {
                 if (storageService.FolderExists(directory))
                 {
-                    //CatalogExistingFolder(directory, callback);
                     if (!this.assetRepository.FolderExists(directory))
                     {
                         this.assetRepository.AddFolder(directory);
@@ -258,6 +257,16 @@ namespace JPPhotoManager.Domain
                             .ToArray();
         }
 
+        private string[] GetNewFileNames(string[] sourceFileNames, string[] destinationFileNames)
+        {
+            return sourceFileNames.Except(destinationFileNames)
+                            .Where(f => f.EndsWith(".jpg", StringComparison.InvariantCultureIgnoreCase)
+                                || f.EndsWith(".jpeg", StringComparison.InvariantCultureIgnoreCase)
+                                || f.EndsWith(".png", StringComparison.InvariantCultureIgnoreCase)
+                                || f.EndsWith(".gif", StringComparison.InvariantCultureIgnoreCase))
+                            .ToArray();
+        }
+
         private string[] GetDeletedFileNames(string[] fileNames, List<Asset> cataloguedAssets)
         {
             return cataloguedAssets.Select(ca => ca.FileName).Except(fileNames).ToArray();
@@ -356,6 +365,20 @@ namespace JPPhotoManager.Domain
             }
 
             this.assetRepository.SaveCatalog(asset.Folder);
+        }
+
+        public void ImportNewImages(string sourceDirectory, string destinationDirectory)
+        {
+            string[] sourceFileNames = this.storageService.GetFileNames(sourceDirectory);
+            string[] destinationFileNames = this.storageService.GetFileNames(destinationDirectory);
+            string[] newFileNames = GetNewFileNames(sourceFileNames, destinationFileNames);
+
+            foreach (string newImage in newFileNames)
+            {
+                this.storageService.CopyImage(
+                    Path.Combine(sourceDirectory, newImage),
+                    Path.Combine(destinationDirectory, newImage));
+            }
         }
     }
 }
