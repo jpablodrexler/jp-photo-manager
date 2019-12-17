@@ -64,7 +64,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService.Object),
-                    userConfigurationService.Object);
+                    userConfigurationService.Object,
+                    new DirectoryComparer());
 
             string[] fileList = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
                 .Select(f => Path.GetFileName(f))
@@ -80,7 +81,7 @@ namespace JPPhotoManager.Test
             var repositoryAssets = repository.GetAssets(dataDirectory);
             Assert.Equal(fileList.Length, processedAssets.Count);
             Assert.Equal(fileList.Length, repositoryAssets.Length);
-            Assert.Equal(0, exceptions.Count);
+            Assert.Empty(exceptions);
 
             bool allProcessedAssetsInFileList = processedAssets.All(a => fileList.Contains(a.FileName));
             bool allProcessedAssetsInRepository = processedAssets.All(a => repositoryAssets.Contains(a));
@@ -105,7 +106,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService.Object),
-                    userConfigurationService.Object);
+                    userConfigurationService.Object,
+                    new DirectoryComparer());
 
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
@@ -130,7 +132,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
             Assert.True(File.Exists(imagePath));
@@ -158,7 +161,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             string imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
             Assert.True(File.Exists(imagePath));
@@ -186,7 +190,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
             Assert.True(File.Exists(imagePath));
@@ -212,7 +217,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
             Assert.True(File.Exists(imagePath));
@@ -240,7 +246,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    userConfigurationService);
+                    userConfigurationService,
+                    new DirectoryComparer());
 
             string sourceImagePath = Path.Combine(dataDirectory, "Image 4.jpg");
             string destinationImagePath = Path.Combine(imageDestinationDirectory, "Image 4.jpg");
@@ -288,7 +295,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    userConfigurationService);
+                    userConfigurationService,
+                    new DirectoryComparer());
 
             string sourceImagePath = Path.Combine(dataDirectory, "Nonexistent Image.jpg");
             string destinationImagePath = Path.Combine(imageDestinationDirectory, "Nonexistent Image.jpg");
@@ -322,7 +330,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    userConfigurationService);
+                    userConfigurationService,
+                    new DirectoryComparer());
 
             string sourceImagePath = Path.Combine(dataDirectory, "Image 5.jpg");
             Assert.True(File.Exists(sourceImagePath));
@@ -358,7 +367,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    userConfigurationService);
+                    userConfigurationService,
+                    new DirectoryComparer());
 
             string sourceImagePath = Path.Combine(dataDirectory, "Image 7.jpg");
             Assert.True(File.Exists(sourceImagePath));
@@ -393,7 +403,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    userConfigurationService);
+                    userConfigurationService,
+                    new DirectoryComparer());
 
             Assert.Throws<ArgumentNullException>(() =>
                 catalogAssetsService.MoveAsset(null, destinationFolder, preserveOriginalFile: false));
@@ -413,7 +424,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    userConfigurationService);
+                    userConfigurationService,
+                    new DirectoryComparer());
 
             Assert.Throws<ArgumentNullException>(() =>
                 catalogAssetsService.MoveAsset(new Asset { Folder = null }, destinationFolder, preserveOriginalFile: false));
@@ -433,7 +445,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    userConfigurationService);
+                    userConfigurationService,
+                    new DirectoryComparer());
 
             Assert.Throws<ArgumentNullException>(() =>
                 catalogAssetsService.MoveAsset(new Asset { Folder = new Folder { } }, null, preserveOriginalFile: false));
@@ -453,7 +466,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    userConfigurationService);
+                    userConfigurationService,
+                    new DirectoryComparer());
 
             string sourceImagePath = Path.Combine(dataDirectory, "Image 5.jpg");
             string destinationImagePath = Path.Combine(imageDestinationDirectory, "Image 5.jpg");
@@ -501,7 +515,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    userConfigurationService);
+                    userConfigurationService,
+                    new DirectoryComparer());
 
             string sourceImagePath = Path.Combine(dataDirectory, "Nonexistent Image.jpg");
             string destinationImagePath = Path.Combine(imageDestinationDirectory, "Nonexistent Image.jpg");
@@ -535,7 +550,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    userConfigurationService);
+                    userConfigurationService,
+                    new DirectoryComparer());
 
             string sourceImagePath = Path.Combine(dataDirectory, "Image 5.jpg");
             Assert.True(File.Exists(sourceImagePath));
@@ -565,7 +581,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    userConfigurationService);
+                    userConfigurationService,
+                    new DirectoryComparer());
 
             string sourceImagePath = Path.Combine(dataDirectory, "Image 6.jpg");
             Assert.True(File.Exists(sourceImagePath));
@@ -594,7 +611,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    userConfigurationService);
+                    userConfigurationService,
+                    new DirectoryComparer());
 
             string sourceImagePath = Path.Combine(dataDirectory, "Nonexistent Image.jpg");
             Assert.False(File.Exists(sourceImagePath));
@@ -623,7 +641,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    userConfigurationService);
+                    userConfigurationService,
+                    new DirectoryComparer());
 
             Assert.Throws<ArgumentNullException>(() =>
                 catalogAssetsService.DeleteAsset(null, deleteFile: true));
@@ -640,116 +659,11 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    userConfigurationService);
+                    userConfigurationService,
+                    new DirectoryComparer());
 
             Assert.Throws<ArgumentNullException>(() =>
                 catalogAssetsService.DeleteAsset(new Asset { Folder = null }, deleteFile: true));
-        }
-
-        [Fact]
-        public void ImportNewImagesSourceEmptyDestinationEmptyTest()
-        {
-            string sourceDirectory = @"C:\MyGame\Screenshots";
-            string destinationDirectory = @"C:\Images\MyGame";
-
-            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
-            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
-            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
-            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
-
-            CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                repositoryMock.Object,
-                hashCalculatorMock.Object,
-                storageServiceMock.Object,
-                userConfigurationServiceMock.Object);
-
-            catalogAssetsService.ImportNewImages(sourceDirectory, destinationDirectory);
-
-            storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
-            storageServiceMock.Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
-        }
-
-        [Fact]
-        public void ImportNewImagesSourceNotEmptyDestinationEmptyTest()
-        {
-            string sourceDirectory = @"C:\MyGame\Screenshots";
-            string destinationDirectory = @"C:\Images\MyGame";
-
-            string[] sourceFileNames = new string[]
-            {
-                "NewImage1.jpg",
-                "NewImage2.jpg",
-                "NewImage3.jpg"
-            };
-
-            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
-            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
-            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
-            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
-
-            storageServiceMock.Setup(s => s.GetFileNames(sourceDirectory))
-                .Returns(sourceFileNames);
-
-            CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                repositoryMock.Object,
-                hashCalculatorMock.Object,
-                storageServiceMock.Object,
-                userConfigurationServiceMock.Object);
-
-            catalogAssetsService.ImportNewImages(sourceDirectory, destinationDirectory);
-
-            storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
-            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
-            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
-            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage3.jpg", @"C:\Images\MyGame\NewImage3.jpg"), Times.Once);
-        }
-
-        [Fact]
-        public void ImportNewImagesSourceNotEmptyDestinationNotEmptyTest()
-        {
-            string sourceDirectory = @"C:\MyGame\Screenshots";
-            string destinationDirectory = @"C:\Images\MyGame";
-
-            string[] sourceFileNames = new string[]
-            {
-                "ExistingImage1.jpg",
-                "ExistingImage2.jpg",
-                "ExistingImage3.jpg",
-                "NewImage1.jpg",
-                "NewImage2.jpg",
-                "NewImage3.jpg"
-            };
-
-            string[] destinationFileNames = new string[]
-            {
-                "ExistingImage1.jpg",
-                "ExistingImage2.jpg",
-                "ExistingImage3.jpg"
-            };
-
-            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
-            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
-            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
-            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
-
-            storageServiceMock.Setup(s => s.GetFileNames(sourceDirectory))
-                .Returns(sourceFileNames);
-
-            storageServiceMock.Setup(s => s.GetFileNames(destinationDirectory))
-                .Returns(destinationFileNames);
-
-            CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                repositoryMock.Object,
-                hashCalculatorMock.Object,
-                storageServiceMock.Object,
-                userConfigurationServiceMock.Object);
-
-            catalogAssetsService.ImportNewImages(sourceDirectory, destinationDirectory);
-
-            storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
-            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
-            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
-            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage3.jpg", @"C:\Images\MyGame\NewImage3.jpg"), Times.Once);
         }
     }
 }

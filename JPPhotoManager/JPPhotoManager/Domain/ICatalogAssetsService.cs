@@ -8,6 +8,5 @@ namespace JPPhotoManager.Domain
         Asset CreateAsset(string directoryName, string fileName);
         bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile);
         void DeleteAsset(Asset asset, bool deleteFile);
-        void ImportNewImages(string sourceDirectory, string destinationDirectory);
     }
 }

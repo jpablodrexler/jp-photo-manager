@@ -14,6 +14,7 @@ namespace JPPhotoManager.Domain
         private readonly IAssetHashCalculatorService assetHashCalculatorService;
         private readonly IStorageService storageService;
         private readonly IUserConfigurationService userConfigurationService;
+        private readonly IDirectoryComparer directoryComparer;
 
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -21,12 +22,14 @@ namespace JPPhotoManager.Domain
             IAssetRepository assetRepository,
             IAssetHashCalculatorService assetHashCalculatorService,
             IStorageService storageService,
-            IUserConfigurationService userConfigurationService)
+            IUserConfigurationService userConfigurationService,
+            IDirectoryComparer directoryComparer)
         {
             this.assetRepository = assetRepository;
             this.assetHashCalculatorService = assetHashCalculatorService;
             this.storageService = storageService;
             this.userConfigurationService = userConfigurationService;
+            this.directoryComparer = directoryComparer;
         }
 
         public void CatalogImages(CatalogChangeCallback callback)
@@ -83,8 +86,8 @@ namespace JPPhotoManager.Domain
                         }
                     }
 
-                    string[] newFileNames = GetNewFileNames(fileNames, cataloguedAssets);
-                    string[] deletedFileNames = GetDeletedFileNames(fileNames, cataloguedAssets);
+                    string[] newFileNames = directoryComparer.GetNewFileNames(fileNames, cataloguedAssets);
+                    string[] deletedFileNames = directoryComparer.GetDeletedFileNames(fileNames, cataloguedAssets);
                     int batchSize = this.userConfigurationService.GetCatalogBatchSize();
                     int batchCount = 0;
 
@@ -247,31 +250,6 @@ namespace JPPhotoManager.Domain
             return asset;
         }
 
-        private string[] GetNewFileNames(string[] fileNames, List<Asset> cataloguedAssets)
-        {
-            return fileNames.Except(cataloguedAssets.Select(ca => ca.FileName))
-                            .Where(f => f.EndsWith(".jpg", StringComparison.InvariantCultureIgnoreCase)
-                                || f.EndsWith(".jpeg", StringComparison.InvariantCultureIgnoreCase)
-                                || f.EndsWith(".png", StringComparison.InvariantCultureIgnoreCase)
-                                || f.EndsWith(".gif", StringComparison.InvariantCultureIgnoreCase))
-                            .ToArray();
-        }
-
-        private string[] GetNewFileNames(string[] sourceFileNames, string[] destinationFileNames)
-        {
-            return sourceFileNames.Except(destinationFileNames)
-                            .Where(f => f.EndsWith(".jpg", StringComparison.InvariantCultureIgnoreCase)
-                                || f.EndsWith(".jpeg", StringComparison.InvariantCultureIgnoreCase)
-                                || f.EndsWith(".png", StringComparison.InvariantCultureIgnoreCase)
-                                || f.EndsWith(".gif", StringComparison.InvariantCultureIgnoreCase))
-                            .ToArray();
-        }
-
-        private string[] GetDeletedFileNames(string[] fileNames, List<Asset> cataloguedAssets)
-        {
-            return cataloguedAssets.Select(ca => ca.FileName).Except(fileNames).ToArray();
-        }
-
         public bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile)
         {
             #region Parameters validation
@@ -365,20 +343,6 @@ namespace JPPhotoManager.Domain
             }
 
             this.assetRepository.SaveCatalog(asset.Folder);
-        }
-
-        public void ImportNewImages(string sourceDirectory, string destinationDirectory)
-        {
-            string[] sourceFileNames = this.storageService.GetFileNames(sourceDirectory);
-            string[] destinationFileNames = this.storageService.GetFileNames(destinationDirectory);
-            string[] newFileNames = GetNewFileNames(sourceFileNames, destinationFileNames);
-
-            foreach (string newImage in newFileNames)
-            {
-                this.storageService.CopyImage(
-                    Path.Combine(sourceDirectory, newImage),
-                    Path.Combine(destinationDirectory, newImage));
-            }
         }
     }
 }

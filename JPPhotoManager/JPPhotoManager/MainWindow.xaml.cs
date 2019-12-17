@@ -273,6 +273,21 @@ namespace JPPhotoManager
             }
         }
 
+        private void ImportNewImages_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = this.ViewModel.Application.ImportNewImages();
+
+                // TODO: Provide a popup for configuring the import.
+                // TODO: Display the result in the popup.
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
         private void About_Click(object sender, RoutedEventArgs e)
         {
             try

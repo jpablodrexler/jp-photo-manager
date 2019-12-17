@@ -11,6 +11,7 @@ namespace JPPhotoManager.Infrastructure
         public double StorageVersion { get; set; }
         public List<Folder> Folders { get; set; }
         public List<Asset> Assets { get; set; }
+        public ImportNewAssetsConfiguration ImportNewAssetsConfiguration { get; set; }
 
         public AssetCatalog()
         {

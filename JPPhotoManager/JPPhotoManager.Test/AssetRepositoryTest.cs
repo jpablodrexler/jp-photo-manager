@@ -3,6 +3,7 @@ using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Xunit;
 
@@ -74,7 +75,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
             Assert.True(repository.HasChanges());
@@ -95,7 +97,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
             repository.SaveCatalog(null);
@@ -116,7 +119,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             bool isCatalogued = repository.IsAssetCatalogued(dataDirectory, "Image 2.jpg");
             Assert.False(isCatalogued);
@@ -158,7 +162,8 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             string imagePath = Path.Combine(dataDirectory, "Image 3.jpg");
             Assert.True(File.Exists(imagePath));
@@ -169,6 +174,44 @@ namespace JPPhotoManager.Test
             bool isCatalogued = repository.IsAssetCatalogued(dataDirectory, "Image 3.jpg");
             Assert.False(isCatalogued);
             Assert.True(File.Exists(imagePath));
+        }
+
+        [Fact]
+        public void SaveAndGetImportNewAssetsConfigurationTest()
+        {
+            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
+            repository.Initialize(this.assetDataSetPath);
+
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration
+            {
+                Imports = new List<ImportNewAssetsDirectoriesDefinition>
+                {
+                    new ImportNewAssetsDirectoriesDefinition
+                    {
+                        SourceDirectory = @"C:\MyFirstGame\Screenshots",
+                        DestinationDirectory = @"C:\Images\MyFirstGame"
+                    },
+                    new ImportNewAssetsDirectoriesDefinition
+                    {
+                        SourceDirectory = @"C:\MySecondGame\Screenshots",
+                        DestinationDirectory = @"C:\Images\MySecondGame"
+                    }
+                }
+            };
+
+            repository.SetImportNewAssetsConfiguration(importConfiguration);
+            repository.SaveCatalog(null);
+
+            repository = new AssetRepository(new StorageService(userConfigurationService));
+            repository.Initialize(this.assetDataSetPath);
+            importConfiguration = repository.GetImportNewAssetsConfiguration();
+
+            Assert.Equal(2, importConfiguration.Imports.Count);
+            Assert.Equal(@"C:\MyFirstGame\Screenshots", importConfiguration.Imports[0].SourceDirectory);
+            Assert.Equal(@"C:\Images\MyFirstGame", importConfiguration.Imports[0].DestinationDirectory);
+            Assert.Equal(@"C:\MySecondGame\Screenshots", importConfiguration.Imports[1].SourceDirectory);
+            Assert.Equal(@"C:\Images\MySecondGame", importConfiguration.Imports[1].DestinationDirectory);
         }
     }
 }

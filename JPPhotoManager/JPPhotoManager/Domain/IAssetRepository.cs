@@ -21,5 +21,7 @@ namespace JPPhotoManager.Domain
         bool ContainsThumbnail(string directoryName, string fileName);
         BitmapImage LoadThumbnail(string directoryName, string fileName);
         bool FolderHasThumbnails(Folder folder);
+        ImportNewAssetsConfiguration GetImportNewAssetsConfiguration();
+        void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration);
     }
 }

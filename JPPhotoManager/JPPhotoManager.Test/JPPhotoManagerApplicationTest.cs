@@ -60,11 +60,16 @@ namespace JPPhotoManager.Test
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
 
             JPPhotoManagerApplication app = new JPPhotoManagerApplication(
+                new ImportNewAssetsService(
+                    mockRepository.Object,
+                    new StorageService(userConfigurationService),
+                    new DirectoryComparer()),
                 new CatalogAssetsService(
                     mockRepository.Object,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration)),
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer()),
                 new FindDuplicatedAssetsService(
                     mockRepository.Object,
                     new StorageService(userConfigurationService)),
@@ -84,11 +89,16 @@ namespace JPPhotoManager.Test
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             Mock<IAssetRepository> mockRepository = new Mock<IAssetRepository>();
             JPPhotoManagerApplication app = new JPPhotoManagerApplication(
+                new ImportNewAssetsService(
+                    mockRepository.Object,
+                    new StorageService(userConfigurationService),
+                    new DirectoryComparer()),
                 new CatalogAssetsService(
                     mockRepository.Object,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration)),
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer()),
                 new FindDuplicatedAssetsService(
                     mockRepository.Object,
                     new StorageService(userConfigurationService)),
@@ -106,11 +116,16 @@ namespace JPPhotoManager.Test
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             Mock<IAssetRepository> mockRepository = new Mock<IAssetRepository>();
             JPPhotoManagerApplication app = new JPPhotoManagerApplication(
+                new ImportNewAssetsService(
+                    mockRepository.Object,
+                    new StorageService(userConfigurationService),
+                    new DirectoryComparer()),
                 new CatalogAssetsService(
                     mockRepository.Object,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration)),
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer()),
                 new FindDuplicatedAssetsService(
                     mockRepository.Object, new StorageService(userConfigurationService)),
                 mockRepository.Object,
@@ -132,9 +147,14 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             JPPhotoManagerApplication app = new JPPhotoManagerApplication(
+                new ImportNewAssetsService(
+                    repository,
+                    new StorageService(userConfigurationService),
+                    new DirectoryComparer()),
                 catalogAssetsService,
                 new FindDuplicatedAssetsService(
                     repository,
@@ -165,9 +185,14 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             app = new JPPhotoManagerApplication(
+                new ImportNewAssetsService(
+                    repository,
+                    new StorageService(userConfigurationService),
+                    new DirectoryComparer()),
                 catalogAssetsService,
                 new FindDuplicatedAssetsService(
                     repository,
@@ -177,7 +202,7 @@ namespace JPPhotoManager.Test
                 new StorageService(userConfigurationService));
 
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
-            Assert.Equal(1, duplicatedAssetSets.Count);
+            Assert.Single(duplicatedAssetSets);
 
             List<Asset> duplicatedAssets = duplicatedAssetSets[0];
             Assert.Equal(2, duplicatedAssets.Count);
@@ -202,9 +227,14 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             JPPhotoManagerApplication app = new JPPhotoManagerApplication(
+                new ImportNewAssetsService(
+                    repository,
+                    new StorageService(userConfigurationService),
+                    new DirectoryComparer()),
                 catalogAssetsService,
                 new FindDuplicatedAssetsService(
                     repository,
@@ -241,9 +271,14 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             JPPhotoManagerApplication app = new JPPhotoManagerApplication(
+                new ImportNewAssetsService(
+                    repository,
+                    new StorageService(userConfigurationService),
+                    new DirectoryComparer()),
                 catalogAssetsService,
                 new FindDuplicatedAssetsService(
                     repository,
@@ -292,9 +327,14 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             JPPhotoManagerApplication app = new JPPhotoManagerApplication(
+                new ImportNewAssetsService(
+                    repository,
+                    new StorageService(userConfigurationService),
+                    new DirectoryComparer()),
                 catalogAssetsService,
                 new FindDuplicatedAssetsService(
                     repository,
@@ -341,9 +381,14 @@ namespace JPPhotoManager.Test
                     repository,
                     hashCalculator.Object,
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             JPPhotoManagerApplication app = new JPPhotoManagerApplication(
+                new ImportNewAssetsService(
+                    repository,
+                    new StorageService(userConfigurationService),
+                    new DirectoryComparer()),
                 catalogAssetsService,
                 new FindDuplicatedAssetsService(
                     repository,
@@ -374,9 +419,14 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             app = new JPPhotoManagerApplication(
+                new ImportNewAssetsService(
+                    repository,
+                    new StorageService(userConfigurationService),
+                    new DirectoryComparer()),
                 catalogAssetsService,
                 new FindDuplicatedAssetsService(
                     repository,
@@ -414,9 +464,14 @@ namespace JPPhotoManager.Test
                     repository,
                     hashCalculator.Object,
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             JPPhotoManagerApplication app = new JPPhotoManagerApplication(
+                new ImportNewAssetsService(
+                    repository,
+                    new StorageService(userConfigurationService),
+                    new DirectoryComparer()),
                 catalogAssetsService,
                 new FindDuplicatedAssetsService(
                     repository,
@@ -449,9 +504,14 @@ namespace JPPhotoManager.Test
                     repository,
                     new AssetHashCalculatorService(),
                     new StorageService(userConfigurationService),
-                    new UserConfigurationService(configuration));
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
 
             JPPhotoManagerApplication app = new JPPhotoManagerApplication(
+                new ImportNewAssetsService(
+                    repository,
+                    new StorageService(userConfigurationService),
+                    new DirectoryComparer()),
                 catalogAssetsService,
                 new FindDuplicatedAssetsService(
                     repository,

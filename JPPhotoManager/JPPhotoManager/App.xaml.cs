@@ -52,6 +52,7 @@ namespace JPPhotoManager
             IConfigurationRoot configuration = builder.Build();
 
             services.AddSingleton(configuration);
+            services.AddSingleton<IDirectoryComparer, DirectoryComparer>();
             services.AddSingleton<IUserConfigurationService, UserConfigurationService>();
             services.AddSingleton<IStorageService, StorageService>();
             services.AddSingleton<IAssetRepository, AssetRepository>();

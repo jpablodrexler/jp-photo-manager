@@ -9,18 +9,21 @@ namespace JPPhotoManager.Application
     public class JPPhotoManagerApplication : IJPPhotoManagerApplication
     {
         private readonly IAssetRepository assetRepository;
+        private readonly IImportNewAssetsService importNewAssetsService;
         private readonly ICatalogAssetsService catalogAssetsService;
         private readonly IFindDuplicatedAssetsService findDuplicatedAssetsService;
         private readonly IUserConfigurationService userConfigurationService;
         private readonly IStorageService storageService;
 
         public JPPhotoManagerApplication(
+            IImportNewAssetsService importNewAssetsService,
             ICatalogAssetsService catalogAssetsService,
             IFindDuplicatedAssetsService findDuplicatedAssetsService,
             IAssetRepository assetRepository,
             IUserConfigurationService userConfigurationService,
             IStorageService storageService)
         {
+            this.importNewAssetsService = importNewAssetsService;
             this.catalogAssetsService = catalogAssetsService;
             this.findDuplicatedAssetsService = findDuplicatedAssetsService;
             this.assetRepository = assetRepository;
@@ -42,6 +45,11 @@ namespace JPPhotoManager.Application
             }
             
             return this.assetRepository.GetAssets(directory);
+        }
+
+        public List<ImportNewAssetsResult> ImportNewImages()
+        {
+            return this.importNewAssetsService.Import();
         }
 
         public void CatalogImages(CatalogChangeCallback callback)

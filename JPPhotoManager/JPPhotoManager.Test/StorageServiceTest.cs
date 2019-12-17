@@ -108,8 +108,8 @@ namespace JPPhotoManager.Test
             string[] fileNames = storageService.GetFileNames(dataDirectory);
 
             Assert.True(fileNames.Length >= 2);
-            Assert.True(fileNames.Contains("Image 2.jpg"));
-            Assert.True(fileNames.Contains("Image 1.jpg"));
+            Assert.Contains("Image 2.jpg", fileNames);
+            Assert.Contains("Image 1.jpg", fileNames);
         }
     }
 }

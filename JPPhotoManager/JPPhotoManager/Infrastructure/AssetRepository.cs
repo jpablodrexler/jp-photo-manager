@@ -26,7 +26,6 @@ namespace JPPhotoManager.Infrastructure
         {
             this.storageService = storageService;
             this.thumbnails = new Dictionary<string, Dictionary<string, byte[]>>();
-            this.assetCatalogPath = assetCatalogPath;
         }
 
         public void Initialize(string assetCatalogPath = null)
@@ -362,6 +361,26 @@ namespace JPPhotoManager.Infrastructure
             }
 
             return result;
+        }
+
+        public ImportNewAssetsConfiguration GetImportNewAssetsConfiguration()
+        {
+            ImportNewAssetsConfiguration result;
+
+            lock (this.AssetCatalog)
+            {
+                result = this.AssetCatalog.ImportNewAssetsConfiguration;
+            }
+
+            return result;
+        }
+
+        public void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration)
+        {
+            lock (this.AssetCatalog)
+            {
+                this.AssetCatalog.ImportNewAssetsConfiguration = importConfiguration;
+            }
         }
     }
 }
