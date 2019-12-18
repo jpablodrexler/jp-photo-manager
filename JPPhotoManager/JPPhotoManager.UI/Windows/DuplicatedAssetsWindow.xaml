@@ -29,11 +29,11 @@
         <ListBox Grid.Row="1" Grid.RowSpan="2" Grid.Column="0" Background="#FF3C3C3C" ItemsSource="{Binding DuplicatedAssetCollectionSets}" SelectedIndex="{Binding DuplicatedAssetCollectionSetsPosition}">
             <ListBox.ItemTemplate>
                 <ItemContainerTemplate>
-                    <Label Foreground="#FFFFFFFF" Content="{Binding Description}" />
+                    <Label Content="{Binding Description}" Foreground="#FFFFFFFF" />
                 </ItemContainerTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
-        <ListBox Grid.Row="1" Grid.Column="1" Background="#FF3C3C3C" ItemsSource="{Binding CurrentDuplicatedAssetCollection}" SelectedIndex="{Binding DuplicatedAssetPosition}">
+        <ListBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding CurrentDuplicatedAssetCollection}" SelectedIndex="{Binding DuplicatedAssetPosition}" Background="#FF3C3C3C">
             <ListBox.ItemContainerStyle>
                 <Style TargetType="ListBoxItem">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -42,18 +42,18 @@
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <DockPanel HorizontalAlignment="Stretch">
-                        <Label x:Name="deleteLabel" Foreground="#FFFFFFFF" DockPanel.Dock="Right" Padding="5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown">
+                        <Label x:Name="deleteLabel" DockPanel.Dock="Right" Padding="5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown" Foreground="#FFFFFFFF">
                             <TextBlock TextDecorations="Underline" Cursor="Hand">Delete</TextBlock>
                         </Label>
-                        <Label Foreground="#FFFFFFFF" Content="{Binding FullPath}" />
+                        <Label Content="{Binding FullPath}" Foreground="#FFFFFFFF" />
                     </DockPanel>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
         <StackPanel Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
             <Image HorizontalAlignment="Center" Source="{ Binding CurrentDuplicatedAsset.ImageData }" MaxWidth="200" MaxHeight="150"/>
-            <Label Foreground="#FFFFFFFF" Content="{ Binding CurrentDuplicatedAsset, Converter={StaticResource PixelSizeConverter}}" HorizontalAlignment="Center" />
-            <Label Foreground="#FFFFFFFF" Content="{ Binding CurrentDuplicatedAsset.FileSize, Converter={StaticResource FileSizeConverter}}" HorizontalAlignment="Center" />
+            <Label Content="{ Binding CurrentDuplicatedAsset, Converter={StaticResource PixelSizeConverter}}" HorizontalAlignment="Center" Foreground="#FFFFFFFF" />
+            <Label Content="{ Binding CurrentDuplicatedAsset.FileSize, Converter={StaticResource FileSizeConverter}}" HorizontalAlignment="Center" Foreground="#FFFFFFFF" />
         </StackPanel>
     </Grid>
 </Window>
