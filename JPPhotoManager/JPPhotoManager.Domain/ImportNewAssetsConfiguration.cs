@@ -1,15 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace JPPhotoManager.Domain
 {
-    public class ImportNewAssetsDirectoriesDefinition
-    {
-        public string SourceDirectory { get; set; }
-        public string DestinationDirectory { get; set; }
-    }
-
     public class ImportNewAssetsConfiguration
     {
         public ImportNewAssetsConfiguration()
@@ -18,5 +13,15 @@ namespace JPPhotoManager.Domain
         }
 
         public List<ImportNewAssetsDirectoriesDefinition> Imports { get; set; }
+
+        public void Validate()
+        {
+            Imports = Imports.Where(d => d.IsValid()).ToList();
+        }
+
+        public void Normalize()
+        {
+            Imports.ForEach(d => d.Normalize());
+        }
     }
 }

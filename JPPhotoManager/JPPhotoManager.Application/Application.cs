@@ -47,6 +47,19 @@ namespace JPPhotoManager.Application
             return this.assetRepository.GetAssets(directory);
         }
 
+        public ImportNewAssetsConfiguration GetImportNewAssetsConfiguration()
+        {
+            return this.assetRepository.GetImportNewAssetsConfiguration();
+        }
+
+        public void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration)
+        {
+            importConfiguration.Validate();
+            importConfiguration.Normalize();
+            this.assetRepository.SetImportNewAssetsConfiguration(importConfiguration);
+            this.assetRepository.SaveCatalog(null);
+        }
+
         public List<ImportNewAssetsResult> ImportNewImages()
         {
             return this.importNewAssetsService.Import();

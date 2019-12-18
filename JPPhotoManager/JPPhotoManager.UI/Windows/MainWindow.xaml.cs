@@ -278,10 +278,9 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                var result = this.ViewModel.Application.ImportNewImages();
-
-                // TODO: Provide a popup for configuring the import.
-                // TODO: Display the result in the popup.
+                ImportNewAssetsViewModel viewModel = new ImportNewAssetsViewModel(this.ViewModel.Application);
+                ImportNewAssetsWindow importNewAssetsWindow = new ImportNewAssetsWindow(viewModel);
+                importNewAssetsWindow.ShowDialog();
             }
             catch (Exception ex)
             {

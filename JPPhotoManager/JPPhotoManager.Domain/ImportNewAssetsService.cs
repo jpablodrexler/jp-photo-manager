@@ -46,19 +46,32 @@ namespace JPPhotoManager.Domain
                 DestinationDirectory = destinationDirectory
             };
 
-            string[] sourceFileNames = this.storageService.GetFileNames(sourceDirectory);
-            string[] destinationFileNames = this.storageService.GetFileNames(destinationDirectory);
-            string[] newFileNames = this.directoryComparer.GetNewFileNames(sourceFileNames, destinationFileNames);
-
-            foreach (string newImage in newFileNames)
+            if (!this.storageService.FolderExists(sourceDirectory))
             {
-                string sourcePath = Path.Combine(sourceDirectory, newImage);
-                string destinationPath = Path.Combine(destinationDirectory, newImage);
+                result.Message = $"Source directory '{sourceDirectory}' not found.";
+            }
+            else if (!this.storageService.FolderExists(destinationDirectory))
+            {
+                result.Message = $"Destination directory '{destinationDirectory}' not found.";
+            }
+            else
+            {
+                string[] sourceFileNames = this.storageService.GetFileNames(sourceDirectory);
+                string[] destinationFileNames = this.storageService.GetFileNames(destinationDirectory);
+                string[] newFileNames = this.directoryComparer.GetNewFileNames(sourceFileNames, destinationFileNames);
 
-                if (this.storageService.CopyImage(sourcePath, destinationPath))
+                foreach (string newImage in newFileNames)
                 {
-                    result.ImportedImages++;
+                    string sourcePath = Path.Combine(sourceDirectory, newImage);
+                    string destinationPath = Path.Combine(destinationDirectory, newImage);
+
+                    if (this.storageService.CopyImage(sourcePath, destinationPath))
+                    {
+                        result.ImportedImages++;
+                    }
                 }
+
+                result.Message = $"{result.ImportedImages} images imported from '{sourceDirectory}' to '{destinationDirectory}'.";
             }
 
             return result;

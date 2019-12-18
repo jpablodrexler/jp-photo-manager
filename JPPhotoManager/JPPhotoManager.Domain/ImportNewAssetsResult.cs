@@ -9,5 +9,6 @@ namespace JPPhotoManager.Domain
         public string SourceDirectory { get; set; }
         public string DestinationDirectory { get; set; }
         public int ImportedImages { get; set; }
+        public string Message { get; set; }
     }
 }
