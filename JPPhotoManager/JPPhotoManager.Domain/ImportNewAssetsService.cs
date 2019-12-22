@@ -71,7 +71,20 @@ namespace JPPhotoManager.Domain
                     }
                 }
 
-                result.Message = $"{result.ImportedImages} images imported from '{sourceDirectory}' to '{destinationDirectory}'.";
+                switch (result.ImportedImages)
+                {
+                    case 0:
+                        result.Message = $"No images imported from '{sourceDirectory}' to '{destinationDirectory}'.";
+                        break;
+
+                    case 1:
+                        result.Message = $"{result.ImportedImages} image imported from '{sourceDirectory}' to '{destinationDirectory}'.";
+                        break;
+
+                    default:
+                        result.Message = $"{result.ImportedImages} images imported from '{sourceDirectory}' to '{destinationDirectory}'.";
+                        break;
+                }
             }
 
             return result;
