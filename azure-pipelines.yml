@@ -32,7 +32,7 @@ steps:
   inputs:
     command: 'test'
     projects: '**/*Tests.csproj'
-    arguments: '--configuration $(buildConfiguration) /p:CollectCoverage=true /p:CoverletOutput=TestResults/ /p:CoverletOutputFormat=lcov'
+    arguments: '--configuration $(buildConfiguration)'
     nobuild: true
 
 - task: CopyFiles@2
