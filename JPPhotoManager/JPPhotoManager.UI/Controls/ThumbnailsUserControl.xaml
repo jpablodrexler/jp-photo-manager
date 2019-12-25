@@ -11,19 +11,26 @@
         <c:PixelSizeConverter x:Key="PixelSizeConverter" />
         <DataTemplate x:Key="ThumbnailDataTemplate">
             <ContentControl MouseDown="ContentControl_MouseDown" MouseDoubleClick="ContentControl_MouseDoubleClick" Margin="10">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Image HorizontalAlignment="Center" Source="{ Binding ImageData }" Width="200" Height="150"></Image>
-                    <StackPanel Orientation="Vertical" Margin="10" VerticalAlignment="Center">
-                        <Label Foreground="#FFFFFFFF" Content="{ Binding FileName }" VerticalContentAlignment="Center"/>
-                        <Label Foreground="#FFFFFFFF" Content="{ Binding Converter={StaticResource PixelSizeConverter}}" VerticalContentAlignment="Center"/>
-                        <Label Foreground="#FFFFFFFF" Content="{ Binding FileSize, Converter={StaticResource FileSizeConverter}}" VerticalContentAlignment="Center"/>
-                    </StackPanel>
-                </StackPanel>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Image Grid.Column="0" Grid.Row="0" Grid.RowSpan="3" HorizontalAlignment="Center" Source="{ Binding ImageData }" Width="200" Height="150"/>
+                    <Label Grid.Row="0" Grid.Column="1" Foreground="#FFFFFFFF" Content="{ Binding FileName }" VerticalContentAlignment="Center"/>
+                    <Label Grid.Row="1" Grid.Column="1" Foreground="#FFFFFFFF" Content="{ Binding Converter={StaticResource PixelSizeConverter}}" VerticalContentAlignment="Center"/>
+                    <Label Grid.Row="2" Grid.Column="1" Foreground="#FFFFFFFF" Content="{ Binding FileSize, Converter={StaticResource FileSizeConverter}}" VerticalContentAlignment="Center"/>
+                </Grid>
             </ContentControl>
         </DataTemplate>
     </UserControl.Resources>
     <Grid>
-        <ListBox Name="thumbnailsListView" ItemsSource="{Binding Files}" ItemTemplate="{DynamicResource ThumbnailDataTemplate}" Background="{x:Null}" SelectedIndex="{Binding ViewerPosition}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+        <ListBox Name="thumbnailsListView" ItemsSource="{Binding Files}" ItemTemplate="{DynamicResource ThumbnailDataTemplate}" Background="#FF3C3C3C" SelectedIndex="{Binding ViewerPosition}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch">
             <ListBox.ItemsPanel>
                 <ItemsPanelTemplate>
                     <VirtualizingStackPanel Orientation="Vertical"/>
