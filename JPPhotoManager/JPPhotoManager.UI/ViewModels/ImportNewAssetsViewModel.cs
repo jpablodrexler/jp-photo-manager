@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
+using System.Windows;
 
 namespace JPPhotoManager.UI.ViewModels
 {
@@ -45,6 +46,7 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 this.results = value;
                 this.NotifyPropertyChanged(nameof(Results));
+                this.NotifyPropertyChanged(nameof(ResultsVisibility));
             }
         }
 
@@ -63,6 +65,14 @@ namespace JPPhotoManager.UI.ViewModels
                 this.ImportsPosition = position;
 
                 this.NotifyPropertyChanged(nameof(Imports));
+            }
+        }
+
+        public Visibility ResultsVisibility
+        {
+            get
+            {
+                return this.Results != null && this.Results.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             }
         }
     }
