@@ -1,0 +1,26 @@
+﻿<UserControl x:Class="JPPhotoManager.UI.Controls.ViewerUserControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:JPPhotoManager"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800" Background="#FF3C3C3C">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="30"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="30"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="70"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <ContentControl Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" MouseDoubleClick="ContentControl_MouseDoubleClick">
+            <Image x:Name="image"/>
+        </ContentControl>
+        <Button x:Name="previousButton" Grid.Row="1" Grid.Column="0" Content="&lt;" FontSize="48" Click="previousButton_Click" Foreground="White" Background="{x:Null}" BorderBrush="{x:Null}" FontFamily="Calibri"/>
+        <Button x:Name="nextButton" Grid.Row="1" Grid.Column="2" Content="&gt;" FontSize="48" Click="nextButton_Click" Foreground="White" Background="{x:Null}" BorderBrush="{x:Null}" FontFamily="Calibri"/>
+    </Grid>
+</UserControl>

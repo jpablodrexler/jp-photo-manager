@@ -3,9 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29409.12
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JPPhotoManager", "JPPhotoManager\JPPhotoManager.csproj", "{C1D4AC0F-F87F-4867-BA9D-ECFCB4B54F46}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JPPhotoManager.Domain", "JPPhotoManager.Domain\JPPhotoManager.Domain.csproj", "{406F31A9-869A-4536-837B-EE64D983C75B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JPPhotoManager.Test", "JPPhotoManager.Test\JPPhotoManager.Test.csproj", "{A7A8E7B8-88B5-4861-A034-4E77D51E17B0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JPPhotoManager.Infrastructure", "JPPhotoManager.Infrastructure\JPPhotoManager.Infrastructure.csproj", "{CCC0A98C-E95E-4C6C-9C08-3B09A960FE01}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JPPhotoManager.Application", "JPPhotoManager.Application\JPPhotoManager.Application.csproj", "{17D0C413-1FB6-4FDD-B283-DD337697C4AB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JPPhotoManager.UI", "JPPhotoManager.UI\JPPhotoManager.UI.csproj", "{4E0E6143-21FC-4EDA-BF0C-FAB9A74C8381}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JPPhotoManager.Tests", "JPPhotoManager.Tests\JPPhotoManager.Tests.csproj", "{BBF3A5D4-6BDC-4ABD-84D6-F7ED6CBCAA2F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,14 +19,26 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C1D4AC0F-F87F-4867-BA9D-ECFCB4B54F46}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C1D4AC0F-F87F-4867-BA9D-ECFCB4B54F46}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C1D4AC0F-F87F-4867-BA9D-ECFCB4B54F46}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C1D4AC0F-F87F-4867-BA9D-ECFCB4B54F46}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A7A8E7B8-88B5-4861-A034-4E77D51E17B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A7A8E7B8-88B5-4861-A034-4E77D51E17B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A7A8E7B8-88B5-4861-A034-4E77D51E17B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A7A8E7B8-88B5-4861-A034-4E77D51E17B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{406F31A9-869A-4536-837B-EE64D983C75B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{406F31A9-869A-4536-837B-EE64D983C75B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{406F31A9-869A-4536-837B-EE64D983C75B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{406F31A9-869A-4536-837B-EE64D983C75B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCC0A98C-E95E-4C6C-9C08-3B09A960FE01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCC0A98C-E95E-4C6C-9C08-3B09A960FE01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCC0A98C-E95E-4C6C-9C08-3B09A960FE01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCC0A98C-E95E-4C6C-9C08-3B09A960FE01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17D0C413-1FB6-4FDD-B283-DD337697C4AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17D0C413-1FB6-4FDD-B283-DD337697C4AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17D0C413-1FB6-4FDD-B283-DD337697C4AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17D0C413-1FB6-4FDD-B283-DD337697C4AB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4E0E6143-21FC-4EDA-BF0C-FAB9A74C8381}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4E0E6143-21FC-4EDA-BF0C-FAB9A74C8381}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4E0E6143-21FC-4EDA-BF0C-FAB9A74C8381}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4E0E6143-21FC-4EDA-BF0C-FAB9A74C8381}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BBF3A5D4-6BDC-4ABD-84D6-F7ED6CBCAA2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBF3A5D4-6BDC-4ABD-84D6-F7ED6CBCAA2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBF3A5D4-6BDC-4ABD-84D6-F7ED6CBCAA2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBF3A5D4-6BDC-4ABD-84D6-F7ED6CBCAA2F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
