@@ -22,12 +22,13 @@ steps:
   inputs:
     restoreSolution: '$(solution)'
 
-- task: DotNetCoreCLI@2
+- task: VSBuild@1
   inputs:
-    command: 'build'
-    projects: '$(solution)'
-    configuration: $(buildConfiguration)
-    arguments: '/p:Version=$(app-version)'
+    solution: '$(solution)'
+    msbuildArgs: '/p:Version=$(app-version)'
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+    clean: true
 
 - task: CopyFiles@2
   inputs:
