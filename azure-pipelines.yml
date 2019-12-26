@@ -34,7 +34,7 @@ steps:
   inputs:
     command: 'test'
     projects: '**/*Tests.csproj'
-    arguments: '--configuration $(buildConfiguration) --nobuild'
+    arguments: '--configuration $(buildConfiguration) --no-build'
 
 - task: CopyFiles@2
   inputs:
