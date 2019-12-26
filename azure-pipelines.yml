@@ -26,14 +26,8 @@ steps:
   inputs:
     command: 'build'
     projects: '$(solution)'
+    configuration: $(buildConfiguration)
     arguments: '/p:Version=$(app-version)'
-
-- task: DotNetCoreCLI@2
-  inputs:
-    command: 'test'
-    projects: '**/*Tests.csproj'
-    arguments: '--configuration $(buildConfiguration)'
-    nobuild: true
 
 - task: CopyFiles@2
   inputs:
