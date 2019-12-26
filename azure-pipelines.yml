@@ -30,6 +30,13 @@ steps:
     configuration: '$(buildConfiguration)'
     clean: true
 
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'test'
+    projects: '**/*Tests.csproj'
+    arguments: '--configuration $(buildConfiguration)'
+    nobuild: true
+
 - task: CopyFiles@2
   inputs:
     Contents: '**'
