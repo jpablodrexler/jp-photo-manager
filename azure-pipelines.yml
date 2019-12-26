@@ -27,7 +27,7 @@ steps:
     solution: '$(solution)'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
-    msbuildArguments: '/p:Version=$(app-version)'
+    msbuildArguments: 'Version=$(app-version)'
 
 - task: DotNetCoreCLI@2
   inputs:
