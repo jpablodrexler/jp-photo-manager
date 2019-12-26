@@ -25,15 +25,16 @@ steps:
 - task: VSBuild@1
   inputs:
     solution: '$(solution)'
+    msbuildArgs: '/p:Version=$(app-version)'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+    clean: true
 
 - task: DotNetCoreCLI@2
   inputs:
     command: 'test'
     projects: '**/*Tests.csproj'
-    arguments: '--configuration $(buildConfiguration)'
-    nobuild: true
+    arguments: '--configuration $(buildConfiguration) --no-build'
 
 - task: CopyFiles@2
   inputs:
@@ -46,7 +47,7 @@ steps:
     rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager.UI/bin/Release/netcoreapp3.1'
     includeRootFolder: false
     archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(app-version).zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-v$(app-version).zip'
     replaceExistingArchive: true
 
 - task: PublishBuildArtifacts@1
@@ -63,7 +64,7 @@ steps:
     action: 'create'
     target: '$(Build.SourceVersion)'
     tagSource: 'manual'
-    tag: '$(app-version)'
-    title: '$(app-version)'
+    tag: 'v$(app-version)'
+    title: 'v$(app-version)'
     isDraft: false
-    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(app-version).zip'
+    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-v$(app-version).zip'

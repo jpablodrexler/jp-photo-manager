@@ -19,12 +19,12 @@ Soon will allow to:
 For the whole roadmap for the application, please take a look at the [Trello board](https://trello.com/b/7OlQJdBw/jp-photo-manager)
 
 ## Run the application
-Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoManager/JPPhotoManager/JPPhotoManager.csproj` project.
+Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoManager/JPPhotoManager/JPPhotoManager.UI.csproj` project.
 
 ## Installation instructions
 * Download the zip file with the compiled application files (`jp-photo-manager-{version}.zip`) for the latest release.
 * Unzip the content of the zip file to a new folder.
-* Run `JPPhotoManager.exe`.
+* Run `JPPhotoManager.UI.exe`.
 * The application saves the catalog files in the following folder: `C:\Users\{username}\AppData\Local\JPPhotoManager`.
 
 ## Technologies used
