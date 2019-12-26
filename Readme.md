@@ -24,7 +24,7 @@ Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoM
 ## Installation instructions
 * Download the zip file with the compiled application files (`jp-photo-manager-{version}.zip`) for the latest release.
 * Unzip the content of the zip file to a new folder.
-* Run `JPPhotoManager.exe`.
+* Run `JPPhotoManager.UI.exe`.
 * The application saves the catalog files in the following folder: `C:\Users\{username}\AppData\Local\JPPhotoManager`.
 
 ## Technologies used
