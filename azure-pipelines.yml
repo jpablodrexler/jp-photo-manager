@@ -22,12 +22,11 @@ steps:
   inputs:
     restoreSolution: '$(solution)'
 
-- task: MSBuild@1
+- task: DotNetCoreCLI@2
   inputs:
-    solution: '$(solution)'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
-    msbuildArguments: 'Version=$(app-version)'
+    command: 'build'
+    projects: '$(solution)'
+    arguments: '/p:Version=$(app-version)'
 
 - task: DotNetCoreCLI@2
   inputs:
