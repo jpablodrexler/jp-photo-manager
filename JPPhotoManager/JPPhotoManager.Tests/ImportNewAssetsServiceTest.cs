@@ -46,7 +46,9 @@ namespace JPPhotoManager.Tests
                 storageServiceMock.Object,
                 new DirectoryComparer());
 
-            var result = importNewAssetsService.Import();
+            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+            
+            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -56,6 +58,7 @@ namespace JPPhotoManager.Tests
             Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
             Assert.Equal(0, result[0].ImportedImages);
             Assert.Equal(@"No images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.", result[0].Message);
+            Assert.Empty(statusChanges);
         }
 
         [Fact]
@@ -108,7 +111,9 @@ namespace JPPhotoManager.Tests
                 storageServiceMock.Object,
                 new DirectoryComparer());
 
-            var result = importNewAssetsService.Import();
+            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+
+            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -120,6 +125,10 @@ namespace JPPhotoManager.Tests
             Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
             Assert.Equal(3, result[0].ImportedImages);
             Assert.Equal(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.", result[0].Message);
+            Assert.Equal(3, statusChanges.Count);
+            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'", statusChanges[0].NewStatus);
+            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'", statusChanges[1].NewStatus);
+            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'", statusChanges[2].NewStatus);
         }
 
         [Fact]
@@ -185,7 +194,9 @@ namespace JPPhotoManager.Tests
                 storageServiceMock.Object,
                 new DirectoryComparer());
 
-            var result = importNewAssetsService.Import();
+            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+
+            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -197,6 +208,10 @@ namespace JPPhotoManager.Tests
             Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
             Assert.Equal(3, result[0].ImportedImages);
             Assert.Equal(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.", result[0].Message);
+            Assert.Equal(3, statusChanges.Count);
+            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'", statusChanges[0].NewStatus);
+            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'", statusChanges[1].NewStatus);
+            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'", statusChanges[2].NewStatus);
         }
 
         [Fact]
@@ -260,7 +275,9 @@ namespace JPPhotoManager.Tests
                 storageServiceMock.Object,
                 new DirectoryComparer());
 
-            var result = importNewAssetsService.Import();
+            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+
+            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -270,6 +287,8 @@ namespace JPPhotoManager.Tests
             Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
             Assert.Equal(1, result[0].ImportedImages);
             Assert.Equal(@"1 image imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.", result[0].Message);
+            Assert.Single(statusChanges);
+            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'", statusChanges[0].NewStatus);
         }
 
         [Fact]
@@ -368,7 +387,9 @@ namespace JPPhotoManager.Tests
                 storageServiceMock.Object,
                 new DirectoryComparer());
 
-            var result = importNewAssetsService.Import();
+            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+
+            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(firstSourceDirectory), Times.Once);
@@ -387,6 +408,12 @@ namespace JPPhotoManager.Tests
             Assert.Equal(@"C:\Images\MySecondGame", result[1].DestinationDirectory);
             Assert.Equal(2, result[1].ImportedImages);
             Assert.Equal(@"2 images imported from 'C:\MySecondGame\Screenshots' to 'C:\Images\MySecondGame'.", result[1].Message);
+            Assert.Equal(5, statusChanges.Count);
+            Assert.Equal(@$"Image 'C:\MyFirstGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyFirstGame\NewImage1.jpg'", statusChanges[0].NewStatus);
+            Assert.Equal(@$"Image 'C:\MyFirstGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyFirstGame\NewImage2.jpg'", statusChanges[1].NewStatus);
+            Assert.Equal(@$"Image 'C:\MyFirstGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyFirstGame\NewImage3.jpg'", statusChanges[2].NewStatus);
+            Assert.Equal(@$"Image 'C:\MySecondGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MySecondGame\NewImage1.jpg'", statusChanges[3].NewStatus);
+            Assert.Equal(@$"Image 'C:\MySecondGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MySecondGame\NewImage2.jpg'", statusChanges[4].NewStatus);
         }
 
         [Fact]
@@ -528,7 +555,9 @@ namespace JPPhotoManager.Tests
                 storageServiceMock.Object,
                 new DirectoryComparer());
 
-            var result = importNewAssetsService.Import();
+            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+
+            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Never);
@@ -538,6 +567,7 @@ namespace JPPhotoManager.Tests
             Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
             Assert.Equal(0, result[0].ImportedImages);
             Assert.Equal(@"Source directory 'C:\MyGame\Screenshots' not found.", result[0].Message);
+            Assert.Empty(statusChanges);
         }
 
         [Fact]
@@ -577,7 +607,9 @@ namespace JPPhotoManager.Tests
                 storageServiceMock.Object,
                 new DirectoryComparer());
 
-            var result = importNewAssetsService.Import();
+            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+
+            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Never);
@@ -587,6 +619,7 @@ namespace JPPhotoManager.Tests
             Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
             Assert.Equal(0, result[0].ImportedImages);
             Assert.Equal(@"Destination directory 'C:\Images\MyGame' not found.", result[0].Message);
+            Assert.Empty(statusChanges);
         }
     }
 }
