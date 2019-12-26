@@ -22,4 +22,11 @@
         Stretch,
         Tile
     }
+
+    public enum ImportNewAssetsStepEnum
+    {
+        Configure,
+        Import,
+        ViewResults
+    }
 }

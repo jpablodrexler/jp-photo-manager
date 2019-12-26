@@ -25,20 +25,20 @@ namespace JPPhotoManager.Domain
             this.directoryComparer = directoryComparer;
         }
 
-        public List<ImportNewAssetsResult> Import()
+        public List<ImportNewAssetsResult> Import(StatusChangeCallback callback)
         {
             List<ImportNewAssetsResult> result = new List<ImportNewAssetsResult>();
             var configuration = this.assetRepository.GetImportNewAssetsConfiguration();
 
             foreach (var import in configuration.Imports)
             {
-                result.Add(this.Import(import.SourceDirectory, import.DestinationDirectory));
+                result.Add(this.Import(import.SourceDirectory, import.DestinationDirectory, callback));
             }
 
             return result;
         }
 
-        private ImportNewAssetsResult Import(string sourceDirectory, string destinationDirectory)
+        private ImportNewAssetsResult Import(string sourceDirectory, string destinationDirectory, StatusChangeCallback callback)
         {
             ImportNewAssetsResult result = new ImportNewAssetsResult()
             {
@@ -68,6 +68,7 @@ namespace JPPhotoManager.Domain
                     if (this.storageService.CopyImage(sourcePath, destinationPath))
                     {
                         result.ImportedImages++;
+                        callback(new StatusChangeCallbackEventArgs { NewStatus = $"Image '{sourcePath}' imported to '{destinationPath}'" });
                     }
                 }
 

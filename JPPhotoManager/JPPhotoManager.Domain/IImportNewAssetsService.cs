@@ -4,6 +4,6 @@ namespace JPPhotoManager.Domain
 {
     public interface IImportNewAssetsService
     {
-        List<ImportNewAssetsResult> Import();
+        List<ImportNewAssetsResult> Import(StatusChangeCallback callback);
     }
 }

@@ -6,7 +6,8 @@
         xmlns:c="clr-namespace:JPPhotoManager.UI.Converters"
         mc:Ignorable="d"
         Title="Import New Assets" Height="450" Width="800"
-        Background="#FF3C3C3C">
+        Background="#FF3C3C3C"
+        WindowState="Maximized">
     <Window.Resources>
         <c:VisibilityConverter x:Key="VisibilityConverter" />
     </Window.Resources>
@@ -20,43 +21,52 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="100"/>
             <ColumnDefinition Width="100"/>
+            <ColumnDefinition Width="100"/>
         </Grid.ColumnDefinitions>
-        <DataGrid Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" ItemsSource="{Binding Imports}" AutoGenerateColumns="False" CanUserReorderColumns="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10" Background="#FF3C3C3C">
-            <DataGrid.RowStyle>
-                <Style TargetType="DataGridRow">
-                    <Setter Property="Background" Value="#FF3C3C3C"/>
-                    <Setter Property="Foreground" Value="#FFFFFFFF"/>
-                </Style>
-            </DataGrid.RowStyle>
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Source Directory" Binding="{Binding SourceDirectory}" Width="300"/>
-                <DataGridTextColumn Header="Destination Directory" Binding="{Binding DestinationDirectory}" Width="300"/>
-                <DataGridTemplateColumn Header="Action">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <Label x:Name="deleteLabel" Grid.Column="2" Padding="5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown" Foreground="#FFFFFFFF"
+        <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Visibility="{Binding InputVisible}">
+            <Label Content="Import definitions" Margin="10 0 0 0" Foreground="#FFFFFFFF" Background="#FF3C3C3C"/>
+            <DataGrid ItemsSource="{Binding Imports}" IsEnabled="{Binding CanConfigure}" AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="True" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Background" Value="#FF3C3C3C"/>
+                        <Setter Property="Foreground" Value="#FFFFFFFF"/>
+                    </Style>
+                </DataGrid.RowStyle>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Source Directory" Binding="{Binding SourceDirectory}" Width="300"/>
+                    <DataGridTextColumn Header="Destination Directory" Binding="{Binding DestinationDirectory}" Width="300"/>
+                    <DataGridTemplateColumn Header="Action">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Label x:Name="deleteLabel" Grid.Column="2" Padding="5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown" Foreground="#FFFFFFFF"
                                    Visibility="{Binding Converter={StaticResource VisibilityConverter}}">
-                                <TextBlock TextDecorations="Underline" Cursor="Hand">Delete</TextBlock>
-                            </Label>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
-        <Button Grid.Row="1" Grid.Column="1" Content="Save" Click="SaveButton_Click" Margin="10"/>
-        <Button Grid.Row="1" Grid.Column="2" Content="Import" Click="ImportButton_Click" Margin="10"/>
-        <DataGrid Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" ItemsSource="{Binding Results}" Visibility="{Binding ResultsVisibility}" AutoGenerateColumns="False" CanUserReorderColumns="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10" Background="#FF3C3C3C">
-            <DataGrid.RowStyle>
-                <Style TargetType="DataGridRow">
-                    <Setter Property="Background" Value="#FF3C3C3C"/>
-                    <Setter Property="Foreground" Value="#FFFFFFFF"/>
-                </Style>
-            </DataGrid.RowStyle>
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="Source Directory" Binding="{Binding SourceDirectory}" Width="250"/>
-                <DataGridTextColumn Header="Destination Directory" Binding="{Binding DestinationDirectory}" Width="250"/>
-                <DataGridTextColumn Header="Imported Images" Binding="{Binding Message}"/>
-            </DataGrid.Columns>
-        </DataGrid>
+                                    <TextBlock TextDecorations="Underline" Cursor="Hand">Delete</TextBlock>
+                                </Label>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </StackPanel>
+        <Button Grid.Row="1" Grid.Column="1" Visibility="{Binding InputVisible}" IsEnabled="{Binding CanConfigure}" Content="Save" Click="SaveButton_Click" Margin="10"/>
+        <Button Grid.Row="1" Grid.Column="2" Visibility="{Binding InputVisible}" IsEnabled="{Binding CanConfigure}" Content="Import" Click="ImportButton_Click" Margin="10"/>
+        <Button Grid.Row="1" Grid.Column="3" Visibility="{Binding InputVisible}" IsEnabled="{Binding CanViewResults}" Content="View Results" Click="ViewResultsButton_Click" Margin="10"/>
+        <ListBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" ItemsSource="{Binding StatusMessages}" Visibility="{Binding InputVisible}" Margin="10" Foreground="#FFFFFFFF" Background="#FF3C3C3C"/>
+        <StackPanel Grid.Row="0" Grid.Column="0" Grid.RowSpan="3" Grid.ColumnSpan="4" Visibility="{Binding ResultsVisible}">
+            <Label Content="Results" Margin="10 0 0 0" Foreground="#FFFFFFFF" Background="#FF3C3C3C"/>
+            <DataGrid ItemsSource="{Binding Results}" AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C">
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Background" Value="#FF3C3C3C"/>
+                        <Setter Property="Foreground" Value="#FFFFFFFF"/>
+                    </Style>
+                </DataGrid.RowStyle>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Source Directory" Binding="{Binding SourceDirectory}" Width="250"/>
+                    <DataGridTextColumn Header="Destination Directory" Binding="{Binding DestinationDirectory}" Width="250"/>
+                    <DataGridTextColumn Header="Imported Images" Binding="{Binding Message}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </StackPanel>
     </Grid>
 </Window>

@@ -3,7 +3,13 @@ using System.Collections.Generic;
 
 namespace JPPhotoManager.Domain
 {
+    public delegate void StatusChangeCallback(StatusChangeCallbackEventArgs e);
     public delegate void CatalogChangeCallback(CatalogChangeCallbackEventArgs e);
+
+    public class StatusChangeCallbackEventArgs
+    {
+        public string NewStatus { get; set; }
+    }
 
     public class CatalogChangeCallbackEventArgs
     {

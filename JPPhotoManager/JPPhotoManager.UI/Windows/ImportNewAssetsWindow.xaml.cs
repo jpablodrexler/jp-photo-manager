@@ -1,10 +1,12 @@
-﻿using JPPhotoManager.Domain;
+﻿using JPPhotoManager.Application;
+using JPPhotoManager.Domain;
 using JPPhotoManager.UI.ViewModels;
 using log4net;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -52,73 +54,92 @@ namespace JPPhotoManager.UI.Windows
 
         private void DeleteLabel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            this.Delete(((TextBlock)e.Source).DataContext);
+            try
+            {
+                this.Delete(((TextBlock)e.Source).DataContext);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            this.Save();
+            try
+            {
+                this.Cursor = Cursors.Wait;
+                this.Save(this.ViewModel.Application, this.ViewModel.Imports);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+            finally
+            {
+                this.Cursor = Cursors.Arrow;
+            }
         }
 
-        private void ImportButton_Click(object sender, RoutedEventArgs e)
+        private async void ImportButton_Click(object sender, RoutedEventArgs e)
         {
-            this.Import();
+            try
+            {
+                this.Cursor = Cursors.Wait;
+                this.ViewModel.AdvanceStep();
+                this.ViewModel.Results = await this.Import(this.ViewModel.Application, this.ViewModel.Imports).ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+            finally
+            {
+                this.Cursor = Cursors.Arrow;
+            }
+        }
+
+        private void ViewResultsButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                this.Cursor = Cursors.Wait;
+                this.ViewModel.AdvanceStep();
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+            finally
+            {
+                this.Cursor = Cursors.Arrow;
+            }
         }
 
         private void Delete(object selected)
         {
-            try
+            // Evaluates if it is an existing item or the NewItemPlaceholder.
+            if (selected is ImportNewAssetsDirectoriesDefinition definition)
             {
-                // Evaluates if it is an existing item or the NewItemPlaceholder.
-                if (selected is ImportNewAssetsDirectoriesDefinition definition)
-                {
-                    this.ViewModel.RemoveDefinition(definition);
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
+                this.ViewModel.RemoveDefinition(definition);
             }
         }
 
-        private void Save()
+        private void Save(IApplication assetApp, ObservableCollection<ImportNewAssetsDirectoriesDefinition> imports)
         {
-            try
-            {
-                this.Cursor = Cursors.Wait;
-                ImportNewAssetsConfiguration configuration = new ImportNewAssetsConfiguration();
-                configuration.Imports = new List<ImportNewAssetsDirectoriesDefinition>(this.ViewModel.Imports);
-                this.ViewModel.Application.SetImportNewAssetsConfiguration(configuration);
-                this.Initialize();
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
-            finally
-            {
-                this.Cursor = Cursors.Arrow;
-            }
+            ImportNewAssetsConfiguration configuration = new ImportNewAssetsConfiguration();
+            configuration.Imports = new List<ImportNewAssetsDirectoriesDefinition>(imports);
+            assetApp.SetImportNewAssetsConfiguration(configuration);
         }
 
-        private void Import()
+        private Task<ObservableCollection<ImportNewAssetsResult>> Import(IApplication assetApp, ObservableCollection<ImportNewAssetsDirectoriesDefinition> imports)
         {
-            try
+            return Task.Run(() =>
             {
-                // TODO: Clear the results grid, fire the import process in an async way and display the results when completed.
-                this.Cursor = Cursors.Wait;
-                this.Save();
-                var results = this.ViewModel.Application.ImportNewImages();
-                this.ViewModel.Results = new ObservableCollection<ImportNewAssetsResult>(results);
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
-            finally
-            {
-                this.Cursor = Cursors.Arrow;
-            }
+                this.Save(assetApp, imports);
+                var results = assetApp.ImportNewImages(e => Dispatcher.Invoke(() => ViewModel.NotifyImageImported(e)));
+                return new ObservableCollection<ImportNewAssetsResult>(results);
+            });
         }
     }
 }

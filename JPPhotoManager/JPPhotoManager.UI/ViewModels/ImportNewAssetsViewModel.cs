@@ -11,12 +11,13 @@ namespace JPPhotoManager.UI.ViewModels
     public class ImportNewAssetsViewModel : BaseViewModel<IApplication>
     {
         private ObservableCollection<ImportNewAssetsDirectoriesDefinition> imports;
-        private int _importsPosition;
         private ObservableCollection<ImportNewAssetsResult> results;
+        private ObservableCollection<string> statusMessages;
+        private ImportNewAssetsStepEnum step = ImportNewAssetsStepEnum.Configure;
 
         public ImportNewAssetsViewModel(IApplication assetApp) : base(assetApp)
         {
-
+            this.statusMessages = new ObservableCollection<string>();
         }
 
         public ObservableCollection<ImportNewAssetsDirectoriesDefinition> Imports
@@ -29,16 +30,6 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
-        public int ImportsPosition
-        {
-            get { return this._importsPosition; }
-            set
-            {
-                this._importsPosition = value;
-                this.NotifyPropertyChanged(nameof(ImportsPosition));
-            }
-        }
-
         public ObservableCollection<ImportNewAssetsResult> Results
         {
             get { return this.results; }
@@ -46,7 +37,56 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 this.results = value;
                 this.NotifyPropertyChanged(nameof(Results));
-                this.NotifyPropertyChanged(nameof(ResultsVisibility));
+                this.NotifyPropertyChanged(nameof(CanViewResults));
+            }
+        }
+
+        public ObservableCollection<string> StatusMessages
+        {
+            get { return this.statusMessages; }
+        }
+
+        public ImportNewAssetsStepEnum Step
+        {
+            get { return this.step; }
+            private set
+            {
+                this.step = value;
+                this.NotifyPropertyChanged(nameof(Step), nameof(InputVisible), nameof(ResultsVisible), nameof(CanConfigure));
+            }
+        }
+
+        public Visibility InputVisible
+        {
+            get { return this.Step == ImportNewAssetsStepEnum.Configure || this.Step == ImportNewAssetsStepEnum.Import ? Visibility.Visible : Visibility.Hidden; }
+        }
+
+        public Visibility ResultsVisible
+        {
+            get { return this.Step == ImportNewAssetsStepEnum.ViewResults ? Visibility.Visible : Visibility.Hidden; }
+        }
+
+        public bool CanConfigure
+        {
+            get { return this.Step == ImportNewAssetsStepEnum.Configure; }
+        }
+
+        public bool CanViewResults
+        {
+            get { return this.Step == ImportNewAssetsStepEnum.Import && this.Results != null && this.Results.Count > 0; }
+        }
+
+        public void AdvanceStep()
+        {
+            switch (this.Step)
+            {
+                case ImportNewAssetsStepEnum.Configure:
+                    this.Step = ImportNewAssetsStepEnum.Import;
+                    break;
+
+                case ImportNewAssetsStepEnum.Import:
+                    this.Step = ImportNewAssetsStepEnum.ViewResults;
+                    break;
             }
         }
 
@@ -54,26 +94,14 @@ namespace JPPhotoManager.UI.ViewModels
         {
             if (this.Imports != null)
             {
-                int position = this.ImportsPosition;
                 this.Imports.Remove(definition);
-
-                if (position == this.Imports.Count)
-                {
-                    position--;
-                }
-
-                this.ImportsPosition = position;
-
                 this.NotifyPropertyChanged(nameof(Imports));
             }
         }
 
-        public Visibility ResultsVisibility
+        public void NotifyImageImported(StatusChangeCallbackEventArgs e)
         {
-            get
-            {
-                return this.Results != null && this.Results.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            }
+            this.StatusMessages.Add(e.NewStatus);
         }
     }
 }

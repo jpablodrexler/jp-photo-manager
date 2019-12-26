@@ -60,9 +60,9 @@ namespace JPPhotoManager.Application
             this.assetRepository.SaveCatalog(null);
         }
 
-        public List<ImportNewAssetsResult> ImportNewImages()
+        public List<ImportNewAssetsResult> ImportNewImages(StatusChangeCallback callback)
         {
-            return this.importNewAssetsService.Import();
+            return this.importNewAssetsService.Import(callback);
         }
 
         public void CatalogImages(CatalogChangeCallback callback)
