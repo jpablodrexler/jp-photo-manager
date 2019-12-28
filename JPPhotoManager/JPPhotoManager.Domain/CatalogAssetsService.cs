@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Domain
@@ -32,34 +33,46 @@ namespace JPPhotoManager.Domain
             this.directoryComparer = directoryComparer;
         }
 
-        public void CatalogImages(CatalogChangeCallback callback)
+        public void CatalogImages(CatalogChangeCallback callback, CancellationToken token)
         {
             try
             {
                 string myPicturesDirectoryPath = this.userConfigurationService.GetPicturesDirectory();
-                this.CatalogImages(myPicturesDirectoryPath, callback);
+                this.CatalogImages(myPicturesDirectoryPath, callback, token);
 
                 Folder[] folders = this.assetRepository.GetFolders();
 
                 foreach (var f in folders)
                 {
+                    if (token.IsCancellationRequested)
+                    {
+                        token.ThrowIfCancellationRequested();
+                    }
+
                     string parentDirectory = this.storageService.GetParentDirectory(f.Path);
 
                     if (f.Path != myPicturesDirectoryPath && parentDirectory != myPicturesDirectoryPath)
                     {
-                        this.CatalogImages(f.Path, callback);
+                        this.CatalogImages(f.Path, callback, token);
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                this.assetRepository.SaveCatalog(null); // TODO: Should be able to pass the folder for the thumbnails to be saved as well.
+                throw; // TODO: Improve this to catch only specific exceptions.
             }
             catch (Exception ex)
             {
                 log.Error(ex);
             }
-
-            callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
+            finally
+            {
+                callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
+            }
         }
 
-        private void CatalogImages(string directory, CatalogChangeCallback callback)
+        private void CatalogImages(string directory, CatalogChangeCallback callback, CancellationToken token)
         {
             try
             {
@@ -93,6 +106,11 @@ namespace JPPhotoManager.Domain
 
                     foreach (var fileName in newFileNames)
                     {
+                        if (token.IsCancellationRequested)
+                        {
+                            token.ThrowIfCancellationRequested();
+                        }
+
                         Asset newAsset = new Asset()
                         {
                             FileName = fileName,
@@ -125,6 +143,11 @@ namespace JPPhotoManager.Domain
 
                     foreach (var fileName in deletedFileNames)
                     {
+                        if (token.IsCancellationRequested)
+                        {
+                            token.ThrowIfCancellationRequested();
+                        }
+
                         Asset deletedAsset = new Asset()
                         {
                             FileName = fileName,
@@ -163,7 +186,12 @@ namespace JPPhotoManager.Domain
 
                     foreach (var subdir in subdirectories)
                     {
-                        this.CatalogImages(subdir.FullName, callback);
+                        if (token.IsCancellationRequested)
+                        {
+                            token.ThrowIfCancellationRequested();
+                        }
+
+                        this.CatalogImages(subdir.FullName, callback, token);
                     }
                 }
                 else
@@ -171,6 +199,10 @@ namespace JPPhotoManager.Domain
                     // TODO: Should validate that if the folder doesn't exist anymore, the corresponding entry in the catalog and the thumbnails file are both deleted.
                     // This should be tested in a new test method, in which the non existent folder is explicitly added to the catalog.
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                throw; // TODO: Improve this to catch only specific exceptions.
             }
             catch (Exception ex)
             {

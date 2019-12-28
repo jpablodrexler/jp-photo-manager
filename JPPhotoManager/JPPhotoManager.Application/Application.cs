@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Application
@@ -65,9 +66,9 @@ namespace JPPhotoManager.Application
             return this.importNewAssetsService.Import(callback);
         }
 
-        public void CatalogImages(CatalogChangeCallback callback)
+        public void CatalogImages(CatalogChangeCallback callback, CancellationToken token)
         {
-            this.catalogAssetsService.CatalogImages(callback);
+            this.catalogAssetsService.CatalogImages(callback, token);
         }
 
         public void SetAsWallpaper(Asset asset, WallpaperStyle style)
