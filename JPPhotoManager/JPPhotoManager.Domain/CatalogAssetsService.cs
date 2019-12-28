@@ -61,6 +61,10 @@ namespace JPPhotoManager.Domain
             }
             catch (OperationCanceledException)
             {
+                // If the catalog background process is cancelled,
+                // there is a risk that it happens while saving the catalog files.
+                // This could result in the files being damaged.
+                // Therefore the application saves the files before the task is completly shut down.
                 Folder currentFolder = this.assetRepository.GetFolderByPath(currentFolderPath);
                 this.assetRepository.SaveCatalog(currentFolder);
                 throw;
