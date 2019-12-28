@@ -76,7 +76,7 @@ namespace JPPhotoManager.UI.Windows
                             }
                         },
                         token);
-                    await Task.Delay(1000 * 60 * minutes).ConfigureAwait(false);
+                    await Task.Delay(1000 * 60 * minutes, token).ConfigureAwait(false);
                 }
             }, token);
         }
