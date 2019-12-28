@@ -19,6 +19,8 @@ namespace JPPhotoManager.Domain
 
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
+        private string currentFolderPath;
+
         public CatalogAssetsService(
             IAssetRepository assetRepository,
             IAssetHashCalculatorService assetHashCalculatorService,
@@ -59,7 +61,8 @@ namespace JPPhotoManager.Domain
             }
             catch (OperationCanceledException)
             {
-                this.assetRepository.SaveCatalog(null); // TODO: Should be able to pass the folder for the thumbnails to be saved as well.
+                Folder currentFolder = this.assetRepository.GetFolderByPath(currentFolderPath);
+                this.assetRepository.SaveCatalog(currentFolder);
                 throw; // TODO: Improve this to catch only specific exceptions.
             }
             catch (Exception ex)
@@ -76,6 +79,8 @@ namespace JPPhotoManager.Domain
         {
             try
             {
+                this.currentFolderPath = directory;
+
                 if (storageService.FolderExists(directory))
                 {
                     if (!this.assetRepository.FolderExists(directory))
