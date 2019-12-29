@@ -295,7 +295,7 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        private void ImportNewImages_Click(object sender, RoutedEventArgs e)
+        private void ImportNewAssets_Click(object sender, RoutedEventArgs e)
         {
             try
             {

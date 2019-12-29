@@ -23,9 +23,9 @@
             <ColumnDefinition Width="100"/>
             <ColumnDefinition Width="100"/>
         </Grid.ColumnDefinitions>
-        <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Visibility="{Binding InputVisible}">
-            <Label Content="Import definitions" Margin="10 0 0 0" Foreground="#FFFFFFFF" Background="#FF3C3C3C"/>
-            <DataGrid ItemsSource="{Binding Imports}" IsEnabled="{Binding CanConfigure}" AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="True" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C">
+        <DockPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="4" Visibility="{Binding InputVisible}">
+            <Label Content="Import definitions" Margin="10 0 0 0" Foreground="#FFFFFFFF" Background="#FF3C3C3C" DockPanel.Dock="Top"/>
+            <DataGrid ItemsSource="{Binding Imports}" IsEnabled="{Binding CanConfigure}" AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="True" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow">
                         <Setter Property="Background" Value="#FF3C3C3C"/>
@@ -35,6 +35,7 @@
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Source Directory" Binding="{Binding SourceDirectory}" Width="300"/>
                     <DataGridTextColumn Header="Destination Directory" Binding="{Binding DestinationDirectory}" Width="300"/>
+                    <DataGridCheckBoxColumn Header="Include Sub Folders" Binding="{Binding IncludeSubFolders}" Width="150"/>
                     <DataGridTemplateColumn Header="Action">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
@@ -47,14 +48,14 @@
                     </DataGridTemplateColumn>
                 </DataGrid.Columns>
             </DataGrid>
-        </StackPanel>
+        </DockPanel>
         <Button Grid.Row="1" Grid.Column="1" Visibility="{Binding InputVisible}" IsEnabled="{Binding CanConfigure}" Content="Save" Click="SaveButton_Click" Margin="10"/>
         <Button Grid.Row="1" Grid.Column="2" Visibility="{Binding InputVisible}" IsEnabled="{Binding CanConfigure}" Content="Import" Click="ImportButton_Click" Margin="10"/>
         <Button Grid.Row="1" Grid.Column="3" Visibility="{Binding InputVisible}" IsEnabled="{Binding CanViewResults}" Content="View Results" Click="ViewResultsButton_Click" Margin="10"/>
         <ListBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" ItemsSource="{Binding StatusMessages}" Visibility="{Binding InputVisible}" Margin="10" Foreground="#FFFFFFFF" Background="#FF3C3C3C"/>
-        <StackPanel Grid.Row="0" Grid.Column="0" Grid.RowSpan="3" Grid.ColumnSpan="4" Visibility="{Binding ResultsVisible}">
-            <Label Content="Results" Margin="10 0 0 0" Foreground="#FFFFFFFF" Background="#FF3C3C3C"/>
-            <DataGrid ItemsSource="{Binding Results}" AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C">
+        <DockPanel Grid.Row="0" Grid.Column="0" Grid.RowSpan="3" Grid.ColumnSpan="4" Visibility="{Binding ResultsVisible}">
+            <Label Content="Results" Margin="10 0 0 0" Foreground="#FFFFFFFF" Background="#FF3C3C3C" DockPanel.Dock="Top"/>
+            <DataGrid ItemsSource="{Binding Results}" AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
                 <DataGrid.RowStyle>
                     <Style TargetType="DataGridRow">
                         <Setter Property="Background" Value="#FF3C3C3C"/>
@@ -67,6 +68,6 @@
                     <DataGridTextColumn Header="Imported Images" Binding="{Binding Message}"/>
                 </DataGrid.Columns>
             </DataGrid>
-        </StackPanel>
+        </DockPanel>
     </Grid>
 </Window>
