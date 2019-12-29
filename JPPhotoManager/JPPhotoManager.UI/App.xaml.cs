@@ -24,8 +24,7 @@ namespace JPPhotoManager.UI
     public partial class App : System.Windows.Application
     {
         private readonly ServiceProvider serviceProvider;
-
-        // TODO: Check the assembly version.
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         // TODO: Add a global exception handler.
         
         public App()
@@ -40,8 +39,17 @@ namespace JPPhotoManager.UI
 
         private void App_OnStartup(object sender, StartupEventArgs e)
         {
-            var mainWindow = this.serviceProvider.GetService<MainWindow>();
-            mainWindow.Show();
+            try
+            {
+                var mainWindow = this.serviceProvider.GetService<MainWindow>();
+                mainWindow.Show();
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+                MessageBox.Show("The application failed to initialize.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
+            }
         }
 
         private void ConfigureServices(IServiceCollection services)
