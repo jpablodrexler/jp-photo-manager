@@ -1,9 +1,7 @@
 ﻿using log4net;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Text;
 
 namespace JPPhotoManager.Domain
 {
@@ -32,13 +30,13 @@ namespace JPPhotoManager.Domain
 
             foreach (var import in configuration.Imports)
             {
-                result.Add(this.Import(import.SourceDirectory, import.DestinationDirectory, callback));
+                this.Import(import.SourceDirectory, import.DestinationDirectory, import.IncludeSubFolders, callback, result);
             }
 
             return result;
         }
 
-        private ImportNewAssetsResult Import(string sourceDirectory, string destinationDirectory, StatusChangeCallback callback)
+        private void Import(string sourceDirectory, string destinationDirectory, bool includeSubFolders, StatusChangeCallback callback, List<ImportNewAssetsResult> resultList)
         {
             ImportNewAssetsResult result = new ImportNewAssetsResult()
             {
@@ -49,13 +47,15 @@ namespace JPPhotoManager.Domain
             if (!this.storageService.FolderExists(sourceDirectory))
             {
                 result.Message = $"Source directory '{sourceDirectory}' not found.";
-            }
-            else if (!this.storageService.FolderExists(destinationDirectory))
-            {
-                result.Message = $"Destination directory '{destinationDirectory}' not found.";
+                resultList.Add(result);
             }
             else
             {
+                if (!this.storageService.FolderExists(destinationDirectory))
+                {
+                    this.storageService.CreateDirectory(destinationDirectory);
+                }
+
                 string[] sourceFileNames = this.storageService.GetFileNames(sourceDirectory);
                 string[] destinationFileNames = this.storageService.GetFileNames(destinationDirectory);
                 string[] newFileNames = this.directoryComparer.GetNewFileNames(sourceFileNames, destinationFileNames);
@@ -86,9 +86,19 @@ namespace JPPhotoManager.Domain
                         result.Message = $"{result.ImportedImages} images imported from '{sourceDirectory}' to '{destinationDirectory}'.";
                         break;
                 }
-            }
 
-            return result;
+                resultList.Add(result);
+
+                if (includeSubFolders)
+                {
+                    var subdirectories = new DirectoryInfo(sourceDirectory).EnumerateDirectories();
+
+                    foreach (var subdir in subdirectories)
+                    {
+                        this.Import(subdir.FullName, Path.Combine(destinationDirectory, subdir.Name), includeSubFolders, callback, resultList);
+                    }
+                }
+            }
         }
     }
 }

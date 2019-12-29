@@ -10,6 +10,7 @@ namespace JPPhotoManager.Domain
 
         public string SourceDirectory { get; set; }
         public string DestinationDirectory { get; set; }
+        public bool IncludeSubFolders { get; set; }
 
         internal bool IsValid()
         {

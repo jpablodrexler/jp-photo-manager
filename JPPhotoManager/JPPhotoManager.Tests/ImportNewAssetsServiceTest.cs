@@ -633,13 +633,14 @@ namespace JPPhotoManager.Tests
             var result = importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
-            storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Never);
+            storageServiceMock.Verify(s => s.CreateDirectory(destinationDirectory), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
             Assert.Single(result);
             Assert.Equal(@"C:\MyGame\Screenshots", result[0].SourceDirectory);
             Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
             Assert.Equal(0, result[0].ImportedImages);
-            Assert.Equal(@"Destination directory 'C:\Images\MyGame' not found.", result[0].Message);
+            Assert.Equal(@"No images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.", result[0].Message);
             Assert.Empty(statusChanges);
         }
     }
