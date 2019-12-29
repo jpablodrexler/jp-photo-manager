@@ -432,17 +432,24 @@ namespace JPPhotoManager.Tests
                     {
                         SourceDirectory = @"C:\MySecondGame\Screenshots",
                         DestinationDirectory = @"C:\Images\MySecondGame"
+                    },
+                    new ImportNewAssetsDirectoriesDefinition
+                    {
+                        SourceDirectory = @"\\MyServer\Images",
+                        DestinationDirectory = @"C:\Images"
                     }
                 }
             };
 
             importConfiguration.Validate();
 
-            Assert.Equal(2, importConfiguration.Imports.Count);
+            Assert.Equal(3, importConfiguration.Imports.Count);
             Assert.Equal(@"C:\MyFirstGame\Screenshots", importConfiguration.Imports[0].SourceDirectory);
             Assert.Equal(@"C:\Images\MyFirstGame", importConfiguration.Imports[0].DestinationDirectory);
             Assert.Equal(@"C:\MySecondGame\Screenshots", importConfiguration.Imports[1].SourceDirectory);
             Assert.Equal(@"C:\Images\MySecondGame", importConfiguration.Imports[1].DestinationDirectory);
+            Assert.Equal(@"\\MyServer\Images", importConfiguration.Imports[2].SourceDirectory);
+            Assert.Equal(@"C:\Images", importConfiguration.Imports[2].DestinationDirectory);
         }
 
         [Fact]
@@ -503,19 +510,33 @@ namespace JPPhotoManager.Tests
                     },
                     new ImportNewAssetsDirectoriesDefinition
                     {
-                        SourceDirectory = @"C:\\\MySecondGame\Screenshots",
+                        SourceDirectory = @"C:\\\MySecondGame\Screenshots\\",
                         DestinationDirectory = @"C:\Images\MySecondGame\\\\\"
+                    },
+                    new ImportNewAssetsDirectoriesDefinition
+                    {
+                        SourceDirectory = @"\\MyServer\Screenshots\\\",
+                        DestinationDirectory = @"C:\Images\\\\\"
+                    },
+                    new ImportNewAssetsDirectoriesDefinition
+                    {
+                        SourceDirectory = @"\\\\\MyServer\Screenshots\\\",
+                        DestinationDirectory = @"C:\Images\\\\\"
                     }
                 }
             };
 
             importConfiguration.Normalize();
 
-            Assert.Equal(2, importConfiguration.Imports.Count);
+            Assert.Equal(4, importConfiguration.Imports.Count);
             Assert.Equal(@"C:\MyFirstGame\Screenshots", importConfiguration.Imports[0].SourceDirectory);
             Assert.Equal(@"C:\Images\MyFirstGame", importConfiguration.Imports[0].DestinationDirectory);
             Assert.Equal(@"C:\MySecondGame\Screenshots", importConfiguration.Imports[1].SourceDirectory);
             Assert.Equal(@"C:\Images\MySecondGame", importConfiguration.Imports[1].DestinationDirectory);
+            Assert.Equal(@"\\MyServer\Screenshots", importConfiguration.Imports[2].SourceDirectory);
+            Assert.Equal(@"C:\Images", importConfiguration.Imports[2].DestinationDirectory);
+            Assert.Equal(@"\\MyServer\Screenshots", importConfiguration.Imports[3].SourceDirectory);
+            Assert.Equal(@"C:\Images", importConfiguration.Imports[3].DestinationDirectory);
         }
 
         [Fact]
