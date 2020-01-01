@@ -56,7 +56,31 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.Delete(((TextBlock)e.Source).DataContext);
+                this.DeleteDefinition(((TextBlock)e.Source).DataContext);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void MoveUpLabel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                this.MoveUpDefinition(((TextBlock)e.Source).DataContext);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void MoveDownLabel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                this.MoveDownDefinition(((TextBlock)e.Source).DataContext);
             }
             catch (Exception ex)
             {
@@ -116,12 +140,30 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        private void Delete(object selected)
+        private void DeleteDefinition(object selected)
         {
             // Evaluates if it is an existing item or the NewItemPlaceholder.
             if (selected is ImportNewAssetsDirectoriesDefinition definition)
             {
-                this.ViewModel.RemoveDefinition(definition);
+                this.ViewModel.DeleteDefinition(definition);
+            }
+        }
+
+        private void MoveUpDefinition(object selected)
+        {
+            // Evaluates if it is an existing item or the NewItemPlaceholder.
+            if (selected is ImportNewAssetsDirectoriesDefinition definition)
+            {
+                this.ViewModel.MoveUpDefinition(definition);
+            }
+        }
+
+        private void MoveDownDefinition(object selected)
+        {
+            // Evaluates if it is an existing item or the NewItemPlaceholder.
+            if (selected is ImportNewAssetsDirectoriesDefinition definition)
+            {
+                this.ViewModel.MoveDownDefinition(definition);
             }
         }
 

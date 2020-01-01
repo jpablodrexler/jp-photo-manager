@@ -90,7 +90,7 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
-        public void RemoveDefinition(ImportNewAssetsDirectoriesDefinition definition)
+        public void DeleteDefinition(ImportNewAssetsDirectoriesDefinition definition)
         {
             if (this.Imports != null)
             {
@@ -102,6 +102,22 @@ namespace JPPhotoManager.UI.ViewModels
         public void NotifyImageImported(StatusChangeCallbackEventArgs e)
         {
             this.StatusMessages.Add(e.NewStatus);
+        }
+
+        internal void MoveUpDefinition(ImportNewAssetsDirectoriesDefinition definition)
+        {
+            if (this.Imports != null)
+            {
+                this.Imports.MoveUp(definition);
+            }
+        }
+
+        internal void MoveDownDefinition(ImportNewAssetsDirectoriesDefinition definition)
+        {
+            if (this.Imports != null)
+            {
+                this.Imports.MoveDown(definition);
+            }
         }
     }
 }

@@ -36,13 +36,20 @@
                     <DataGridTextColumn Header="Source Directory" Binding="{Binding SourceDirectory}" Width="300"/>
                     <DataGridTextColumn Header="Destination Directory" Binding="{Binding DestinationDirectory}" Width="300"/>
                     <DataGridCheckBoxColumn Header="Include Sub Folders" Binding="{Binding IncludeSubFolders}" Width="150"/>
-                    <DataGridTemplateColumn Header="Action">
+                    <DataGridTemplateColumn Header="Actions">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <Label x:Name="deleteLabel" Grid.Column="2" Padding="5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown" Foreground="#FFFFFFFF"
-                                   Visibility="{Binding Converter={StaticResource VisibilityConverter}}">
-                                    <TextBlock TextDecorations="Underline" Cursor="Hand">Delete</TextBlock>
-                                </Label>
+                                <StackPanel Orientation="Horizontal">
+                                    <Label x:Name="moveUpLabel" Padding="5" MouseLeftButtonDown="MoveUpLabel_MouseLeftButtonDown" Foreground="#FFFFFFFF" Visibility="{Binding Converter={StaticResource VisibilityConverter}}">
+                                        <TextBlock TextDecorations="Underline" Cursor="Hand">Move Up</TextBlock>
+                                    </Label>
+                                    <Label x:Name="moveDownLabel" Padding="5" MouseLeftButtonDown="MoveDownLabel_MouseLeftButtonDown" Foreground="#FFFFFFFF" Visibility="{Binding Converter={StaticResource VisibilityConverter}}">
+                                        <TextBlock TextDecorations="Underline" Cursor="Hand">Move Down</TextBlock>
+                                    </Label>
+                                    <Label x:Name="deleteLabel" Padding="5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown" Foreground="#FFFFFFFF" Visibility="{Binding Converter={StaticResource VisibilityConverter}}">
+                                        <TextBlock TextDecorations="Underline" Cursor="Hand">Delete</TextBlock>
+                                    </Label>
+                                </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
