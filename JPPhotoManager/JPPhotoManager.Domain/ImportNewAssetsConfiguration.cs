@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace JPPhotoManager.Domain
 {
@@ -16,12 +14,12 @@ namespace JPPhotoManager.Domain
 
         public void Validate()
         {
-            Imports = Imports.Where(d => d.IsValid()).ToList();
+            this.Imports = this.Imports.Where(d => d.IsValid()).ToList();
         }
 
         public void Normalize()
         {
-            Imports.ForEach(d => d.Normalize());
+            this.Imports.ForEach(d => d.Normalize());
         }
     }
 }

@@ -391,10 +391,21 @@ namespace JPPhotoManager.UI.Windows
             DeleteAsset();
         }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            this.source.Cancel();
-            this.catalogTask.Wait();
+            try
+            {
+                this.source.Cancel();
+                await catalogTask.ConfigureAwait(true);
+            }
+            catch (OperationCanceledException)
+            {
+                // No actions required at this point.
+            }
+            finally
+            {
+                this.source.Dispose();
+            }
         }
     }
 }
