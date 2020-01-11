@@ -127,6 +127,8 @@ namespace JPPhotoManager.UI.ViewModels
             get { return this.Files?.Count > 0 && this.ViewerPosition >= 0 ? this.Files?[this.ViewerPosition] : null; }
         }
 
+        public Folder LastSelectedFolder { get; set; }
+
         private void AddAsset(Asset asset)
         {
             if (this.Files != null)
