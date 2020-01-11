@@ -161,8 +161,17 @@ namespace JPPhotoManager.Infrastructure
 
         public byte[] GetJpegBitmapImage(BitmapImage thumbnailImage)
         {
+            return GetBitmapImage(thumbnailImage, new JpegBitmapEncoder());
+        }
+
+        public byte[] GetPngBitmapImage(BitmapImage thumbnailImage)
+        {
+            return GetBitmapImage(thumbnailImage, new PngBitmapEncoder());
+        }
+
+        private byte[] GetBitmapImage(BitmapImage thumbnailImage, BitmapEncoder encoder)
+        {
             byte[] imageBuffer;
-            BitmapEncoder encoder = new JpegBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(thumbnailImage));
 
             using (var memoryStream = new MemoryStream())

@@ -25,6 +25,7 @@ namespace JPPhotoManager.Domain
         bool HasSameContent(Asset assetA, Asset assetB);
         BitmapImage LoadBitmapImage(string imagePath);
         byte[] GetJpegBitmapImage(BitmapImage thumbnailImage);
+        byte[] GetPngBitmapImage(BitmapImage thumbnailImage);
         Folder[] GetDrives();
         Folder[] GetFolders(Folder parentFolder, bool includeHidden);
         bool ImageExists(Asset asset, Folder folder);

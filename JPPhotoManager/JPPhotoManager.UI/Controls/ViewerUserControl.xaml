@@ -18,7 +18,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <ContentControl Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" MouseDoubleClick="ContentControl_MouseDoubleClick">
-            <Image x:Name="image"/>
+            <Image x:Name="image" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.EdgeMode="Aliased"/>
         </ContentControl>
         <Button x:Name="previousButton" Grid.Row="1" Grid.Column="0" Content="&lt;" FontSize="48" Click="previousButton_Click" Foreground="White" Background="{x:Null}" BorderBrush="{x:Null}" FontFamily="Calibri"/>
         <Button x:Name="nextButton" Grid.Row="1" Grid.Column="2" Content="&gt;" FontSize="48" Click="nextButton_Click" Foreground="White" Background="{x:Null}" BorderBrush="{x:Null}" FontFamily="Calibri"/>

@@ -259,7 +259,8 @@ namespace JPPhotoManager.Domain
                 BitmapImage thumbnailImage = this.storageService.LoadBitmapImage(imageBytes,
                     Convert.ToInt32(thumbnailDecodeWidth),
                     Convert.ToInt32(thumbnailDecodeHeight));
-                byte[] thumbnailBuffer = this.storageService.GetJpegBitmapImage(thumbnailImage);
+                bool isPng = imagePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase);
+                byte[] thumbnailBuffer = isPng ? this.storageService.GetPngBitmapImage(thumbnailImage) : this.storageService.GetJpegBitmapImage(thumbnailImage);
                 Folder folder = this.assetRepository.GetFolderByPath(directoryName);
 
                 asset = new Asset
