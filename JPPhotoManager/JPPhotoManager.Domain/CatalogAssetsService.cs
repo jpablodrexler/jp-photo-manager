@@ -119,14 +119,9 @@ namespace JPPhotoManager.Domain
                         token.ThrowIfCancellationRequested();
                     }
 
-                    Asset newAsset = new Asset()
-                    {
-                        FileName = fileName,
-                        FolderId = folder.FolderId,
-                        Folder = folder,
-                        ImageData = LoadThumbnail(directory, fileName)
-                    };
-
+                    Asset newAsset = CreateAsset(directory, fileName);
+                    newAsset.ImageData = LoadThumbnail(directory, fileName);
+                    
                     if (!folderHasThumbnails)
                     {
                         cataloguedAssets.Add(newAsset);
@@ -212,8 +207,6 @@ namespace JPPhotoManager.Domain
         private BitmapImage LoadThumbnail(string directoryName, string fileName)
         {
             BitmapImage thumbnailImage = null;
-
-            this.CreateAsset(directoryName, fileName);
 
             if (this.assetRepository.ContainsThumbnail(directoryName, fileName))
             {
