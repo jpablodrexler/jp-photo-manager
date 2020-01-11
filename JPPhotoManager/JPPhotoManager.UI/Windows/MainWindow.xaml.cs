@@ -341,24 +341,30 @@ namespace JPPhotoManager.UI.Windows
 
                 if (asset != null)
                 {
-                    FolderNavigationViewModel viewModel = new FolderNavigationViewModel(this.ViewModel.Application, asset.Folder);
+                    FolderNavigationViewModel viewModel = new FolderNavigationViewModel(this.ViewModel.Application, asset.Folder, this.ViewModel.LastSelectedFolder);
                     FolderNavigationWindow folderNavigationWindow = new FolderNavigationWindow(viewModel);
-
-                    if (folderNavigationWindow.ShowDialog().Value)
+                    
+                    folderNavigationWindow.Closed += (sender, e) =>
                     {
-                        Folder destinationFolder = viewModel.SelectedFolder;
-                        bool result = this.ViewModel.Application.MoveAsset(asset, destinationFolder, preserveOriginalFile);
-
-                        if (!preserveOriginalFile && result)
+                        if (viewModel.HasConfirmed)
                         {
-                            this.ViewModel.RemoveAsset(asset);
-                            
-                            if (this.ViewModel.AppMode == AppModeEnum.Viewer)
+                            Folder destinationFolder = viewModel.SelectedFolder;
+                            bool result = this.ViewModel.Application.MoveAsset(asset, destinationFolder, preserveOriginalFile);
+                            this.ViewModel.LastSelectedFolder = viewModel.SelectedFolder;
+
+                            if (!preserveOriginalFile && result)
                             {
-                                this.viewerUserControl.ShowImage();
+                                this.ViewModel.RemoveAsset(asset);
+
+                                if (this.ViewModel.AppMode == AppModeEnum.Viewer)
+                                {
+                                    this.viewerUserControl.ShowImage();
+                                }
                             }
                         }
-                    }
+                    };
+
+                    folderNavigationWindow.Show();
                 }
             }
             catch (Exception ex)

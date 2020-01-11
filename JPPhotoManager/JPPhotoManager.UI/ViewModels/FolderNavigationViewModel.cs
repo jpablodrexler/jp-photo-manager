@@ -13,9 +13,10 @@ namespace JPPhotoManager.UI.ViewModels
     {
         private Folder selectedFolder;
 
-        public FolderNavigationViewModel(IApplication assetApp, Folder sourceFolder): base(assetApp)
+        public FolderNavigationViewModel(IApplication assetApp, Folder sourceFolder, Folder lastSelectedFolder): base(assetApp)
         {
             this.SourceFolder = sourceFolder;
+            this.LastSelectedFolder = lastSelectedFolder;
         }
 
         public Folder SourceFolder { get; private set; }
@@ -37,5 +38,8 @@ namespace JPPhotoManager.UI.ViewModels
                 return this.SourceFolder?.Path != this.SelectedFolder?.Path;
             }
         }
+
+        public Folder LastSelectedFolder { get; private set; }
+        public bool HasConfirmed { get; internal set; }
     }
 }
