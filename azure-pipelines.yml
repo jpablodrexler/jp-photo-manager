@@ -42,7 +42,7 @@ steps:
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
 - task: ArchiveFiles@2
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/azure-pipelines'), eq(variables['create-release'], true))
   inputs:
     rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager.UI/bin/Release/netcoreapp3.1'
     includeRootFolder: false
@@ -57,7 +57,7 @@ steps:
     publishLocation: 'Container'
 
 - task: GitHubRelease@0
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'), eq(variables['create-release'], true))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/azure-pipelines'), eq(variables['create-release'], true))
   inputs:
     gitHubConnection: 'GitHub connection'
     repositoryName: '$(Build.Repository.Name)'
