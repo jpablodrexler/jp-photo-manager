@@ -57,7 +57,7 @@ steps:
     publishLocation: 'Container'
 
 - task: GitHubRelease@0
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'), eq(variables['create-release'], true))
   inputs:
     gitHubConnection: 'GitHub connection'
     repositoryName: '$(Build.Repository.Name)'
@@ -66,5 +66,5 @@ steps:
     tagSource: 'manual'
     tag: 'v$(app-version)'
     title: 'v$(app-version)'
-    isDraft: false
+    isDraft: true
     assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-v$(app-version).zip'
