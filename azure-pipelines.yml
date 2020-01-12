@@ -66,5 +66,5 @@ steps:
     tagSource: 'manual'
     tag: 'v$(app-version)'
     title: 'v$(app-version)'
-    isDraft: true
+    isDraft: false
     assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-v$(app-version).zip'
