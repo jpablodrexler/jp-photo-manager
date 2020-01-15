@@ -54,7 +54,8 @@ namespace JPPhotoManager.Domain
 
                 Folder[] folders = this.assetRepository.GetFolders();
 
-            callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
+                callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
+                
                 foreach (var f in folders)
                 {
                     if (token.IsCancellationRequested)
@@ -64,7 +65,8 @@ namespace JPPhotoManager.Domain
 
                     string parentDirectory = this.storageService.GetParentDirectory(f.Path);
 
-                    if (f.Path != myPicturesDirectoryPath && parentDirectory != myPicturesDirectoryPath)
+                    // TODO: This condition is meant to avoid cataloging the same folder twice. However, it only works with only one level of subfolders. Must be improved to support a complex directory tree.
+                    if (!rootFolders.Any(p => string.Compare(p, f.Path, StringComparison.OrdinalIgnoreCase) == 0) && !rootFolders.Any(p => string.Compare(p, parentDirectory, StringComparison.OrdinalIgnoreCase) == 0))
                     {
                         this.CatalogImages(f.Path, callback, token);
                     }
