@@ -128,11 +128,11 @@ namespace JPPhotoManager.Infrastructure
 
                         if (!isNewFile)
                         {
-                            foreach (Asset assetRow in assetsList)
+                            foreach (Asset asset in assetsList)
                             {
-                                if (thumbnails.ContainsKey(assetRow.FileName))
+                                if (thumbnails.ContainsKey(asset.FileName))
                                 {
-                                    assetRow.ImageData = this.storageService.LoadBitmapImage(thumbnails[assetRow.FileName]);
+                                    asset.ImageData = this.storageService.LoadBitmapImage(thumbnails[asset.FileName], asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
                                 }
                             }
                         }
@@ -345,7 +345,7 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
-        public BitmapImage LoadThumbnail(string directoryName, string fileName)
+        public BitmapImage LoadThumbnail(string directoryName, string fileName, int width, int height)
         {
             BitmapImage result;
 
@@ -357,7 +357,7 @@ namespace JPPhotoManager.Infrastructure
                     this.thumbnails[directoryName] = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
                 }
 
-                result = this.storageService.LoadBitmapImage(thumbnails[directoryName][fileName]);
+                result = this.storageService.LoadBitmapImage(thumbnails[directoryName][fileName], width, height);
             }
 
             return result;

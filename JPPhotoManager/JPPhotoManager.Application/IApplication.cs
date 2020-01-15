@@ -26,6 +26,6 @@ namespace JPPhotoManager.Application
         string GetInitialFolder();
         int GetCatalogCooldownMinutes();
         bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile);
-        BitmapImage LoadBitmapImage(string imagePath);
+        BitmapImage LoadBitmapImage(string imagePath, Rotation rotation);
     }
 }

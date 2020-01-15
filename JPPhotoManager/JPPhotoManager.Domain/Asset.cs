@@ -15,6 +15,9 @@ namespace JPPhotoManager.Domain
         public long FileSize { get; set; }
         public int PixelWidth { get; set; }
         public int PixelHeight { get; set; }
+        public int ThumbnailPixelWidth { get; set; }
+        public int ThumbnailPixelHeight { get; set; }
+        public Rotation ImageRotation { get; set; }
         public DateTime ThumbnailCreationDateTime { get; set; }
         public string Hash { get; set; }
 
