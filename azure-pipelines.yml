@@ -25,15 +25,16 @@ steps:
 - task: VSBuild@1
   inputs:
     solution: '$(solution)'
+    msbuildArgs: '/p:Version=$(app-version)'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+    clean: true
 
 - task: DotNetCoreCLI@2
   inputs:
     command: 'test'
-    projects: '**/*Test.csproj'
-    arguments: '--configuration $(buildConfiguration)'
-    nobuild: true
+    projects: '**/*Tests.csproj'
+    arguments: '--configuration $(buildConfiguration) --no-build'
 
 - task: CopyFiles@2
   inputs:
@@ -41,12 +42,12 @@ steps:
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
 - task: ArchiveFiles@2
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'), eq(variables['create-release'], true))
   inputs:
-    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager/bin/Release/netcoreapp3.0'
+    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager.UI/bin/Release/netcoreapp3.1'
     includeRootFolder: false
     archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(app-version).zip'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-v$(app-version).zip'
     replaceExistingArchive: true
 
 - task: PublishBuildArtifacts@1
@@ -56,14 +57,14 @@ steps:
     publishLocation: 'Container'
 
 - task: GitHubRelease@0
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'), eq(variables['create-release'], true))
   inputs:
     gitHubConnection: 'GitHub connection'
     repositoryName: '$(Build.Repository.Name)'
     action: 'create'
     target: '$(Build.SourceVersion)'
     tagSource: 'manual'
-    tag: '$(app-version)'
-    title: '$(app-version)'
+    tag: 'v$(app-version)'
+    title: 'v$(app-version)'
     isDraft: false
-    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-$(app-version).zip'
+    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-v$(app-version).zip'
