@@ -80,7 +80,7 @@ namespace JPPhotoManager.UI.Controls
         {
             if (this.ViewModel.ViewerPosition >= 0)
             {
-                var source = this.ViewModel.Application.LoadBitmapImage(this.ViewModel.CurrentAsset.FullPath);
+                var source = this.ViewModel.Application.LoadBitmapImage(this.ViewModel.CurrentAsset.FullPath, this.ViewModel.CurrentAsset.ImageRotation);
 
                 if (source != null)
                 {

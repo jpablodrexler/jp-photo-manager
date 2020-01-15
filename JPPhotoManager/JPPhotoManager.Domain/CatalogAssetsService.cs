@@ -103,7 +103,7 @@ namespace JPPhotoManager.Domain
                 {
                     foreach (var asset in cataloguedAssets)
                     {
-                        asset.ImageData = LoadThumbnail(directory, asset.FileName);
+                        asset.ImageData = LoadThumbnail(directory, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
                     }
                 }
 
@@ -120,7 +120,7 @@ namespace JPPhotoManager.Domain
                     }
 
                     Asset newAsset = CreateAsset(directory, fileName);
-                    newAsset.ImageData = LoadThumbnail(directory, fileName);
+                    newAsset.ImageData = LoadThumbnail(directory, fileName, newAsset.ThumbnailPixelWidth, newAsset.ThumbnailPixelHeight);
                     
                     if (!folderHasThumbnails)
                     {
@@ -204,13 +204,13 @@ namespace JPPhotoManager.Domain
             }
         }
 
-        private BitmapImage LoadThumbnail(string directoryName, string fileName)
+        private BitmapImage LoadThumbnail(string directoryName, string fileName, int width, int height)
         {
             BitmapImage thumbnailImage = null;
 
             if (this.assetRepository.ContainsThumbnail(directoryName, fileName))
             {
-                thumbnailImage = this.assetRepository.LoadThumbnail(directoryName, fileName);
+                thumbnailImage = this.assetRepository.LoadThumbnail(directoryName, fileName, width, height);
             }
 
             return thumbnailImage;
@@ -226,7 +226,9 @@ namespace JPPhotoManager.Domain
             if (!this.assetRepository.IsAssetCatalogued(directoryName, fileName))
             {
                 string imagePath = Path.Combine(directoryName, fileName);
-                BitmapImage originalImage = this.storageService.LoadBitmapImage(imagePath);
+                byte[] imageBytes = this.storageService.GetFileBytes(imagePath);
+                Rotation rotation = this.storageService.GetImageRotation(imageBytes);
+                BitmapImage originalImage = this.storageService.LoadBitmapImage(imageBytes, rotation);
 
                 double originalDecodeWidth = originalImage.PixelWidth;
                 double originalDecodeHeight = originalImage.PixelHeight;
@@ -248,8 +250,8 @@ namespace JPPhotoManager.Domain
                     thumbnailDecodeWidth = (percentage * originalDecodeWidth) / 100d;
                 }
 
-                byte[] imageBytes = this.storageService.GetFileBytes(imagePath);
-                BitmapImage thumbnailImage = this.storageService.LoadBitmapImage(imageBytes,
+                BitmapImage thumbnailImage = this.storageService.LoadBitmapImage(imagePath,
+                    rotation,
                     Convert.ToInt32(thumbnailDecodeWidth),
                     Convert.ToInt32(thumbnailDecodeHeight));
                 bool isPng = imagePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase);
@@ -264,6 +266,9 @@ namespace JPPhotoManager.Domain
                     FileSize = new FileInfo(imagePath).Length,
                     PixelWidth = Convert.ToInt32(originalDecodeWidth),
                     PixelHeight = Convert.ToInt32(originalDecodeHeight),
+                    ThumbnailPixelWidth = Convert.ToInt32(thumbnailDecodeWidth),
+                    ThumbnailPixelHeight = Convert.ToInt32(thumbnailDecodeHeight),
+                    ImageRotation = rotation,
                     ThumbnailCreationDateTime = DateTime.Now,
                     Hash = this.assetHashCalculatorService.CalculateHash(imageBytes)
                 };

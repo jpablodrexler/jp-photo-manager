@@ -118,29 +118,24 @@ namespace JPPhotoManager.Infrastructure
             return File.ReadAllBytes(filePath);
         }
 
-        public BitmapImage LoadBitmapImage(byte[] buffer, int? width = null, int? height = null)
+        public BitmapImage LoadBitmapImage(byte[] buffer, int width, int height)
         {
+            // TODO: If the stream is disposed by a using block, the thumbnail is not shown. Find a way to dispose of the stream.
             MemoryStream stream = new MemoryStream(buffer);
             BitmapImage thumbnailImage = new BitmapImage();
             thumbnailImage.BeginInit();
             thumbnailImage.CacheOption = BitmapCacheOption.None;
             thumbnailImage.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-
-            if (width.HasValue && height.HasValue)
-            {
-                thumbnailImage.DecodePixelWidth = width.Value;
-                thumbnailImage.DecodePixelHeight = height.Value;
-            }
-
             thumbnailImage.StreamSource = stream;
-            thumbnailImage.Rotation = Rotation.Rotate0;
+            thumbnailImage.DecodePixelWidth = width;
+            thumbnailImage.DecodePixelHeight = height;
             thumbnailImage.EndInit();
             thumbnailImage.Freeze();
 
             return thumbnailImage;
         }
 
-        public BitmapImage LoadBitmapImage(string imagePath)
+        public BitmapImage LoadBitmapImage(string imagePath, Rotation rotation, int? width = null, int? height = null)
         {
             BitmapImage image = null;
 
@@ -151,12 +146,108 @@ namespace JPPhotoManager.Infrastructure
                 image.CacheOption = BitmapCacheOption.OnLoad;
                 image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
                 image.UriSource = new Uri(imagePath);
-                image.Rotation = Rotation.Rotate0;
+                image.Rotation = rotation;
+
+                if (width.HasValue && height.HasValue)
+                {
+                    image.DecodePixelWidth = width.Value;
+                    image.DecodePixelHeight = height.Value;
+                }
+
                 image.EndInit();
                 image.Freeze();
             }
 
             return image;
+        }
+
+        public BitmapImage LoadBitmapImage(string imagePath, Rotation rotation)
+        {
+            BitmapImage image = null;
+
+            if (File.Exists(imagePath))
+            {
+                image = new BitmapImage();
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                image.UriSource = new Uri(imagePath);
+                image.Rotation = rotation;
+                image.EndInit();
+                image.Freeze();
+            }
+
+            return image;
+        }
+
+        public BitmapImage LoadBitmapImage(byte[] buffer, Rotation rotation)
+        {
+            BitmapImage image = new BitmapImage();
+
+            using (MemoryStream stream = new MemoryStream(buffer))
+            {
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                image.StreamSource = stream;
+                image.Rotation = rotation;
+                image.EndInit();
+                image.Freeze();
+            }
+
+            return image;
+        }
+
+        public Rotation GetImageRotation(byte[] buffer)
+        {
+            Rotation rotation = Rotation.Rotate0;
+
+            using (MemoryStream stream = new MemoryStream(buffer))
+            {
+                BitmapFrame bitmapFrame = BitmapFrame.Create(stream);
+                BitmapMetadata bitmapMetadata = bitmapFrame.Metadata as BitmapMetadata;
+
+                if (bitmapMetadata != null && bitmapMetadata.ContainsQuery("System.Photo.Orientation"))
+                {
+                    object result = bitmapMetadata.GetQuery("System.Photo.Orientation");
+
+                    if (result != null)
+                    {
+                        switch ((ushort)result)
+                        {
+                            case 1:
+                                rotation = Rotation.Rotate0;
+                                break;
+                            case 2:
+                                rotation = Rotation.Rotate0; // FlipX
+                                break;
+                            case 3:
+                                rotation = Rotation.Rotate180;
+                                break;
+                            case 4:
+                                rotation = Rotation.Rotate180; // FlipX
+                                break;
+                            case 5:
+                                rotation = Rotation.Rotate90; // FlipX
+                                break;
+                            case 6:
+                                rotation = Rotation.Rotate90;
+                                break;
+                            case 7:
+                                rotation = Rotation.Rotate270; // FlipX
+                                break;
+                            case 8:
+                                rotation = Rotation.Rotate270;
+                                break;
+                            default:
+                                rotation = Rotation.Rotate0;
+                                break;
+                        }
+                    }
+                }
+            }
+
+            return rotation;
         }
 
         public byte[] GetJpegBitmapImage(BitmapImage thumbnailImage)
