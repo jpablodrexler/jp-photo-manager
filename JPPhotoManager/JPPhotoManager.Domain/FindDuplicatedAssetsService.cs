@@ -79,7 +79,7 @@ namespace JPPhotoManager.Domain
             {
                 foreach (Asset asset in duplicatedSet)
                 {
-                    asset.ImageData = this.assetRepository.LoadThumbnail(asset.Folder.Path, asset.FileName);
+                    asset.ImageData = this.assetRepository.LoadThumbnail(asset.Folder.Path, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
                 }
             }
 

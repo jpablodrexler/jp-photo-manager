@@ -124,9 +124,9 @@ namespace JPPhotoManager.Application
             return this.catalogAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile);
         }
 
-        public BitmapImage LoadBitmapImage(string imagePath)
+        public BitmapImage LoadBitmapImage(string imagePath, Rotation rotation)
         {
-            return this.storageService.LoadBitmapImage(imagePath);
+            return this.storageService.LoadBitmapImage(imagePath, rotation);
         }
     }
 }

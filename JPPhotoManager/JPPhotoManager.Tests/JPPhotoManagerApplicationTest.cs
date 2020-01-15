@@ -211,8 +211,8 @@ namespace JPPhotoManager.Tests
 
             Assert.True(repository.ContainsThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName));
             Assert.True(repository.ContainsThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName));
-            Assert.NotNull(repository.LoadThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName));
-            Assert.NotNull(repository.LoadThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName));
+            Assert.NotNull(repository.LoadThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName, duplicatedAssets[0].ThumbnailPixelWidth, duplicatedAssets[0].ThumbnailPixelHeight));
+            Assert.NotNull(repository.LoadThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName, duplicatedAssets[1].ThumbnailPixelWidth, duplicatedAssets[1].ThumbnailPixelHeight));
         }
 
         [Fact]
@@ -445,8 +445,8 @@ namespace JPPhotoManager.Tests
 
             Assert.True(repository.ContainsThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName));
             Assert.True(repository.ContainsThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName));
-            Assert.NotNull(repository.LoadThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName));
-            Assert.NotNull(repository.LoadThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName));
+            Assert.NotNull(repository.LoadThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName, duplicatedAssets[0].ThumbnailPixelWidth, duplicatedAssets[0].ThumbnailPixelHeight));
+            Assert.NotNull(repository.LoadThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName, duplicatedAssets[1].ThumbnailPixelWidth, duplicatedAssets[1].ThumbnailPixelHeight));
         }
 
         [Fact]
