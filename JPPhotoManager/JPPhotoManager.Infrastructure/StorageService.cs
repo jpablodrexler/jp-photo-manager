@@ -135,17 +135,17 @@ namespace JPPhotoManager.Infrastructure
             return thumbnailImage;
         }
 
-        public BitmapImage LoadBitmapImage(string imagePath, Rotation rotation, int? width = null, int? height = null)
+        public BitmapImage LoadBitmapImage(byte[] buffer, Rotation rotation, int? width = null, int? height = null)
         {
             BitmapImage image = null;
 
-            if (File.Exists(imagePath))
+            using (MemoryStream stream = new MemoryStream(buffer))
             {
                 image = new BitmapImage();
                 image.BeginInit();
                 image.CacheOption = BitmapCacheOption.OnLoad;
                 image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-                image.UriSource = new Uri(imagePath);
+                image.StreamSource = stream;
                 image.Rotation = rotation;
 
                 if (width.HasValue && height.HasValue)

@@ -250,7 +250,7 @@ namespace JPPhotoManager.Domain
                     thumbnailDecodeWidth = (percentage * originalDecodeWidth) / 100d;
                 }
 
-                BitmapImage thumbnailImage = this.storageService.LoadBitmapImage(imagePath,
+                BitmapImage thumbnailImage = this.storageService.LoadBitmapImage(imageBytes,
                     rotation,
                     Convert.ToInt32(thumbnailDecodeWidth),
                     Convert.ToInt32(thumbnailDecodeHeight));

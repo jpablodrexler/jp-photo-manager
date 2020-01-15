@@ -21,7 +21,7 @@ namespace JPPhotoManager.Domain
         void DeleteFile(string directory, string fileName);
         string[] GetFileNames(string directory);
         byte[] GetFileBytes(string filePath);
-        BitmapImage LoadBitmapImage(string imagePath, Rotation rotation, int? width = null, int? height = null);
+        BitmapImage LoadBitmapImage(byte[] buffer, Rotation rotation, int? width = null, int? height = null);
         BitmapImage LoadBitmapImage(byte[] buffer, int width, int height);
         BitmapImage LoadBitmapImage(byte[] buffer, Rotation rotation);
         Rotation GetImageRotation(byte[] buffer);
