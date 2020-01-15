@@ -135,7 +135,7 @@ namespace JPPhotoManager.Infrastructure
             return thumbnailImage;
         }
 
-        public BitmapImage LoadBitmapImage(byte[] buffer, Rotation rotation, int? width = null, int? height = null)
+        public BitmapImage LoadBitmapImage(byte[] buffer, Rotation rotation, int width, int height)
         {
             BitmapImage image = null;
 
@@ -147,13 +147,8 @@ namespace JPPhotoManager.Infrastructure
                 image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
                 image.StreamSource = stream;
                 image.Rotation = rotation;
-
-                if (width.HasValue && height.HasValue)
-                {
-                    image.DecodePixelWidth = width.Value;
-                    image.DecodePixelHeight = height.Value;
-                }
-
+                image.DecodePixelWidth = width;
+                image.DecodePixelHeight = height;
                 image.EndInit();
                 image.Freeze();
             }
