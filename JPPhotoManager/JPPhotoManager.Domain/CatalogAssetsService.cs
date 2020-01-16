@@ -39,11 +39,23 @@ namespace JPPhotoManager.Domain
         {
             try
             {
-                string myPicturesDirectoryPath = this.userConfigurationService.GetPicturesDirectory();
-                this.CatalogImages(myPicturesDirectoryPath, callback, token);
+                // TODO: Allow the user to configure additional root folders.
+	            // TODO: Validate if some of the root folders are not valid or don't exist any longer.
+	            string[] rootFolders = new string[]
+	            {
+	                this.userConfigurationService.GetOneDriveDirectory(),
+	                this.userConfigurationService.GetPicturesDirectory()
+	            };
+	
+	            foreach (string path in rootFolders)
+	            {
+	                this.CatalogImages(path, callback, token);
+	            }
 
                 Folder[] folders = this.assetRepository.GetFolders();
 
+                callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
+                
                 foreach (var f in folders)
                 {
                     if (token.IsCancellationRequested)
@@ -53,7 +65,8 @@ namespace JPPhotoManager.Domain
 
                     string parentDirectory = this.storageService.GetParentDirectory(f.Path);
 
-                    if (f.Path != myPicturesDirectoryPath && parentDirectory != myPicturesDirectoryPath)
+                    // TODO: This condition is meant to avoid cataloging the same folder twice. However, it only works with only one level of subfolders. Must be improved to support a complex directory tree.
+                    if (!rootFolders.Any(p => string.Compare(p, f.Path, StringComparison.OrdinalIgnoreCase) == 0) && !rootFolders.Any(p => string.Compare(p, parentDirectory, StringComparison.OrdinalIgnoreCase) == 0))
                     {
                         this.CatalogImages(f.Path, callback, token);
                     }
