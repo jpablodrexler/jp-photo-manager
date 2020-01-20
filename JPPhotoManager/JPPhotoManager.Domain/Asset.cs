@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Text.Json.Serialization;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Domain
@@ -8,8 +7,6 @@ namespace JPPhotoManager.Domain
     public class Asset
     {
         public string FolderId { get; set; }
-
-        [JsonIgnore]
         public Folder Folder { get; set; }
         public string FileName { get; set; }
         public long FileSize { get; set; }
@@ -20,11 +17,7 @@ namespace JPPhotoManager.Domain
         public Rotation ImageRotation { get; set; }
         public DateTime ThumbnailCreationDateTime { get; set; }
         public string Hash { get; set; }
-
-        [JsonIgnore]
         public BitmapImage ImageData { get; set; }
-
-        [JsonIgnore]
         public string FullPath => Path.Combine(this.Folder.Path, this.FileName);
 
         public override bool Equals(object obj)

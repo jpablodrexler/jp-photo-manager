@@ -14,7 +14,9 @@ namespace JPPhotoManager.Tests
     public class CatalogAssetsServiceTest
     {
         private string dataDirectory;
-        private string assetDataSetPath;
+        private string assetsDataFilePath;
+        private string foldersDataFilePath;
+        private string importsDataFilePath;
         private string imageDestinationDirectory;
         private string nonCataloguedImageDestinationDirectory;
         private IConfigurationRoot configuration;
@@ -23,7 +25,9 @@ namespace JPPhotoManager.Tests
         {
             dataDirectory = Path.GetDirectoryName(typeof(CatalogAssetsServiceTest).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
-            assetDataSetPath = Path.Combine(dataDirectory, $"AssetCatalog{Guid.NewGuid()}.json");
+            assetsDataFilePath = Path.Combine(dataDirectory, $"asset.{Guid.NewGuid()}.db");
+            foldersDataFilePath = Path.Combine(dataDirectory, $"folder.{Guid.NewGuid()}.db");
+            importsDataFilePath = Path.Combine(dataDirectory, $"import.{Guid.NewGuid()}.db");
             imageDestinationDirectory = Path.Combine(dataDirectory, "NewFolder");
             nonCataloguedImageDestinationDirectory = Path.Combine(dataDirectory, "NonCataloguedNewFolder");
 
@@ -35,9 +39,19 @@ namespace JPPhotoManager.Tests
 
             configuration = configurationMock.Object;
 
-            if (File.Exists(assetDataSetPath))
+            if (File.Exists(assetsDataFilePath))
             {
-                File.Delete(assetDataSetPath);
+                File.Delete(assetsDataFilePath);
+            }
+
+            if (File.Exists(foldersDataFilePath))
+            {
+                File.Delete(foldersDataFilePath);
+            }
+
+            if (File.Exists(importsDataFilePath))
+            {
+                File.Delete(importsDataFilePath);
             }
 
             if (Directory.Exists(imageDestinationDirectory))
@@ -60,7 +74,7 @@ namespace JPPhotoManager.Tests
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
 
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService.Object));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
                     repository,
@@ -102,7 +116,7 @@ namespace JPPhotoManager.Tests
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(Path.Combine(dataDirectory, "NonExistent"));
 
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService.Object));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
                     repository,
@@ -127,7 +141,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -156,7 +170,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -185,7 +199,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -212,7 +226,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -239,7 +253,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
@@ -288,7 +302,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
@@ -324,7 +338,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             Folder sourceFolder = repository.AddFolder(dataDirectory);
 
@@ -356,7 +370,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.GetFolderByPath(nonCataloguedImageDestinationDirectory);
@@ -396,7 +410,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
@@ -417,7 +431,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
@@ -438,7 +452,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
@@ -459,7 +473,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
@@ -508,7 +522,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
@@ -544,7 +558,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             
@@ -575,7 +589,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             Folder sourceFolder = repository.AddFolder(dataDirectory);
 
@@ -605,7 +619,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             Folder sourceFolder = repository.AddFolder(dataDirectory);
 
@@ -635,7 +649,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             Folder sourceFolder = repository.AddFolder(dataDirectory);
 
@@ -655,7 +669,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetDataSetPath);
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
                     repository,

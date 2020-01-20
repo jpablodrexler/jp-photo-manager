@@ -10,11 +10,13 @@ namespace JPPhotoManager.Domain
             this.Imports = new List<ImportNewAssetsDirectoriesDefinition>();
         }
 
-        public List<ImportNewAssetsDirectoriesDefinition> Imports { get; set; }
+        public List<ImportNewAssetsDirectoriesDefinition> Imports { get; }
 
         public void Validate()
         {
-            this.Imports = this.Imports.Where(d => d.IsValid()).ToList();
+            var validImports = this.Imports.Where(d => d.IsValid()).ToList();
+            this.Imports.Clear();
+            this.Imports.AddRange(validImports);
         }
 
         public void Normalize()

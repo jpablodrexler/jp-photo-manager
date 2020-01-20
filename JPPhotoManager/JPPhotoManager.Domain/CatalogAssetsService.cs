@@ -318,7 +318,7 @@ namespace JPPhotoManager.Domain
             string destinationPath = Path.Combine(destinationFolder.Path, asset.FileName);
             bool isDestinationFolderInCatalog;
 
-            if (!this.storageService.ImageExists(sourcePath))
+            if (!this.storageService.FileExists(sourcePath))
             {
                 throw new ArgumentException(sourcePath);
             }
@@ -334,7 +334,7 @@ namespace JPPhotoManager.Domain
                 destinationFolder = folder;
             }
 
-            if (this.storageService.ImageExists(sourcePath) && !this.storageService.ImageExists(destinationPath))
+            if (this.storageService.FileExists(sourcePath) && !this.storageService.FileExists(destinationPath))
             {
                 result = this.storageService.CopyImage(sourcePath, destinationPath);
                 
@@ -370,7 +370,7 @@ namespace JPPhotoManager.Domain
                 throw new ArgumentNullException(nameof(asset), "Asset.Folder cannot be null.");
             }
 
-            if (deleteFile && !this.storageService.ImageExists(asset, asset.Folder))
+            if (deleteFile && !this.storageService.FileExists(asset, asset.Folder))
             {
                 throw new ArgumentException("File does not exist: " + asset.FullPath);
             }
