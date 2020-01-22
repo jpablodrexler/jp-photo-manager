@@ -71,6 +71,7 @@ namespace JPPhotoManager.Tests
             userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
 
             AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService.Object));
             repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
