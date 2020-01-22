@@ -66,9 +66,9 @@ namespace JPPhotoManager.Application
             return this.importNewAssetsService.Import(callback);
         }
 
-        public void CatalogImages(CatalogChangeCallback callback, CancellationToken token)
+        public void CatalogImages(CatalogChangeCallback callback)
         {
-            this.catalogAssetsService.CatalogImages(callback, token);
+            this.catalogAssetsService.CatalogImages(callback);
         }
 
         public void SetAsWallpaper(Asset asset, WallpaperStyle style)

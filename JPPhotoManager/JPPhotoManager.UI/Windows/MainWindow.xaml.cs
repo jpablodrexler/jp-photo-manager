@@ -24,8 +24,6 @@ namespace JPPhotoManager.UI.Windows
     public partial class MainWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        CancellationTokenSource source;
-        CancellationToken token;
         Task catalogTask;
 
         public MainWindow(ApplicationViewModel viewModel)
@@ -52,33 +50,15 @@ namespace JPPhotoManager.UI.Windows
 
         private Task CatalogImages(IApplication assetApp)
         {
-            int minutes = assetApp.GetCatalogCooldownMinutes();
-
-            source = new CancellationTokenSource();
-            token = source.Token;
-
-            return Task.Run(async () =>
+            return Task.Run(() =>
             {
-                while (true)
-                {
-                    if (token.IsCancellationRequested)
+                assetApp.CatalogImages(
+                    async (e) =>
                     {
-                        token.ThrowIfCancellationRequested();
-                    }
-
-                    assetApp.CatalogImages(
-                        async (e) =>
-                        {
-                            if (!token.IsCancellationRequested)
-                            {
-                                // The InvokeAsync method is used to avoid freezing the application when the task is cancelled.
-                                await Dispatcher.InvokeAsync(() => ViewModel.NotifyCatalogChange(e));
-                            }
-                        },
-                        token);
-                    await Task.Delay(1000 * 60 * minutes, token).ConfigureAwait(false);
-                }
-            }, token);
+                        // The InvokeAsync method is used to avoid freezing the application when the task is cancelled.
+                        await Dispatcher.InvokeAsync(() => ViewModel.NotifyCatalogChange(e));
+                    });
+            }, CancellationToken.None);
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
@@ -90,9 +70,14 @@ namespace JPPhotoManager.UI.Windows
                 this.folderTreeView.SelectedPath = this.ViewModel?.CurrentFolder;
 
                 ViewModel.StatusMessage = "Cataloging thumbnails for " + ViewModel.CurrentFolder;
-
-                catalogTask = this.CatalogImages(this.ViewModel.Application);
-                await catalogTask;
+                int minutes = this.ViewModel.Application.GetCatalogCooldownMinutes();
+                
+                while (true)
+                {
+                    catalogTask = this.CatalogImages(this.ViewModel.Application);
+                    await catalogTask.ConfigureAwait(true);
+                    await Task.Delay(1000 * 60 * minutes, CancellationToken.None).ConfigureAwait(true);
+                }
             }
             catch (Exception ex)
             {
@@ -397,21 +382,9 @@ namespace JPPhotoManager.UI.Windows
             DeleteAsset();
         }
 
-        private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            try
-            {
-                this.source.Cancel();
-                await catalogTask.ConfigureAwait(true);
-            }
-            catch (OperationCanceledException)
-            {
-                // No actions required at this point.
-            }
-            finally
-            {
-                this.source.Dispose();
-            }
+            e.Cancel = catalogTask != null && !catalogTask.IsCompleted;
         }
     }
 }

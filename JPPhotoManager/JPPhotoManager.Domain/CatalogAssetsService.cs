@@ -35,8 +35,10 @@ namespace JPPhotoManager.Domain
             this.directoryComparer = directoryComparer;
         }
 
-        public void CatalogImages(CatalogChangeCallback callback, CancellationToken token)
+        public void CatalogImages(CatalogChangeCallback callback)
         {
+            int cataloguedAssetsBatchCount = 0;
+
             try
             {
                 // TODO: Allow the user to configure additional root folders.
@@ -49,7 +51,7 @@ namespace JPPhotoManager.Domain
 	
 	            foreach (string path in rootFolders)
 	            {
-	                this.CatalogImages(path, callback, token);
+                    cataloguedAssetsBatchCount = this.CatalogImages(path, callback, cataloguedAssetsBatchCount);
 	            }
 
                 Folder[] folders = this.assetRepository.GetFolders();
@@ -58,17 +60,12 @@ namespace JPPhotoManager.Domain
                 
                 foreach (var f in folders)
                 {
-                    if (token.IsCancellationRequested)
-                    {
-                        token.ThrowIfCancellationRequested();
-                    }
-
                     string parentDirectory = this.storageService.GetParentDirectory(f.Path);
 
                     // TODO: This condition is meant to avoid cataloging the same folder twice. However, it only works with only one level of subfolders. Must be improved to support a complex directory tree.
                     if (!rootFolders.Any(p => string.Compare(p, f.Path, StringComparison.OrdinalIgnoreCase) == 0) && !rootFolders.Any(p => string.Compare(p, parentDirectory, StringComparison.OrdinalIgnoreCase) == 0))
                     {
-                        this.CatalogImages(f.Path, callback, token);
+                        cataloguedAssetsBatchCount = this.CatalogImages(f.Path, callback, cataloguedAssetsBatchCount);
                     }
                 }
             }
@@ -93,7 +90,7 @@ namespace JPPhotoManager.Domain
             }
         }
 
-        private void CatalogImages(string directory, CatalogChangeCallback callback, CancellationToken token)
+        private int CatalogImages(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount)
         {
             this.currentFolderPath = directory;
 
@@ -106,7 +103,7 @@ namespace JPPhotoManager.Domain
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Inspecting folder " + directory });
                 string[] fileNames = this.storageService.GetFileNames(directory);
-                List<Asset> cataloguedAssets = null;
+                List<Asset> cataloguedAssets;
 
                 Folder folder = this.assetRepository.GetFolderByPath(directory);
                 cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
@@ -123,13 +120,12 @@ namespace JPPhotoManager.Domain
                 string[] newFileNames = directoryComparer.GetNewFileNames(fileNames, cataloguedAssets);
                 string[] deletedFileNames = directoryComparer.GetDeletedFileNames(fileNames, cataloguedAssets);
                 int batchSize = this.userConfigurationService.GetCatalogBatchSize();
-                int batchCount = 0;
-
+                
                 foreach (var fileName in newFileNames)
                 {
-                    if (token.IsCancellationRequested)
+                    if (cataloguedAssetsBatchCount >= batchSize)
                     {
-                        token.ThrowIfCancellationRequested();
+                        break;
                     }
 
                     Asset newAsset = CreateAsset(directory, fileName);
@@ -148,20 +144,14 @@ namespace JPPhotoManager.Domain
                         Reason = ReasonEnum.Created
                     });
 
-                    batchCount++;
-
-                    if (batchCount >= batchSize)
-                    {
-                        this.assetRepository.SaveCatalog(folder);
-                        batchCount = 0;
-                    }
+                    cataloguedAssetsBatchCount++;
                 }
 
                 foreach (var fileName in deletedFileNames)
                 {
-                    if (token.IsCancellationRequested)
+                    if (cataloguedAssetsBatchCount >= batchSize)
                     {
-                        token.ThrowIfCancellationRequested();
+                        break;
                     }
 
                     Asset deletedAsset = new Asset()
@@ -184,13 +174,7 @@ namespace JPPhotoManager.Domain
                         Reason = ReasonEnum.Deleted
                     });
 
-                    batchCount++;
-
-                    if (batchCount >= batchSize)
-                    {
-                        this.assetRepository.SaveCatalog(folder);
-                        batchCount = 0;
-                    }
+                    cataloguedAssetsBatchCount++;
                 }
 
                 if (this.assetRepository.HasChanges() || !folderHasThumbnails)
@@ -198,16 +182,14 @@ namespace JPPhotoManager.Domain
                     this.assetRepository.SaveCatalog(folder);
                 }
 
-                var subdirectories = new DirectoryInfo(directory).EnumerateDirectories();
-
-                foreach (var subdir in subdirectories)
+                if (cataloguedAssetsBatchCount < batchSize)
                 {
-                    if (token.IsCancellationRequested)
-                    {
-                        token.ThrowIfCancellationRequested();
-                    }
+                    var subdirectories = new DirectoryInfo(directory).EnumerateDirectories();
 
-                    this.CatalogImages(subdir.FullName, callback, token);
+                    foreach (var subdir in subdirectories)
+                    {
+                        cataloguedAssetsBatchCount = this.CatalogImages(subdir.FullName, callback, cataloguedAssetsBatchCount);
+                    }
                 }
             }
             else
@@ -215,6 +197,8 @@ namespace JPPhotoManager.Domain
                 // TODO: Should validate that if the folder doesn't exist anymore, the corresponding entry in the catalog and the thumbnails file are both deleted.
                 // This should be tested in a new test method, in which the non existent folder is explicitly added to the catalog.
             }
+
+            return cataloguedAssetsBatchCount;
         }
 
         private BitmapImage LoadThumbnail(string directoryName, string fileName, int width, int height)
