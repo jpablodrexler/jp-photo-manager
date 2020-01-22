@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using Xunit;
 
 namespace JPPhotoManager.Tests
@@ -89,7 +88,7 @@ namespace JPPhotoManager.Tests
 
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
             
-            catalogAssetsService.CatalogImages(e => statusChanges.Add(e), new CancellationTokenSource().Token);
+            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
 
             var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
@@ -127,7 +126,7 @@ namespace JPPhotoManager.Tests
 
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            catalogAssetsService.CatalogImages(e => statusChanges.Add(e), new CancellationTokenSource().Token);
+            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
 
             var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
