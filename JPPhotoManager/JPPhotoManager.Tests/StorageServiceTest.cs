@@ -1,9 +1,5 @@
 ﻿using JPPhotoManager.Infrastructure;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using JPPhotoManager.Domain;
 using System.IO;
 using Microsoft.Extensions.Configuration;
@@ -35,10 +31,10 @@ namespace JPPhotoManager.Tests
         public void ResolveDataDirectoryTest1()
         {
             string directory = @"C:\Data\JPPhotoManager";
-            string expected = @"C:\Data\JPPhotoManager\AssetCatalog.json";
+            string expected = @"C:\Data\JPPhotoManager\Tables\assets.db";
 
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
-            string result = storageService.ResolveCatalogPath(directory);
+            string result = storageService.ResolveTableFilePath(directory, "assets");
 
             Assert.Equal(expected, result);
         }
@@ -47,10 +43,10 @@ namespace JPPhotoManager.Tests
         public void ResolveDataDirectoryTest2()
         {
             string directory = "";
-            string expected = "AssetCatalog.json";
+            string expected = @"Tables\assets.db";
 
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
-            string result = storageService.ResolveCatalogPath(directory);
+            string result = storageService.ResolveTableFilePath(directory, "assets");
 
             Assert.Equal(expected, result);
         }
@@ -59,10 +55,10 @@ namespace JPPhotoManager.Tests
         public void ResolveDataDirectoryTest3()
         {
             string directory = null;
-            string expected = "AssetCatalog.json";
+            string expected = @"Tables\assets.db";
 
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
-            string result = storageService.ResolveCatalogPath(directory);
+            string result = storageService.ResolveTableFilePath(directory, "assets");
 
             Assert.Equal(expected, result);
         }

@@ -16,7 +16,7 @@ namespace JPPhotoManager.Application
         ImportNewAssetsConfiguration GetImportNewAssetsConfiguration();
         void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration);
         List<ImportNewAssetsResult> ImportNewImages(StatusChangeCallback callback);
-        void CatalogImages(CatalogChangeCallback callback, CancellationToken token);
+        void CatalogImages(CatalogChangeCallback callback);
         void SetAsWallpaper(Asset asset, WallpaperStyle style);
         List<DuplicatedAssetCollection> GetDuplicatedAssets();
         void DeleteAsset(Asset asset, bool deleteFile);

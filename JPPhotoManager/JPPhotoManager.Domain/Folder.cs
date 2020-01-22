@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text.Json.Serialization;
 
 namespace JPPhotoManager.Domain
 {
@@ -7,8 +6,6 @@ namespace JPPhotoManager.Domain
     {
         public string FolderId { get; set; }
         public string Path { get; set; }
-
-        [JsonIgnore]
         public string ThumbnailsFilename => FolderId + ".bin";
 
         public string Name

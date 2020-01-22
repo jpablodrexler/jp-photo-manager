@@ -15,17 +15,14 @@ namespace JPPhotoManager.Tests
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration
-            {
-                Imports = new List<ImportNewAssetsDirectoriesDefinition>
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
                 {
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = sourceDirectory,
-                        DestinationDirectory = destinationDirectory
-                    }
-                }
-            };
+                    SourceDirectory = sourceDirectory,
+                    DestinationDirectory = destinationDirectory
+                });
 
             Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
@@ -74,17 +71,14 @@ namespace JPPhotoManager.Tests
                 "NewImage3.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration
-            {
-                Imports = new List<ImportNewAssetsDirectoriesDefinition>
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
                 {
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = sourceDirectory,
-                        DestinationDirectory = destinationDirectory
-                    }
-                }
-            };
+                    SourceDirectory = sourceDirectory,
+                    DestinationDirectory = destinationDirectory
+                });
 
             Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
@@ -154,17 +148,14 @@ namespace JPPhotoManager.Tests
                 "ExistingImage3.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration
-            {
-                Imports = new List<ImportNewAssetsDirectoriesDefinition>
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
                 {
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = sourceDirectory,
-                        DestinationDirectory = destinationDirectory
-                    }
-                }
-            };
+                    SourceDirectory = sourceDirectory,
+                    DestinationDirectory = destinationDirectory
+                });
 
             Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
@@ -235,18 +226,15 @@ namespace JPPhotoManager.Tests
                 "ExistingImage3.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration
-            {
-                Imports = new List<ImportNewAssetsDirectoriesDefinition>
-                {
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = sourceDirectory,
-                        DestinationDirectory = destinationDirectory
-                    }
-                }
-            };
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
 
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = sourceDirectory,
+                    DestinationDirectory = destinationDirectory
+                });
+            
             Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
             Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
@@ -330,23 +318,22 @@ namespace JPPhotoManager.Tests
                 "ExistingImage2.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration
-            {
-                Imports = new List<ImportNewAssetsDirectoriesDefinition>
-                {
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = firstSourceDirectory,
-                        DestinationDirectory = firstDestinationDirectory
-                    },
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = secondSourceDirectory,
-                        DestinationDirectory = secondDestinationDirectory
-                    }
-                }
-            };
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
 
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = firstSourceDirectory,
+                    DestinationDirectory = firstDestinationDirectory
+                });
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = secondSourceDirectory,
+                    DestinationDirectory = secondDestinationDirectory
+                });
+            
             Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
             Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
@@ -419,28 +406,29 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void ValidateAllValidDefinitionsTest()
         {
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration
-            {
-                Imports = new List<ImportNewAssetsDirectoriesDefinition>
-                {
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = @"C:\MyFirstGame\Screenshots",
-                        DestinationDirectory = @"C:\Images\MyFirstGame"
-                    },
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = @"C:\MySecondGame\Screenshots",
-                        DestinationDirectory = @"C:\Images\MySecondGame"
-                    },
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = @"\\MyServer\Images",
-                        DestinationDirectory = @"C:\Images"
-                    }
-                }
-            };
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
 
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = @"C:\MyFirstGame\Screenshots",
+                    DestinationDirectory = @"C:\Images\MyFirstGame"
+                });
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = @"C:\MySecondGame\Screenshots",
+                    DestinationDirectory = @"C:\Images\MySecondGame"
+                });
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = @"\\MyServer\Images",
+                    DestinationDirectory = @"C:\Images"
+                });
+            
             importConfiguration.Validate();
 
             Assert.Equal(3, importConfiguration.Imports.Count);
@@ -455,38 +443,43 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void ValidateOneInvalidDefinitionTest()
         {
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration
-            {
-                Imports = new List<ImportNewAssetsDirectoriesDefinition>
-                {
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = @"C:\MyFirstGame\Screenshots",
-                        DestinationDirectory = @"C:\Images\MyFirstGame"
-                    },
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = @"C:\MySecondGame\Screenshots",
-                        DestinationDirectory = @"C:\Images\MySecondGame"
-                    },
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = @"http://www.some-site.com",
-                        DestinationDirectory = @"ftp://some-location.com"
-                    },
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = @"InvalidValue",
-                        DestinationDirectory = @"InvalidValue"
-                    },
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = @"Invalid@Value.com",
-                        DestinationDirectory = @"Invalid@Value.com"
-                    }
-                }
-            };
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
 
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = @"C:\MyFirstGame\Screenshots",
+                    DestinationDirectory = @"C:\Images\MyFirstGame"
+                });
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = @"C:\MySecondGame\Screenshots",
+                    DestinationDirectory = @"C:\Images\MySecondGame"
+                });
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = @"http://www.some-site.com",
+                    DestinationDirectory = @"ftp://some-location.com"
+                });
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = @"InvalidValue",
+                    DestinationDirectory = @"InvalidValue"
+                });
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = @"Invalid@Value.com",
+                    DestinationDirectory = @"Invalid@Value.com"
+                });
+            
             importConfiguration.Validate();
 
             Assert.Equal(2, importConfiguration.Imports.Count);
@@ -499,33 +492,36 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void NormalizeTest()
         {
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration
-            {
-                Imports = new List<ImportNewAssetsDirectoriesDefinition>
-                {
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = @"C:\MyFirstGame\Screenshots",
-                        DestinationDirectory = @"C:\Images\\\MyFirstGame\"
-                    },
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = @"C:\\\MySecondGame\Screenshots\\",
-                        DestinationDirectory = @"C:\Images\MySecondGame\\\\\"
-                    },
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = @"\\MyServer\Screenshots\\\",
-                        DestinationDirectory = @"C:\Images\\\\\"
-                    },
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = @"\\\\\MyServer\Screenshots\\\",
-                        DestinationDirectory = @"C:\Images\\\\\"
-                    }
-                }
-            };
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
 
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = @"C:\MyFirstGame\Screenshots",
+                    DestinationDirectory = @"C:\Images\\\MyFirstGame\"
+                });
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = @"C:\\\MySecondGame\Screenshots\\",
+                    DestinationDirectory = @"C:\Images\MySecondGame\\\\\"
+                });
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = @"\\MyServer\Screenshots\\\",
+                    DestinationDirectory = @"C:\Images\\\\\"
+                });
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = @"\\\\\MyServer\Screenshots\\\",
+                    DestinationDirectory = @"C:\Images\\\\\"
+                });
+            
             importConfiguration.Normalize();
 
             Assert.Equal(4, importConfiguration.Imports.Count);
@@ -545,18 +541,15 @@ namespace JPPhotoManager.Tests
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration
-            {
-                Imports = new List<ImportNewAssetsDirectoriesDefinition>
-                {
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = sourceDirectory,
-                        DestinationDirectory = destinationDirectory
-                    }
-                }
-            };
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
 
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = sourceDirectory,
+                    DestinationDirectory = destinationDirectory
+                });
+            
             Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
             Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
@@ -597,18 +590,15 @@ namespace JPPhotoManager.Tests
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration
-            {
-                Imports = new List<ImportNewAssetsDirectoriesDefinition>
-                {
-                    new ImportNewAssetsDirectoriesDefinition
-                    {
-                        SourceDirectory = sourceDirectory,
-                        DestinationDirectory = destinationDirectory
-                    }
-                }
-            };
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
 
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = sourceDirectory,
+                    DestinationDirectory = destinationDirectory
+                });
+            
             Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
             Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
