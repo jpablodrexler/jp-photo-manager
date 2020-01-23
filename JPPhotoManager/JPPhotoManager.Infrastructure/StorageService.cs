@@ -25,6 +25,11 @@ namespace JPPhotoManager.Infrastructure
             return new DirectoryInfo(directoryPath).Parent.FullName;
         }
 
+        public List<DirectoryInfo> GetSubDirectories(string directoryPath)
+        {
+            return new DirectoryInfo(directoryPath).EnumerateDirectories().ToList();
+        }
+
         public string ResolveDataDirectory()
         {
             return userConfigurationService.GetApplicationDataFolder();
