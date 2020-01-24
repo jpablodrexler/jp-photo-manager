@@ -6,9 +6,9 @@ namespace JPPhotoManager.UI.Converters
 {
     public class FileSizeConverter : IValueConverter
     {
-        private const decimal ONE_KILOBYTE = 1024;
-        private const decimal ONE_MEGABYTE = ONE_KILOBYTE * 1024;
-        private const decimal ONE_GIGABYTE = ONE_MEGABYTE * 1024;
+        private const long ONE_KILOBYTE = 1024;
+        private const long ONE_MEGABYTE = ONE_KILOBYTE * 1024;
+        private const long ONE_GIGABYTE = ONE_MEGABYTE * 1024;
         private const string KILOBYTE_UNIT = "KB";
         private const string MEGABYTE_UNIT = "MB";
         private const string GIGABYTE_UNIT = "GB";

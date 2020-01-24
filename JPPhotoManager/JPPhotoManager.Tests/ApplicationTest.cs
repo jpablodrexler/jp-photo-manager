@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
@@ -10,13 +9,13 @@ using Xunit;
 
 namespace JPPhotoManager.Tests
 {
-    public class JPPhotoManagerApplicationTest
+    public class ApplicationTest
     {
         private string dataDirectory;
         private string assetDataSetPath;
         private IConfigurationRoot configuration;
 
-        public JPPhotoManagerApplicationTest()
+        public ApplicationTest()
         {
             dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTest).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
@@ -204,10 +203,11 @@ namespace JPPhotoManager.Tests
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
             Assert.Single(duplicatedAssetSets);
 
-            List<Asset> duplicatedAssets = duplicatedAssetSets[0];
+            DuplicatedAssetCollection duplicatedAssets = duplicatedAssetSets[0];
             Assert.Equal(2, duplicatedAssets.Count);
             Assert.Equal("Image 2.jpg", duplicatedAssets[0].FileName);
             Assert.Equal("Image 2 duplicated.jpg", duplicatedAssets[1].FileName);
+            Assert.Equal("Image 2.jpg (2 duplicates)", duplicatedAssets.Description);
 
             Assert.True(repository.ContainsThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName));
             Assert.True(repository.ContainsThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName));
