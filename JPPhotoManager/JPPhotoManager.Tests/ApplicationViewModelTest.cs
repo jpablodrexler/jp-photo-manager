@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Windows;
 using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.UI.ViewModels;
@@ -166,6 +167,40 @@ namespace JPPhotoManager.Tests
 
             Assert.Equal(-1, viewModel.ViewerPosition);
             Assert.Null(viewModel.Files);
+        }
+
+        [Fact]
+        public void ThumbnailsVisibleTest()
+        {
+            Mock<IApplication> mockApp = new Mock<IApplication>();
+            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+            
+            viewModel.ChangeAppMode(AppModeEnum.Thumbnails);
+            
+            Assert.Equal(Visibility.Visible, viewModel.ThumbnailsVisible);
+
+            viewModel.ChangeAppMode(AppModeEnum.Viewer);
+
+            Assert.Equal(Visibility.Hidden, viewModel.ThumbnailsVisible);
+        }
+
+        [Fact]
+        public void ViewerVisibleTest()
+        {
+            Mock<IApplication> mockApp = new Mock<IApplication>();
+            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+
+            viewModel.ChangeAppMode(AppModeEnum.Viewer);
+
+            Assert.Equal(Visibility.Visible, viewModel.ViewerVisible);
+
+            viewModel.ChangeAppMode(AppModeEnum.Thumbnails);
+
+            Assert.Equal(Visibility.Hidden, viewModel.ViewerVisible);
         }
     }
 }
