@@ -2,6 +2,7 @@
 using Moq;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using Xunit;
 
@@ -632,6 +633,90 @@ namespace JPPhotoManager.Tests
             Assert.Equal(0, result[0].ImportedImages);
             Assert.Equal(@"No images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.", result[0].Message);
             Assert.Empty(statusChanges);
+        }
+
+        [Fact]
+        public void ImportNewImagesSourceNotEmptyDestinationEmptyIncludingSubFoldersTest()
+        {
+            string sourceDirectory = @"C:\MyGame\Screenshots";
+            string sourceSubDirectory = @"C:\MyGame\Screenshots\SubDirectory";
+            string destinationDirectory = @"C:\Images\MyGame";
+
+            string[] sourceFileNames = new string[]
+            {
+                "NewImage1.jpg",
+                "NewImage2.jpg",
+                "NewImage3.jpg"
+            };
+
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = sourceDirectory,
+                    DestinationDirectory = destinationDirectory,
+                    IncludeSubFolders = true
+                });
+
+            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
+            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+
+            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
+                .Returns(importConfiguration);
+
+            storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
+                .Returns(true);
+
+            storageServiceMock.Setup(s => s.FolderExists(sourceSubDirectory))
+                .Returns(true);
+
+            storageServiceMock.Setup(s => s.FolderExists(destinationDirectory))
+                .Returns(true);
+
+            storageServiceMock.Setup(s => s.GetFileNames(sourceDirectory))
+                .Returns(sourceFileNames);
+
+            storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(true);
+
+            storageServiceMock.Setup(s => s.GetSubDirectories(sourceDirectory)).Returns(
+                new List<DirectoryInfo>
+                {
+                    new DirectoryInfo(sourceSubDirectory)
+                });
+
+            storageServiceMock.Setup(s => s.GetSubDirectories(sourceSubDirectory)).Returns(new List<DirectoryInfo>());
+
+            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+                repositoryMock.Object,
+                storageServiceMock.Object,
+                new DirectoryComparer());
+
+            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+
+            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+
+            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage3.jpg", @"C:\Images\MyGame\NewImage3.jpg"), Times.Once);
+            Assert.Equal(2, result.Count);
+            Assert.Equal(@"C:\MyGame\Screenshots", result[0].SourceDirectory);
+            Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
+            Assert.Equal(3, result[0].ImportedImages);
+            Assert.Equal(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.", result[0].Message);
+            Assert.Equal(@"C:\MyGame\Screenshots\SubDirectory", result[1].SourceDirectory);
+            Assert.Equal(@"C:\Images\MyGame\SubDirectory", result[1].DestinationDirectory);
+            Assert.Equal(0, result[1].ImportedImages);
+            Assert.Equal(@"No images imported from 'C:\MyGame\Screenshots\SubDirectory' to 'C:\Images\MyGame\SubDirectory'.", result[1].Message);
+            Assert.Equal(3, statusChanges.Count);
+            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'", statusChanges[0].NewStatus);
+            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'", statusChanges[1].NewStatus);
+            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'", statusChanges[2].NewStatus);
         }
     }
 }

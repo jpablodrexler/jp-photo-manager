@@ -6,9 +6,9 @@ namespace JPPhotoManager.UI.Converters
 {
     public class FileSizeConverter : IValueConverter
     {
-        private const decimal ONE_KILOBYTE = 1024;
-        private const decimal ONE_MEGABYTE = ONE_KILOBYTE * 1024;
-        private const decimal ONE_GIGABYTE = ONE_MEGABYTE * 1024;
+        private const long ONE_KILOBYTE = 1024;
+        private const long ONE_MEGABYTE = ONE_KILOBYTE * 1024;
+        private const long ONE_GIGABYTE = ONE_MEGABYTE * 1024;
         private const string KILOBYTE_UNIT = "KB";
         private const string MEGABYTE_UNIT = "MB";
         private const string GIGABYTE_UNIT = "GB";
@@ -25,25 +25,28 @@ namespace JPPhotoManager.UI.Converters
             else
             {
                 decimal bytes = FileSize;
-                decimal decimal_value = 0;
-                string unit = "";
+                decimal decimal_value;
+                string unit;
 
-                if (FileSize >= ONE_KILOBYTE && FileSize < ONE_MEGABYTE)
+                bool sizeInKb = (FileSize >= ONE_KILOBYTE && FileSize < ONE_MEGABYTE && FileSize < ONE_GIGABYTE);
+                bool sizeInMb = (FileSize >= ONE_MEGABYTE && FileSize < ONE_GIGABYTE);
+
+                if (sizeInKb)
                 {
                     decimal_value = bytes / ONE_KILOBYTE;
                     unit = KILOBYTE_UNIT;
                 }
-                else if (FileSize >= ONE_MEGABYTE && FileSize < ONE_GIGABYTE)
+                else if (!sizeInKb && sizeInMb)
                 {
                     decimal_value = bytes / ONE_MEGABYTE;
                     unit = MEGABYTE_UNIT;
                 }
-                else if (FileSize >= ONE_GIGABYTE)
+                else
                 {
                     decimal_value = bytes / ONE_GIGABYTE;
                     unit = GIGABYTE_UNIT;
                 }
-
+                
                 result = decimal_value.ToString("0.0", culture) + " " + unit;
             }
 

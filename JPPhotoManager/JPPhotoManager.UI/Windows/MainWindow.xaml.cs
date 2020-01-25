@@ -1,5 +1,6 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
+using JPPhotoManager.Infrastructure;
 using JPPhotoManager.UI.ViewModels;
 using log4net;
 using System;
@@ -21,6 +22,7 @@ namespace JPPhotoManager.UI.Windows
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public partial class MainWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);

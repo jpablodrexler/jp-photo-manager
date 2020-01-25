@@ -11,8 +11,6 @@ namespace JPPhotoManager.Domain
         private readonly IStorageService storageService;
         private readonly IDirectoryComparer directoryComparer;
 
-        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         public ImportNewAssetsService(
             IAssetRepository assetRepository,
             IStorageService storageService,
@@ -91,7 +89,7 @@ namespace JPPhotoManager.Domain
 
                 if (includeSubFolders)
                 {
-                    var subdirectories = new DirectoryInfo(sourceDirectory).EnumerateDirectories();
+                    var subdirectories = this.storageService.GetSubDirectories(sourceDirectory);
 
                     foreach (var subdir in subdirectories)
                     {

@@ -1,11 +1,10 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
+using JPPhotoManager.Infrastructure;
 using JPPhotoManager.UI.ViewModels;
 using JPPhotoManager.UI.Windows;
 using log4net;
 using System;
-using System.Collections.ObjectModel;
-using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
@@ -17,6 +16,7 @@ namespace JPPhotoManager.UI.Controls
     /// <summary>
     /// Interaction logic for ThumbnailsUserControl.xaml
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public partial class ThumbnailsUserControl : UserControl
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
@@ -45,14 +45,7 @@ namespace JPPhotoManager.UI.Controls
             {
                 this.ViewModel.CurrentFolder = selectedImagePath;
                 Asset[] assets = await GetAssets(assetApp, ViewModel.CurrentFolder).ConfigureAwait(true);
-
-                // The assets that have no image data are filtered out.
-                // If a folder is being catalogued for the first time and
-                // the GetImages method is called, since the thumbnails file is not
-                // created yet, the assets catalogued so far are returned without
-                // its thumbnails.
-                assets = assets.Where(a => a.ImageData != null).ToArray();
-                this.ViewModel.Files = new ObservableCollection<Asset>(assets);
+                this.ViewModel.SetFiles(assets);
 
                 if (this.thumbnailsListView.Items.Count > 0)
                 {

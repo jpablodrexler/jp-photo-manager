@@ -18,7 +18,6 @@ namespace JPPhotoManager.UI.ViewModels
         private int viewerPosition;
         private string currentFolder;
         private ObservableCollection<Asset> files;
-        private ImageSource currentImageSource;
         private string appTitle;
         private string statusMessage;
 
@@ -94,12 +93,23 @@ namespace JPPhotoManager.UI.ViewModels
         public ObservableCollection<Asset> Files
         {
             get { return this.files; }
-            set
+            private set
             {
                 this.files = value;
                 this.NotifyPropertyChanged(nameof(Files));
                 this.UpdateAppTitle();
             }
+        }
+
+        public void SetFiles(Asset[] assets)
+        {
+            // The assets that have no image data are filtered out.
+            // If a folder is being catalogued for the first time and
+            // the GetImages method is called, since the thumbnails file is not
+            // created yet, the assets catalogued so far are returned without
+            // its thumbnails.
+            assets = assets?.Where(a => a.ImageData != null).ToArray();
+            this.Files = assets != null ? new ObservableCollection<Asset>(assets) : null;
         }
 
         public string AppTitle

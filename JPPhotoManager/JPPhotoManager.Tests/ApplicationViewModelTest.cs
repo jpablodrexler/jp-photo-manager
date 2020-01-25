@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Windows;
+using System.Windows.Media.Imaging;
 using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.UI.ViewModels;
@@ -29,24 +31,22 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void RemoveAssetMidElementTest()
         {
-            ObservableCollection<Asset> assets = new ObservableCollection<Asset>
+            Asset[] assets = new Asset[]
             {
-                new Asset { FileName="Image1.jpg" },
-                new Asset { FileName="Image2.jpg" },
-                new Asset { FileName="Image3.jpg" },
-                new Asset { FileName="Image4.jpg" },
-                new Asset { FileName="Image5.jpg" }
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
             };
 
             Mock<IApplication> mockApp = new Mock<IApplication>();
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object)
-            {
-                Files = assets,
-                ViewerPosition = 2
-            };
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
+            viewModel.SetFiles(assets);
+            viewModel.ViewerPosition = 2;
             viewModel.RemoveAsset(assets[2]);
 
             Assert.Equal(2, viewModel.ViewerPosition);
@@ -56,23 +56,21 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void RemoveAssetFirstElementTest()
         {
-            ObservableCollection<Asset> assets = new ObservableCollection<Asset>
+            Asset[] assets = new Asset[]
             {
-                new Asset { FileName="Image1.jpg" },
-                new Asset { FileName="Image2.jpg" },
-                new Asset { FileName="Image3.jpg" },
-                new Asset { FileName="Image4.jpg" },
-                new Asset { FileName="Image5.jpg" }
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
             };
 
             Mock<IApplication> mockApp = new Mock<IApplication>();
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object)
-            {
-                Files = assets,
-                ViewerPosition = 0
-            };
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+            viewModel.SetFiles(assets);
+            viewModel.ViewerPosition = 0;
 
             viewModel.RemoveAsset(assets[0]);
 
@@ -83,23 +81,21 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void RemoveAssetLastElementTest()
         {
-            ObservableCollection<Asset> assets = new ObservableCollection<Asset>
+            Asset[] assets = new Asset[]
             {
-                new Asset { FileName="Image1.jpg" },
-                new Asset { FileName="Image2.jpg" },
-                new Asset { FileName="Image3.jpg" },
-                new Asset { FileName="Image4.jpg" },
-                new Asset { FileName="Image5.jpg" }
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
             };
 
             Mock<IApplication> mockApp = new Mock<IApplication>();
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object)
-            {
-                Files = assets,
-                ViewerPosition = 4
-            };
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+            viewModel.SetFiles(assets);
+            viewModel.ViewerPosition = 4;
 
             viewModel.RemoveAsset(assets[4]);
 
@@ -110,19 +106,17 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void RemoveAssetSoleElementTest()
         {
-            ObservableCollection<Asset> assets = new ObservableCollection<Asset>
+            Asset[] assets = new Asset[]
             {
-                new Asset { FileName="Image1.jpg" }
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() }
             };
 
             Mock<IApplication> mockApp = new Mock<IApplication>();
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object)
-            {
-                Files = assets,
-                ViewerPosition = 0
-            };
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+            viewModel.SetFiles(assets);
+            viewModel.ViewerPosition = 0;
 
             viewModel.RemoveAsset(assets[0]);
 
@@ -133,16 +127,14 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void RemoveAssetNoElementsTest()
         {
-            ObservableCollection<Asset> assets = new ObservableCollection<Asset>();
+            Asset[] assets = new Asset[] { };
 
             Mock<IApplication> mockApp = new Mock<IApplication>();
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object)
-            {
-                Files = assets,
-                ViewerPosition = -1
-            };
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+            viewModel.SetFiles(assets);
+            viewModel.ViewerPosition = -1;
 
             viewModel.RemoveAsset(null);
 
@@ -156,16 +148,48 @@ namespace JPPhotoManager.Tests
             Mock<IApplication> mockApp = new Mock<IApplication>();
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object)
-            {
-                Files = null,
-                ViewerPosition = -1
-            };
-
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+            viewModel.SetFiles(null);
+            viewModel.ViewerPosition = -1;
+            
             viewModel.RemoveAsset(null);
 
             Assert.Equal(-1, viewModel.ViewerPosition);
             Assert.Null(viewModel.Files);
+        }
+
+        [Fact]
+        public void ThumbnailsVisibleTest()
+        {
+            Mock<IApplication> mockApp = new Mock<IApplication>();
+            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+            
+            viewModel.ChangeAppMode(AppModeEnum.Thumbnails);
+            
+            Assert.Equal(Visibility.Visible, viewModel.ThumbnailsVisible);
+
+            viewModel.ChangeAppMode(AppModeEnum.Viewer);
+
+            Assert.Equal(Visibility.Hidden, viewModel.ThumbnailsVisible);
+        }
+
+        [Fact]
+        public void ViewerVisibleTest()
+        {
+            Mock<IApplication> mockApp = new Mock<IApplication>();
+            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+
+            viewModel.ChangeAppMode(AppModeEnum.Viewer);
+
+            Assert.Equal(Visibility.Visible, viewModel.ViewerVisible);
+
+            viewModel.ChangeAppMode(AppModeEnum.Thumbnails);
+
+            Assert.Equal(Visibility.Hidden, viewModel.ViewerVisible);
         }
     }
 }

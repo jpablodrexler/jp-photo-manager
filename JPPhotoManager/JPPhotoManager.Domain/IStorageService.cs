@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Domain
@@ -7,6 +8,7 @@ namespace JPPhotoManager.Domain
     public interface IStorageService
     {
         string GetParentDirectory(string directoryPath);
+        List<DirectoryInfo> GetSubDirectories(string directoryPath);
         string ResolveDataDirectory();
         string ResolveTableFilePath(string dataDirectory, string entityName);
         string ResolveBlobFilePath(string dataDirectory, string thumbnailsFileName);

@@ -12,7 +12,7 @@ namespace JPPhotoManager.Domain
         {
             get
             {
-                return this.Count > 0 ? $"{this[0].FileName} ({this.Count} duplicates)" : string.Empty;
+                return $"{this[0].FileName} ({this.Count} duplicates)";
             }
         }
     }

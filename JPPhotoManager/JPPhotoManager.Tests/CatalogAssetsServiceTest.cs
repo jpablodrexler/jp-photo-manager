@@ -681,5 +681,81 @@ namespace JPPhotoManager.Tests
             Assert.Throws<ArgumentNullException>(() =>
                 catalogAssetsService.DeleteAsset(new Asset { Folder = null }, deleteFile: true));
         }
+
+        [Fact]
+        public void LogOnExceptionTest()
+        {
+            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
+
+            Mock<IStorageService> storageService = new Mock<IStorageService>();
+            storageService.Setup(s => s.FolderExists(It.IsAny<string>())).Returns(true);
+            storageService.Setup(s => s.GetFileNames(It.IsAny<string>())).Throws(new IOException());
+
+            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService.Object));
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
+
+            CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
+                    repository,
+                    new AssetHashCalculatorService(),
+                    storageService.Object,
+                    userConfigurationService.Object,
+                    new DirectoryComparer());
+
+            string[] fileList = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
+                .Select(f => Path.GetFileName(f))
+                .ToArray();
+
+            var statusChanges = new List<CatalogChangeCallbackEventArgs>();
+            
+            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+
+            var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
+            var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
+
+            var repositoryAssets = repository.GetAssets(dataDirectory);
+            Assert.Empty(processedAssets);
+            Assert.Empty(repositoryAssets);
+            Assert.Single(exceptions);
+
+            bool allProcessedAssetsInFileList = processedAssets.All(a => fileList.Contains(a.FileName));
+            bool allProcessedAssetsInRepository = processedAssets.All(a => repositoryAssets.Contains(a));
+            bool allRepositoryAssetsInProcessed = repositoryAssets.All(a => processedAssets.Contains(a));
+
+            Assert.True(allProcessedAssetsInFileList);
+            Assert.True(allProcessedAssetsInRepository);
+            Assert.True(allRepositoryAssetsInProcessed);
+        }
+
+        [Fact]
+        public void SaveCatalogOnOperationCanceledExceptionTest()
+        {
+            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
+
+            Mock<IStorageService> storageService = new Mock<IStorageService>();
+            storageService.Setup(s => s.FolderExists(It.IsAny<string>())).Returns(true);
+            storageService.Setup(s => s.GetFileNames(It.IsAny<string>())).Throws(new OperationCanceledException());
+
+            Mock<IAssetRepository> repository = new Mock<IAssetRepository>();
+            
+            CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
+                    repository.Object,
+                    new AssetHashCalculatorService(),
+                    storageService.Object,
+                    userConfigurationService.Object,
+                    new DirectoryComparer());
+
+            var statusChanges = new List<CatalogChangeCallbackEventArgs>();
+
+            Assert.Throws<OperationCanceledException>(() => catalogAssetsService.CatalogImages(e => statusChanges.Add(e)));
+            repository.Verify(r => r.SaveCatalog(It.IsAny<Folder>()), Times.Once);
+        }
     }
 }

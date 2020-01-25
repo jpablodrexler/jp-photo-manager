@@ -1,5 +1,7 @@
-﻿using JPPhotoManager.UI.Converters;
-using JPPhotoManager.Domain;
+﻿using JPPhotoManager.Domain;
+using JPPhotoManager.UI.Converters;
+using System;
+using System.Globalization;
 using System.Threading;
 using Xunit;
 
@@ -21,6 +23,13 @@ namespace JPPhotoManager.Tests
 
             string result = (string)converter.Convert(asset, typeof(Asset), null, Thread.CurrentThread.CurrentCulture);
             Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void ConvertBackTest()
+        {
+            PixelSizeConverter converter = new PixelSizeConverter();
+            Assert.Throws<NotImplementedException>(() => converter.ConvertBack("1920x1080 pixels", typeof(string), null, new CultureInfo("en-US")));
         }
     }
 }

@@ -1,21 +1,19 @@
-﻿using JPPhotoManager.Domain;
+﻿using JPPhotoManager.Infrastructure;
 using JPPhotoManager.UI.ViewModels;
 using JPPhotoManager.UI.Windows;
 using log4net;
 using System;
-using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.UI.Controls
 {
     /// <summary>
     /// Interaction logic for ViewerUserControl.xaml
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public partial class ViewerUserControl : UserControl
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
