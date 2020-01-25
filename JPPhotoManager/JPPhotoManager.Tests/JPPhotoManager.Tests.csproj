@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <None Remove="TestFiles\Image 1.jpg" />
+    <None Remove="TestFiles\Image 10 portrait.png" />
     <None Remove="TestFiles\Image 2 duplicated.jpg" />
     <None Remove="TestFiles\Image 2.jpg" />
     <None Remove="TestFiles\Image 3.jpg" />
@@ -20,6 +21,7 @@
     <None Remove="TestFiles\Image 6.jpg" />
     <None Remove="TestFiles\Image 7.jpg" />
     <None Remove="TestFiles\Image 8.jpeg" />
+    <None Remove="TestFiles\Image 9 portrait.png" />
     <None Remove="TestFiles\Image 9.png" />
     <None Remove="TestFiles\Image.pptx" />
     <None Remove="TestFiles\IMAGE_WITH_UPPERCASE_NAME.JPG" />
@@ -27,6 +29,9 @@
 
   <ItemGroup>
     <Content Include="TestFiles\Image 1.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\Image 10 portrait.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="TestFiles\Image 2 duplicated.jpg">
