@@ -1,9 +1,9 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
+using JPPhotoManager.Infrastructure;
 using JPPhotoManager.UI.ViewModels;
 using log4net;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -16,6 +16,7 @@ namespace JPPhotoManager.UI.Windows
     /// <summary>
     /// Interaction logic for ImportNewAssetsWindow.xaml
     /// </summary>
+    [ExcludeFromCodeCoverage]
     public partial class ImportNewAssetsWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
