@@ -83,9 +83,15 @@ namespace JPPhotoManager.Tests
                     userConfigurationService.Object,
                     new DirectoryComparer());
 
-            string[] fileList = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
-                .Select(f => Path.GetFileName(f))
-                .ToArray();
+            var jpegFiles = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
+                .Select(f => Path.GetFileName(f));
+
+            var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
+                .Select(f => Path.GetFileName(f));
+
+            List<string> fileList = new List<string>();
+            fileList.AddRange(jpegFiles);
+            fileList.AddRange(pngFiles);
 
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
             
@@ -95,8 +101,8 @@ namespace JPPhotoManager.Tests
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
 
             var repositoryAssets = repository.GetAssets(dataDirectory);
-            Assert.Equal(fileList.Length, processedAssets.Count);
-            Assert.Equal(fileList.Length, repositoryAssets.Length);
+            Assert.Equal(fileList.Count, processedAssets.Count);
+            Assert.Equal(fileList.Count, repositoryAssets.Length);
             Assert.Empty(exceptions);
 
             bool allProcessedAssetsInFileList = processedAssets.All(a => fileList.Contains(a.FileName));
@@ -106,6 +112,177 @@ namespace JPPhotoManager.Tests
             Assert.True(allProcessedAssetsInFileList);
             Assert.True(allProcessedAssetsInRepository);
             Assert.True(allRepositoryAssetsInProcessed);
+        }
+
+        [Fact]
+        public void CatalogFolderLargerThanBatchSizeTest()
+        {
+            int batchSize = 5;
+
+            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
+
+            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService.Object));
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
+
+            CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
+                    repository,
+                    new AssetHashCalculatorService(),
+                    new StorageService(userConfigurationService.Object),
+                    userConfigurationService.Object,
+                    new DirectoryComparer());
+
+            var jpegFiles = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
+                .Select(f => Path.GetFileName(f));
+
+            var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
+                .Select(f => Path.GetFileName(f));
+
+            List<string> fileList = new List<string>();
+            fileList.AddRange(jpegFiles);
+            fileList.AddRange(pngFiles);
+
+            var statusChanges = new List<CatalogChangeCallbackEventArgs>();
+
+            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+
+            var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
+            var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
+
+            var repositoryAssets = repository.GetAssets(dataDirectory);
+            Assert.True(fileList.Count > batchSize);
+            Assert.Equal(batchSize, processedAssets.Count);
+            Assert.Equal(batchSize, repositoryAssets.Length);
+            Assert.Empty(exceptions);
+
+            bool allProcessedAssetsInFileList = processedAssets.All(a => fileList.Contains(a.FileName));
+            bool allProcessedAssetsInRepository = processedAssets.All(a => repositoryAssets.Contains(a));
+            bool allRepositoryAssetsInProcessed = repositoryAssets.All(a => processedAssets.Contains(a));
+
+            Assert.True(allProcessedAssetsInFileList);
+            Assert.True(allProcessedAssetsInRepository);
+            Assert.True(allRepositoryAssetsInProcessed);
+        }
+
+        [Fact]
+        public void CatalogFolderRemovesDeletedFileTest()
+        {
+            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
+
+            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService.Object));
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
+
+            CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
+                    repository,
+                    new AssetHashCalculatorService(),
+                    new StorageService(userConfigurationService.Object),
+                    userConfigurationService.Object,
+                    new DirectoryComparer());
+
+            var jpegFiles = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
+                .Select(f => Path.GetFileName(f));
+
+            var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
+                .Select(f => Path.GetFileName(f));
+
+            List<string> fileList = new List<string>();
+            fileList.AddRange(jpegFiles);
+            fileList.AddRange(pngFiles);
+
+            var statusChanges = new List<CatalogChangeCallbackEventArgs>();
+
+            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+
+            var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
+            var repositoryAssets = repository.GetAssets(dataDirectory);
+            string deletedFile = fileList[0];
+
+            Mock<IDirectoryComparer> directoryComparer = new Mock<IDirectoryComparer>();
+            directoryComparer.Setup(
+                c => c.GetDeletedFileNames(It.IsAny<string[]>(), It.IsAny<List<Asset>>()))
+                .Returns(new string[] { deletedFile });
+
+            catalogAssetsService = new CatalogAssetsService(
+                    repository,
+                    new AssetHashCalculatorService(),
+                    new StorageService(userConfigurationService.Object),
+                    userConfigurationService.Object,
+                    directoryComparer.Object);
+
+            statusChanges.Clear();
+            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+            var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
+
+            Assert.Contains(repositoryAssets, a => a.FileName == deletedFile);
+            Assert.DoesNotContain(repositoryAssetsAfterDelete, a => a.FileName == deletedFile);
+            Assert.Contains(statusChanges, s => s.Asset?.FileName == deletedFile);
+        }
+
+        [Fact]
+        public void CatalogFolderRemovesDeletedFileLargerThanBatchSizeTest()
+        {
+            int batchSize = 1000;
+
+            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
+
+            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService.Object));
+            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
+
+            CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
+                    repository,
+                    new AssetHashCalculatorService(),
+                    new StorageService(userConfigurationService.Object),
+                    userConfigurationService.Object,
+                    new DirectoryComparer());
+
+            var jpegFiles = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
+                .Select(f => Path.GetFileName(f));
+
+            var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
+                .Select(f => Path.GetFileName(f));
+
+            List<string> fileList = new List<string>();
+            fileList.AddRange(jpegFiles);
+            fileList.AddRange(pngFiles);
+
+            var statusChanges = new List<CatalogChangeCallbackEventArgs>();
+
+            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+
+            var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
+            var repositoryAssets = repository.GetAssets(dataDirectory);
+            
+            Mock<IDirectoryComparer> directoryComparer = new Mock<IDirectoryComparer>();
+            directoryComparer.Setup(
+                c => c.GetDeletedFileNames(It.IsAny<string[]>(), It.IsAny<List<Asset>>()))
+                .Returns(fileList.ToArray());
+
+            batchSize = 5;
+            userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
+
+            catalogAssetsService = new CatalogAssetsService(
+                    repository,
+                    new AssetHashCalculatorService(),
+                    new StorageService(userConfigurationService.Object),
+                    userConfigurationService.Object,
+                    directoryComparer.Object);
+
+            statusChanges.Clear();
+            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+            var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
+
+            Assert.Equal(fileList.Count - batchSize, repositoryAssetsAfterDelete.Length);
         }
 
         [Fact]

@@ -20,6 +20,7 @@
     <None Remove="TestFiles\Image 6.jpg" />
     <None Remove="TestFiles\Image 7.jpg" />
     <None Remove="TestFiles\Image 8.jpeg" />
+    <None Remove="TestFiles\Image 9.png" />
     <None Remove="TestFiles\Image.pptx" />
     <None Remove="TestFiles\IMAGE_WITH_UPPERCASE_NAME.JPG" />
   </ItemGroup>
@@ -50,6 +51,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="TestFiles\Image 8.jpeg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\Image 9.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="TestFiles\Image.pptx" />
