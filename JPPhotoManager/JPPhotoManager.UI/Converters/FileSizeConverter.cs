@@ -25,31 +25,28 @@ namespace JPPhotoManager.UI.Converters
             else
             {
                 decimal bytes = FileSize;
-                decimal decimal_value = 0;
-                string unit = "";
+                decimal decimal_value;
+                string unit;
 
-                if (FileSize >= ONE_KILOBYTE)
+                bool sizeInKb = (FileSize >= ONE_KILOBYTE && FileSize < ONE_MEGABYTE && FileSize < ONE_GIGABYTE);
+                bool sizeInMb = (FileSize >= ONE_MEGABYTE && FileSize < ONE_GIGABYTE);
+
+                if (sizeInKb)
                 {
-                    if (FileSize < ONE_MEGABYTE)
-                    {
-                        decimal_value = bytes / ONE_KILOBYTE;
-                        unit = KILOBYTE_UNIT;
-                    }
-                    else
-                    {
-                        if (FileSize < ONE_GIGABYTE)
-                        {
-                            decimal_value = bytes / ONE_MEGABYTE;
-                            unit = MEGABYTE_UNIT;
-                        }
-                        else
-                        {
-                            decimal_value = bytes / ONE_GIGABYTE;
-                            unit = GIGABYTE_UNIT;
-                        }
-                    }
+                    decimal_value = bytes / ONE_KILOBYTE;
+                    unit = KILOBYTE_UNIT;
                 }
-
+                else if (!sizeInKb && sizeInMb)
+                {
+                    decimal_value = bytes / ONE_MEGABYTE;
+                    unit = MEGABYTE_UNIT;
+                }
+                else
+                {
+                    decimal_value = bytes / ONE_GIGABYTE;
+                    unit = GIGABYTE_UNIT;
+                }
+                
                 result = decimal_value.ToString("0.0", culture) + " " + unit;
             }
 

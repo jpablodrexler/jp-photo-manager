@@ -1,9 +1,9 @@
-﻿using JPPhotoManager.UI.Converters;
-using JPPhotoManager.Domain;
-using System.Threading;
-using Xunit;
+﻿using JPPhotoManager.Domain;
+using JPPhotoManager.UI.Converters;
 using System;
 using System.Globalization;
+using System.Threading;
+using Xunit;
 
 namespace JPPhotoManager.Tests
 {
