@@ -1,14 +1,9 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Windows;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.UI.ViewModels
 {
@@ -176,7 +171,7 @@ namespace JPPhotoManager.UI.ViewModels
             }
             else if (this.AppMode == AppModeEnum.Viewer)
             {
-                title = string.Format("{0} {1} - {2} - imagen {3} de {4}", this.Product, this.Version, this.CurrentAsset?.FileName, this.ViewerPosition + 1, this.Files?.Count);
+                title = string.Format("{0} {1} - {2} - image {3} de {4}", this.Product, this.Version, this.CurrentAsset?.FileName, this.ViewerPosition + 1, this.Files?.Count);
             }
 
             this.AppTitle = title;
@@ -191,6 +186,7 @@ namespace JPPhotoManager.UI.ViewModels
         {
             Asset targetAsset = this.Files.FirstOrDefault(f => f.FileName == asset.FileName);
 
+            // TODO: Replace File.Exists call with a call to the Application object.
             if (targetAsset != null && File.Exists(targetAsset.FullPath))
             {
                 int position = this.Files.IndexOf(targetAsset);

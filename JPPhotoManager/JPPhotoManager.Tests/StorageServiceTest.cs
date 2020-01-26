@@ -148,16 +148,16 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void WriteReadJsonTest()
         {
-            List<string> writtenTuple = new List<string> { "Value 1", "Value 2" };
+            List<string> writtenList = new List<string> { "Value 1", "Value 2" };
             string jsonPath = Path.Combine(dataDirectory, "test.json");
 
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
-            storageService.WriteObjectToJson(writtenTuple, jsonPath);
-            List<string> readTuple = storageService.ReadObjectFromJson<List<string>>(jsonPath);
+            storageService.WriteObjectToJson(writtenList, jsonPath);
+            List<string> readList = storageService.ReadObjectFromJson<List<string>>(jsonPath);
 
-            Assert.Equal(writtenTuple.Count, readTuple.Count);
-            Assert.Equal(writtenTuple[0], readTuple[0]);
-            Assert.Equal(writtenTuple[1], readTuple[1]);
+            Assert.Equal(writtenList.Count, readList.Count);
+            Assert.Equal(writtenList[0], readList[0]);
+            Assert.Equal(writtenList[1], readList[1]);
         }
     }
 }
