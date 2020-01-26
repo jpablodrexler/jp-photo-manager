@@ -24,6 +24,10 @@
     <None Remove="TestFiles\Image 9.png" />
     <None Remove="TestFiles\Image.pptx" />
     <None Remove="TestFiles\IMAGE_WITH_UPPERCASE_NAME.JPG" />
+    <None Remove="TestFiles\TestFolder\EmptyFile.txt" />
+    <None Remove="TestFiles\TestFolder\TestHiddenSubFolder\EmptyFile.txt" />
+    <None Remove="TestFiles\TestFolder\TestSubFolder2\EmptyFile.txt" />
+    <None Remove="TestFiles\TestFolder\TestSubFolder1\EmptyFile.txt" />
   </ItemGroup>
 
   <ItemGroup>
@@ -62,6 +66,18 @@
     </Content>
     <Content Include="TestFiles\Image.pptx" />
     <Content Include="TestFiles\IMAGE_WITH_UPPERCASE_NAME.JPG">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\TestFolder\EmptyFile.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\TestFolder\TestHiddenSubFolder\EmptyFile.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\TestFolder\TestSubFolder2\EmptyFile.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\TestFolder\TestSubFolder1\EmptyFile.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

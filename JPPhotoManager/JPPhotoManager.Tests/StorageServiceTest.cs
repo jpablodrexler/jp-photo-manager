@@ -1,9 +1,10 @@
-﻿using JPPhotoManager.Infrastructure;
-using System;
-using JPPhotoManager.Domain;
-using System.IO;
+﻿using JPPhotoManager.Domain;
+using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Moq;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using Xunit;
 
 namespace JPPhotoManager.Tests
@@ -17,6 +18,9 @@ namespace JPPhotoManager.Tests
         {
             dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTest).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
+
+            string hiddenFolderPath = Path.Combine(dataDirectory, "TestFolder", "TestHiddenSubFolder");
+            File.SetAttributes(hiddenFolderPath, File.GetAttributes(hiddenFolderPath) | FileAttributes.Hidden);
 
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
             configurationMock
@@ -106,6 +110,54 @@ namespace JPPhotoManager.Tests
             Assert.True(fileNames.Length >= 2);
             Assert.Contains("Image 2.jpg", fileNames);
             Assert.Contains("Image 1.jpg", fileNames);
+        }
+
+        [Fact]
+        public void GetDrivesTest()
+        {
+            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
+            Folder[] drives = storageService.GetDrives();
+            Assert.NotEmpty(drives);
+        }
+
+        [Fact]
+        public void GetFoldersWithoutHiddenTest()
+        {
+            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
+            string parentPath = Path.Combine(dataDirectory, "TestFolder");
+            Folder[] folders = storageService.GetFolders(new Folder { Path = parentPath }, false);
+
+            Assert.Equal(2, folders.Length);
+            Assert.Equal("TestSubFolder1", folders[0].Name);
+            Assert.Equal("TestSubFolder2", folders[1].Name);
+        }
+
+        [Fact]
+        public void GetFoldersWithHiddenTest()
+        {
+            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
+            string parentPath = Path.Combine(dataDirectory, "TestFolder");
+            Folder[] folders = storageService.GetFolders(new Folder { Path = parentPath }, true);
+
+            Assert.Equal(3, folders.Length);
+            Assert.Equal("TestHiddenSubFolder", folders[0].Name);
+            Assert.Equal("TestSubFolder1", folders[1].Name);
+            Assert.Equal("TestSubFolder2", folders[2].Name);
+        }
+
+        [Fact]
+        public void WriteReadJsonTest()
+        {
+            List<string> writtenTuple = new List<string> { "Value 1", "Value 2" };
+            string jsonPath = Path.Combine(dataDirectory, "test.json");
+
+            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
+            storageService.WriteObjectToJson(writtenTuple, jsonPath);
+            List<string> readTuple = storageService.ReadObjectFromJson<List<string>>(jsonPath);
+
+            Assert.Equal(writtenTuple.Count, readTuple.Count);
+            Assert.Equal(writtenTuple[0], readTuple[0]);
+            Assert.Equal(writtenTuple[1], readTuple[1]);
         }
     }
 }
