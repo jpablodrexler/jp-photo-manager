@@ -43,13 +43,11 @@ namespace JPPhotoManager.Infrastructure
             return Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
         }
 
-        [ExcludeFromCodeCoverage]
         public string GetOneDriveDirectory()
         {
             return Environment.GetEnvironmentVariable("OneDrive", EnvironmentVariableTarget.User);
         }
 
-        [ExcludeFromCodeCoverage]
         public void SetAsWallpaper(Asset asset, WallpaperStyle style)
         {
             RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop", true);

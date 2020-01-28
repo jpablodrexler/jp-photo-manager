@@ -5,6 +5,7 @@ using Moq;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Windows.Media.Imaging;
 using Xunit;
 
 namespace JPPhotoManager.Tests
@@ -146,6 +147,19 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
+        public void GetSubDirectoriesTest()
+        {
+            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
+            string parentPath = Path.Combine(dataDirectory, "TestFolder");
+            List<DirectoryInfo> directories = storageService.GetSubDirectories(parentPath);
+
+            Assert.Equal(3, directories.Count);
+            Assert.Equal("TestHiddenSubFolder", directories[0].Name);
+            Assert.Equal("TestSubFolder1", directories[1].Name);
+            Assert.Equal("TestSubFolder2", directories[2].Name);
+        }
+
+        [Fact]
         public void WriteReadJsonTest()
         {
             List<string> writtenList = new List<string> { "Value 1", "Value 2" };
@@ -158,6 +172,28 @@ namespace JPPhotoManager.Tests
             Assert.Equal(writtenList.Count, readList.Count);
             Assert.Equal(writtenList[0], readList[0]);
             Assert.Equal(writtenList[1], readList[1]);
+        }
+
+        [Theory]
+        [InlineData(0, Rotation.Rotate0)]
+        [InlineData(1, Rotation.Rotate0)]
+        [InlineData(2, Rotation.Rotate0)]
+        [InlineData(3, Rotation.Rotate180)]
+        [InlineData(4, Rotation.Rotate180)]
+        [InlineData(5, Rotation.Rotate90)]
+        [InlineData(6, Rotation.Rotate90)]
+        [InlineData(7, Rotation.Rotate270)]
+        [InlineData(8, Rotation.Rotate270)]
+        [InlineData(9, Rotation.Rotate0)]
+        [InlineData(10, Rotation.Rotate0)]
+        [InlineData(ushort.MinValue, Rotation.Rotate0)]
+        [InlineData(ushort.MaxValue, Rotation.Rotate0)]
+        public void GetImageRotationTest(ushort exifOrientation, Rotation expected)
+        {
+            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
+            Rotation result = storageService.GetImageRotation(exifOrientation);
+
+            Assert.Equal(expected, result);
         }
     }
 }
