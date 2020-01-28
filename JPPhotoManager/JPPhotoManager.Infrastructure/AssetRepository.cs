@@ -22,21 +22,28 @@ namespace JPPhotoManager.Infrastructure
         private string assetsDataFilePath;
         private string foldersDataFilePath;
         private string importsDataFilePath;
-        private IStorageService storageService;
-        
+        private readonly IStorageService storageService;
+        private readonly IUserConfigurationService userConfigurationService;
+
         protected AssetCatalog AssetCatalog { get; private set; }
         private Dictionary<string, Dictionary<string, byte[]>> thumbnails;
 
-        public AssetRepository(IStorageService storageService)
+        public AssetRepository(IStorageService storageService, IUserConfigurationService userConfigurationService)
         {
             this.storageService = storageService;
+            this.userConfigurationService = userConfigurationService;
             this.thumbnails = new Dictionary<string, Dictionary<string, byte[]>>();
+            this.Initialize();
         }
 
-        public void Initialize(string assetsDataFilePath = null, string foldersDataFilePath = null, string importsDataFilePath = null)
+        private void Initialize()
         {
             if (!this.IsInitialized)
             {
+                string assetsDataFilePath = this.userConfigurationService.GetAssetsDataFilePath();
+                string foldersDataFilePath = this.userConfigurationService.GetFoldersDataFilePath();
+                string importsDataFilePath = this.userConfigurationService.GetImportsDataFilePath();
+
                 this.dataDirectory = this.storageService.ResolveDataDirectory();
                 this.assetsDataFilePath = string.IsNullOrEmpty(assetsDataFilePath) ? this.storageService.ResolveTableFilePath(this.dataDirectory, "asset") : assetsDataFilePath;
                 this.foldersDataFilePath = string.IsNullOrEmpty(foldersDataFilePath) ? this.storageService.ResolveTableFilePath(this.dataDirectory, "folder") : foldersDataFilePath;

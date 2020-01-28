@@ -30,7 +30,6 @@ namespace JPPhotoManager.Application
             this.assetRepository = assetRepository;
             this.userConfigurationService = userConfigurationService;
             this.storageService = storageService;
-            this.assetRepository.Initialize();
         }
 
         public Asset[] GetAssets(string directory)

@@ -29,8 +29,11 @@ namespace JPPhotoManager.Tests
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
-                .MockGetValue("appsettings:CatalogBatchSize", "100");
-            
+                .MockGetValue("appsettings:CatalogBatchSize", "100")
+                .MockGetValue("appsettings:AssetsDataFilePath", assetsDataFilePath)
+                .MockGetValue("appsettings:FoldersDataFilePath", foldersDataFilePath)
+                .MockGetValue("appsettings:ImportsDataFilePath", importsDataFilePath);
+
             configuration = configurationMock.Object;
 
             if (File.Exists(assetsDataFilePath))
@@ -52,9 +55,8 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void FolderExistsTest()
         {
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
             bool folderExists = repository.FolderExists(dataDirectory);
             Assert.False(folderExists);
             repository.AddFolder(dataDirectory);
@@ -68,9 +70,8 @@ namespace JPPhotoManager.Tests
             string imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
             Assert.True(File.Exists(imagePath));
 
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
             Assert.False(repository.HasChanges());
         }
 
@@ -80,9 +81,8 @@ namespace JPPhotoManager.Tests
             string imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
             Assert.True(File.Exists(imagePath));
 
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -102,9 +102,8 @@ namespace JPPhotoManager.Tests
             string imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
             Assert.True(File.Exists(imagePath));
 
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -125,10 +124,9 @@ namespace JPPhotoManager.Tests
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
             Assert.True(File.Exists(imagePath));
 
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
-
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
+            
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
                     repository,
                     new AssetHashCalculatorService(),
@@ -147,9 +145,8 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void DeleteNonExistingAssetTest()
         {
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             string imagePath = Path.Combine(dataDirectory, "Non Existing Image.jpg");
@@ -167,9 +164,8 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void DeleteExistingAssetTest()
         {
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -193,10 +189,9 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void SaveAndGetImportNewAssetsConfigurationTest()
         {
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            AssetRepository repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
-
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
+            
             ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
 
             importConfiguration.Imports.Add(
@@ -217,9 +212,8 @@ namespace JPPhotoManager.Tests
             repository.SaveCatalog(null);
 
             importConfiguration = repository.GetImportNewAssetsConfiguration();
-            repository = new AssetRepository(new StorageService(userConfigurationService));
-            repository.Initialize(this.assetsDataFilePath, this.foldersDataFilePath, this.importsDataFilePath);
-
+            repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
+            
             Assert.Equal(2, importConfiguration.Imports.Count);
             Assert.Equal(@"C:\MyFirstGame\Screenshots", importConfiguration.Imports[0].SourceDirectory);
             Assert.Equal(@"C:\Images\MyFirstGame", importConfiguration.Imports[0].DestinationDirectory);
