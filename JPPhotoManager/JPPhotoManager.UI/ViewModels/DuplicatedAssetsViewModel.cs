@@ -1,11 +1,6 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
-using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace JPPhotoManager.UI.ViewModels
 {
@@ -53,12 +48,32 @@ namespace JPPhotoManager.UI.ViewModels
 
         public DuplicatedAssetCollection CurrentDuplicatedAssetCollection
         {
-            get { return this.DuplicatedAssetCollectionSets?.Count > 0 && this.DuplicatedAssetCollectionSetsPosition >= 0 ? this.DuplicatedAssetCollectionSets?[this.DuplicatedAssetCollectionSetsPosition] : null; }
+            get
+            {
+                DuplicatedAssetCollection result = null;
+
+                if (this.DuplicatedAssetCollectionSets != null && this.DuplicatedAssetCollectionSets.Count > 0 && this.DuplicatedAssetCollectionSetsPosition >= 0)
+                {
+                    result = this.DuplicatedAssetCollectionSets[this.DuplicatedAssetCollectionSetsPosition];
+                }
+
+                return result;
+            }
         }
 
         public Asset CurrentDuplicatedAsset
         {
-            get { return this.CurrentDuplicatedAssetCollection?.Count > 0 && this.DuplicatedAssetPosition >= 0 ? this.CurrentDuplicatedAssetCollection?[this.DuplicatedAssetPosition] : null; }
+            get
+            {
+                Asset result = null;
+
+                if (this.CurrentDuplicatedAssetCollection != null && this.CurrentDuplicatedAssetCollection.Count > 0 && this.DuplicatedAssetPosition >= 0)
+                {
+                    result = this.CurrentDuplicatedAssetCollection[this.DuplicatedAssetPosition];
+                }
+
+                return result;
+            }
         }
     }
 }
