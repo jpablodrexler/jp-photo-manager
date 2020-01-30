@@ -1,11 +1,5 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace JPPhotoManager.UI.ViewModels
 {
@@ -35,11 +29,13 @@ namespace JPPhotoManager.UI.ViewModels
         {
             get
             {
-                return this.SourceFolder?.Path != this.SelectedFolder?.Path;
+                return this.SourceFolder != null
+                    && this.SelectedFolder != null
+                    && this.SourceFolder.Path != this.SelectedFolder.Path;
             }
         }
 
         public Folder LastSelectedFolder { get; private set; }
-        public bool HasConfirmed { get; internal set; }
+        public bool HasConfirmed { get; set; }
     }
 }
