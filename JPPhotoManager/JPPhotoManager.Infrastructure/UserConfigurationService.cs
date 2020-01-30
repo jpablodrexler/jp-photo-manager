@@ -24,6 +24,9 @@ namespace JPPhotoManager.Infrastructure
         private const string CATALOG_BATCH_SIZE_KEY = "appsettings:CatalogBatchSize";
         private const string CATALOG_COOLDOWN_MINUTES = "appsettings:CatalogCooldownMinutes";
         private const string APPLICATION_NAME = "JPPhotoManager";
+        private const string ASSETS_DATA_FILE_PATH = "appsettings:AssetsDataFilePath";
+        private const string FOLDERS_DATA_FILE_PATH = "appsettings:FoldersDataFilePath";
+        private const string IMPORTS_DATA_FILE_PATH = "appsettings:ImportsDataFilePath";
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
@@ -40,13 +43,11 @@ namespace JPPhotoManager.Infrastructure
             return Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
         }
 
-        [ExcludeFromCodeCoverage]
         public string GetOneDriveDirectory()
         {
             return Environment.GetEnvironmentVariable("OneDrive", EnvironmentVariableTarget.User);
         }
 
-        [ExcludeFromCodeCoverage]
         public void SetAsWallpaper(Asset asset, WallpaperStyle style)
         {
             RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop", true);
@@ -152,6 +153,21 @@ namespace JPPhotoManager.Infrastructure
         public int GetCatalogCooldownMinutes()
         {
             return this.configuration.GetValue<int>(CATALOG_COOLDOWN_MINUTES);
+        }
+
+        public string GetAssetsDataFilePath()
+        {
+            return this.configuration.GetValue<string>(ASSETS_DATA_FILE_PATH);
+        }
+
+        public string GetFoldersDataFilePath()
+        {
+            return this.configuration.GetValue<string>(FOLDERS_DATA_FILE_PATH);
+        }
+
+        public string GetImportsDataFilePath()
+        {
+            return this.configuration.GetValue<string>(IMPORTS_DATA_FILE_PATH);
         }
     }
 }

@@ -30,7 +30,6 @@ namespace JPPhotoManager.Application
             this.assetRepository = assetRepository;
             this.userConfigurationService = userConfigurationService;
             this.storageService = storageService;
-            this.assetRepository.Initialize();
         }
 
         public Asset[] GetAssets(string directory)
@@ -127,6 +126,11 @@ namespace JPPhotoManager.Application
         public BitmapImage LoadBitmapImage(string imagePath, Rotation rotation)
         {
             return this.storageService.LoadBitmapImage(imagePath, rotation);
+        }
+
+        public bool FileExists(string fullPath)
+        {
+            return this.storageService.FileExists(fullPath);
         }
     }
 }

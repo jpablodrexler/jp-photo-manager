@@ -258,10 +258,10 @@ namespace JPPhotoManager.Infrastructure
             return image;
         }
 
-        public Rotation GetImageRotation(byte[] buffer)
+        public ushort? GetExifOrientation(byte[] buffer)
         {
-            Rotation rotation = Rotation.Rotate0;
-
+            ushort? result = null;
+            
             using (MemoryStream stream = new MemoryStream(buffer))
             {
                 BitmapFrame bitmapFrame = BitmapFrame.Create(stream);
@@ -269,42 +269,51 @@ namespace JPPhotoManager.Infrastructure
 
                 if (bitmapMetadata != null && bitmapMetadata.ContainsQuery("System.Photo.Orientation"))
                 {
-                    object result = bitmapMetadata.GetQuery("System.Photo.Orientation");
+                    object value = bitmapMetadata.GetQuery("System.Photo.Orientation");
 
-                    if (result != null)
+                    if (value != null)
                     {
-                        switch ((ushort)result)
-                        {
-                            case 1:
-                                rotation = Rotation.Rotate0;
-                                break;
-                            case 2:
-                                rotation = Rotation.Rotate0; // FlipX
-                                break;
-                            case 3:
-                                rotation = Rotation.Rotate180;
-                                break;
-                            case 4:
-                                rotation = Rotation.Rotate180; // FlipX
-                                break;
-                            case 5:
-                                rotation = Rotation.Rotate90; // FlipX
-                                break;
-                            case 6:
-                                rotation = Rotation.Rotate90;
-                                break;
-                            case 7:
-                                rotation = Rotation.Rotate270; // FlipX
-                                break;
-                            case 8:
-                                rotation = Rotation.Rotate270;
-                                break;
-                            default:
-                                rotation = Rotation.Rotate0;
-                                break;
-                        }
+                        result = (ushort)value;
                     }
                 }
+            }
+
+            return result;
+        }
+
+        public Rotation GetImageRotation(ushort exifOrientation)
+        {
+            Rotation rotation = Rotation.Rotate0;
+
+            switch (exifOrientation)
+            {
+                case 1:
+                    rotation = Rotation.Rotate0;
+                    break;
+                case 2:
+                    rotation = Rotation.Rotate0; // FlipX
+                    break;
+                case 3:
+                    rotation = Rotation.Rotate180;
+                    break;
+                case 4:
+                    rotation = Rotation.Rotate180; // FlipX
+                    break;
+                case 5:
+                    rotation = Rotation.Rotate90; // FlipX
+                    break;
+                case 6:
+                    rotation = Rotation.Rotate90;
+                    break;
+                case 7:
+                    rotation = Rotation.Rotate270; // FlipX
+                    break;
+                case 8:
+                    rotation = Rotation.Rotate270;
+                    break;
+                default:
+                    rotation = Rotation.Rotate0;
+                    break;
             }
 
             return rotation;

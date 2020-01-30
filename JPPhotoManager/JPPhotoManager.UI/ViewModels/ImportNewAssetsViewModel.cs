@@ -104,7 +104,7 @@ namespace JPPhotoManager.UI.ViewModels
             this.StatusMessages.Add(e.NewStatus);
         }
 
-        internal void MoveUpDefinition(ImportNewAssetsDirectoriesDefinition definition)
+        public void MoveUpDefinition(ImportNewAssetsDirectoriesDefinition definition)
         {
             if (this.Imports != null)
             {
@@ -112,7 +112,7 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
-        internal void MoveDownDefinition(ImportNewAssetsDirectoriesDefinition definition)
+        public void MoveDownDefinition(ImportNewAssetsDirectoriesDefinition definition)
         {
             if (this.Imports != null)
             {

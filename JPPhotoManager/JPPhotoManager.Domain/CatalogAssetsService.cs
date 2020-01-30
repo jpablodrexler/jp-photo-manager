@@ -224,7 +224,8 @@ namespace JPPhotoManager.Domain
             {
                 string imagePath = Path.Combine(directoryName, fileName);
                 byte[] imageBytes = this.storageService.GetFileBytes(imagePath);
-                Rotation rotation = this.storageService.GetImageRotation(imageBytes);
+                ushort? exifOrientation = this.storageService.GetExifOrientation(imageBytes);
+                Rotation rotation = exifOrientation.HasValue ? this.storageService.GetImageRotation(exifOrientation.Value) : Rotation.Rotate0;
                 BitmapImage originalImage = this.storageService.LoadBitmapImage(imageBytes, rotation);
 
                 double originalDecodeWidth = originalImage.PixelWidth;

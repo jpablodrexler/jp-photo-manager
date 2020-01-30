@@ -1,14 +1,8 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Windows;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.UI.ViewModels
 {
@@ -26,8 +20,7 @@ namespace JPPhotoManager.UI.ViewModels
 
         public ApplicationViewModel(IApplication assetApp) : base(assetApp)
         {
-            var folder = this.Application.GetInitialFolder();
-            this.CurrentFolder = folder;
+            this.CurrentFolder = this.Application.GetInitialFolder();
         }
 
         public AppModeEnum AppMode
@@ -176,22 +169,22 @@ namespace JPPhotoManager.UI.ViewModels
             }
             else if (this.AppMode == AppModeEnum.Viewer)
             {
-                title = string.Format("{0} {1} - {2} - imagen {3} de {4}", this.Product, this.Version, this.CurrentAsset?.FileName, this.ViewerPosition + 1, this.Files?.Count);
+                title = string.Format("{0} {1} - {2} - image {3} de {4}", this.Product, this.Version, this.CurrentAsset?.FileName, this.ViewerPosition + 1, this.Files?.Count);
             }
 
             this.AppTitle = title;
         }
 
-        public void GoToImage(Asset asset)
+        public void GoToAsset(Asset asset)
         {
-            this.GoToImage(asset, this.AppMode);
+            this.GoToAsset(asset, this.AppMode);
         }
 
-        public void GoToImage(Asset asset, AppModeEnum newAppMode)
+        public void GoToAsset(Asset asset, AppModeEnum newAppMode)
         {
             Asset targetAsset = this.Files.FirstOrDefault(f => f.FileName == asset.FileName);
 
-            if (targetAsset != null && File.Exists(targetAsset.FullPath))
+            if (targetAsset != null && this.Application.FileExists(targetAsset.FullPath))
             {
                 int position = this.Files.IndexOf(targetAsset);
                 this.ChangeAppMode(newAppMode);
@@ -217,7 +210,7 @@ namespace JPPhotoManager.UI.ViewModels
 
         public void NotifyCatalogChange(CatalogChangeCallbackEventArgs e)
         {
-            this.StatusMessage = e.Message;
+            this.StatusMessage = e?.Message;
 
             if (e?.Asset?.Folder?.Path == this.CurrentFolder)
             {

@@ -27,7 +27,8 @@ namespace JPPhotoManager.Domain
         BitmapImage LoadBitmapImage(byte[] buffer, Rotation rotation, int width, int height);
         BitmapImage LoadBitmapImage(byte[] buffer, int width, int height);
         BitmapImage LoadBitmapImage(byte[] buffer, Rotation rotation);
-        Rotation GetImageRotation(byte[] buffer);
+        ushort? GetExifOrientation(byte[] buffer);
+        Rotation GetImageRotation(ushort exifOrientation);
         bool HasSameContent(Asset assetA, Asset assetB);
         BitmapImage LoadBitmapImage(string imagePath, Rotation rotation);
         byte[] GetJpegBitmapImage(BitmapImage thumbnailImage);
