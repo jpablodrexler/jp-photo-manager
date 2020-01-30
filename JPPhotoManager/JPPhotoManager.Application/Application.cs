@@ -127,5 +127,10 @@ namespace JPPhotoManager.Application
         {
             return this.storageService.LoadBitmapImage(imagePath, rotation);
         }
+
+        public bool FileExists(string fullPath)
+        {
+            return this.storageService.FileExists(fullPath);
+        }
     }
 }

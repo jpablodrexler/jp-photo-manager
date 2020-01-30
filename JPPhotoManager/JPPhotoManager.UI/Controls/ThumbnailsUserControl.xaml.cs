@@ -69,7 +69,7 @@ namespace JPPhotoManager.UI.Controls
             try
             {
                 Asset asset = (Asset)((FrameworkElement)sender).DataContext;
-                this.ViewModel?.GoToImage(asset);
+                this.ViewModel?.GoToAsset(asset);
             }
             catch (Exception ex)
             {

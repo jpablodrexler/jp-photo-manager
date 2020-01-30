@@ -153,7 +153,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.ViewModel?.GoToImage(e.Asset, AppModeEnum.Viewer);
+                this.ViewModel?.GoToAsset(e.Asset, AppModeEnum.Viewer);
                 ShowImage();
             }
             catch (Exception ex)
@@ -166,7 +166,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.ViewModel?.GoToImage(e.Asset, AppModeEnum.Thumbnails);
+                this.ViewModel?.GoToAsset(e.Asset, AppModeEnum.Thumbnails);
                 ShowImage();
             }
             catch (Exception ex)
