@@ -1,4 +1,5 @@
-﻿using JPPhotoManager.Application;
+﻿using FluentAssertions;
+using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.UI.ViewModels;
 using Moq;
@@ -23,10 +24,10 @@ namespace JPPhotoManager.Tests
                 HasConfirmed = true
             };
 
-            Assert.Equal(@"D:\Data\Folder1", viewModel.SourceFolder.Path);
-            Assert.Equal(@"D:\Data\Folder2", viewModel.LastSelectedFolder.Path);
-            Assert.Equal(@"D:\Data\Folder2", viewModel.SelectedFolder.Path);
-            Assert.True(viewModel.HasConfirmed);
+            viewModel.SourceFolder.Path.Should().Be(@"D:\Data\Folder1");
+            viewModel.LastSelectedFolder.Path.Should().Be(@"D:\Data\Folder2");
+            viewModel.SelectedFolder.Path.Should().Be(@"D:\Data\Folder2");
+            viewModel.HasConfirmed.Should().BeTrue();
         }
 
         [Theory]
@@ -45,7 +46,7 @@ namespace JPPhotoManager.Tests
                 SelectedFolder = selectedFolder
             };
 
-            Assert.Equal(expected, viewModel.CanConfirm);
+            viewModel.CanConfirm.Should().Be(expected);
         }
 
         [Fact]
@@ -62,7 +63,7 @@ namespace JPPhotoManager.Tests
                 SelectedFolder = selectedFolder
             };
 
-            Assert.False(viewModel.CanConfirm);
+            viewModel.CanConfirm.Should().BeFalse();
         }
 
         [Fact]
@@ -79,7 +80,7 @@ namespace JPPhotoManager.Tests
                 SelectedFolder = selectedFolder
             };
 
-            Assert.False(viewModel.CanConfirm);
+            viewModel.CanConfirm.Should().BeFalse();
         }
     }
 }
