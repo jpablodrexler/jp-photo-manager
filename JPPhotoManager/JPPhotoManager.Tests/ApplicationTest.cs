@@ -455,7 +455,7 @@ namespace JPPhotoManager.Tests
                 new StorageService(userConfigurationService));
 
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
-            duplicatedAssetSets.Should().HaveCount(1);
+            duplicatedAssetSets.Should().ContainSingle();
 
             List<Asset> duplicatedAssets = duplicatedAssetSets[0];
             duplicatedAssets.Should().HaveCount(2);
