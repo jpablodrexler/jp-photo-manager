@@ -1,4 +1,5 @@
-﻿using JPPhotoManager.Domain;
+﻿using FluentAssertions;
+using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Moq;
@@ -106,17 +107,13 @@ namespace JPPhotoManager.Tests
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
 
             var repositoryAssets = repository.GetAssets(dataDirectory);
-            Assert.Equal(fileList.Count, processedAssets.Count);
-            Assert.Equal(fileList.Count, repositoryAssets.Length);
-            Assert.Empty(exceptions);
+            processedAssets.Should().HaveSameCount(fileList);
+            repositoryAssets.Should().HaveSameCount(fileList);
+            exceptions.Should().BeEmpty();
 
-            bool allProcessedAssetsInFileList = processedAssets.All(a => fileList.Contains(a.FileName));
-            bool allProcessedAssetsInRepository = processedAssets.All(a => repositoryAssets.Contains(a));
-            bool allRepositoryAssetsInProcessed = repositoryAssets.All(a => processedAssets.Contains(a));
-
-            Assert.True(allProcessedAssetsInFileList);
-            Assert.True(allProcessedAssetsInRepository);
-            Assert.True(allRepositoryAssetsInProcessed);
+            processedAssets.Should().OnlyContain(a => fileList.Contains(a.FileName));
+            processedAssets.Should().OnlyContain(a => repositoryAssets.Contains(a));
+            repositoryAssets.Should().OnlyContain(a => processedAssets.Contains(a));
         }
 
         [Fact]
@@ -160,18 +157,14 @@ namespace JPPhotoManager.Tests
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
 
             var repositoryAssets = repository.GetAssets(dataDirectory);
-            Assert.True(fileList.Count > batchSize);
-            Assert.Equal(batchSize, processedAssets.Count);
-            Assert.Equal(batchSize, repositoryAssets.Length);
-            Assert.Empty(exceptions);
+            fileList.Should().HaveCountGreaterThan(batchSize);
+            processedAssets.Should().HaveCount(batchSize);
+            repositoryAssets.Should().HaveCount(batchSize);
+            exceptions.Should().BeEmpty();
 
-            bool allProcessedAssetsInFileList = processedAssets.All(a => fileList.Contains(a.FileName));
-            bool allProcessedAssetsInRepository = processedAssets.All(a => repositoryAssets.Contains(a));
-            bool allRepositoryAssetsInProcessed = repositoryAssets.All(a => processedAssets.Contains(a));
-
-            Assert.True(allProcessedAssetsInFileList);
-            Assert.True(allProcessedAssetsInRepository);
-            Assert.True(allRepositoryAssetsInProcessed);
+            processedAssets.Should().OnlyContain(a => fileList.Contains(a.FileName));
+            processedAssets.Should().OnlyContain(a => repositoryAssets.Contains(a));
+            repositoryAssets.Should().OnlyContain(a => processedAssets.Contains(a));
         }
 
         [Fact]
@@ -231,9 +224,9 @@ namespace JPPhotoManager.Tests
             catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
             var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
 
-            Assert.Contains(repositoryAssets, a => a.FileName == deletedFile);
-            Assert.DoesNotContain(repositoryAssetsAfterDelete, a => a.FileName == deletedFile);
-            Assert.Contains(statusChanges, s => s.Asset?.FileName == deletedFile);
+            repositoryAssets.Should().Contain(a => a.FileName == deletedFile);
+            repositoryAssetsAfterDelete.Should().NotContain(a => a.FileName == deletedFile);
+            statusChanges.Should().Contain(s => s.Asset != null && s.Asset.FileName == deletedFile);
         }
 
         [Fact]
@@ -297,7 +290,7 @@ namespace JPPhotoManager.Tests
             catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
             var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
 
-            Assert.Equal(fileList.Count - batchSize, repositoryAssetsAfterDelete.Length);
+            repositoryAssetsAfterDelete.Should().HaveCount(fileList.Count - batchSize);
         }
 
         [Fact]
@@ -325,11 +318,8 @@ namespace JPPhotoManager.Tests
 
             catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
 
-            var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
-            var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
-
-            Assert.Empty(processedAssets);
-            Assert.Empty(exceptions);
+            statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).Should().BeEmpty();
+            statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).Should().BeEmpty();
         }
 
         [Fact]
@@ -348,17 +338,17 @@ namespace JPPhotoManager.Tests
                     new DirectoryComparer());
 
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
-            Assert.True(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeTrue();
             Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
 
-            Assert.Equal("Image 2.jpg", asset.FileName);
-            Assert.Equal(30197, asset.FileSize);
-            Assert.Equal(dataDirectory, asset.Folder.Path);
-            Assert.Equal(imagePath, asset.FullPath);
-            Assert.Equal(720, asset.PixelHeight);
-            Assert.Equal(1280, asset.PixelWidth);
-            Assert.Equal("0b6d010f85544871c307bb3a96028402f55fa29094908cdd0f74a8ec8d3fc3d4fbec995d98b89aafef3dcf5581c018fbb50481e33c7e45aef552d66c922f4078", asset.Hash);
-            Assert.NotEqual(DateTime.MinValue, asset.ThumbnailCreationDateTime);
+            asset.FileName.Should().Be("Image 2.jpg");
+            asset.FileSize.Should().Be(30197);
+            asset.Folder.Path.Should().Be(dataDirectory);
+            asset.FullPath.Should().Be(imagePath);
+            asset.PixelHeight.Should().Be(720);
+            asset.PixelWidth.Should().Be(1280);
+            asset.Hash.Should().Be("0b6d010f85544871c307bb3a96028402f55fa29094908cdd0f74a8ec8d3fc3d4fbec995d98b89aafef3dcf5581c018fbb50481e33c7e45aef552d66c922f4078");
+            asset.ThumbnailCreationDateTime.Should().NotBe(DateTime.MinValue);
         }
 
         [Fact]
