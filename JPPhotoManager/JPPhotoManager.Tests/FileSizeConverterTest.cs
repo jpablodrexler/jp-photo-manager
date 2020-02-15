@@ -1,4 +1,5 @@
-﻿using JPPhotoManager.UI.Converters;
+﻿using FluentAssertions;
+using JPPhotoManager.UI.Converters;
 using System;
 using System.Globalization;
 using Xunit;
@@ -25,14 +26,15 @@ namespace JPPhotoManager.Tests
         {
             FileSizeConverter converter = new FileSizeConverter();
             string result = (string)converter.Convert(size, typeof(long), null, new CultureInfo("en-US"));
-            Assert.Equal(expected, result);
+            result.Should().Be(expected);
         }
 
         [Fact]
         public void ConvertBackTest()
         {
             FileSizeConverter converter = new FileSizeConverter();
-            Assert.Throws<NotImplementedException>(() => converter.ConvertBack("17.3 KB", typeof(string), null, new CultureInfo("en-US")));
+            Func<object> function = () => converter.ConvertBack("17.3 KB", typeof(string), null, new CultureInfo("en-US"));
+            function.Should().Throw<NotImplementedException>();
         }
     }
 }
