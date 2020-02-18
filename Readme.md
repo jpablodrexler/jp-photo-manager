@@ -10,8 +10,9 @@ JPPhotoManager is a desktop application that allows:
 * Change Windows wallpaper
 * Find duplicates
 * Copy/move images
-* Import images from game screenshots folder
+* Import images from local folders (such as game screenshots folders)
 * Import images from shared folders in the local network
+* Export images to shared folders in the local network
 
 Soon will allow to:
 * Add your own metadata to the images
