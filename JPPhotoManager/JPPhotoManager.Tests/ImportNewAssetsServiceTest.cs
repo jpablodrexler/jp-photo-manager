@@ -1,9 +1,8 @@
-﻿using JPPhotoManager.Domain;
+﻿using FluentAssertions;
+using JPPhotoManager.Domain;
 using Moq;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using Xunit;
 
 namespace JPPhotoManager.Tests
@@ -51,12 +50,12 @@ namespace JPPhotoManager.Tests
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
-            Assert.Single(result);
-            Assert.Equal(@"C:\MyGame\Screenshots", result[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
-            Assert.Equal(0, result[0].ImportedImages);
-            Assert.Equal(@"No images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.", result[0].Message);
-            Assert.Empty(statusChanges);
+            result.Should().ContainSingle();
+            result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
+            result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
+            result[0].ImportedImages.Should().Be(0);
+            result[0].Message.Should().Be(@"No images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            statusChanges.Should().BeEmpty();
         }
 
         [Fact]
@@ -115,15 +114,15 @@ namespace JPPhotoManager.Tests
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage3.jpg", @"C:\Images\MyGame\NewImage3.jpg"), Times.Once);
-            Assert.Single(result);
-            Assert.Equal(@"C:\MyGame\Screenshots", result[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
-            Assert.Equal(3, result[0].ImportedImages);
-            Assert.Equal(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.", result[0].Message);
-            Assert.Equal(3, statusChanges.Count);
-            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'", statusChanges[0].NewStatus);
-            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'", statusChanges[1].NewStatus);
-            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'", statusChanges[2].NewStatus);
+            result.Should().ContainSingle();
+            result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
+            result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
+            result[0].ImportedImages.Should().Be(3);
+            result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            statusChanges.Should().HaveCount(3);
+            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'");
+            statusChanges[1].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'");
+            statusChanges[2].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'");
         }
 
         [Fact]
@@ -195,15 +194,15 @@ namespace JPPhotoManager.Tests
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage3.jpg", @"C:\Images\MyGame\NewImage3.jpg"), Times.Once);
-            Assert.Single(result);
-            Assert.Equal(@"C:\MyGame\Screenshots", result[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
-            Assert.Equal(3, result[0].ImportedImages);
-            Assert.Equal(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.", result[0].Message);
-            Assert.Equal(3, statusChanges.Count);
-            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'", statusChanges[0].NewStatus);
-            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'", statusChanges[1].NewStatus);
-            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'", statusChanges[2].NewStatus);
+            result.Should().ContainSingle();
+            result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
+            result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
+            result[0].ImportedImages.Should().Be(3);
+            result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            statusChanges.Should().HaveCount(3);
+            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'");
+            statusChanges[1].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'");
+            statusChanges[2].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'");
         }
 
         [Fact]
@@ -271,13 +270,13 @@ namespace JPPhotoManager.Tests
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
-            Assert.Single(result);
-            Assert.Equal(@"C:\MyGame\Screenshots", result[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
-            Assert.Equal(1, result[0].ImportedImages);
-            Assert.Equal(@"1 image imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.", result[0].Message);
-            Assert.Single(statusChanges);
-            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'", statusChanges[0].NewStatus);
+            result.Should().ContainSingle();
+            result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
+            result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
+            result[0].ImportedImages.Should().Be(1);
+            result[0].Message.Should().Be(@"1 image imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            statusChanges.Should().ContainSingle();
+            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'");
         }
 
         [Fact]
@@ -387,21 +386,21 @@ namespace JPPhotoManager.Tests
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyFirstGame\Screenshots\NewImage3.jpg", @"C:\Images\MyFirstGame\NewImage3.jpg"), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MySecondGame\Screenshots\NewImage1.jpg", @"C:\Images\MySecondGame\NewImage1.jpg"), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MySecondGame\Screenshots\NewImage2.jpg", @"C:\Images\MySecondGame\NewImage2.jpg"), Times.Once);
-            Assert.Equal(2, result.Count);
-            Assert.Equal(@"C:\MyFirstGame\Screenshots", result[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyFirstGame", result[0].DestinationDirectory);
-            Assert.Equal(3, result[0].ImportedImages);
-            Assert.Equal(@"3 images imported from 'C:\MyFirstGame\Screenshots' to 'C:\Images\MyFirstGame'.", result[0].Message);
-            Assert.Equal(@"C:\MySecondGame\Screenshots", result[1].SourceDirectory);
-            Assert.Equal(@"C:\Images\MySecondGame", result[1].DestinationDirectory);
-            Assert.Equal(2, result[1].ImportedImages);
-            Assert.Equal(@"2 images imported from 'C:\MySecondGame\Screenshots' to 'C:\Images\MySecondGame'.", result[1].Message);
-            Assert.Equal(5, statusChanges.Count);
-            Assert.Equal(@$"Image 'C:\MyFirstGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyFirstGame\NewImage1.jpg'", statusChanges[0].NewStatus);
-            Assert.Equal(@$"Image 'C:\MyFirstGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyFirstGame\NewImage2.jpg'", statusChanges[1].NewStatus);
-            Assert.Equal(@$"Image 'C:\MyFirstGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyFirstGame\NewImage3.jpg'", statusChanges[2].NewStatus);
-            Assert.Equal(@$"Image 'C:\MySecondGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MySecondGame\NewImage1.jpg'", statusChanges[3].NewStatus);
-            Assert.Equal(@$"Image 'C:\MySecondGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MySecondGame\NewImage2.jpg'", statusChanges[4].NewStatus);
+            result.Should().HaveCount(2);
+            result[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            result[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            result[0].ImportedImages.Should().Be(3);
+            result[0].Message.Should().Be(@"3 images imported from 'C:\MyFirstGame\Screenshots' to 'C:\Images\MyFirstGame'.");
+            result[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            result[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            result[1].ImportedImages.Should().Be(2);
+            result[1].Message.Should().Be(@"2 images imported from 'C:\MySecondGame\Screenshots' to 'C:\Images\MySecondGame'.");
+            statusChanges.Should().HaveCount(5);
+            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyFirstGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyFirstGame\NewImage1.jpg'");
+            statusChanges[1].NewStatus.Should().Be(@$"Image 'C:\MyFirstGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyFirstGame\NewImage2.jpg'");
+            statusChanges[2].NewStatus.Should().Be(@$"Image 'C:\MyFirstGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyFirstGame\NewImage3.jpg'");
+            statusChanges[3].NewStatus.Should().Be(@$"Image 'C:\MySecondGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MySecondGame\NewImage1.jpg'");
+            statusChanges[4].NewStatus.Should().Be(@$"Image 'C:\MySecondGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MySecondGame\NewImage2.jpg'");
         }
 
         [Fact]
@@ -432,13 +431,13 @@ namespace JPPhotoManager.Tests
             
             importConfiguration.Validate();
 
-            Assert.Equal(3, importConfiguration.Imports.Count);
-            Assert.Equal(@"C:\MyFirstGame\Screenshots", importConfiguration.Imports[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyFirstGame", importConfiguration.Imports[0].DestinationDirectory);
-            Assert.Equal(@"C:\MySecondGame\Screenshots", importConfiguration.Imports[1].SourceDirectory);
-            Assert.Equal(@"C:\Images\MySecondGame", importConfiguration.Imports[1].DestinationDirectory);
-            Assert.Equal(@"\\MyServer\Images", importConfiguration.Imports[2].SourceDirectory);
-            Assert.Equal(@"C:\Images", importConfiguration.Imports[2].DestinationDirectory);
+            importConfiguration.Imports.Should().HaveCount(3);
+            importConfiguration.Imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            importConfiguration.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            importConfiguration.Imports[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            importConfiguration.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            importConfiguration.Imports[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
+            importConfiguration.Imports[2].DestinationDirectory.Should().Be(@"C:\Images");
         }
 
         [Fact]
@@ -483,11 +482,11 @@ namespace JPPhotoManager.Tests
             
             importConfiguration.Validate();
 
-            Assert.Equal(2, importConfiguration.Imports.Count);
-            Assert.Equal(@"C:\MyFirstGame\Screenshots", importConfiguration.Imports[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyFirstGame", importConfiguration.Imports[0].DestinationDirectory);
-            Assert.Equal(@"C:\MySecondGame\Screenshots", importConfiguration.Imports[1].SourceDirectory);
-            Assert.Equal(@"C:\Images\MySecondGame", importConfiguration.Imports[1].DestinationDirectory);
+            importConfiguration.Imports.Should().HaveCount(2);
+            importConfiguration.Imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            importConfiguration.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            importConfiguration.Imports[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            importConfiguration.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
         }
 
         [Fact]
@@ -525,15 +524,15 @@ namespace JPPhotoManager.Tests
             
             importConfiguration.Normalize();
 
-            Assert.Equal(4, importConfiguration.Imports.Count);
-            Assert.Equal(@"C:\MyFirstGame\Screenshots", importConfiguration.Imports[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyFirstGame", importConfiguration.Imports[0].DestinationDirectory);
-            Assert.Equal(@"C:\MySecondGame\Screenshots", importConfiguration.Imports[1].SourceDirectory);
-            Assert.Equal(@"C:\Images\MySecondGame", importConfiguration.Imports[1].DestinationDirectory);
-            Assert.Equal(@"\\MyServer\Screenshots", importConfiguration.Imports[2].SourceDirectory);
-            Assert.Equal(@"C:\Images", importConfiguration.Imports[2].DestinationDirectory);
-            Assert.Equal(@"\\MyServer\Screenshots", importConfiguration.Imports[3].SourceDirectory);
-            Assert.Equal(@"C:\Images", importConfiguration.Imports[3].DestinationDirectory);
+            importConfiguration.Imports.Should().HaveCount(4);
+            importConfiguration.Imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            importConfiguration.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            importConfiguration.Imports[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            importConfiguration.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            importConfiguration.Imports[2].SourceDirectory.Should().Be(@"\\MyServer\Screenshots");
+            importConfiguration.Imports[2].DestinationDirectory.Should().Be(@"C:\Images");
+            importConfiguration.Imports[3].SourceDirectory.Should().Be(@"\\MyServer\Screenshots");
+            importConfiguration.Imports[3].DestinationDirectory.Should().Be(@"C:\Images");
         }
 
         [Fact]
@@ -577,12 +576,12 @@ namespace JPPhotoManager.Tests
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Never);
             storageServiceMock.Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
-            Assert.Single(result);
-            Assert.Equal(@"C:\MyGame\Screenshots", result[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
-            Assert.Equal(0, result[0].ImportedImages);
-            Assert.Equal(@"Source directory 'C:\MyGame\Screenshots' not found.", result[0].Message);
-            Assert.Empty(statusChanges);
+            result.Should().ContainSingle();
+            result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
+            result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
+            result[0].ImportedImages.Should().Be(0);
+            result[0].Message.Should().Be(@"Source directory 'C:\MyGame\Screenshots' not found.");
+            statusChanges.Should().BeEmpty();
         }
 
         [Fact]
@@ -627,12 +626,12 @@ namespace JPPhotoManager.Tests
             storageServiceMock.Verify(s => s.CreateDirectory(destinationDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
-            Assert.Single(result);
-            Assert.Equal(@"C:\MyGame\Screenshots", result[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
-            Assert.Equal(0, result[0].ImportedImages);
-            Assert.Equal(@"No images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.", result[0].Message);
-            Assert.Empty(statusChanges);
+            result.Should().ContainSingle();
+            result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
+            result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
+            result[0].ImportedImages.Should().Be(0);
+            result[0].Message.Should().Be(@"No images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            statusChanges.Should().BeEmpty();
         }
 
         [Fact]
@@ -704,19 +703,19 @@ namespace JPPhotoManager.Tests
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage3.jpg", @"C:\Images\MyGame\NewImage3.jpg"), Times.Once);
-            Assert.Equal(2, result.Count);
-            Assert.Equal(@"C:\MyGame\Screenshots", result[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame", result[0].DestinationDirectory);
-            Assert.Equal(3, result[0].ImportedImages);
-            Assert.Equal(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.", result[0].Message);
-            Assert.Equal(@"C:\MyGame\Screenshots\SubDirectory", result[1].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame\SubDirectory", result[1].DestinationDirectory);
-            Assert.Equal(0, result[1].ImportedImages);
-            Assert.Equal(@"No images imported from 'C:\MyGame\Screenshots\SubDirectory' to 'C:\Images\MyGame\SubDirectory'.", result[1].Message);
-            Assert.Equal(3, statusChanges.Count);
-            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'", statusChanges[0].NewStatus);
-            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'", statusChanges[1].NewStatus);
-            Assert.Equal(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'", statusChanges[2].NewStatus);
+            result.Should().HaveCount(2);
+            result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
+            result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
+            result[0].ImportedImages.Should().Be(3);
+            result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            result[1].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots\SubDirectory");
+            result[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame\SubDirectory");
+            result[1].ImportedImages.Should().Be(0);
+            result[1].Message.Should().Be(@"No images imported from 'C:\MyGame\Screenshots\SubDirectory' to 'C:\Images\MyGame\SubDirectory'.");
+            statusChanges.Should().HaveCount(3);
+            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'");
+            statusChanges[1].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'");
+            statusChanges[2].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'");
         }
     }
 }

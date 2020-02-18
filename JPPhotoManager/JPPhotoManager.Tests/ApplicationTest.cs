@@ -220,7 +220,7 @@ namespace JPPhotoManager.Tests
                 new StorageService(userConfigurationService));
 
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
-            Assert.Single(duplicatedAssetSets);
+            duplicatedAssetSets.Should().ContainSingle();
 
             DuplicatedAssetCollection duplicatedAssets = duplicatedAssetSets[0];
             duplicatedAssets.Should().HaveCount(2);
@@ -263,11 +263,11 @@ namespace JPPhotoManager.Tests
                 new StorageService(userConfigurationService));
 
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
-            Assert.True(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeTrue();
             Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
-            Assert.True(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeTrue();
             Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
 
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
