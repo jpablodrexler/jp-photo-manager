@@ -1,4 +1,5 @@
-﻿using JPPhotoManager.Application;
+﻿using FluentAssertions;
+using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.UI.ViewModels;
 using Moq;
@@ -40,13 +41,13 @@ namespace JPPhotoManager.Tests
                 Imports = imports
             };
 
-            Assert.Equal(3, viewModel.Imports.Count);
-            Assert.Equal(@"C:\MyGame1\Screenshots", viewModel.Imports[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame1", viewModel.Imports[0].DestinationDirectory);
-            Assert.Equal(@"C:\MyGame2\Screenshots", viewModel.Imports[1].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame2", viewModel.Imports[1].DestinationDirectory);
-            Assert.Equal(@"C:\MyGame3\Screenshots", viewModel.Imports[2].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame3", viewModel.Imports[2].DestinationDirectory);
+            viewModel.Imports.Should().HaveCount(3);
+            viewModel.Imports[0].SourceDirectory.Should().Be(@"C:\MyGame1\Screenshots");
+            viewModel.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame1");
+            viewModel.Imports[1].SourceDirectory.Should().Be(@"C:\MyGame2\Screenshots");
+            viewModel.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame2");
+            viewModel.Imports[2].SourceDirectory.Should().Be(@"C:\MyGame3\Screenshots");
+            viewModel.Imports[2].DestinationDirectory.Should().Be(@"C:\Images\MyGame3");
         }
 
         [Fact]
@@ -81,11 +82,11 @@ namespace JPPhotoManager.Tests
 
             viewModel.DeleteDefinition(viewModel.Imports[1]);
 
-            Assert.Equal(2, viewModel.Imports.Count);
-            Assert.Equal(@"C:\MyGame1\Screenshots", viewModel.Imports[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame1", viewModel.Imports[0].DestinationDirectory);
-            Assert.Equal(@"C:\MyGame3\Screenshots", viewModel.Imports[1].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame3", viewModel.Imports[1].DestinationDirectory);
+            viewModel.Imports.Should().HaveCount(2);
+            viewModel.Imports[0].SourceDirectory.Should().Be(@"C:\MyGame1\Screenshots");
+            viewModel.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame1");
+            viewModel.Imports[1].SourceDirectory.Should().Be(@"C:\MyGame3\Screenshots");
+            viewModel.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame3");
         }
 
         [Fact]
@@ -106,36 +107,36 @@ namespace JPPhotoManager.Tests
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
             ImportNewAssetsViewModel viewModel = new ImportNewAssetsViewModel(mock.Object);
 
-            Assert.Equal(ImportNewAssetsStepEnum.Configure, viewModel.Step);
-            Assert.True(viewModel.CanConfigure);
-            Assert.False(viewModel.CanViewResults);
-            Assert.Equal(Visibility.Visible, viewModel.InputVisible);
-            Assert.Equal(Visibility.Hidden, viewModel.ResultsVisible);
+            viewModel.Step.Should().Be(ImportNewAssetsStepEnum.Configure);
+            viewModel.CanConfigure.Should().BeTrue();
+            viewModel.CanViewResults.Should().BeFalse();
+            viewModel.InputVisible.Should().Be(Visibility.Visible);
+            viewModel.ResultsVisible.Should().Be(Visibility.Hidden);
 
             viewModel.AdvanceStep();
             viewModel.Results = results;
 
-            Assert.Equal(ImportNewAssetsStepEnum.Import, viewModel.Step);
-            Assert.False(viewModel.CanConfigure);
-            Assert.True(viewModel.CanViewResults);
-            Assert.Equal(Visibility.Visible, viewModel.InputVisible);
-            Assert.Equal(Visibility.Hidden, viewModel.ResultsVisible);
+            viewModel.Step.Should().Be(ImportNewAssetsStepEnum.Import);
+            viewModel.CanConfigure.Should().BeFalse();
+            viewModel.CanViewResults.Should().BeTrue();
+            viewModel.InputVisible.Should().Be(Visibility.Visible);
+            viewModel.ResultsVisible.Should().Be(Visibility.Hidden);
 
             viewModel.AdvanceStep();
             
-            Assert.Equal(ImportNewAssetsStepEnum.ViewResults, viewModel.Step);
-            Assert.False(viewModel.CanConfigure);
-            Assert.False(viewModel.CanViewResults);
-            Assert.Equal(Visibility.Hidden, viewModel.InputVisible);
-            Assert.Equal(Visibility.Visible, viewModel.ResultsVisible);
+            viewModel.Step.Should().Be(ImportNewAssetsStepEnum.ViewResults);
+            viewModel.CanConfigure.Should().BeFalse();
+            viewModel.CanViewResults.Should().BeFalse();
+            viewModel.InputVisible.Should().Be(Visibility.Hidden);
+            viewModel.ResultsVisible.Should().Be(Visibility.Visible);
 
             viewModel.AdvanceStep();
 
-            Assert.Equal(ImportNewAssetsStepEnum.ViewResults, viewModel.Step);
-            Assert.False(viewModel.CanConfigure);
-            Assert.False(viewModel.CanViewResults);
-            Assert.Equal(Visibility.Hidden, viewModel.InputVisible);
-            Assert.Equal(Visibility.Visible, viewModel.ResultsVisible);
+            viewModel.Step.Should().Be(ImportNewAssetsStepEnum.ViewResults);
+            viewModel.CanConfigure.Should().BeFalse();
+            viewModel.CanViewResults.Should().BeFalse();
+            viewModel.InputVisible.Should().Be(Visibility.Hidden);
+            viewModel.ResultsVisible.Should().Be(Visibility.Visible);
         }
 
         [Fact]
@@ -170,13 +171,13 @@ namespace JPPhotoManager.Tests
 
             viewModel.MoveUpDefinition(viewModel.Imports[1]);
 
-            Assert.Equal(3, viewModel.Imports.Count);
-            Assert.Equal(@"C:\MyGame2\Screenshots", viewModel.Imports[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame2", viewModel.Imports[0].DestinationDirectory);
-            Assert.Equal(@"C:\MyGame1\Screenshots", viewModel.Imports[1].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame1", viewModel.Imports[1].DestinationDirectory);
-            Assert.Equal(@"C:\MyGame3\Screenshots", viewModel.Imports[2].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame3", viewModel.Imports[2].DestinationDirectory);
+            viewModel.Imports.Should().HaveCount(3);
+            viewModel.Imports[0].SourceDirectory.Should().Be(@"C:\MyGame2\Screenshots");
+            viewModel.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame2");
+            viewModel.Imports[1].SourceDirectory.Should().Be(@"C:\MyGame1\Screenshots");
+            viewModel.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame1");
+            viewModel.Imports[2].SourceDirectory.Should().Be(@"C:\MyGame3\Screenshots");
+            viewModel.Imports[2].DestinationDirectory.Should().Be(@"C:\Images\MyGame3");
         }
 
         [Fact]
@@ -211,13 +212,13 @@ namespace JPPhotoManager.Tests
 
             viewModel.MoveDownDefinition(viewModel.Imports[1]);
 
-            Assert.Equal(3, viewModel.Imports.Count);
-            Assert.Equal(@"C:\MyGame1\Screenshots", viewModel.Imports[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame1", viewModel.Imports[0].DestinationDirectory);
-            Assert.Equal(@"C:\MyGame3\Screenshots", viewModel.Imports[1].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame3", viewModel.Imports[1].DestinationDirectory);
-            Assert.Equal(@"C:\MyGame2\Screenshots", viewModel.Imports[2].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyGame2", viewModel.Imports[2].DestinationDirectory);
+            viewModel.Imports.Should().HaveCount(3);
+            viewModel.Imports[0].SourceDirectory.Should().Be(@"C:\MyGame1\Screenshots");
+            viewModel.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame1");
+            viewModel.Imports[1].SourceDirectory.Should().Be(@"C:\MyGame3\Screenshots");
+            viewModel.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame3");
+            viewModel.Imports[2].SourceDirectory.Should().Be(@"C:\MyGame2\Screenshots");
+            viewModel.Imports[2].DestinationDirectory.Should().Be(@"C:\Images\MyGame2");
         }
 
         [Fact]
@@ -233,24 +234,24 @@ namespace JPPhotoManager.Tests
                 NewStatus = @"2 images imported from C:\MyGame1\Screenshots to C:\Images\MyGame1"
             });
             
-            Assert.Single(viewModel.StatusMessages);
-            Assert.Equal(@"2 images imported from C:\MyGame1\Screenshots to C:\Images\MyGame1", viewModel.StatusMessages[0]);
+            viewModel.StatusMessages.Should().ContainSingle();
+            viewModel.StatusMessages[0].Should().Be(@"2 images imported from C:\MyGame1\Screenshots to C:\Images\MyGame1");
 
             viewModel.NotifyImageImported(new StatusChangeCallbackEventArgs
             {
                 NewStatus = @"2 images imported from C:\MyGame2\Screenshots to C:\Images\MyGame2"
             });
 
-            Assert.Equal(2, viewModel.StatusMessages.Count);
-            Assert.Equal(@"2 images imported from C:\MyGame2\Screenshots to C:\Images\MyGame2", viewModel.StatusMessages[1]);
+            viewModel.StatusMessages.Should().HaveCount(2);
+            viewModel.StatusMessages[1].Should().Be(@"2 images imported from C:\MyGame2\Screenshots to C:\Images\MyGame2");
 
             viewModel.NotifyImageImported(new StatusChangeCallbackEventArgs
             {
                 NewStatus = @"2 images imported from C:\MyGame3\Screenshots to C:\Images\MyGame3"
             });
 
-            Assert.Equal(3, viewModel.StatusMessages.Count);
-            Assert.Equal(@"2 images imported from C:\MyGame3\Screenshots to C:\Images\MyGame3", viewModel.StatusMessages[2]);
+            viewModel.StatusMessages.Should().HaveCount(3);
+            viewModel.StatusMessages[2].Should().Be(@"2 images imported from C:\MyGame3\Screenshots to C:\Images\MyGame3");
         }
     }
 }
