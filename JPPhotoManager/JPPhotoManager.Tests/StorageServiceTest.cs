@@ -170,7 +170,7 @@ namespace JPPhotoManager.Tests
             storageService.WriteObjectToJson(writtenList, jsonPath);
             List<string> readList = storageService.ReadObjectFromJson<List<string>>(jsonPath);
 
-            readList.Should().HaveCount(writtenList.Count);
+            readList.Should().HaveSameCount(writtenList);
             readList[0].Should().Be(writtenList[0]);
             readList[1].Should().Be(writtenList[1]);
         }
