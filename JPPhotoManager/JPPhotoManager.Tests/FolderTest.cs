@@ -104,7 +104,7 @@ namespace JPPhotoManager.Tests
                 Path = ""
             };
 
-            folder2.ToString().Should().Be("");
+            folder2.ToString().Should().BeEmpty();
         }
     }
 }
