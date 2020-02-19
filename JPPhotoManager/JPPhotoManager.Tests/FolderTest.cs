@@ -1,7 +1,5 @@
-﻿using JPPhotoManager.Domain;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using FluentAssertions;
+using JPPhotoManager.Domain;
 using Xunit;
 
 namespace JPPhotoManager.Tests
@@ -23,8 +21,8 @@ namespace JPPhotoManager.Tests
                 Path = @"C:\Users\TestUser\Pictures"
             };
 
-            Assert.True(folder1.Equals(folder2));
-            Assert.Equal(folder1.GetHashCode(), folder2.GetHashCode());
+            folder1.Should().Be(folder2);
+            folder1.GetHashCode().Should().Be(folder2.GetHashCode());
         }
 
         [Fact]
@@ -42,8 +40,8 @@ namespace JPPhotoManager.Tests
                 Path = @"C:\Users\TestUser\Pictures\MyAlbum"
             };
 
-            Assert.False(folder1.Equals(folder2));
-            Assert.NotEqual(folder1.GetHashCode(), folder2.GetHashCode());
+            folder1.Should().NotBe(folder2);
+            folder1.GetHashCode().Should().NotBe(folder2.GetHashCode());
         }
 
         [Fact]
@@ -61,8 +59,8 @@ namespace JPPhotoManager.Tests
                 Path = null
             };
 
-            Assert.False(folder1.Equals(folder2));
-            Assert.NotEqual(folder1.GetHashCode(), folder2.GetHashCode());
+            folder1.Should().NotBe(folder2);
+            folder1.GetHashCode().Should().NotBe(folder2.GetHashCode());
         }
 
         [Fact]
@@ -74,7 +72,7 @@ namespace JPPhotoManager.Tests
                 Path = @"C:\Users\TestUser\Pictures"
             };
 
-            Assert.False(folder.Equals(null));
+            folder.Should().NotBeNull();
         }
 
         [Fact]
@@ -86,7 +84,7 @@ namespace JPPhotoManager.Tests
                 Path = @"C:\Users\TestUser\Pictures"
             };
 
-            Assert.Equal(@"C:\Users\TestUser\Pictures", folder.ToString());
+            folder.ToString().Should().Be(@"C:\Users\TestUser\Pictures");
         }
 
         [Fact]
@@ -98,7 +96,7 @@ namespace JPPhotoManager.Tests
                 Path = null
             };
 
-            Assert.Null(folder1.ToString());
+            folder1.ToString().Should().BeNull();
 
             Folder folder2 = new Folder
             {
@@ -106,7 +104,7 @@ namespace JPPhotoManager.Tests
                 Path = ""
             };
 
-            Assert.Equal("", folder2.ToString());
+            folder2.ToString().Should().BeEmpty();
         }
     }
 }

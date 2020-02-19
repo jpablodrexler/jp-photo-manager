@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using FluentAssertions;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
@@ -93,7 +94,7 @@ namespace JPPhotoManager.Tests
                 new UserConfigurationService(configuration),
                 new StorageService(userConfigurationService));
             Asset[] assets = app.GetAssets(directory);
-            Assert.Equal(expectedResult, assets);
+            assets.Should().BeEquivalentTo(expectedResult);
 
             mockRepository.VerifyAll();
         }
@@ -121,8 +122,9 @@ namespace JPPhotoManager.Tests
                 mockRepository.Object,
                 new UserConfigurationService(configuration),
                 new StorageService(userConfigurationService));
-            Assert.Throws<ArgumentException>(() =>
-                app.GetAssets(directory));
+
+            Func<Asset[]> function = () => app.GetAssets(directory);
+            function.Should().Throw<ArgumentException>();
         }
 
         [Fact]
@@ -147,8 +149,9 @@ namespace JPPhotoManager.Tests
                 mockRepository.Object,
                 new UserConfigurationService(configuration),
                 new StorageService(userConfigurationService));
-            Assert.Throws<ArgumentException>(() =>
-                app.GetAssets(directory));
+
+            Func<Asset[]> function = () => app.GetAssets(directory);
+            function.Should().Throw<ArgumentException>();
         }
 
         [Fact]
@@ -217,18 +220,18 @@ namespace JPPhotoManager.Tests
                 new StorageService(userConfigurationService));
 
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
-            Assert.Single(duplicatedAssetSets);
+            duplicatedAssetSets.Should().ContainSingle();
 
             DuplicatedAssetCollection duplicatedAssets = duplicatedAssetSets[0];
-            Assert.Equal(2, duplicatedAssets.Count);
-            Assert.Equal("Image 2.jpg", duplicatedAssets[0].FileName);
-            Assert.Equal("Image 2 duplicated.jpg", duplicatedAssets[1].FileName);
-            Assert.Equal("Image 2.jpg (2 duplicates)", duplicatedAssets.Description);
+            duplicatedAssets.Should().HaveCount(2);
+            duplicatedAssets[0].FileName.Should().Be("Image 2.jpg");
+            duplicatedAssets[1].FileName.Should().Be("Image 2 duplicated.jpg");
+            duplicatedAssets.Description.Should().Be("Image 2.jpg (2 duplicates)");
 
-            Assert.True(repository.ContainsThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName));
-            Assert.True(repository.ContainsThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName));
-            Assert.NotNull(repository.LoadThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName, duplicatedAssets[0].ThumbnailPixelWidth, duplicatedAssets[0].ThumbnailPixelHeight));
-            Assert.NotNull(repository.LoadThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName, duplicatedAssets[1].ThumbnailPixelWidth, duplicatedAssets[1].ThumbnailPixelHeight));
+            repository.ContainsThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName).Should().BeTrue();
+            repository.ContainsThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName).Should().BeTrue();
+            repository.LoadThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName, duplicatedAssets[0].ThumbnailPixelWidth, duplicatedAssets[0].ThumbnailPixelHeight).Should().NotBeNull();
+            repository.LoadThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName, duplicatedAssets[1].ThumbnailPixelWidth, duplicatedAssets[1].ThumbnailPixelHeight).Should().NotBeNull();
         }
 
         [Fact]
@@ -260,15 +263,15 @@ namespace JPPhotoManager.Tests
                 new StorageService(userConfigurationService));
 
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
-            Assert.True(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeTrue();
             Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
-            Assert.True(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeTrue();
             Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
 
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
-            Assert.Empty(duplicatedAssetSets);
+            duplicatedAssetSets.Should().BeEmpty();
         }
 
         /// <summary>
@@ -304,15 +307,15 @@ namespace JPPhotoManager.Tests
                 new StorageService(userConfigurationService));
 
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
-            Assert.True(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeTrue();
             Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
-            Assert.True(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeTrue();
             Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Inexistent Image.jpg");
-            Assert.False(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeFalse();
 
             Asset inexistentAsset = new Asset
             {
@@ -324,7 +327,7 @@ namespace JPPhotoManager.Tests
 
             repository.AddAsset(inexistentAsset, null);
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
-            Assert.Empty(duplicatedAssetSets);
+            duplicatedAssetSets.Should().BeEmpty();
         }
 
         /// <summary>
@@ -360,7 +363,7 @@ namespace JPPhotoManager.Tests
                 new StorageService(userConfigurationService));
 
             string imagePath = Path.Combine(dataDirectory, "Inexistent Image.jpg");
-            Assert.False(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeFalse();
 
             repository.AddAsset(new Asset
             {
@@ -371,15 +374,15 @@ namespace JPPhotoManager.Tests
             }, null);
 
             imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
-            Assert.True(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeTrue();
             Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
-            Assert.True(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeTrue();
             Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
 
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
-            Assert.Empty(duplicatedAssetSets);
+            duplicatedAssetSets.Should().BeEmpty();
         }
 
         [Fact]
@@ -415,15 +418,15 @@ namespace JPPhotoManager.Tests
                 storageService);
 
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
-            Assert.True(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeTrue();
             Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
-            Assert.True(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeTrue();
             Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 2 duplicated.jpg");
-            Assert.True(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeTrue();
             Asset duplicatedAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2 duplicated.jpg");
 
             repository.SaveCatalog(folder);
@@ -452,17 +455,17 @@ namespace JPPhotoManager.Tests
                 new StorageService(userConfigurationService));
 
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
-            Assert.Single(duplicatedAssetSets);
+            duplicatedAssetSets.Should().ContainSingle();
 
             List<Asset> duplicatedAssets = duplicatedAssetSets[0];
-            Assert.Equal(2, duplicatedAssets.Count);
-            Assert.Equal("Image 2.jpg", duplicatedAssets[0].FileName);
-            Assert.Equal("Image 2 duplicated.jpg", duplicatedAssets[1].FileName);
+            duplicatedAssets.Should().HaveCount(2);
+            duplicatedAssets[0].FileName.Should().Be("Image 2.jpg");
+            duplicatedAssets[1].FileName.Should().Be("Image 2 duplicated.jpg");
 
-            Assert.True(repository.ContainsThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName));
-            Assert.True(repository.ContainsThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName));
-            Assert.NotNull(repository.LoadThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName, duplicatedAssets[0].ThumbnailPixelWidth, duplicatedAssets[0].ThumbnailPixelHeight));
-            Assert.NotNull(repository.LoadThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName, duplicatedAssets[1].ThumbnailPixelWidth, duplicatedAssets[1].ThumbnailPixelHeight));
+            repository.ContainsThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName).Should().BeTrue();
+            repository.ContainsThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName).Should().BeTrue();
+            repository.LoadThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName, duplicatedAssets[0].ThumbnailPixelWidth, duplicatedAssets[0].ThumbnailPixelHeight).Should().NotBeNull();
+            repository.LoadThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName, duplicatedAssets[1].ThumbnailPixelWidth, duplicatedAssets[1].ThumbnailPixelHeight).Should().NotBeNull();
         }
 
         [Fact]
@@ -497,15 +500,15 @@ namespace JPPhotoManager.Tests
                 new StorageService(userConfigurationService));
 
             string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
-            Assert.True(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeTrue();
             Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
 
             imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
-            Assert.True(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeTrue();
             Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
 
             List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
-            Assert.Empty(duplicatedAssetSets);
+            duplicatedAssetSets.Should().BeEmpty();
         }
 
         [Fact]
@@ -518,7 +521,7 @@ namespace JPPhotoManager.Tests
             Folder folder = new Folder { FolderId = "1", Path = "C:\\Inexistent Folder" };
 
             string imagePath = Path.Combine(dataDirectory, "Inexistent Image.jpg");
-            Assert.False(File.Exists(imagePath));
+            File.Exists(imagePath).Should().BeFalse();
 
             repository.AddAsset(new Asset
             {
@@ -529,9 +532,9 @@ namespace JPPhotoManager.Tests
             }, null);
 
             folder = repository.GetFolderByPath("C:\\Inexistent Folder");
-            Assert.NotNull(folder);
-            Assert.Equal("C:\\Inexistent Folder", folder.Path);
-            Assert.Equal("Inexistent Folder", folder.Name);
+            folder.Should().NotBeNull();
+            folder.Path.Should().Be("C:\\Inexistent Folder");
+            folder.Name.Should().Be("Inexistent Folder");
         }
     }
 }

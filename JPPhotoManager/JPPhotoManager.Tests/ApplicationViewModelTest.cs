@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Windows;
-using System.Windows.Media.Imaging;
+﻿using FluentAssertions;
 using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.UI.ViewModels;
 using Moq;
+using System.Collections.Generic;
+using System.Windows;
+using System.Windows.Media.Imaging;
 using Xunit;
 
 namespace JPPhotoManager.Tests
@@ -20,13 +19,13 @@ namespace JPPhotoManager.Tests
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
             ApplicationViewModel viewModel = new ApplicationViewModel(mock.Object);
 
-            Assert.Equal(AppModeEnum.Thumbnails, viewModel.AppMode);
+            viewModel.AppMode.Should().Be(AppModeEnum.Thumbnails);
             viewModel.ChangeAppMode();
-            Assert.Equal(AppModeEnum.Viewer, viewModel.AppMode);
+            viewModel.AppMode.Should().Be(AppModeEnum.Viewer);
             viewModel.ChangeAppMode();
-            Assert.Equal(AppModeEnum.Thumbnails, viewModel.AppMode);
+            viewModel.AppMode.Should().Be(AppModeEnum.Thumbnails);
             viewModel.ChangeAppMode(AppModeEnum.Viewer);
-            Assert.Equal(AppModeEnum.Viewer, viewModel.AppMode);
+            viewModel.AppMode.Should().Be(AppModeEnum.Viewer);
         }
 
         [Fact]
@@ -50,7 +49,7 @@ namespace JPPhotoManager.Tests
             viewModel.ViewerPosition = 2;
             viewModel.GoToPreviousImage();
 
-            Assert.Equal(1, viewModel.ViewerPosition);
+            viewModel.ViewerPosition.Should().Be(1);
         }
 
         [Fact]
@@ -74,7 +73,7 @@ namespace JPPhotoManager.Tests
             viewModel.ViewerPosition = 0;
             viewModel.GoToPreviousImage();
 
-            Assert.Equal(0, viewModel.ViewerPosition);
+            viewModel.ViewerPosition.Should().Be(0);
         }
 
         [Fact]
@@ -98,7 +97,7 @@ namespace JPPhotoManager.Tests
             viewModel.ViewerPosition = 2;
             viewModel.GoToNextImage();
 
-            Assert.Equal(3, viewModel.ViewerPosition);
+            viewModel.ViewerPosition.Should().Be(3);
         }
 
         [Fact]
@@ -122,7 +121,7 @@ namespace JPPhotoManager.Tests
             viewModel.ViewerPosition = 4;
             viewModel.GoToNextImage();
 
-            Assert.Equal(4, viewModel.ViewerPosition);
+            viewModel.ViewerPosition.Should().Be(4);
         }
 
         [Fact]
@@ -149,7 +148,7 @@ namespace JPPhotoManager.Tests
             viewModel.ViewerPosition = 4;
             viewModel.GoToAsset(assets[2]);
 
-            Assert.Equal(2, viewModel.ViewerPosition);
+            viewModel.ViewerPosition.Should().Be(2);
         }
 
         [Fact]
@@ -178,7 +177,7 @@ namespace JPPhotoManager.Tests
             viewModel.ViewerPosition = 4;
             viewModel.GoToAsset(assetNotInList);
 
-            Assert.Equal(4, viewModel.ViewerPosition);
+            viewModel.ViewerPosition.Should().Be(4);
         }
 
         [Fact]
@@ -211,14 +210,14 @@ namespace JPPhotoManager.Tests
                 Reason = ReasonEnum.Created
             });
 
-            Assert.Equal(6, viewModel.Files.Count);
-            Assert.Equal("Image1.jpg", viewModel.Files[0].FileName);
-            Assert.Equal("Image2.jpg", viewModel.Files[1].FileName);
-            Assert.Equal("Image3.jpg", viewModel.Files[2].FileName);
-            Assert.Equal("Image4.jpg", viewModel.Files[3].FileName);
-            Assert.Equal("Image5.jpg", viewModel.Files[4].FileName);
-            Assert.Equal("NewImage.jpg", viewModel.Files[5].FileName);
-            Assert.Equal(statusMessage, viewModel.StatusMessage);
+            viewModel.Files.Should().HaveCount(6);
+            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
+            viewModel.Files[1].FileName.Should().Be("Image2.jpg");
+            viewModel.Files[2].FileName.Should().Be("Image3.jpg");
+            viewModel.Files[3].FileName.Should().Be("Image4.jpg");
+            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+            viewModel.Files[5].FileName.Should().Be("NewImage.jpg");
+            viewModel.StatusMessage.Should().Be(statusMessage);
         }
 
         [Fact]
@@ -252,13 +251,13 @@ namespace JPPhotoManager.Tests
                 Reason = ReasonEnum.Created
             });
 
-            Assert.Equal(5, viewModel.Files.Count);
-            Assert.Equal("Image1.jpg", viewModel.Files[0].FileName);
-            Assert.Equal("Image2.jpg", viewModel.Files[1].FileName);
-            Assert.Equal("Image3.jpg", viewModel.Files[2].FileName);
-            Assert.Equal("Image4.jpg", viewModel.Files[3].FileName);
-            Assert.Equal("Image5.jpg", viewModel.Files[4].FileName);
-            Assert.Equal(statusMessage, viewModel.StatusMessage);
+            viewModel.Files.Should().HaveCount(5);
+            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
+            viewModel.Files[1].FileName.Should().Be("Image2.jpg");
+            viewModel.Files[2].FileName.Should().Be("Image3.jpg");
+            viewModel.Files[3].FileName.Should().Be("Image4.jpg");
+            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+            viewModel.StatusMessage.Should().Be(statusMessage);
         }
 
         [Fact]
@@ -280,7 +279,7 @@ namespace JPPhotoManager.Tests
                 Reason = ReasonEnum.Created
             });
 
-            Assert.Single(viewModel.Files);
+            viewModel.Files.Should().ContainSingle();
         }
 
         [Fact]
@@ -312,12 +311,12 @@ namespace JPPhotoManager.Tests
                 Reason = ReasonEnum.Created
             });
 
-            Assert.Equal(5, viewModel.Files.Count);
-            Assert.Equal("Image1.jpg", viewModel.Files[0].FileName);
-            Assert.Equal("Image2.jpg", viewModel.Files[1].FileName);
-            Assert.Equal("Image3.jpg", viewModel.Files[2].FileName);
-            Assert.Equal("Image4.jpg", viewModel.Files[3].FileName);
-            Assert.Equal("Image5.jpg", viewModel.Files[4].FileName);
+            viewModel.Files.Should().HaveCount(5);
+            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
+            viewModel.Files[1].FileName.Should().Be("Image2.jpg");
+            viewModel.Files[2].FileName.Should().Be("Image3.jpg");
+            viewModel.Files[3].FileName.Should().Be("Image4.jpg");
+            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
         }
 
         [Fact]
@@ -356,12 +355,12 @@ namespace JPPhotoManager.Tests
                 Reason = ReasonEnum.Created
             });
 
-            Assert.Equal(5, viewModel.Files.Count);
-            Assert.Equal("Image1.jpg", viewModel.Files[0].FileName);
-            Assert.Equal("Image2.jpg", viewModel.Files[1].FileName);
-            Assert.Equal("Image3.jpg", viewModel.Files[2].FileName);
-            Assert.Equal("Image4.jpg", viewModel.Files[3].FileName);
-            Assert.Equal("Image5.jpg", viewModel.Files[4].FileName);
+            viewModel.Files.Should().HaveCount(5);
+            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
+            viewModel.Files[1].FileName.Should().Be("Image2.jpg");
+            viewModel.Files[2].FileName.Should().Be("Image3.jpg");
+            viewModel.Files[3].FileName.Should().Be("Image4.jpg");
+            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
         }
 
         [Fact]
@@ -393,12 +392,12 @@ namespace JPPhotoManager.Tests
                 Reason = ReasonEnum.Deleted
             });
 
-            Assert.Equal(4, viewModel.Files.Count);
-            Assert.Equal("Image1.jpg", viewModel.Files[0].FileName);
-            Assert.Equal("Image2.jpg", viewModel.Files[1].FileName);
-            Assert.Equal("Image4.jpg", viewModel.Files[2].FileName);
-            Assert.Equal("Image5.jpg", viewModel.Files[3].FileName);
-            Assert.Equal(statusMessage, viewModel.StatusMessage);
+            viewModel.Files.Should().HaveCount(4);
+            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
+            viewModel.Files[1].FileName.Should().Be("Image2.jpg");
+            viewModel.Files[2].FileName.Should().Be("Image4.jpg");
+            viewModel.Files[3].FileName.Should().Be("Image5.jpg");
+            viewModel.StatusMessage.Should().Be(statusMessage);
         }
 
         [Fact]
@@ -422,8 +421,8 @@ namespace JPPhotoManager.Tests
             viewModel.ViewerPosition = 2;
             viewModel.RemoveAsset(assets[2]);
 
-            Assert.Equal(2, viewModel.ViewerPosition);
-            Assert.Equal(4, viewModel.Files.Count);
+            viewModel.ViewerPosition.Should().Be(2);
+            viewModel.Files.Should().HaveCount(4);
         }
 
         [Fact]
@@ -447,8 +446,8 @@ namespace JPPhotoManager.Tests
 
             viewModel.RemoveAsset(assets[0]);
 
-            Assert.Equal(0, viewModel.ViewerPosition);
-            Assert.Equal(4, viewModel.Files.Count);
+            viewModel.ViewerPosition.Should().Be(0);
+            viewModel.Files.Should().HaveCount(4);
         }
 
         [Fact]
@@ -472,8 +471,8 @@ namespace JPPhotoManager.Tests
 
             viewModel.RemoveAsset(assets[4]);
 
-            Assert.Equal(3, viewModel.ViewerPosition);
-            Assert.Equal(4, viewModel.Files.Count);
+            viewModel.ViewerPosition.Should().Be(3);
+            viewModel.Files.Should().HaveCount(4);
         }
 
         [Fact]
@@ -493,8 +492,8 @@ namespace JPPhotoManager.Tests
 
             viewModel.RemoveAsset(assets[0]);
 
-            Assert.Equal(-1, viewModel.ViewerPosition);
-            Assert.Empty(viewModel.Files);
+            viewModel.ViewerPosition.Should().Be(-1);
+            viewModel.Files.Should().BeEmpty();
         }
 
         [Fact]
@@ -511,8 +510,8 @@ namespace JPPhotoManager.Tests
 
             viewModel.RemoveAsset(null);
 
-            Assert.Equal(-1, viewModel.ViewerPosition);
-            Assert.Empty(viewModel.Files);
+            viewModel.ViewerPosition.Should().Be(-1);
+            viewModel.Files.Should().BeEmpty();
         }
 
         [Fact]
@@ -527,8 +526,8 @@ namespace JPPhotoManager.Tests
             
             viewModel.RemoveAsset(null);
 
-            Assert.Equal(-1, viewModel.ViewerPosition);
-            Assert.Null(viewModel.Files);
+            viewModel.ViewerPosition.Should().Be(-1);
+            viewModel.Files.Should().BeNull();
         }
 
         [Fact]
@@ -540,12 +539,12 @@ namespace JPPhotoManager.Tests
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
             
             viewModel.ChangeAppMode(AppModeEnum.Thumbnails);
-            
-            Assert.Equal(Visibility.Visible, viewModel.ThumbnailsVisible);
+
+            viewModel.ThumbnailsVisible.Should().Be(Visibility.Visible);
 
             viewModel.ChangeAppMode(AppModeEnum.Viewer);
 
-            Assert.Equal(Visibility.Hidden, viewModel.ThumbnailsVisible);
+            viewModel.ThumbnailsVisible.Should().Be(Visibility.Hidden);
         }
 
         [Fact]
@@ -558,11 +557,11 @@ namespace JPPhotoManager.Tests
 
             viewModel.ChangeAppMode(AppModeEnum.Viewer);
 
-            Assert.Equal(Visibility.Visible, viewModel.ViewerVisible);
+            viewModel.ViewerVisible.Should().Be(Visibility.Visible);
 
             viewModel.ChangeAppMode(AppModeEnum.Thumbnails);
 
-            Assert.Equal(Visibility.Hidden, viewModel.ViewerVisible);
+            viewModel.ViewerVisible.Should().Be(Visibility.Hidden);
         }
 
         [Fact]
@@ -588,7 +587,7 @@ namespace JPPhotoManager.Tests
             viewModel.SetFiles(assets);
             viewModel.ViewerPosition = 3;
 
-            Assert.Equal(@"JPPhotoManager v1.0.0.0 - D:\Data", viewModel.AppTitle);
+            viewModel.AppTitle.Should().Be(@"JPPhotoManager v1.0.0.0 - D:\Data");
         }
 
         [Fact]
@@ -614,7 +613,7 @@ namespace JPPhotoManager.Tests
             viewModel.SetFiles(assets);
             viewModel.ViewerPosition = 3;
 
-            Assert.Equal(@"JPPhotoManager v1.0.0.0 - Image4.jpg - image 4 de 5", viewModel.AppTitle);
+            viewModel.AppTitle.Should().Be(@"JPPhotoManager v1.0.0.0 - Image4.jpg - image 4 de 5");
         }
     }
 }

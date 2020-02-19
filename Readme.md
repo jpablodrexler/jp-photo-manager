@@ -10,7 +10,9 @@ JPPhotoManager is a desktop application that allows:
 * Change Windows wallpaper
 * Find duplicates
 * Copy/move images
-* Import images from game screenshots folder
+* Import images from local folders (such as game screenshots folders)
+* Import images from shared folders in the local network
+* Export images to shared folders in the local network
 
 Soon will allow to:
 * Add your own metadata to the images
@@ -32,4 +34,5 @@ Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoM
 * [Windows Presentation Foundation](https://docs.microsoft.com/en-us/dotnet/framework/wpf/)
 * [xUnit](https://xunit.net/)
 * [Moq framework for .NET](https://github.com/moq/moq4)
+* [Fluent Assertions](https://fluentassertions.com/)
 * [log4net](https://logging.apache.org/log4net/)

@@ -1,9 +1,7 @@
-﻿using JPPhotoManager.Domain;
+﻿using FluentAssertions;
+using JPPhotoManager.Domain;
 using JPPhotoManager.UI.ViewModels;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Text;
 using Xunit;
 
 namespace JPPhotoManager.Tests
@@ -34,13 +32,13 @@ namespace JPPhotoManager.Tests
 
             imports.MoveUp(imports[1]);
 
-            Assert.Equal(3, imports.Count);
-            Assert.Equal(@"C:\MySecondGame\Screenshots", imports[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MySecondGame", imports[0].DestinationDirectory);
-            Assert.Equal(@"C:\MyFirstGame\Screenshots", imports[1].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyFirstGame", imports[1].DestinationDirectory);
-            Assert.Equal(@"\\MyServer\Images", imports[2].SourceDirectory);
-            Assert.Equal(@"C:\Images", imports[2].DestinationDirectory);
+            imports.Should().HaveCount(3);
+            imports[0].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            imports[0].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            imports[1].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            imports[1].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            imports[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
+            imports[2].DestinationDirectory.Should().Be(@"C:\Images");
         }
 
         [Fact]
@@ -67,13 +65,13 @@ namespace JPPhotoManager.Tests
 
             imports.MoveUp(imports[2]);
 
-            Assert.Equal(3, imports.Count);
-            Assert.Equal(@"C:\MyFirstGame\Screenshots", imports[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyFirstGame", imports[0].DestinationDirectory);
-            Assert.Equal(@"\\MyServer\Images", imports[1].SourceDirectory);
-            Assert.Equal(@"C:\Images", imports[1].DestinationDirectory);
-            Assert.Equal(@"C:\MySecondGame\Screenshots", imports[2].SourceDirectory);
-            Assert.Equal(@"C:\Images\MySecondGame", imports[2].DestinationDirectory);
+            imports.Should().HaveCount(3);
+            imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            imports[1].SourceDirectory.Should().Be(@"\\MyServer\Images");
+            imports[1].DestinationDirectory.Should().Be(@"C:\Images");
+            imports[2].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            imports[2].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
         }
 
         [Fact]
@@ -100,13 +98,13 @@ namespace JPPhotoManager.Tests
 
             imports.MoveUp(imports[0]);
 
-            Assert.Equal(3, imports.Count);
-            Assert.Equal(@"C:\MyFirstGame\Screenshots", imports[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyFirstGame", imports[0].DestinationDirectory);
-            Assert.Equal(@"C:\MySecondGame\Screenshots", imports[1].SourceDirectory);
-            Assert.Equal(@"C:\Images\MySecondGame", imports[1].DestinationDirectory);
-            Assert.Equal(@"\\MyServer\Images", imports[2].SourceDirectory);
-            Assert.Equal(@"C:\Images", imports[2].DestinationDirectory);
+            imports.Should().HaveCount(3);
+            imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            imports[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            imports[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            imports[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
+            imports[2].DestinationDirectory.Should().Be(@"C:\Images");
         }
 
         [Fact]
@@ -133,13 +131,13 @@ namespace JPPhotoManager.Tests
 
             imports.MoveDown(imports[1]);
 
-            Assert.Equal(3, imports.Count);
-            Assert.Equal(@"C:\MyFirstGame\Screenshots", imports[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyFirstGame", imports[0].DestinationDirectory);
-            Assert.Equal(@"\\MyServer\Images", imports[1].SourceDirectory);
-            Assert.Equal(@"C:\Images", imports[1].DestinationDirectory);
-            Assert.Equal(@"C:\MySecondGame\Screenshots", imports[2].SourceDirectory);
-            Assert.Equal(@"C:\Images\MySecondGame", imports[2].DestinationDirectory);
+            imports.Should().HaveCount(3);
+            imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            imports[1].SourceDirectory.Should().Be(@"\\MyServer\Images");
+            imports[1].DestinationDirectory.Should().Be(@"C:\Images");
+            imports[2].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            imports[2].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
         }
 
         [Fact]
@@ -166,13 +164,13 @@ namespace JPPhotoManager.Tests
 
             imports.MoveDown(imports[0]);
 
-            Assert.Equal(3, imports.Count);
-            Assert.Equal(@"C:\MySecondGame\Screenshots", imports[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MySecondGame", imports[0].DestinationDirectory);
-            Assert.Equal(@"C:\MyFirstGame\Screenshots", imports[1].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyFirstGame", imports[1].DestinationDirectory);
-            Assert.Equal(@"\\MyServer\Images", imports[2].SourceDirectory);
-            Assert.Equal(@"C:\Images", imports[2].DestinationDirectory);
+            imports.Should().HaveCount(3);
+            imports[0].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            imports[0].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            imports[1].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            imports[1].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            imports[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
+            imports[2].DestinationDirectory.Should().Be(@"C:\Images");
         }
 
         [Fact]
@@ -199,13 +197,13 @@ namespace JPPhotoManager.Tests
 
             imports.MoveDown(imports[2]);
 
-            Assert.Equal(3, imports.Count);
-            Assert.Equal(@"C:\MyFirstGame\Screenshots", imports[0].SourceDirectory);
-            Assert.Equal(@"C:\Images\MyFirstGame", imports[0].DestinationDirectory);
-            Assert.Equal(@"C:\MySecondGame\Screenshots", imports[1].SourceDirectory);
-            Assert.Equal(@"C:\Images\MySecondGame", imports[1].DestinationDirectory);
-            Assert.Equal(@"\\MyServer\Images", imports[2].SourceDirectory);
-            Assert.Equal(@"C:\Images", imports[2].DestinationDirectory);
+            imports.Should().HaveCount(3);
+            imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            imports[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            imports[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            imports[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
+            imports[2].DestinationDirectory.Should().Be(@"C:\Images");
         }
     }
 }

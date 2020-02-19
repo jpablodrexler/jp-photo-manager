@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using Xunit;
 
@@ -16,9 +17,9 @@ namespace JPPhotoManager.Tests
                 .MockGetValue("appsettings:CatalogBatchSize", "100");
 
             IConfigurationRoot configuration = configurationMock.Object;
-            Assert.Equal("dataDirectory1", configuration.GetValue<string>("appsettings:InitialDirectory"));
-            Assert.Equal("dataDirectory2", configuration.GetValue<string>("appsettings:ApplicationDataDirectory"));
-            Assert.Equal("100", configuration.GetValue<string>("appsettings:CatalogBatchSize"));
+            configuration.GetValue<string>("appsettings:InitialDirectory").Should().Be("dataDirectory1");
+            configuration.GetValue<string>("appsettings:ApplicationDataDirectory").Should().Be("dataDirectory2");
+            configuration.GetValue<string>("appsettings:CatalogBatchSize").Should().Be("100");
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using JPPhotoManager.Domain;
+﻿using FluentAssertions;
+using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Moq;
@@ -41,7 +42,7 @@ namespace JPPhotoManager.Tests
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
             string result = storageService.ResolveTableFilePath(directory, "assets");
 
-            Assert.Equal(expected, result);
+            result.Should().Be(expected);
         }
 
         [Fact]
@@ -53,7 +54,7 @@ namespace JPPhotoManager.Tests
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
             string result = storageService.ResolveTableFilePath(directory, "assets");
 
-            Assert.Equal(expected, result);
+            result.Should().Be(expected);
         }
 
         [Fact]
@@ -65,7 +66,7 @@ namespace JPPhotoManager.Tests
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
             string result = storageService.ResolveTableFilePath(directory, "assets");
 
-            Assert.Equal(expected, result);
+            result.Should().Be(expected);
         }
 
         [Fact]
@@ -82,7 +83,7 @@ namespace JPPhotoManager.Tests
             IStorageService storageService = new StorageService(new UserConfigurationService(configurationMock.Object));
             string result = storageService.ResolveDataDirectory();
 
-            Assert.Equal(expected, result);
+            result.Should().Be(expected);
         }
 
         [Fact]
@@ -99,7 +100,7 @@ namespace JPPhotoManager.Tests
             IStorageService storageService = new StorageService(new UserConfigurationService(configurationMock.Object));
             string result = storageService.ResolveDataDirectory();
 
-            Assert.Equal(expected, result);
+            result.Should().Be(expected);
         }
 
         [Fact]
@@ -108,9 +109,9 @@ namespace JPPhotoManager.Tests
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
             string[] fileNames = storageService.GetFileNames(dataDirectory);
 
-            Assert.True(fileNames.Length >= 2);
-            Assert.Contains("Image 2.jpg", fileNames);
-            Assert.Contains("Image 1.jpg", fileNames);
+            fileNames.Should().HaveCountGreaterOrEqualTo(2);
+            fileNames.Should().Contain("Image 2.jpg");
+            fileNames.Should().Contain("Image 1.jpg");
         }
 
         [Fact]
@@ -118,7 +119,7 @@ namespace JPPhotoManager.Tests
         {
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
             Folder[] drives = storageService.GetDrives();
-            Assert.NotEmpty(drives);
+            drives.Should().NotBeEmpty();
         }
 
         [Fact]
@@ -128,9 +129,9 @@ namespace JPPhotoManager.Tests
             string parentPath = Path.Combine(dataDirectory, "TestFolder");
             Folder[] folders = storageService.GetFolders(new Folder { Path = parentPath }, false);
 
-            Assert.Equal(2, folders.Length);
-            Assert.Equal("TestSubFolder1", folders[0].Name);
-            Assert.Equal("TestSubFolder2", folders[1].Name);
+            folders.Should().HaveCount(2);
+            folders[0].Name.Should().Be("TestSubFolder1");
+            folders[1].Name.Should().Be("TestSubFolder2");
         }
 
         [Fact]
@@ -140,10 +141,10 @@ namespace JPPhotoManager.Tests
             string parentPath = Path.Combine(dataDirectory, "TestFolder");
             Folder[] folders = storageService.GetFolders(new Folder { Path = parentPath }, true);
 
-            Assert.Equal(3, folders.Length);
-            Assert.Equal("TestHiddenSubFolder", folders[0].Name);
-            Assert.Equal("TestSubFolder1", folders[1].Name);
-            Assert.Equal("TestSubFolder2", folders[2].Name);
+            folders.Should().HaveCount(3);
+            folders[0].Name.Should().Be("TestHiddenSubFolder");
+            folders[1].Name.Should().Be("TestSubFolder1");
+            folders[2].Name.Should().Be("TestSubFolder2");
         }
 
         [Fact]
@@ -153,10 +154,10 @@ namespace JPPhotoManager.Tests
             string parentPath = Path.Combine(dataDirectory, "TestFolder");
             List<DirectoryInfo> directories = storageService.GetSubDirectories(parentPath);
 
-            Assert.Equal(3, directories.Count);
-            Assert.Equal("TestHiddenSubFolder", directories[0].Name);
-            Assert.Equal("TestSubFolder1", directories[1].Name);
-            Assert.Equal("TestSubFolder2", directories[2].Name);
+            directories.Should().HaveCount(3);
+            directories[0].Name.Should().Be("TestHiddenSubFolder");
+            directories[1].Name.Should().Be("TestSubFolder1");
+            directories[2].Name.Should().Be("TestSubFolder2");
         }
 
         [Fact]
@@ -169,9 +170,9 @@ namespace JPPhotoManager.Tests
             storageService.WriteObjectToJson(writtenList, jsonPath);
             List<string> readList = storageService.ReadObjectFromJson<List<string>>(jsonPath);
 
-            Assert.Equal(writtenList.Count, readList.Count);
-            Assert.Equal(writtenList[0], readList[0]);
-            Assert.Equal(writtenList[1], readList[1]);
+            readList.Should().HaveSameCount(writtenList);
+            readList[0].Should().Be(writtenList[0]);
+            readList[1].Should().Be(writtenList[1]);
         }
 
         [Theory]
@@ -193,7 +194,7 @@ namespace JPPhotoManager.Tests
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
             Rotation result = storageService.GetImageRotation(exifOrientation);
 
-            Assert.Equal(expected, result);
+            result.Should().Be(expected);
         }
     }
 }

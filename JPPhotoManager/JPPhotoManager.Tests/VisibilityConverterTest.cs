@@ -1,4 +1,5 @@
-﻿using JPPhotoManager.UI.Converters;
+﻿using FluentAssertions;
+using JPPhotoManager.UI.Converters;
 using System;
 using System.Globalization;
 using System.Windows;
@@ -18,7 +19,7 @@ namespace JPPhotoManager.Tests
         {
             VisibilityConverter converter = new VisibilityConverter();
             Visibility result = (Visibility)converter.Convert("A string", typeof(object), null, new CultureInfo("en-US"));
-            Assert.Equal(Visibility.Visible, result);
+            result.Should().Be(Visibility.Visible);
         }
 
         [Fact]
@@ -26,14 +27,15 @@ namespace JPPhotoManager.Tests
         {
             VisibilityConverter converter = new VisibilityConverter();
             Visibility result = (Visibility)converter.Convert(new NamedObject(), typeof(object), null, new CultureInfo("en-US"));
-            Assert.Equal(Visibility.Hidden, result);
+            result.Should().Be(Visibility.Hidden);
         }
 
         [Fact]
         public void ConvertBackTest()
         {
             VisibilityConverter converter = new VisibilityConverter();
-            Assert.Throws<NotImplementedException>(() => converter.ConvertBack(Visibility.Visible, typeof(object), null, new CultureInfo("en-US")));
+            Func<object> function = () => converter.ConvertBack(Visibility.Visible, typeof(object), null, new CultureInfo("en-US"));
+            function.Should().Throw<NotImplementedException>();
         }
     }
 }

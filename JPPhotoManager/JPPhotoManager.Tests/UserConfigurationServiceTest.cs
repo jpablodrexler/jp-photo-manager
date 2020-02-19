@@ -1,4 +1,5 @@
-﻿using JPPhotoManager.Domain;
+﻿using FluentAssertions;
+using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using JPPhotoManager.UI;
 using Microsoft.Extensions.Configuration;
@@ -33,7 +34,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             string result = userConfigurationService.GetPicturesDirectory();
-            Assert.False(string.IsNullOrEmpty(result));
+            result.Should().NotBeEmpty();
         }
 
         [Fact]
@@ -41,9 +42,9 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             AboutInformation result = userConfigurationService.GetAboutInformation(typeof(App).Assembly);
-            Assert.Equal("JPPhotoManager", result.Product);
-            Assert.NotEmpty(result.Version);
-            Assert.StartsWith("Version ", result.Version);
+            result.Product.Should().Be("JPPhotoManager");
+            result.Version.Should().NotBeEmpty();
+            result.Version.Should().StartWith("Version ");
         }
 
         [Fact]
@@ -51,7 +52,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             int result = userConfigurationService.GetCatalogBatchSize();
-            Assert.Equal(100, result);
+            result.Should().Be(100);
         }
 
         [Fact]
@@ -59,7 +60,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             int result = userConfigurationService.GetCatalogCooldownMinutes();
-            Assert.Equal(5, result);
+            result.Should().Be(5);
         }
 
         [Fact]
@@ -67,7 +68,7 @@ namespace JPPhotoManager.Tests
         {
             UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             string result = userConfigurationService.GetInitialFolder();
-            Assert.Equal(dataDirectory, result);
+            result.Should().Be(dataDirectory);
         }
 
         [Fact]
@@ -83,7 +84,7 @@ namespace JPPhotoManager.Tests
             UserConfigurationService userConfigurationService = new UserConfigurationService(configurationMock.Object);
             string expected = userConfigurationService.GetPicturesDirectory();
             string result = userConfigurationService.GetInitialFolder();
-            Assert.Equal(expected, result);
+            result.Should().Be(expected);
         }
 
         [Fact]
@@ -98,7 +99,7 @@ namespace JPPhotoManager.Tests
 
             UserConfigurationService userConfigurationService = new UserConfigurationService(configurationMock.Object);
             string result = userConfigurationService.GetApplicationDataFolder();
-            Assert.NotEmpty(result);
+            result.Should().NotBeEmpty();
         }
 
         [Fact]
@@ -113,7 +114,7 @@ namespace JPPhotoManager.Tests
 
             UserConfigurationService userConfigurationService = new UserConfigurationService(configurationMock.Object);
             string result = userConfigurationService.GetApplicationDataFolder();
-            Assert.NotEmpty(result);
+            result.Should().NotBeEmpty();
         }
     }
 }

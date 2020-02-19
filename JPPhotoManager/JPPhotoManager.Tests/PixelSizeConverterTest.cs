@@ -1,4 +1,5 @@
-﻿using JPPhotoManager.Domain;
+﻿using FluentAssertions;
+using JPPhotoManager.Domain;
 using JPPhotoManager.UI.Converters;
 using System;
 using System.Globalization;
@@ -22,14 +23,15 @@ namespace JPPhotoManager.Tests
             };
 
             string result = (string)converter.Convert(asset, typeof(Asset), null, Thread.CurrentThread.CurrentCulture);
-            Assert.Equal(expected, result);
+            result.Should().Be(expected);
         }
 
         [Fact]
         public void ConvertBackTest()
         {
             PixelSizeConverter converter = new PixelSizeConverter();
-            Assert.Throws<NotImplementedException>(() => converter.ConvertBack("1920x1080 pixels", typeof(string), null, new CultureInfo("en-US")));
+            Func<object> function = () => converter.ConvertBack("1920x1080 pixels", typeof(string), null, new CultureInfo("en-US"));
+            function.Should().Throw<NotImplementedException>();
         }
     }
 }

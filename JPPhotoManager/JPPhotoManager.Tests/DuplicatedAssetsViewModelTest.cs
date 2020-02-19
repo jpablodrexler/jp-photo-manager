@@ -1,4 +1,5 @@
-﻿using JPPhotoManager.Application;
+﻿using FluentAssertions;
+using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.UI.ViewModels;
 using Moq;
@@ -30,16 +31,15 @@ namespace JPPhotoManager.Tests
                 DuplicatedAssetCollectionSets = duplicatedAssetSets
             };
 
-            Assert.Equal(0, viewModel.DuplicatedAssetCollectionSetsPosition);
-            Assert.Equal(0, viewModel.DuplicatedAssetPosition);
-            Assert.Single(viewModel.DuplicatedAssetCollectionSets);
-            Assert.NotNull(viewModel.CurrentDuplicatedAssetCollection);
-
-            Assert.Equal("Image 2.jpg", viewModel.CurrentDuplicatedAsset.FileName);
+            viewModel.DuplicatedAssetCollectionSetsPosition.Should().Be(0);
+            viewModel.DuplicatedAssetPosition.Should().Be(0);
+            viewModel.DuplicatedAssetCollectionSets.Should().ContainSingle();
+            viewModel.CurrentDuplicatedAssetCollection.Should().NotBeNull();
+            viewModel.CurrentDuplicatedAsset.FileName.Should().Be("Image 2.jpg");
             
             viewModel.DuplicatedAssetPosition = 1;
             
-            Assert.Equal("Image 2 duplicated.jpg", viewModel.CurrentDuplicatedAsset.FileName);
+            viewModel.CurrentDuplicatedAsset.FileName.Should().Be("Image 2 duplicated.jpg");
         }
 
         [Fact]
@@ -58,10 +58,10 @@ namespace JPPhotoManager.Tests
             viewModel.DuplicatedAssetCollectionSetsPosition = -1;
             viewModel.DuplicatedAssetPosition = -1;
 
-            Assert.Equal(-1, viewModel.DuplicatedAssetCollectionSetsPosition);
-            Assert.Equal(-1, viewModel.DuplicatedAssetPosition);
-            Assert.Null(viewModel.CurrentDuplicatedAssetCollection);
-            Assert.Null(viewModel.CurrentDuplicatedAsset);
+            viewModel.DuplicatedAssetCollectionSetsPosition.Should().Be(-1);
+            viewModel.DuplicatedAssetPosition.Should().Be(-1);
+            viewModel.CurrentDuplicatedAssetCollection.Should().BeNull();
+            viewModel.CurrentDuplicatedAsset.Should().BeNull();
         }
 
         [Fact]
@@ -80,10 +80,10 @@ namespace JPPhotoManager.Tests
             viewModel.DuplicatedAssetCollectionSetsPosition = -1;
             viewModel.DuplicatedAssetPosition = -1;
 
-            Assert.Equal(-1, viewModel.DuplicatedAssetCollectionSetsPosition);
-            Assert.Equal(-1, viewModel.DuplicatedAssetPosition);
-            Assert.Null(viewModel.CurrentDuplicatedAssetCollection);
-            Assert.Null(viewModel.CurrentDuplicatedAsset);
+            viewModel.DuplicatedAssetCollectionSetsPosition.Should().Be(-1);
+            viewModel.DuplicatedAssetPosition.Should().Be(-1);
+            viewModel.CurrentDuplicatedAssetCollection.Should().BeNull();
+            viewModel.CurrentDuplicatedAsset.Should().BeNull();
         }
     }
 }
