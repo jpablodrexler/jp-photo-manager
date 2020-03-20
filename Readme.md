@@ -18,7 +18,7 @@ Soon will allow to:
 * Add your own metadata to the images
 * Search images
 
-For the whole roadmap for the application, please take a look at the [Trello board](https://trello.com/b/7OlQJdBw/jp-photo-manager)
+For the whole roadmap for the application, please take a look at the issues in this repository.
 
 ## Run the application
 Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoManager/JPPhotoManager/JPPhotoManager.UI.csproj` project.
