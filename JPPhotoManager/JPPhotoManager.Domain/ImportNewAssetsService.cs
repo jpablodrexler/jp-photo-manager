@@ -49,52 +49,60 @@ namespace JPPhotoManager.Domain
             }
             else
             {
-                if (!this.storageService.FolderExists(destinationDirectory))
+                try
                 {
-                    this.storageService.CreateDirectory(destinationDirectory);
-                }
-
-                string[] sourceFileNames = this.storageService.GetFileNames(sourceDirectory);
-                string[] destinationFileNames = this.storageService.GetFileNames(destinationDirectory);
-                string[] newFileNames = this.directoryComparer.GetNewFileNames(sourceFileNames, destinationFileNames);
-
-                foreach (string newImage in newFileNames)
-                {
-                    string sourcePath = Path.Combine(sourceDirectory, newImage);
-                    string destinationPath = Path.Combine(destinationDirectory, newImage);
-
-                    if (this.storageService.CopyImage(sourcePath, destinationPath))
+                    if (!this.storageService.FolderExists(destinationDirectory))
                     {
-                        result.ImportedImages++;
-                        callback(new StatusChangeCallbackEventArgs { NewStatus = $"Image '{sourcePath}' imported to '{destinationPath}'" });
+                        this.storageService.CreateDirectory(destinationDirectory);
+                    }
+
+                    string[] sourceFileNames = this.storageService.GetFileNames(sourceDirectory);
+                    string[] destinationFileNames = this.storageService.GetFileNames(destinationDirectory);
+                    string[] newFileNames = this.directoryComparer.GetNewFileNames(sourceFileNames, destinationFileNames);
+
+                    foreach (string newImage in newFileNames)
+                    {
+                        string sourcePath = Path.Combine(sourceDirectory, newImage);
+                        string destinationPath = Path.Combine(destinationDirectory, newImage);
+
+                        if (this.storageService.CopyImage(sourcePath, destinationPath))
+                        {
+                            result.ImportedImages++;
+                            callback(new StatusChangeCallbackEventArgs { NewStatus = $"Image '{sourcePath}' imported to '{destinationPath}'" });
+                        }
+                    }
+
+                    switch (result.ImportedImages)
+                    {
+                        case 0:
+                            result.Message = $"No images imported from '{sourceDirectory}' to '{destinationDirectory}'.";
+                            break;
+
+                        case 1:
+                            result.Message = $"{result.ImportedImages} image imported from '{sourceDirectory}' to '{destinationDirectory}'.";
+                            break;
+
+                        default:
+                            result.Message = $"{result.ImportedImages} images imported from '{sourceDirectory}' to '{destinationDirectory}'.";
+                            break;
+                    }
+
+                    resultList.Add(result);
+
+                    if (includeSubFolders)
+                    {
+                        var subdirectories = this.storageService.GetSubDirectories(sourceDirectory);
+
+                        foreach (var subdir in subdirectories)
+                        {
+                            this.Import(subdir.FullName, Path.Combine(destinationDirectory, subdir.Name), includeSubFolders, callback, resultList);
+                        }
                     }
                 }
-
-                switch (result.ImportedImages)
+                catch (DirectoryNotFoundException)
                 {
-                    case 0:
-                        result.Message = $"No images imported from '{sourceDirectory}' to '{destinationDirectory}'.";
-                        break;
-
-                    case 1:
-                        result.Message = $"{result.ImportedImages} image imported from '{sourceDirectory}' to '{destinationDirectory}'.";
-                        break;
-
-                    default:
-                        result.Message = $"{result.ImportedImages} images imported from '{sourceDirectory}' to '{destinationDirectory}'.";
-                        break;
-                }
-
-                resultList.Add(result);
-
-                if (includeSubFolders)
-                {
-                    var subdirectories = this.storageService.GetSubDirectories(sourceDirectory);
-
-                    foreach (var subdir in subdirectories)
-                    {
-                        this.Import(subdir.FullName, Path.Combine(destinationDirectory, subdir.Name), includeSubFolders, callback, resultList);
-                    }
+                    result.Message = $"Destination directory '{destinationDirectory}' not found.";
+                    resultList.Add(result);
                 }
             }
         }

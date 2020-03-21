@@ -635,6 +635,58 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
+        public void ImportNewImagesInaccessibleDestinationDirectory()
+        {
+            string sourceDirectory = @"C:\MyGame\Screenshots";
+            string destinationDirectory = @"\\MyServer\MyGame";
+
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = sourceDirectory,
+                    DestinationDirectory = destinationDirectory
+                });
+
+            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
+            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+
+            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
+                .Returns(importConfiguration);
+
+            storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
+                .Returns(true);
+
+            storageServiceMock.Setup(s => s.FolderExists(destinationDirectory))
+                .Returns(false);
+
+            storageServiceMock.Setup(s => s.CreateDirectory(destinationDirectory))
+                .Throws(new DirectoryNotFoundException());
+
+            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+                repositoryMock.Object,
+                storageServiceMock.Object,
+                new DirectoryComparer());
+
+            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+
+            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+
+            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Never);
+            storageServiceMock.Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            result.Should().ContainSingle();
+            result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
+            result[0].DestinationDirectory.Should().Be(@"\\MyServer\MyGame");
+            result[0].ImportedImages.Should().Be(0);
+            result[0].Message.Should().Be(@"Destination directory '\\MyServer\MyGame' not found.");
+            statusChanges.Should().BeEmpty();
+        }
+
+        [Fact]
         public void ImportNewImagesSourceNotEmptyDestinationEmptyIncludingSubFoldersTest()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
