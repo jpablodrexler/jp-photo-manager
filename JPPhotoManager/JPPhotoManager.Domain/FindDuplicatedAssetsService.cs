@@ -41,7 +41,7 @@ namespace JPPhotoManager.Domain
 
                 for (int i = 0; i < duplicatedSet.Count; i++)
                 {
-                    if (!File.Exists(duplicatedSet[i].FullPath))
+                    if (!storageService.FileExists(duplicatedSet[i].FullPath))
                     {
                         assetsToRemove.Add(duplicatedSet[i]);
                     }
@@ -82,6 +82,27 @@ namespace JPPhotoManager.Domain
                     asset.ImageData = this.assetRepository.LoadThumbnail(asset.Folder.Path, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
                 }
             }
+
+            // Removes assets with no thumbnails.
+            foreach (List<Asset> duplicatedSet in result)
+            {
+                List<Asset> assetsToRemove = new List<Asset>();
+
+                for (int i = 0; i < duplicatedSet.Count; i++)
+                {
+                    if (duplicatedSet[i].ImageData == null)
+                    {
+                        assetsToRemove.Add(duplicatedSet[i]);
+                    }
+                }
+
+                foreach (Asset asset in assetsToRemove)
+                {
+                    duplicatedSet.Remove(asset);
+                }
+            }
+
+            result = result.Where(r => r.Count() > 1).ToList();
 
             return result;
         }
