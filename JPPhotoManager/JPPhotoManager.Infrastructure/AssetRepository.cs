@@ -281,6 +281,22 @@ namespace JPPhotoManager.Infrastructure
                                     asset.ImageData = this.storageService.LoadBitmapImage(thumbnails[asset.FileName], asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
                                 }
                             }
+
+                            // Removes assets with no thumbnails.
+                            List<Asset> assetsToRemove = new List<Asset>();
+
+                            for (int i = 0; i < assetsList.Count; i++)
+                            {
+                                if (assetsList[i].ImageData == null)
+                                {
+                                    assetsToRemove.Add(assetsList[i]);
+                                }
+                            }
+
+                            foreach (Asset asset in assetsToRemove)
+                            {
+                                assetsList.Remove(asset);
+                            }
                         }
                     }
                 }

@@ -618,6 +618,86 @@ namespace JPPhotoManager.Tests
             repository.LoadThumbnail(dataDirectory, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight).Should().NotBeNull();
             repository.LoadThumbnail(dataDirectory, duplicatedAsset.FileName, duplicatedAsset.ThumbnailPixelWidth, duplicatedAsset.ThumbnailPixelHeight).Should().BeNull();
         }
+
+        [Fact]
+        public void GetAssetsWithThumbnailNotFoundTest()
+        {
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IStorageService storageService = new StorageService(userConfigurationService);
+            UnencapsulatedAssetRepository repository = new UnencapsulatedAssetRepository(storageService, userConfigurationService);
+            IDirectoryComparer directoryComparer = new DirectoryComparer();
+            Folder folder = repository.AddFolder(dataDirectory);
+            Mock<IAssetHashCalculatorService> hashCalculator = new Mock<IAssetHashCalculatorService>();
+
+            CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
+                    repository,
+                    hashCalculator.Object,
+                    storageService,
+                    userConfigurationService,
+                    directoryComparer);
+
+            Application.Application app = new Application.Application(
+                new ImportNewAssetsService(
+                    repository,
+                    storageService,
+                    directoryComparer),
+                catalogAssetsService,
+                new FindDuplicatedAssetsService(
+                    repository,
+                    storageService),
+                repository,
+                userConfigurationService,
+                storageService);
+
+            string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
+            File.Exists(imagePath).Should().BeTrue();
+            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
+
+            imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
+            File.Exists(imagePath).Should().BeTrue();
+            Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
+
+            imagePath = Path.Combine(dataDirectory, "Image 2 duplicated.jpg");
+            File.Exists(imagePath).Should().BeTrue();
+            Asset duplicatedAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2 duplicated.jpg");
+
+            repository.SaveCatalog(folder);
+            repository.RemoveThumbnail(folder.Path, "Image 2 duplicated.jpg");
+            repository.SaveCatalog(folder);
+
+            repository = new UnencapsulatedAssetRepository(storageService, userConfigurationService);
+            repository.AddFolder(dataDirectory);
+
+            catalogAssetsService = new CatalogAssetsService(
+                    repository,
+                    new AssetHashCalculatorService(),
+                    new StorageService(userConfigurationService),
+                    new UserConfigurationService(configuration),
+                    new DirectoryComparer());
+
+            app = new Application.Application(
+                new ImportNewAssetsService(
+                    repository,
+                    new StorageService(userConfigurationService),
+                    new DirectoryComparer()),
+                catalogAssetsService,
+                new FindDuplicatedAssetsService(
+                    repository,
+                    new StorageService(userConfigurationService)),
+                repository,
+                new UserConfigurationService(configuration),
+                new StorageService(userConfigurationService));
+
+            Asset[] assets = app.GetAssets(dataDirectory);
+            assets.Should().NotBeEmpty();
+
+            repository.GetAssets(dataDirectory).Should().Contain(a => a.FileName == "Image 2.jpg");
+            repository.GetAssets(dataDirectory).Should().NotContain(a => a.FileName == "Image 2 duplicated.jpg");
+            repository.ContainsThumbnail(dataDirectory, "Image 2.jpg").Should().BeTrue();
+            repository.ContainsThumbnail(dataDirectory, "Image 2 duplicated.jpg").Should().BeFalse();
+            repository.LoadThumbnail(dataDirectory, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight).Should().NotBeNull();
+            repository.LoadThumbnail(dataDirectory, duplicatedAsset.FileName, duplicatedAsset.ThumbnailPixelWidth, duplicatedAsset.ThumbnailPixelHeight).Should().BeNull();
+        }
     }
 
     class UnencapsulatedAssetRepository : AssetRepository
