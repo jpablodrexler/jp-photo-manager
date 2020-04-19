@@ -104,6 +104,11 @@ namespace JPPhotoManager.Domain
                     result.Message = $"Destination directory '{destinationDirectory}' not found.";
                     resultList.Add(result);
                 }
+                catch (IOException ex)
+                {
+                    result.Message = ex.Message;
+                    resultList.Add(result);
+                }
             }
         }
     }
