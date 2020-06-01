@@ -384,6 +384,26 @@ namespace JPPhotoManager.UI.Windows
             DeleteAsset();
         }
 
+        private void SortAssetsByFileName_Click(object sender, RoutedEventArgs e)
+        {
+            this.ViewModel.SortAssetsByFileName();
+        }
+
+        private void SortAssetsByFileCreationDateTime_Click(object sender, RoutedEventArgs e)
+        {
+            this.ViewModel.SortAssetsByFileCreationDateTime();
+        }
+
+        private void SortAssetsByFileModificationDateTime_Click(object sender, RoutedEventArgs e)
+        {
+            this.ViewModel.SortAssetsByFileModificationDateTime();
+        }
+
+        private void SortAssetsByThumbnailCreationDateTime_Click(object sender, RoutedEventArgs e)
+        {
+            this.ViewModel.SortAssetsByThumbnailCreationDateTime();
+        }
+
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             e.Cancel = catalogTask != null && !catalogTask.IsCompleted;

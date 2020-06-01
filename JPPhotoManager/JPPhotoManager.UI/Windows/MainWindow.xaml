@@ -27,6 +27,14 @@
                 <Separator/>
                 <MenuItem Header="_Exit" />
             </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="_Sort">
+                    <MenuItem Header="By _Name" Click="SortAssetsByFileName_Click"/>
+                    <MenuItem Header="By File _Creation Date" Click="SortAssetsByFileCreationDateTime_Click"/>
+                    <MenuItem Header="By File _Modification Date" Click="SortAssetsByFileModificationDateTime_Click"/>
+                    <MenuItem Header="By _Thumbnail Creation Date" Click="SortAssetsByThumbnailCreationDateTime_Click"/>
+                </MenuItem>
+            </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="About JPPhotoManager..." Click="About_Click"/>
             </MenuItem>

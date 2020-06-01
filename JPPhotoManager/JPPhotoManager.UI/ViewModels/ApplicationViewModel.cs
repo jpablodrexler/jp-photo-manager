@@ -11,9 +11,11 @@ namespace JPPhotoManager.UI.ViewModels
         private AppModeEnum appMode;
         private int viewerPosition;
         private string currentFolder;
+        private Asset[] assets;
         private ObservableCollection<Asset> files;
         private string appTitle;
         private string statusMessage;
+        private SortCriteriaEnum sortCriteria;
 
         public string Product { get; set; }
         public string Version { get; set; }
@@ -31,6 +33,16 @@ namespace JPPhotoManager.UI.ViewModels
                 this.appMode = value;
                 this.NotifyPropertyChanged(nameof(AppMode), nameof(ThumbnailsVisible), nameof(ViewerVisible));
                 this.UpdateAppTitle();
+            }
+        }
+
+        public SortCriteriaEnum SortCriteria
+        {
+            get { return this.sortCriteria; }
+            private set
+            {
+                this.sortCriteria = value;
+                this.NotifyPropertyChanged(nameof(SortCriteria));
             }
         }
 
@@ -101,8 +113,24 @@ namespace JPPhotoManager.UI.ViewModels
             // the GetImages method is called, since the thumbnails file is not
             // created yet, the assets catalogued so far are returned without
             // its thumbnails.
-            assets = assets?.Where(a => a.ImageData != null).ToArray();
-            this.Files = assets != null ? new ObservableCollection<Asset>(assets) : null;
+            this.assets = assets?.Where(a => a.ImageData != null).ToArray();
+            this.SortFiles();
+        }
+
+        private void SortFiles()
+        {
+            switch (this.SortCriteria)
+            {
+                case SortCriteriaEnum.FileName:
+                    this.assets = this.assets?.OrderBy(a => a.FileName).ToArray();
+                    break;
+
+                case SortCriteriaEnum.ThumbnailCreationDateTime:
+                    this.assets = this.assets?.OrderBy(a => a.ThumbnailCreationDateTime).ToArray();
+                    break;
+            }
+
+            this.Files = this.assets != null ? new ObservableCollection<Asset>(this.assets) : null;
         }
 
         public string AppTitle
@@ -220,7 +248,8 @@ namespace JPPhotoManager.UI.ViewModels
                         // If the files list is empty or belongs to other directory
                         if ((this.Files.Count == 0 || this.Files[0].Folder.Path != this.CurrentFolder) && e.CataloguedAssets != null)
                         {
-                            this.Files = new ObservableCollection<Asset>(e.CataloguedAssets.Where(a => a.ImageData != null).ToList());
+                            this.assets = e.CataloguedAssets.Where(a => a.ImageData != null).ToArray();
+                            this.SortFiles();
                         }
                         else
                         {
@@ -238,6 +267,30 @@ namespace JPPhotoManager.UI.ViewModels
                         break;
                 }
             }
+        }
+
+        internal void SortAssetsByFileName()
+        {
+            this.SortCriteria = SortCriteriaEnum.FileName;
+            this.SortFiles();
+        }
+
+        internal void SortAssetsByFileCreationDateTime()
+        {
+            this.SortCriteria = SortCriteriaEnum.FileCreationDateTime;
+            this.SortFiles();
+        }
+
+        internal void SortAssetsByFileModificationDateTime()
+        {
+            this.SortCriteria = SortCriteriaEnum.FileModificationDateTime;
+            this.SortFiles();
+        }
+
+        internal void SortAssetsByThumbnailCreationDateTime()
+        {
+            this.SortCriteria = SortCriteriaEnum.ThumbnailCreationDateTime;
+            this.SortFiles();
         }
     }
 }
