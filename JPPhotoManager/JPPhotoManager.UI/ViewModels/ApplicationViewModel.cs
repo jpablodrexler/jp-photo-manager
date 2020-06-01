@@ -11,7 +11,9 @@ namespace JPPhotoManager.UI.ViewModels
         private AppModeEnum appMode;
         private int viewerPosition;
         private string currentFolder;
+        // TODO: REVIEW NAMING FOR THIS VARIABLE AND RELATED METHODS
         private Asset[] assets;
+        // TODO: REVIEW NAMING FOR THIS VARIABLE AND RELATED PROPERTY AND METHOD
         private ObservableCollection<Asset> files;
         private string appTitle;
         private string statusMessage;
@@ -119,6 +121,8 @@ namespace JPPhotoManager.UI.ViewModels
 
         private void SortFiles()
         {
+            // TODO: IMPLEMENT ORDER BY ASCENDING OR DESCENDING.
+            // TODO: ADD UNIT TESTS FOR THE NEW CODE.
             switch (this.SortCriteria)
             {
                 case SortCriteriaEnum.FileName:
