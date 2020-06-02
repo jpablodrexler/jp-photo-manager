@@ -386,22 +386,22 @@ namespace JPPhotoManager.UI.Windows
 
         private void SortAssetsByFileName_Click(object sender, RoutedEventArgs e)
         {
-            this.ViewModel.SortAssetsByFileName();
+            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
         }
 
         private void SortAssetsByFileCreationDateTime_Click(object sender, RoutedEventArgs e)
         {
-            this.ViewModel.SortAssetsByFileCreationDateTime();
+            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
         }
 
         private void SortAssetsByFileModificationDateTime_Click(object sender, RoutedEventArgs e)
         {
-            this.ViewModel.SortAssetsByFileModificationDateTime();
+            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileModificationDateTime);
         }
 
         private void SortAssetsByThumbnailCreationDateTime_Click(object sender, RoutedEventArgs e)
         {
-            this.ViewModel.SortAssetsByThumbnailCreationDateTime();
+            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

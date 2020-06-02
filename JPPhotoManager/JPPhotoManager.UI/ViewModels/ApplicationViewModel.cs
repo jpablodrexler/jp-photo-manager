@@ -273,27 +273,9 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
-        internal void SortAssetsByFileName()
+        public void SortAssetsByCriteria(SortCriteriaEnum sortCriteria)
         {
-            this.SortCriteria = SortCriteriaEnum.FileName;
-            this.SortFiles();
-        }
-
-        internal void SortAssetsByFileCreationDateTime()
-        {
-            this.SortCriteria = SortCriteriaEnum.FileCreationDateTime;
-            this.SortFiles();
-        }
-
-        internal void SortAssetsByFileModificationDateTime()
-        {
-            this.SortCriteria = SortCriteriaEnum.FileModificationDateTime;
-            this.SortFiles();
-        }
-
-        internal void SortAssetsByThumbnailCreationDateTime()
-        {
-            this.SortCriteria = SortCriteriaEnum.ThumbnailCreationDateTime;
+            this.SortCriteria = sortCriteria;
             this.SortFiles();
         }
     }
