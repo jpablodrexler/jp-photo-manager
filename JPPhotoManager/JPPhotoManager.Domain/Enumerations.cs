@@ -32,6 +32,7 @@
 
     public enum SortCriteriaEnum
     {
+        Undefined,
         FileName,
         FileCreationDateTime,
         FileModificationDateTime,

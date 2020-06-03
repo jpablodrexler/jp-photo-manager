@@ -18,6 +18,8 @@ namespace JPPhotoManager.UI.ViewModels
         private string appTitle;
         private string statusMessage;
         private SortCriteriaEnum sortCriteria;
+        private SortCriteriaEnum previousSortCriteria;
+        private bool sortAscending = true;
 
         public string Product { get; set; }
         public string Version { get; set; }
@@ -121,16 +123,19 @@ namespace JPPhotoManager.UI.ViewModels
 
         private void SortFiles()
         {
-            // TODO: IMPLEMENT ORDER BY ASCENDING OR DESCENDING.
             // TODO: ADD UNIT TESTS FOR THE NEW CODE.
             switch (this.SortCriteria)
             {
                 case SortCriteriaEnum.FileName:
-                    this.assets = this.assets?.OrderBy(a => a.FileName).ToArray();
+                    this.assets = this.sortAscending ?
+                        this.assets?.OrderBy(a => a.FileName).ToArray() :
+                        this.assets?.OrderByDescending(a => a.FileName).ToArray();
                     break;
 
                 case SortCriteriaEnum.ThumbnailCreationDateTime:
-                    this.assets = this.assets?.OrderBy(a => a.ThumbnailCreationDateTime).ToArray();
+                    this.assets = this.sortAscending ?
+                        this.assets?.OrderBy(a => a.ThumbnailCreationDateTime).ToArray() :
+                        this.assets?.OrderByDescending(a => a.ThumbnailCreationDateTime).ToArray();
                     break;
             }
 
@@ -275,7 +280,9 @@ namespace JPPhotoManager.UI.ViewModels
 
         public void SortAssetsByCriteria(SortCriteriaEnum sortCriteria)
         {
+            this.previousSortCriteria = this.SortCriteria;
             this.SortCriteria = sortCriteria;
+            this.sortAscending = this.SortCriteria != this.previousSortCriteria || !this.sortAscending;
             this.SortFiles();
         }
     }
