@@ -27,6 +27,7 @@ namespace JPPhotoManager.UI.ViewModels
         public ApplicationViewModel(IApplication assetApp) : base(assetApp)
         {
             this.CurrentFolder = this.Application.GetInitialFolder();
+            this.SortCriteria = SortCriteriaEnum.FileName;
         }
 
         public AppModeEnum AppMode
@@ -123,7 +124,6 @@ namespace JPPhotoManager.UI.ViewModels
 
         private void SortFiles()
         {
-            // TODO: ADD UNIT TESTS FOR THE NEW CODE.
             switch (this.SortCriteria)
             {
                 case SortCriteriaEnum.FileName:
@@ -136,6 +136,18 @@ namespace JPPhotoManager.UI.ViewModels
                     this.assets = this.sortAscending ?
                         this.assets?.OrderBy(a => a.ThumbnailCreationDateTime).ThenBy(a => a.FileName).ToArray() :
                         this.assets?.OrderByDescending(a => a.ThumbnailCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
+                    break;
+
+                case SortCriteriaEnum.FileCreationDateTime:
+                    this.assets = this.sortAscending ?
+                        this.assets?.OrderBy(a => a.FileCreationDateTime).ThenBy(a => a.FileName).ToArray() :
+                        this.assets?.OrderByDescending(a => a.FileCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
+                    break;
+
+                case SortCriteriaEnum.FileModificationDateTime:
+                    this.assets = this.sortAscending ?
+                        this.assets?.OrderBy(a => a.FileModificationDateTime).ThenBy(a => a.FileName).ToArray() :
+                        this.assets?.OrderByDescending(a => a.FileModificationDateTime).ThenByDescending(a => a.FileName).ToArray();
                     break;
             }
 

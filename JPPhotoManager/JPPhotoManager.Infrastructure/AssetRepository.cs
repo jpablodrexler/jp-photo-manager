@@ -298,6 +298,11 @@ namespace JPPhotoManager.Infrastructure
                                 assetsList.Remove(asset);
                             }
                         }
+
+                        foreach (Asset asset in assetsList)
+                        {
+                            this.storageService.GetFileInformation(asset);
+                        }
                     }
                 }
             }

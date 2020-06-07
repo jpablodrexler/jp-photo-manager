@@ -426,5 +426,15 @@ namespace JPPhotoManager.Infrastructure
 
             return FileExists(sourcePath) && FileExists(destinationPath);
         }
+
+        public void GetFileInformation(Asset asset)
+        {
+            if (FileExists(asset.FullPath))
+            {
+                FileInfo info = new FileInfo(asset.FullPath);
+                asset.FileCreationDateTime = info.CreationTime;
+                asset.FileModificationDateTime = info.LastWriteTime;
+            }
+        }
     }
 }
