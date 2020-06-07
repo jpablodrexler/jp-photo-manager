@@ -686,7 +686,7 @@ namespace JPPhotoManager.Tests
             Mock<IApplication> mockApp = new Mock<IApplication>();
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object, SortCriteriaEnum.Undefined);
 
             viewModel.SetFiles(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
@@ -715,7 +715,7 @@ namespace JPPhotoManager.Tests
             Mock<IApplication> mockApp = new Mock<IApplication>();
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object, SortCriteriaEnum.Undefined);
 
             viewModel.SetFiles(assets);
 
@@ -1007,6 +1007,101 @@ namespace JPPhotoManager.Tests
             for (int i = 0; i < 10; i++)
             {
                 viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileModificationDateTime);
+
+                viewModel.Files.Should().NotBeNull();
+                viewModel.Files.Should().HaveCount(5);
+
+                if (i % 2 == 0) // Ascending
+                {
+                    viewModel.Files[0].FileName.Should().Be("Image3.jpg");
+                    viewModel.Files[1].FileName.Should().Be("Image1.jpg");
+                    viewModel.Files[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.Files[3].FileName.Should().Be("Image2.jpg");
+                    viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+                }
+                else // Descending
+                {
+                    viewModel.Files[0].FileName.Should().Be("Image5.jpg");
+                    viewModel.Files[1].FileName.Should().Be("Image2.jpg");
+                    viewModel.Files[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.Files[3].FileName.Should().Be("Image1.jpg");
+                    viewModel.Files[4].FileName.Should().Be("Image3.jpg");
+                }
+            }
+        }
+
+        [Fact]
+        public void SortByFileSizeTimeSingleFileTest()
+        {
+            Asset[] assets = new Asset[]
+            {
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), FileSize = 2048 }
+            };
+
+            Mock<IApplication> mockApp = new Mock<IApplication>();
+            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+
+            viewModel.SetFiles(assets);
+            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileSize);
+
+            viewModel.Files.Should().NotBeNull();
+            viewModel.Files.Should().ContainSingle();
+            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
+        }
+
+        [Fact]
+        public void SortByFileSizeMultipleFilesOneTimeTest()
+        {
+            Asset[] assets = new Asset[]
+            {
+                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), FileSize = 2048 },
+                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage(), FileSize = 2048 },
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), FileSize = 2020 },
+                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage(), FileSize = 2000 },
+                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), FileSize = 2030 }
+            };
+
+            Mock<IApplication> mockApp = new Mock<IApplication>();
+            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+
+            viewModel.SetFiles(assets);
+            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileSize);
+
+            viewModel.Files.Should().NotBeNull();
+            viewModel.Files.Should().HaveCount(5);
+            viewModel.Files[0].FileName.Should().Be("Image3.jpg");
+            viewModel.Files[1].FileName.Should().Be("Image1.jpg");
+            viewModel.Files[2].FileName.Should().Be("Image4.jpg");
+            viewModel.Files[3].FileName.Should().Be("Image2.jpg");
+            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+        }
+
+        [Fact]
+        public void SortByFileSizeMultipleFilesMultipleTimesTest()
+        {
+            Asset[] assets = new Asset[]
+            {
+                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), FileSize = 2048 },
+                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage(), FileSize = 2048 },
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), FileSize = 2020 },
+                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage(), FileSize = 2000 },
+                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), FileSize = 2030 }
+            };
+
+            Mock<IApplication> mockApp = new Mock<IApplication>();
+            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+
+            viewModel.SetFiles(assets);
+
+            for (int i = 0; i < 10; i++)
+            {
+                viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileSize);
 
                 viewModel.Files.Should().NotBeNull();
                 viewModel.Files.Should().HaveCount(5);

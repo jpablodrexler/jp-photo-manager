@@ -389,6 +389,11 @@ namespace JPPhotoManager.UI.Windows
             this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
         }
 
+        private void SortAssetsByFileSize_Click(object sender, RoutedEventArgs e)
+        {
+            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileSize);
+        }
+
         private void SortAssetsByFileCreationDateTime_Click(object sender, RoutedEventArgs e)
         {
             this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);

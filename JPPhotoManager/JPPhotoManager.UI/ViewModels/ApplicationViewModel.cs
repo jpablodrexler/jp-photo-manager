@@ -24,10 +24,10 @@ namespace JPPhotoManager.UI.ViewModels
         public string Product { get; set; }
         public string Version { get; set; }
 
-        public ApplicationViewModel(IApplication assetApp) : base(assetApp)
+        public ApplicationViewModel(IApplication assetApp, SortCriteriaEnum initialSortCriteria = SortCriteriaEnum.FileName) : base(assetApp)
         {
             this.CurrentFolder = this.Application.GetInitialFolder();
-            this.SortCriteria = SortCriteriaEnum.FileName;
+            this.SortCriteria = initialSortCriteria;
         }
 
         public AppModeEnum AppMode
@@ -148,6 +148,12 @@ namespace JPPhotoManager.UI.ViewModels
                     this.assets = this.sortAscending ?
                         this.assets?.OrderBy(a => a.FileModificationDateTime).ThenBy(a => a.FileName).ToArray() :
                         this.assets?.OrderByDescending(a => a.FileModificationDateTime).ThenByDescending(a => a.FileName).ToArray();
+                    break;
+
+                case SortCriteriaEnum.FileSize:
+                    this.assets = this.sortAscending ?
+                        this.assets?.OrderBy(a => a.FileSize).ThenBy(a => a.FileName).ToArray() :
+                        this.assets?.OrderByDescending(a => a.FileSize).ThenByDescending(a => a.FileName).ToArray();
                     break;
             }
 

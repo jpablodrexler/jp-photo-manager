@@ -34,6 +34,7 @@
     {
         Undefined,
         FileName,
+        FileSize,
         FileCreationDateTime,
         FileModificationDateTime,
         ThumbnailCreationDateTime
