@@ -46,9 +46,9 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.ViewerPosition = 2;
-            viewModel.GoToPreviousImage();
+            viewModel.GoToPreviousAsset();
 
             viewModel.ViewerPosition.Should().Be(1);
         }
@@ -70,9 +70,9 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.ViewerPosition = 0;
-            viewModel.GoToPreviousImage();
+            viewModel.GoToPreviousAsset();
 
             viewModel.ViewerPosition.Should().Be(0);
         }
@@ -94,9 +94,9 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.ViewerPosition = 2;
-            viewModel.GoToNextImage();
+            viewModel.GoToNextAsset();
 
             viewModel.ViewerPosition.Should().Be(3);
         }
@@ -118,9 +118,9 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.ViewerPosition = 4;
-            viewModel.GoToNextImage();
+            viewModel.GoToNextAsset();
 
             viewModel.ViewerPosition.Should().Be(4);
         }
@@ -145,7 +145,7 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.ViewerPosition = 4;
             viewModel.GoToAsset(assets[2]);
 
@@ -174,7 +174,7 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.ViewerPosition = 4;
             viewModel.GoToAsset(assetNotInList);
 
@@ -202,7 +202,7 @@ namespace JPPhotoManager.Tests
             mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
             
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
 
             viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
             {
@@ -211,13 +211,13 @@ namespace JPPhotoManager.Tests
                 Reason = ReasonEnum.Created
             });
 
-            viewModel.Files.Should().HaveCount(6);
-            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
-            viewModel.Files[1].FileName.Should().Be("Image2.jpg");
-            viewModel.Files[2].FileName.Should().Be("Image3.jpg");
-            viewModel.Files[3].FileName.Should().Be("Image4.jpg");
-            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
-            viewModel.Files[5].FileName.Should().Be("NewImage.jpg");
+            viewModel.ObservableAssets.Should().HaveCount(6);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+            viewModel.ObservableAssets[5].FileName.Should().Be("NewImage.jpg");
             viewModel.StatusMessage.Should().Be(statusMessage);
         }
 
@@ -242,7 +242,7 @@ namespace JPPhotoManager.Tests
             mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
 
             viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
             {
@@ -252,12 +252,12 @@ namespace JPPhotoManager.Tests
                 Reason = ReasonEnum.Created
             });
 
-            viewModel.Files.Should().HaveCount(5);
-            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
-            viewModel.Files[1].FileName.Should().Be("Image2.jpg");
-            viewModel.Files[2].FileName.Should().Be("Image3.jpg");
-            viewModel.Files[3].FileName.Should().Be("Image4.jpg");
-            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+            viewModel.ObservableAssets.Should().HaveCount(5);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
             viewModel.StatusMessage.Should().Be(statusMessage);
         }
 
@@ -272,7 +272,7 @@ namespace JPPhotoManager.Tests
             mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
 
             viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
             {
@@ -280,7 +280,7 @@ namespace JPPhotoManager.Tests
                 Reason = ReasonEnum.Created
             });
 
-            viewModel.Files.Should().ContainSingle();
+            viewModel.ObservableAssets.Should().ContainSingle();
         }
 
         [Fact]
@@ -304,7 +304,7 @@ namespace JPPhotoManager.Tests
             mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
 
             viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
             {
@@ -312,12 +312,12 @@ namespace JPPhotoManager.Tests
                 Reason = ReasonEnum.Created
             });
 
-            viewModel.Files.Should().HaveCount(5);
-            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
-            viewModel.Files[1].FileName.Should().Be("Image2.jpg");
-            viewModel.Files[2].FileName.Should().Be("Image3.jpg");
-            viewModel.Files[3].FileName.Should().Be("Image4.jpg");
-            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+            viewModel.ObservableAssets.Should().HaveCount(5);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
         }
 
         [Fact]
@@ -340,7 +340,7 @@ namespace JPPhotoManager.Tests
             mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
 
             viewModel.NotifyCatalogChange(null);
 
@@ -356,12 +356,12 @@ namespace JPPhotoManager.Tests
                 Reason = ReasonEnum.Created
             });
 
-            viewModel.Files.Should().HaveCount(5);
-            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
-            viewModel.Files[1].FileName.Should().Be("Image2.jpg");
-            viewModel.Files[2].FileName.Should().Be("Image3.jpg");
-            viewModel.Files[3].FileName.Should().Be("Image4.jpg");
-            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+            viewModel.ObservableAssets.Should().HaveCount(5);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
         }
 
         [Fact]
@@ -384,7 +384,7 @@ namespace JPPhotoManager.Tests
             mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
 
             viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
             {
@@ -393,11 +393,11 @@ namespace JPPhotoManager.Tests
                 Reason = ReasonEnum.Deleted
             });
 
-            viewModel.Files.Should().HaveCount(4);
-            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
-            viewModel.Files[1].FileName.Should().Be("Image2.jpg");
-            viewModel.Files[2].FileName.Should().Be("Image4.jpg");
-            viewModel.Files[3].FileName.Should().Be("Image5.jpg");
+            viewModel.ObservableAssets.Should().HaveCount(4);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image5.jpg");
             viewModel.StatusMessage.Should().Be(statusMessage);
         }
 
@@ -418,12 +418,12 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.ViewerPosition = 2;
             viewModel.RemoveAsset(assets[2]);
 
             viewModel.ViewerPosition.Should().Be(2);
-            viewModel.Files.Should().HaveCount(4);
+            viewModel.ObservableAssets.Should().HaveCount(4);
         }
 
         [Fact]
@@ -442,13 +442,13 @@ namespace JPPhotoManager.Tests
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.ViewerPosition = 0;
 
             viewModel.RemoveAsset(assets[0]);
 
             viewModel.ViewerPosition.Should().Be(0);
-            viewModel.Files.Should().HaveCount(4);
+            viewModel.ObservableAssets.Should().HaveCount(4);
         }
 
         [Fact]
@@ -467,13 +467,13 @@ namespace JPPhotoManager.Tests
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.ViewerPosition = 4;
 
             viewModel.RemoveAsset(assets[4]);
 
             viewModel.ViewerPosition.Should().Be(3);
-            viewModel.Files.Should().HaveCount(4);
+            viewModel.ObservableAssets.Should().HaveCount(4);
         }
 
         [Fact]
@@ -488,13 +488,13 @@ namespace JPPhotoManager.Tests
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.ViewerPosition = 0;
 
             viewModel.RemoveAsset(assets[0]);
 
             viewModel.ViewerPosition.Should().Be(-1);
-            viewModel.Files.Should().BeEmpty();
+            viewModel.ObservableAssets.Should().BeEmpty();
         }
 
         [Fact]
@@ -506,13 +506,13 @@ namespace JPPhotoManager.Tests
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.ViewerPosition = -1;
 
             viewModel.RemoveAsset(null);
 
             viewModel.ViewerPosition.Should().Be(-1);
-            viewModel.Files.Should().BeEmpty();
+            viewModel.ObservableAssets.Should().BeEmpty();
         }
 
         [Fact]
@@ -522,13 +522,13 @@ namespace JPPhotoManager.Tests
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetFiles(null);
+            viewModel.SetAssets(null);
             viewModel.ViewerPosition = -1;
             
             viewModel.RemoveAsset(null);
 
             viewModel.ViewerPosition.Should().Be(-1);
-            viewModel.Files.Should().BeNull();
+            viewModel.ObservableAssets.Should().BeNull();
         }
 
         [Fact]
@@ -585,7 +585,7 @@ namespace JPPhotoManager.Tests
             viewModel.Product = "JPPhotoManager";
             viewModel.Version = "v1.0.0.0";
             viewModel.ChangeAppMode(AppModeEnum.Thumbnails);
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.ViewerPosition = 3;
 
             viewModel.AppTitle.Should().Be(@"JPPhotoManager v1.0.0.0 - D:\Data - image 4 de 5 - sorted by file name ascending");
@@ -611,7 +611,7 @@ namespace JPPhotoManager.Tests
             viewModel.Product = "JPPhotoManager";
             viewModel.Version = "v1.0.0.0";
             viewModel.ChangeAppMode(AppModeEnum.Viewer);
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.ViewerPosition = 3;
 
             viewModel.AppTitle.Should().Be(@"JPPhotoManager v1.0.0.0 - D:\Data - Image4.jpg - image 4 de 5 - sorted by file name ascending");
@@ -627,10 +627,10 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
 
-            viewModel.Files.Should().BeNull();
+            viewModel.ObservableAssets.Should().BeNull();
         }
 
         [Fact]
@@ -643,11 +643,11 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
 
-            viewModel.Files.Should().NotBeNull();
-            viewModel.Files.Should().BeEmpty();
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().BeEmpty();
         }
 
         [Fact]
@@ -663,12 +663,12 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
 
-            viewModel.Files.Should().NotBeNull();
-            viewModel.Files.Should().ContainSingle();
-            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().ContainSingle();
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
         }
 
         [Fact]
@@ -688,16 +688,16 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object, SortCriteriaEnum.Undefined);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
 
-            viewModel.Files.Should().NotBeNull();
-            viewModel.Files.Should().HaveCount(5);
-            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
-            viewModel.Files[1].FileName.Should().Be("Image2.jpg");
-            viewModel.Files[2].FileName.Should().Be("Image3.jpg");
-            viewModel.Files[3].FileName.Should().Be("Image4.jpg");
-            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().HaveCount(5);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
         }
 
         [Fact]
@@ -717,30 +717,30 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object, SortCriteriaEnum.Undefined);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
 
             for (int i = 0; i < 10; i++)
             {
                 viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
 
-                viewModel.Files.Should().NotBeNull();
-                viewModel.Files.Should().HaveCount(5);
+                viewModel.ObservableAssets.Should().NotBeNull();
+                viewModel.ObservableAssets.Should().HaveCount(5);
 
                 if (i % 2 == 0) // Ascending
                 {
-                    viewModel.Files[0].FileName.Should().Be("Image1.jpg");
-                    viewModel.Files[1].FileName.Should().Be("Image2.jpg");
-                    viewModel.Files[2].FileName.Should().Be("Image3.jpg");
-                    viewModel.Files[3].FileName.Should().Be("Image4.jpg");
-                    viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
                 }
                 else // Descending
                 {
-                    viewModel.Files[0].FileName.Should().Be("Image5.jpg");
-                    viewModel.Files[1].FileName.Should().Be("Image4.jpg");
-                    viewModel.Files[2].FileName.Should().Be("Image3.jpg");
-                    viewModel.Files[3].FileName.Should().Be("Image2.jpg");
-                    viewModel.Files[4].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image1.jpg");
                 }
             }
         }
@@ -758,12 +758,12 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
 
-            viewModel.Files.Should().NotBeNull();
-            viewModel.Files.Should().ContainSingle();
-            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().ContainSingle();
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
         }
 
         [Fact]
@@ -783,16 +783,16 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
 
-            viewModel.Files.Should().NotBeNull();
-            viewModel.Files.Should().HaveCount(5);
-            viewModel.Files[0].FileName.Should().Be("Image3.jpg");
-            viewModel.Files[1].FileName.Should().Be("Image1.jpg");
-            viewModel.Files[2].FileName.Should().Be("Image4.jpg");
-            viewModel.Files[3].FileName.Should().Be("Image2.jpg");
-            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().HaveCount(5);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
         }
 
         [Fact]
@@ -812,30 +812,30 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
 
             for (int i = 0; i < 10; i++)
             {
                 viewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
 
-                viewModel.Files.Should().NotBeNull();
-                viewModel.Files.Should().HaveCount(5);
+                viewModel.ObservableAssets.Should().NotBeNull();
+                viewModel.ObservableAssets.Should().HaveCount(5);
 
                 if (i % 2 == 0) // Ascending
                 {
-                    viewModel.Files[0].FileName.Should().Be("Image3.jpg");
-                    viewModel.Files[1].FileName.Should().Be("Image1.jpg");
-                    viewModel.Files[2].FileName.Should().Be("Image4.jpg");
-                    viewModel.Files[3].FileName.Should().Be("Image2.jpg");
-                    viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
                 }
                 else // Descending
                 {
-                    viewModel.Files[0].FileName.Should().Be("Image5.jpg");
-                    viewModel.Files[1].FileName.Should().Be("Image2.jpg");
-                    viewModel.Files[2].FileName.Should().Be("Image4.jpg");
-                    viewModel.Files[3].FileName.Should().Be("Image1.jpg");
-                    viewModel.Files[4].FileName.Should().Be("Image3.jpg");
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image3.jpg");
                 }
             }
         }
@@ -853,12 +853,12 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
 
-            viewModel.Files.Should().NotBeNull();
-            viewModel.Files.Should().ContainSingle();
-            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().ContainSingle();
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
         }
 
         [Fact]
@@ -878,16 +878,16 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
 
-            viewModel.Files.Should().NotBeNull();
-            viewModel.Files.Should().HaveCount(5);
-            viewModel.Files[0].FileName.Should().Be("Image3.jpg");
-            viewModel.Files[1].FileName.Should().Be("Image1.jpg");
-            viewModel.Files[2].FileName.Should().Be("Image4.jpg");
-            viewModel.Files[3].FileName.Should().Be("Image2.jpg");
-            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().HaveCount(5);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
         }
 
         [Fact]
@@ -907,30 +907,30 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
 
             for (int i = 0; i < 10; i++)
             {
                 viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
 
-                viewModel.Files.Should().NotBeNull();
-                viewModel.Files.Should().HaveCount(5);
+                viewModel.ObservableAssets.Should().NotBeNull();
+                viewModel.ObservableAssets.Should().HaveCount(5);
 
                 if (i % 2 == 0) // Ascending
                 {
-                    viewModel.Files[0].FileName.Should().Be("Image3.jpg");
-                    viewModel.Files[1].FileName.Should().Be("Image1.jpg");
-                    viewModel.Files[2].FileName.Should().Be("Image4.jpg");
-                    viewModel.Files[3].FileName.Should().Be("Image2.jpg");
-                    viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
                 }
                 else // Descending
                 {
-                    viewModel.Files[0].FileName.Should().Be("Image5.jpg");
-                    viewModel.Files[1].FileName.Should().Be("Image2.jpg");
-                    viewModel.Files[2].FileName.Should().Be("Image4.jpg");
-                    viewModel.Files[3].FileName.Should().Be("Image1.jpg");
-                    viewModel.Files[4].FileName.Should().Be("Image3.jpg");
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image3.jpg");
                 }
             }
         }
@@ -948,12 +948,12 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileModificationDateTime);
 
-            viewModel.Files.Should().NotBeNull();
-            viewModel.Files.Should().ContainSingle();
-            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().ContainSingle();
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
         }
 
         [Fact]
@@ -973,16 +973,16 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileModificationDateTime);
 
-            viewModel.Files.Should().NotBeNull();
-            viewModel.Files.Should().HaveCount(5);
-            viewModel.Files[0].FileName.Should().Be("Image3.jpg");
-            viewModel.Files[1].FileName.Should().Be("Image1.jpg");
-            viewModel.Files[2].FileName.Should().Be("Image4.jpg");
-            viewModel.Files[3].FileName.Should().Be("Image2.jpg");
-            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().HaveCount(5);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
         }
 
         [Fact]
@@ -1002,30 +1002,30 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
 
             for (int i = 0; i < 10; i++)
             {
                 viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileModificationDateTime);
 
-                viewModel.Files.Should().NotBeNull();
-                viewModel.Files.Should().HaveCount(5);
+                viewModel.ObservableAssets.Should().NotBeNull();
+                viewModel.ObservableAssets.Should().HaveCount(5);
 
                 if (i % 2 == 0) // Ascending
                 {
-                    viewModel.Files[0].FileName.Should().Be("Image3.jpg");
-                    viewModel.Files[1].FileName.Should().Be("Image1.jpg");
-                    viewModel.Files[2].FileName.Should().Be("Image4.jpg");
-                    viewModel.Files[3].FileName.Should().Be("Image2.jpg");
-                    viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
                 }
                 else // Descending
                 {
-                    viewModel.Files[0].FileName.Should().Be("Image5.jpg");
-                    viewModel.Files[1].FileName.Should().Be("Image2.jpg");
-                    viewModel.Files[2].FileName.Should().Be("Image4.jpg");
-                    viewModel.Files[3].FileName.Should().Be("Image1.jpg");
-                    viewModel.Files[4].FileName.Should().Be("Image3.jpg");
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image3.jpg");
                 }
             }
         }
@@ -1043,12 +1043,12 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileSize);
 
-            viewModel.Files.Should().NotBeNull();
-            viewModel.Files.Should().ContainSingle();
-            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().ContainSingle();
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
         }
 
         [Fact]
@@ -1068,16 +1068,16 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileSize);
 
-            viewModel.Files.Should().NotBeNull();
-            viewModel.Files.Should().HaveCount(5);
-            viewModel.Files[0].FileName.Should().Be("Image3.jpg");
-            viewModel.Files[1].FileName.Should().Be("Image1.jpg");
-            viewModel.Files[2].FileName.Should().Be("Image4.jpg");
-            viewModel.Files[3].FileName.Should().Be("Image2.jpg");
-            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().HaveCount(5);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
         }
 
         [Fact]
@@ -1097,30 +1097,30 @@ namespace JPPhotoManager.Tests
 
             ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
 
-            viewModel.SetFiles(assets);
+            viewModel.SetAssets(assets);
 
             for (int i = 0; i < 10; i++)
             {
                 viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileSize);
 
-                viewModel.Files.Should().NotBeNull();
-                viewModel.Files.Should().HaveCount(5);
+                viewModel.ObservableAssets.Should().NotBeNull();
+                viewModel.ObservableAssets.Should().HaveCount(5);
 
                 if (i % 2 == 0) // Ascending
                 {
-                    viewModel.Files[0].FileName.Should().Be("Image3.jpg");
-                    viewModel.Files[1].FileName.Should().Be("Image1.jpg");
-                    viewModel.Files[2].FileName.Should().Be("Image4.jpg");
-                    viewModel.Files[3].FileName.Should().Be("Image2.jpg");
-                    viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
                 }
                 else // Descending
                 {
-                    viewModel.Files[0].FileName.Should().Be("Image5.jpg");
-                    viewModel.Files[1].FileName.Should().Be("Image2.jpg");
-                    viewModel.Files[2].FileName.Should().Be("Image4.jpg");
-                    viewModel.Files[3].FileName.Should().Be("Image1.jpg");
-                    viewModel.Files[4].FileName.Should().Be("Image3.jpg");
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image3.jpg");
                 }
             }
         }

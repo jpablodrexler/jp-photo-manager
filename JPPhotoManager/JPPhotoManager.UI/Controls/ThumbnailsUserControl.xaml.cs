@@ -45,7 +45,7 @@ namespace JPPhotoManager.UI.Controls
             {
                 this.ViewModel.CurrentFolder = selectedImagePath;
                 Asset[] assets = await GetAssets(assetApp, ViewModel.CurrentFolder).ConfigureAwait(true);
-                this.ViewModel.SetFiles(assets);
+                this.ViewModel.SetAssets(assets);
 
                 if (this.thumbnailsListView.Items.Count > 0)
                 {

@@ -114,13 +114,13 @@ namespace JPPhotoManager.UI.Windows
                     {
                         case Key.PageUp:
                         case Key.Left:
-                            this.ViewModel?.GoToPreviousImage();
+                            this.ViewModel?.GoToPreviousAsset();
                             ShowImage();
                             break;
 
                         case Key.PageDown:
                         case Key.Right:
-                            this.ViewModel?.GoToNextImage();
+                            this.ViewModel?.GoToNextAsset();
                             ShowImage();
                             break;
 

@@ -12,10 +12,8 @@ namespace JPPhotoManager.UI.ViewModels
         private AppModeEnum appMode;
         private int viewerPosition;
         private string currentFolder;
-        // TODO: REVIEW NAMING FOR THIS VARIABLE AND RELATED METHODS
-        private Asset[] assets;
-        // TODO: REVIEW NAMING FOR THIS VARIABLE AND RELATED PROPERTY AND METHOD
-        private ObservableCollection<Asset> files;
+        private Asset[] cataloguedAssets;
+        private ObservableCollection<Asset> observableAssets;
         private string appTitle;
         private string statusMessage;
         private SortCriteriaEnum sortCriteria;
@@ -101,64 +99,64 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
-        public ObservableCollection<Asset> Files
+        public ObservableCollection<Asset> ObservableAssets
         {
-            get { return this.files; }
+            get { return this.observableAssets; }
             private set
             {
-                this.files = value;
-                this.NotifyPropertyChanged(nameof(Files));
+                this.observableAssets = value;
+                this.NotifyPropertyChanged(nameof(ObservableAssets));
                 this.UpdateAppTitle();
             }
         }
 
-        public void SetFiles(Asset[] assets)
+        public void SetAssets(Asset[] assets)
         {
             // The assets that have no image data are filtered out.
             // If a folder is being catalogued for the first time and
             // the GetImages method is called, since the thumbnails file is not
             // created yet, the assets catalogued so far are returned without
             // its thumbnails.
-            this.assets = assets?.Where(a => a.ImageData != null).ToArray();
-            this.SortFiles();
+            this.cataloguedAssets = assets?.Where(a => a.ImageData != null).ToArray();
+            this.SortAssets();
         }
 
-        private void SortFiles()
+        private void SortAssets()
         {
             switch (this.SortCriteria)
             {
                 case SortCriteriaEnum.FileName:
-                    this.assets = this.sortAscending ?
-                        this.assets?.OrderBy(a => a.FileName).ToArray() :
-                        this.assets?.OrderByDescending(a => a.FileName).ToArray();
+                    this.cataloguedAssets = this.sortAscending ?
+                        this.cataloguedAssets?.OrderBy(a => a.FileName).ToArray() :
+                        this.cataloguedAssets?.OrderByDescending(a => a.FileName).ToArray();
                     break;
 
                 case SortCriteriaEnum.ThumbnailCreationDateTime:
-                    this.assets = this.sortAscending ?
-                        this.assets?.OrderBy(a => a.ThumbnailCreationDateTime).ThenBy(a => a.FileName).ToArray() :
-                        this.assets?.OrderByDescending(a => a.ThumbnailCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
+                    this.cataloguedAssets = this.sortAscending ?
+                        this.cataloguedAssets?.OrderBy(a => a.ThumbnailCreationDateTime).ThenBy(a => a.FileName).ToArray() :
+                        this.cataloguedAssets?.OrderByDescending(a => a.ThumbnailCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
                     break;
 
                 case SortCriteriaEnum.FileCreationDateTime:
-                    this.assets = this.sortAscending ?
-                        this.assets?.OrderBy(a => a.FileCreationDateTime).ThenBy(a => a.FileName).ToArray() :
-                        this.assets?.OrderByDescending(a => a.FileCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
+                    this.cataloguedAssets = this.sortAscending ?
+                        this.cataloguedAssets?.OrderBy(a => a.FileCreationDateTime).ThenBy(a => a.FileName).ToArray() :
+                        this.cataloguedAssets?.OrderByDescending(a => a.FileCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
                     break;
 
                 case SortCriteriaEnum.FileModificationDateTime:
-                    this.assets = this.sortAscending ?
-                        this.assets?.OrderBy(a => a.FileModificationDateTime).ThenBy(a => a.FileName).ToArray() :
-                        this.assets?.OrderByDescending(a => a.FileModificationDateTime).ThenByDescending(a => a.FileName).ToArray();
+                    this.cataloguedAssets = this.sortAscending ?
+                        this.cataloguedAssets?.OrderBy(a => a.FileModificationDateTime).ThenBy(a => a.FileName).ToArray() :
+                        this.cataloguedAssets?.OrderByDescending(a => a.FileModificationDateTime).ThenByDescending(a => a.FileName).ToArray();
                     break;
 
                 case SortCriteriaEnum.FileSize:
-                    this.assets = this.sortAscending ?
-                        this.assets?.OrderBy(a => a.FileSize).ThenBy(a => a.FileName).ToArray() :
-                        this.assets?.OrderByDescending(a => a.FileSize).ThenByDescending(a => a.FileName).ToArray();
+                    this.cataloguedAssets = this.sortAscending ?
+                        this.cataloguedAssets?.OrderBy(a => a.FileSize).ThenBy(a => a.FileName).ToArray() :
+                        this.cataloguedAssets?.OrderByDescending(a => a.FileSize).ThenByDescending(a => a.FileName).ToArray();
                     break;
             }
 
-            this.Files = this.assets != null ? new ObservableCollection<Asset>(this.assets) : null;
+            this.ObservableAssets = this.cataloguedAssets != null ? new ObservableCollection<Asset>(this.cataloguedAssets) : null;
         }
 
         public string AppTitle
@@ -183,35 +181,35 @@ namespace JPPhotoManager.UI.ViewModels
 
         public Asset CurrentAsset
         {
-            get { return this.Files?.Count > 0 && this.ViewerPosition >= 0 ? this.Files?[this.ViewerPosition] : null; }
+            get { return this.ObservableAssets?.Count > 0 && this.ViewerPosition >= 0 ? this.ObservableAssets?[this.ViewerPosition] : null; }
         }
 
         public Folder LastSelectedFolder { get; set; }
 
         private void AddAsset(Asset asset)
         {
-            if (this.Files != null)
+            if (this.ObservableAssets != null)
             {
-                this.Files.Add(asset);
-                this.NotifyPropertyChanged(nameof(Files));
+                this.ObservableAssets.Add(asset);
+                this.NotifyPropertyChanged(nameof(ObservableAssets));
             }
         }
 
         public void RemoveAsset(Asset asset)
         {
-            if (this.Files != null)
+            if (this.ObservableAssets != null)
             {
                 int position = this.ViewerPosition;
-                this.Files.Remove(asset);
+                this.ObservableAssets.Remove(asset);
 
-                if (position == this.Files.Count)
+                if (position == this.ObservableAssets.Count)
                 {
                     position--;
                 }
 
                 this.ViewerPosition = position;
 
-                this.NotifyPropertyChanged(nameof(Files));
+                this.NotifyPropertyChanged(nameof(ObservableAssets));
             }
         }
 
@@ -229,7 +227,7 @@ namespace JPPhotoManager.UI.ViewModels
                     this.Version,
                     this.CurrentFolder,
                     this.ViewerPosition + 1,
-                    this.Files?.Count,
+                    this.ObservableAssets?.Count,
                     sortCriteria);
             }
             else if (this.AppMode == AppModeEnum.Viewer)
@@ -242,7 +240,7 @@ namespace JPPhotoManager.UI.ViewModels
                     this.CurrentFolder,
                     this.CurrentAsset?.FileName,
                     this.ViewerPosition + 1,
-                    this.Files?.Count,
+                    this.ObservableAssets?.Count,
                     sortCriteria);
             }
 
@@ -256,17 +254,17 @@ namespace JPPhotoManager.UI.ViewModels
 
         public void GoToAsset(Asset asset, AppModeEnum newAppMode)
         {
-            Asset targetAsset = this.Files.FirstOrDefault(f => f.FileName == asset.FileName);
+            Asset targetAsset = this.ObservableAssets.FirstOrDefault(f => f.FileName == asset.FileName);
 
             if (targetAsset != null && this.Application.FileExists(targetAsset.FullPath))
             {
-                int position = this.Files.IndexOf(targetAsset);
+                int position = this.ObservableAssets.IndexOf(targetAsset);
                 this.ChangeAppMode(newAppMode);
                 this.ViewerPosition = position;
             }
         }
 
-        public void GoToPreviousImage()
+        public void GoToPreviousAsset()
         {
             if (this.ViewerPosition > 0)
             {
@@ -274,9 +272,9 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
-        public void GoToNextImage()
+        public void GoToNextAsset()
         {
-            if (this.ViewerPosition < (this.Files.Count - 1))
+            if (this.ViewerPosition < (this.ObservableAssets.Count - 1))
             {
                 this.ViewerPosition++;
             }
@@ -292,10 +290,10 @@ namespace JPPhotoManager.UI.ViewModels
                 {
                     case ReasonEnum.Created:
                         // If the files list is empty or belongs to other directory
-                        if ((this.Files.Count == 0 || this.Files[0].Folder.Path != this.CurrentFolder) && e.CataloguedAssets != null)
+                        if ((this.ObservableAssets.Count == 0 || this.ObservableAssets[0].Folder.Path != this.CurrentFolder) && e.CataloguedAssets != null)
                         {
-                            this.assets = e.CataloguedAssets.Where(a => a.ImageData != null).ToArray();
-                            this.SortFiles();
+                            this.cataloguedAssets = e.CataloguedAssets.Where(a => a.ImageData != null).ToArray();
+                            this.SortAssets();
                         }
                         else
                         {
@@ -320,7 +318,7 @@ namespace JPPhotoManager.UI.ViewModels
             this.previousSortCriteria = this.SortCriteria;
             this.SortCriteria = sortCriteria;
             this.sortAscending = this.SortCriteria != this.previousSortCriteria || !this.sortAscending;
-            this.SortFiles();
+            this.SortAssets();
         }
 
         private string GetSortCriteriaDescription()
