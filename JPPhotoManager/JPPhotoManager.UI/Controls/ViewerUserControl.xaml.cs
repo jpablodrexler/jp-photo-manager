@@ -40,7 +40,7 @@ namespace JPPhotoManager.UI.Controls
         {
             try
             {
-                this.ViewModel?.GoToNextImage();
+                this.ViewModel?.GoToNextAsset();
                 this.ShowImage();
             }
             catch (Exception ex)
@@ -53,7 +53,7 @@ namespace JPPhotoManager.UI.Controls
         {
             try
             {
-                this.ViewModel?.GoToPreviousImage();
+                this.ViewModel?.GoToPreviousAsset();
                 this.ShowImage();
             }
             catch (Exception ex)

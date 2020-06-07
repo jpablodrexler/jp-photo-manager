@@ -29,4 +29,14 @@
         Import,
         ViewResults
     }
+
+    public enum SortCriteriaEnum
+    {
+        Undefined,
+        FileName,
+        FileSize,
+        FileCreationDateTime,
+        FileModificationDateTime,
+        ThumbnailCreationDateTime
+    }
 }

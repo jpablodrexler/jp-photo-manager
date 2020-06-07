@@ -114,13 +114,13 @@ namespace JPPhotoManager.UI.Windows
                     {
                         case Key.PageUp:
                         case Key.Left:
-                            this.ViewModel?.GoToPreviousImage();
+                            this.ViewModel?.GoToPreviousAsset();
                             ShowImage();
                             break;
 
                         case Key.PageDown:
                         case Key.Right:
-                            this.ViewModel?.GoToNextImage();
+                            this.ViewModel?.GoToNextAsset();
                             ShowImage();
                             break;
 
@@ -382,6 +382,31 @@ namespace JPPhotoManager.UI.Windows
         private void DeleteAsset_Click(object sender, RoutedEventArgs e)
         {
             DeleteAsset();
+        }
+
+        private void SortAssetsByFileName_Click(object sender, RoutedEventArgs e)
+        {
+            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
+        }
+
+        private void SortAssetsByFileSize_Click(object sender, RoutedEventArgs e)
+        {
+            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileSize);
+        }
+
+        private void SortAssetsByFileCreationDateTime_Click(object sender, RoutedEventArgs e)
+        {
+            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
+        }
+
+        private void SortAssetsByFileModificationDateTime_Click(object sender, RoutedEventArgs e)
+        {
+            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileModificationDateTime);
+        }
+
+        private void SortAssetsByThumbnailCreationDateTime_Click(object sender, RoutedEventArgs e)
+        {
+            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

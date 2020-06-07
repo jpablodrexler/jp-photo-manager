@@ -39,5 +39,6 @@ namespace JPPhotoManager.Domain
         bool FileExists(string fullPath);
         bool FolderExists(string fullPath);
         bool CopyImage(string sourcePath, string destinationPath);
+        void GetFileInformation(Asset asset);
     }
 }

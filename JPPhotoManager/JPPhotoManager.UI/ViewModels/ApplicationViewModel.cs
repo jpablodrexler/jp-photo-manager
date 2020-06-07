@@ -2,6 +2,7 @@
 using JPPhotoManager.Domain;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 
 namespace JPPhotoManager.UI.ViewModels
@@ -11,16 +12,21 @@ namespace JPPhotoManager.UI.ViewModels
         private AppModeEnum appMode;
         private int viewerPosition;
         private string currentFolder;
-        private ObservableCollection<Asset> files;
+        private Asset[] cataloguedAssets;
+        private ObservableCollection<Asset> observableAssets;
         private string appTitle;
         private string statusMessage;
+        private SortCriteriaEnum sortCriteria;
+        private SortCriteriaEnum previousSortCriteria;
+        private bool sortAscending = true;
 
         public string Product { get; set; }
         public string Version { get; set; }
 
-        public ApplicationViewModel(IApplication assetApp) : base(assetApp)
+        public ApplicationViewModel(IApplication assetApp, SortCriteriaEnum initialSortCriteria = SortCriteriaEnum.FileName) : base(assetApp)
         {
             this.CurrentFolder = this.Application.GetInitialFolder();
+            this.SortCriteria = initialSortCriteria;
         }
 
         public AppModeEnum AppMode
@@ -31,6 +37,16 @@ namespace JPPhotoManager.UI.ViewModels
                 this.appMode = value;
                 this.NotifyPropertyChanged(nameof(AppMode), nameof(ThumbnailsVisible), nameof(ViewerVisible));
                 this.UpdateAppTitle();
+            }
+        }
+
+        public SortCriteriaEnum SortCriteria
+        {
+            get { return this.sortCriteria; }
+            private set
+            {
+                this.sortCriteria = value;
+                this.NotifyPropertyChanged(nameof(SortCriteria));
             }
         }
 
@@ -83,26 +99,64 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
-        public ObservableCollection<Asset> Files
+        public ObservableCollection<Asset> ObservableAssets
         {
-            get { return this.files; }
+            get { return this.observableAssets; }
             private set
             {
-                this.files = value;
-                this.NotifyPropertyChanged(nameof(Files));
+                this.observableAssets = value;
+                this.NotifyPropertyChanged(nameof(ObservableAssets));
                 this.UpdateAppTitle();
             }
         }
 
-        public void SetFiles(Asset[] assets)
+        public void SetAssets(Asset[] assets)
         {
             // The assets that have no image data are filtered out.
             // If a folder is being catalogued for the first time and
             // the GetImages method is called, since the thumbnails file is not
             // created yet, the assets catalogued so far are returned without
             // its thumbnails.
-            assets = assets?.Where(a => a.ImageData != null).ToArray();
-            this.Files = assets != null ? new ObservableCollection<Asset>(assets) : null;
+            this.cataloguedAssets = assets?.Where(a => a.ImageData != null).ToArray();
+            this.SortAssets();
+        }
+
+        private void SortAssets()
+        {
+            switch (this.SortCriteria)
+            {
+                case SortCriteriaEnum.FileName:
+                    this.cataloguedAssets = this.sortAscending ?
+                        this.cataloguedAssets?.OrderBy(a => a.FileName).ToArray() :
+                        this.cataloguedAssets?.OrderByDescending(a => a.FileName).ToArray();
+                    break;
+
+                case SortCriteriaEnum.ThumbnailCreationDateTime:
+                    this.cataloguedAssets = this.sortAscending ?
+                        this.cataloguedAssets?.OrderBy(a => a.ThumbnailCreationDateTime).ThenBy(a => a.FileName).ToArray() :
+                        this.cataloguedAssets?.OrderByDescending(a => a.ThumbnailCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
+                    break;
+
+                case SortCriteriaEnum.FileCreationDateTime:
+                    this.cataloguedAssets = this.sortAscending ?
+                        this.cataloguedAssets?.OrderBy(a => a.FileCreationDateTime).ThenBy(a => a.FileName).ToArray() :
+                        this.cataloguedAssets?.OrderByDescending(a => a.FileCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
+                    break;
+
+                case SortCriteriaEnum.FileModificationDateTime:
+                    this.cataloguedAssets = this.sortAscending ?
+                        this.cataloguedAssets?.OrderBy(a => a.FileModificationDateTime).ThenBy(a => a.FileName).ToArray() :
+                        this.cataloguedAssets?.OrderByDescending(a => a.FileModificationDateTime).ThenByDescending(a => a.FileName).ToArray();
+                    break;
+
+                case SortCriteriaEnum.FileSize:
+                    this.cataloguedAssets = this.sortAscending ?
+                        this.cataloguedAssets?.OrderBy(a => a.FileSize).ThenBy(a => a.FileName).ToArray() :
+                        this.cataloguedAssets?.OrderByDescending(a => a.FileSize).ThenByDescending(a => a.FileName).ToArray();
+                    break;
+            }
+
+            this.ObservableAssets = this.cataloguedAssets != null ? new ObservableCollection<Asset>(this.cataloguedAssets) : null;
         }
 
         public string AppTitle
@@ -127,49 +181,67 @@ namespace JPPhotoManager.UI.ViewModels
 
         public Asset CurrentAsset
         {
-            get { return this.Files?.Count > 0 && this.ViewerPosition >= 0 ? this.Files?[this.ViewerPosition] : null; }
+            get { return this.ObservableAssets?.Count > 0 && this.ViewerPosition >= 0 ? this.ObservableAssets?[this.ViewerPosition] : null; }
         }
 
         public Folder LastSelectedFolder { get; set; }
 
         private void AddAsset(Asset asset)
         {
-            if (this.Files != null)
+            if (this.ObservableAssets != null)
             {
-                this.Files.Add(asset);
-                this.NotifyPropertyChanged(nameof(Files));
+                this.ObservableAssets.Add(asset);
+                this.NotifyPropertyChanged(nameof(ObservableAssets));
             }
         }
 
         public void RemoveAsset(Asset asset)
         {
-            if (this.Files != null)
+            if (this.ObservableAssets != null)
             {
                 int position = this.ViewerPosition;
-                this.Files.Remove(asset);
+                this.ObservableAssets.Remove(asset);
 
-                if (position == this.Files.Count)
+                if (position == this.ObservableAssets.Count)
                 {
                     position--;
                 }
 
                 this.ViewerPosition = position;
 
-                this.NotifyPropertyChanged(nameof(Files));
+                this.NotifyPropertyChanged(nameof(ObservableAssets));
             }
         }
 
         private void UpdateAppTitle()
         {
             string title = null;
+            string sortCriteria = GetSortCriteriaDescription();
 
             if (this.AppMode == AppModeEnum.Thumbnails)
             {
-                title = string.Format("{0} {1} - {2}", this.Product, this.Version, this.CurrentFolder);
+                title = string.Format(
+                    Thread.CurrentThread.CurrentCulture,
+                    "{0} {1} - {2} - image {3} de {4} - sorted by {5}",
+                    this.Product,
+                    this.Version,
+                    this.CurrentFolder,
+                    this.ViewerPosition + 1,
+                    this.ObservableAssets?.Count,
+                    sortCriteria);
             }
             else if (this.AppMode == AppModeEnum.Viewer)
             {
-                title = string.Format("{0} {1} - {2} - image {3} de {4}", this.Product, this.Version, this.CurrentAsset?.FileName, this.ViewerPosition + 1, this.Files?.Count);
+                title = string.Format(
+                    Thread.CurrentThread.CurrentCulture,
+                    "{0} {1} - {2} - {3} - image {4} de {5} - sorted by {6}",
+                    this.Product,
+                    this.Version,
+                    this.CurrentFolder,
+                    this.CurrentAsset?.FileName,
+                    this.ViewerPosition + 1,
+                    this.ObservableAssets?.Count,
+                    sortCriteria);
             }
 
             this.AppTitle = title;
@@ -182,17 +254,17 @@ namespace JPPhotoManager.UI.ViewModels
 
         public void GoToAsset(Asset asset, AppModeEnum newAppMode)
         {
-            Asset targetAsset = this.Files.FirstOrDefault(f => f.FileName == asset.FileName);
+            Asset targetAsset = this.ObservableAssets.FirstOrDefault(f => f.FileName == asset.FileName);
 
             if (targetAsset != null && this.Application.FileExists(targetAsset.FullPath))
             {
-                int position = this.Files.IndexOf(targetAsset);
+                int position = this.ObservableAssets.IndexOf(targetAsset);
                 this.ChangeAppMode(newAppMode);
                 this.ViewerPosition = position;
             }
         }
 
-        public void GoToPreviousImage()
+        public void GoToPreviousAsset()
         {
             if (this.ViewerPosition > 0)
             {
@@ -200,9 +272,9 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
-        public void GoToNextImage()
+        public void GoToNextAsset()
         {
-            if (this.ViewerPosition < (this.Files.Count - 1))
+            if (this.ViewerPosition < (this.ObservableAssets.Count - 1))
             {
                 this.ViewerPosition++;
             }
@@ -218,9 +290,10 @@ namespace JPPhotoManager.UI.ViewModels
                 {
                     case ReasonEnum.Created:
                         // If the files list is empty or belongs to other directory
-                        if ((this.Files.Count == 0 || this.Files[0].Folder.Path != this.CurrentFolder) && e.CataloguedAssets != null)
+                        if ((this.ObservableAssets.Count == 0 || this.ObservableAssets[0].Folder.Path != this.CurrentFolder) && e.CataloguedAssets != null)
                         {
-                            this.Files = new ObservableCollection<Asset>(e.CataloguedAssets.Where(a => a.ImageData != null).ToList());
+                            this.cataloguedAssets = e.CataloguedAssets.Where(a => a.ImageData != null).ToArray();
+                            this.SortAssets();
                         }
                         else
                         {
@@ -238,6 +311,46 @@ namespace JPPhotoManager.UI.ViewModels
                         break;
                 }
             }
+        }
+
+        public void SortAssetsByCriteria(SortCriteriaEnum sortCriteria)
+        {
+            this.previousSortCriteria = this.SortCriteria;
+            this.SortCriteria = sortCriteria;
+            this.sortAscending = this.SortCriteria != this.previousSortCriteria || !this.sortAscending;
+            this.SortAssets();
+        }
+
+        private string GetSortCriteriaDescription()
+        {
+            string result = "";
+
+            switch (this.SortCriteria)
+            {
+                case SortCriteriaEnum.FileName:
+                    result = "file name";
+                    break;
+
+                case SortCriteriaEnum.FileSize:
+                    result = "file size";
+                    break;
+
+                case SortCriteriaEnum.FileCreationDateTime:
+                    result = "file creation";
+                    break;
+
+                case SortCriteriaEnum.FileModificationDateTime:
+                    result = "file modification";
+                    break;
+
+                case SortCriteriaEnum.ThumbnailCreationDateTime:
+                    result = "thumbnail creation";
+                    break;
+            }
+
+            result += this.sortAscending ? " ascending" : " descending";
+
+            return result;
         }
     }
 }
