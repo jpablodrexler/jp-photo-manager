@@ -839,5 +839,195 @@ namespace JPPhotoManager.Tests
                 }
             }
         }
+
+        [Fact]
+        public void SortByFileCreationDateTimeTimeSingleFileTest()
+        {
+            Asset[] assets = new Asset[]
+            {
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), FileCreationDateTime = DateTime.Now }
+            };
+
+            Mock<IApplication> mockApp = new Mock<IApplication>();
+            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+
+            viewModel.SetFiles(assets);
+            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
+
+            viewModel.Files.Should().NotBeNull();
+            viewModel.Files.Should().ContainSingle();
+            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
+        }
+
+        [Fact]
+        public void SortByFileCreationDateTimeMultipleFilesOneTimeTest()
+        {
+            Asset[] assets = new Asset[]
+            {
+                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), FileCreationDateTime = new DateTime(2020, 6, 1) },
+                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage(), FileCreationDateTime = new DateTime(2020, 6, 1) },
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), FileCreationDateTime = new DateTime(2010, 2, 1) },
+                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage(), FileCreationDateTime = new DateTime(2010, 1, 1) },
+                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), FileCreationDateTime = new DateTime(2010, 8, 1) }
+            };
+
+            Mock<IApplication> mockApp = new Mock<IApplication>();
+            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+
+            viewModel.SetFiles(assets);
+            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
+
+            viewModel.Files.Should().NotBeNull();
+            viewModel.Files.Should().HaveCount(5);
+            viewModel.Files[0].FileName.Should().Be("Image3.jpg");
+            viewModel.Files[1].FileName.Should().Be("Image1.jpg");
+            viewModel.Files[2].FileName.Should().Be("Image4.jpg");
+            viewModel.Files[3].FileName.Should().Be("Image2.jpg");
+            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+        }
+
+        [Fact]
+        public void SortByFileCreationDateTimeMultipleFilesMultipleTimesTest()
+        {
+            Asset[] assets = new Asset[]
+            {
+                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), FileCreationDateTime = new DateTime(2020, 6, 1) },
+                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage(), FileCreationDateTime = new DateTime(2020, 6, 1) },
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), FileCreationDateTime = new DateTime(2010, 2, 1) },
+                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage(), FileCreationDateTime = new DateTime(2010, 1, 1) },
+                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), FileCreationDateTime = new DateTime(2010, 8, 1) }
+            };
+
+            Mock<IApplication> mockApp = new Mock<IApplication>();
+            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+
+            viewModel.SetFiles(assets);
+
+            for (int i = 0; i < 10; i++)
+            {
+                viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
+
+                viewModel.Files.Should().NotBeNull();
+                viewModel.Files.Should().HaveCount(5);
+
+                if (i % 2 == 0) // Ascending
+                {
+                    viewModel.Files[0].FileName.Should().Be("Image3.jpg");
+                    viewModel.Files[1].FileName.Should().Be("Image1.jpg");
+                    viewModel.Files[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.Files[3].FileName.Should().Be("Image2.jpg");
+                    viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+                }
+                else // Descending
+                {
+                    viewModel.Files[0].FileName.Should().Be("Image5.jpg");
+                    viewModel.Files[1].FileName.Should().Be("Image2.jpg");
+                    viewModel.Files[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.Files[3].FileName.Should().Be("Image1.jpg");
+                    viewModel.Files[4].FileName.Should().Be("Image3.jpg");
+                }
+            }
+        }
+
+        [Fact]
+        public void SortByFileModificationDateTimeTimeSingleFileTest()
+        {
+            Asset[] assets = new Asset[]
+            {
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), FileModificationDateTime = DateTime.Now }
+            };
+
+            Mock<IApplication> mockApp = new Mock<IApplication>();
+            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+
+            viewModel.SetFiles(assets);
+            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileModificationDateTime);
+
+            viewModel.Files.Should().NotBeNull();
+            viewModel.Files.Should().ContainSingle();
+            viewModel.Files[0].FileName.Should().Be("Image1.jpg");
+        }
+
+        [Fact]
+        public void SortByFileModificationDateTimeMultipleFilesOneTimeTest()
+        {
+            Asset[] assets = new Asset[]
+            {
+                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), FileModificationDateTime = new DateTime(2020, 6, 1) },
+                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage(), FileModificationDateTime = new DateTime(2020, 6, 1) },
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), FileModificationDateTime = new DateTime(2010, 2, 1) },
+                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage(), FileModificationDateTime = new DateTime(2010, 1, 1) },
+                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), FileModificationDateTime = new DateTime(2010, 8, 1) }
+            };
+
+            Mock<IApplication> mockApp = new Mock<IApplication>();
+            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+
+            viewModel.SetFiles(assets);
+            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileModificationDateTime);
+
+            viewModel.Files.Should().NotBeNull();
+            viewModel.Files.Should().HaveCount(5);
+            viewModel.Files[0].FileName.Should().Be("Image3.jpg");
+            viewModel.Files[1].FileName.Should().Be("Image1.jpg");
+            viewModel.Files[2].FileName.Should().Be("Image4.jpg");
+            viewModel.Files[3].FileName.Should().Be("Image2.jpg");
+            viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+        }
+
+        [Fact]
+        public void SortByFileModificationDateTimeMultipleFilesMultipleTimesTest()
+        {
+            Asset[] assets = new Asset[]
+            {
+                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), FileModificationDateTime = new DateTime(2020, 6, 1) },
+                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage(), FileModificationDateTime = new DateTime(2020, 6, 1) },
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), FileModificationDateTime = new DateTime(2010, 2, 1) },
+                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage(), FileModificationDateTime = new DateTime(2010, 1, 1) },
+                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), FileModificationDateTime = new DateTime(2010, 8, 1) }
+            };
+
+            Mock<IApplication> mockApp = new Mock<IApplication>();
+            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+
+            viewModel.SetFiles(assets);
+
+            for (int i = 0; i < 10; i++)
+            {
+                viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileModificationDateTime);
+
+                viewModel.Files.Should().NotBeNull();
+                viewModel.Files.Should().HaveCount(5);
+
+                if (i % 2 == 0) // Ascending
+                {
+                    viewModel.Files[0].FileName.Should().Be("Image3.jpg");
+                    viewModel.Files[1].FileName.Should().Be("Image1.jpg");
+                    viewModel.Files[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.Files[3].FileName.Should().Be("Image2.jpg");
+                    viewModel.Files[4].FileName.Should().Be("Image5.jpg");
+                }
+                else // Descending
+                {
+                    viewModel.Files[0].FileName.Should().Be("Image5.jpg");
+                    viewModel.Files[1].FileName.Should().Be("Image2.jpg");
+                    viewModel.Files[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.Files[3].FileName.Should().Be("Image1.jpg");
+                    viewModel.Files[4].FileName.Should().Be("Image3.jpg");
+                }
+            }
+        }
     }
 }
