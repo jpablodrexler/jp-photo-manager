@@ -2,6 +2,7 @@
 using JPPhotoManager.Domain;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 
 namespace JPPhotoManager.UI.ViewModels
@@ -217,14 +218,32 @@ namespace JPPhotoManager.UI.ViewModels
         private void UpdateAppTitle()
         {
             string title = null;
+            string sortCriteria = GetSortCriteriaDescription();
 
             if (this.AppMode == AppModeEnum.Thumbnails)
             {
-                title = string.Format("{0} {1} - {2}", this.Product, this.Version, this.CurrentFolder);
+                title = string.Format(
+                    Thread.CurrentThread.CurrentCulture,
+                    "{0} {1} - {2} - image {3} de {4} - sorted by {5}",
+                    this.Product,
+                    this.Version,
+                    this.CurrentFolder,
+                    this.ViewerPosition + 1,
+                    this.Files?.Count,
+                    sortCriteria);
             }
             else if (this.AppMode == AppModeEnum.Viewer)
             {
-                title = string.Format("{0} {1} - {2} - image {3} de {4}", this.Product, this.Version, this.CurrentAsset?.FileName, this.ViewerPosition + 1, this.Files?.Count);
+                title = string.Format(
+                    Thread.CurrentThread.CurrentCulture,
+                    "{0} {1} - {2} - {3} - image {4} de {5} - sorted by {6}",
+                    this.Product,
+                    this.Version,
+                    this.CurrentFolder,
+                    this.CurrentAsset?.FileName,
+                    this.ViewerPosition + 1,
+                    this.Files?.Count,
+                    sortCriteria);
             }
 
             this.AppTitle = title;
@@ -302,6 +321,38 @@ namespace JPPhotoManager.UI.ViewModels
             this.SortCriteria = sortCriteria;
             this.sortAscending = this.SortCriteria != this.previousSortCriteria || !this.sortAscending;
             this.SortFiles();
+        }
+
+        private string GetSortCriteriaDescription()
+        {
+            string result = "";
+
+            switch (this.SortCriteria)
+            {
+                case SortCriteriaEnum.FileName:
+                    result = "file name";
+                    break;
+
+                case SortCriteriaEnum.FileSize:
+                    result = "file size";
+                    break;
+
+                case SortCriteriaEnum.FileCreationDateTime:
+                    result = "file creation";
+                    break;
+
+                case SortCriteriaEnum.FileModificationDateTime:
+                    result = "file modification";
+                    break;
+
+                case SortCriteriaEnum.ThumbnailCreationDateTime:
+                    result = "thumbnail creation";
+                    break;
+            }
+
+            result += this.sortAscending ? " ascending" : " descending";
+
+            return result;
         }
     }
 }

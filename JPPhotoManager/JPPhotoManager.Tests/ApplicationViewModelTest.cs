@@ -588,7 +588,7 @@ namespace JPPhotoManager.Tests
             viewModel.SetFiles(assets);
             viewModel.ViewerPosition = 3;
 
-            viewModel.AppTitle.Should().Be(@"JPPhotoManager v1.0.0.0 - D:\Data");
+            viewModel.AppTitle.Should().Be(@"JPPhotoManager v1.0.0.0 - D:\Data - image 4 de 5 - sorted by file name ascending");
         }
 
         [Fact]
@@ -614,7 +614,7 @@ namespace JPPhotoManager.Tests
             viewModel.SetFiles(assets);
             viewModel.ViewerPosition = 3;
 
-            viewModel.AppTitle.Should().Be(@"JPPhotoManager v1.0.0.0 - Image4.jpg - image 4 de 5");
+            viewModel.AppTitle.Should().Be(@"JPPhotoManager v1.0.0.0 - D:\Data - Image4.jpg - image 4 de 5 - sorted by file name ascending");
         }
 
         [Fact]
