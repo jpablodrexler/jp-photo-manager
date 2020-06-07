@@ -134,8 +134,8 @@ namespace JPPhotoManager.UI.ViewModels
 
                 case SortCriteriaEnum.ThumbnailCreationDateTime:
                     this.assets = this.sortAscending ?
-                        this.assets?.OrderBy(a => a.ThumbnailCreationDateTime).ToArray() :
-                        this.assets?.OrderByDescending(a => a.ThumbnailCreationDateTime).ToArray();
+                        this.assets?.OrderBy(a => a.ThumbnailCreationDateTime).ThenBy(a => a.FileName).ToArray() :
+                        this.assets?.OrderByDescending(a => a.ThumbnailCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
                     break;
             }
 
