@@ -12,6 +12,7 @@
   <ItemGroup>
     <None Remove="AppIcon.png" />
     <None Remove="Readme.md" />
+    <None Remove="Windows\AppIcon.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -47,6 +48,10 @@
     <ProjectReference Include="..\JPPhotoManager.Application\JPPhotoManager.Application.csproj" />
     <ProjectReference Include="..\JPPhotoManager.Domain\JPPhotoManager.Domain.csproj" />
     <ProjectReference Include="..\JPPhotoManager.Infrastructure\JPPhotoManager.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Windows\AppIcon.png" />
   </ItemGroup>
 
   <ItemGroup>
