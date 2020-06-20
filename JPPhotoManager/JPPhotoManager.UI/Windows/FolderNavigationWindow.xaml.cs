@@ -38,6 +38,7 @@ namespace JPPhotoManager.UI.Windows
         private void FolderTreeView_FolderSelected(object sender, System.EventArgs e)
         {
             selectedPathTextBox.Text = this.folderTreeView.SelectedPath;
+            this.ViewModel.SelectedFolder = new Domain.Folder { Path = selectedPathTextBox.Text };
         }
 
         private void Confirm_Click(object sender, RoutedEventArgs e)
