@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using CsvPortableDatabase;
+using FluentAssertions;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
@@ -56,7 +57,7 @@ namespace JPPhotoManager.Tests
         public void FolderExistsTest()
         {
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
+            IAssetRepository repository = new AssetRepository(new Database(), new StorageService(userConfigurationService), userConfigurationService);
             bool folderExists = repository.FolderExists(dataDirectory);
             folderExists.Should().BeFalse();
             repository.AddFolder(dataDirectory);
@@ -71,7 +72,7 @@ namespace JPPhotoManager.Tests
             File.Exists(imagePath).Should().BeTrue();
 
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
+            IAssetRepository repository = new AssetRepository(new Database(), new StorageService(userConfigurationService), userConfigurationService);
             repository.HasChanges().Should().BeFalse();
         }
 
@@ -82,7 +83,7 @@ namespace JPPhotoManager.Tests
             File.Exists(imagePath).Should().BeTrue();
 
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
+            IAssetRepository repository = new AssetRepository(new Database(), new StorageService(userConfigurationService), userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -103,7 +104,7 @@ namespace JPPhotoManager.Tests
             File.Exists(imagePath).Should().BeTrue();
 
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
+            IAssetRepository repository = new AssetRepository(new Database(), new StorageService(userConfigurationService), userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -125,7 +126,7 @@ namespace JPPhotoManager.Tests
             File.Exists(imagePath).Should().BeTrue();
 
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
+            IAssetRepository repository = new AssetRepository(new Database(), new StorageService(userConfigurationService), userConfigurationService);
             
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
                     repository,
@@ -144,7 +145,7 @@ namespace JPPhotoManager.Tests
         public void DeleteNonExistingAssetTest()
         {
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
+            IAssetRepository repository = new AssetRepository(new Database(), new StorageService(userConfigurationService), userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             string imagePath = Path.Combine(dataDirectory, "Non Existing Image.jpg");
@@ -161,7 +162,7 @@ namespace JPPhotoManager.Tests
         public void DeleteExistingAssetTest()
         {
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
+            IAssetRepository repository = new AssetRepository(new Database(), new StorageService(userConfigurationService), userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -185,7 +186,7 @@ namespace JPPhotoManager.Tests
         public void SaveAndGetImportNewAssetsConfigurationTest()
         {
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
+            IAssetRepository repository = new AssetRepository(new Database(), new StorageService(userConfigurationService), userConfigurationService);
             
             ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
 
@@ -207,7 +208,7 @@ namespace JPPhotoManager.Tests
             repository.SaveCatalog(null);
 
             importConfiguration = repository.GetImportNewAssetsConfiguration();
-            repository = new AssetRepository(new StorageService(userConfigurationService), userConfigurationService);
+            repository = new AssetRepository(new Database(), new StorageService(userConfigurationService), userConfigurationService);
             
             importConfiguration.Imports.Should().HaveCount(2);
             importConfiguration.Imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");

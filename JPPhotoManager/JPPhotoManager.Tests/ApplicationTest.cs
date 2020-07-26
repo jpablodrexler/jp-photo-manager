@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using CsvPortableDatabase;
 using FluentAssertions;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
@@ -157,9 +158,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetDuplicatedAssetsWithDuplicatesTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             Folder folder = repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -196,7 +198,7 @@ namespace JPPhotoManager.Tests
 
             repository.SaveCatalog(folder);
 
-            repository = new AssetRepository(storageService, userConfigurationService);
+            repository = new AssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             catalogAssetsService = new CatalogAssetsService(
@@ -237,9 +239,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetDuplicatedAssetsWithoutDuplicatesTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -281,9 +284,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetDuplicatedAssetsWithInexistingImageTest1()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -337,9 +341,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetDuplicatedAssetsWithInexistingImageTest2()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             Folder folder = repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -388,9 +393,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetDuplicatedAssetsWithDuplicatesHashCollisionWithDuplicatedTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             IDirectoryComparer directoryComparer = new DirectoryComparer();
             Folder folder = repository.AddFolder(dataDirectory);
 
@@ -431,7 +437,7 @@ namespace JPPhotoManager.Tests
 
             repository.SaveCatalog(folder);
 
-            repository = new AssetRepository(storageService, userConfigurationService);
+            repository = new AssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             catalogAssetsService = new CatalogAssetsService(
@@ -471,9 +477,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetDuplicatedAssetsWithDuplicatesHashCollisionWithNoDuplicatedTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             Mock<IAssetHashCalculatorService> hashCalculator = new Mock<IAssetHashCalculatorService>();
@@ -514,9 +521,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void AddAssetsToNonExistingFolderAddsFolderToCatalogTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             IDirectoryComparer directoryComparer = new DirectoryComparer();
             Folder folder = new Folder { FolderId = "1", Path = "C:\\Inexistent Folder" };
 
@@ -540,9 +548,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetDuplicatedAssetsWithDuplicatesThumbnailNotFoundTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            UnencapsulatedAssetRepository repository = new UnencapsulatedAssetRepository(storageService, userConfigurationService);
+            UnencapsulatedAssetRepository repository = new UnencapsulatedAssetRepository(database, storageService, userConfigurationService);
             IDirectoryComparer directoryComparer = new DirectoryComparer();
             Folder folder = repository.AddFolder(dataDirectory);
 
@@ -585,7 +594,7 @@ namespace JPPhotoManager.Tests
             repository.RemoveThumbnail(folder.Path, "Image 2 duplicated.jpg");
             repository.SaveCatalog(folder);
 
-            repository = new UnencapsulatedAssetRepository(storageService, userConfigurationService);
+            repository = new UnencapsulatedAssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             catalogAssetsService = new CatalogAssetsService(
@@ -622,9 +631,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetAssetsWithThumbnailNotFoundTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            UnencapsulatedAssetRepository repository = new UnencapsulatedAssetRepository(storageService, userConfigurationService);
+            UnencapsulatedAssetRepository repository = new UnencapsulatedAssetRepository(database, storageService, userConfigurationService);
             IDirectoryComparer directoryComparer = new DirectoryComparer();
             Folder folder = repository.AddFolder(dataDirectory);
             Mock<IAssetHashCalculatorService> hashCalculator = new Mock<IAssetHashCalculatorService>();
@@ -665,7 +675,7 @@ namespace JPPhotoManager.Tests
             repository.RemoveThumbnail(folder.Path, "Image 2 duplicated.jpg");
             repository.SaveCatalog(folder);
 
-            repository = new UnencapsulatedAssetRepository(storageService, userConfigurationService);
+            repository = new UnencapsulatedAssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             catalogAssetsService = new CatalogAssetsService(
@@ -702,7 +712,7 @@ namespace JPPhotoManager.Tests
 
     class UnencapsulatedAssetRepository : AssetRepository
     {
-        internal UnencapsulatedAssetRepository(IStorageService storageService, IUserConfigurationService userConfigurationService) : base(storageService, userConfigurationService)
+        internal UnencapsulatedAssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService) : base(database, storageService, userConfigurationService)
         {
 
         }

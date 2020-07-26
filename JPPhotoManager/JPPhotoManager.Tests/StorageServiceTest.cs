@@ -34,42 +34,6 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
-        public void ResolveDataDirectoryTest1()
-        {
-            string directory = @"C:\Data\JPPhotoManager";
-            string expected = @"C:\Data\JPPhotoManager\Tables\assets.db";
-
-            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
-            string result = storageService.ResolveTableFilePath(directory, "assets");
-
-            result.Should().Be(expected);
-        }
-
-        [Fact]
-        public void ResolveDataDirectoryTest2()
-        {
-            string directory = "";
-            string expected = @"Tables\assets.db";
-
-            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
-            string result = storageService.ResolveTableFilePath(directory, "assets");
-
-            result.Should().Be(expected);
-        }
-
-        [Fact]
-        public void ResolveDataDirectoryTest3()
-        {
-            string directory = null;
-            string expected = @"Tables\assets.db";
-
-            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
-            string result = storageService.ResolveTableFilePath(directory, "assets");
-
-            result.Should().Be(expected);
-        }
-
-        [Fact]
         public void ResolveCatalogPathTest1()
         {
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();

@@ -1,12 +1,33 @@
 using CsvPortableDatabase;
 using FluentAssertions;
 using System.Data;
+using System.IO;
 using Xunit;
 
 namespace CsvDb.Tests
 {
     public class CsvPortableDatabaseTest
     {
+        private string dataDirectory;
+        
+        public CsvPortableDatabaseTest()
+        {
+            dataDirectory = Path.GetDirectoryName(typeof(CsvPortableDatabaseTest).Assembly.Location);
+            dataDirectory = Path.Combine(dataDirectory, "TestFiles");
+        }
+
+        [Theory]
+        [InlineData(@"C:\Data\JPPhotoManager", @"C:\Data\JPPhotoManager\Tables\assets.db")]
+        [InlineData("", @"Tables\assets.db")]
+        [InlineData(null, @"Tables\assets.db")]
+        public void ResolveTableFilePathTest1(string directory, string expected)
+        {
+            IDatabase database = new Database();
+            string result = database.ResolveTableFilePath(directory, "assets");
+
+            result.Should().Be(expected);
+        }
+
         [Fact]
         public void GetCsvFromDataTableTest()
         {
