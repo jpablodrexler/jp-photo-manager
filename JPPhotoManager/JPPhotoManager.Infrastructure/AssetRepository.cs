@@ -57,7 +57,6 @@ namespace JPPhotoManager.Infrastructure
                 if (this.AssetCatalog == null)
                 {
                     this.AssetCatalog = new AssetCatalog();
-                    this.database.InitializeDirectory(this.dataDirectory);
                     this.AssetCatalog.StorageVersion = 2.0;
                     SaveCatalog(null);
                 }
@@ -68,19 +67,14 @@ namespace JPPhotoManager.Infrastructure
 
         private void ReadCatalog()
         {
-            if (this.storageService.FileExists(this.assetsDataFilePath)
-                && this.storageService.FileExists(this.foldersDataFilePath)
-                && this.storageService.FileExists(this.importsDataFilePath))
-            {
-                this.AssetCatalog = new AssetCatalog();
-                this.AssetCatalog.Assets.Clear();
-                this.AssetCatalog.Assets.AddRange(ReadAssetsFromCsv());
-                this.AssetCatalog.Folders.Clear();
-                this.AssetCatalog.Folders.AddRange(ReadFoldersFromCsv());
-                this.AssetCatalog.ImportNewAssetsConfiguration.Imports.Clear();
-                this.AssetCatalog.ImportNewAssetsConfiguration.Imports.AddRange(ReadImportDefinitionsFromCsv());
-                this.AssetCatalog.Assets.ForEach(a => a.Folder = GetFolderById(a.FolderId));
-            }
+            this.AssetCatalog = new AssetCatalog();
+            this.AssetCatalog.Assets.Clear();
+            this.AssetCatalog.Assets.AddRange(ReadAssetsFromCsv());
+            this.AssetCatalog.Folders.Clear();
+            this.AssetCatalog.Folders.AddRange(ReadFoldersFromCsv());
+            this.AssetCatalog.ImportNewAssetsConfiguration.Imports.Clear();
+            this.AssetCatalog.ImportNewAssetsConfiguration.Imports.AddRange(ReadImportDefinitionsFromCsv());
+            this.AssetCatalog.Assets.ForEach(a => a.Folder = GetFolderById(a.FolderId));
         }
 
         public void SaveCatalog(Folder folder)
@@ -203,35 +197,35 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteAssetsToCsvFile(List<Asset> assets)
         {
-            this.storageService.WriteToCsvFile(
-                this.assetsDataFilePath,
-                assets,
-                new string[]
-                {
-                    nameof(Asset.FolderId),
-                    nameof(Asset.FileName),
-                    nameof(Asset.FileSize),
-                    nameof(Asset.ImageRotation),
-                    nameof(Asset.PixelWidth),
-                    nameof(Asset.PixelHeight),
-                    nameof(Asset.ThumbnailPixelWidth),
-                    nameof(Asset.ThumbnailPixelHeight),
-                    nameof(Asset.ThumbnailCreationDateTime),
-                    nameof(Asset.Hash)
-                },
-                a => new object[]
-                {
-                    a.FolderId,
-                    a.FileName,
-                    a.FileSize,
-                    a.ImageRotation,
-                    a.PixelWidth,
-                    a.PixelHeight,
-                    a.ThumbnailPixelWidth,
-                    a.ThumbnailPixelHeight,
-                    a.ThumbnailCreationDateTime,
-                    a.Hash
-                });
+            DataTable table = new DataTable("Asset");
+            table.Columns.Add("FolderId");
+            table.Columns.Add("FileName");
+            table.Columns.Add("FileSize");
+            table.Columns.Add("ImageRotation");
+            table.Columns.Add("PixelWidth");
+            table.Columns.Add("PixelHeight");
+            table.Columns.Add("ThumbnailPixelWidth");
+            table.Columns.Add("ThumbnailPixelHeight");
+            table.Columns.Add("ThumbnailCreationDateTime");
+            table.Columns.Add("Hash");
+
+            foreach (Asset asset in assets)
+            {
+                DataRow row = table.NewRow();
+                row["FolderId"] = asset.FolderId;
+                row["FileName"] = asset.FileName;
+                row["FileSize"] = asset.FileSize;
+                row["ImageRotation"] = asset.ImageRotation;
+                row["PixelWidth"] = asset.PixelWidth;
+                row["PixelHeight"] = asset.PixelHeight;
+                row["ThumbnailPixelWidth"] = asset.ThumbnailPixelWidth;
+                row["ThumbnailPixelHeight"] = asset.ThumbnailPixelHeight;
+                row["ThumbnailCreationDateTime"] = asset.ThumbnailCreationDateTime;
+                row["Hash"] = asset.Hash;
+                table.Rows.Add(row);
+            }
+
+            this.database.WriteDataTable(table);
         }
 
         public void WriteImportsToCsvFile(List<ImportNewAssetsDirectoriesDefinition> imports)

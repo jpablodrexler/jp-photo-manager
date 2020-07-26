@@ -14,6 +14,7 @@ namespace CsvPortableDatabase
         {
             this.dataDirectory = dataDirectory;
             this.separator = separator;
+            InitializeDirectory(dataDirectory);
         }
 
         public DataTable ReadDataTable(string tableName)
@@ -28,6 +29,13 @@ namespace CsvPortableDatabase
             }
 
             return dataTable;
+        }
+
+        public void WriteDataTable(DataTable dataTable)
+        {
+            string csv = GetCsvFromDataTable(dataTable, ";");
+            string dataFilePath = ResolveTableFilePath(this.dataDirectory, dataTable.TableName);
+            File.WriteAllText(dataFilePath, csv);
         }
 
         public string GetCsvFromDataTable(DataTable table, string separator)

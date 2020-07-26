@@ -6,6 +6,7 @@ namespace CsvPortableDatabase
     {
         void Initialize(string dataDirectory, string separator);
         DataTable ReadDataTable(string tableName);
+        void WriteDataTable(DataTable dataTable);
         string GetBlobsDirectory(string dataDirectory);
         string GetCsvFromDataTable(DataTable table, string separator);
         DataTable GetDataTableFromCsv(string csv, string separator, string tableName);
