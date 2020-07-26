@@ -46,17 +46,15 @@ namespace JPPhotoManager.Infrastructure
                 string importsDataFilePath = this.userConfigurationService.GetImportsDataFilePath();
 
                 this.dataDirectory = this.storageService.ResolveDataDirectory();
-                this.assetsDataFilePath = string.IsNullOrEmpty(assetsDataFilePath) ? this.storageService.ResolveTableFilePath(this.dataDirectory, "asset") : assetsDataFilePath;
-                this.foldersDataFilePath = string.IsNullOrEmpty(foldersDataFilePath) ? this.storageService.ResolveTableFilePath(this.dataDirectory, "folder") : foldersDataFilePath;
-                this.importsDataFilePath = string.IsNullOrEmpty(importsDataFilePath) ? this.storageService.ResolveTableFilePath(this.dataDirectory, "import") : importsDataFilePath;
+                this.assetsDataFilePath = string.IsNullOrEmpty(assetsDataFilePath) ? this.database.ResolveTableFilePath(this.dataDirectory, "asset") : assetsDataFilePath;
+                this.foldersDataFilePath = string.IsNullOrEmpty(foldersDataFilePath) ? this.database.ResolveTableFilePath(this.dataDirectory, "folder") : foldersDataFilePath;
+                this.importsDataFilePath = string.IsNullOrEmpty(importsDataFilePath) ? this.database.ResolveTableFilePath(this.dataDirectory, "import") : importsDataFilePath;
                 this.ReadCatalog();
 
                 if (this.AssetCatalog == null)
                 {
                     this.AssetCatalog = new AssetCatalog();
-                    this.storageService.CreateDirectory(this.dataDirectory);
-                    this.storageService.CreateDirectory(this.storageService.GetTablesDirectory(this.dataDirectory));
-                    this.storageService.CreateDirectory(this.storageService.GetBlobsDirectory(this.dataDirectory));
+                    this.database.InitializeDirectory(this.dataDirectory);
                     this.AssetCatalog.StorageVersion = 2.0;
                     SaveCatalog(null);
                 }
@@ -130,9 +128,7 @@ namespace JPPhotoManager.Infrastructure
         public List<Asset> ReadAssetsFromCsv()
         {
             List<Asset> result = new List<Asset>();
-
             var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
-            
             string csv = File.ReadAllText(this.assetsDataFilePath);
             DataTable dataTable = database.GetDataTableFromCsv(csv, separator, "Asset");
 
@@ -163,9 +159,7 @@ namespace JPPhotoManager.Infrastructure
         public List<ImportNewAssetsDirectoriesDefinition> ReadImportDefinitionsFromCsv()
         {
             List<ImportNewAssetsDirectoriesDefinition> result = new List<ImportNewAssetsDirectoriesDefinition>();
-
             var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
-
             string csv = File.ReadAllText(this.importsDataFilePath);
             DataTable dataTable = database.GetDataTableFromCsv(csv, separator, "Import");
 
@@ -257,14 +251,14 @@ namespace JPPhotoManager.Infrastructure
 
         public bool FolderHasThumbnails(Folder folder)
         {
-            string thumbnailsFilePath = this.storageService.ResolveBlobFilePath(dataDirectory, folder.ThumbnailsFilename);
+            string thumbnailsFilePath = this.database.ResolveBlobFilePath(dataDirectory, folder.ThumbnailsFilename);
             return File.Exists(thumbnailsFilePath);
         }
 
         protected virtual Dictionary<string, byte[]> GetThumbnails(string thumbnailsFileName, out bool isNewFile)
         {
             isNewFile = false;
-            string thumbnailsFilePath = this.storageService.ResolveBlobFilePath(dataDirectory, thumbnailsFileName);
+            string thumbnailsFilePath = this.database.ResolveBlobFilePath(dataDirectory, thumbnailsFileName);
             Dictionary<string, byte[]> thumbnails = (Dictionary<string, byte[]>)this.storageService.ReadFromBinaryFile(thumbnailsFilePath);
 
             if (thumbnails == null)
@@ -290,7 +284,7 @@ namespace JPPhotoManager.Infrastructure
 
         private void SaveThumbnails(Dictionary<string, byte[]> thumbnails, string thumbnailsFileName)
         {
-            string thumbnailsFilePath = this.storageService.ResolveBlobFilePath(dataDirectory, thumbnailsFileName);
+            string thumbnailsFilePath = this.database.ResolveBlobFilePath(dataDirectory, thumbnailsFileName);
             this.storageService.WriteToBinaryFile(thumbnails, thumbnailsFilePath);
         }
 

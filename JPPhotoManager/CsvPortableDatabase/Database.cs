@@ -6,6 +6,8 @@ namespace CsvPortableDatabase
 {
     public class Database : IDatabase
     {
+        private const string DATA_FILE_FORMAT = "{0}.db";
+
         public string GetCsvFromDataTable(DataTable table, string separator)
         {
             StringBuilder builder = new StringBuilder();
@@ -60,6 +62,35 @@ namespace CsvPortableDatabase
             }
 
             return table;
+        }
+
+        public void InitializeDirectory(string dataDirectory)
+        {
+            Directory.CreateDirectory(dataDirectory);
+            Directory.CreateDirectory(GetTablesDirectory(dataDirectory));
+            Directory.CreateDirectory(GetBlobsDirectory(dataDirectory));
+        }
+
+        public string GetTablesDirectory(string dataDirectory)
+        {
+            return Path.Combine(dataDirectory, "Tables");
+        }
+
+        public string GetBlobsDirectory(string dataDirectory)
+        {
+            return Path.Combine(dataDirectory, "Blobs");
+        }
+
+        public string ResolveTableFilePath(string dataDirectory, string entityName)
+        {
+            dataDirectory = !string.IsNullOrEmpty(dataDirectory) ? dataDirectory : string.Empty;
+            string fileName = string.Format(DATA_FILE_FORMAT, entityName);
+            return Path.Combine(GetTablesDirectory(dataDirectory), fileName);
+        }
+
+        public string ResolveBlobFilePath(string dataDirectory, string thumbnailsFileName)
+        {
+            return Path.Combine(GetBlobsDirectory(dataDirectory), thumbnailsFileName);
         }
     }
 }
