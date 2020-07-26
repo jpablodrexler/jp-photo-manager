@@ -159,6 +159,7 @@ namespace JPPhotoManager.Tests
         public void GetDuplicatedAssetsWithDuplicatesTest()
         {
             IDatabase database = new Database();
+            database.Initialize(dataDirectory, ";");
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
             IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
@@ -394,6 +395,7 @@ namespace JPPhotoManager.Tests
         public void GetDuplicatedAssetsWithDuplicatesHashCollisionWithDuplicatedTest()
         {
             IDatabase database = new Database();
+            database.Initialize(dataDirectory, ";");
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
             IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
@@ -549,6 +551,7 @@ namespace JPPhotoManager.Tests
         public void GetDuplicatedAssetsWithDuplicatesThumbnailNotFoundTest()
         {
             IDatabase database = new Database();
+            database.Initialize(dataDirectory, ";");
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
             UnencapsulatedAssetRepository repository = new UnencapsulatedAssetRepository(database, storageService, userConfigurationService);
@@ -632,6 +635,7 @@ namespace JPPhotoManager.Tests
         public void GetAssetsWithThumbnailNotFoundTest()
         {
             IDatabase database = new Database();
+            database.Initialize(dataDirectory, ";");
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
             UnencapsulatedAssetRepository repository = new UnencapsulatedAssetRepository(database, storageService, userConfigurationService);

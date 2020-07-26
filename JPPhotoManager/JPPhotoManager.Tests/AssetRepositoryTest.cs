@@ -185,8 +185,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void SaveAndGetImportNewAssetsConfigurationTest()
         {
+            IDatabase database = new Database();
+            database.Initialize(dataDirectory, ";");
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IAssetRepository repository = new AssetRepository(new Database(), new StorageService(userConfigurationService), userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, new StorageService(userConfigurationService), userConfigurationService);
             
             ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
 

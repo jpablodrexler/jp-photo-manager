@@ -7,6 +7,21 @@ namespace CsvPortableDatabase
     public class Database : IDatabase
     {
         private const string DATA_FILE_FORMAT = "{0}.db";
+        private string dataDirectory;
+        private string separator;
+
+        public void Initialize(string dataDirectory, string separator)
+        {
+            this.dataDirectory = dataDirectory;
+            this.separator = separator;
+        }
+
+        public DataTable ReadDataTable(string tableName)
+        {
+            string dataFilePath = ResolveTableFilePath(this.dataDirectory, tableName);
+            string csv = File.ReadAllText(dataFilePath);
+            return GetDataTableFromCsv(csv, this.separator, tableName);
+        }
 
         public string GetCsvFromDataTable(DataTable table, string separator)
         {
@@ -84,7 +99,7 @@ namespace CsvPortableDatabase
         public string ResolveTableFilePath(string dataDirectory, string entityName)
         {
             dataDirectory = !string.IsNullOrEmpty(dataDirectory) ? dataDirectory : string.Empty;
-            string fileName = string.Format(DATA_FILE_FORMAT, entityName);
+            string fileName = string.Format(DATA_FILE_FORMAT, entityName).ToLower();
             return Path.Combine(GetTablesDirectory(dataDirectory), fileName);
         }
 

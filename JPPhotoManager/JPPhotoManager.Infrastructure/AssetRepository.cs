@@ -49,6 +49,9 @@ namespace JPPhotoManager.Infrastructure
                 this.assetsDataFilePath = string.IsNullOrEmpty(assetsDataFilePath) ? this.database.ResolveTableFilePath(this.dataDirectory, "asset") : assetsDataFilePath;
                 this.foldersDataFilePath = string.IsNullOrEmpty(foldersDataFilePath) ? this.database.ResolveTableFilePath(this.dataDirectory, "folder") : foldersDataFilePath;
                 this.importsDataFilePath = string.IsNullOrEmpty(importsDataFilePath) ? this.database.ResolveTableFilePath(this.dataDirectory, "import") : importsDataFilePath;
+
+                var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
+                this.database.Initialize(this.dataDirectory, separator);
                 this.ReadCatalog();
 
                 if (this.AssetCatalog == null)
@@ -103,11 +106,7 @@ namespace JPPhotoManager.Infrastructure
         public List<Folder> ReadFoldersFromCsv()
         {
             List<Folder> result = new List<Folder>();
-
-            var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
-
-            string csv = File.ReadAllText(this.foldersDataFilePath);
-            DataTable dataTable = database.GetDataTableFromCsv(csv, separator, "Folder");
+            DataTable dataTable = database.ReadDataTable("Folder");
 
             for (int i = 0; i < dataTable.Rows.Count; i++)
             {
@@ -128,9 +127,7 @@ namespace JPPhotoManager.Infrastructure
         public List<Asset> ReadAssetsFromCsv()
         {
             List<Asset> result = new List<Asset>();
-            var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
-            string csv = File.ReadAllText(this.assetsDataFilePath);
-            DataTable dataTable = database.GetDataTableFromCsv(csv, separator, "Asset");
+            DataTable dataTable = database.ReadDataTable("Asset");
 
             for (int i = 0; i < dataTable.Rows.Count; i++)
             {
@@ -159,9 +156,7 @@ namespace JPPhotoManager.Infrastructure
         public List<ImportNewAssetsDirectoriesDefinition> ReadImportDefinitionsFromCsv()
         {
             List<ImportNewAssetsDirectoriesDefinition> result = new List<ImportNewAssetsDirectoriesDefinition>();
-            var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
-            string csv = File.ReadAllText(this.importsDataFilePath);
-            DataTable dataTable = database.GetDataTableFromCsv(csv, separator, "Import");
+            DataTable dataTable = database.ReadDataTable("Import");
 
             for (int i = 0; i < dataTable.Rows.Count; i++)
             {
