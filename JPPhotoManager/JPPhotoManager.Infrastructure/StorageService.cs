@@ -90,33 +90,6 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        public List<T> ReadFromCsv<T>(string dataFilePath, Func<string[], T> mappingFunc)
-        {
-            List<T> result = new List<T>();
-            var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
-
-            using (StreamReader reader = new StreamReader(dataFilePath))
-            {
-                string line = reader.ReadLine();
-                bool hasRecord;
-
-                do
-                {
-                    line = reader.ReadLine();
-                    hasRecord = !string.IsNullOrEmpty(line);
-
-                    if (hasRecord)
-                    {
-                        string[] fields = line.Split(separator);
-                        result.Add(mappingFunc(fields));
-                    }
-                }
-                while (hasRecord);
-            }
-            
-            return result;
-        }
-
         public void WriteToCsvFile<T>(string dataFilePath, List<T> records, string[] headers, Func<T, object[]> mappingFunc)
         {
             var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;

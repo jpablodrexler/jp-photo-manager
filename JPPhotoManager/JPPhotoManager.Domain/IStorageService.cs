@@ -17,7 +17,6 @@ namespace JPPhotoManager.Domain
         void CreateDirectory(string directory);
         T ReadObjectFromJson<T>(string jsonFilePath);
         void WriteObjectToJson(object anObject, string jsonFilePath);
-        List<T> ReadFromCsv<T>(string dataFilePath, Func<string[], T> mappingFunc);
         void WriteToCsvFile<T>(string dataFilePath, List<T> records, string[] headers, Func<T, object[]> mappingFunc);
         object ReadFromBinaryFile(string binaryFilePath);
         void WriteToBinaryFile(object anObject, string binaryFilePath);

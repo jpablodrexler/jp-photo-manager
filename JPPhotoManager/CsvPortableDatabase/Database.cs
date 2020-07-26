@@ -2,9 +2,9 @@
 using System.IO;
 using System.Text;
 
-namespace CsvDb
+namespace CsvPortableDatabase
 {
-    public class CsvPortableDatabase
+    public class Database : IDatabase
     {
         public string GetCsvFromDataTable(DataTable table, string separator)
         {

@@ -1,3 +1,4 @@
+using CsvPortableDatabase;
 using JPPhotoManager.Domain;
 using log4net;
 using System;
@@ -5,9 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Windows.Media.Imaging;
 
@@ -22,14 +21,16 @@ namespace JPPhotoManager.Infrastructure
         private string assetsDataFilePath;
         private string foldersDataFilePath;
         private string importsDataFilePath;
+        private readonly IDatabase database;
         private readonly IStorageService storageService;
         private readonly IUserConfigurationService userConfigurationService;
 
         protected AssetCatalog AssetCatalog { get; private set; }
         protected Dictionary<string, Dictionary<string, byte[]>> Thumbnails { get; private set; }
 
-        public AssetRepository(IStorageService storageService, IUserConfigurationService userConfigurationService)
+        public AssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService)
         {
+            this.database = database;
             this.storageService = storageService;
             this.userConfigurationService = userConfigurationService;
             this.Thumbnails = new Dictionary<string, Dictionary<string, byte[]>>();
@@ -103,48 +104,84 @@ namespace JPPhotoManager.Infrastructure
 
         public List<Folder> ReadFoldersFromCsv()
         {
-            List<Folder> result = this.storageService.ReadFromCsv(
-                this.foldersDataFilePath,
-                r => new Folder
+            List<Folder> result = new List<Folder>();
+
+            var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
+
+            string csv = File.ReadAllText(this.foldersDataFilePath);
+            DataTable dataTable = database.GetDataTableFromCsv(csv, separator, "Folder");
+
+            for (int i = 0; i < dataTable.Rows.Count; i++)
+            {
+                DataRow row = dataTable.Rows[i];
+
+                Folder folder = new Folder
                 {
-                    FolderId = r[0],
-                    Path = r[1]
-                });
-            
+                    FolderId = row["FolderId"].ToString(),
+                    Path = row["Path"].ToString()
+                };
+
+                result.Add(folder);
+            }
+
             return result;
         }
 
         public List<Asset> ReadAssetsFromCsv()
         {
-            List<Asset> result = this.storageService.ReadFromCsv(
-                this.assetsDataFilePath,
-                r => new Asset
+            List<Asset> result = new List<Asset>();
+
+            var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
+            
+            string csv = File.ReadAllText(this.assetsDataFilePath);
+            DataTable dataTable = database.GetDataTableFromCsv(csv, separator, "Asset");
+
+            for (int i = 0; i < dataTable.Rows.Count; i++)
+            {
+                DataRow row = dataTable.Rows[i];
+
+                Asset asset = new Asset
                 {
-                    FolderId = r[0],
-                    FileName = r[1],
-                    FileSize = long.Parse(r[2]),
-                    ImageRotation = (Rotation)Enum.Parse(typeof(Rotation), r[3]),
-                    PixelWidth = int.Parse(r[4]),
-                    PixelHeight = int.Parse(r[5]),
-                    ThumbnailPixelWidth = int.Parse(r[6]),
-                    ThumbnailPixelHeight = int.Parse(r[7]),
-                    ThumbnailCreationDateTime = DateTime.Parse(r[8]),
-                    Hash = r[9]
-                });
+                    FolderId = row["FolderId"].ToString(),
+                    FileName = row["FileName"].ToString(),
+                    FileSize = long.Parse(row["FileSize"].ToString()),
+                    ImageRotation = (Rotation)Enum.Parse(typeof(Rotation), row["ImageRotation"].ToString()),
+                    PixelWidth = int.Parse(row["PixelWidth"].ToString()),
+                    PixelHeight = int.Parse(row["PixelHeight"].ToString()),
+                    ThumbnailPixelWidth = int.Parse(row["ThumbnailPixelWidth"].ToString()),
+                    ThumbnailPixelHeight = int.Parse(row["ThumbnailPixelHeight"].ToString()),
+                    ThumbnailCreationDateTime = DateTime.Parse(row["ThumbnailCreationDateTime"].ToString()),
+                    Hash = row["Hash"].ToString()
+                };
+
+                result.Add(asset);
+            }
 
             return result;
         }
 
         public List<ImportNewAssetsDirectoriesDefinition> ReadImportDefinitionsFromCsv()
         {
-            List<ImportNewAssetsDirectoriesDefinition> result = this.storageService.ReadFromCsv(
-                this.importsDataFilePath,
-                r => new ImportNewAssetsDirectoriesDefinition
+            List<ImportNewAssetsDirectoriesDefinition> result = new List<ImportNewAssetsDirectoriesDefinition>();
+
+            var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
+
+            string csv = File.ReadAllText(this.importsDataFilePath);
+            DataTable dataTable = database.GetDataTableFromCsv(csv, separator, "Import");
+
+            for (int i = 0; i < dataTable.Rows.Count; i++)
+            {
+                DataRow row = dataTable.Rows[i];
+
+                ImportNewAssetsDirectoriesDefinition import = new ImportNewAssetsDirectoriesDefinition
                 {
-                    SourceDirectory = r[0],
-                    DestinationDirectory = r[1],
-                    IncludeSubFolders = bool.Parse(r[2])
-                });
+                    SourceDirectory = row["SourceDirectory"].ToString(),
+                    DestinationDirectory = row["DestinationDirectory"].ToString(),
+                    IncludeSubFolders = bool.Parse(row["IncludeSubFolders"].ToString())
+                };
+
+                result.Add(import);
+            }
 
             return result;
         }
