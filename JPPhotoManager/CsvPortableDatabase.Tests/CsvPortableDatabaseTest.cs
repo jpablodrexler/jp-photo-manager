@@ -67,7 +67,7 @@ namespace CsvDb.Tests
                 "876283c6-780e-4ad5-975c-be63044c087a;20200720175816_3.jpg;343633;Rotate0;1920;1080;200;112;25/07/2020 9:45:47;0af8f118b7d606e5d174643727bd3c0c6028b52c50481585274fd572110b108c7a0d7901227f75a72b44c89335e002a65e8137ff5b238ab1c0bba0505e783124\r\n";
 
             CsvPortableDatabase portableDatabase = new CsvPortableDatabase();
-            DataTable table = portableDatabase.GetDataTableFromCsv(csv, ";");
+            DataTable table = portableDatabase.GetDataTableFromCsv(csv, ";", "Asset");
             
             table.Columns.Should().HaveCount(10);
             table.Columns[0].ColumnName.Should().Be("FolderId");
@@ -81,6 +81,7 @@ namespace CsvDb.Tests
             table.Columns[8].ColumnName.Should().Be("ThumbnailCreationDateTime");
             table.Columns[9].ColumnName.Should().Be("Hash");
 
+            table.TableName.Should().Be("Asset");
             table.Rows.Should().HaveCount(2);
             
             table.Rows[0]["FolderId"].Should().Be("876283c6-780e-4ad5-975c-be63044c087a");

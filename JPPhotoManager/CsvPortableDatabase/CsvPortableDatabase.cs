@@ -28,9 +28,9 @@ namespace CsvDb
             return builder.ToString();
         }
 
-        public DataTable GetDataTableFromCsv(string csv, string separator)
+        public DataTable GetDataTableFromCsv(string csv, string separator, string tableName)
         {
-            DataTable table = new DataTable();
+            DataTable table = new DataTable(tableName);
 
             using (StringReader reader = new StringReader(csv))
             {
