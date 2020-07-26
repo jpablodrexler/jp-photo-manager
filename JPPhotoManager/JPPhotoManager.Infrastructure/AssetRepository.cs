@@ -108,17 +108,20 @@ namespace JPPhotoManager.Infrastructure
             List<Folder> result = new List<Folder>();
             DataTable dataTable = database.ReadDataTable("Folder");
 
-            for (int i = 0; i < dataTable.Rows.Count; i++)
+            if (dataTable != null)
             {
-                DataRow row = dataTable.Rows[i];
-
-                Folder folder = new Folder
+                for (int i = 0; i < dataTable.Rows.Count; i++)
                 {
-                    FolderId = row["FolderId"].ToString(),
-                    Path = row["Path"].ToString()
-                };
+                    DataRow row = dataTable.Rows[i];
 
-                result.Add(folder);
+                    Folder folder = new Folder
+                    {
+                        FolderId = row["FolderId"].ToString(),
+                        Path = row["Path"].ToString()
+                    };
+
+                    result.Add(folder);
+                }
             }
 
             return result;
@@ -129,27 +132,30 @@ namespace JPPhotoManager.Infrastructure
             List<Asset> result = new List<Asset>();
             DataTable dataTable = database.ReadDataTable("Asset");
 
-            for (int i = 0; i < dataTable.Rows.Count; i++)
+            if (dataTable != null)
             {
-                DataRow row = dataTable.Rows[i];
-
-                Asset asset = new Asset
+                for (int i = 0; i < dataTable.Rows.Count; i++)
                 {
-                    FolderId = row["FolderId"].ToString(),
-                    FileName = row["FileName"].ToString(),
-                    FileSize = long.Parse(row["FileSize"].ToString()),
-                    ImageRotation = (Rotation)Enum.Parse(typeof(Rotation), row["ImageRotation"].ToString()),
-                    PixelWidth = int.Parse(row["PixelWidth"].ToString()),
-                    PixelHeight = int.Parse(row["PixelHeight"].ToString()),
-                    ThumbnailPixelWidth = int.Parse(row["ThumbnailPixelWidth"].ToString()),
-                    ThumbnailPixelHeight = int.Parse(row["ThumbnailPixelHeight"].ToString()),
-                    ThumbnailCreationDateTime = DateTime.Parse(row["ThumbnailCreationDateTime"].ToString()),
-                    Hash = row["Hash"].ToString()
-                };
+                    DataRow row = dataTable.Rows[i];
 
-                result.Add(asset);
+                    Asset asset = new Asset
+                    {
+                        FolderId = row["FolderId"].ToString(),
+                        FileName = row["FileName"].ToString(),
+                        FileSize = long.Parse(row["FileSize"].ToString()),
+                        ImageRotation = (Rotation)Enum.Parse(typeof(Rotation), row["ImageRotation"].ToString()),
+                        PixelWidth = int.Parse(row["PixelWidth"].ToString()),
+                        PixelHeight = int.Parse(row["PixelHeight"].ToString()),
+                        ThumbnailPixelWidth = int.Parse(row["ThumbnailPixelWidth"].ToString()),
+                        ThumbnailPixelHeight = int.Parse(row["ThumbnailPixelHeight"].ToString()),
+                        ThumbnailCreationDateTime = DateTime.Parse(row["ThumbnailCreationDateTime"].ToString()),
+                        Hash = row["Hash"].ToString()
+                    };
+
+                    result.Add(asset);
+                }
             }
-
+            
             return result;
         }
 
@@ -158,20 +164,23 @@ namespace JPPhotoManager.Infrastructure
             List<ImportNewAssetsDirectoriesDefinition> result = new List<ImportNewAssetsDirectoriesDefinition>();
             DataTable dataTable = database.ReadDataTable("Import");
 
-            for (int i = 0; i < dataTable.Rows.Count; i++)
+            if (dataTable != null)
             {
-                DataRow row = dataTable.Rows[i];
-
-                ImportNewAssetsDirectoriesDefinition import = new ImportNewAssetsDirectoriesDefinition
+                for (int i = 0; i < dataTable.Rows.Count; i++)
                 {
-                    SourceDirectory = row["SourceDirectory"].ToString(),
-                    DestinationDirectory = row["DestinationDirectory"].ToString(),
-                    IncludeSubFolders = bool.Parse(row["IncludeSubFolders"].ToString())
-                };
+                    DataRow row = dataTable.Rows[i];
 
-                result.Add(import);
+                    ImportNewAssetsDirectoriesDefinition import = new ImportNewAssetsDirectoriesDefinition
+                    {
+                        SourceDirectory = row["SourceDirectory"].ToString(),
+                        DestinationDirectory = row["DestinationDirectory"].ToString(),
+                        IncludeSubFolders = bool.Parse(row["IncludeSubFolders"].ToString())
+                    };
+
+                    result.Add(import);
+                }
             }
-
+            
             return result;
         }
 

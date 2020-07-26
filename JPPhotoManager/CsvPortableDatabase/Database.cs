@@ -18,9 +18,16 @@ namespace CsvPortableDatabase
 
         public DataTable ReadDataTable(string tableName)
         {
+            DataTable dataTable = null;
             string dataFilePath = ResolveTableFilePath(this.dataDirectory, tableName);
-            string csv = File.ReadAllText(dataFilePath);
-            return GetDataTableFromCsv(csv, this.separator, tableName);
+            
+            if (File.Exists(dataFilePath))
+            {
+                string csv = File.ReadAllText(dataFilePath);
+                dataTable = GetDataTableFromCsv(csv, this.separator, tableName);
+            }
+
+            return dataTable;
         }
 
         public string GetCsvFromDataTable(DataTable table, string separator)
