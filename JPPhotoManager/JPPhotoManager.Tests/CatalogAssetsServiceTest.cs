@@ -35,7 +35,7 @@ namespace JPPhotoManager.Tests
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
-                .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
+                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, Guid.NewGuid().ToString()))
                 .MockGetValue("appsettings:CatalogBatchSize", "100")
                 .MockGetValue("appsettings:AssetsDataFilePath", assetsDataFilePath)
                 .MockGetValue("appsettings:FoldersDataFilePath", foldersDataFilePath)
@@ -73,7 +73,7 @@ namespace JPPhotoManager.Tests
         public void CatalogFolderTest()
         {
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
@@ -124,7 +124,7 @@ namespace JPPhotoManager.Tests
             int batchSize = 5;
 
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
@@ -174,7 +174,7 @@ namespace JPPhotoManager.Tests
         public void CatalogFolderRemovesDeletedFileTest()
         {
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
@@ -239,7 +239,7 @@ namespace JPPhotoManager.Tests
             int batchSize = 1000;
 
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
@@ -302,7 +302,7 @@ namespace JPPhotoManager.Tests
         public void CatalogNonExistentFolderTest()
         {
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(Path.Combine(dataDirectory, "NonExistent"));
             userConfigurationService.Setup(conf => conf.GetAssetsDataFilePath()).Returns(assetsDataFilePath);
             userConfigurationService.Setup(conf => conf.GetFoldersDataFilePath()).Returns(foldersDataFilePath);
@@ -895,7 +895,7 @@ namespace JPPhotoManager.Tests
         public void LogOnExceptionTest()
         {
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
@@ -934,7 +934,7 @@ namespace JPPhotoManager.Tests
         public void SaveCatalogOnOperationCanceledExceptionTest()
         {
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);

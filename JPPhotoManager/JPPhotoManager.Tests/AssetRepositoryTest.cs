@@ -29,7 +29,7 @@ namespace JPPhotoManager.Tests
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
-                .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
+                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, Guid.NewGuid().ToString()))
                 .MockGetValue("appsettings:CatalogBatchSize", "100")
                 .MockGetValue("appsettings:AssetsDataFilePath", assetsDataFilePath)
                 .MockGetValue("appsettings:FoldersDataFilePath", foldersDataFilePath)
@@ -186,7 +186,6 @@ namespace JPPhotoManager.Tests
         public void SaveAndGetImportNewAssetsConfigurationTest()
         {
             IDatabase database = new Database();
-            database.Initialize(dataDirectory, ";");
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IAssetRepository repository = new AssetRepository(database, new StorageService(userConfigurationService), userConfigurationService);
             
