@@ -15,9 +15,6 @@ namespace JPPhotoManager.Tests
     public class CatalogAssetsServiceTest
     {
         private string dataDirectory;
-        private string assetsDataFilePath;
-        private string foldersDataFilePath;
-        private string importsDataFilePath;
         private string imageDestinationDirectory;
         private string nonCataloguedImageDestinationDirectory;
         private IConfigurationRoot configuration;
@@ -26,9 +23,6 @@ namespace JPPhotoManager.Tests
         {
             dataDirectory = Path.GetDirectoryName(typeof(CatalogAssetsServiceTest).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
-            assetsDataFilePath = Path.Combine(dataDirectory, $"asset.{Guid.NewGuid()}.db");
-            foldersDataFilePath = Path.Combine(dataDirectory, $"folder.{Guid.NewGuid()}.db");
-            importsDataFilePath = Path.Combine(dataDirectory, $"import.{Guid.NewGuid()}.db");
             imageDestinationDirectory = Path.Combine(dataDirectory, "NewFolder");
             nonCataloguedImageDestinationDirectory = Path.Combine(dataDirectory, "NonCataloguedNewFolder");
 
@@ -36,27 +30,9 @@ namespace JPPhotoManager.Tests
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, Guid.NewGuid().ToString()))
-                .MockGetValue("appsettings:CatalogBatchSize", "100")
-                .MockGetValue("appsettings:AssetsDataFilePath", assetsDataFilePath)
-                .MockGetValue("appsettings:FoldersDataFilePath", foldersDataFilePath)
-                .MockGetValue("appsettings:ImportsDataFilePath", importsDataFilePath);
+                .MockGetValue("appsettings:CatalogBatchSize", "100");
 
             configuration = configurationMock.Object;
-
-            if (File.Exists(assetsDataFilePath))
-            {
-                File.Delete(assetsDataFilePath);
-            }
-
-            if (File.Exists(foldersDataFilePath))
-            {
-                File.Delete(foldersDataFilePath);
-            }
-
-            if (File.Exists(importsDataFilePath))
-            {
-                File.Delete(importsDataFilePath);
-            }
 
             if (Directory.Exists(imageDestinationDirectory))
             {
@@ -77,9 +53,6 @@ namespace JPPhotoManager.Tests
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
-            userConfigurationService.Setup(conf => conf.GetAssetsDataFilePath()).Returns(assetsDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetFoldersDataFilePath()).Returns(foldersDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetImportsDataFilePath()).Returns(importsDataFilePath);
 
             IDatabase database = new Database();
             IStorageService storageService = new StorageService(userConfigurationService.Object);
@@ -128,9 +101,6 @@ namespace JPPhotoManager.Tests
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
-            userConfigurationService.Setup(conf => conf.GetAssetsDataFilePath()).Returns(assetsDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetFoldersDataFilePath()).Returns(foldersDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetImportsDataFilePath()).Returns(importsDataFilePath);
 
             IDatabase database = new Database();
             IStorageService storageService = new StorageService(userConfigurationService.Object);
@@ -178,9 +148,6 @@ namespace JPPhotoManager.Tests
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
-            userConfigurationService.Setup(conf => conf.GetAssetsDataFilePath()).Returns(assetsDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetFoldersDataFilePath()).Returns(foldersDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetImportsDataFilePath()).Returns(importsDataFilePath);
 
             IDatabase database = new Database();
             IStorageService storageService = new StorageService(userConfigurationService.Object);
@@ -243,9 +210,6 @@ namespace JPPhotoManager.Tests
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
-            userConfigurationService.Setup(conf => conf.GetAssetsDataFilePath()).Returns(assetsDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetFoldersDataFilePath()).Returns(foldersDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetImportsDataFilePath()).Returns(importsDataFilePath);
 
             IDatabase database = new Database();
             IStorageService storageService = new StorageService(userConfigurationService.Object);
@@ -304,9 +268,6 @@ namespace JPPhotoManager.Tests
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
             userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(Path.Combine(dataDirectory, "NonExistent"));
-            userConfigurationService.Setup(conf => conf.GetAssetsDataFilePath()).Returns(assetsDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetFoldersDataFilePath()).Returns(foldersDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetImportsDataFilePath()).Returns(importsDataFilePath);
 
             IDatabase database = new Database();
             IStorageService storageService = new StorageService(userConfigurationService.Object);

@@ -14,44 +14,20 @@ namespace JPPhotoManager.Tests
     public class ApplicationTest
     {
         private string dataDirectory;
-        private string assetsDataFilePath;
-        private string foldersDataFilePath;
-        private string importsDataFilePath;
         private IConfigurationRoot configuration;
 
         public ApplicationTest()
         {
             dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTest).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
-            assetsDataFilePath = Path.Combine(dataDirectory, $"asset.{Guid.NewGuid()}.db");
-            foldersDataFilePath = Path.Combine(dataDirectory, $"folder.{Guid.NewGuid()}.db");
-            importsDataFilePath = Path.Combine(dataDirectory, $"import.{Guid.NewGuid()}.db");
 
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, Guid.NewGuid().ToString()))
-                .MockGetValue("appsettings:CatalogBatchSize", "100")
-                .MockGetValue("appsettings:AssetsDataFilePath", assetsDataFilePath)
-                .MockGetValue("appsettings:FoldersDataFilePath", foldersDataFilePath)
-                .MockGetValue("appsettings:ImportsDataFilePath", importsDataFilePath);
-
+                .MockGetValue("appsettings:CatalogBatchSize", "100");
+                
             configuration = configurationMock.Object;
-
-            if (File.Exists(assetsDataFilePath))
-            {
-                File.Delete(assetsDataFilePath);
-            }
-
-            if (File.Exists(foldersDataFilePath))
-            {
-                File.Delete(foldersDataFilePath);
-            }
-
-            if (File.Exists(importsDataFilePath))
-            {
-                File.Delete(importsDataFilePath);
-            }
         }
 
         [Fact]

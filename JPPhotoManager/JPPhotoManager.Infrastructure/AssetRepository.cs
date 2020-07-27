@@ -18,9 +18,6 @@ namespace JPPhotoManager.Infrastructure
 
         public bool IsInitialized { get; private set; }
         private string dataDirectory;
-        private string assetsDataFilePath;
-        private string foldersDataFilePath;
-        private string importsDataFilePath;
         private readonly IDatabase database;
         private readonly IStorageService storageService;
         private readonly IUserConfigurationService userConfigurationService;
@@ -41,15 +38,7 @@ namespace JPPhotoManager.Infrastructure
         {
             if (!this.IsInitialized)
             {
-                string assetsDataFilePath = this.userConfigurationService.GetAssetsDataFilePath();
-                string foldersDataFilePath = this.userConfigurationService.GetFoldersDataFilePath();
-                string importsDataFilePath = this.userConfigurationService.GetImportsDataFilePath();
-
                 this.dataDirectory = this.storageService.ResolveDataDirectory();
-                this.assetsDataFilePath = string.IsNullOrEmpty(assetsDataFilePath) ? this.database.ResolveTableFilePath(this.dataDirectory, "asset") : assetsDataFilePath;
-                this.foldersDataFilePath = string.IsNullOrEmpty(foldersDataFilePath) ? this.database.ResolveTableFilePath(this.dataDirectory, "folder") : foldersDataFilePath;
-                this.importsDataFilePath = string.IsNullOrEmpty(importsDataFilePath) ? this.database.ResolveTableFilePath(this.dataDirectory, "import") : importsDataFilePath;
-
                 var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
                 this.database.Initialize(this.dataDirectory, separator);
                 this.ReadCatalog();
