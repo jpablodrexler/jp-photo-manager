@@ -723,7 +723,10 @@ namespace JPPhotoManager.Tests
 
         internal void RemoveThumbnail(string directoryName, string fileName)
         {
-            Thumbnails[directoryName].Remove(fileName);
+            if (Thumbnails.ContainsKey(directoryName) && Thumbnails[directoryName].ContainsKey(fileName))
+            {
+                Thumbnails[directoryName].Remove(fileName);
+            }
         }
     }
 }

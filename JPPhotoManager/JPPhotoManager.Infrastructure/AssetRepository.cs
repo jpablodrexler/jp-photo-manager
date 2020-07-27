@@ -180,19 +180,19 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteFoldersToCsvFile(List<Folder> folders)
         {
-            this.storageService.WriteToCsvFile(
-                this.foldersDataFilePath,
-                folders,
-                new string[]
-                {
-                    nameof(Folder.FolderId),
-                    nameof(Folder.Path)
-                },
-                f => new object[]
-                {
-                    f.FolderId,
-                    f.Path
-                });
+            DataTable table = new DataTable("Folder");
+            table.Columns.Add("FolderId");
+            table.Columns.Add("Path");
+            
+            foreach (Folder folder in folders)
+            {
+                DataRow row = table.NewRow();
+                row["FolderId"] = folder.FolderId;
+                row["Path"] = folder.Path;
+                table.Rows.Add(row);
+            }
+
+            this.database.WriteDataTable(table);
         }
 
         public void WriteAssetsToCsvFile(List<Asset> assets)
@@ -230,21 +230,21 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteImportsToCsvFile(List<ImportNewAssetsDirectoriesDefinition> imports)
         {
-            this.storageService.WriteToCsvFile(
-                this.importsDataFilePath,
-                imports,
-                new string[]
-                {
-                    nameof(ImportNewAssetsDirectoriesDefinition.SourceDirectory),
-                    nameof(ImportNewAssetsDirectoriesDefinition.DestinationDirectory),
-                    nameof(ImportNewAssetsDirectoriesDefinition.IncludeSubFolders)
-                },
-                i => new object[]
-                {
-                    i.SourceDirectory,
-                    i.DestinationDirectory,
-                    i.IncludeSubFolders
-                });
+            DataTable table = new DataTable("Import");
+            table.Columns.Add("SourceDirectory");
+            table.Columns.Add("DestinationDirectory");
+            table.Columns.Add("IncludeSubFolders");
+
+            foreach (ImportNewAssetsDirectoriesDefinition import in imports)
+            {
+                DataRow row = table.NewRow();
+                row["SourceDirectory"] = import.SourceDirectory;
+                row["DestinationDirectory"] = import.DestinationDirectory;
+                row["IncludeSubFolders"] = import.IncludeSubFolders;
+                table.Rows.Add(row);
+            }
+
+            this.database.WriteDataTable(table);
         }
 
         public bool FolderHasThumbnails(Folder folder)

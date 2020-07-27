@@ -18,7 +18,7 @@ namespace JPPhotoManager.Domain
         public DateTime ThumbnailCreationDateTime { get; set; }
         public string Hash { get; set; }
         public BitmapImage ImageData { get; set; }
-        public string FullPath => Path.Combine(this.Folder.Path, this.FileName);
+        public string FullPath => this.Folder != null ? Path.Combine(this.Folder.Path, this.FileName) : this.FileName;
         public DateTime FileCreationDateTime { get; set; }
         public DateTime FileModificationDateTime { get; set; }
 
