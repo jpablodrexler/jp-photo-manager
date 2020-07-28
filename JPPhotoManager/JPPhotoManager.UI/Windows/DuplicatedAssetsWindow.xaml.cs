@@ -41,7 +41,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                Asset asset = (Asset)((TextBlock)e.Source).DataContext;
+                Asset asset = (Asset)((FrameworkElement)e.Source).DataContext;
 
                 if (MessageBox.Show($"Are you sure you want to delete {asset.FullPath}?", "Confirm", MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK)
                 {
