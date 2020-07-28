@@ -7,7 +7,7 @@
         <Style TargetType="Label" x:Key="ButtonStyle">
             <Style.Setters>
                 <Setter Property="Background" Value="#FF3C3C3C" />
-                <Setter Property="Foreground" Value="#FFFFFFFF" />
+                <Setter Property="Foreground" Value="White" />
                 <Setter Property="BorderBrush" Value="#AAAAAAAA" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -16,6 +16,24 @@
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="#AAAAAAAA" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="Menu">
+            <Style.Setters>
+                <Setter Property="Background" Value="#FF3C3C3C" />
+                <Setter Property="Foreground" Value="White" />
+            </Style.Setters>
+        </Style>
+        <Style TargetType="MenuItem" x:Key="MenuItemStyle">
+            <Style.Setters>
+                <Setter Property="Background" Value="#FF3C3C3C" />
+                <Setter Property="Foreground" Value="#FFFFFFFF" />
+                <Setter Property="BorderThickness" Value="0" />
+            </Style.Setters>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="Black" />
                 </Trigger>
             </Style.Triggers>
         </Style>
