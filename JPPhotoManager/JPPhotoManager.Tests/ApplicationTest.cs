@@ -172,6 +172,9 @@ namespace JPPhotoManager.Tests
             Assert.True(File.Exists(imagePath));
             Asset duplicatedAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2 duplicated.jpg");
 
+            Console.WriteLine("database.DataDirectory: " + database.DataDirectory);
+            Console.WriteLine("database.Separator: " + database.Separator);
+
             repository.SaveCatalog(folder);
 
             repository = new AssetRepository(database, storageService, userConfigurationService);
