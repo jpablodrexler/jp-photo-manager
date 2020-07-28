@@ -11,33 +11,32 @@
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
-                <MenuItem Header="Set as _Wallpaper">
-                    <MenuItem Header="_Center" Click="SetAsWallpaperCenter_Click"/>
-                    <MenuItem Header="_Fill" Click="SetAsWallpaperFill_Click"/>
-                    <MenuItem Header="_Fit" Click="SetAsWallpaperFit_Click"/>
-                    <MenuItem Header="S_pan" Click="SetAsWallpaperSpan_Click"/>
-                    <MenuItem Header="_Stretch" Click="SetAsWallpaperStretch_Click"/>
-                    <MenuItem Header="_Tile" Click="SetAsWallpaperTile_Click"/>
+                <MenuItem Header="Set as _Wallpaper" Style="{StaticResource MenuItemStyle}">
+                    <MenuItem Header="_Center" Click="SetAsWallpaperCenter_Click" Style="{StaticResource MenuItemStyle}" />
+                    <MenuItem Header="_Fill" Click="SetAsWallpaperFill_Click" Style="{StaticResource MenuItemStyle}" />
+                    <MenuItem Header="_Fit" Click="SetAsWallpaperFit_Click" Style="{StaticResource MenuItemStyle}" />
+                    <MenuItem Header="S_pan" Click="SetAsWallpaperSpan_Click" Style="{StaticResource MenuItemStyle}" />
+                    <MenuItem Header="_Stretch" Click="SetAsWallpaperStretch_Click" Style="{StaticResource MenuItemStyle}" />
+                    <MenuItem Header="_Tile" Click="SetAsWallpaperTile_Click" Style="{StaticResource MenuItemStyle}" />
                 </MenuItem>
-                <MenuItem Header="Find _Duplicates..." Click="FindDuplicates_Click"/>
-                <MenuItem Header="Import New Assets..." Click="ImportNewAssets_Click"/>
-                <MenuItem Header="Copy Asset (Ctrl+C)..." Click="CopyAsset_Click"/>
-                <MenuItem Header="Move Asset (Ctrl+M)..." Click="MoveAsset_Click"/>
-                <MenuItem Header="Delete Asset (Del)" Click="DeleteAsset_Click"/>
-                <Separator/>
-                <MenuItem Header="_Exit" />
+                <MenuItem Header="Find _Duplicates..." Click="FindDuplicates_Click" Style="{StaticResource MenuItemStyle}" />
+                <MenuItem Header="Import New Assets..." Click="ImportNewAssets_Click" Style="{StaticResource MenuItemStyle}" />
+                <MenuItem Header="Copy Asset (Ctrl+C)..." Click="CopyAsset_Click" Style="{StaticResource MenuItemStyle}" />
+                <MenuItem Header="Move Asset (Ctrl+M)..." Click="MoveAsset_Click" Style="{StaticResource MenuItemStyle}" />
+                <MenuItem Header="Delete Asset (Del)" Click="DeleteAsset_Click" Style="{StaticResource MenuItemStyle}" />
+                <MenuItem Header="_Exit" Style="{StaticResource MenuItemStyle}" />
             </MenuItem>
             <MenuItem Header="_View">
-                <MenuItem Header="_Sort">
-                    <MenuItem Header="By _Name" Click="SortAssetsByFileName_Click"/>
-                    <MenuItem Header="By _Size" Click="SortAssetsByFileSize_Click"/>
-                    <MenuItem Header="By File _Creation Date" Click="SortAssetsByFileCreationDateTime_Click"/>
-                    <MenuItem Header="By File _Modification Date" Click="SortAssetsByFileModificationDateTime_Click"/>
-                    <MenuItem Header="By _Thumbnail Creation Date" Click="SortAssetsByThumbnailCreationDateTime_Click"/>
+                <MenuItem Header="_Sort" Style="{StaticResource MenuItemStyle}" >
+                    <MenuItem Header="By _Name" Click="SortAssetsByFileName_Click" Style="{StaticResource MenuItemStyle}" />
+                    <MenuItem Header="By _Size" Click="SortAssetsByFileSize_Click" Style="{StaticResource MenuItemStyle}" />
+                    <MenuItem Header="By File _Creation Date" Click="SortAssetsByFileCreationDateTime_Click" Style="{StaticResource MenuItemStyle}" />
+                    <MenuItem Header="By File _Modification Date" Click="SortAssetsByFileModificationDateTime_Click" Style="{StaticResource MenuItemStyle}" />
+                    <MenuItem Header="By _Thumbnail Creation Date" Click="SortAssetsByThumbnailCreationDateTime_Click" Style="{StaticResource MenuItemStyle}" />
                 </MenuItem>
             </MenuItem>
             <MenuItem Header="_Help">
-                <MenuItem Header="About JPPhotoManager..." Click="About_Click"/>
+                <MenuItem Header="About JPPhotoManager..." Click="About_Click" Style="{StaticResource MenuItemStyle}" />
             </MenuItem>
         </Menu>
         <Grid>

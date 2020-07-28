@@ -42,9 +42,7 @@
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <DockPanel HorizontalAlignment="Stretch">
-                        <Label x:Name="deleteLabel" DockPanel.Dock="Right" Padding="5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown" Foreground="#FFFFFFFF">
-                            <TextBlock TextDecorations="Underline" Cursor="Hand">Delete</TextBlock>
-                        </Label>
+                        <Label x:Name="deleteLabel" DockPanel.Dock="Right" Padding="5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown" Content="Delete" Style="{StaticResource ButtonStyle}" />
                         <Label Content="{Binding FullPath}" Foreground="#FFFFFFFF" />
                     </DockPanel>
                 </DataTemplate>
