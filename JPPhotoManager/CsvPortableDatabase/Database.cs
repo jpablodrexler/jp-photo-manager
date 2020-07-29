@@ -10,8 +10,7 @@ namespace CsvPortableDatabase
 
         public string DataDirectory { get; private set; }
         public string Separator { get; private set; }
-        public string LastReadFilePath { get; private set; }
-        public string LastReadFileRaw { get; private set; }
+        public Diagnostics Diagnostics { get; private set; }
 
         public void Initialize(string dataDirectory, string separator)
         {
@@ -24,12 +23,12 @@ namespace CsvPortableDatabase
         {
             DataTable dataTable = null;
             string dataFilePath = ResolveTableFilePath(this.DataDirectory, tableName);
-            this.LastReadFilePath = dataFilePath;
+            this.Diagnostics = new Diagnostics { LastReadFilePath = dataFilePath };
             
             if (File.Exists(dataFilePath))
             {
                 string csv = File.ReadAllText(dataFilePath);
-                LastReadFileRaw = csv;
+                this.Diagnostics.LastReadFileRaw = csv;
                 dataTable = GetDataTableFromCsv(csv, this.Separator, tableName);
             }
 
@@ -39,7 +38,9 @@ namespace CsvPortableDatabase
         public void WriteDataTable(DataTable dataTable)
         {
             string csv = GetCsvFromDataTable(dataTable, this.Separator);
+            this.Diagnostics = new Diagnostics { LastWriteFileRaw = csv };
             string dataFilePath = ResolveTableFilePath(this.DataDirectory, dataTable.TableName);
+            this.Diagnostics.LastWriteFilePath = dataFilePath;
             File.WriteAllText(dataFilePath, csv);
         }
 

@@ -6,8 +6,7 @@ namespace CsvPortableDatabase
     {
         string DataDirectory { get; }
         string Separator { get; }
-        string LastReadFilePath { get; }
-        string LastReadFileRaw { get; }
+        Diagnostics Diagnostics { get; }
         void Initialize(string dataDirectory, string separator);
         DataTable ReadDataTable(string tableName);
         void WriteDataTable(DataTable dataTable);

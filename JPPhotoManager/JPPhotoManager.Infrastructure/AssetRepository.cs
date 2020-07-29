@@ -58,11 +58,11 @@ namespace JPPhotoManager.Infrastructure
         {
             this.AssetCatalog = new AssetCatalog();
             this.AssetCatalog.Assets.Clear();
-            this.AssetCatalog.Assets.AddRange(ReadAssetsFromCsv());
+            this.AssetCatalog.Assets.AddRange(ReadAssets());
             this.AssetCatalog.Folders.Clear();
-            this.AssetCatalog.Folders.AddRange(ReadFoldersFromCsv());
+            this.AssetCatalog.Folders.AddRange(ReadFolders());
             this.AssetCatalog.ImportNewAssetsConfiguration.Imports.Clear();
-            this.AssetCatalog.ImportNewAssetsConfiguration.Imports.AddRange(ReadImportDefinitionsFromCsv());
+            this.AssetCatalog.ImportNewAssetsConfiguration.Imports.AddRange(ReadImportDefinitions());
             this.AssetCatalog.Assets.ForEach(a => a.Folder = GetFolderById(a.FolderId));
         }
 
@@ -72,9 +72,9 @@ namespace JPPhotoManager.Infrastructure
             {
                 if (this.AssetCatalog.HasChanges)
                 {
-                    WriteAssetsToCsvFile(this.AssetCatalog.Assets);
-                    WriteFoldersToCsvFile(this.AssetCatalog.Folders);
-                    WriteImportsToCsvFile(this.AssetCatalog.ImportNewAssetsConfiguration.Imports);
+                    WriteAssets(this.AssetCatalog.Assets);
+                    WriteFolders(this.AssetCatalog.Folders);
+                    WriteImports(this.AssetCatalog.ImportNewAssetsConfiguration.Imports);
                 }
                 
                 this.AssetCatalog.HasChanges = false;
@@ -86,31 +86,44 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        public List<Folder> ReadFoldersFromCsv()
+        public List<Folder> ReadFolders()
         {
             List<Folder> result = new List<Folder>();
-            DataTable dataTable = database.ReadDataTable("Folder");
 
-            if (dataTable != null)
+            try
             {
-                for (int i = 0; i < dataTable.Rows.Count; i++)
+                DataTable dataTable = database.ReadDataTable("Folder");
+
+                if (dataTable != null)
                 {
-                    DataRow row = dataTable.Rows[i];
-
-                    Folder folder = new Folder
+                    for (int i = 0; i < dataTable.Rows.Count; i++)
                     {
-                        FolderId = row["FolderId"].ToString(),
-                        Path = row["Path"].ToString()
-                    };
+                        DataRow row = dataTable.Rows[i];
 
-                    result.Add(folder);
+                        Folder folder = new Folder
+                        {
+                            FolderId = row["FolderId"].ToString(),
+                            Path = row["Path"].ToString()
+                        };
+
+                        result.Add(folder);
+                    }
                 }
+            }
+            catch (ArgumentException ex)
+            {
+                throw new ApplicationException($"Error while trying to read data table 'Folder'. " +
+                    $"DataDirectory: {database.DataDirectory} - " +
+                    $"Separator: {database.Separator} - " +
+                    $"LastReadFilePath: {database.Diagnostics.LastReadFilePath} - " +
+                    $"LastReadFileRaw: {database.Diagnostics.LastReadFileRaw}",
+                    ex);
             }
 
             return result;
         }
 
-        public List<Asset> ReadAssetsFromCsv()
+        public List<Asset> ReadAssets()
         {
             List<Asset> result = new List<Asset>();
             
@@ -144,38 +157,56 @@ namespace JPPhotoManager.Infrastructure
             }
             catch (ArgumentException ex)
             {
-                throw new ApplicationException($"Error while trying to read data table 'Asset'. DataDirectory: {database.DataDirectory} - Separator: {database.Separator} - LastReadFilePath: {database.LastReadFilePath} - LastReadFileRaw: {database.LastReadFileRaw}", ex);
+                throw new ApplicationException($"Error while trying to read data table 'Asset'. " +
+                    $"DataDirectory: {database.DataDirectory} - " +
+                    $"Separator: {database.Separator} - " +
+                    $"LastReadFilePath: {database.Diagnostics.LastReadFilePath} - " +
+                    $"LastReadFileRaw: {database.Diagnostics.LastReadFileRaw}",
+                    ex);
             }
             
             return result;
         }
 
-        public List<ImportNewAssetsDirectoriesDefinition> ReadImportDefinitionsFromCsv()
+        public List<ImportNewAssetsDirectoriesDefinition> ReadImportDefinitions()
         {
             List<ImportNewAssetsDirectoriesDefinition> result = new List<ImportNewAssetsDirectoriesDefinition>();
-            DataTable dataTable = database.ReadDataTable("Import");
 
-            if (dataTable != null)
+            try
             {
-                for (int i = 0; i < dataTable.Rows.Count; i++)
+                DataTable dataTable = database.ReadDataTable("Import");
+
+                if (dataTable != null)
                 {
-                    DataRow row = dataTable.Rows[i];
-
-                    ImportNewAssetsDirectoriesDefinition import = new ImportNewAssetsDirectoriesDefinition
+                    for (int i = 0; i < dataTable.Rows.Count; i++)
                     {
-                        SourceDirectory = row["SourceDirectory"].ToString(),
-                        DestinationDirectory = row["DestinationDirectory"].ToString(),
-                        IncludeSubFolders = bool.Parse(row["IncludeSubFolders"].ToString())
-                    };
+                        DataRow row = dataTable.Rows[i];
 
-                    result.Add(import);
+                        ImportNewAssetsDirectoriesDefinition import = new ImportNewAssetsDirectoriesDefinition
+                        {
+                            SourceDirectory = row["SourceDirectory"].ToString(),
+                            DestinationDirectory = row["DestinationDirectory"].ToString(),
+                            IncludeSubFolders = bool.Parse(row["IncludeSubFolders"].ToString())
+                        };
+
+                        result.Add(import);
+                    }
                 }
+            }
+            catch (ArgumentException ex)
+            {
+                throw new ApplicationException($"Error while trying to read data table 'Import'. " +
+                    $"DataDirectory: {database.DataDirectory} - " +
+                    $"Separator: {database.Separator} - " +
+                    $"LastReadFilePath: {database.Diagnostics.LastReadFilePath} - " +
+                    $"LastReadFileRaw: {database.Diagnostics.LastReadFileRaw}",
+                    ex);
             }
             
             return result;
         }
 
-        public void WriteFoldersToCsvFile(List<Folder> folders)
+        public void WriteFolders(List<Folder> folders)
         {
             DataTable table = new DataTable("Folder");
             table.Columns.Add("FolderId");
@@ -192,7 +223,7 @@ namespace JPPhotoManager.Infrastructure
             this.database.WriteDataTable(table);
         }
 
-        public void WriteAssetsToCsvFile(List<Asset> assets)
+        public void WriteAssets(List<Asset> assets)
         {
             DataTable table = new DataTable("Asset");
             table.Columns.Add("FolderId");
@@ -225,7 +256,7 @@ namespace JPPhotoManager.Infrastructure
             this.database.WriteDataTable(table);
         }
 
-        public void WriteImportsToCsvFile(List<ImportNewAssetsDirectoriesDefinition> imports)
+        public void WriteImports(List<ImportNewAssetsDirectoriesDefinition> imports)
         {
             DataTable table = new DataTable("Import");
             table.Columns.Add("SourceDirectory");
