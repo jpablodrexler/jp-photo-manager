@@ -38,7 +38,7 @@ namespace CsvPortableDatabase
 
         public void WriteDataTable(DataTable dataTable)
         {
-            string csv = GetCsvFromDataTable(dataTable, ";");
+            string csv = GetCsvFromDataTable(dataTable, this.Separator);
             string dataFilePath = ResolveTableFilePath(this.DataDirectory, dataTable.TableName);
             File.WriteAllText(dataFilePath, csv);
         }
