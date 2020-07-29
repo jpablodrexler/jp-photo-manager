@@ -113,30 +113,38 @@ namespace JPPhotoManager.Infrastructure
         public List<Asset> ReadAssetsFromCsv()
         {
             List<Asset> result = new List<Asset>();
-            DataTable dataTable = database.ReadDataTable("Asset");
-
-            if (dataTable != null)
+            
+            try
             {
-                for (int i = 0; i < dataTable.Rows.Count; i++)
+                DataTable dataTable = database.ReadDataTable("Asset");
+
+                if (dataTable != null)
                 {
-                    DataRow row = dataTable.Rows[i];
-
-                    Asset asset = new Asset
+                    for (int i = 0; i < dataTable.Rows.Count; i++)
                     {
-                        FolderId = row["FolderId"].ToString(),
-                        FileName = row["FileName"].ToString(),
-                        FileSize = long.Parse(row["FileSize"].ToString()),
-                        ImageRotation = (Rotation)Enum.Parse(typeof(Rotation), row["ImageRotation"].ToString()),
-                        PixelWidth = int.Parse(row["PixelWidth"].ToString()),
-                        PixelHeight = int.Parse(row["PixelHeight"].ToString()),
-                        ThumbnailPixelWidth = int.Parse(row["ThumbnailPixelWidth"].ToString()),
-                        ThumbnailPixelHeight = int.Parse(row["ThumbnailPixelHeight"].ToString()),
-                        ThumbnailCreationDateTime = DateTime.Parse(row["ThumbnailCreationDateTime"].ToString()),
-                        Hash = row["Hash"].ToString()
-                    };
+                        DataRow row = dataTable.Rows[i];
 
-                    result.Add(asset);
+                        Asset asset = new Asset
+                        {
+                            FolderId = row["FolderId"].ToString(),
+                            FileName = row["FileName"].ToString(),
+                            FileSize = long.Parse(row["FileSize"].ToString()),
+                            ImageRotation = (Rotation)Enum.Parse(typeof(Rotation), row["ImageRotation"].ToString()),
+                            PixelWidth = int.Parse(row["PixelWidth"].ToString()),
+                            PixelHeight = int.Parse(row["PixelHeight"].ToString()),
+                            ThumbnailPixelWidth = int.Parse(row["ThumbnailPixelWidth"].ToString()),
+                            ThumbnailPixelHeight = int.Parse(row["ThumbnailPixelHeight"].ToString()),
+                            ThumbnailCreationDateTime = DateTime.Parse(row["ThumbnailCreationDateTime"].ToString()),
+                            Hash = row["Hash"].ToString()
+                        };
+
+                        result.Add(asset);
+                    }
                 }
+            }
+            catch (ArgumentException ex)
+            {
+                throw new ApplicationException($"Error while trying to read data table 'Asset'. DataDirectory: {database.DataDirectory} - Separator: {database.Separator}", ex);
             }
             
             return result;
