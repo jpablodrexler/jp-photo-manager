@@ -10,6 +10,8 @@ namespace CsvPortableDatabase
 
         public string DataDirectory { get; private set; }
         public string Separator { get; private set; }
+        public string LastReadFilePath { get; private set; }
+        public string LastReadFileRaw { get; private set; }
 
         public void Initialize(string dataDirectory, string separator)
         {
@@ -22,10 +24,12 @@ namespace CsvPortableDatabase
         {
             DataTable dataTable = null;
             string dataFilePath = ResolveTableFilePath(this.DataDirectory, tableName);
+            this.LastReadFilePath = dataFilePath;
             
             if (File.Exists(dataFilePath))
             {
                 string csv = File.ReadAllText(dataFilePath);
+                LastReadFileRaw = csv;
                 dataTable = GetDataTableFromCsv(csv, this.Separator, tableName);
             }
 

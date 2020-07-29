@@ -144,7 +144,7 @@ namespace JPPhotoManager.Infrastructure
             }
             catch (ArgumentException ex)
             {
-                throw new ApplicationException($"Error while trying to read data table 'Asset'. DataDirectory: {database.DataDirectory} - Separator: {database.Separator}", ex);
+                throw new ApplicationException($"Error while trying to read data table 'Asset'. DataDirectory: {database.DataDirectory} - Separator: {database.Separator} - LastReadFilePath: {database.LastReadFilePath} - LastReadFileRaw: {database.LastReadFileRaw}", ex);
             }
             
             return result;
