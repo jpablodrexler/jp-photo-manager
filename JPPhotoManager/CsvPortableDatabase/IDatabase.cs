@@ -15,7 +15,9 @@ namespace CsvPortableDatabase
         DataTable GetDataTableFromCsv(string csv, string separator, string tableName);
         string GetTablesDirectory(string dataDirectory);
         void InitializeDirectory(string dataDirectory);
+        object ReadBlob(string blobName);
         string ResolveBlobFilePath(string dataDirectory, string thumbnailsFileName);
         string ResolveTableFilePath(string dataDirectory, string entityName);
+        void WriteBlob(object blob, string blobName);
     }
 }

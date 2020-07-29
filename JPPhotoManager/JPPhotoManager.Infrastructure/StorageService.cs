@@ -87,31 +87,6 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        public object ReadFromBinaryFile(string binaryFilePath)
-        {
-            object result = null;
-
-            if (File.Exists(binaryFilePath))
-            {
-                using (FileStream fileStream = new FileStream(binaryFilePath, FileMode.Open))
-                {
-                    BinaryFormatter binaryFormatter = new BinaryFormatter();
-                    result = binaryFormatter.Deserialize(fileStream);
-                }
-            }
-
-            return result;
-        }
-
-        public void WriteToBinaryFile(object anObject, string binaryFilePath)
-        {
-            using (FileStream fileStream = new FileStream(binaryFilePath, FileMode.Create))
-            {
-                BinaryFormatter binaryFormatter = new BinaryFormatter();
-                binaryFormatter.Serialize(fileStream, anObject);
-            }
-        }
-
         public void DeleteFile(string directory, string fileName)
         {
             string fullPath = Path.Combine(directory, fileName);

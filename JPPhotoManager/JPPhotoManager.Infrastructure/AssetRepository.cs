@@ -284,9 +284,8 @@ namespace JPPhotoManager.Infrastructure
         protected virtual Dictionary<string, byte[]> GetThumbnails(string thumbnailsFileName, out bool isNewFile)
         {
             isNewFile = false;
-            string thumbnailsFilePath = this.database.ResolveBlobFilePath(dataDirectory, thumbnailsFileName);
-            Dictionary<string, byte[]> thumbnails = (Dictionary<string, byte[]>)this.storageService.ReadFromBinaryFile(thumbnailsFilePath);
-
+            Dictionary<string, byte[]> thumbnails = (Dictionary<string, byte[]>)this.database.ReadBlob(thumbnailsFileName);
+            
             if (thumbnails == null)
             {
                 thumbnails = new Dictionary<string, byte[]>();
@@ -310,8 +309,7 @@ namespace JPPhotoManager.Infrastructure
 
         private void SaveThumbnails(Dictionary<string, byte[]> thumbnails, string thumbnailsFileName)
         {
-            string thumbnailsFilePath = this.database.ResolveBlobFilePath(dataDirectory, thumbnailsFileName);
-            this.storageService.WriteToBinaryFile(thumbnails, thumbnailsFilePath);
+            this.database.WriteBlob(thumbnails, thumbnailsFileName);
         }
 
         public Asset[] GetAssets(string directory)

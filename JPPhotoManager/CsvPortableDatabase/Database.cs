@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 
 namespace CsvPortableDatabase
@@ -42,6 +43,20 @@ namespace CsvPortableDatabase
             string dataFilePath = ResolveTableFilePath(this.DataDirectory, dataTable.TableName);
             this.Diagnostics.LastWriteFilePath = dataFilePath;
             File.WriteAllText(dataFilePath, csv);
+        }
+
+        public object ReadBlob(string blobName)
+        {
+            string blobFilePath = ResolveBlobFilePath(this.DataDirectory, blobName);
+            this.Diagnostics = new Diagnostics { LastReadFilePath = blobFilePath };
+            return ReadFromBinaryFile(blobFilePath);
+        }
+
+        public void WriteBlob(object blob, string blobName)
+        {
+            string blobFilePath = ResolveBlobFilePath(this.DataDirectory, blobName);
+            this.Diagnostics = new Diagnostics { LastWriteFilePath = blobFilePath, LastWriteFileRaw = blob };
+            WriteToBinaryFile(blob, blobFilePath);
         }
 
         public string GetCsvFromDataTable(DataTable table, string separator)
@@ -98,6 +113,31 @@ namespace CsvPortableDatabase
             }
 
             return table;
+        }
+
+        private object ReadFromBinaryFile(string binaryFilePath)
+        {
+            object result = null;
+
+            if (File.Exists(binaryFilePath))
+            {
+                using (FileStream fileStream = new FileStream(binaryFilePath, FileMode.Open))
+                {
+                    BinaryFormatter binaryFormatter = new BinaryFormatter();
+                    result = binaryFormatter.Deserialize(fileStream);
+                }
+            }
+
+            return result;
+        }
+
+        private void WriteToBinaryFile(object anObject, string binaryFilePath)
+        {
+            using (FileStream fileStream = new FileStream(binaryFilePath, FileMode.Create))
+            {
+                BinaryFormatter binaryFormatter = new BinaryFormatter();
+                binaryFormatter.Serialize(fileStream, anObject);
+            }
         }
 
         public void InitializeDirectory(string dataDirectory)
