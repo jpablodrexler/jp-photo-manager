@@ -30,7 +30,7 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        private void ConfirmButton_Click(object sender, RoutedEventArgs e)
+        private void ConfirmButton_MouseLeftButtonDown(object sender, RoutedEventArgs e)
         {
             this.Close();
         }

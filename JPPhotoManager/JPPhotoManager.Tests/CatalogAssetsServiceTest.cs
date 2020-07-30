@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using CsvPortableDatabase;
+using FluentAssertions;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
@@ -14,9 +15,6 @@ namespace JPPhotoManager.Tests
     public class CatalogAssetsServiceTest
     {
         private string dataDirectory;
-        private string assetsDataFilePath;
-        private string foldersDataFilePath;
-        private string importsDataFilePath;
         private string imageDestinationDirectory;
         private string nonCataloguedImageDestinationDirectory;
         private IConfigurationRoot configuration;
@@ -25,37 +23,16 @@ namespace JPPhotoManager.Tests
         {
             dataDirectory = Path.GetDirectoryName(typeof(CatalogAssetsServiceTest).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
-            assetsDataFilePath = Path.Combine(dataDirectory, $"asset.{Guid.NewGuid()}.db");
-            foldersDataFilePath = Path.Combine(dataDirectory, $"folder.{Guid.NewGuid()}.db");
-            importsDataFilePath = Path.Combine(dataDirectory, $"import.{Guid.NewGuid()}.db");
             imageDestinationDirectory = Path.Combine(dataDirectory, "NewFolder");
             nonCataloguedImageDestinationDirectory = Path.Combine(dataDirectory, "NonCataloguedNewFolder");
 
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
-                .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
-                .MockGetValue("appsettings:CatalogBatchSize", "100")
-                .MockGetValue("appsettings:AssetsDataFilePath", assetsDataFilePath)
-                .MockGetValue("appsettings:FoldersDataFilePath", foldersDataFilePath)
-                .MockGetValue("appsettings:ImportsDataFilePath", importsDataFilePath);
+                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, Guid.NewGuid().ToString()))
+                .MockGetValue("appsettings:CatalogBatchSize", "100");
 
             configuration = configurationMock.Object;
-
-            if (File.Exists(assetsDataFilePath))
-            {
-                File.Delete(assetsDataFilePath);
-            }
-
-            if (File.Exists(foldersDataFilePath))
-            {
-                File.Delete(foldersDataFilePath);
-            }
-
-            if (File.Exists(importsDataFilePath))
-            {
-                File.Delete(importsDataFilePath);
-            }
 
             if (Directory.Exists(imageDestinationDirectory))
             {
@@ -72,16 +49,14 @@ namespace JPPhotoManager.Tests
         public void CatalogFolderTest()
         {
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
-            userConfigurationService.Setup(conf => conf.GetAssetsDataFilePath()).Returns(assetsDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetFoldersDataFilePath()).Returns(foldersDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetImportsDataFilePath()).Returns(importsDataFilePath);
 
+            IDatabase database = new Database();
             IStorageService storageService = new StorageService(userConfigurationService.Object);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService.Object);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService.Object);
             ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
                     repository,
                     new AssetHashCalculatorService(),
@@ -122,16 +97,14 @@ namespace JPPhotoManager.Tests
             int batchSize = 5;
 
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
-            userConfigurationService.Setup(conf => conf.GetAssetsDataFilePath()).Returns(assetsDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetFoldersDataFilePath()).Returns(foldersDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetImportsDataFilePath()).Returns(importsDataFilePath);
 
+            IDatabase database = new Database();
             IStorageService storageService = new StorageService(userConfigurationService.Object);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService.Object);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService.Object);
             ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
                     repository,
                     new AssetHashCalculatorService(),
@@ -171,16 +144,14 @@ namespace JPPhotoManager.Tests
         public void CatalogFolderRemovesDeletedFileTest()
         {
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
-            userConfigurationService.Setup(conf => conf.GetAssetsDataFilePath()).Returns(assetsDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetFoldersDataFilePath()).Returns(foldersDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetImportsDataFilePath()).Returns(importsDataFilePath);
 
+            IDatabase database = new Database();
             IStorageService storageService = new StorageService(userConfigurationService.Object);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService.Object);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService.Object);
             IAssetHashCalculatorService assetHashCalculatorService = new AssetHashCalculatorService();
             IDirectoryComparer directoryComparer = new DirectoryComparer();
             ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -235,16 +206,14 @@ namespace JPPhotoManager.Tests
             int batchSize = 1000;
 
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
-            userConfigurationService.Setup(conf => conf.GetAssetsDataFilePath()).Returns(assetsDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetFoldersDataFilePath()).Returns(foldersDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetImportsDataFilePath()).Returns(importsDataFilePath);
 
+            IDatabase database = new Database();
             IStorageService storageService = new StorageService(userConfigurationService.Object);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService.Object);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService.Object);
             IAssetHashCalculatorService assetHashCalculatorService = new AssetHashCalculatorService();
             IDirectoryComparer directoryComparer = new DirectoryComparer();
             ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -297,14 +266,12 @@ namespace JPPhotoManager.Tests
         public void CatalogNonExistentFolderTest()
         {
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(Path.Combine(dataDirectory, "NonExistent"));
-            userConfigurationService.Setup(conf => conf.GetAssetsDataFilePath()).Returns(assetsDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetFoldersDataFilePath()).Returns(foldersDataFilePath);
-            userConfigurationService.Setup(conf => conf.GetImportsDataFilePath()).Returns(importsDataFilePath);
 
+            IDatabase database = new Database();
             IStorageService storageService = new StorageService(userConfigurationService.Object);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService.Object);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService.Object);
             IAssetHashCalculatorService assetHashCalculatorService = new AssetHashCalculatorService();
             IDirectoryComparer directoryComparer = new DirectoryComparer();
             ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -325,9 +292,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void CreateAssetTest1()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -354,9 +322,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void CreateAssetTest2()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -383,9 +352,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void CreateAssetOfDuplicatedFilesCompareHashesTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -410,9 +380,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void CreateAssetOfDifferentFilesCompareHashesTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -437,9 +408,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void MoveExistingAssetTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
@@ -483,9 +455,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void MoveNonExistingAssetTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
@@ -520,9 +493,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void MoveAssetToSamePathTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             
             Folder sourceFolder = repository.AddFolder(dataDirectory);
 
@@ -551,9 +525,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void MoveAssetToNonCataloguedFolderTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.GetFolderByPath(nonCataloguedImageDestinationDirectory);
@@ -590,9 +565,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void MoveNullAssetTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
@@ -612,9 +588,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void MoveNullSourceFolderTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
@@ -634,9 +611,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void MoveNullDestinationFolderTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
@@ -656,9 +634,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void CopyExistingAssetTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
@@ -702,9 +681,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void CopyNonExistingAssetTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
@@ -739,9 +719,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void CopyAssetToSamePathTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             
             Folder sourceFolder = repository.AddFolder(dataDirectory);
             
@@ -769,9 +750,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void DeleteExistingImageTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             
             Folder sourceFolder = repository.AddFolder(dataDirectory);
 
@@ -799,9 +781,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void DeleteNonExistingImageTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             
             Folder sourceFolder = repository.AddFolder(dataDirectory);
 
@@ -830,9 +813,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void DeleteNullAssetTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             
             Folder sourceFolder = repository.AddFolder(dataDirectory);
 
@@ -851,9 +835,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void DeleteNullFolderTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             
             ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
                     repository,
@@ -871,7 +856,7 @@ namespace JPPhotoManager.Tests
         public void LogOnExceptionTest()
         {
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
@@ -880,7 +865,8 @@ namespace JPPhotoManager.Tests
             storageService.Setup(s => s.FolderExists(It.IsAny<string>())).Returns(true);
             storageService.Setup(s => s.GetFileNames(It.IsAny<string>())).Throws(new IOException());
 
-            IAssetRepository repository = new AssetRepository(new StorageService(userConfigurationService.Object), userConfigurationService.Object);
+            IDatabase database = new Database();
+            IAssetRepository repository = new AssetRepository(database, new StorageService(userConfigurationService.Object), userConfigurationService.Object);
             ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
                     repository,
                     new AssetHashCalculatorService(),
@@ -909,7 +895,7 @@ namespace JPPhotoManager.Tests
         public void SaveCatalogOnOperationCanceledExceptionTest()
         {
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(dataDirectory);
+            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
             userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
             userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);

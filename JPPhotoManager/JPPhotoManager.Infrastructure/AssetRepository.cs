@@ -1,3 +1,4 @@
+using CsvPortableDatabase;
 using JPPhotoManager.Domain;
 using log4net;
 using System;
@@ -5,9 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Windows.Media.Imaging;
 
@@ -19,17 +18,16 @@ namespace JPPhotoManager.Infrastructure
 
         public bool IsInitialized { get; private set; }
         private string dataDirectory;
-        private string assetsDataFilePath;
-        private string foldersDataFilePath;
-        private string importsDataFilePath;
+        private readonly IDatabase database;
         private readonly IStorageService storageService;
         private readonly IUserConfigurationService userConfigurationService;
 
         protected AssetCatalog AssetCatalog { get; private set; }
         protected Dictionary<string, Dictionary<string, byte[]>> Thumbnails { get; private set; }
 
-        public AssetRepository(IStorageService storageService, IUserConfigurationService userConfigurationService)
+        public AssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService)
         {
+            this.database = database;
             this.storageService = storageService;
             this.userConfigurationService = userConfigurationService;
             this.Thumbnails = new Dictionary<string, Dictionary<string, byte[]>>();
@@ -40,22 +38,14 @@ namespace JPPhotoManager.Infrastructure
         {
             if (!this.IsInitialized)
             {
-                string assetsDataFilePath = this.userConfigurationService.GetAssetsDataFilePath();
-                string foldersDataFilePath = this.userConfigurationService.GetFoldersDataFilePath();
-                string importsDataFilePath = this.userConfigurationService.GetImportsDataFilePath();
-
                 this.dataDirectory = this.storageService.ResolveDataDirectory();
-                this.assetsDataFilePath = string.IsNullOrEmpty(assetsDataFilePath) ? this.storageService.ResolveTableFilePath(this.dataDirectory, "asset") : assetsDataFilePath;
-                this.foldersDataFilePath = string.IsNullOrEmpty(foldersDataFilePath) ? this.storageService.ResolveTableFilePath(this.dataDirectory, "folder") : foldersDataFilePath;
-                this.importsDataFilePath = string.IsNullOrEmpty(importsDataFilePath) ? this.storageService.ResolveTableFilePath(this.dataDirectory, "import") : importsDataFilePath;
+                var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
+                this.database.Initialize(this.dataDirectory, separator);
                 this.ReadCatalog();
 
                 if (this.AssetCatalog == null)
                 {
                     this.AssetCatalog = new AssetCatalog();
-                    this.storageService.CreateDirectory(this.dataDirectory);
-                    this.storageService.CreateDirectory(this.storageService.GetTablesDirectory(this.dataDirectory));
-                    this.storageService.CreateDirectory(this.storageService.GetBlobsDirectory(this.dataDirectory));
                     this.AssetCatalog.StorageVersion = 2.0;
                     SaveCatalog(null);
                 }
@@ -66,19 +56,14 @@ namespace JPPhotoManager.Infrastructure
 
         private void ReadCatalog()
         {
-            if (this.storageService.FileExists(this.assetsDataFilePath)
-                && this.storageService.FileExists(this.foldersDataFilePath)
-                && this.storageService.FileExists(this.importsDataFilePath))
-            {
-                this.AssetCatalog = new AssetCatalog();
-                this.AssetCatalog.Assets.Clear();
-                this.AssetCatalog.Assets.AddRange(ReadAssetsFromCsv());
-                this.AssetCatalog.Folders.Clear();
-                this.AssetCatalog.Folders.AddRange(ReadFoldersFromCsv());
-                this.AssetCatalog.ImportNewAssetsConfiguration.Imports.Clear();
-                this.AssetCatalog.ImportNewAssetsConfiguration.Imports.AddRange(ReadImportDefinitionsFromCsv());
-                this.AssetCatalog.Assets.ForEach(a => a.Folder = GetFolderById(a.FolderId));
-            }
+            this.AssetCatalog = new AssetCatalog();
+            this.AssetCatalog.Assets.Clear();
+            this.AssetCatalog.Assets.AddRange(ReadAssets());
+            this.AssetCatalog.Folders.Clear();
+            this.AssetCatalog.Folders.AddRange(ReadFolders());
+            this.AssetCatalog.ImportNewAssetsConfiguration.Imports.Clear();
+            this.AssetCatalog.ImportNewAssetsConfiguration.Imports.AddRange(ReadImportDefinitions());
+            this.AssetCatalog.Assets.ForEach(a => a.Folder = GetFolderById(a.FolderId));
         }
 
         public void SaveCatalog(Folder folder)
@@ -87,9 +72,9 @@ namespace JPPhotoManager.Infrastructure
             {
                 if (this.AssetCatalog.HasChanges)
                 {
-                    WriteAssetsToCsvFile(this.AssetCatalog.Assets);
-                    WriteFoldersToCsvFile(this.AssetCatalog.Folders);
-                    WriteImportsToCsvFile(this.AssetCatalog.ImportNewAssetsConfiguration.Imports);
+                    WriteAssets(this.AssetCatalog.Assets);
+                    WriteFolders(this.AssetCatalog.Folders);
+                    WriteImports(this.AssetCatalog.ImportNewAssetsConfiguration.Imports);
                 }
                 
                 this.AssetCatalog.HasChanges = false;
@@ -101,135 +86,206 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        public List<Folder> ReadFoldersFromCsv()
+        public List<Folder> ReadFolders()
         {
-            List<Folder> result = this.storageService.ReadFromCsv(
-                this.foldersDataFilePath,
-                r => new Folder
+            List<Folder> result = new List<Folder>();
+
+            try
+            {
+                DataTable dataTable = database.ReadDataTable("Folder");
+
+                if (dataTable != null)
                 {
-                    FolderId = r[0],
-                    Path = r[1]
-                });
+                    for (int i = 0; i < dataTable.Rows.Count; i++)
+                    {
+                        DataRow row = dataTable.Rows[i];
+
+                        Folder folder = new Folder
+                        {
+                            FolderId = row["FolderId"].ToString(),
+                            Path = row["Path"].ToString()
+                        };
+
+                        result.Add(folder);
+                    }
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                throw new ApplicationException($"Error while trying to read data table 'Folder'. " +
+                    $"DataDirectory: {database.DataDirectory} - " +
+                    $"Separator: {database.Separator} - " +
+                    $"LastReadFilePath: {database.Diagnostics.LastReadFilePath} - " +
+                    $"LastReadFileRaw: {database.Diagnostics.LastReadFileRaw}",
+                    ex);
+            }
+
+            return result;
+        }
+
+        public List<Asset> ReadAssets()
+        {
+            List<Asset> result = new List<Asset>();
+            
+            try
+            {
+                DataTable dataTable = database.ReadDataTable("Asset");
+
+                if (dataTable != null)
+                {
+                    for (int i = 0; i < dataTable.Rows.Count; i++)
+                    {
+                        DataRow row = dataTable.Rows[i];
+
+                        Asset asset = new Asset
+                        {
+                            FolderId = row["FolderId"].ToString(),
+                            FileName = row["FileName"].ToString(),
+                            FileSize = long.Parse(row["FileSize"].ToString()),
+                            ImageRotation = (Rotation)Enum.Parse(typeof(Rotation), row["ImageRotation"].ToString()),
+                            PixelWidth = int.Parse(row["PixelWidth"].ToString()),
+                            PixelHeight = int.Parse(row["PixelHeight"].ToString()),
+                            ThumbnailPixelWidth = int.Parse(row["ThumbnailPixelWidth"].ToString()),
+                            ThumbnailPixelHeight = int.Parse(row["ThumbnailPixelHeight"].ToString()),
+                            ThumbnailCreationDateTime = DateTime.Parse(row["ThumbnailCreationDateTime"].ToString()),
+                            Hash = row["Hash"].ToString()
+                        };
+
+                        result.Add(asset);
+                    }
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                throw new ApplicationException($"Error while trying to read data table 'Asset'. " +
+                    $"DataDirectory: {database.DataDirectory} - " +
+                    $"Separator: {database.Separator} - " +
+                    $"LastReadFilePath: {database.Diagnostics.LastReadFilePath} - " +
+                    $"LastReadFileRaw: {database.Diagnostics.LastReadFileRaw}",
+                    ex);
+            }
             
             return result;
         }
 
-        public List<Asset> ReadAssetsFromCsv()
+        public List<ImportNewAssetsDirectoriesDefinition> ReadImportDefinitions()
         {
-            List<Asset> result = this.storageService.ReadFromCsv(
-                this.assetsDataFilePath,
-                r => new Asset
-                {
-                    FolderId = r[0],
-                    FileName = r[1],
-                    FileSize = long.Parse(r[2]),
-                    ImageRotation = (Rotation)Enum.Parse(typeof(Rotation), r[3]),
-                    PixelWidth = int.Parse(r[4]),
-                    PixelHeight = int.Parse(r[5]),
-                    ThumbnailPixelWidth = int.Parse(r[6]),
-                    ThumbnailPixelHeight = int.Parse(r[7]),
-                    ThumbnailCreationDateTime = DateTime.Parse(r[8]),
-                    Hash = r[9]
-                });
+            List<ImportNewAssetsDirectoriesDefinition> result = new List<ImportNewAssetsDirectoriesDefinition>();
 
+            try
+            {
+                DataTable dataTable = database.ReadDataTable("Import");
+
+                if (dataTable != null)
+                {
+                    for (int i = 0; i < dataTable.Rows.Count; i++)
+                    {
+                        DataRow row = dataTable.Rows[i];
+
+                        ImportNewAssetsDirectoriesDefinition import = new ImportNewAssetsDirectoriesDefinition
+                        {
+                            SourceDirectory = row["SourceDirectory"].ToString(),
+                            DestinationDirectory = row["DestinationDirectory"].ToString(),
+                            IncludeSubFolders = bool.Parse(row["IncludeSubFolders"].ToString())
+                        };
+
+                        result.Add(import);
+                    }
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                throw new ApplicationException($"Error while trying to read data table 'Import'. " +
+                    $"DataDirectory: {database.DataDirectory} - " +
+                    $"Separator: {database.Separator} - " +
+                    $"LastReadFilePath: {database.Diagnostics.LastReadFilePath} - " +
+                    $"LastReadFileRaw: {database.Diagnostics.LastReadFileRaw}",
+                    ex);
+            }
+            
             return result;
         }
 
-        public List<ImportNewAssetsDirectoriesDefinition> ReadImportDefinitionsFromCsv()
+        public void WriteFolders(List<Folder> folders)
         {
-            List<ImportNewAssetsDirectoriesDefinition> result = this.storageService.ReadFromCsv(
-                this.importsDataFilePath,
-                r => new ImportNewAssetsDirectoriesDefinition
-                {
-                    SourceDirectory = r[0],
-                    DestinationDirectory = r[1],
-                    IncludeSubFolders = bool.Parse(r[2])
-                });
+            DataTable table = new DataTable("Folder");
+            table.Columns.Add("FolderId");
+            table.Columns.Add("Path");
+            
+            foreach (Folder folder in folders)
+            {
+                DataRow row = table.NewRow();
+                row["FolderId"] = folder.FolderId;
+                row["Path"] = folder.Path;
+                table.Rows.Add(row);
+            }
 
-            return result;
+            this.database.WriteDataTable(table);
         }
 
-        public void WriteFoldersToCsvFile(List<Folder> folders)
+        public void WriteAssets(List<Asset> assets)
         {
-            this.storageService.WriteToCsvFile(
-                this.foldersDataFilePath,
-                folders,
-                new string[]
-                {
-                    nameof(Folder.FolderId),
-                    nameof(Folder.Path)
-                },
-                f => new object[]
-                {
-                    f.FolderId,
-                    f.Path
-                });
+            DataTable table = new DataTable("Asset");
+            table.Columns.Add("FolderId");
+            table.Columns.Add("FileName");
+            table.Columns.Add("FileSize");
+            table.Columns.Add("ImageRotation");
+            table.Columns.Add("PixelWidth");
+            table.Columns.Add("PixelHeight");
+            table.Columns.Add("ThumbnailPixelWidth");
+            table.Columns.Add("ThumbnailPixelHeight");
+            table.Columns.Add("ThumbnailCreationDateTime");
+            table.Columns.Add("Hash");
+
+            foreach (Asset asset in assets)
+            {
+                DataRow row = table.NewRow();
+                row["FolderId"] = asset.FolderId;
+                row["FileName"] = asset.FileName;
+                row["FileSize"] = asset.FileSize;
+                row["ImageRotation"] = asset.ImageRotation;
+                row["PixelWidth"] = asset.PixelWidth;
+                row["PixelHeight"] = asset.PixelHeight;
+                row["ThumbnailPixelWidth"] = asset.ThumbnailPixelWidth;
+                row["ThumbnailPixelHeight"] = asset.ThumbnailPixelHeight;
+                row["ThumbnailCreationDateTime"] = asset.ThumbnailCreationDateTime;
+                row["Hash"] = asset.Hash;
+                table.Rows.Add(row);
+            }
+
+            this.database.WriteDataTable(table);
         }
 
-        public void WriteAssetsToCsvFile(List<Asset> assets)
+        public void WriteImports(List<ImportNewAssetsDirectoriesDefinition> imports)
         {
-            this.storageService.WriteToCsvFile(
-                this.assetsDataFilePath,
-                assets,
-                new string[]
-                {
-                    nameof(Asset.FolderId),
-                    nameof(Asset.FileName),
-                    nameof(Asset.FileSize),
-                    nameof(Asset.ImageRotation),
-                    nameof(Asset.PixelWidth),
-                    nameof(Asset.PixelHeight),
-                    nameof(Asset.ThumbnailPixelWidth),
-                    nameof(Asset.ThumbnailPixelHeight),
-                    nameof(Asset.ThumbnailCreationDateTime),
-                    nameof(Asset.Hash)
-                },
-                a => new object[]
-                {
-                    a.FolderId,
-                    a.FileName,
-                    a.FileSize,
-                    a.ImageRotation,
-                    a.PixelWidth,
-                    a.PixelHeight,
-                    a.ThumbnailPixelWidth,
-                    a.ThumbnailPixelHeight,
-                    a.ThumbnailCreationDateTime,
-                    a.Hash
-                });
-        }
+            DataTable table = new DataTable("Import");
+            table.Columns.Add("SourceDirectory");
+            table.Columns.Add("DestinationDirectory");
+            table.Columns.Add("IncludeSubFolders");
 
-        public void WriteImportsToCsvFile(List<ImportNewAssetsDirectoriesDefinition> imports)
-        {
-            this.storageService.WriteToCsvFile(
-                this.importsDataFilePath,
-                imports,
-                new string[]
-                {
-                    nameof(ImportNewAssetsDirectoriesDefinition.SourceDirectory),
-                    nameof(ImportNewAssetsDirectoriesDefinition.DestinationDirectory),
-                    nameof(ImportNewAssetsDirectoriesDefinition.IncludeSubFolders)
-                },
-                i => new object[]
-                {
-                    i.SourceDirectory,
-                    i.DestinationDirectory,
-                    i.IncludeSubFolders
-                });
+            foreach (ImportNewAssetsDirectoriesDefinition import in imports)
+            {
+                DataRow row = table.NewRow();
+                row["SourceDirectory"] = import.SourceDirectory;
+                row["DestinationDirectory"] = import.DestinationDirectory;
+                row["IncludeSubFolders"] = import.IncludeSubFolders;
+                table.Rows.Add(row);
+            }
+
+            this.database.WriteDataTable(table);
         }
 
         public bool FolderHasThumbnails(Folder folder)
         {
-            string thumbnailsFilePath = this.storageService.ResolveBlobFilePath(dataDirectory, folder.ThumbnailsFilename);
+            string thumbnailsFilePath = this.database.ResolveBlobFilePath(dataDirectory, folder.ThumbnailsFilename);
             return File.Exists(thumbnailsFilePath);
         }
 
         protected virtual Dictionary<string, byte[]> GetThumbnails(string thumbnailsFileName, out bool isNewFile)
         {
             isNewFile = false;
-            string thumbnailsFilePath = this.storageService.ResolveBlobFilePath(dataDirectory, thumbnailsFileName);
-            Dictionary<string, byte[]> thumbnails = (Dictionary<string, byte[]>)this.storageService.ReadFromBinaryFile(thumbnailsFilePath);
-
+            Dictionary<string, byte[]> thumbnails = (Dictionary<string, byte[]>)this.database.ReadBlob(thumbnailsFileName);
+            
             if (thumbnails == null)
             {
                 thumbnails = new Dictionary<string, byte[]>();
@@ -253,8 +309,7 @@ namespace JPPhotoManager.Infrastructure
 
         private void SaveThumbnails(Dictionary<string, byte[]> thumbnails, string thumbnailsFileName)
         {
-            string thumbnailsFilePath = this.storageService.ResolveBlobFilePath(dataDirectory, thumbnailsFileName);
-            this.storageService.WriteToBinaryFile(thumbnails, thumbnailsFilePath);
+            this.database.WriteBlob(thumbnails, thumbnailsFileName);
         }
 
         public Asset[] GetAssets(string directory)

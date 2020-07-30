@@ -89,7 +89,7 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private void SaveButton_MouseLeftButtonDown(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -106,7 +106,7 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        private async void ImportButton_Click(object sender, RoutedEventArgs e)
+        private async void ImportButton_MouseLeftButtonDown(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -124,7 +124,7 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        private void ViewResultsButton_Click(object sender, RoutedEventArgs e)
+        private void ViewResultsButton_MouseLeftButtonDown(object sender, RoutedEventArgs e)
         {
             try
             {

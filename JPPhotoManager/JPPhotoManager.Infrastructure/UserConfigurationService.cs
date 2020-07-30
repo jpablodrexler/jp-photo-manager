@@ -154,20 +154,5 @@ namespace JPPhotoManager.Infrastructure
         {
             return this.configuration.GetValue<int>(CATALOG_COOLDOWN_MINUTES);
         }
-
-        public string GetAssetsDataFilePath()
-        {
-            return this.configuration.GetValue<string>(ASSETS_DATA_FILE_PATH);
-        }
-
-        public string GetFoldersDataFilePath()
-        {
-            return this.configuration.GetValue<string>(FOLDERS_DATA_FILE_PATH);
-        }
-
-        public string GetImportsDataFilePath()
-        {
-            return this.configuration.GetValue<string>(IMPORTS_DATA_FILE_PATH);
-        }
     }
 }

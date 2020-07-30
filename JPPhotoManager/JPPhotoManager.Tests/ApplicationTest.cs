@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using CsvPortableDatabase;
 using FluentAssertions;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
@@ -13,44 +14,20 @@ namespace JPPhotoManager.Tests
     public class ApplicationTest
     {
         private string dataDirectory;
-        private string assetsDataFilePath;
-        private string foldersDataFilePath;
-        private string importsDataFilePath;
         private IConfigurationRoot configuration;
 
         public ApplicationTest()
         {
             dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTest).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
-            assetsDataFilePath = Path.Combine(dataDirectory, $"asset.{Guid.NewGuid()}.db");
-            foldersDataFilePath = Path.Combine(dataDirectory, $"folder.{Guid.NewGuid()}.db");
-            importsDataFilePath = Path.Combine(dataDirectory, $"import.{Guid.NewGuid()}.db");
 
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
-                .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
-                .MockGetValue("appsettings:CatalogBatchSize", "100")
-                .MockGetValue("appsettings:AssetsDataFilePath", assetsDataFilePath)
-                .MockGetValue("appsettings:FoldersDataFilePath", foldersDataFilePath)
-                .MockGetValue("appsettings:ImportsDataFilePath", importsDataFilePath);
-
+                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, Guid.NewGuid().ToString()))
+                .MockGetValue("appsettings:CatalogBatchSize", "100");
+                
             configuration = configurationMock.Object;
-
-            if (File.Exists(assetsDataFilePath))
-            {
-                File.Delete(assetsDataFilePath);
-            }
-
-            if (File.Exists(foldersDataFilePath))
-            {
-                File.Delete(foldersDataFilePath);
-            }
-
-            if (File.Exists(importsDataFilePath))
-            {
-                File.Delete(importsDataFilePath);
-            }
         }
 
         [Fact]
@@ -157,9 +134,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetDuplicatedAssetsWithDuplicatesTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             Folder folder = repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -194,9 +172,12 @@ namespace JPPhotoManager.Tests
             Assert.True(File.Exists(imagePath));
             Asset duplicatedAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2 duplicated.jpg");
 
+            Console.WriteLine("database.DataDirectory: " + database.DataDirectory);
+            Console.WriteLine("database.Separator: " + database.Separator);
+
             repository.SaveCatalog(folder);
 
-            repository = new AssetRepository(storageService, userConfigurationService);
+            repository = new AssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             catalogAssetsService = new CatalogAssetsService(
@@ -237,9 +218,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetDuplicatedAssetsWithoutDuplicatesTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -281,9 +263,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetDuplicatedAssetsWithInexistingImageTest1()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -337,9 +320,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetDuplicatedAssetsWithInexistingImageTest2()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             Folder folder = repository.AddFolder(dataDirectory);
 
             CatalogAssetsService catalogAssetsService = new CatalogAssetsService(
@@ -388,9 +372,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetDuplicatedAssetsWithDuplicatesHashCollisionWithDuplicatedTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             IDirectoryComparer directoryComparer = new DirectoryComparer();
             Folder folder = repository.AddFolder(dataDirectory);
 
@@ -431,7 +416,7 @@ namespace JPPhotoManager.Tests
 
             repository.SaveCatalog(folder);
 
-            repository = new AssetRepository(storageService, userConfigurationService);
+            repository = new AssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             catalogAssetsService = new CatalogAssetsService(
@@ -471,9 +456,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetDuplicatedAssetsWithDuplicatesHashCollisionWithNoDuplicatedTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             Mock<IAssetHashCalculatorService> hashCalculator = new Mock<IAssetHashCalculatorService>();
@@ -514,9 +500,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void AddAssetsToNonExistingFolderAddsFolderToCatalogTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(storageService, userConfigurationService);
+            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
             IDirectoryComparer directoryComparer = new DirectoryComparer();
             Folder folder = new Folder { FolderId = "1", Path = "C:\\Inexistent Folder" };
 
@@ -540,9 +527,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetDuplicatedAssetsWithDuplicatesThumbnailNotFoundTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            UnencapsulatedAssetRepository repository = new UnencapsulatedAssetRepository(storageService, userConfigurationService);
+            UnencapsulatedAssetRepository repository = new UnencapsulatedAssetRepository(database, storageService, userConfigurationService);
             IDirectoryComparer directoryComparer = new DirectoryComparer();
             Folder folder = repository.AddFolder(dataDirectory);
 
@@ -585,7 +573,7 @@ namespace JPPhotoManager.Tests
             repository.RemoveThumbnail(folder.Path, "Image 2 duplicated.jpg");
             repository.SaveCatalog(folder);
 
-            repository = new UnencapsulatedAssetRepository(storageService, userConfigurationService);
+            repository = new UnencapsulatedAssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             catalogAssetsService = new CatalogAssetsService(
@@ -622,9 +610,10 @@ namespace JPPhotoManager.Tests
         [Fact]
         public void GetAssetsWithThumbnailNotFoundTest()
         {
+            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
             IStorageService storageService = new StorageService(userConfigurationService);
-            UnencapsulatedAssetRepository repository = new UnencapsulatedAssetRepository(storageService, userConfigurationService);
+            UnencapsulatedAssetRepository repository = new UnencapsulatedAssetRepository(database, storageService, userConfigurationService);
             IDirectoryComparer directoryComparer = new DirectoryComparer();
             Folder folder = repository.AddFolder(dataDirectory);
             Mock<IAssetHashCalculatorService> hashCalculator = new Mock<IAssetHashCalculatorService>();
@@ -665,7 +654,7 @@ namespace JPPhotoManager.Tests
             repository.RemoveThumbnail(folder.Path, "Image 2 duplicated.jpg");
             repository.SaveCatalog(folder);
 
-            repository = new UnencapsulatedAssetRepository(storageService, userConfigurationService);
+            repository = new UnencapsulatedAssetRepository(database, storageService, userConfigurationService);
             repository.AddFolder(dataDirectory);
 
             catalogAssetsService = new CatalogAssetsService(
@@ -702,14 +691,17 @@ namespace JPPhotoManager.Tests
 
     class UnencapsulatedAssetRepository : AssetRepository
     {
-        internal UnencapsulatedAssetRepository(IStorageService storageService, IUserConfigurationService userConfigurationService) : base(storageService, userConfigurationService)
+        internal UnencapsulatedAssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService) : base(database, storageService, userConfigurationService)
         {
 
         }
 
         internal void RemoveThumbnail(string directoryName, string fileName)
         {
-            Thumbnails[directoryName].Remove(fileName);
+            if (Thumbnails.ContainsKey(directoryName) && Thumbnails[directoryName].ContainsKey(fileName))
+            {
+                Thumbnails[directoryName].Remove(fileName);
+            }
         }
     }
 }

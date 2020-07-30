@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CsvPortableDatabase\CsvPortableDatabase.csproj" />
     <ProjectReference Include="..\JPPhotoManager.Domain\JPPhotoManager.Domain.csproj" />
   </ItemGroup>
 

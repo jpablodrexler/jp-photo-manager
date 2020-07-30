@@ -56,9 +56,9 @@
                 </DataGrid.Columns>
             </DataGrid>
         </DockPanel>
-        <Label Grid.Row="1" Grid.Column="1" Visibility="{Binding InputVisible}" IsEnabled="{Binding CanConfigure}" Content="Save" Style="{StaticResource ButtonStyle}" MouseLeftButtonDown="SaveButton_Click" Margin="10"/>
-        <Label Grid.Row="1" Grid.Column="2" Visibility="{Binding InputVisible}" IsEnabled="{Binding CanConfigure}" Content="Import" Style="{StaticResource ButtonStyle}" MouseLeftButtonDown="ImportButton_Click" Margin="10"/>
-        <Label Grid.Row="1" Grid.Column="3" Visibility="{Binding InputVisible}" IsEnabled="{Binding CanViewResults}" Content="View Results" Style="{StaticResource ButtonStyle}" MouseLeftButtonDown="ViewResultsButton_Click" Margin="10"/>
+        <Label Grid.Row="1" Grid.Column="1" Visibility="{Binding InputVisible}" IsEnabled="{Binding CanConfigure}" Content="Save" Style="{StaticResource ButtonStyle}" MouseLeftButtonDown="SaveButton_MouseLeftButtonDown" Margin="10"/>
+        <Label Grid.Row="1" Grid.Column="2" Visibility="{Binding InputVisible}" IsEnabled="{Binding CanConfigure}" Content="Import" Style="{StaticResource ButtonStyle}" MouseLeftButtonDown="ImportButton_MouseLeftButtonDown" Margin="10"/>
+        <Label Grid.Row="1" Grid.Column="3" Visibility="{Binding InputVisible}" IsEnabled="{Binding CanViewResults}" Content="View Results" Style="{StaticResource ButtonStyle}" MouseLeftButtonDown="ViewResultsButton_MouseLeftButtonDown" Margin="10"/>
         <ListBox Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" ItemsSource="{Binding StatusMessages}" Visibility="{Binding InputVisible}" Margin="10" Foreground="#FFFFFFFF" Background="#FF3C3C3C"/>
         <DockPanel Grid.Row="0" Grid.Column="0" Grid.RowSpan="3" Grid.ColumnSpan="4" Visibility="{Binding ResultsVisible}">
             <Label Content="Results" Margin="10 0 0 0" Foreground="#FFFFFFFF" Background="#FF3C3C3C" DockPanel.Dock="Top"/>

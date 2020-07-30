@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Reflection;
 
 namespace JPPhotoManager.Domain
 {
@@ -17,8 +12,5 @@ namespace JPPhotoManager.Domain
         string GetApplicationDataFolder();
         int GetCatalogBatchSize();
         int GetCatalogCooldownMinutes();
-        string GetAssetsDataFilePath();
-        string GetFoldersDataFilePath();
-        string GetImportsDataFilePath();
     }
 }

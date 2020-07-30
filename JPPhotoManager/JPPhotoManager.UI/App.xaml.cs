@@ -1,4 +1,5 @@
-﻿using JPPhotoManager.Domain;
+﻿using CsvPortableDatabase;
+using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using JPPhotoManager.UI.ViewModels;
 using JPPhotoManager.UI.Windows;
@@ -56,6 +57,7 @@ namespace JPPhotoManager.UI
             IConfigurationRoot configuration = builder.Build();
 
             services.AddSingleton(configuration);
+            services.AddSingleton<IDatabase, Database>();
             services.AddSingleton<IDirectoryComparer, DirectoryComparer>();
             services.AddSingleton<IUserConfigurationService, UserConfigurationService>();
             services.AddSingleton<IStorageService, StorageService>();

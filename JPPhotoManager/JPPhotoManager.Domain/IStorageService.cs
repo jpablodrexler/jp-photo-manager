@@ -10,17 +10,10 @@ namespace JPPhotoManager.Domain
         string GetParentDirectory(string directoryPath);
         List<DirectoryInfo> GetSubDirectories(string directoryPath);
         string ResolveDataDirectory();
-        string ResolveTableFilePath(string dataDirectory, string entityName);
-        string ResolveBlobFilePath(string dataDirectory, string thumbnailsFileName);
-        string GetTablesDirectory(string dataDirectory);
-        string GetBlobsDirectory(string dataDirectory);
         void CreateDirectory(string directory);
         T ReadObjectFromJson<T>(string jsonFilePath);
         void WriteObjectToJson(object anObject, string jsonFilePath);
-        List<T> ReadFromCsv<T>(string dataFilePath, Func<string[], T> mappingFunc);
         void WriteToCsvFile<T>(string dataFilePath, List<T> records, string[] headers, Func<T, object[]> mappingFunc);
-        object ReadFromBinaryFile(string binaryFilePath);
-        void WriteToBinaryFile(object anObject, string binaryFilePath);
         void DeleteFile(string directory, string fileName);
         string[] GetFileNames(string directory);
         byte[] GetFileBytes(string filePath);

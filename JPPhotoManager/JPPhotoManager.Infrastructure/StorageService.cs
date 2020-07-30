@@ -12,7 +12,6 @@ namespace JPPhotoManager.Infrastructure
 {
     public class StorageService : IStorageService
     {
-        private const string DATA_FILE_FORMAT = "{0}.db";
         private readonly IUserConfigurationService userConfigurationService;
 
         public StorageService(IUserConfigurationService userConfigurationService)
@@ -33,28 +32,6 @@ namespace JPPhotoManager.Infrastructure
         public string ResolveDataDirectory()
         {
             return userConfigurationService.GetApplicationDataFolder();
-        }
-
-        public string ResolveTableFilePath(string dataDirectory, string entityName)
-        {
-            dataDirectory = !string.IsNullOrEmpty(dataDirectory) ? dataDirectory : string.Empty;
-            string fileName = string.Format(DATA_FILE_FORMAT, entityName);
-            return Path.Combine(GetTablesDirectory(dataDirectory), fileName);
-        }
-
-        public string ResolveBlobFilePath(string dataDirectory, string thumbnailsFileName)
-        {
-            return Path.Combine(GetBlobsDirectory(dataDirectory), thumbnailsFileName);
-        }
-
-        public string GetTablesDirectory(string dataDirectory)
-        {
-            return Path.Combine(dataDirectory, "Tables");
-        }
-
-        public string GetBlobsDirectory(string dataDirectory)
-        {
-            return Path.Combine(dataDirectory, "Blobs");
         }
 
         public void CreateDirectory(string directory)
@@ -90,33 +67,6 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        public List<T> ReadFromCsv<T>(string dataFilePath, Func<string[], T> mappingFunc)
-        {
-            List<T> result = new List<T>();
-            var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
-
-            using (StreamReader reader = new StreamReader(dataFilePath))
-            {
-                string line = reader.ReadLine();
-                bool hasRecord;
-
-                do
-                {
-                    line = reader.ReadLine();
-                    hasRecord = !string.IsNullOrEmpty(line);
-
-                    if (hasRecord)
-                    {
-                        string[] fields = line.Split(separator);
-                        result.Add(mappingFunc(fields));
-                    }
-                }
-                while (hasRecord);
-            }
-            
-            return result;
-        }
-
         public void WriteToCsvFile<T>(string dataFilePath, List<T> records, string[] headers, Func<T, object[]> mappingFunc)
         {
             var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
@@ -134,31 +84,6 @@ namespace JPPhotoManager.Infrastructure
 
                 writer.Flush();
                 writer.Close();
-            }
-        }
-
-        public object ReadFromBinaryFile(string binaryFilePath)
-        {
-            object result = null;
-
-            if (File.Exists(binaryFilePath))
-            {
-                using (FileStream fileStream = new FileStream(binaryFilePath, FileMode.Open))
-                {
-                    BinaryFormatter binaryFormatter = new BinaryFormatter();
-                    result = binaryFormatter.Deserialize(fileStream);
-                }
-            }
-
-            return result;
-        }
-
-        public void WriteToBinaryFile(object anObject, string binaryFilePath)
-        {
-            using (FileStream fileStream = new FileStream(binaryFilePath, FileMode.Create))
-            {
-                BinaryFormatter binaryFormatter = new BinaryFormatter();
-                binaryFormatter.Serialize(fileStream, anObject);
             }
         }
 
