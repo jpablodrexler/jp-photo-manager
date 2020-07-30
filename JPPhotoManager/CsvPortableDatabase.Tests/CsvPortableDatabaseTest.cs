@@ -1,10 +1,9 @@
-using CsvPortableDatabase;
 using FluentAssertions;
 using System.Data;
 using System.IO;
 using Xunit;
 
-namespace CsvDb.Tests
+namespace CsvPortableDatabase.Tests
 {
     public class CsvPortableDatabaseTest
     {
