@@ -11,6 +11,7 @@ namespace JPPhotoManager.Domain
             return fileNames.Except(cataloguedAssets.Select(ca => ca.FileName))
                             .Where(f => f.EndsWith(".jpg", StringComparison.InvariantCultureIgnoreCase)
                                 || f.EndsWith(".jpeg", StringComparison.InvariantCultureIgnoreCase)
+                                || f.EndsWith(".jfif", StringComparison.InvariantCultureIgnoreCase)
                                 || f.EndsWith(".png", StringComparison.InvariantCultureIgnoreCase)
                                 || f.EndsWith(".gif", StringComparison.InvariantCultureIgnoreCase))
                             .ToArray();
@@ -21,6 +22,7 @@ namespace JPPhotoManager.Domain
             return sourceFileNames.Except(destinationFileNames)
                             .Where(f => f.EndsWith(".jpg", StringComparison.InvariantCultureIgnoreCase)
                                 || f.EndsWith(".jpeg", StringComparison.InvariantCultureIgnoreCase)
+                                || f.EndsWith(".jfif", StringComparison.InvariantCultureIgnoreCase)
                                 || f.EndsWith(".png", StringComparison.InvariantCultureIgnoreCase)
                                 || f.EndsWith(".gif", StringComparison.InvariantCultureIgnoreCase))
                             .ToArray();
