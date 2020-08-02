@@ -22,6 +22,5 @@
         </Rectangle>
         <Image x:Name="AppIcon" HorizontalAlignment="Left" Margin="40,0,0,0" Source="/Windows/AppIcon.png" Stretch="Fill" VerticalAlignment="Top" Width="128" Height="128" RenderTransformOrigin="1.599,0.677"/>
         <Label x:Name="confirmButton" Style="{StaticResource ButtonStyle}" MouseLeftButtonDown="ConfirmButton_MouseLeftButtonDown" Content="Got it!" HorizontalAlignment="Right" Height="30" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="100"/>
-
     </Grid>
 </Window>

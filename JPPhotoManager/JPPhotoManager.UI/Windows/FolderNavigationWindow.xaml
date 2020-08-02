@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:JPPhotoManager.UI.Controls"
         mc:Ignorable="d"
         Title="Select destination folder" Height="400" Width="500">
-    <Grid>
+    <Grid Background="#FF3C3C3C">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
@@ -15,7 +15,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <local:FolderNavigationControl x:Name="folderTreeView" Grid.Column="0" Grid.Row="0" FolderSelected="FolderTreeView_FolderSelected"/>
+        <local:FolderNavigationControl x:Name="folderTreeView" Grid.Column="0" Grid.Row="0" FolderSelected="FolderTreeView_FolderSelected" Margin="5"/>
         <Grid Grid.Row="1" Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -24,12 +24,12 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Label Grid.Row="0" Grid.Column="0" Content="Selected path:" Width="100"/>
-            <TextBox Grid.Row="0" Grid.Column="1" x:Name="selectedPathTextBox" HorizontalAlignment="Stretch" />
+            <Label Grid.Row="0" Grid.Column="0" Content="Selected path:" Foreground="#FFFFFFFF" Width="100" Margin="5"/>
+            <TextBox Grid.Row="0" Grid.Column="1" x:Name="selectedPathTextBox" HorizontalAlignment="Stretch" Margin="5"/>
         </Grid>
         <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Confirm" IsEnabled="{Binding CanConfirm}" Click="Confirm_Click" Width="100" Margin="5" />
-            <Button Content="Cancel" Click="Cancel_Click" Width="100" Margin="5"/>
+            <Label Content="Confirm" Style="{StaticResource ButtonStyle}" IsEnabled="{Binding CanConfirm}" MouseLeftButtonDown="Confirm_MouseLeftButtonDown" Width="100" Margin="5"/>
+            <Label Content="Cancel" Style="{StaticResource ButtonStyle}" MouseLeftButtonDown="Cancel_MouseLeftButtonDown" Width="100" Margin="5"/>
         </StackPanel>
     </Grid>
 </Window>

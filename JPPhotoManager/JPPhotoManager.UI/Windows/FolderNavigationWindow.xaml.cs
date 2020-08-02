@@ -41,7 +41,7 @@ namespace JPPhotoManager.UI.Windows
             this.ViewModel.SelectedFolder = new Domain.Folder { Path = selectedPathTextBox.Text };
         }
 
-        private void Confirm_Click(object sender, RoutedEventArgs e)
+        private void Confirm_MouseLeftButtonDown(object sender, RoutedEventArgs e)
         {
             // TODO: SHOULD VALIDATE IF THE PATH IS VALID.
             this.ViewModel.SelectedFolder = new Domain.Folder { Path = selectedPathTextBox.Text };
@@ -49,7 +49,7 @@ namespace JPPhotoManager.UI.Windows
             this.Close();
         }
 
-        private void Cancel_Click(object sender, RoutedEventArgs e)
+        private void Cancel_MouseLeftButtonDown(object sender, RoutedEventArgs e)
         {
             this.ViewModel.HasConfirmed = false;
             this.Close();
