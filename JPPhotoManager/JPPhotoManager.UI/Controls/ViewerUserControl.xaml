@@ -18,7 +18,11 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <ContentControl Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" MouseDoubleClick="ContentControl_MouseDoubleClick">
-            <Image x:Name="image" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.EdgeMode="Aliased"/>
+            <Image x:Name="image" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.EdgeMode="Aliased">
+                <Image.Effect>
+                    <DropShadowEffect/>
+                </Image.Effect>
+            </Image>
         </ContentControl>
         <Button x:Name="previousButton" Grid.Row="1" Grid.Column="0" Content="←" FontSize="48" Click="previousButton_Click" Foreground="White" Background="{x:Null}" BorderBrush="{x:Null}" FontFamily="Calibri"/>
         <Button x:Name="nextButton" Grid.Row="1" Grid.Column="2" Content="→" FontSize="48" Click="nextButton_Click" Foreground="White" Background="{x:Null}" BorderBrush="{x:Null}" FontFamily="Calibri"/>
