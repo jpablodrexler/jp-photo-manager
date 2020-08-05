@@ -13,10 +13,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JPPhotoManager.UI", "JPPhot
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JPPhotoManager.Tests", "JPPhotoManager.Tests\JPPhotoManager.Tests.csproj", "{BBF3A5D4-6BDC-4ABD-84D6-F7ED6CBCAA2F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsvPortableDatabase", "CsvPortableDatabase\CsvPortableDatabase.csproj", "{ACD5C8A7-9BF4-45E1-AB5E-761343977CD5}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CsvPortableDatabase.Tests", "CsvPortableDatabase.Tests\CsvPortableDatabase.Tests.csproj", "{29EF85F1-9BBD-4674-9BD4-1B5306B09E11}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,14 +39,6 @@ Global
 		{BBF3A5D4-6BDC-4ABD-84D6-F7ED6CBCAA2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BBF3A5D4-6BDC-4ABD-84D6-F7ED6CBCAA2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BBF3A5D4-6BDC-4ABD-84D6-F7ED6CBCAA2F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{ACD5C8A7-9BF4-45E1-AB5E-761343977CD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{ACD5C8A7-9BF4-45E1-AB5E-761343977CD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{ACD5C8A7-9BF4-45E1-AB5E-761343977CD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{ACD5C8A7-9BF4-45E1-AB5E-761343977CD5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{29EF85F1-9BBD-4674-9BD4-1B5306B09E11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{29EF85F1-9BBD-4674-9BD4-1B5306B09E11}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{29EF85F1-9BBD-4674-9BD4-1B5306B09E11}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{29EF85F1-9BBD-4674-9BD4-1B5306B09E11}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
