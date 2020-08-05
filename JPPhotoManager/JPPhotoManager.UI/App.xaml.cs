@@ -1,5 +1,4 @@
-﻿using CsvPortableDatabase;
-using JPPhotoManager.Domain;
+﻿using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using JPPhotoManager.UI.ViewModels;
 using JPPhotoManager.UI.Windows;
@@ -7,6 +6,7 @@ using log4net;
 using log4net.Config;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SimplePortableDatabase;
 using System;
 using System.IO;
 using System.Reflection;

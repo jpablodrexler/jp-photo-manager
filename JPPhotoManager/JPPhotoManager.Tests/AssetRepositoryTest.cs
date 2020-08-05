@@ -1,9 +1,9 @@
-﻿using CsvPortableDatabase;
-using FluentAssertions;
+﻿using FluentAssertions;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Moq;
+using SimplePortableDatabase;
 using System;
 using System.IO;
 using Xunit;

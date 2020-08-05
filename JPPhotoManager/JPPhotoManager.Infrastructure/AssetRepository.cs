@@ -1,6 +1,6 @@
-using CsvPortableDatabase;
 using JPPhotoManager.Domain;
 using log4net;
+using SimplePortableDatabase;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -40,7 +40,8 @@ namespace JPPhotoManager.Infrastructure
             {
                 this.dataDirectory = this.storageService.ResolveDataDirectory();
                 var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
-                this.database.Initialize(this.dataDirectory, separator);
+                var separatorChar = separator.ToCharArray().First();
+                this.database.Initialize(this.dataDirectory, separatorChar);
                 this.ReadCatalog();
 
                 if (this.AssetCatalog == null)
