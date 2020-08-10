@@ -47,7 +47,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="SimplePortableDatabase" Version="0.7.3.1" />
+    <PackageReference Include="SimplePortableDatabase" Version="0.8.0" />
   </ItemGroup>
 
   <ItemGroup>
