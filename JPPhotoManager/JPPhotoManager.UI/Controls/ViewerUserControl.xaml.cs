@@ -36,7 +36,7 @@ namespace JPPhotoManager.UI.Controls
             get { return (ApplicationViewModel)this.DataContext; }
         }
 
-        private void nextButton_Click(object sender, RoutedEventArgs e)
+        private void nextButton_MouseLeftButtonDown(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -49,7 +49,7 @@ namespace JPPhotoManager.UI.Controls
             }
         }
 
-        private void previousButton_Click(object sender, RoutedEventArgs e)
+        private void previousButton_MouseLeftButtonDown(object sender, RoutedEventArgs e)
         {
             try
             {
