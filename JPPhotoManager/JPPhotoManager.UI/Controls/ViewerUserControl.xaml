@@ -3,14 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:JPPhotoManager"
+             xmlns:local="clr-namespace:JPPhotoManager.UI"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Background="#FF3C3C3C">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="48"/>
+            <ColumnDefinition Width="50"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="48"/>
+            <ColumnDefinition Width="50"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -24,7 +24,35 @@
                 </Image.Effect>
             </Image>
         </ContentControl>
-        <Button x:Name="previousButton" Grid.Row="1" Grid.Column="0" Content="←" FontSize="48" Click="previousButton_Click" Foreground="White" Background="{x:Null}" BorderBrush="{x:Null}" FontFamily="Calibri"/>
-        <Button x:Name="nextButton" Grid.Row="1" Grid.Column="2" Content="→" FontSize="48" Click="nextButton_Click" Foreground="White" Background="{x:Null}" BorderBrush="{x:Null}" FontFamily="Calibri"/>
+        <Label x:Name="previousButton" Grid.Row="1" Grid.Column="0" FontSize="46" MouseLeftButtonDown="previousButton_MouseLeftButtonDown" Background="{x:Null}" BorderBrush="{x:Null}" FontFamily="Calibri">
+            <Label.Template>
+                <ControlTemplate>
+                    <Grid>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="←" Cursor="Hand" Foreground="White" Panel.ZIndex="1" Margin="5,5,0,0" />
+                        <Ellipse x:Name="BackgroundEllipse" Grid.Row="0" Grid.Column="0" Cursor="Hand" Height="45" Width="45" Fill="#FF3C3C3C" Panel.ZIndex="0"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="BackgroundEllipse" Property="Fill" Value="#AAAAAAAA" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Label.Template>
+        </Label>
+        <Label x:Name="nextButton" Grid.Row="1" Grid.Column="2" FontSize="46" MouseLeftButtonDown="nextButton_MouseLeftButtonDown" Background="{x:Null}" BorderBrush="{x:Null}" FontFamily="Calibri">
+            <Label.Template>
+                <ControlTemplate>
+                    <Grid>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="→" Cursor="Hand" Foreground="White" Panel.ZIndex="1" Margin="5,5,0,0" />
+                        <Ellipse x:Name="BackgroundEllipse" Grid.Row="0" Grid.Column="0" Cursor="Hand" Height="45" Width="45" Fill="#FF3C3C3C" Panel.ZIndex="0"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="BackgroundEllipse" Property="Fill" Value="#AAAAAAAA" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Label.Template>
+        </Label>
     </Grid>
 </UserControl>
