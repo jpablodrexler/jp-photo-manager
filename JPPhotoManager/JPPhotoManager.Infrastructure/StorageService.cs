@@ -29,6 +29,25 @@ namespace JPPhotoManager.Infrastructure
             return new DirectoryInfo(directoryPath).EnumerateDirectories().ToList();
         }
 
+        public List<DirectoryInfo> GetRecursiveSubDirectories(string directoryPath)
+        {
+            List<DirectoryInfo> result = new List<DirectoryInfo>();
+            GetRecursiveSubDirectories(directoryPath, result);
+
+            return result;
+        }
+
+        private void GetRecursiveSubDirectories(string directoryPath, List<DirectoryInfo> result)
+        {
+            List<DirectoryInfo> subdirs = GetSubDirectories(directoryPath);
+            result.AddRange(subdirs);
+
+            foreach (var dir in subdirs)
+            {
+                GetRecursiveSubDirectories(dir.FullName, result);
+            }
+        }
+
         public string ResolveDataDirectory()
         {
             return userConfigurationService.GetApplicationDataFolder();

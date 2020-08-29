@@ -125,6 +125,20 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
+        public void GetRecursiveSubDirectoriesTest()
+        {
+            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
+            string parentPath = Path.Combine(dataDirectory, "TestFolder");
+            List<DirectoryInfo> directories = storageService.GetRecursiveSubDirectories(parentPath);
+
+            directories.Should().HaveCount(4);
+            directories[0].FullName.Should().EndWith("\\TestHiddenSubFolder");
+            directories[1].FullName.Should().EndWith("\\TestSubFolder1");
+            directories[2].FullName.Should().EndWith("\\TestSubFolder2");
+            directories[3].FullName.Should().EndWith("\\TestSubFolder2\\TestSubFolder3");
+        }
+
+        [Fact]
         public void WriteReadJsonTest()
         {
             List<string> writtenList = new List<string> { "Value 1", "Value 2" };

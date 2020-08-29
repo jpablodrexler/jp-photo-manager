@@ -28,6 +28,7 @@
     <None Remove="TestFiles\TestFolder\TestHiddenSubFolder\EmptyFile.txt" />
     <None Remove="TestFiles\TestFolder\TestSubFolder2\EmptyFile.txt" />
     <None Remove="TestFiles\TestFolder\TestSubFolder1\EmptyFile.txt" />
+    <None Remove="TestFiles\TestFolder\TestSubFolder2\TestSubFolder3\EmptyFile.txt" />
   </ItemGroup>
 
   <ItemGroup>
@@ -78,6 +79,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="TestFiles\TestFolder\TestSubFolder1\EmptyFile.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestFiles\TestFolder\TestSubFolder2\TestSubFolder3\EmptyFile.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

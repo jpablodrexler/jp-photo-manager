@@ -404,6 +404,516 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
+        public void ImportNewImagesSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesSingleLevelWithoutSourceSubDirectories()
+        {
+            string sourceDirectory = @"C:\MyGame\Screenshots";
+            string destinationDirectory = @"C:\Images\MyGame";
+            string destinationSubDirectory1 = @"C:\Images\MyGame\SubDirectory1";
+            string destinationSubDirectory2 = @"C:\Images\MyGame\SubDirectory2";
+
+            string[] sourceFileNames = new string[]
+            {
+                "ExistingImage1.jpg",
+                "ExistingImage2.jpg",
+                "ExistingImage3.jpg",
+                "ExistingImage4.jpg",
+                "ExistingImage5.jpg",
+                "NewImage1.jpg",
+                "NewImage2.jpg",
+                "NewImage3.jpg"
+            };
+
+            string[] destinationFileNames = new string[]
+            {
+                "ExistingImage1.jpg"
+            };
+
+            string[] destinationSubDirectory1FileNames = new string[]
+            {
+                "ExistingImage2.jpg",
+                "ExistingImage3.jpg"
+            };
+
+            string[] destinationSubDirectory2FileNames = new string[]
+            {
+                "ExistingImage4.jpg",
+                "ExistingImage5.jpg"
+            };
+
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = sourceDirectory,
+                    DestinationDirectory = destinationDirectory
+                });
+
+            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
+            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+
+            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
+                .Returns(importConfiguration);
+
+            storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
+                .Returns(true);
+
+            storageServiceMock.Setup(s => s.FolderExists(destinationDirectory))
+                .Returns(true);
+
+            storageServiceMock.Setup(s => s.GetSubDirectories(destinationDirectory)).Returns(
+                new List<DirectoryInfo>
+                {
+                    new DirectoryInfo(destinationSubDirectory1),
+                    new DirectoryInfo(destinationSubDirectory2)
+                });
+
+            storageServiceMock.Setup(s => s.GetRecursiveSubDirectories(destinationDirectory)).Returns(
+                new List<DirectoryInfo>
+                {
+                    new DirectoryInfo(destinationSubDirectory1),
+                    new DirectoryInfo(destinationSubDirectory2)
+                });
+
+            storageServiceMock.Setup(s => s.GetFileNames(sourceDirectory))
+                .Returns(sourceFileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(destinationDirectory))
+                .Returns(destinationFileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(destinationSubDirectory1))
+                .Returns(destinationSubDirectory1FileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(destinationSubDirectory2))
+                .Returns(destinationSubDirectory2FileNames);
+
+            storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(true);
+
+            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+                repositoryMock.Object,
+                storageServiceMock.Object,
+                new DirectoryComparer());
+
+            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+
+            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+
+            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(destinationDirectory), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(destinationSubDirectory1), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(destinationSubDirectory2), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage3.jpg", @"C:\Images\MyGame\NewImage3.jpg"), Times.Once);
+            result.Should().ContainSingle();
+            result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
+            result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
+            result[0].ImportedImages.Should().Be(3);
+            result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            statusChanges.Should().HaveCount(3);
+            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'");
+            statusChanges[1].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'");
+            statusChanges[2].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'");
+        }
+
+        [Fact]
+        public void ImportNewImagesSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesMultipleLevelsWithoutSourceSubDirectories()
+        {
+            string sourceDirectory = @"C:\MyGame\Screenshots";
+            string destinationDirectory = @"C:\Images\MyGame";
+            string destinationSubDirectory1 = @"C:\Images\MyGame\SubDirectory1";
+            string destinationSubSubDirectory1 = @"C:\Images\MyGame\SubDirectory1\AnotherSubDirectory";
+            string destinationSubDirectory2 = @"C:\Images\MyGame\SubDirectory2";
+
+            string[] sourceFileNames = new string[]
+            {
+                "ExistingImage1.jpg",
+                "ExistingImage2.jpg",
+                "ExistingImage3.jpg",
+                "ExistingImage4.jpg",
+                "ExistingImage5.jpg",
+                "ExistingImage6.jpg",
+                "ExistingImage7.jpg",
+                "NewImage1.jpg",
+                "NewImage2.jpg",
+                "NewImage3.jpg"
+            };
+
+            string[] destinationFileNames = new string[]
+            {
+                "ExistingImage1.jpg"
+            };
+
+            string[] destinationSubDirectory1FileNames = new string[]
+            {
+                "ExistingImage2.jpg",
+                "ExistingImage3.jpg"
+            };
+
+            string[] destinationSubSubDirectory1FileNames = new string[]
+            {
+                "ExistingImage4.jpg",
+                "ExistingImage5.jpg"
+            };
+
+            string[] destinationSubDirectory2FileNames = new string[]
+            {
+                "ExistingImage6.jpg",
+                "ExistingImage7.jpg"
+            };
+
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = sourceDirectory,
+                    DestinationDirectory = destinationDirectory
+                });
+
+            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
+            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+
+            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
+                .Returns(importConfiguration);
+
+            storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
+                .Returns(true);
+
+            storageServiceMock.Setup(s => s.FolderExists(destinationDirectory))
+                .Returns(true);
+
+            storageServiceMock.Setup(s => s.GetSubDirectories(destinationDirectory)).Returns(
+                new List<DirectoryInfo>
+                {
+                    new DirectoryInfo(destinationSubDirectory1),
+                    new DirectoryInfo(destinationSubDirectory2)
+                });
+
+            storageServiceMock.Setup(s => s.GetSubDirectories(destinationSubDirectory1)).Returns(
+                new List<DirectoryInfo>
+                {
+                    new DirectoryInfo(destinationSubSubDirectory1)
+                });
+
+            storageServiceMock.Setup(s => s.GetRecursiveSubDirectories(destinationDirectory)).Returns(
+                new List<DirectoryInfo>
+                {
+                    new DirectoryInfo(destinationSubDirectory1),
+                    new DirectoryInfo(destinationSubSubDirectory1),
+                    new DirectoryInfo(destinationSubDirectory2)
+                });
+
+            storageServiceMock.Setup(s => s.GetFileNames(sourceDirectory))
+                .Returns(sourceFileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(destinationDirectory))
+                .Returns(destinationFileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(destinationSubDirectory1))
+                .Returns(destinationSubDirectory1FileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(destinationSubSubDirectory1))
+                .Returns(destinationSubSubDirectory1FileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(destinationSubDirectory2))
+                .Returns(destinationSubDirectory2FileNames);
+
+            storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(true);
+
+            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+                repositoryMock.Object,
+                storageServiceMock.Object,
+                new DirectoryComparer());
+
+            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+
+            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+
+            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(destinationDirectory), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(destinationSubDirectory1), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(destinationSubDirectory2), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage3.jpg", @"C:\Images\MyGame\NewImage3.jpg"), Times.Once);
+            result.Should().ContainSingle();
+            result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
+            result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
+            result[0].ImportedImages.Should().Be(3);
+            result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            statusChanges.Should().HaveCount(3);
+            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'");
+            statusChanges[1].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'");
+            statusChanges[2].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'");
+        }
+
+        [Fact]
+        public void ImportNewImagesSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesWithSourceSubDirectories()
+        {
+            string sourceDirectory = @"C:\MyGame\Screenshots";
+            string sourceSubDirectory = @"C:\MyGame\Screenshots\SubDirectory";
+            string destinationDirectory = @"C:\Images\MyGame";
+            string destinationSubDirectory1 = @"C:\Images\MyGame\SubDirectory1";
+            string destinationSubDirectory2 = @"C:\Images\MyGame\SubDirectory2";
+
+            string[] sourceFileNames = new string[]
+            {
+                "ExistingImage1.jpg",
+                "ExistingImage2.jpg",
+                "ExistingImage3.jpg",
+                "ExistingImage4.jpg",
+                "ExistingImage5.jpg",
+                "NewImage1.jpg",
+                "NewImage2.jpg",
+                "NewImage3.jpg"
+            };
+
+            string[] sourceSubDirectoryFileNames = new string[]
+            {
+                "NewImage4.jpg",
+                "NewImage5.jpg"
+            };
+
+            string[] destinationFileNames = new string[]
+            {
+                "ExistingImage1.jpg"
+            };
+
+            string[] destinationSubDirectory1FileNames = new string[]
+            {
+                "ExistingImage2.jpg",
+                "ExistingImage3.jpg"
+            };
+
+            string[] destinationSubDirectory2FileNames = new string[]
+            {
+                "ExistingImage4.jpg",
+                "ExistingImage5.jpg"
+            };
+
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = sourceDirectory,
+                    DestinationDirectory = destinationDirectory,
+                    IncludeSubFolders = true
+                });
+
+            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
+            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+
+            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
+                .Returns(importConfiguration);
+
+            storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
+                .Returns(true);
+
+            storageServiceMock.Setup(s => s.FolderExists(sourceSubDirectory))
+                .Returns(true);
+
+            storageServiceMock.Setup(s => s.FolderExists(destinationDirectory))
+                .Returns(true);
+
+            storageServiceMock.Setup(s => s.GetSubDirectories(sourceDirectory)).Returns(
+                new List<DirectoryInfo>
+                {
+                    new DirectoryInfo(sourceSubDirectory)
+                });
+
+            storageServiceMock.Setup(s => s.GetSubDirectories(sourceSubDirectory)).Returns(new List<DirectoryInfo>());
+
+            storageServiceMock.Setup(s => s.GetSubDirectories(destinationDirectory)).Returns(
+                new List<DirectoryInfo>
+                {
+                    new DirectoryInfo(destinationSubDirectory1),
+                    new DirectoryInfo(destinationSubDirectory2)
+                });
+
+            storageServiceMock.Setup(s => s.GetRecursiveSubDirectories(destinationDirectory)).Returns(
+                new List<DirectoryInfo>
+                {
+                    new DirectoryInfo(destinationSubDirectory1),
+                    new DirectoryInfo(destinationSubDirectory2)
+                });
+
+            storageServiceMock.Setup(s => s.GetFileNames(sourceDirectory))
+                .Returns(sourceFileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(sourceSubDirectory))
+                .Returns(sourceSubDirectoryFileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(destinationDirectory))
+                .Returns(destinationFileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(destinationSubDirectory1))
+                .Returns(destinationSubDirectory1FileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(destinationSubDirectory2))
+                .Returns(destinationSubDirectory2FileNames);
+
+            storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(true);
+
+            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+                repositoryMock.Object,
+                storageServiceMock.Object,
+                new DirectoryComparer());
+
+            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+
+            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+
+            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(sourceSubDirectory), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(destinationDirectory), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(destinationSubDirectory1), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(destinationSubDirectory2), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage3.jpg", @"C:\Images\MyGame\NewImage3.jpg"), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\SubDirectory\NewImage4.jpg", @"C:\Images\MyGame\SubDirectory\NewImage4.jpg"), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\SubDirectory\NewImage5.jpg", @"C:\Images\MyGame\SubDirectory\NewImage5.jpg"), Times.Once);
+            result.Should().HaveCount(2);
+            result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
+            result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
+            result[0].ImportedImages.Should().Be(3);
+            result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            result[1].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots\SubDirectory");
+            result[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame\SubDirectory");
+            result[1].ImportedImages.Should().Be(2);
+            result[1].Message.Should().Be(@"2 images imported from 'C:\MyGame\Screenshots\SubDirectory' to 'C:\Images\MyGame\SubDirectory'.");
+            statusChanges.Should().HaveCount(5);
+            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'");
+            statusChanges[1].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'");
+            statusChanges[2].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'");
+            statusChanges[3].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\SubDirectory\NewImage4.jpg' imported to 'C:\Images\MyGame\SubDirectory\NewImage4.jpg'");
+            statusChanges[4].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\SubDirectory\NewImage5.jpg' imported to 'C:\Images\MyGame\SubDirectory\NewImage5.jpg'");
+        }
+
+        [Fact]
+        public void ImportNewImagesSourceNotEmptyDestinationNotEmptyAllSourceImagesInTargetSubDirectories()
+        {
+            string sourceDirectory = @"C:\MyGame\Screenshots";
+            string destinationDirectory = @"C:\Images\MyGame";
+            string destinationSubDirectory1 = @"C:\Images\MyGame\SubDirectory1";
+            string destinationSubDirectory2 = @"C:\Images\MyGame\SubDirectory2";
+
+            string[] sourceFileNames = new string[]
+            {
+                "ExistingImage1.jpg",
+                "ExistingImage2.jpg",
+                "ExistingImage3.jpg",
+                "ExistingImage4.jpg",
+                "ExistingImage5.jpg"
+            };
+
+            string[] destinationFileNames = new string[]
+            {
+                "ExistingImage1.jpg"
+            };
+
+            string[] destinationSubDirectory1FileNames = new string[]
+            {
+                "ExistingImage2.jpg",
+                "ExistingImage3.jpg"
+            };
+
+            string[] destinationSubDirectory2FileNames = new string[]
+            {
+                "ExistingImage4.jpg",
+                "ExistingImage5.jpg"
+            };
+
+            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+
+            importConfiguration.Imports.Add(
+                new ImportNewAssetsDirectoriesDefinition
+                {
+                    SourceDirectory = sourceDirectory,
+                    DestinationDirectory = destinationDirectory
+                });
+
+            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
+            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+
+            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
+                .Returns(importConfiguration);
+
+            storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
+                .Returns(true);
+
+            storageServiceMock.Setup(s => s.FolderExists(destinationDirectory))
+                .Returns(true);
+
+            storageServiceMock.Setup(s => s.GetSubDirectories(destinationDirectory)).Returns(
+                new List<DirectoryInfo>
+                {
+                    new DirectoryInfo(destinationSubDirectory1),
+                    new DirectoryInfo(destinationSubDirectory2)
+                });
+
+            storageServiceMock.Setup(s => s.GetRecursiveSubDirectories(destinationDirectory)).Returns(
+                new List<DirectoryInfo>
+                {
+                    new DirectoryInfo(destinationSubDirectory1),
+                    new DirectoryInfo(destinationSubDirectory2)
+                });
+
+            storageServiceMock.Setup(s => s.GetFileNames(sourceDirectory))
+                .Returns(sourceFileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(destinationDirectory))
+                .Returns(destinationFileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(destinationSubDirectory1))
+                .Returns(destinationSubDirectory1FileNames);
+
+            storageServiceMock.Setup(s => s.GetFileNames(destinationSubDirectory2))
+                .Returns(destinationSubDirectory2FileNames);
+
+            storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(true);
+
+            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+                repositoryMock.Object,
+                storageServiceMock.Object,
+                new DirectoryComparer());
+
+            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+
+            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+
+            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(destinationDirectory), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(destinationSubDirectory1), Times.Once);
+            storageServiceMock.Verify(s => s.GetFileNames(destinationSubDirectory2), Times.Once);
+            storageServiceMock.Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+            result.Should().ContainSingle();
+            result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
+            result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
+            result[0].ImportedImages.Should().Be(0);
+            result[0].Message.Should().Be(@"No images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            statusChanges.Should().BeEmpty();
+        }
+
+        [Fact]
         public void ValidateAllValidDefinitionsTest()
         {
             ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();

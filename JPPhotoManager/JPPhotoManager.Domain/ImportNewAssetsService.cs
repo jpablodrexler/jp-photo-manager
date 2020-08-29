@@ -59,6 +59,7 @@ namespace JPPhotoManager.Domain
                     string[] sourceFileNames = this.storageService.GetFileNames(sourceDirectory);
                     string[] destinationFileNames = this.storageService.GetFileNames(destinationDirectory);
                     string[] newFileNames = this.directoryComparer.GetNewFileNames(sourceFileNames, destinationFileNames);
+                    newFileNames = GetFilesNotAlreadyInDestinationSubDirectories(newFileNames, destinationDirectory);
 
                     foreach (string newImage in newFileNames)
                     {
@@ -93,9 +94,12 @@ namespace JPPhotoManager.Domain
                     {
                         var subdirectories = this.storageService.GetSubDirectories(sourceDirectory);
 
-                        foreach (var subdir in subdirectories)
+                        if (subdirectories != null)
                         {
-                            this.Import(subdir.FullName, Path.Combine(destinationDirectory, subdir.Name), includeSubFolders, callback, resultList);
+                            foreach (var subdir in subdirectories)
+                            {
+                                this.Import(subdir.FullName, Path.Combine(destinationDirectory, subdir.Name), includeSubFolders, callback, resultList);
+                            }
                         }
                     }
                 }
@@ -110,6 +114,22 @@ namespace JPPhotoManager.Domain
                     resultList.Add(result);
                 }
             }
+        }
+
+        private string[] GetFilesNotAlreadyInDestinationSubDirectories(string[] newFileNames, string destinationDirectory)
+        {
+            List<DirectoryInfo> destinationSubDirectories = this.storageService.GetRecursiveSubDirectories(destinationDirectory);
+
+            if (destinationSubDirectories != null)
+            {
+                foreach (var dir in destinationSubDirectories)
+                {
+                    string[] destinationFileNames = this.storageService.GetFileNames(dir.FullName);
+                    newFileNames = this.directoryComparer.GetNewFileNames(newFileNames, destinationFileNames);
+                }
+            }
+
+            return newFileNames;
         }
     }
 }
