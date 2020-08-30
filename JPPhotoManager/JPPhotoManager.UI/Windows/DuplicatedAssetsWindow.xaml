@@ -19,10 +19,10 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="24"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="200"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="400"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Label Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Foreground="#FFFFFFFF" Content="{Binding DuplicatedAssetCollectionSets.Count}" ContentStringFormat="Duplicated sets: {0}"/>
@@ -33,25 +33,34 @@
                 </ItemContainerTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
-        <ListBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding CurrentDuplicatedAssetCollection}" SelectedIndex="{Binding DuplicatedAssetPosition}" Background="#FF3C3C3C">
-            <ListBox.ItemContainerStyle>
-                <Style TargetType="ListBoxItem">
-                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <DataGrid Grid.Row="1" Grid.Column="1" ItemsSource="{Binding CurrentDuplicatedAssetCollection}" SelectedIndex="{Binding DuplicatedAssetPosition}" AutoGenerateColumns="False" CanUserReorderColumns="True" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Background" Value="#FF3C3C3C"/>
+                    <Setter Property="Foreground" Value="#FFFFFFFF"/>
                 </Style>
-            </ListBox.ItemContainerStyle>
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <DockPanel HorizontalAlignment="Stretch">
-                        <Label x:Name="deleteLabel" DockPanel.Dock="Right" Padding="5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown" Content="Delete" Style="{StaticResource ButtonStyle}" />
-                        <Label Content="{Binding FullPath}" Foreground="#FFFFFFFF" />
-                    </DockPanel>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
-        <StackPanel Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
-            <Image HorizontalAlignment="Center" Source="{ Binding CurrentDuplicatedAsset.ImageData }" MaxWidth="200" MaxHeight="150"/>
-            <Label Content="{ Binding CurrentDuplicatedAsset, Converter={StaticResource PixelSizeConverter}}" HorizontalAlignment="Center" Foreground="#FFFFFFFF" />
-            <Label Content="{ Binding CurrentDuplicatedAsset.FileSize, Converter={StaticResource FileSizeConverter}}" HorizontalAlignment="Center" Foreground="#FFFFFFFF" />
-        </StackPanel>
+            </DataGrid.RowStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Path" Binding="{Binding FullPath}" Width="400"/>
+                <DataGridTextColumn Header="Image size" Binding="{ Binding Converter={StaticResource PixelSizeConverter}}" Width="100"/>
+                <DataGridTextColumn Header="File size" Binding="{ Binding FileSize, Converter={StaticResource FileSizeConverter}}" Width="60"/>
+                <DataGridTextColumn Header="File created" Binding="{ Binding FileCreationDateTime}" Width="150"/>
+                <DataGridTextColumn Header="File last modified" Binding="{ Binding FileModificationDateTime}" Width="150"/>
+                <DataGridTemplateColumn Header="Actions" Width="50">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Label x:Name="deleteLabel" DockPanel.Dock="Right" Padding="5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown" Content="Delete" Style="{StaticResource ButtonStyle}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <Image Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" Source="{ Binding CurrentDuplicatedAsset.ImageData }" Width="200" Height="150">
+            <Image.Effect>
+                <DropShadowEffect/>
+            </Image.Effect>
+        </Image>
     </Grid>
 </Window>
