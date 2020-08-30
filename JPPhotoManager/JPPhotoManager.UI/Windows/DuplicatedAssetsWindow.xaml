@@ -49,7 +49,11 @@
             </ListBox.ItemTemplate>
         </ListBox>
         <StackPanel Grid.Row="2" Grid.Column="1" VerticalAlignment="Center">
-            <Image HorizontalAlignment="Center" Source="{ Binding CurrentDuplicatedAsset.ImageData }" MaxWidth="200" MaxHeight="150"/>
+            <Image HorizontalAlignment="Center" Source="{ Binding CurrentDuplicatedAsset.ImageData }" Width="200" Height="150">
+                <Image.Effect>
+                    <DropShadowEffect/>
+                </Image.Effect>
+            </Image>
             <Label Content="{ Binding CurrentDuplicatedAsset, Converter={StaticResource PixelSizeConverter}}" HorizontalAlignment="Center" Foreground="#FFFFFFFF" />
             <Label Content="{ Binding CurrentDuplicatedAsset.FileSize, Converter={StaticResource FileSizeConverter}}" HorizontalAlignment="Center" Foreground="#FFFFFFFF" />
         </StackPanel>
