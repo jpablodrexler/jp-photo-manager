@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace JPPhotoManager.Domain
@@ -74,12 +73,13 @@ namespace JPPhotoManager.Domain
 
             result = result.Where(r => r.Count() > 1).ToList();
 
-            // Loads the thumbnail for each asset.
+            // Loads the thumbnail and file information for each asset.
             foreach (List<Asset> duplicatedSet in result)
             {
                 foreach (Asset asset in duplicatedSet)
                 {
                     asset.ImageData = this.assetRepository.LoadThumbnail(asset.Folder.Path, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
+                    this.storageService.GetFileInformation(asset);
                 }
             }
 

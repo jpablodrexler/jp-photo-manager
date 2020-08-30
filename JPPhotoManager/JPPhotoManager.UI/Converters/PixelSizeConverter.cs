@@ -13,8 +13,7 @@ namespace JPPhotoManager.UI.Converters
 
             if (value != null)
             {
-                Asset asset = (Asset)value;
-                result = $"{asset.PixelWidth}x{asset.PixelHeight} pixels";
+                result = value is Asset asset ? $"{asset.PixelWidth}x{asset.PixelHeight} pixels" : "";
             }
 
             return result;
