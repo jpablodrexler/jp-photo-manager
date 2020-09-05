@@ -38,8 +38,13 @@ namespace JPPhotoManager.UI.Windows
 
         private void FolderTreeView_FolderSelected(object sender, System.EventArgs e)
         {
-            selectedPathTextBox.Text = this.folderTreeView.SelectedPath;
-            this.ViewModel.SelectedFolder = new Domain.Folder { Path = selectedPathTextBox.Text };
+            selectedPathComboBox.Text = this.folderTreeView.SelectedPath;
+            this.ViewModel.SelectedFolder = new Domain.Folder { Path = selectedPathComboBox.Text };
+        }
+
+        private void selectedPathComboBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            this.ViewModel.SelectedFolder = new Domain.Folder { Path = selectedPathComboBox.Text };
         }
 
         private void Confirm_MouseLeftButtonDown(object sender, RoutedEventArgs e)
@@ -69,7 +74,7 @@ namespace JPPhotoManager.UI.Windows
         private void Confirm()
         {
             // TODO: SHOULD VALIDATE IF THE PATH IS VALID.
-            this.ViewModel.SelectedFolder = new Domain.Folder { Path = selectedPathTextBox.Text };
+            this.ViewModel.SelectedFolder = new Domain.Folder { Path = selectedPathComboBox.Text };
             this.ViewModel.HasConfirmed = true;
             this.Close();
         }
