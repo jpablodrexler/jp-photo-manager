@@ -65,6 +65,7 @@ namespace JPPhotoManager.Infrastructure
             this.AssetCatalog.ImportNewAssetsConfiguration.Imports.Clear();
             this.AssetCatalog.ImportNewAssetsConfiguration.Imports.AddRange(ReadImportDefinitions());
             this.AssetCatalog.Assets.ForEach(a => a.Folder = GetFolderById(a.FolderId));
+            this.AssetCatalog.RecentTargetPaths.AddRange(ReadRecentTargetPaths());
         }
 
         public void SaveCatalog(Folder folder)
@@ -76,6 +77,7 @@ namespace JPPhotoManager.Infrastructure
                     WriteAssets(this.AssetCatalog.Assets);
                     WriteFolders(this.AssetCatalog.Folders);
                     WriteImports(this.AssetCatalog.ImportNewAssetsConfiguration.Imports);
+                    WriteRecentTargetPaths(this.AssetCatalog.RecentTargetPaths);
                 }
                 
                 this.AssetCatalog.HasChanges = false;
@@ -207,6 +209,36 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
+        public List<string> ReadRecentTargetPaths()
+        {
+            List<string> result = new List<string>();
+
+            try
+            {
+                DataTable dataTable = database.ReadDataTable("RecentTargetPaths");
+
+                if (dataTable != null)
+                {
+                    for (int i = 0; i < dataTable.Rows.Count; i++)
+                    {
+                        DataRow row = dataTable.Rows[i];
+                        result.Add(row["Path"].ToString());
+                    }
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                throw new ApplicationException($"Error while trying to read data table 'RecentTargetPaths'. " +
+                    $"DataDirectory: {database.DataDirectory} - " +
+                    $"Separator: {database.Separator} - " +
+                    $"LastReadFilePath: {database.Diagnostics.LastReadFilePath} - " +
+                    $"LastReadFileRaw: {database.Diagnostics.LastReadFileRaw}",
+                    ex);
+            }
+
+            return result;
+        }
+
         public void WriteFolders(List<Folder> folders)
         {
             DataTable table = new DataTable("Folder");
@@ -270,6 +302,21 @@ namespace JPPhotoManager.Infrastructure
                 row["SourceDirectory"] = import.SourceDirectory;
                 row["DestinationDirectory"] = import.DestinationDirectory;
                 row["IncludeSubFolders"] = import.IncludeSubFolders;
+                table.Rows.Add(row);
+            }
+
+            this.database.WriteDataTable(table);
+        }
+
+        public void WriteRecentTargetPaths(List<string> recentTargetPaths)
+        {
+            DataTable table = new DataTable("RecentTargetPaths");
+            table.Columns.Add("Path");
+
+            foreach (string path in recentTargetPaths)
+            {
+                DataRow row = table.NewRow();
+                row["Path"] = path;
                 table.Rows.Add(row);
             }
 
@@ -613,6 +660,27 @@ namespace JPPhotoManager.Infrastructure
             lock (this.AssetCatalog)
             {
                 this.AssetCatalog.ImportNewAssetsConfiguration = importConfiguration;
+                this.AssetCatalog.HasChanges = true;
+            }
+        }
+
+        public List<string> GetRecentTargetPaths()
+        {
+            List<string> result = null;
+
+            lock (this.AssetCatalog)
+            {
+                result = this.AssetCatalog.RecentTargetPaths;
+            }
+
+            return result;
+        }
+
+        public void SetRecentTargetPaths(List<string> recentTargetPaths)
+        {
+            lock (this.AssetCatalog)
+            {
+                this.AssetCatalog.RecentTargetPaths = recentTargetPaths;
                 this.AssetCatalog.HasChanges = true;
             }
         }

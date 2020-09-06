@@ -22,5 +22,7 @@ namespace JPPhotoManager.Domain
         bool FolderHasThumbnails(Folder folder);
         ImportNewAssetsConfiguration GetImportNewAssetsConfiguration();
         void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration);
+        List<string> GetRecentTargetPaths();
+        void SetRecentTargetPaths(List<string> recentTargetPaths);
     }
 }

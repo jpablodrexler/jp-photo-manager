@@ -9,12 +9,14 @@ namespace JPPhotoManager.Domain
         public List<Folder> Folders { get; }
         public List<Asset> Assets { get; }
         public ImportNewAssetsConfiguration ImportNewAssetsConfiguration { get; set; }
+        public List<string> RecentTargetPaths { get; set; }
 
         public AssetCatalog()
         {
             this.Folders = new List<Folder>();
             this.Assets = new List<Asset>();
             this.ImportNewAssetsConfiguration = new ImportNewAssetsConfiguration();
+            this.RecentTargetPaths = new List<string>();
         }
     }
 }

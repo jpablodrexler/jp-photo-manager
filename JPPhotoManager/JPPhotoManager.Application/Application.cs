@@ -132,5 +132,10 @@ namespace JPPhotoManager.Application
         {
             return this.storageService.FileExists(fullPath);
         }
+
+        public List<string> GetRecentTargetPaths()
+        {
+            return this.assetRepository.GetRecentTargetPaths();
+        }
     }
 }

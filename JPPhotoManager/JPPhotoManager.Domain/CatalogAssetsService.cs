@@ -4,13 +4,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Domain
 {
     public class CatalogAssetsService : ICatalogAssetsService
     {
+        private const int RECENT_TARGET_PATHS_MAX_COUNT = 20;
         private readonly IAssetRepository assetRepository;
         private readonly IAssetHashCalculatorService assetHashCalculatorService;
         private readonly IStorageService storageService;
@@ -305,6 +305,7 @@ namespace JPPhotoManager.Domain
 
             if (!this.storageService.FileExists(sourcePath))
             {
+                // This could happen if an image was moved or deleted outside the app.
                 throw new ArgumentException(sourcePath);
             }
 
@@ -333,12 +334,27 @@ namespace JPPhotoManager.Domain
                     if (isDestinationFolderInCatalog)
                     {
                         this.CreateAsset(destinationFolder.Path, asset.FileName);
-                        this.assetRepository.SaveCatalog(destinationFolder);
                     }
+
+                    AddTargetPathToRecent(destinationFolder);
+                    this.assetRepository.SaveCatalog(destinationFolder);
                 }
             }
 
             return result;
+        }
+
+        private void AddTargetPathToRecent(Folder destinationFolder)
+        {
+            List<string> recentTargetPaths = this.assetRepository.GetRecentTargetPaths();
+            
+            if (recentTargetPaths.Contains(destinationFolder.Path))
+                recentTargetPaths.Remove(destinationFolder.Path);
+
+            recentTargetPaths.Insert(0, destinationFolder.Path);
+
+            recentTargetPaths = recentTargetPaths.Take(RECENT_TARGET_PATHS_MAX_COUNT).ToList();
+            this.assetRepository.SetRecentTargetPaths(recentTargetPaths);
         }
 
         public void DeleteAsset(Asset asset, bool deleteFile)

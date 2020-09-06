@@ -26,7 +26,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Label Grid.Row="0" Grid.Column="0" Content="Selected path:" Foreground="#FFFFFFFF" Width="100" Margin="5"/>
-            <ComboBox Grid.Row="0" Grid.Column="1" x:Name="selectedPathComboBox" HorizontalAlignment="Stretch" Margin="5" IsEditable="True" TextBoxBase.TextChanged="selectedPathComboBox_TextChanged"/>
+            <ComboBox Grid.Row="0" Grid.Column="1" x:Name="selectedPathComboBox" HorizontalAlignment="Stretch" Margin="5" IsEditable="True" Text="{Binding TargetPath}" ItemsSource="{Binding RecentTargetPaths}" />
         </Grid>
         <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Right">
             <Label Content="Confirm" Style="{StaticResource ButtonStyle}" IsEnabled="{Binding CanConfirm}" MouseLeftButtonDown="Confirm_MouseLeftButtonDown" Width="100" Margin="5"/>

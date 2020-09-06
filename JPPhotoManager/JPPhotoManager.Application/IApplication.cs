@@ -1,11 +1,6 @@
 ﻿using JPPhotoManager.Domain;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Application
@@ -28,5 +23,6 @@ namespace JPPhotoManager.Application
         bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile);
         BitmapImage LoadBitmapImage(string imagePath, Rotation rotation);
         bool FileExists(string fullPath);
+        List<string> GetRecentTargetPaths();
     }
 }
