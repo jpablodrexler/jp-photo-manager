@@ -34,8 +34,14 @@ namespace JPPhotoManager.UI.Controls
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
+            Initialize();
+        }
+
+        public void Initialize()
+        {
             try
             {
+                foldersTreeView.Items.Clear();
                 Folder[] drives = this.ViewModel.Application.GetDrives();
 
                 foreach (Folder drive in drives)

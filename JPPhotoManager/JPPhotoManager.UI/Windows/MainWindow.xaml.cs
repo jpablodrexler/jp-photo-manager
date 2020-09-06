@@ -341,6 +341,13 @@ namespace JPPhotoManager.UI.Windows
                             bool result = this.ViewModel.Application.MoveAsset(asset, destinationFolder, preserveOriginalFile);
                             this.ViewModel.LastSelectedFolder = viewModel.SelectedFolder;
 
+                            if (result)
+                            {
+                                this.ViewModel.IsRefreshingFolders = true;
+                                this.folderTreeView.Initialize();
+                                this.ViewModel.IsRefreshingFolders = false;
+                            }
+
                             if (!preserveOriginalFile && result)
                             {
                                 this.ViewModel.RemoveAsset(asset);

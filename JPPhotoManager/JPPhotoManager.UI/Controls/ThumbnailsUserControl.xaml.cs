@@ -43,14 +43,17 @@ namespace JPPhotoManager.UI.Controls
         {
             try
             {
-                this.ViewModel.CurrentFolder = selectedImagePath;
-                Asset[] assets = await GetAssets(assetApp, ViewModel.CurrentFolder).ConfigureAwait(true);
-                this.ViewModel.SetAssets(assets);
-
-                if (this.thumbnailsListView.Items.Count > 0)
+                if (!this.ViewModel.IsRefreshingFolders)
                 {
-                    this.ViewModel.ViewerPosition = 0;
-                    this.thumbnailsListView.ScrollIntoView(this.thumbnailsListView.Items[0]);
+                    this.ViewModel.CurrentFolder = selectedImagePath;
+                    Asset[] assets = await GetAssets(assetApp, ViewModel.CurrentFolder).ConfigureAwait(true);
+                    this.ViewModel.SetAssets(assets);
+
+                    if (this.thumbnailsListView.Items.Count > 0)
+                    {
+                        this.ViewModel.ViewerPosition = 0;
+                        this.thumbnailsListView.ScrollIntoView(this.thumbnailsListView.Items[0]);
+                    }
                 }
             }
             catch (Exception ex)
