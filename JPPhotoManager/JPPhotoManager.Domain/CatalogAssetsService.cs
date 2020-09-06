@@ -306,6 +306,7 @@ namespace JPPhotoManager.Domain
             if (!this.storageService.FileExists(sourcePath))
             {
                 // This could happen if an image was moved or deleted outside the app.
+                // TODO: Instead of just failing, should remove the file from the catalog.
                 throw new ArgumentException(sourcePath);
             }
 
@@ -345,6 +346,7 @@ namespace JPPhotoManager.Domain
             return result;
         }
 
+        // TODO: Extend automated tests to evaluate recent target paths.
         private void AddTargetPathToRecent(Folder destinationFolder)
         {
             List<string> recentTargetPaths = this.assetRepository.GetRecentTargetPaths();
