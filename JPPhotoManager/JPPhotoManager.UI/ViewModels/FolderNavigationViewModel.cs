@@ -20,7 +20,10 @@ namespace JPPhotoManager.UI.ViewModels
 
         public Folder SelectedFolder
         {
-            get { return new Folder { Path = this.TargetPath }; }
+            get
+            {
+                return !string.IsNullOrEmpty(this.TargetPath) ? new Folder { Path = this.TargetPath } : null;
+            }
         }
 
         public bool CanConfirm
