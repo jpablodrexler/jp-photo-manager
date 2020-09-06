@@ -331,11 +331,12 @@ namespace JPPhotoManager.Domain
                         this.DeleteAsset(asset, deleteFile: true);
                     }
 
-                    if (isDestinationFolderInCatalog)
+                    if (!this.assetRepository.FolderExists(destinationFolder.Path))
                     {
-                        this.CreateAsset(destinationFolder.Path, asset.FileName);
+                        destinationFolder = this.assetRepository.AddFolder(destinationFolder.Path);
                     }
 
+                    this.CreateAsset(destinationFolder.Path, asset.FileName);
                     AddTargetPathToRecent(destinationFolder);
                     this.assetRepository.SaveCatalog(destinationFolder);
                 }
