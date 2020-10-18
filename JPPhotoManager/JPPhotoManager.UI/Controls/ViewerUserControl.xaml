@@ -17,6 +17,11 @@
             <RowDefinition Height="70"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+        <Image x:Name="backgroundImage" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.EdgeMode="Aliased" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" Grid.RowSpan="3" Stretch="Fill" Opacity="0.7">
+            <Image.Effect>
+                <BlurEffect Radius="100"/>
+            </Image.Effect>
+        </Image>
         <ContentControl Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" MouseDoubleClick="ContentControl_MouseDoubleClick">
             <Image x:Name="image" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.EdgeMode="Aliased">
                 <Image.Effect>
@@ -29,11 +34,11 @@
                 <ControlTemplate>
                     <Grid>
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="←" Cursor="Hand" Foreground="White" Panel.ZIndex="1" Margin="5,5,0,0" />
-                        <Ellipse x:Name="BackgroundEllipse" Grid.Row="0" Grid.Column="0" Cursor="Hand" Height="45" Width="45" Fill="#FF3C3C3C" Panel.ZIndex="0"/>
+                        <Ellipse x:Name="BackgroundEllipse" Grid.Row="0" Grid.Column="0" Cursor="Hand" Height="45" Width="45" Fill="#FF3C3C3C" Panel.ZIndex="0" Opacity="0.2"/>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="BackgroundEllipse" Property="Fill" Value="#AAAAAAAA" />
+                            <Setter TargetName="BackgroundEllipse" Property="Opacity" Value="0.4" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -44,11 +49,11 @@
                 <ControlTemplate>
                     <Grid>
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="→" Cursor="Hand" Foreground="White" Panel.ZIndex="1" Margin="5,5,0,0" />
-                        <Ellipse x:Name="BackgroundEllipse" Grid.Row="0" Grid.Column="0" Cursor="Hand" Height="45" Width="45" Fill="#FF3C3C3C" Panel.ZIndex="0"/>
+                        <Ellipse x:Name="BackgroundEllipse" Grid.Row="0" Grid.Column="0" Cursor="Hand" Height="45" Width="45" Fill="#FF3C3C3C" Panel.ZIndex="0" Opacity="0.2"/>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="BackgroundEllipse" Property="Fill" Value="#AAAAAAAA" />
+                            <Setter TargetName="BackgroundEllipse" Property="Opacity" Value="0.4" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
