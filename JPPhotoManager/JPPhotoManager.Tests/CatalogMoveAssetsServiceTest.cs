@@ -12,16 +12,16 @@ using Xunit;
 
 namespace JPPhotoManager.Tests
 {
-    public class CatalogAssetsServiceTest
+    public class CatalogMoveAssetsServiceTest
     {
         private string dataDirectory;
         private string imageDestinationDirectory;
         private string nonCataloguedImageDestinationDirectory;
         private IConfigurationRoot configuration;
 
-        public CatalogAssetsServiceTest()
+        public CatalogMoveAssetsServiceTest()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(CatalogAssetsServiceTest).Assembly.Location);
+            dataDirectory = Path.GetDirectoryName(typeof(CatalogMoveAssetsServiceTest).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
             imageDestinationDirectory = Path.Combine(dataDirectory, "NewFolder");
             nonCataloguedImageDestinationDirectory = Path.Combine(dataDirectory, "NonCataloguedNewFolder");

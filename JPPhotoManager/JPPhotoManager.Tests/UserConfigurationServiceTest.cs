@@ -16,7 +16,7 @@ namespace JPPhotoManager.Tests
 
         public UserConfigurationServiceTest()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(CatalogAssetsServiceTest).Assembly.Location);
+            dataDirectory = Path.GetDirectoryName(typeof(UserConfigurationServiceTest).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
 
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
