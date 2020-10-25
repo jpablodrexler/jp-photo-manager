@@ -423,6 +423,11 @@ namespace JPPhotoManager.Tests
                     userConfigurationService,
                     new DirectoryComparer());
 
+            IMoveAssetsService moveAssetsService = new MoveAssetsService(
+                    repository,
+                    storageService,
+                    catalogAssetsService);
+
             string sourceImagePath = Path.Combine(dataDirectory, "Image 4.jpg");
             string destinationImagePath = Path.Combine(imageDestinationDirectory, "Image 4.jpg");
             File.Exists(sourceImagePath).Should().BeTrue();
@@ -435,7 +440,7 @@ namespace JPPhotoManager.Tests
             repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
             repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
 
-            catalogAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
+            moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
 
             File.Exists(sourceImagePath).Should().BeFalse();
             File.Exists(destinationImagePath).Should().BeTrue();
@@ -470,6 +475,11 @@ namespace JPPhotoManager.Tests
                     userConfigurationService,
                     new DirectoryComparer());
 
+            IMoveAssetsService moveAssetsService = new MoveAssetsService(
+                    repository,
+                    storageService,
+                    catalogAssetsService);
+
             string sourceImagePath = Path.Combine(dataDirectory, "Nonexistent Image.jpg");
             string destinationImagePath = Path.Combine(imageDestinationDirectory, "Nonexistent Image.jpg");
             File.Exists(sourceImagePath).Should().BeFalse();
@@ -486,7 +496,7 @@ namespace JPPhotoManager.Tests
             asset.Folder.Should().NotBe(destinationFolder);
 
             Func<bool> function = () =>
-                catalogAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false);
+                moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false);
             function.Should().Throw<ArgumentException>();
         }
 
@@ -507,6 +517,11 @@ namespace JPPhotoManager.Tests
                     userConfigurationService,
                     new DirectoryComparer());
 
+            IMoveAssetsService moveAssetsService = new MoveAssetsService(
+                    repository,
+                    storageService,
+                    catalogAssetsService);
+
             string sourceImagePath = Path.Combine(dataDirectory, "Image 5.jpg");
             File.Exists(sourceImagePath).Should().BeTrue();
 
@@ -515,7 +530,7 @@ namespace JPPhotoManager.Tests
 
             repository.ContainsThumbnail(asset.Folder.Path, asset.FileName).Should().BeTrue();
 
-            catalogAssetsService.MoveAsset(asset, sourceFolder, preserveOriginalFile: false).Should().BeFalse();
+            moveAssetsService.MoveAsset(asset, sourceFolder, preserveOriginalFile: false).Should().BeFalse();
 
             File.Exists(sourceImagePath).Should().BeTrue();
 
@@ -544,6 +559,11 @@ namespace JPPhotoManager.Tests
                     userConfigurationService,
                     new DirectoryComparer());
 
+            IMoveAssetsService moveAssetsService = new MoveAssetsService(
+                    repository,
+                    storageService,
+                    catalogAssetsService);
+
             string sourceImagePath = Path.Combine(dataDirectory, "Image 7.jpg");
             File.Exists(sourceImagePath).Should().BeTrue();
 
@@ -555,7 +575,7 @@ namespace JPPhotoManager.Tests
 
             Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
 
-            catalogAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
+            moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
 
             File.Exists(sourceImagePath).Should().BeFalse();
             File.Exists(destinationImagePath).Should().BeTrue();
@@ -580,8 +600,13 @@ namespace JPPhotoManager.Tests
                     userConfigurationService,
                     new DirectoryComparer());
 
+            IMoveAssetsService moveAssetsService = new MoveAssetsService(
+                    repository,
+                    storageService,
+                    catalogAssetsService);
+
             Func<bool> function = () =>
-                catalogAssetsService.MoveAsset(null, destinationFolder, preserveOriginalFile: false);
+                moveAssetsService.MoveAsset(null, destinationFolder, preserveOriginalFile: false);
             function.Should().Throw<ArgumentNullException>();
         }
 
@@ -603,8 +628,13 @@ namespace JPPhotoManager.Tests
                     userConfigurationService,
                     new DirectoryComparer());
 
+            IMoveAssetsService moveAssetsService = new MoveAssetsService(
+                    repository,
+                    storageService,
+                    catalogAssetsService);
+
             Func<bool> function = () =>
-                catalogAssetsService.MoveAsset(new Asset { Folder = null }, destinationFolder, preserveOriginalFile: false);
+                moveAssetsService.MoveAsset(new Asset { Folder = null }, destinationFolder, preserveOriginalFile: false);
             function.Should().Throw<ArgumentNullException>();
         }
 
@@ -626,8 +656,13 @@ namespace JPPhotoManager.Tests
                     userConfigurationService,
                     new DirectoryComparer());
 
+            IMoveAssetsService moveAssetsService = new MoveAssetsService(
+                    repository,
+                    storageService,
+                    catalogAssetsService);
+
             Func<bool> function = () =>
-                catalogAssetsService.MoveAsset(new Asset { Folder = new Folder { } }, null, preserveOriginalFile: false);
+                moveAssetsService.MoveAsset(new Asset { Folder = new Folder { } }, null, preserveOriginalFile: false);
             function.Should().Throw<ArgumentNullException>();
         }
 
@@ -649,6 +684,11 @@ namespace JPPhotoManager.Tests
                     userConfigurationService,
                     new DirectoryComparer());
 
+            IMoveAssetsService moveAssetsService = new MoveAssetsService(
+                    repository,
+                    storageService,
+                    catalogAssetsService);
+
             string sourceImagePath = Path.Combine(dataDirectory, "Image 5.jpg");
             string destinationImagePath = Path.Combine(imageDestinationDirectory, "Image 5.jpg");
             File.Exists(sourceImagePath).Should().BeTrue();
@@ -661,7 +701,7 @@ namespace JPPhotoManager.Tests
             repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
             repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
 
-            catalogAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: true).Should().BeTrue();
+            moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: true).Should().BeTrue();
 
             File.Exists(sourceImagePath).Should().BeTrue();
             File.Exists(destinationImagePath).Should().BeTrue();
@@ -696,6 +736,11 @@ namespace JPPhotoManager.Tests
                     userConfigurationService,
                     new DirectoryComparer());
 
+            IMoveAssetsService moveAssetsService = new MoveAssetsService(
+                    repository,
+                    storageService,
+                    catalogAssetsService);
+
             string sourceImagePath = Path.Combine(dataDirectory, "Nonexistent Image.jpg");
             string destinationImagePath = Path.Combine(imageDestinationDirectory, "Nonexistent Image.jpg");
             File.Exists(sourceImagePath).Should().BeFalse();
@@ -712,7 +757,7 @@ namespace JPPhotoManager.Tests
             asset.Folder.Should().NotBe(destinationFolder);
 
             Func<bool> function = () =>
-                catalogAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: true);
+                moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: true);
             function.Should().Throw<ArgumentException>();
         }
 
@@ -733,6 +778,11 @@ namespace JPPhotoManager.Tests
                     userConfigurationService,
                     new DirectoryComparer());
 
+            IMoveAssetsService moveAssetsService = new MoveAssetsService(
+                    repository,
+                    storageService,
+                    catalogAssetsService);
+
             string sourceImagePath = Path.Combine(dataDirectory, "Image 5.jpg");
             File.Exists(sourceImagePath).Should().BeTrue();
             
@@ -741,7 +791,7 @@ namespace JPPhotoManager.Tests
             
             Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
 
-            catalogAssetsService.MoveAsset(asset, sourceFolder, preserveOriginalFile: true).Should().BeFalse();
+            moveAssetsService.MoveAsset(asset, sourceFolder, preserveOriginalFile: true).Should().BeFalse();
 
             File.Exists(sourceImagePath).Should().BeTrue();
             repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
@@ -764,6 +814,11 @@ namespace JPPhotoManager.Tests
                     userConfigurationService,
                     new DirectoryComparer());
 
+            IMoveAssetsService moveAssetsService = new MoveAssetsService(
+                    repository,
+                    storageService,
+                    catalogAssetsService);
+
             string sourceImagePath = Path.Combine(dataDirectory, "Image 6.jpg");
             File.Exists(sourceImagePath).Should().BeTrue();
 
@@ -772,7 +827,7 @@ namespace JPPhotoManager.Tests
 
             Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
 
-            catalogAssetsService.DeleteAsset(asset, deleteFile: true);
+            moveAssetsService.DeleteAsset(asset, deleteFile: true);
 
             File.Exists(sourceImagePath).Should().BeFalse();
             repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeFalse();
@@ -795,6 +850,11 @@ namespace JPPhotoManager.Tests
                     userConfigurationService,
                     new DirectoryComparer());
 
+            IMoveAssetsService moveAssetsService = new MoveAssetsService(
+                    repository,
+                    storageService,
+                    catalogAssetsService);
+
             string sourceImagePath = Path.Combine(dataDirectory, "Nonexistent Image.jpg");
             File.Exists(sourceImagePath).Should().BeFalse();
 
@@ -806,7 +866,7 @@ namespace JPPhotoManager.Tests
             };
 
             Action action = () =>
-                catalogAssetsService.DeleteAsset(asset, deleteFile: true);
+                moveAssetsService.DeleteAsset(asset, deleteFile: true);
             action.Should().Throw<ArgumentException>();
         }
 
@@ -827,8 +887,13 @@ namespace JPPhotoManager.Tests
                     userConfigurationService,
                     new DirectoryComparer());
 
+            IMoveAssetsService moveAssetsService = new MoveAssetsService(
+                    repository,
+                    storageService,
+                    catalogAssetsService);
+
             Action action = () =>
-                catalogAssetsService.DeleteAsset(null, deleteFile: true);
+                moveAssetsService.DeleteAsset(null, deleteFile: true);
             action.Should().Throw<ArgumentNullException>();
         }
 
@@ -847,8 +912,13 @@ namespace JPPhotoManager.Tests
                     userConfigurationService,
                     new DirectoryComparer());
 
+            IMoveAssetsService moveAssetsService = new MoveAssetsService(
+                    repository,
+                    storageService,
+                    catalogAssetsService);
+
             Action action = () =>
-                catalogAssetsService.DeleteAsset(new Asset { Folder = null }, deleteFile: true);
+                moveAssetsService.DeleteAsset(new Asset { Folder = null }, deleteFile: true);
             action.Should().Throw<ArgumentNullException>();
         }
 
