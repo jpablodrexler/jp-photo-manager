@@ -64,6 +64,7 @@ namespace JPPhotoManager.UI
             services.AddSingleton<IAssetRepository, AssetRepository>();
             services.AddSingleton<IAssetHashCalculatorService, AssetHashCalculatorService>();
             services.AddSingleton<ICatalogAssetsService, CatalogAssetsService>();
+            services.AddSingleton<IMoveAssetsService, MoveAssetsService>();
             services.AddSingleton<IFindDuplicatedAssetsService, FindDuplicatedAssetsService>();
             services.AddSingleton<IImportNewAssetsService, ImportNewAssetsService>();
             services.AddSingleton<Application.IApplication, Application.Application>();
