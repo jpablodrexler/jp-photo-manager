@@ -16,6 +16,7 @@ namespace JPPhotoManager.Domain
         List<Asset> GetCataloguedAssets(string directory);
         bool IsAssetCatalogued(string directoryName, string fileName);
         void DeleteAsset(string directory, string deletedFileName);
+        void DeleteFolder(Folder folder);
         bool HasChanges();
         bool ContainsThumbnail(string directoryName, string fileName);
         BitmapImage LoadThumbnail(string directoryName, string fileName, int width, int height);

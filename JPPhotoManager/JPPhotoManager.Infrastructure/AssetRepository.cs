@@ -326,7 +326,15 @@ namespace JPPhotoManager.Infrastructure
         public bool FolderHasThumbnails(Folder folder)
         {
             string thumbnailsFilePath = this.database.ResolveBlobFilePath(dataDirectory, folder.ThumbnailsFilename);
+            // TODO: Implement through the NuGet package.
             return File.Exists(thumbnailsFilePath);
+        }
+
+        private void DeleteThumbnails(Folder folder)
+        {
+            // TODO: Implement through the NuGet package.
+            string thumbnailsFilePath = this.database.ResolveBlobFilePath(dataDirectory, folder.ThumbnailsFilename);
+            File.Delete(thumbnailsFilePath);
         }
 
         protected virtual Dictionary<string, byte[]> GetThumbnails(string thumbnailsFileName, out bool isNewFile)
@@ -542,16 +550,43 @@ namespace JPPhotoManager.Infrastructure
                 {
                     Asset deletedAsset = GetAssetByFolderIdFileName(folder.FolderId, fileName);
 
+                    if (!this.Thumbnails.ContainsKey(folder.Path))
+                    {
+                        this.LoadThumbnail(deletedAsset.Folder.Path, deletedAsset.FileName, deletedAsset.ThumbnailPixelWidth, deletedAsset.ThumbnailPixelHeight);
+                    }
+
                     if (this.Thumbnails.ContainsKey(folder.Path))
                     {
                         this.Thumbnails[folder.Path].Remove(fileName);
                     }
-
+                    
                     if (deletedAsset != null)
                     {
                         this.AssetCatalog.Assets.Remove(deletedAsset);
                         this.AssetCatalog.HasChanges = true;
                     }
+                }
+            }
+        }
+
+        public void DeleteFolder(Folder folder)
+        {
+            lock (this.AssetCatalog)
+            {
+                if (folder != null)
+                {
+                    if (this.Thumbnails.ContainsKey(folder.Path))
+                    {
+                        this.Thumbnails.Remove(folder.Path);
+                    }
+
+                    if (this.FolderHasThumbnails(folder))
+                    {
+                        this.DeleteThumbnails(folder);
+                    }
+
+                    this.AssetCatalog.Folders.Remove(folder);
+                    this.AssetCatalog.HasChanges = true;
                 }
             }
         }

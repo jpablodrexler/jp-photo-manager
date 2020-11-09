@@ -92,6 +92,8 @@ namespace JPPhotoManager.Domain
         private int CatalogImages(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount)
         {
             this.currentFolderPath = directory;
+            int batchSize = this.userConfigurationService.GetCatalogBatchSize();
+            Folder folder = this.assetRepository.GetFolderByPath(directory);
 
             if (storageService.FolderExists(directory))
             {
@@ -102,10 +104,7 @@ namespace JPPhotoManager.Domain
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Inspecting folder " + directory });
                 string[] fileNames = this.storageService.GetFileNames(directory);
-                List<Asset> cataloguedAssets;
-
-                Folder folder = this.assetRepository.GetFolderByPath(directory);
-                cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+                List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
                 bool folderHasThumbnails = this.assetRepository.FolderHasThumbnails(folder);
 
                 if (!folderHasThumbnails)
@@ -118,7 +117,6 @@ namespace JPPhotoManager.Domain
 
                 string[] newFileNames = directoryComparer.GetNewFileNames(fileNames, cataloguedAssets);
                 string[] deletedFileNames = directoryComparer.GetDeletedFileNames(fileNames, cataloguedAssets);
-                int batchSize = this.userConfigurationService.GetCatalogBatchSize();
                 
                 foreach (var fileName in newFileNames)
                 {
@@ -193,8 +191,33 @@ namespace JPPhotoManager.Domain
             }
             else
             {
-                // TODO: Should validate that if the folder doesn't exist anymore, the corresponding entry in the catalog and the thumbnails file are both deleted.
-                // This should be tested in a new test method, in which the non existent folder is explicitly added to the catalog.
+                // If the folder doesn't exist anymore, the corresponding entry in the catalog and the thumbnails file are both deleted.
+                // TODO: This should be tested in a new test method, in which the non existent folder is explicitly added to the catalog.
+
+                List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+
+                foreach (var asset in cataloguedAssets)
+                {
+                    if (cataloguedAssetsBatchCount >= batchSize)
+                    {
+                        break;
+                    }
+
+                    this.assetRepository.DeleteAsset(directory, asset.FileName);
+                    cataloguedAssetsBatchCount++;
+                }
+
+                cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+
+                if (cataloguedAssets.Count == 0)
+                {
+                    this.assetRepository.DeleteFolder(folder);
+                }
+
+                if (this.assetRepository.HasChanges())
+                {
+                    this.assetRepository.SaveCatalog(folder);
+                }
             }
 
             return cataloguedAssetsBatchCount;
