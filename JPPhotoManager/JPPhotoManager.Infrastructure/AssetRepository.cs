@@ -552,7 +552,7 @@ namespace JPPhotoManager.Infrastructure
 
                     if (!this.Thumbnails.ContainsKey(folder.Path))
                     {
-                        this.LoadThumbnail(deletedAsset.Folder.Path, deletedAsset.FileName, deletedAsset.ThumbnailPixelWidth, deletedAsset.ThumbnailPixelHeight);
+                        this.Thumbnails[folder.Path] = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
                     }
 
                     if (this.Thumbnails.ContainsKey(folder.Path))
