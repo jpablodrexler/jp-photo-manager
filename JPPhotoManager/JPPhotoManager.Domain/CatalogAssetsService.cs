@@ -93,8 +93,7 @@ namespace JPPhotoManager.Domain
         {
             this.currentFolderPath = directory;
             int batchSize = this.userConfigurationService.GetCatalogBatchSize();
-            Folder folder = this.assetRepository.GetFolderByPath(directory);
-
+            
             if (storageService.FolderExists(directory))
             {
                 if (!this.assetRepository.FolderExists(directory))
@@ -104,6 +103,7 @@ namespace JPPhotoManager.Domain
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Inspecting folder " + directory });
                 string[] fileNames = this.storageService.GetFileNames(directory);
+                Folder folder = this.assetRepository.GetFolderByPath(directory);
                 List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
                 bool folderHasThumbnails = this.assetRepository.FolderHasThumbnails(folder);
 
@@ -189,34 +189,38 @@ namespace JPPhotoManager.Domain
                     }
                 }
             }
-            else
+            else if (!string.IsNullOrEmpty(directory) && !storageService.FolderExists(directory))
             {
                 // If the folder doesn't exist anymore, the corresponding entry in the catalog and the thumbnails file are both deleted.
                 // TODO: This should be tested in a new test method, in which the non existent folder is explicitly added to the catalog.
+                Folder folder = this.assetRepository.GetFolderByPath(directory);
 
-                List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
-
-                foreach (var asset in cataloguedAssets)
+                if (folder != null)
                 {
-                    if (cataloguedAssetsBatchCount >= batchSize)
+                    List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+
+                    foreach (var asset in cataloguedAssets)
                     {
-                        break;
+                        if (cataloguedAssetsBatchCount >= batchSize)
+                        {
+                            break;
+                        }
+
+                        this.assetRepository.DeleteAsset(directory, asset.FileName);
+                        cataloguedAssetsBatchCount++;
                     }
 
-                    this.assetRepository.DeleteAsset(directory, asset.FileName);
-                    cataloguedAssetsBatchCount++;
-                }
+                    cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
 
-                cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+                    if (cataloguedAssets.Count == 0)
+                    {
+                        this.assetRepository.DeleteFolder(folder);
+                    }
 
-                if (cataloguedAssets.Count == 0)
-                {
-                    this.assetRepository.DeleteFolder(folder);
-                }
-
-                if (this.assetRepository.HasChanges())
-                {
-                    this.assetRepository.SaveCatalog(folder);
+                    if (this.assetRepository.HasChanges())
+                    {
+                        this.assetRepository.SaveCatalog(folder);
+                    }
                 }
             }
 
