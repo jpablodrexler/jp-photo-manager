@@ -16,6 +16,9 @@ namespace JPPhotoManager.Infrastructure
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
+        private const int STORAGE_VERSION = 3;
+        private const string SEPARATOR = "|";
+
         public bool IsInitialized { get; private set; }
         private string dataDirectory;
         private readonly IDatabase database;
@@ -38,16 +41,15 @@ namespace JPPhotoManager.Infrastructure
         {
             if (!this.IsInitialized)
             {
-                this.dataDirectory = this.storageService.ResolveDataDirectory();
-                var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
-                var separatorChar = separator.ToCharArray().First();
+                this.dataDirectory = this.storageService.ResolveDataDirectory(STORAGE_VERSION);
+                var separatorChar = SEPARATOR.ToCharArray().First();
                 this.database.Initialize(this.dataDirectory, separatorChar);
                 this.ReadCatalog();
 
                 if (this.AssetCatalog == null)
                 {
                     this.AssetCatalog = new AssetCatalog();
-                    this.AssetCatalog.StorageVersion = 2.0;
+                    this.AssetCatalog.StorageVersion = STORAGE_VERSION;
                     SaveCatalog(null);
                 }
 

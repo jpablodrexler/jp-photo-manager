@@ -48,9 +48,9 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        public string ResolveDataDirectory()
+        public string ResolveDataDirectory(int storageVersion)
         {
-            return userConfigurationService.GetApplicationDataFolder();
+            return Path.Combine(userConfigurationService.GetApplicationDataFolder(), "v" + storageVersion);
         }
 
         public void CreateDirectory(string directory)
