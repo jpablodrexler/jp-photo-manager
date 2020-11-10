@@ -3,6 +3,7 @@ using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.UI.ViewModels;
 using Moq;
+using System.Collections.Generic;
 using Xunit;
 
 namespace JPPhotoManager.Tests
@@ -18,14 +19,15 @@ namespace JPPhotoManager.Tests
             Folder sourceFolder = new Folder { Path = @"D:\Data\Folder1" };
             Folder selectedFolder = new Folder { Path = @"D:\Data\Folder2" };
 
-            FolderNavigationViewModel viewModel = new FolderNavigationViewModel(mockApp.Object, sourceFolder, selectedFolder)
+            FolderNavigationViewModel viewModel = new FolderNavigationViewModel(mockApp.Object, sourceFolder, selectedFolder, new List<string>())
             {
-                SelectedFolder = selectedFolder,
+                TargetPath = @"D:\Data\Folder2",
                 HasConfirmed = true
             };
 
             viewModel.SourceFolder.Path.Should().Be(@"D:\Data\Folder1");
             viewModel.LastSelectedFolder.Path.Should().Be(@"D:\Data\Folder2");
+            viewModel.TargetPath.Should().Be(@"D:\Data\Folder2");
             viewModel.SelectedFolder.Path.Should().Be(@"D:\Data\Folder2");
             viewModel.HasConfirmed.Should().BeTrue();
         }
@@ -39,11 +41,10 @@ namespace JPPhotoManager.Tests
             mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
             Folder sourceFolder = new Folder { Path = sourcePath };
-            Folder selectedFolder = new Folder { Path = selectedPath };
 
-            FolderNavigationViewModel viewModel = new FolderNavigationViewModel(mockApp.Object, sourceFolder, null)
+            FolderNavigationViewModel viewModel = new FolderNavigationViewModel(mockApp.Object, sourceFolder, null, new List<string>())
             {
-                SelectedFolder = selectedFolder
+                TargetPath = selectedPath
             };
 
             viewModel.CanConfirm.Should().Be(expected);
@@ -56,28 +57,26 @@ namespace JPPhotoManager.Tests
             mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
             Folder sourceFolder = null;
-            Folder selectedFolder = new Folder { Path = @"D:\Data\Folder2" };
 
-            FolderNavigationViewModel viewModel = new FolderNavigationViewModel(mockApp.Object, sourceFolder, null)
+            FolderNavigationViewModel viewModel = new FolderNavigationViewModel(mockApp.Object, sourceFolder, null, new List<string>())
             {
-                SelectedFolder = selectedFolder
+                TargetPath = @"D:\Data\Folder2"
             };
 
             viewModel.CanConfirm.Should().BeFalse();
         }
 
         [Fact]
-        public void CanConfirmNullSelectedFolderTest()
+        public void CanConfirmNullTargetPathTest()
         {
             Mock<IApplication> mockApp = new Mock<IApplication>();
             mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
             Folder sourceFolder = new Folder { Path = @"D:\Data\Folder1" };
-            Folder selectedFolder = null;
 
-            FolderNavigationViewModel viewModel = new FolderNavigationViewModel(mockApp.Object, sourceFolder, null)
+            FolderNavigationViewModel viewModel = new FolderNavigationViewModel(mockApp.Object, sourceFolder, null, new List<string>())
             {
-                SelectedFolder = selectedFolder
+                TargetPath = null
             };
 
             viewModel.CanConfirm.Should().BeFalse();

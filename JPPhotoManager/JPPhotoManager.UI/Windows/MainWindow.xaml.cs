@@ -4,6 +4,7 @@ using JPPhotoManager.Infrastructure;
 using JPPhotoManager.UI.ViewModels;
 using log4net;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -328,7 +329,8 @@ namespace JPPhotoManager.UI.Windows
 
                 if (asset != null)
                 {
-                    FolderNavigationViewModel viewModel = new FolderNavigationViewModel(this.ViewModel.Application, asset.Folder, this.ViewModel.LastSelectedFolder);
+                    List<string> recentTargetPaths = this.ViewModel.Application.GetRecentTargetPaths();
+                    FolderNavigationViewModel viewModel = new FolderNavigationViewModel(this.ViewModel.Application, asset.Folder, this.ViewModel.LastSelectedFolder, recentTargetPaths);
                     FolderNavigationWindow folderNavigationWindow = new FolderNavigationWindow(viewModel);
                     
                     folderNavigationWindow.Closed += (sender, e) =>
@@ -338,6 +340,13 @@ namespace JPPhotoManager.UI.Windows
                             Folder destinationFolder = viewModel.SelectedFolder;
                             bool result = this.ViewModel.Application.MoveAsset(asset, destinationFolder, preserveOriginalFile);
                             this.ViewModel.LastSelectedFolder = viewModel.SelectedFolder;
+
+                            if (result)
+                            {
+                                this.ViewModel.IsRefreshingFolders = true;
+                                this.folderTreeView.Initialize();
+                                this.ViewModel.IsRefreshingFolders = false;
+                            }
 
                             if (!preserveOriginalFile && result)
                             {

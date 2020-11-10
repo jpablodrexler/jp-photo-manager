@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Domain
@@ -93,7 +92,8 @@ namespace JPPhotoManager.Domain
         private int CatalogImages(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount)
         {
             this.currentFolderPath = directory;
-
+            int batchSize = this.userConfigurationService.GetCatalogBatchSize();
+            
             if (storageService.FolderExists(directory))
             {
                 if (!this.assetRepository.FolderExists(directory))
@@ -103,10 +103,8 @@ namespace JPPhotoManager.Domain
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Inspecting folder " + directory });
                 string[] fileNames = this.storageService.GetFileNames(directory);
-                List<Asset> cataloguedAssets;
-
                 Folder folder = this.assetRepository.GetFolderByPath(directory);
-                cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+                List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
                 bool folderHasThumbnails = this.assetRepository.FolderHasThumbnails(folder);
 
                 if (!folderHasThumbnails)
@@ -119,7 +117,6 @@ namespace JPPhotoManager.Domain
 
                 string[] newFileNames = directoryComparer.GetNewFileNames(fileNames, cataloguedAssets);
                 string[] deletedFileNames = directoryComparer.GetDeletedFileNames(fileNames, cataloguedAssets);
-                int batchSize = this.userConfigurationService.GetCatalogBatchSize();
                 
                 foreach (var fileName in newFileNames)
                 {
@@ -192,10 +189,39 @@ namespace JPPhotoManager.Domain
                     }
                 }
             }
-            else
+            else if (!string.IsNullOrEmpty(directory) && !storageService.FolderExists(directory))
             {
-                // TODO: Should validate that if the folder doesn't exist anymore, the corresponding entry in the catalog and the thumbnails file are both deleted.
-                // This should be tested in a new test method, in which the non existent folder is explicitly added to the catalog.
+                // If the folder doesn't exist anymore, the corresponding entry in the catalog and the thumbnails file are both deleted.
+                // TODO: This should be tested in a new test method, in which the non existent folder is explicitly added to the catalog.
+                Folder folder = this.assetRepository.GetFolderByPath(directory);
+
+                if (folder != null)
+                {
+                    List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+
+                    foreach (var asset in cataloguedAssets)
+                    {
+                        if (cataloguedAssetsBatchCount >= batchSize)
+                        {
+                            break;
+                        }
+
+                        this.assetRepository.DeleteAsset(directory, asset.FileName);
+                        cataloguedAssetsBatchCount++;
+                    }
+
+                    cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+
+                    if (cataloguedAssets.Count == 0)
+                    {
+                        this.assetRepository.DeleteFolder(folder);
+                    }
+
+                    if (this.assetRepository.HasChanges())
+                    {
+                        this.assetRepository.SaveCatalog(folder);
+                    }
+                }
             }
 
             return cataloguedAssetsBatchCount;
@@ -275,101 +301,6 @@ namespace JPPhotoManager.Domain
             }
 
             return asset;
-        }
-
-        public bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile)
-        {
-            #region Parameters validation
-
-            if (asset == null)
-            {
-                throw new ArgumentNullException(nameof(asset), "asset cannot be null.");
-            }
-
-            if (asset.Folder == null)
-            {
-                throw new ArgumentNullException(nameof(asset), "asset.Folder cannot be null.");
-            }
-
-            if (destinationFolder == null)
-            {
-                throw new ArgumentNullException(nameof(destinationFolder), "destinationFolder cannot be null.");
-            }
-
-            #endregion
-
-            bool result = false;
-            string sourcePath = asset.FullPath;
-            string destinationPath = Path.Combine(destinationFolder.Path, asset.FileName);
-            bool isDestinationFolderInCatalog;
-
-            if (!this.storageService.FileExists(sourcePath))
-            {
-                throw new ArgumentException(sourcePath);
-            }
-
-            var folder = this.assetRepository.GetFolderByPath(destinationFolder.Path);
-
-            // If the folder is null, it means is not present in the catalog.
-            // TODO: IF THE DESTINATION FOLDER IS NEW, THE FOLDER NAVIGATION CONTROL SHOULD DISPLAY IT WHEN THE USER GOES BACK TO THE MAIN WINDOW.
-            isDestinationFolderInCatalog = folder != null;
-
-            if (isDestinationFolderInCatalog)
-            {
-                destinationFolder = folder;
-            }
-
-            if (this.storageService.FileExists(sourcePath) && !this.storageService.FileExists(destinationPath))
-            {
-                result = this.storageService.CopyImage(sourcePath, destinationPath);
-                
-                if (result)
-                {
-                    if (!preserveOriginalFile)
-                    {
-                        this.DeleteAsset(asset, deleteFile: true);
-                    }
-
-                    if (isDestinationFolderInCatalog)
-                    {
-                        this.CreateAsset(destinationFolder.Path, asset.FileName);
-                        this.assetRepository.SaveCatalog(destinationFolder);
-                    }
-                }
-            }
-
-            return result;
-        }
-
-        public void DeleteAsset(Asset asset, bool deleteFile)
-        {
-            #region Parameters validation
-
-            if (asset == null)
-            {
-                throw new ArgumentNullException(nameof(asset), "Asset cannot be null.");
-            }
-
-            if (asset.Folder == null)
-            {
-                throw new ArgumentNullException(nameof(asset), "Asset.Folder cannot be null.");
-            }
-
-            if (deleteFile && !this.storageService.FileExists(asset, asset.Folder))
-            {
-                throw new ArgumentException("File does not exist: " + asset.FullPath);
-            }
-
-            #endregion
-
-            this.assetRepository.DeleteAsset(asset.Folder.Path, asset.FileName);
-
-            if (deleteFile)
-            {
-                this.storageService.DeleteFile(asset.Folder.Path, asset.FileName);
-            }
-
-            this.assetRepository.SaveCatalog(asset.Folder);
         }
     }
 }

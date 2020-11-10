@@ -83,11 +83,13 @@ namespace JPPhotoManager.UI.Controls
                 if (source != null)
                 {
                     this.image.Source = source;
+                    this.backgroundImage.Source = source;
                 }
             }
             else
             {
                 this.image.Source = null;
+                this.backgroundImage.Source = null;
             }
         }
     }

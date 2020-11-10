@@ -22,6 +22,7 @@ namespace JPPhotoManager.UI.ViewModels
 
         public string Product { get; set; }
         public string Version { get; set; }
+        public bool IsRefreshingFolders { get; set; }
 
         public ApplicationViewModel(IApplication assetApp, SortCriteriaEnum initialSortCriteria = SortCriteriaEnum.FileName) : base(assetApp)
         {

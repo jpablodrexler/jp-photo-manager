@@ -16,6 +16,9 @@ namespace JPPhotoManager.Infrastructure
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
+        private const int STORAGE_VERSION = 3;
+        private const string SEPARATOR = "|";
+
         public bool IsInitialized { get; private set; }
         private string dataDirectory;
         private readonly IDatabase database;
@@ -38,16 +41,15 @@ namespace JPPhotoManager.Infrastructure
         {
             if (!this.IsInitialized)
             {
-                this.dataDirectory = this.storageService.ResolveDataDirectory();
-                var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
-                var separatorChar = separator.ToCharArray().First();
+                this.dataDirectory = this.storageService.ResolveDataDirectory(STORAGE_VERSION);
+                var separatorChar = SEPARATOR.ToCharArray().First();
                 this.database.Initialize(this.dataDirectory, separatorChar);
                 this.ReadCatalog();
 
                 if (this.AssetCatalog == null)
                 {
                     this.AssetCatalog = new AssetCatalog();
-                    this.AssetCatalog.StorageVersion = 2.0;
+                    this.AssetCatalog.StorageVersion = STORAGE_VERSION;
                     SaveCatalog(null);
                 }
 
@@ -65,6 +67,7 @@ namespace JPPhotoManager.Infrastructure
             this.AssetCatalog.ImportNewAssetsConfiguration.Imports.Clear();
             this.AssetCatalog.ImportNewAssetsConfiguration.Imports.AddRange(ReadImportDefinitions());
             this.AssetCatalog.Assets.ForEach(a => a.Folder = GetFolderById(a.FolderId));
+            this.AssetCatalog.RecentTargetPaths.AddRange(ReadRecentTargetPaths());
         }
 
         public void SaveCatalog(Folder folder)
@@ -76,6 +79,7 @@ namespace JPPhotoManager.Infrastructure
                     WriteAssets(this.AssetCatalog.Assets);
                     WriteFolders(this.AssetCatalog.Folders);
                     WriteImports(this.AssetCatalog.ImportNewAssetsConfiguration.Imports);
+                    WriteRecentTargetPaths(this.AssetCatalog.RecentTargetPaths);
                 }
                 
                 this.AssetCatalog.HasChanges = false;
@@ -207,6 +211,36 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
+        public List<string> ReadRecentTargetPaths()
+        {
+            List<string> result = new List<string>();
+
+            try
+            {
+                DataTable dataTable = database.ReadDataTable("RecentTargetPaths");
+
+                if (dataTable != null)
+                {
+                    for (int i = 0; i < dataTable.Rows.Count; i++)
+                    {
+                        DataRow row = dataTable.Rows[i];
+                        result.Add(row["Path"].ToString());
+                    }
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                throw new ApplicationException($"Error while trying to read data table 'RecentTargetPaths'. " +
+                    $"DataDirectory: {database.DataDirectory} - " +
+                    $"Separator: {database.Separator} - " +
+                    $"LastReadFilePath: {database.Diagnostics.LastReadFilePath} - " +
+                    $"LastReadFileRaw: {database.Diagnostics.LastReadFileRaw}",
+                    ex);
+            }
+
+            return result;
+        }
+
         public void WriteFolders(List<Folder> folders)
         {
             DataTable table = new DataTable("Folder");
@@ -276,10 +310,33 @@ namespace JPPhotoManager.Infrastructure
             this.database.WriteDataTable(table);
         }
 
+        public void WriteRecentTargetPaths(List<string> recentTargetPaths)
+        {
+            DataTable table = new DataTable("RecentTargetPaths");
+            table.Columns.Add("Path");
+
+            foreach (string path in recentTargetPaths)
+            {
+                DataRow row = table.NewRow();
+                row["Path"] = path;
+                table.Rows.Add(row);
+            }
+
+            this.database.WriteDataTable(table);
+        }
+
         public bool FolderHasThumbnails(Folder folder)
         {
             string thumbnailsFilePath = this.database.ResolveBlobFilePath(dataDirectory, folder.ThumbnailsFilename);
+            // TODO: Implement through the NuGet package.
             return File.Exists(thumbnailsFilePath);
+        }
+
+        private void DeleteThumbnails(Folder folder)
+        {
+            // TODO: Implement through the NuGet package.
+            string thumbnailsFilePath = this.database.ResolveBlobFilePath(dataDirectory, folder.ThumbnailsFilename);
+            File.Delete(thumbnailsFilePath);
         }
 
         protected virtual Dictionary<string, byte[]> GetThumbnails(string thumbnailsFileName, out bool isNewFile)
@@ -495,16 +552,43 @@ namespace JPPhotoManager.Infrastructure
                 {
                     Asset deletedAsset = GetAssetByFolderIdFileName(folder.FolderId, fileName);
 
+                    if (!this.Thumbnails.ContainsKey(folder.Path))
+                    {
+                        this.Thumbnails[folder.Path] = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
+                    }
+
                     if (this.Thumbnails.ContainsKey(folder.Path))
                     {
                         this.Thumbnails[folder.Path].Remove(fileName);
                     }
-
+                    
                     if (deletedAsset != null)
                     {
                         this.AssetCatalog.Assets.Remove(deletedAsset);
                         this.AssetCatalog.HasChanges = true;
                     }
+                }
+            }
+        }
+
+        public void DeleteFolder(Folder folder)
+        {
+            lock (this.AssetCatalog)
+            {
+                if (folder != null)
+                {
+                    if (this.Thumbnails.ContainsKey(folder.Path))
+                    {
+                        this.Thumbnails.Remove(folder.Path);
+                    }
+
+                    if (this.FolderHasThumbnails(folder))
+                    {
+                        this.DeleteThumbnails(folder);
+                    }
+
+                    this.AssetCatalog.Folders.Remove(folder);
+                    this.AssetCatalog.HasChanges = true;
                 }
             }
         }
@@ -613,6 +697,27 @@ namespace JPPhotoManager.Infrastructure
             lock (this.AssetCatalog)
             {
                 this.AssetCatalog.ImportNewAssetsConfiguration = importConfiguration;
+                this.AssetCatalog.HasChanges = true;
+            }
+        }
+
+        public List<string> GetRecentTargetPaths()
+        {
+            List<string> result = null;
+
+            lock (this.AssetCatalog)
+            {
+                result = this.AssetCatalog.RecentTargetPaths;
+            }
+
+            return result;
+        }
+
+        public void SetRecentTargetPaths(List<string> recentTargetPaths)
+        {
+            lock (this.AssetCatalog)
+            {
+                this.AssetCatalog.RecentTargetPaths = recentTargetPaths;
                 this.AssetCatalog.HasChanges = true;
             }
         }

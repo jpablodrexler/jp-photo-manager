@@ -42,10 +42,10 @@ namespace JPPhotoManager.Tests
                 .MockGetValue("appsettings:ApplicationDataDirectory", "{ApplicationData}\\JPPhotoManager")
                 .MockGetValue("appsettings:CatalogBatchSize", "100");
             
-            string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPPhotoManager");
+            string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPPhotoManager", "v3");
             
             IStorageService storageService = new StorageService(new UserConfigurationService(configurationMock.Object));
-            string result = storageService.ResolveDataDirectory();
+            string result = storageService.ResolveDataDirectory(3);
 
             result.Should().Be(expected);
         }
@@ -59,10 +59,10 @@ namespace JPPhotoManager.Tests
                 .MockGetValue("appsettings:ApplicationDataDirectory", "{ApplicationData}\\JPPhotoManager")
                 .MockGetValue("appsettings:CatalogBatchSize", "100");
 
-            string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPPhotoManager");
+            string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPPhotoManager", "v3");
             
             IStorageService storageService = new StorageService(new UserConfigurationService(configurationMock.Object));
-            string result = storageService.ResolveDataDirectory();
+            string result = storageService.ResolveDataDirectory(3);
 
             result.Should().Be(expected);
         }

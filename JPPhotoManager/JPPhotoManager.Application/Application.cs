@@ -12,6 +12,7 @@ namespace JPPhotoManager.Application
         private readonly IAssetRepository assetRepository;
         private readonly IImportNewAssetsService importNewAssetsService;
         private readonly ICatalogAssetsService catalogAssetsService;
+        private readonly IMoveAssetsService moveAssetsService;
         private readonly IFindDuplicatedAssetsService findDuplicatedAssetsService;
         private readonly IUserConfigurationService userConfigurationService;
         private readonly IStorageService storageService;
@@ -19,6 +20,7 @@ namespace JPPhotoManager.Application
         public Application(
             IImportNewAssetsService importNewAssetsService,
             ICatalogAssetsService catalogAssetsService,
+            IMoveAssetsService moveAssetsService,
             IFindDuplicatedAssetsService findDuplicatedAssetsService,
             IAssetRepository assetRepository,
             IUserConfigurationService userConfigurationService,
@@ -26,6 +28,7 @@ namespace JPPhotoManager.Application
         {
             this.importNewAssetsService = importNewAssetsService;
             this.catalogAssetsService = catalogAssetsService;
+            this.moveAssetsService = moveAssetsService;
             this.findDuplicatedAssetsService = findDuplicatedAssetsService;
             this.assetRepository = assetRepository;
             this.userConfigurationService = userConfigurationService;
@@ -90,7 +93,7 @@ namespace JPPhotoManager.Application
 
         public void DeleteAsset(Asset asset, bool deleteFile)
         {
-            this.catalogAssetsService.DeleteAsset(asset, deleteFile);
+            this.moveAssetsService.DeleteAsset(asset, deleteFile);
         }
 
         public AboutInformation GetAboutInformation(Assembly assembly)
@@ -120,7 +123,7 @@ namespace JPPhotoManager.Application
 
         public bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile)
         {
-            return this.catalogAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile);
+            return this.moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile);
         }
 
         public BitmapImage LoadBitmapImage(string imagePath, Rotation rotation)
@@ -131,6 +134,11 @@ namespace JPPhotoManager.Application
         public bool FileExists(string fullPath)
         {
             return this.storageService.FileExists(fullPath);
+        }
+
+        public List<string> GetRecentTargetPaths()
+        {
+            return this.assetRepository.GetRecentTargetPaths();
         }
     }
 }
