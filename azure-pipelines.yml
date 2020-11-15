@@ -29,6 +29,7 @@ steps:
   displayName: 'dotnet build'
   inputs:
     command: 'build'
+    projects: '$(solution)'
     arguments: '/p:Version=$(app-version)'
     configuration: '$(buildConfiguration)'
 
