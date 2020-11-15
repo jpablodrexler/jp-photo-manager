@@ -25,13 +25,12 @@ steps:
     command: 'restore'
     projects: '**/*.csproj'
 
-- task: VSBuild@1
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet build'
   inputs:
-    solution: '$(solution)'
-    msbuildArgs: '/p:Version=$(app-version)'
-    platform: '$(buildPlatform)'
+    command: 'build'
+    arguments: '/p:Version=$(app-version)'
     configuration: '$(buildConfiguration)'
-    clean: true
 
 - task: DotNetCoreCLI@2
   displayName: 'dotnet test'
