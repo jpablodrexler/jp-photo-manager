@@ -21,7 +21,7 @@ Soon will allow to:
 For the whole roadmap for the application, please take a look at the issues in this repository.
 
 ## Run the application
-Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoManager/JPPhotoManager/JPPhotoManager.UI.csproj` project.
+Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoManager/JPPhotoManager.UI/JPPhotoManager.UI.csproj` project.
 
 ## Installation instructions
 * Download the zip file with the compiled application files (`jp-photo-manager-{version}.zip`) for the latest release.
