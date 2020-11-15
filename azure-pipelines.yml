@@ -30,8 +30,7 @@ steps:
   inputs:
     command: 'build'
     projects: '$(solution)'
-    arguments: '/p:Version=$(app-version)'
-    configuration: '$(buildConfiguration)'
+    arguments: '--configuration $(buildConfiguration) -p:Version=$(app-version)'
 
 - task: DotNetCoreCLI@2
   displayName: 'dotnet test'
