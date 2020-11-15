@@ -20,6 +20,7 @@ steps:
     version: '5.0.100'
 
 - task: DotNetCoreCLI@2
+  displayName: 'dotnet restore'
   inputs:
     command: 'restore'
     projects: '**/*.csproj'
@@ -33,6 +34,7 @@ steps:
     clean: true
 
 - task: DotNetCoreCLI@2
+  displayName: 'dotnet test'
   inputs:
     command: 'test'
     projects: '**/*Tests.csproj'
