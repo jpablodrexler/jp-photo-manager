@@ -15,21 +15,25 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
-- task: NuGetToolInstaller@1
-
-- task: NuGetCommand@2
+- task: UseDotNet@2
   inputs:
-    restoreSolution: '$(solution)'
-
-- task: VSBuild@1
-  inputs:
-    solution: '$(solution)'
-    msbuildArgs: '/p:Version=$(app-version)'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
-    clean: true
+    version: '5.0.100'
 
 - task: DotNetCoreCLI@2
+  displayName: 'dotnet restore'
+  inputs:
+    command: 'restore'
+    projects: '**/*.csproj'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet build'
+  inputs:
+    command: 'build'
+    projects: '$(solution)'
+    arguments: '--configuration $(buildConfiguration) -p:Version=$(app-version)'
+
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet test'
   inputs:
     command: 'test'
     projects: '**/*Tests.csproj'
@@ -43,7 +47,7 @@ steps:
 - task: ArchiveFiles@2
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['create-release'], true))
   inputs:
-    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager.UI/bin/Release/netcoreapp3.1'
+    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows'
     includeRootFolder: false
     archiveType: 'zip'
     archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-v$(app-version).zip'
