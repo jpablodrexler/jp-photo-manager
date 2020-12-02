@@ -5,6 +5,7 @@ using JPPhotoManager.UI.ViewModels;
 using log4net;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -268,7 +269,8 @@ namespace JPPhotoManager.UI.Windows
 
                 if (duplicates.Count > 0)
                 {
-                    DuplicatedAssetsViewModel viewModel = new DuplicatedAssetsViewModel(this.ViewModel.Application) { DuplicatedAssetCollectionSets = duplicates };
+                    DuplicatedAssetsViewModel viewModel = new DuplicatedAssetsViewModel(this.ViewModel.Application);
+                    viewModel.SetDuplicates(duplicates);
                     DuplicatedAssetsWindow duplicatedAssetsWindow = new DuplicatedAssetsWindow(viewModel);
                     duplicatedAssetsWindow.ShowDialog();
                 }

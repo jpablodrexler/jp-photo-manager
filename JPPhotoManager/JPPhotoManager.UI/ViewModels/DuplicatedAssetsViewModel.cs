@@ -1,12 +1,15 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace JPPhotoManager.UI.ViewModels
 {
     public class DuplicatedAssetsViewModel : BaseViewModel<IApplication>
     {
-        private List<DuplicatedAssetCollection> _duplicatedAssetCollectionSets;
+        // TODO: IMPROVE NAMING ON CLASSES AND VARIABLES.
+        private List<DuplicatedAssetCollection> _duplicatedAssets;
+        private ObservableCollection<DuplicatedAssetCollection> _observableDuplicatedAssetCollectionSets;
         private int _duplicatedAssetCollectionSetsPosition;
         private int _duplicatedAssetPosition;
 		
@@ -14,13 +17,13 @@ namespace JPPhotoManager.UI.ViewModels
 		{
 		}
 
-        public List<DuplicatedAssetCollection> DuplicatedAssetCollectionSets
+        public ObservableCollection<DuplicatedAssetCollection> ObservableDuplicatedAssetCollectionSets
         {
-            get { return this._duplicatedAssetCollectionSets; }
-            set
+            get { return this._observableDuplicatedAssetCollectionSets; }
+            private set
             {
-                this._duplicatedAssetCollectionSets = value;
-                this.NotifyPropertyChanged(nameof(DuplicatedAssetCollectionSets));
+                this._observableDuplicatedAssetCollectionSets = value;
+                this.NotifyPropertyChanged(nameof(ObservableDuplicatedAssetCollectionSets));
                 this.DuplicatedAssetCollectionSetsPosition = 0;
             }
         }
@@ -34,6 +37,12 @@ namespace JPPhotoManager.UI.ViewModels
                 this.NotifyPropertyChanged(nameof(DuplicatedAssetCollectionSetsPosition), nameof(CurrentDuplicatedAssetCollection));
                 this.DuplicatedAssetPosition = 0;
             }
+        }
+
+        public void SetDuplicates(List<DuplicatedAssetCollection> duplicatedAssets)
+        {
+            this._duplicatedAssets = duplicatedAssets;
+            this._observableDuplicatedAssetCollectionSets = new ObservableCollection<DuplicatedAssetCollection>(duplicatedAssets);
         }
 
         public int DuplicatedAssetPosition
@@ -52,9 +61,9 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 DuplicatedAssetCollection result = null;
 
-                if (this.DuplicatedAssetCollectionSets != null && this.DuplicatedAssetCollectionSets.Count > 0 && this.DuplicatedAssetCollectionSetsPosition >= 0)
+                if (this.ObservableDuplicatedAssetCollectionSets != null && this.ObservableDuplicatedAssetCollectionSets.Count > 0 && this.DuplicatedAssetCollectionSetsPosition >= 0)
                 {
-                    result = this.DuplicatedAssetCollectionSets[this.DuplicatedAssetCollectionSetsPosition];
+                    result = this.ObservableDuplicatedAssetCollectionSets[this.DuplicatedAssetCollectionSetsPosition];
                 }
 
                 return result;
@@ -74,6 +83,25 @@ namespace JPPhotoManager.UI.ViewModels
 
                 return result;
             }
+        }
+
+        public void RemoveDuplicatedAsset(Asset asset)
+        {
+            this.Application.DeleteAsset(asset, deleteFile: true);
+
+            // TODO: INSTEAD OF REMOVING FROM THE COLLECTION, SHOULD FILTER IF THE DUPLICATED ASSETS ON SET > 1
+            //var duplicatedSet = this.DuplicatedAssetCollectionSets[this.DuplicatedAssetCollectionSetsPosition];
+            //duplicatedSet.Remove(asset);
+
+            //if (!duplicatedSet.HasDuplicates)
+            //{
+            //    this.DuplicatedAssetCollectionSets.Remove(duplicatedSet);
+            //}
+        }
+
+        public void RemoveFromParentFolder()
+        {
+            this.Application.RemoveDuplicatesFromParentFolder(this._duplicatedAssets);
         }
     }
 }

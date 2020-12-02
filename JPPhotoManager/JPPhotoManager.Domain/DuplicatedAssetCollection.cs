@@ -15,5 +15,13 @@ namespace JPPhotoManager.Domain
                 return $"{this[0].FileName} ({this.Count} duplicates)";
             }
         }
+
+        public bool HasDuplicates
+        {
+            get
+            {
+                return this.Count > 1;
+            }
+        }
     }
 }

@@ -1,11 +1,22 @@
 ﻿using FluentAssertions;
 using JPPhotoManager.Domain;
+using JPPhotoManager.Infrastructure;
+using Moq;
+using System.IO;
 using Xunit;
 
 namespace JPPhotoManager.Tests
 {
     public class FolderTest
     {
+        private string dataDirectory;
+
+        public FolderTest()
+        {
+            dataDirectory = Path.GetDirectoryName(typeof(FolderTest).Assembly.Location);
+            dataDirectory = Path.Combine(dataDirectory, "TestFiles");
+        }
+
         [Fact]
         public void SameFileAndFolderEqualTest()
         {
@@ -105,6 +116,43 @@ namespace JPPhotoManager.Tests
             };
 
             folder2.ToString().Should().BeEmpty();
+        }
+
+        [Theory]
+        [InlineData("TestFolder", "TestFolder\\TestSubFolder1", true)]
+        [InlineData("TestFolder", "TestFolder\\TestSubFolder2", true)]
+        [InlineData("TestFolder", "TestFolder\\TestSubFolder2\\TestSubFolder3", false)]
+        [InlineData("TestFolder\\TestSubFolder1", "TestFolder", false)]
+        [InlineData("TestFolder\\TestSubFolder2", "TestFolder", false)]
+        [InlineData("TestFolder\\TestSubFolder2\\TestSubFolder3", "TestFolder", false)]
+        [InlineData("TestFolder", "TestFolder", false)]
+        [InlineData("TestFolder\\TestSubFolder1", "TestFolder\\TestSubFolder2", false)]
+        [InlineData("", "TestFolder", true)]
+        [InlineData("", "TestFolder\\TestSubFolder1", false)]
+        [InlineData("TestFolder", "", false)]
+        public void IsParentFolderTest(string testFolderPath1, string testFolderPath2, bool expected)
+        {
+            dataDirectory = Path.GetDirectoryName(typeof(CatalogMoveAssetsServiceTest).Assembly.Location);
+            dataDirectory = Path.Combine(dataDirectory, "TestFiles");
+
+            string absoluteTestFolderPath1 = Path.Combine(dataDirectory, testFolderPath1);
+            string absoluteTestFolderPath2 = Path.Combine(dataDirectory, testFolderPath2);
+
+            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
+            IStorageService storageService = new StorageService(userConfigurationService.Object);
+
+            Folder folder1 = new Folder
+            {
+                Path = absoluteTestFolderPath1
+            };
+
+            Folder folder2 = new Folder
+            {
+                Path = absoluteTestFolderPath2
+            };
+
+            bool result = folder1.IsParentOf(folder2, storageService);
+            result.Should().Be(expected);
         }
     }
 }

@@ -73,11 +73,15 @@ namespace JPPhotoManager.Tests
                 mockRepository.Object,
                 storageService,
                 catalogAssetsService);
+            IRemoveDuplicatedAssetsService removeDuplicatedAssetsService = new RemoveDuplicatedAssetsService(
+                storageService,
+                moveAssetsService);
             Application.Application app = new Application.Application(
                 importNewAssetsService,
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 mockRepository.Object,
                 userConfigurationService,
                 storageService);
@@ -113,11 +117,15 @@ namespace JPPhotoManager.Tests
                 mockRepository.Object,
                 storageService,
                 catalogAssetsService);
+            IRemoveDuplicatedAssetsService removeDuplicatedAssetsService = new RemoveDuplicatedAssetsService(
+                storageService,
+                moveAssetsService);
             Application.Application app = new Application.Application(
                 importNewAssetsService,
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 mockRepository.Object,
                 userConfigurationService,
                 storageService);
@@ -152,11 +160,15 @@ namespace JPPhotoManager.Tests
                 mockRepository.Object,
                 storageService,
                 catalogAssetsService);
+            IRemoveDuplicatedAssetsService removeDuplicatedAssetsService = new RemoveDuplicatedAssetsService(
+                storageService,
+                moveAssetsService);
             Application.Application app = new Application.Application(
                 importNewAssetsService,
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 mockRepository.Object,
                 userConfigurationService,
                 storageService);
@@ -192,11 +204,15 @@ namespace JPPhotoManager.Tests
                 repository,
                 storageService,
                 catalogAssetsService);
+            IRemoveDuplicatedAssetsService removeDuplicatedAssetsService = new RemoveDuplicatedAssetsService(
+                storageService,
+                moveAssetsService);
             Application.Application app = new Application.Application(
                 importNewAssetsService,
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 repository,
                 userConfigurationService,
                 storageService);
@@ -233,6 +249,7 @@ namespace JPPhotoManager.Tests
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 repository,
                 userConfigurationService,
                 storageService);
@@ -280,11 +297,15 @@ namespace JPPhotoManager.Tests
                 repository,
                 storageService,
                 catalogAssetsService);
+            IRemoveDuplicatedAssetsService removeDuplicatedAssetsService = new RemoveDuplicatedAssetsService(
+                storageService,
+                moveAssetsService);
             Application.Application app = new Application.Application(
                 importNewAssetsService,
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 repository,
                 userConfigurationService,
                 storageService);
@@ -332,11 +353,15 @@ namespace JPPhotoManager.Tests
                 repository,
                 storageService,
                 catalogAssetsService);
+            IRemoveDuplicatedAssetsService removeDuplicatedAssetsService = new RemoveDuplicatedAssetsService(
+                storageService,
+                moveAssetsService);
             Application.Application app = new Application.Application(
                 importNewAssetsService,
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 repository,
                 userConfigurationService,
                 storageService);
@@ -396,11 +421,15 @@ namespace JPPhotoManager.Tests
                 repository,
                 storageService,
                 catalogAssetsService);
+            IRemoveDuplicatedAssetsService removeDuplicatedAssetsService = new RemoveDuplicatedAssetsService(
+                storageService,
+                moveAssetsService);
             Application.Application app = new Application.Application(
                 importNewAssetsService,
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 repository,
                 userConfigurationService,
                 storageService);
@@ -458,11 +487,15 @@ namespace JPPhotoManager.Tests
                 repository,
                 storageService,
                 catalogAssetsService);
+            IRemoveDuplicatedAssetsService removeDuplicatedAssetsService = new RemoveDuplicatedAssetsService(
+                storageService,
+                moveAssetsService);
             Application.Application app = new Application.Application(
                 importNewAssetsService,
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 repository,
                 userConfigurationService,
                 storageService);
@@ -500,6 +533,7 @@ namespace JPPhotoManager.Tests
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 repository,
                 userConfigurationService,
                 storageService);
@@ -548,11 +582,15 @@ namespace JPPhotoManager.Tests
                 repository,
                 storageService,
                 catalogAssetsService);
+            IRemoveDuplicatedAssetsService removeDuplicatedAssetsService = new RemoveDuplicatedAssetsService(
+                storageService,
+                moveAssetsService);
             Application.Application app = new Application.Application(
                 importNewAssetsService,
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 repository,
                 userConfigurationService,
                 storageService);
@@ -627,11 +665,15 @@ namespace JPPhotoManager.Tests
                 repository,
                 storageService,
                 catalogAssetsService);
+            IRemoveDuplicatedAssetsService removeDuplicatedAssetsService = new RemoveDuplicatedAssetsService(
+                storageService,
+                moveAssetsService);
             Application.Application app = new Application.Application(
                 importNewAssetsService,
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 repository,
                 userConfigurationService,
                 storageService);
@@ -667,6 +709,7 @@ namespace JPPhotoManager.Tests
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 repository,
                 userConfigurationService,
                 storageService);
@@ -710,11 +753,15 @@ namespace JPPhotoManager.Tests
                 repository,
                 storageService,
                 catalogAssetsService);
+            IRemoveDuplicatedAssetsService removeDuplicatedAssetsService = new RemoveDuplicatedAssetsService(
+                storageService,
+                moveAssetsService);
             Application.Application app = new Application.Application(
                 importNewAssetsService,
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 repository,
                 userConfigurationService,
                 storageService);
@@ -764,6 +811,7 @@ namespace JPPhotoManager.Tests
                 catalogAssetsService,
                 moveAssetsService,
                 findDuplicatedAssetsService,
+                removeDuplicatedAssetsService,
                 repository,
                 userConfigurationService,
                 storageService);

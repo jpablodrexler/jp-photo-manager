@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Threading;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Application
@@ -14,6 +13,7 @@ namespace JPPhotoManager.Application
         private readonly ICatalogAssetsService catalogAssetsService;
         private readonly IMoveAssetsService moveAssetsService;
         private readonly IFindDuplicatedAssetsService findDuplicatedAssetsService;
+        private readonly IRemoveDuplicatedAssetsService removeDuplicatedAssetsService;
         private readonly IUserConfigurationService userConfigurationService;
         private readonly IStorageService storageService;
 
@@ -22,6 +22,7 @@ namespace JPPhotoManager.Application
             ICatalogAssetsService catalogAssetsService,
             IMoveAssetsService moveAssetsService,
             IFindDuplicatedAssetsService findDuplicatedAssetsService,
+            IRemoveDuplicatedAssetsService removeDuplicatedAssetsService,
             IAssetRepository assetRepository,
             IUserConfigurationService userConfigurationService,
             IStorageService storageService)
@@ -30,6 +31,7 @@ namespace JPPhotoManager.Application
             this.catalogAssetsService = catalogAssetsService;
             this.moveAssetsService = moveAssetsService;
             this.findDuplicatedAssetsService = findDuplicatedAssetsService;
+            this.removeDuplicatedAssetsService = removeDuplicatedAssetsService;
             this.assetRepository = assetRepository;
             this.userConfigurationService = userConfigurationService;
             this.storageService = storageService;
@@ -89,6 +91,11 @@ namespace JPPhotoManager.Application
         public List<DuplicatedAssetCollection> GetDuplicatedAssets()
         {
             return this.findDuplicatedAssetsService.GetDuplicatedAssets();
+        }
+
+        public void RemoveDuplicatesFromParentFolder(List<DuplicatedAssetCollection> duplicatedAssetCollectionSets)
+        {
+            this.removeDuplicatedAssetsService.RemoveDuplicatesFromParentFolder(duplicatedAssetCollectionSets);
         }
 
         public void DeleteAsset(Asset asset, bool deleteFile)

@@ -19,6 +19,11 @@ namespace JPPhotoManager.Domain
             }
         }
 
+        public bool IsParentOf(Folder otherFolder, IStorageService storageService)
+        {
+            return string.Compare(storageService.GetParentDirectory(otherFolder.Path), this.Path, StringComparison.OrdinalIgnoreCase) == 0;
+        }
+
         public override bool Equals(object obj)
         {
             Folder folder = obj as Folder;

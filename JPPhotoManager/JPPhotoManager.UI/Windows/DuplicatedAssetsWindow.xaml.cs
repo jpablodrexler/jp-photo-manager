@@ -37,6 +37,12 @@ namespace JPPhotoManager.UI.Windows
             get { return (DuplicatedAssetsViewModel)this.DataContext; }
         }
 
+        private void DeleteFromParentFolderLabel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            // TODO: SHOULD ASK FOR CONFIRMATION AND SHOW A LIST OF THE ASSETS THAT WERE REMOVED
+            this.ViewModel.RemoveFromParentFolder();
+        }
+
         private void DeleteLabel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             try
@@ -45,9 +51,7 @@ namespace JPPhotoManager.UI.Windows
 
                 if (MessageBox.Show($"Are you sure you want to delete {asset.FullPath}?", "Confirm", MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK)
                 {
-                    this.ViewModel.Application.DeleteAsset(asset, deleteFile: true);
-                    var duplicates = this.ViewModel.Application.GetDuplicatedAssets();
-                    this.ViewModel.DuplicatedAssetCollectionSets = duplicates;
+                    this.ViewModel.RemoveDuplicatedAsset(asset);
                 }
 
                 // TODO: IN THE LIST BOXES, IF THE FILENAME INCLUDES _ IT IS NOT BEING SHOWN.
