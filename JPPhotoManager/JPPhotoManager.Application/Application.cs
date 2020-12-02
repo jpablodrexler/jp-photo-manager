@@ -12,6 +12,7 @@ namespace JPPhotoManager.Application
         private readonly ICatalogAssetsService catalogAssetsService;
         private readonly IMoveAssetsService moveAssetsService;
         private readonly IFindDuplicatedAssetsService findDuplicatedAssetsService;
+        private readonly IRemoveDuplicatedAssetsService removeDuplicatedAssetsService;
         private readonly IUserConfigurationService userConfigurationService;
         private readonly IStorageService storageService;
         private readonly IBatchRenameService batchRenameService;
@@ -23,6 +24,7 @@ namespace JPPhotoManager.Application
             ICatalogAssetsService catalogAssetsService,
             IMoveAssetsService moveAssetsService,
             IFindDuplicatedAssetsService findDuplicatedAssetsService,
+            IRemoveDuplicatedAssetsService removeDuplicatedAssetsService,
             IAssetRepository assetRepository,
             IUserConfigurationService userConfigurationService,
             IStorageService storageService,
@@ -34,6 +36,7 @@ namespace JPPhotoManager.Application
             this.catalogAssetsService = catalogAssetsService;
             this.moveAssetsService = moveAssetsService;
             this.findDuplicatedAssetsService = findDuplicatedAssetsService;
+            this.removeDuplicatedAssetsService = removeDuplicatedAssetsService;
             this.assetRepository = assetRepository;
             this.userConfigurationService = userConfigurationService;
             this.storageService = storageService;
@@ -93,6 +96,9 @@ namespace JPPhotoManager.Application
         /// <returns>A list of duplicated sets of assets (corresponding to the same image),
         /// where each item is a list of duplicated assets.</returns>
         public List<List<Asset>> GetDuplicatedAssets() => findDuplicatedAssetsService.GetDuplicatedAssets();
+
+        public void RemoveDuplicatesFromParentFolder(List<List<Asset>> duplicatedAssets) =>
+            removeDuplicatedAssetsService.RemoveDuplicatesFromParentFolder(duplicatedAssets);
 
         public void DeleteAssets(Asset[] assets, bool deleteFiles) => moveAssetsService.DeleteAssets(assets, deleteFiles);
 

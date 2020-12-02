@@ -139,6 +139,11 @@ namespace JPPhotoManager.UI.ViewModels
             // TODO: THE COUNTER DISPLAYED AT THE TOP OF THE SCREEN SHOULD BE UPDATED AS WELL BASED ON THE TOTAL OF DUPLICATED SETS WITH AT LEAST 2 VISIBLE ASSETS.
         }
 
+        public void RemoveFromParentFolder()
+        {
+            Application.RemoveDuplicatesFromParentFolder(_duplicatedAssets);
+        }
+
         private void NavigateToNextVisibleSet(int currentIndex)
         {
             var nextVisibleSet = DuplicatedAssetSetsCollection

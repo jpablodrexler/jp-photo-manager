@@ -1,5 +1,8 @@
 ﻿using FluentAssertions;
 using JPPhotoManager.Domain;
+using JPPhotoManager.Domain.Interfaces;
+using JPPhotoManager.Infrastructure;
+using Moq;
 using System.IO;
 using Xunit;
 
@@ -136,7 +139,10 @@ namespace JPPhotoManager.Tests.Unit
             string absoluteTestFolderPath1 = Path.Combine(dataDirectory, testFolderPath1);
             string absoluteTestFolderPath2 = Path.Combine(dataDirectory, testFolderPath2);
 
-            Folder folder1 = new()
+            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
+            IStorageService storageService = new StorageService(userConfigurationService.Object);
+
+            Folder folder1 = new Folder
             {
                 Path = absoluteTestFolderPath1
             };

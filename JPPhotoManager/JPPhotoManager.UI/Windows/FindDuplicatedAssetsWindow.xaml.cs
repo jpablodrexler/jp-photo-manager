@@ -36,6 +36,12 @@ namespace JPPhotoManager.UI.Windows
             get { return (FindDuplicatedAssetsViewModel)DataContext; }
         }
 
+        private void DeleteFromParentFolderLabel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            // TODO: SHOULD ASK FOR CONFIRMATION AND SHOW A LIST OF THE ASSETS THAT WERE REMOVED
+            this.ViewModel.RemoveFromParentFolder();
+        }
+
         private void DeleteLabel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             try

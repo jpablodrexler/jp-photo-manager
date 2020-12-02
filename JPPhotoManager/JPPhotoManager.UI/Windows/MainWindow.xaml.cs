@@ -5,6 +5,8 @@ using JPPhotoManager.UI.ViewModels;
 using log4net;
 using Microsoft.Toolkit.Uwp.Notifications;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
