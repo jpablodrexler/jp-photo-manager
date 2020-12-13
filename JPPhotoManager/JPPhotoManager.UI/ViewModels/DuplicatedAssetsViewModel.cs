@@ -42,7 +42,22 @@ namespace JPPhotoManager.UI.ViewModels
             set
             {
                 this._duplicatedAssetPosition = value;
-                this.NotifyPropertyChanged(nameof(DuplicatedAssetPosition), nameof(CurrentDuplicatedAsset));
+
+                Asset asset = CurrentDuplicatedAsset;
+
+                if (asset != null && asset.ImageData == null)
+                {
+                    this.Application.LoadThumbnailAndFileInformation(asset);
+                }
+
+                if (asset != null && asset.ImageData == null)
+                {
+                    Refresh();
+                }
+                else
+                {
+                    this.NotifyPropertyChanged(nameof(DuplicatedAssetPosition), nameof(CurrentDuplicatedAsset));
+                }
             }
         }
 
@@ -74,6 +89,12 @@ namespace JPPhotoManager.UI.ViewModels
 
                 return result;
             }
+        }
+
+        public void Refresh()
+        {
+            var duplicates = this.Application.GetDuplicatedAssets();
+            DuplicatedAssetCollectionSets = duplicates;
         }
     }
 }

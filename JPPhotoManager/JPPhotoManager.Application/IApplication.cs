@@ -8,6 +8,7 @@ namespace JPPhotoManager.Application
     public interface IApplication
     {
         Asset[] GetAssets(string directory);
+        void LoadThumbnailAndFileInformation(Asset asset);
         ImportNewAssetsConfiguration GetImportNewAssetsConfiguration();
         void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration);
         List<ImportNewAssetsResult> ImportNewImages(StatusChangeCallback callback);
