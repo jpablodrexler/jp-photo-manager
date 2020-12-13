@@ -42,7 +42,7 @@ namespace JPPhotoManager.UI.ViewModels
         public void SetDuplicates(List<DuplicatedAssetCollection> duplicatedAssets)
         {
             this._duplicatedAssets = duplicatedAssets;
-            this._observableDuplicatedAssetCollectionSets = new ObservableCollection<DuplicatedAssetCollection>(duplicatedAssets);
+            this.ObservableDuplicatedAssetCollectionSets = new ObservableCollection<DuplicatedAssetCollection>(duplicatedAssets);
         }
 
         public int DuplicatedAssetPosition
@@ -109,6 +109,7 @@ namespace JPPhotoManager.UI.ViewModels
         public void RemoveDuplicatedAsset(Asset asset)
         {
             this.Application.DeleteAsset(asset, deleteFile: true);
+            this.Refresh(); // TODO: SHOULD REFRESH THE OBSERVABLE COLLECTION INSTEAD.
 
             // TODO: INSTEAD OF REMOVING FROM THE COLLECTION, SHOULD FILTER IF THE DUPLICATED ASSETS ON SET > 1
             //var duplicatedSet = this.DuplicatedAssetCollectionSets[this.DuplicatedAssetCollectionSetsPosition];
