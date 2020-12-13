@@ -17,15 +17,17 @@
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="24"/>
+            <RowDefinition Height="32"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="200"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="400"/>
+            <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <Label Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Foreground="#FFFFFFFF" Content="{Binding DuplicatedAssetCollectionSets.Count}" ContentStringFormat="Duplicated sets: {0}"/>
+        <Label Grid.Row="0" Grid.Column="0" Foreground="#FFFFFFFF" Content="{Binding DuplicatedAssetCollectionSets.Count}" ContentStringFormat="Duplicated sets: {0}"/>
+        <Label Grid.Row="0" Grid.Column="1" x:Name="refreshLabel" Padding="5" MouseLeftButtonDown="RefreshLabel_MouseLeftButtonDown" Content="Refresh" Style="{StaticResource ButtonStyle}" />
         <ListBox Grid.Row="1" Grid.RowSpan="2" Grid.Column="0" Background="#FF3C3C3C" ItemsSource="{Binding DuplicatedAssetCollectionSets}" SelectedIndex="{Binding DuplicatedAssetCollectionSetsPosition}">
             <ListBox.ItemTemplate>
                 <ItemContainerTemplate>
@@ -33,7 +35,7 @@
                 </ItemContainerTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
-        <DataGrid Grid.Row="1" Grid.Column="1" ItemsSource="{Binding CurrentDuplicatedAssetCollection}" SelectedIndex="{Binding DuplicatedAssetPosition}" AutoGenerateColumns="False" CanUserReorderColumns="True" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C">
+        <DataGrid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" ItemsSource="{Binding CurrentDuplicatedAssetCollection}" SelectedIndex="{Binding DuplicatedAssetPosition}" AutoGenerateColumns="False" CanUserReorderColumns="True" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C">
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Setter Property="Background" Value="#FF3C3C3C"/>
@@ -57,7 +59,7 @@
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
-        <Image Grid.Row="2" Grid.Column="1" HorizontalAlignment="Center" Source="{ Binding CurrentDuplicatedAsset.ImageData }" Width="200" Height="150">
+        <Image Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" HorizontalAlignment="Center" Source="{ Binding CurrentDuplicatedAsset.ImageData }" Width="200" Height="150">
             <Image.Effect>
                 <DropShadowEffect/>
             </Image.Effect>

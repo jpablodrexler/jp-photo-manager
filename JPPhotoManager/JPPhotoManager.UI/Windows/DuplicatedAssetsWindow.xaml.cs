@@ -5,7 +5,6 @@ using log4net;
 using System;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace JPPhotoManager.UI.Windows
@@ -52,6 +51,18 @@ namespace JPPhotoManager.UI.Windows
 
                 // TODO: IN THE LIST BOXES, IF THE FILENAME INCLUDES _ IT IS NOT BEING SHOWN.
                 Console.WriteLine("Delete " + asset.FullPath);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void RefreshLabel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                this.ViewModel.Refresh();
             }
             catch (Exception ex)
             {
