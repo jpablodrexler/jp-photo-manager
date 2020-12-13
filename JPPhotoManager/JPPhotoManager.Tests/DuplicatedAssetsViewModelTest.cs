@@ -5,7 +5,6 @@ using JPPhotoManager.UI.ViewModels;
 using Moq;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using Xunit;
 
 namespace JPPhotoManager.Tests
@@ -26,6 +25,8 @@ namespace JPPhotoManager.Tests
             
             Mock<IApplication> mock = new Mock<IApplication>();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
+            mock.Setup(app => app.LoadThumbnailAndFileInformation(It.IsAny<Asset>()))
+                .Callback<Asset>(a => a.ImageData = new System.Windows.Media.Imaging.BitmapImage());
 
             DuplicatedAssetsViewModel viewModel = new DuplicatedAssetsViewModel(mock.Object);
             viewModel.SetDuplicates(duplicatedAssetSets);

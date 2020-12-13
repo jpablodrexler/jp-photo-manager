@@ -73,37 +73,6 @@ namespace JPPhotoManager.Domain
 
             result = result.Where(r => r.Count() > 1).ToList();
 
-            // Loads the thumbnail and file information for each asset.
-            foreach (List<Asset> duplicatedSet in result)
-            {
-                foreach (Asset asset in duplicatedSet)
-                {
-                    asset.ImageData = this.assetRepository.LoadThumbnail(asset.Folder.Path, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
-                    this.storageService.GetFileInformation(asset);
-                }
-            }
-
-            // Removes assets with no thumbnails.
-            foreach (List<Asset> duplicatedSet in result)
-            {
-                List<Asset> assetsToRemove = new List<Asset>();
-
-                for (int i = 0; i < duplicatedSet.Count; i++)
-                {
-                    if (duplicatedSet[i].ImageData == null)
-                    {
-                        assetsToRemove.Add(duplicatedSet[i]);
-                    }
-                }
-
-                foreach (Asset asset in assetsToRemove)
-                {
-                    duplicatedSet.Remove(asset);
-                }
-            }
-
-            result = result.Where(r => r.Count() > 1).ToList();
-
             return result;
         }
     }
