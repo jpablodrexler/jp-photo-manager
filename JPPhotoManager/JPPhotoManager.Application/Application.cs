@@ -94,12 +94,12 @@ namespace JPPhotoManager.Application
         /// </summary>
         /// <returns>A list of duplicated sets of assets (corresponding to the same image),
         /// where each item is a list of duplicated assets.</returns>
-        public List<DuplicatedAssetCollection> GetDuplicatedAssets()
+        public List<List<Asset>> GetDuplicatedAssets()
         {
             return this.findDuplicatedAssetsService.GetDuplicatedAssets();
         }
 
-        public void RemoveDuplicatesFromParentFolder(List<DuplicatedAssetCollection> duplicatedAssetCollectionSets)
+        public void RemoveDuplicatesFromParentFolder(List<List<Asset>> duplicatedAssetCollectionSets)
         {
             this.removeDuplicatedAssetsService.RemoveDuplicatesFromParentFolder(duplicatedAssetCollectionSets);
         }

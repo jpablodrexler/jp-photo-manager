@@ -14,8 +14,8 @@ namespace JPPhotoManager.Application
         List<ImportNewAssetsResult> ImportNewImages(StatusChangeCallback callback);
         void CatalogImages(CatalogChangeCallback callback);
         void SetAsWallpaper(Asset asset, WallpaperStyle style);
-        List<DuplicatedAssetCollection> GetDuplicatedAssets();
-        void RemoveDuplicatesFromParentFolder(List<DuplicatedAssetCollection> duplicatedAssetCollectionSets);
+        List<List<Asset>> GetDuplicatedAssets();
+        void RemoveDuplicatesFromParentFolder(List<List<Asset>> duplicatedAssetCollectionSets);
         void DeleteAsset(Asset asset, bool deleteFile);
         AboutInformation GetAboutInformation(Assembly assembly);
         Folder[] GetDrives();

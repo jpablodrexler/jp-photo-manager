@@ -1,28 +1,28 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.Windows;
 
 namespace JPPhotoManager.UI.ViewModels
 {
-    public class DuplicatedAssetsViewModel : BaseViewModel<IApplication>
+    public class FindDuplicatedAssetsViewModel : BaseViewModel<IApplication>
     {
         // TODO: IMPROVE NAMING ON CLASSES AND VARIABLES.
-        private List<DuplicatedAssetCollection> _duplicatedAssets;
-        private ObservableCollection<DuplicatedAssetCollection> _observableDuplicatedAssetCollectionSets;
+        private List<List<Asset>> _duplicatedAssets;
+        private List<DuplicatedSetViewModel> _collection;
         private int _duplicatedAssetCollectionSetsPosition;
         private int _duplicatedAssetPosition;
 		
-		public DuplicatedAssetsViewModel(IApplication assetApp) : base(assetApp)
+		public FindDuplicatedAssetsViewModel(IApplication assetApp) : base(assetApp)
 		{
 		}
 
-        public ObservableCollection<DuplicatedAssetCollection> ObservableDuplicatedAssetCollectionSets
+        public List<DuplicatedSetViewModel> ObservableDuplicatedAssetCollectionSets
         {
-            get { return this._observableDuplicatedAssetCollectionSets; }
+            get { return this._collection; }
             private set
             {
-                this._observableDuplicatedAssetCollectionSets = value;
+                this._collection = value;
                 this.NotifyPropertyChanged(nameof(ObservableDuplicatedAssetCollectionSets));
                 this.DuplicatedAssetCollectionSetsPosition = 0;
             }
@@ -39,10 +39,24 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
-        public void SetDuplicates(List<DuplicatedAssetCollection> duplicatedAssets)
+        public void SetDuplicates(List<List<Asset>> duplicatedAssets)
         {
             this._duplicatedAssets = duplicatedAssets;
-            this.ObservableDuplicatedAssetCollectionSets = new ObservableCollection<DuplicatedAssetCollection>(duplicatedAssets);
+            List<DuplicatedSetViewModel> collection = new List<DuplicatedSetViewModel>();
+
+            foreach (var duplicatedSet in duplicatedAssets)
+            {
+                DuplicatedSetViewModel duplicatedSetViewModel = new DuplicatedSetViewModel();
+
+                foreach (var asset in duplicatedSet)
+                {
+                    duplicatedSetViewModel.Add(new DuplicatedAssetViewModel { Asset = asset, Visible = Visibility.Visible });
+                }
+
+                collection.Add(duplicatedSetViewModel);
+            }
+
+            this.ObservableDuplicatedAssetCollectionSets = collection;
         }
 
         public int DuplicatedAssetPosition
@@ -52,14 +66,14 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 this._duplicatedAssetPosition = value;
 
-                Asset asset = CurrentDuplicatedAsset;
+                DuplicatedAssetViewModel assetViewModel = CurrentDuplicatedAsset;
 
-                if (asset != null && asset.ImageData == null)
+                if (assetViewModel != null && assetViewModel.Asset != null && assetViewModel.Asset.ImageData == null)
                 {
-                    this.Application.LoadThumbnailAndFileInformation(asset);
+                    this.Application.LoadThumbnailAndFileInformation(assetViewModel.Asset);
                 }
 
-                if (asset != null && asset.ImageData == null)
+                if (assetViewModel != null && assetViewModel.Asset != null && assetViewModel.Asset.ImageData == null)
                 {
                     Refresh();
                 }
@@ -70,11 +84,11 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
-        public DuplicatedAssetCollection CurrentDuplicatedAssetCollection
+        public DuplicatedSetViewModel CurrentDuplicatedAssetCollection
         {
             get
             {
-                DuplicatedAssetCollection result = null;
+                DuplicatedSetViewModel result = null;
 
                 if (this.ObservableDuplicatedAssetCollectionSets != null && this.ObservableDuplicatedAssetCollectionSets.Count > 0 && this.DuplicatedAssetCollectionSetsPosition >= 0)
                 {
@@ -85,11 +99,11 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
-        public Asset CurrentDuplicatedAsset
+        public DuplicatedAssetViewModel CurrentDuplicatedAsset
         {
             get
             {
-                Asset result = null;
+                DuplicatedAssetViewModel result = null;
 
                 if (this.CurrentDuplicatedAssetCollection != null && this.CurrentDuplicatedAssetCollection.Count > 0 && this.DuplicatedAssetPosition >= 0)
                 {
@@ -106,10 +120,11 @@ namespace JPPhotoManager.UI.ViewModels
             SetDuplicates(duplicates);
         }
 
-        public void RemoveDuplicatedAsset(Asset asset)
+        public void DeleteAsset(DuplicatedAssetViewModel assetViewModel)
         {
-            this.Application.DeleteAsset(asset, deleteFile: true);
-            this.Refresh(); // TODO: SHOULD REFRESH THE OBSERVABLE COLLECTION INSTEAD.
+            this.Application.DeleteAsset(assetViewModel.Asset, deleteFile: true);
+            assetViewModel.Visible = Visibility.Hidden;
+            //this.Refresh(); // TODO: SHOULD REFRESH THE OBSERVABLE COLLECTION INSTEAD.
 
             // TODO: INSTEAD OF REMOVING FROM THE COLLECTION, SHOULD FILTER IF THE DUPLICATED ASSETS ON SET > 1
             //var duplicatedSet = this.DuplicatedAssetCollectionSets[this.DuplicatedAssetCollectionSetsPosition];
@@ -124,6 +139,31 @@ namespace JPPhotoManager.UI.ViewModels
         public void RemoveFromParentFolder()
         {
             this.Application.RemoveDuplicatesFromParentFolder(this._duplicatedAssets);
+        }
+    }
+
+    public class DuplicatedAssetViewModel
+    {
+        public Asset Asset { get; set; }
+        public Visibility Visible { get; set; }
+    }
+
+    public class DuplicatedSetViewModel : List<DuplicatedAssetViewModel>
+    {
+        public string Description
+        {
+            get
+            {
+                return $"{this[0].Asset.FileName} ({this.Count} duplicates)";
+            }
+        }
+
+        public bool HasDuplicates
+        {
+            get
+            {
+                return this.Count > 1;
+            }
         }
     }
 }

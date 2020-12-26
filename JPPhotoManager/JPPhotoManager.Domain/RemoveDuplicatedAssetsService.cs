@@ -16,7 +16,7 @@ namespace JPPhotoManager.Domain
             this.moveAssetsService = moveAssetsService;
         }
 
-        public void RemoveDuplicatesFromParentFolder(List<DuplicatedAssetCollection> duplicatedAssetCollectionSets)
+        public void RemoveDuplicatesFromParentFolder(List<List<Asset>> duplicatedAssetCollectionSets)
         {
             foreach (var duplicatedSet in duplicatedAssetCollectionSets) // TODO: IF MULTIPLE DUPLICATED SETS ARE PROCESSED, THIS THROWS AN ERROR OF MODIFIED COLLECTION
             {
@@ -29,7 +29,7 @@ namespace JPPhotoManager.Domain
 
         // TODO: THIS METHOD SHOULD RUN IN THE BACKGROUND
         // TODO: ADD LOGIC SO THE CONDITION OF PARENT FOLDER CAN CONSIDER N LEVELS
-        private void RemoveDuplicatesFromParentFolder(DuplicatedAssetCollection duplicatedSet)
+        private void RemoveDuplicatesFromParentFolder(List<Asset> duplicatedSet)
         {
             // TODO: THIS CONDITION SHOULD BE ENCAPSULATED IN A STRATEGY PATTERN
 

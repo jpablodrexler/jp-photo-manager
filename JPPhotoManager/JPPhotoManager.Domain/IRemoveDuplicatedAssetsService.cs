@@ -4,6 +4,6 @@ namespace JPPhotoManager.Domain
 {
     public interface IRemoveDuplicatedAssetsService
     {
-        void RemoveDuplicatesFromParentFolder(List<DuplicatedAssetCollection> duplicatedAssetCollectionSets);
+        void RemoveDuplicatesFromParentFolder(List<List<Asset>> duplicatedAssetCollectionSets);
     }
 }
