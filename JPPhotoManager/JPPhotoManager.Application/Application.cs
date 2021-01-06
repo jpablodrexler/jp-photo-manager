@@ -36,7 +36,7 @@ namespace JPPhotoManager.Application
 
         public Asset[] GetAssets(string directory)
         {
-            if (string.IsNullOrEmpty(directory))
+            if (string.IsNullOrWhiteSpace(directory))
             {
                 throw new ArgumentException("Directory cannot be null or empty.", directory);
             }

@@ -1,4 +1,6 @@
-﻿using FluentAssertions;
+﻿using Autofac;
+using Autofac.Extras.Moq;
+using FluentAssertions;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
@@ -31,7 +33,7 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
-        public void GetImagesTest()
+        public void GetAssets_ValidDirectory_ReturnAssetsArray()
         {
             string directory = @"D:\Imágenes";
             Asset[] expectedResult = new Asset[]
@@ -48,208 +50,92 @@ namespace JPPhotoManager.Tests
                     }
                 };
 
-            Mock<IAssetRepository> mockRepository = new Mock<IAssetRepository>();
-            mockRepository.Setup(m => m.GetAssets(directory)).Returns(expectedResult);
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IAssetRepository>().Setup(m => m.GetAssets(directory)).Returns(expectedResult);
 
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+                var app = mock.Create<Application.Application>();
 
-            IAssetHashCalculatorService assetHashCalculatorService = new AssetHashCalculatorService();
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IDirectoryComparer directoryComparer = new DirectoryComparer();
-            IFindDuplicatedAssetsService findDuplicatedAssetsService = new FindDuplicatedAssetsService(
-                mockRepository.Object,
-                storageService);
-            IImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
-                mockRepository.Object,
-                storageService,
-                directoryComparer);
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                mockRepository.Object,
-                assetHashCalculatorService,
-                storageService,
-                userConfigurationService,
-                directoryComparer);
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                mockRepository.Object,
-                storageService,
-                catalogAssetsService);
-            Application.Application app = new Application.Application(
-                importNewAssetsService,
-                catalogAssetsService,
-                moveAssetsService,
-                findDuplicatedAssetsService,
-                mockRepository.Object,
-                userConfigurationService,
-                storageService);
-            Asset[] assets = app.GetAssets(directory);
-            assets.Should().BeEquivalentTo(expectedResult);
+                Asset[] assets = app.GetAssets(directory);
+                assets.Should().BeEquivalentTo(expectedResult);
 
-            mockRepository.VerifyAll();
+                mock.Mock<IAssetRepository>().VerifyAll();
+            }
         }
 
-        [Fact]
-        public void GetImagesOnEmptyStringTest()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        public void GetAssets_InvalidDirectory_Test(string directory)
         {
-            string directory = string.Empty;
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            Mock<IAssetRepository> mockRepository = new Mock<IAssetRepository>();
-            IAssetHashCalculatorService assetHashCalculatorService = new AssetHashCalculatorService();
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IDirectoryComparer directoryComparer = new DirectoryComparer();
-            IFindDuplicatedAssetsService findDuplicatedAssetsService = new FindDuplicatedAssetsService(
-                mockRepository.Object,
-                storageService);
-            IImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
-                mockRepository.Object,
-                storageService,
-                directoryComparer);
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                mockRepository.Object,
-                assetHashCalculatorService,
-                storageService,
-                userConfigurationService,
-                directoryComparer);
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                mockRepository.Object,
-                storageService,
-                catalogAssetsService);
-            Application.Application app = new Application.Application(
-                importNewAssetsService,
-                catalogAssetsService,
-                moveAssetsService,
-                findDuplicatedAssetsService,
-                mockRepository.Object,
-                userConfigurationService,
-                storageService);
+            using (var mock = AutoMock.GetLoose())
+            {
+                var app = mock.Create<Application.Application>();
 
-            Func<Asset[]> function = () => app.GetAssets(directory);
-            function.Should().Throw<ArgumentException>();
+                Func<Asset[]> function = () => app.GetAssets(directory);
+                function.Should().Throw<ArgumentException>();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
-        public void GetImagesOnNullStringTest()
+        public void GetDuplicatedAssets_WithDuplicates_ReturnArray()
         {
-            string directory = null;
-            Mock<IAssetRepository> mockRepository = new Mock<IAssetRepository>();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IAssetHashCalculatorService assetHashCalculatorService = new AssetHashCalculatorService();
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IDirectoryComparer directoryComparer = new DirectoryComparer();
-            IFindDuplicatedAssetsService findDuplicatedAssetsService = new FindDuplicatedAssetsService(
-                mockRepository.Object,
-                storageService);
-            IImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
-                mockRepository.Object,
-                storageService,
-                directoryComparer);
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                mockRepository.Object,
-                assetHashCalculatorService,
-                storageService,
-                userConfigurationService,
-                directoryComparer);
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                mockRepository.Object,
-                storageService,
-                catalogAssetsService);
-            Application.Application app = new Application.Application(
-                importNewAssetsService,
-                catalogAssetsService,
-                moveAssetsService,
-                findDuplicatedAssetsService,
-                mockRepository.Object,
-                userConfigurationService,
-                storageService);
+            
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                }))
+            {
+                var database = mock.Container.Resolve<IDatabase>();
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+                var storageService = mock.Container.Resolve<IStorageService>();
+                var app = mock.Create<Application.Application>();
 
-            Func<Asset[]> function = () => app.GetAssets(directory);
-            function.Should().Throw<ArgumentException>();
-        }
+                Folder folder = repository.AddFolder(dataDirectory);
 
-        [Fact]
-        public void GetDuplicatedAssetsWithDuplicatesTest()
-        {
-            IDatabase database = new Database();
-            IAssetHashCalculatorService assetHashCalculatorService = new AssetHashCalculatorService();
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IDirectoryComparer directoryComparer = new DirectoryComparer();
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            Folder folder = repository.AddFolder(dataDirectory);
-            IFindDuplicatedAssetsService findDuplicatedAssetsService = new FindDuplicatedAssetsService(
-                repository,
-                storageService);
-            IImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
-                repository,
-                storageService,
-                directoryComparer);
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                repository,
-                assetHashCalculatorService,
-                storageService,
-                userConfigurationService,
-                directoryComparer);
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                repository,
-                storageService,
-                catalogAssetsService);
-            Application.Application app = new Application.Application(
-                importNewAssetsService,
-                catalogAssetsService,
-                moveAssetsService,
-                findDuplicatedAssetsService,
-                repository,
-                userConfigurationService,
-                storageService);
+                string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
+                Assert.True(File.Exists(imagePath));
+                Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
 
-            string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
-            Assert.True(File.Exists(imagePath));
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
+                imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
+                Assert.True(File.Exists(imagePath));
+                Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
 
-            imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
-            Assert.True(File.Exists(imagePath));
-            Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
+                imagePath = Path.Combine(dataDirectory, "Image 2 duplicated.jpg");
+                Assert.True(File.Exists(imagePath));
+                Asset duplicatedAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2 duplicated.jpg");
 
-            imagePath = Path.Combine(dataDirectory, "Image 2 duplicated.jpg");
-            Assert.True(File.Exists(imagePath));
-            Asset duplicatedAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2 duplicated.jpg");
+                Console.WriteLine("database.DataDirectory: " + database.DataDirectory);
+                Console.WriteLine("database.Separator: " + database.Separator);
 
-            Console.WriteLine("database.DataDirectory: " + database.DataDirectory);
-            Console.WriteLine("database.Separator: " + database.Separator);
+                repository.SaveCatalog(folder);
 
-            repository.SaveCatalog(folder);
+                List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
+                duplicatedAssetSets.Should().ContainSingle();
 
-            repository = new AssetRepository(database, storageService, userConfigurationService);
-            repository.AddFolder(dataDirectory);
+                DuplicatedAssetCollection duplicatedAssets = duplicatedAssetSets[0];
+                duplicatedAssets.Should().HaveCount(2);
+                duplicatedAssets[0].FileName.Should().Be("Image 2.jpg");
+                duplicatedAssets[1].FileName.Should().Be("Image 2 duplicated.jpg");
+                duplicatedAssets.Description.Should().Be("Image 2.jpg (2 duplicates)");
 
-            catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    new UserConfigurationService(configuration),
-                    new DirectoryComparer());
-
-            app = new Application.Application(
-                importNewAssetsService,
-                catalogAssetsService,
-                moveAssetsService,
-                findDuplicatedAssetsService,
-                repository,
-                userConfigurationService,
-                storageService);
-
-            List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
-            duplicatedAssetSets.Should().ContainSingle();
-
-            DuplicatedAssetCollection duplicatedAssets = duplicatedAssetSets[0];
-            duplicatedAssets.Should().HaveCount(2);
-            duplicatedAssets[0].FileName.Should().Be("Image 2.jpg");
-            duplicatedAssets[1].FileName.Should().Be("Image 2 duplicated.jpg");
-            duplicatedAssets.Description.Should().Be("Image 2.jpg (2 duplicates)");
-
-            repository.ContainsThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName).Should().BeTrue();
-            repository.ContainsThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName).Should().BeTrue();
-            repository.LoadThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName, duplicatedAssets[0].ThumbnailPixelWidth, duplicatedAssets[0].ThumbnailPixelHeight).Should().NotBeNull();
-            repository.LoadThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName, duplicatedAssets[1].ThumbnailPixelWidth, duplicatedAssets[1].ThumbnailPixelHeight).Should().NotBeNull();
+                repository.ContainsThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName).Should().BeTrue();
+                repository.ContainsThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName).Should().BeTrue();
+                repository.LoadThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName, duplicatedAssets[0].ThumbnailPixelWidth, duplicatedAssets[0].ThumbnailPixelHeight).Should().NotBeNull();
+                repository.LoadThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName, duplicatedAssets[1].ThumbnailPixelWidth, duplicatedAssets[1].ThumbnailPixelHeight).Should().NotBeNull();
+            }
         }
 
         [Fact]
