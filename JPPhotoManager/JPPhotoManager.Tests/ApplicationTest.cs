@@ -138,117 +138,96 @@ namespace JPPhotoManager.Tests
             }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
-        public void GetDuplicatedAssetsWithoutDuplicatesTest()
+        public void GetDuplicatedAssets_WithoutDuplicates_ReturnEmptyArray()
         {
-            IDatabase database = new Database();
-            IAssetHashCalculatorService assetHashCalculatorService = new AssetHashCalculatorService();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IDirectoryComparer directoryComparer = new DirectoryComparer();
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            repository.AddFolder(dataDirectory);
-            
-            IFindDuplicatedAssetsService findDuplicatedAssetsService = new FindDuplicatedAssetsService(
-                repository,
-                storageService);
-            IImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
-                repository,
-                storageService,
-                directoryComparer);
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                repository,
-                assetHashCalculatorService,
-                storageService,
-                userConfigurationService,
-                directoryComparer);
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                repository,
-                storageService,
-                catalogAssetsService);
-            Application.Application app = new Application.Application(
-                importNewAssetsService,
-                catalogAssetsService,
-                moveAssetsService,
-                findDuplicatedAssetsService,
-                repository,
-                userConfigurationService,
-                storageService);
 
-            string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
-            File.Exists(imagePath).Should().BeTrue();
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                }))
+            {
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+                var app = mock.Create<Application.Application>();
 
-            imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
-            File.Exists(imagePath).Should().BeTrue();
-            Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
+                repository.AddFolder(dataDirectory);
 
-            List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
-            duplicatedAssetSets.Should().BeEmpty();
+                string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
+                File.Exists(imagePath).Should().BeTrue();
+                Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
+
+                imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
+                File.Exists(imagePath).Should().BeTrue();
+                Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
+
+                List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
+                duplicatedAssetSets.Should().BeEmpty();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         /// <summary>
         /// Tests an scenario when the user searches for duplicates before an
         /// old entry gets deleted from the catalog.
         /// </summary>
         [Fact]
-        public void GetDuplicatedAssetsWithInexistingImageTest1()
+        public void GetDuplicatedAssets_WithInexistingImage_ReturnEmptyArray()
         {
-            IDatabase database = new Database();
-            IAssetHashCalculatorService assetHashCalculatorService = new AssetHashCalculatorService();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IDirectoryComparer directoryComparer = new DirectoryComparer();
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            repository.AddFolder(dataDirectory);
-            IFindDuplicatedAssetsService findDuplicatedAssetsService = new FindDuplicatedAssetsService(
-                repository,
-                storageService);
-            IImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
-                repository,
-                storageService,
-                directoryComparer);
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                repository,
-                assetHashCalculatorService,
-                storageService,
-                userConfigurationService,
-                directoryComparer);
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                repository,
-                storageService,
-                catalogAssetsService);
-            Application.Application app = new Application.Application(
-                importNewAssetsService,
-                catalogAssetsService,
-                moveAssetsService,
-                findDuplicatedAssetsService,
-                repository,
-                userConfigurationService,
-                storageService);
 
-            string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
-            File.Exists(imagePath).Should().BeTrue();
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
-
-            imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
-            File.Exists(imagePath).Should().BeTrue();
-            Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
-
-            imagePath = Path.Combine(dataDirectory, "Inexistent Image.jpg");
-            File.Exists(imagePath).Should().BeFalse();
-
-            Asset inexistentAsset = new Asset
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                }))
             {
-                FileName = "Inexistent Image.jpg",
-                Folder = asset.Folder,
-                FolderId = asset.FolderId,
-                Hash = asset.Hash
-            };
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+                var app = mock.Create<Application.Application>();
 
-            repository.AddAsset(inexistentAsset, null);
-            List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
-            duplicatedAssetSets.Should().BeEmpty();
+                repository.AddFolder(dataDirectory);
+
+                string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
+                File.Exists(imagePath).Should().BeTrue();
+                Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
+
+                imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
+                File.Exists(imagePath).Should().BeTrue();
+                Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
+
+                imagePath = Path.Combine(dataDirectory, "Inexistent Image.jpg");
+                File.Exists(imagePath).Should().BeFalse();
+
+                Asset inexistentAsset = new Asset
+                {
+                    FileName = "Inexistent Image.jpg",
+                    Folder = asset.Folder,
+                    FolderId = asset.FolderId,
+                    Hash = asset.Hash
+                };
+
+                repository.AddAsset(inexistentAsset, null);
+                List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
+                duplicatedAssetSets.Should().BeEmpty();
+            }
         }
 
         /// <summary>
