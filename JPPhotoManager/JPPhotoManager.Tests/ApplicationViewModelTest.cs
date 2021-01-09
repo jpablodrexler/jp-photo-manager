@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using Autofac.Extras.Moq;
+using FluentAssertions;
 using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.UI.ViewModels;
@@ -14,23 +15,31 @@ namespace JPPhotoManager.Tests
     public class ApplicationViewModelTest
     {
         [Fact]
-        public void TestChangeAppMode()
+        public void ChangeAppMode_NoParameter_ChangeAppMode()
         {
-            Mock<IApplication> mock = new Mock<IApplication>();
-            mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
-            ApplicationViewModel viewModel = new ApplicationViewModel(mock.Object);
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
-            viewModel.AppMode.Should().Be(AppModeEnum.Thumbnails);
-            viewModel.ChangeAppMode();
-            viewModel.AppMode.Should().Be(AppModeEnum.Viewer);
-            viewModel.ChangeAppMode();
-            viewModel.AppMode.Should().Be(AppModeEnum.Thumbnails);
-            viewModel.ChangeAppMode(AppModeEnum.Viewer);
-            viewModel.AppMode.Should().Be(AppModeEnum.Viewer);
+                var viewModel = mock.Create<ApplicationViewModel>();
+
+                viewModel.AppMode.Should().Be(AppModeEnum.Thumbnails);
+                viewModel.ChangeAppMode();
+                viewModel.AppMode.Should().Be(AppModeEnum.Viewer);
+                viewModel.ChangeAppMode();
+                viewModel.AppMode.Should().Be(AppModeEnum.Thumbnails);
+                viewModel.ChangeAppMode(AppModeEnum.Viewer);
+                viewModel.AppMode.Should().Be(AppModeEnum.Viewer);
+            }
         }
 
-        [Fact]
-        public void GoToPreviousImageTest()
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(1, 0)]
+        [InlineData(2, 1)]
+        [InlineData(3, 2)]
+        [InlineData(4, 3)]
+        public void GoToPreviousAsset_ChangeViewerPosition(int currentPosition, int expected)
         {
             Asset[] assets = new Asset[]
             {
@@ -41,20 +50,27 @@ namespace JPPhotoManager.Tests
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            viewModel.SetAssets(assets);
-            viewModel.ViewerPosition = 2;
-            viewModel.GoToPreviousAsset();
+                viewModel.SetAssets(assets);
+                viewModel.ViewerPosition = currentPosition;
+                viewModel.GoToPreviousAsset();
 
-            viewModel.ViewerPosition.Should().Be(1);
+                viewModel.ViewerPosition.Should().Be(expected);
+            }
         }
 
-        [Fact]
-        public void GoToPreviousImageFromFirstTest()
+        [Theory]
+        [InlineData(0, 1)]
+        [InlineData(1, 2)]
+        [InlineData(2, 3)]
+        [InlineData(3, 4)]
+        [InlineData(4, 4)]
+        public void GoToNextAsset_ChangeViewerPosition(int currentPosition, int expected)
         {
             Asset[] assets = new Asset[]
             {
@@ -65,68 +81,47 @@ namespace JPPhotoManager.Tests
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-
-            viewModel.SetAssets(assets);
-            viewModel.ViewerPosition = 0;
-            viewModel.GoToPreviousAsset();
-
-            viewModel.ViewerPosition.Should().Be(0);
-        }
-
-        [Fact]
-        public void GoToNextImageTest()
-        {
-            Asset[] assets = new Asset[]
+            using (var mock = AutoMock.GetLoose())
             {
-                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
-            };
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+                viewModel.SetAssets(assets);
+                viewModel.ViewerPosition = currentPosition;
+                viewModel.GoToNextAsset();
 
-            viewModel.SetAssets(assets);
-            viewModel.ViewerPosition = 2;
-            viewModel.GoToNextAsset();
-
-            viewModel.ViewerPosition.Should().Be(3);
+                viewModel.ViewerPosition.Should().Be(expected);
+            }
         }
 
-        [Fact]
-        public void GoToNextImageFromLastTest()
-        {
-            Asset[] assets = new Asset[]
-            {
-                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
-            };
-
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-
-            viewModel.SetAssets(assets);
-            viewModel.ViewerPosition = 4;
-            viewModel.GoToNextAsset();
-
-            viewModel.ViewerPosition.Should().Be(4);
-        }
-
-        [Fact]
-        public void GoToAssetTest()
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(1, 0)]
+        [InlineData(2, 0)]
+        [InlineData(3, 0)]
+        [InlineData(4, 0)]
+        [InlineData(0, 1)]
+        [InlineData(1, 1)]
+        [InlineData(2, 1)]
+        [InlineData(3, 1)]
+        [InlineData(4, 1)]
+        [InlineData(0, 2)]
+        [InlineData(1, 2)]
+        [InlineData(2, 2)]
+        [InlineData(3, 2)]
+        [InlineData(4, 2)]
+        [InlineData(0, 3)]
+        [InlineData(1, 3)]
+        [InlineData(2, 3)]
+        [InlineData(3, 3)]
+        [InlineData(4, 3)]
+        [InlineData(0, 4)]
+        [InlineData(1, 4)]
+        [InlineData(2, 4)]
+        [InlineData(3, 4)]
+        [InlineData(4, 4)]
+        public void GoToAsset_ChangeViewerPosition(int currentPosition, int goToAssetIndex)
         {
             Folder folder = new Folder { Path = @"D:\Data" };
 
@@ -139,21 +134,27 @@ namespace JPPhotoManager.Tests
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), Folder = folder }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
-            mockApp.Setup(a => a.FileExists(@"D:\Data\Image3.jpg")).Returns(true);
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+                mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image1.jpg")).Returns(true);
+                mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image2.jpg")).Returns(true);
+                mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image3.jpg")).Returns(true);
+                mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image4.jpg")).Returns(true);
+                mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image5.jpg")).Returns(true);
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            viewModel.SetAssets(assets);
-            viewModel.ViewerPosition = 4;
-            viewModel.GoToAsset(assets[2]);
+                viewModel.SetAssets(assets);
+                viewModel.ViewerPosition = currentPosition;
+                viewModel.GoToAsset(assets[goToAssetIndex]);
 
-            viewModel.ViewerPosition.Should().Be(2);
+                viewModel.ViewerPosition.Should().Be(goToAssetIndex);
+            }
         }
 
         [Fact]
-        public void GoToAssetNotInListTest()
+        public void GoToAsset_NotInList_KeepPosition()
         {
             Folder folder = new Folder { Path = @"D:\Data" };
 
@@ -168,17 +169,19 @@ namespace JPPhotoManager.Tests
 
             Asset assetNotInList = new Asset { FileName = "ImageNotInList.jpg", ImageData = new BitmapImage(), Folder = folder };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
-            mockApp.Setup(a => a.FileExists(@"D:\Data\Image3.jpg")).Returns(true);
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+                mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image3.jpg")).Returns(true);
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            viewModel.SetAssets(assets);
-            viewModel.ViewerPosition = 4;
-            viewModel.GoToAsset(assetNotInList);
+                viewModel.SetAssets(assets);
+                viewModel.ViewerPosition = 4;
+                viewModel.GoToAsset(assetNotInList);
 
-            viewModel.ViewerPosition.Should().Be(4);
+                viewModel.ViewerPosition.Should().Be(4);
+            }
         }
 
         [Fact]
