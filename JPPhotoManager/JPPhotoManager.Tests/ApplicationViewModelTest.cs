@@ -402,12 +402,11 @@ namespace JPPhotoManager.Tests
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), Folder = folder }
             };
 
-            Folder newFolder = new Folder { FolderId = folderId, Path = folderPath };
             Asset newAsset = new Asset
             {
                 FileName = fileName,
                 ImageData = new BitmapImage(),
-                Folder = newFolder
+                Folder = new Folder { FolderId = folderId, Path = folderPath }
             };
 
             using (var mock = AutoMock.GetLoose())
@@ -442,7 +441,7 @@ namespace JPPhotoManager.Tests
         }
         
         [Fact]
-        public void RemoveAssetFromCurrentFolderTest()
+        public void NotifyCatalogChange_DeletedInFromCurrentFolder_RemoveFromAssetList()
         {
             Folder folder = new Folder { Path = @"D:\Data" };
             
@@ -457,29 +456,37 @@ namespace JPPhotoManager.Tests
 
             string statusMessage = "Removing thumbnail for Image3.jpg";
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetAssets(assets);
-
-            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+            using (var mock = AutoMock.GetLoose())
             {
-                Asset = assets[2],
-                Message = statusMessage,
-                Reason = ReasonEnum.Deleted
-            });
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            viewModel.ObservableAssets.Should().HaveCount(4);
-            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-            viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
-            viewModel.ObservableAssets[3].FileName.Should().Be("Image5.jpg");
-            viewModel.StatusMessage.Should().Be(statusMessage);
+                var viewModel = mock.Create<ApplicationViewModel>();
+
+                viewModel.SetAssets(assets);
+
+                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+                {
+                    Asset = assets[2],
+                    Message = statusMessage,
+                    Reason = ReasonEnum.Deleted
+                });
+
+                viewModel.ObservableAssets.Should().HaveCount(4);
+                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+                viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                viewModel.ObservableAssets[3].FileName.Should().Be("Image5.jpg");
+                viewModel.StatusMessage.Should().Be(statusMessage);
+            }
         }
 
-        [Fact]
-        public void RemoveAssetMidElementTest()
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(1, 1)]
+        [InlineData(2, 2)]
+        [InlineData(3, 3)]
+        [InlineData(4, 3)]
+        public void RemoveAsset_AssetRemovedIsCurrent_RemoveFromAssetList(int currentPosition, int newPosition)
         {
             Asset[] assets = new Asset[]
             {
@@ -490,160 +497,123 @@ namespace JPPhotoManager.Tests
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-
-            viewModel.SetAssets(assets);
-            viewModel.ViewerPosition = 2;
-            viewModel.RemoveAsset(assets[2]);
-
-            viewModel.ViewerPosition.Should().Be(2);
-            viewModel.ObservableAssets.Should().HaveCount(4);
-        }
-
-        [Fact]
-        public void RemoveAssetFirstElementTest()
-        {
-            Asset[] assets = new Asset[]
+            using (var mock = AutoMock.GetLoose())
             {
-                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
-            };
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetAssets(assets);
-            viewModel.ViewerPosition = 0;
+                viewModel.SetAssets(assets);
+                viewModel.ViewerPosition = currentPosition;
+                viewModel.RemoveAsset(assets[currentPosition]);
 
-            viewModel.RemoveAsset(assets[0]);
-
-            viewModel.ViewerPosition.Should().Be(0);
-            viewModel.ObservableAssets.Should().HaveCount(4);
+                viewModel.ViewerPosition.Should().Be(newPosition);
+                viewModel.ObservableAssets.Should().HaveCount(4);
+            }
         }
 
         [Fact]
-        public void RemoveAssetLastElementTest()
-        {
-            Asset[] assets = new Asset[]
-            {
-                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
-            };
-
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetAssets(assets);
-            viewModel.ViewerPosition = 4;
-
-            viewModel.RemoveAsset(assets[4]);
-
-            viewModel.ViewerPosition.Should().Be(3);
-            viewModel.ObservableAssets.Should().HaveCount(4);
-        }
-
-        [Fact]
-        public void RemoveAssetSoleElementTest()
+        public void RemoveAsset_SoleElement_ListBeEmptyAndPositionBeforeFirstItem()
         {
             Asset[] assets = new Asset[]
             {
                 new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetAssets(assets);
-            viewModel.ViewerPosition = 0;
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            viewModel.RemoveAsset(assets[0]);
+                viewModel.SetAssets(assets);
+                viewModel.ViewerPosition = 0;
 
-            viewModel.ViewerPosition.Should().Be(-1);
-            viewModel.ObservableAssets.Should().BeEmpty();
+                viewModel.RemoveAsset(assets[0]);
+
+                viewModel.ViewerPosition.Should().Be(-1);
+                viewModel.ObservableAssets.Should().BeEmpty();
+            }
         }
 
         [Fact]
-        public void RemoveAssetNoElementsTest()
+        public void RemoveAsset_NullAssetFromEmptyAssetList_EmptyAssetList()
         {
             Asset[] assets = new Asset[] { };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetAssets(assets);
-            viewModel.ViewerPosition = -1;
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            viewModel.RemoveAsset(null);
+                viewModel.SetAssets(assets);
+                viewModel.ViewerPosition = -1;
 
-            viewModel.ViewerPosition.Should().Be(-1);
-            viewModel.ObservableAssets.Should().BeEmpty();
+                viewModel.RemoveAsset(null);
+
+                viewModel.ViewerPosition.Should().Be(-1);
+                viewModel.ObservableAssets.Should().BeEmpty();
+            }
         }
 
         [Fact]
-        public void RemoveAssetNullCollectionTest()
+        public void RemoveAsset_NullAssetFromNullAssetList_NullAssetList()
         {
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetAssets(null);
-            viewModel.ViewerPosition = -1;
-            
-            viewModel.RemoveAsset(null);
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            viewModel.ViewerPosition.Should().Be(-1);
-            viewModel.ObservableAssets.Should().BeNull();
+                viewModel.SetAssets(null);
+                viewModel.ViewerPosition = -1;
+
+                viewModel.RemoveAsset(null);
+
+                viewModel.ViewerPosition.Should().Be(-1);
+                viewModel.ObservableAssets.Should().BeNull();
+            }
         }
 
-        [Fact]
-        public void ThumbnailsVisibleTest()
+        [Theory]
+        [InlineData(AppModeEnum.Thumbnails, Visibility.Visible)]
+        [InlineData(AppModeEnum.Viewer, Visibility.Hidden)]
+        public void ThumbnailsVisible_ChangeAppMode_RefreshThumbnailsVisible(AppModeEnum appMode, Visibility expected)
         {
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            
-            viewModel.ChangeAppMode(AppModeEnum.Thumbnails);
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            viewModel.ThumbnailsVisible.Should().Be(Visibility.Visible);
+                viewModel.ChangeAppMode(appMode);
 
-            viewModel.ChangeAppMode(AppModeEnum.Viewer);
-
-            viewModel.ThumbnailsVisible.Should().Be(Visibility.Hidden);
+                viewModel.ThumbnailsVisible.Should().Be(expected);
+            }
         }
 
-        [Fact]
-        public void ViewerVisibleTest()
+        [Theory]
+        [InlineData(AppModeEnum.Viewer, Visibility.Visible)]
+        [InlineData(AppModeEnum.Thumbnails, Visibility.Hidden)]
+        public void ViewerVisible_ChangeAppMode_RefreshViewerVisible(AppModeEnum appMode, Visibility expected)
         {
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            viewModel.ChangeAppMode(AppModeEnum.Viewer);
+                viewModel.ChangeAppMode(appMode);
 
-            viewModel.ViewerVisible.Should().Be(Visibility.Visible);
-
-            viewModel.ChangeAppMode(AppModeEnum.Thumbnails);
-
-            viewModel.ViewerVisible.Should().Be(Visibility.Hidden);
+                viewModel.ViewerVisible.Should().Be(expected);
+            }
         }
 
-        [Fact]
-        public void UpdateAppTitleInThumbnailsModeTest()
+        [Theory]
+        [InlineData(AppModeEnum.Thumbnails, @"JPPhotoManager v1.0.0.0 - D:\Data - image 4 de 5 - sorted by file name ascending")]
+        [InlineData(AppModeEnum.Viewer, @"JPPhotoManager v1.0.0.0 - D:\Data - Image4.jpg - image 4 de 5 - sorted by file name ascending")]
+        public void AppTitle_AppMode_ApplyAppTitleFormat(AppModeEnum appMode, string expected)
         {
             Asset[] assets = new Asset[]
             {
@@ -654,131 +624,98 @@ namespace JPPhotoManager.Tests
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-
-            viewModel.Product = "JPPhotoManager";
-            viewModel.Version = "v1.0.0.0";
-            viewModel.ChangeAppMode(AppModeEnum.Thumbnails);
-            viewModel.SetAssets(assets);
-            viewModel.ViewerPosition = 3;
-
-            viewModel.AppTitle.Should().Be(@"JPPhotoManager v1.0.0.0 - D:\Data - image 4 de 5 - sorted by file name ascending");
-        }
-
-        [Fact]
-        public void UpdateAppTitleInViewerModeTest()
-        {
-            Asset[] assets = new Asset[]
+            using (var mock = AutoMock.GetLoose())
             {
-                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
-            };
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+                viewModel.Product = "JPPhotoManager";
+                viewModel.Version = "v1.0.0.0";
+                viewModel.ChangeAppMode(appMode);
+                viewModel.SetAssets(assets);
+                viewModel.ViewerPosition = 3;
 
-            viewModel.Product = "JPPhotoManager";
-            viewModel.Version = "v1.0.0.0";
-            viewModel.ChangeAppMode(AppModeEnum.Viewer);
-            viewModel.SetAssets(assets);
-            viewModel.ViewerPosition = 3;
-
-            viewModel.AppTitle.Should().Be(@"JPPhotoManager v1.0.0.0 - D:\Data - Image4.jpg - image 4 de 5 - sorted by file name ascending");
+                viewModel.AppTitle.Should().Be(expected);
+            }
         }
 
         [Fact]
-        public void SortNullFilesTest()
+        public void SortAssetsByCriteria_NullAssetList_AssetListIsNull()
         {
             Asset[] assets = null;
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            viewModel.SetAssets(assets);
-            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
+                viewModel.SetAssets(assets);
+                viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
 
-            viewModel.ObservableAssets.Should().BeNull();
+                viewModel.ObservableAssets.Should().BeNull();
+            }
         }
 
         [Fact]
-        public void SortEmptyFilesTest()
+        public void SortAssetsByCriteria_EmptyAssetList_AssetListIsEmpty()
         {
             Asset[] assets = new Asset[] { };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            viewModel.SetAssets(assets);
-            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
+                viewModel.SetAssets(assets);
+                viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
 
-            viewModel.ObservableAssets.Should().NotBeNull();
-            viewModel.ObservableAssets.Should().BeEmpty();
+                viewModel.ObservableAssets.Should().NotBeNull();
+                viewModel.ObservableAssets.Should().BeEmpty();
+            }
         }
 
-        [Fact]
-        public void SortByFileNameSingleFileTest()
+        [Theory]
+        [InlineData(SortCriteriaEnum.FileCreationDateTime)]
+        [InlineData(SortCriteriaEnum.FileModificationDateTime)]
+        [InlineData(SortCriteriaEnum.FileName)]
+        [InlineData(SortCriteriaEnum.FileSize)]
+        [InlineData(SortCriteriaEnum.ThumbnailCreationDateTime)]
+        [InlineData(SortCriteriaEnum.Undefined)]
+        public void SortAssetsByCriteria_SingleItemAssetList_AssetListHasSameSingleItem(SortCriteriaEnum sortCriteria)
         {
             Asset[] assets = new Asset[]
             {
-                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() }
+                new Asset
+                {
+                    FileName="Image1.jpg",
+                    ImageData = new BitmapImage(),
+                    FileSize = 2048,
+                    FileCreationDateTime = DateTime.Now,
+                    FileModificationDateTime = DateTime.Now,
+                    ThumbnailCreationDateTime = DateTime.Now
+                }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-
-            viewModel.SetAssets(assets);
-            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
-
-            viewModel.ObservableAssets.Should().NotBeNull();
-            viewModel.ObservableAssets.Should().ContainSingle();
-            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-        }
-
-        [Fact]
-        public void SortByFileNameMultipleFilesOneTimeTest()
-        {
-            Asset[] assets = new Asset[]
+            using (var mock = AutoMock.GetLoose())
             {
-                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage() },
-                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() }
-            };
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object, SortCriteriaEnum.Undefined);
+                viewModel.SetAssets(assets);
+                viewModel.SortAssetsByCriteria(sortCriteria);
 
-            viewModel.SetAssets(assets);
-            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
-
-            viewModel.ObservableAssets.Should().NotBeNull();
-            viewModel.ObservableAssets.Should().HaveCount(5);
-            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
-            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+                viewModel.ObservableAssets.Should().NotBeNull();
+                viewModel.ObservableAssets.Should().ContainSingle();
+                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+            }
         }
 
         [Fact]
-        public void SortByFileNameMultipleFilesMultipleTimesTest()
+        public void SortAssetsByCriteria_ByFileNameMultipleAssetsList_AssetListSortedByFileName()
         {
             Asset[] assets = new Asset[]
             {
@@ -789,62 +726,78 @@ namespace JPPhotoManager.Tests
                 new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object, SortCriteriaEnum.Undefined);
-
-            viewModel.SetAssets(assets);
-
-            for (int i = 0; i < 10; i++)
+            using (var mock = AutoMock.GetLoose())
             {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+
+                var viewModel = mock.Create<ApplicationViewModel>();
+                viewModel.SortAssetsByCriteria(SortCriteriaEnum.Undefined);
+
+                viewModel.SetAssets(assets);
                 viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
 
                 viewModel.ObservableAssets.Should().NotBeNull();
                 viewModel.ObservableAssets.Should().HaveCount(5);
+                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+                viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+                viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+                viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+            }
+        }
 
-                if (i % 2 == 0) // Ascending
+        [Fact]
+        public void SortAssetsByCriteria_ByFileNameMultipleAssetsListMultipleTimes_AssetListSortedByFileNameChangingSortingDirection()
+        {
+            Asset[] assets = new Asset[]
+            {
+                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() }
+            };
+
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+
+                var viewModel = mock.Create<ApplicationViewModel>();
+                viewModel.SortAssetsByCriteria(SortCriteriaEnum.Undefined);
+
+                viewModel.SetAssets(assets);
+
+                for (int i = 0; i < 10; i++)
                 {
-                    viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-                    viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-                    viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-                    viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
-                    viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-                }
-                else // Descending
-                {
-                    viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
-                    viewModel.ObservableAssets[1].FileName.Should().Be("Image4.jpg");
-                    viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-                    viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
-                    viewModel.ObservableAssets[4].FileName.Should().Be("Image1.jpg");
+                    viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
+
+                    viewModel.ObservableAssets.Should().NotBeNull();
+                    viewModel.ObservableAssets.Should().HaveCount(5);
+
+                    if (i % 2 == 0) // Ascending
+                    {
+                        viewModel.SortAscending.Should().BeTrue();
+                        viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+                        viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                        viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+                        viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+                        viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+                    }
+                    else // Descending
+                    {
+                        viewModel.SortAscending.Should().BeFalse();
+                        viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
+                        viewModel.ObservableAssets[1].FileName.Should().Be("Image4.jpg");
+                        viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+                        viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+                        viewModel.ObservableAssets[4].FileName.Should().Be("Image1.jpg");
+                    }
                 }
             }
         }
 
         [Fact]
-        public void SortByThumbnailCreationDateTimeSingleFileTest()
-        {
-            Asset[] assets = new Asset[]
-            {
-                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), ThumbnailCreationDateTime = DateTime.Now }
-            };
-
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-
-            viewModel.SetAssets(assets);
-            viewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
-
-            viewModel.ObservableAssets.Should().NotBeNull();
-            viewModel.ObservableAssets.Should().ContainSingle();
-            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-        }
-
-        [Fact]
-        public void SortByThumbnailCreationDateTimeMultipleFilesOneTimeTest()
+        public void SortAssetsByCriteria_ByThumbnailCreationDateTimeMultipleAssetsList_AssetListSortedByThumbnailCreationDateTime()
         {
             Asset[] assets = new Asset[]
             {
@@ -855,91 +808,76 @@ namespace JPPhotoManager.Tests
                 new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), ThumbnailCreationDateTime = new DateTime(2010, 8, 1) }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-
-            viewModel.SetAssets(assets);
-            viewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
-
-            viewModel.ObservableAssets.Should().NotBeNull();
-            viewModel.ObservableAssets.Should().HaveCount(5);
-            viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
-            viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
-            viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
-            viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
-            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-        }
-
-        [Fact]
-        public void SortByThumbnailCreationDateTimeMultipleFilesMultipleTimesTest()
-        {
-            Asset[] assets = new Asset[]
+            using (var mock = AutoMock.GetLoose())
             {
-                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), ThumbnailCreationDateTime = new DateTime(2020, 6, 1) },
-                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage(), ThumbnailCreationDateTime = new DateTime(2020, 6, 1) },
-                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), ThumbnailCreationDateTime = new DateTime(2010, 2, 1) },
-                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage(), ThumbnailCreationDateTime = new DateTime(2010, 1, 1) },
-                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), ThumbnailCreationDateTime = new DateTime(2010, 8, 1) }
-            };
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-
-            viewModel.SetAssets(assets);
-
-            for (int i = 0; i < 10; i++)
-            {
+                viewModel.SetAssets(assets);
                 viewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
 
                 viewModel.ObservableAssets.Should().NotBeNull();
                 viewModel.ObservableAssets.Should().HaveCount(5);
+                viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
+                viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
+                viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+                viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+            }
+        }
 
-                if (i % 2 == 0) // Ascending
+        [Fact]
+        public void SortAssetsByCriteria_ByThumbnailCreationDateTimeMultipleAssetsListMultipleTimes_AssetListSortedByThumbnailCreationDateTimeChangingSortingDirection()
+        {
+            Asset[] assets = new Asset[]
+            {
+                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), ThumbnailCreationDateTime = new DateTime(2020, 6, 1) },
+                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage(), ThumbnailCreationDateTime = new DateTime(2020, 6, 1) },
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), ThumbnailCreationDateTime = new DateTime(2010, 2, 1) },
+                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage(), ThumbnailCreationDateTime = new DateTime(2010, 1, 1) },
+                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), ThumbnailCreationDateTime = new DateTime(2010, 8, 1) }
+            };
+
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+
+                var viewModel = mock.Create<ApplicationViewModel>();
+
+                viewModel.SetAssets(assets);
+
+                for (int i = 0; i < 10; i++)
                 {
-                    viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
-                    viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
-                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
-                    viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
-                    viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-                }
-                else // Descending
-                {
-                    viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
-                    viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
-                    viewModel.ObservableAssets[3].FileName.Should().Be("Image1.jpg");
-                    viewModel.ObservableAssets[4].FileName.Should().Be("Image3.jpg");
+                    viewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
+
+                    viewModel.ObservableAssets.Should().NotBeNull();
+                    viewModel.ObservableAssets.Should().HaveCount(5);
+
+                    if (i % 2 == 0) // Ascending
+                    {
+                        viewModel.SortAscending.Should().BeTrue();
+                        viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
+                        viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
+                        viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                        viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+                        viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+                    }
+                    else // Descending
+                    {
+                        viewModel.SortAscending.Should().BeFalse();
+                        viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
+                        viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                        viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                        viewModel.ObservableAssets[3].FileName.Should().Be("Image1.jpg");
+                        viewModel.ObservableAssets[4].FileName.Should().Be("Image3.jpg");
+                    }
                 }
             }
         }
 
         [Fact]
-        public void SortByFileCreationDateTimeTimeSingleFileTest()
-        {
-            Asset[] assets = new Asset[]
-            {
-                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), FileCreationDateTime = DateTime.Now }
-            };
-
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-
-            viewModel.SetAssets(assets);
-            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
-
-            viewModel.ObservableAssets.Should().NotBeNull();
-            viewModel.ObservableAssets.Should().ContainSingle();
-            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-        }
-
-        [Fact]
-        public void SortByFileCreationDateTimeMultipleFilesOneTimeTest()
+        public void SortAssetsByCriteria_ByFileCreationDateTimeMultipleAssetsList_AssetListSortedByFileCreationDateTime()
         {
             Asset[] assets = new Asset[]
             {
@@ -968,7 +906,7 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
-        public void SortByFileCreationDateTimeMultipleFilesMultipleTimesTest()
+        public void SortAssetsByCriteria_ByFileCreationDateTimeMultipleAssetsListMultipleTimes_AssetListSortedByFileCreationDateTimeChangingSortingDirection()
         {
             Asset[] assets = new Asset[]
             {
@@ -979,58 +917,41 @@ namespace JPPhotoManager.Tests
                 new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), FileCreationDateTime = new DateTime(2010, 8, 1) }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-
-            viewModel.SetAssets(assets);
-
-            for (int i = 0; i < 10; i++)
+            using (var mock = AutoMock.GetLoose())
             {
-                viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                viewModel.ObservableAssets.Should().NotBeNull();
-                viewModel.ObservableAssets.Should().HaveCount(5);
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-                if (i % 2 == 0) // Ascending
+                viewModel.SetAssets(assets);
+
+                for (int i = 0; i < 10; i++)
                 {
-                    viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
-                    viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
-                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
-                    viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
-                    viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-                }
-                else // Descending
-                {
-                    viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
-                    viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
-                    viewModel.ObservableAssets[3].FileName.Should().Be("Image1.jpg");
-                    viewModel.ObservableAssets[4].FileName.Should().Be("Image3.jpg");
+                    viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
+
+                    viewModel.ObservableAssets.Should().NotBeNull();
+                    viewModel.ObservableAssets.Should().HaveCount(5);
+
+                    if (i % 2 == 0) // Ascending
+                    {
+                        viewModel.SortAscending.Should().BeTrue();
+                        viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
+                        viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
+                        viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                        viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+                        viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+                    }
+                    else // Descending
+                    {
+                        viewModel.SortAscending.Should().BeFalse();
+                        viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
+                        viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                        viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                        viewModel.ObservableAssets[3].FileName.Should().Be("Image1.jpg");
+                        viewModel.ObservableAssets[4].FileName.Should().Be("Image3.jpg");
+                    }
                 }
             }
-        }
-
-        [Fact]
-        public void SortByFileModificationDateTimeTimeSingleFileTest()
-        {
-            Asset[] assets = new Asset[]
-            {
-                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), FileModificationDateTime = DateTime.Now }
-            };
-
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-
-            viewModel.SetAssets(assets);
-            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileModificationDateTime);
-
-            viewModel.ObservableAssets.Should().NotBeNull();
-            viewModel.ObservableAssets.Should().ContainSingle();
-            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
         }
 
         [Fact]
@@ -1105,27 +1026,6 @@ namespace JPPhotoManager.Tests
                     viewModel.ObservableAssets[4].FileName.Should().Be("Image3.jpg");
                 }
             }
-        }
-
-        [Fact]
-        public void SortByFileSizeTimeSingleFileTest()
-        {
-            Asset[] assets = new Asset[]
-            {
-                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), FileSize = 2048 }
-            };
-
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-
-            viewModel.SetAssets(assets);
-            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileSize);
-
-            viewModel.ObservableAssets.Should().NotBeNull();
-            viewModel.ObservableAssets.Should().ContainSingle();
-            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
         }
 
         [Fact]

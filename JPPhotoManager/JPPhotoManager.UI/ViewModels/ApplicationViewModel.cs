@@ -18,7 +18,7 @@ namespace JPPhotoManager.UI.ViewModels
         private string statusMessage;
         private SortCriteriaEnum sortCriteria;
         private SortCriteriaEnum previousSortCriteria;
-        private bool sortAscending = true;
+        public bool SortAscending { get; private set; } = true;
 
         public string Product { get; set; }
         public string Version { get; set; }
@@ -127,31 +127,31 @@ namespace JPPhotoManager.UI.ViewModels
             switch (this.SortCriteria)
             {
                 case SortCriteriaEnum.FileName:
-                    this.cataloguedAssets = this.sortAscending ?
+                    this.cataloguedAssets = this.SortAscending ?
                         this.cataloguedAssets?.OrderBy(a => a.FileName).ToArray() :
                         this.cataloguedAssets?.OrderByDescending(a => a.FileName).ToArray();
                     break;
 
                 case SortCriteriaEnum.ThumbnailCreationDateTime:
-                    this.cataloguedAssets = this.sortAscending ?
+                    this.cataloguedAssets = this.SortAscending ?
                         this.cataloguedAssets?.OrderBy(a => a.ThumbnailCreationDateTime).ThenBy(a => a.FileName).ToArray() :
                         this.cataloguedAssets?.OrderByDescending(a => a.ThumbnailCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
                     break;
 
                 case SortCriteriaEnum.FileCreationDateTime:
-                    this.cataloguedAssets = this.sortAscending ?
+                    this.cataloguedAssets = this.SortAscending ?
                         this.cataloguedAssets?.OrderBy(a => a.FileCreationDateTime).ThenBy(a => a.FileName).ToArray() :
                         this.cataloguedAssets?.OrderByDescending(a => a.FileCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
                     break;
 
                 case SortCriteriaEnum.FileModificationDateTime:
-                    this.cataloguedAssets = this.sortAscending ?
+                    this.cataloguedAssets = this.SortAscending ?
                         this.cataloguedAssets?.OrderBy(a => a.FileModificationDateTime).ThenBy(a => a.FileName).ToArray() :
                         this.cataloguedAssets?.OrderByDescending(a => a.FileModificationDateTime).ThenByDescending(a => a.FileName).ToArray();
                     break;
 
                 case SortCriteriaEnum.FileSize:
-                    this.cataloguedAssets = this.sortAscending ?
+                    this.cataloguedAssets = this.SortAscending ?
                         this.cataloguedAssets?.OrderBy(a => a.FileSize).ThenBy(a => a.FileName).ToArray() :
                         this.cataloguedAssets?.OrderByDescending(a => a.FileSize).ThenByDescending(a => a.FileName).ToArray();
                     break;
@@ -318,7 +318,7 @@ namespace JPPhotoManager.UI.ViewModels
         {
             this.previousSortCriteria = this.SortCriteria;
             this.SortCriteria = sortCriteria;
-            this.sortAscending = this.SortCriteria != this.previousSortCriteria || !this.sortAscending;
+            this.SortAscending = this.SortCriteria != this.previousSortCriteria || !this.SortAscending;
             this.SortAssets();
         }
 
@@ -349,7 +349,7 @@ namespace JPPhotoManager.UI.ViewModels
                     break;
             }
 
-            result += this.sortAscending ? " ascending" : " descending";
+            result += this.SortAscending ? " ascending" : " descending";
 
             return result;
         }
