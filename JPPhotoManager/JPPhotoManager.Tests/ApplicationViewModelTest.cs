@@ -336,7 +336,7 @@ namespace JPPhotoManager.Tests
         }
         
         [Fact]
-        public void NotifyCatalogChangeInvalidParametersTest()
+        public void NotifyCatalogChange_NullFolder_IgnoreNewAsset()
         {
             Folder folder = new Folder { Path = @"D:\Data" };
 
@@ -351,34 +351,96 @@ namespace JPPhotoManager.Tests
 
             Asset newAsset = new Asset { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = null };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetAssets(assets);
-
-            viewModel.NotifyCatalogChange(null);
-
-            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+            using (var mock = AutoMock.GetLoose())
             {
-                Asset = null,
-                Reason = ReasonEnum.Created
-            });
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
-            {
-                Asset = newAsset,
-                Reason = ReasonEnum.Created
-            });
+                var viewModel = mock.Create<ApplicationViewModel>();
 
-            viewModel.ObservableAssets.Should().HaveCount(5);
-            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
-            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+                viewModel.SetAssets(assets);
+
+                viewModel.NotifyCatalogChange(null);
+
+                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+                {
+                    Asset = null,
+                    Reason = ReasonEnum.Created
+                });
+
+                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+                {
+                    Asset = newAsset,
+                    Reason = ReasonEnum.Created
+                });
+
+                viewModel.ObservableAssets.Should().HaveCount(5);
+                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+                viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+                viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+                viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+            }
         }
 
+        [Theory]
+        [InlineData("", "", "")]
+        [InlineData("NewImage.jpg", "", "")]
+        [InlineData("", "C3BB07CC-343F-4DCC-A39D-767B8F3E5DA4", "")]
+        [InlineData("", "", "NewFolder")]
+        [InlineData("NewImage.jpg", "C3BB07CC-343F-4DCC-A39D-767B8F3E5DA4", "")]
+        [InlineData("NewImage.jpg", "", "C:\\NewFolder")]
+        public void NotifyCatalogChange_InvalidParameters_IgnoreAsset(string fileName, string folderId, string folderPath)
+        {
+            Folder folder = new Folder { Path = @"D:\Data" };
+
+            Asset[] assets = new Asset[]
+            {
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), Folder = folder },
+                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage(), Folder = folder },
+                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage(), Folder = folder },
+                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), Folder = folder },
+                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), Folder = folder }
+            };
+
+            Folder newFolder = new Folder { FolderId = folderId, Path = folderPath };
+            Asset newAsset = new Asset
+            {
+                FileName = fileName,
+                ImageData = new BitmapImage(),
+                Folder = newFolder
+            };
+
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+
+                var viewModel = mock.Create<ApplicationViewModel>();
+
+                viewModel.SetAssets(assets);
+
+                viewModel.NotifyCatalogChange(null);
+
+                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+                {
+                    Asset = null,
+                    Reason = ReasonEnum.Created
+                });
+
+                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+                {
+                    Asset = newAsset,
+                    Reason = ReasonEnum.Created
+                });
+
+                viewModel.ObservableAssets.Should().HaveCount(5);
+                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+                viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+                viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+                viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+            }
+        }
+        
         [Fact]
         public void RemoveAssetFromCurrentFolderTest()
         {
