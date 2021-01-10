@@ -185,7 +185,7 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
-        public void NotifyCatalogChangeCreatedToNonEmptyListCurrentFolderTest()
+        public void NotifyCatalogChange_CreatedToNonEmptyListCurrentFolder_AddNewAssetToList()
         {
             Folder folder = new Folder { Path = @"D:\Data" };
 
@@ -201,31 +201,34 @@ namespace JPPhotoManager.Tests
             Asset newAsset = new Asset { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = folder };
             string statusMessage = "Creating thumbnail for NewImage.jpg";
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
-            
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetAssets(assets);
-
-            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+            using (var mock = AutoMock.GetLoose())
             {
-                Asset = newAsset,
-                Message = statusMessage,
-                Reason = ReasonEnum.Created
-            });
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            viewModel.ObservableAssets.Should().HaveCount(6);
-            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
-            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-            viewModel.ObservableAssets[5].FileName.Should().Be("NewImage.jpg");
-            viewModel.StatusMessage.Should().Be(statusMessage);
+                var viewModel = mock.Create<ApplicationViewModel>();
+
+                viewModel.SetAssets(assets);
+
+                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+                {
+                    Asset = newAsset,
+                    Message = statusMessage,
+                    Reason = ReasonEnum.Created
+                });
+
+                viewModel.ObservableAssets.Should().HaveCount(6);
+                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+                viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+                viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+                viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+                viewModel.ObservableAssets[5].FileName.Should().Be("NewImage.jpg");
+                viewModel.StatusMessage.Should().Be(statusMessage);
+            }
         }
-
+        
         [Fact]
-        public void NotifyCatalogChangeCreatedToEmptyListCurrentFolderWithCataloguedAssetsTest()
+        public void NotifyCatalogChange_CreatedToEmptyListCurrentFolderWithCataloguedAssets_AddAllCataloguedAssetsToList()
         {
             Folder folder = new Folder { Path = @"D:\Data" };
             Asset[] assets = new Asset[] { };
@@ -241,53 +244,59 @@ namespace JPPhotoManager.Tests
 
             string statusMessage = "Creating thumbnail for Image5.jpg";
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetAssets(assets);
-
-            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+            using (var mock = AutoMock.GetLoose())
             {
-                Asset = cataloguedAssets[4],
-                CataloguedAssets = cataloguedAssets,
-                Message = statusMessage,
-                Reason = ReasonEnum.Created
-            });
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            viewModel.ObservableAssets.Should().HaveCount(5);
-            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
-            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-            viewModel.StatusMessage.Should().Be(statusMessage);
+                var viewModel = mock.Create<ApplicationViewModel>();
+
+                viewModel.SetAssets(assets);
+
+                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+                {
+                    Asset = cataloguedAssets[4],
+                    CataloguedAssets = cataloguedAssets,
+                    Message = statusMessage,
+                    Reason = ReasonEnum.Created
+                });
+
+                viewModel.ObservableAssets.Should().HaveCount(5);
+                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+                viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+                viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+                viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+                viewModel.StatusMessage.Should().Be(statusMessage);
+            }
         }
 
         [Fact]
-        public void NotifyCatalogChangeCreatedToEmptyListCurrentFolderTest()
+        public void NotifyCatalogChange_CreatedToEmptyListCurrentFolderWithoutCataloguedAssets_AddNewAssetToList()
         {
             Folder folder = new Folder { Path = @"D:\Data" };
             Asset[] assets = new Asset[] { };
             Asset newAsset = new Asset { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = folder };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetAssets(assets);
-
-            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+            using (var mock = AutoMock.GetLoose())
             {
-                Asset = newAsset,
-                Reason = ReasonEnum.Created
-            });
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            viewModel.ObservableAssets.Should().ContainSingle();
+                var viewModel = mock.Create<ApplicationViewModel>();
+
+                viewModel.SetAssets(assets);
+
+                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+                {
+                    Asset = newAsset,
+                    Reason = ReasonEnum.Created
+                });
+
+                viewModel.ObservableAssets.Should().ContainSingle();
+            }
         }
 
         [Fact]
-        public void NotifyCatalogChangeCreatedToNonEmptyListDifferentFolderTest()
+        public void NotifyCatalogChange_CreatedToNonEmptyListDifferentFolder_KeepExistingList()
         {
             Folder folder = new Folder { Path = @"D:\Data" };
 
@@ -303,26 +312,29 @@ namespace JPPhotoManager.Tests
             Folder newFolder = new Folder { Path = @"D:\NewFolder" };
             Asset newAsset = new Asset { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = newFolder };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
-            mockApp.Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
-
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
-            viewModel.SetAssets(assets);
-
-            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+            using (var mock = AutoMock.GetLoose())
             {
-                Asset = newAsset,
-                Reason = ReasonEnum.Created
-            });
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-            viewModel.ObservableAssets.Should().HaveCount(5);
-            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
-            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+                var viewModel = mock.Create<ApplicationViewModel>();
+
+                viewModel.SetAssets(assets);
+
+                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+                {
+                    Asset = newAsset,
+                    Reason = ReasonEnum.Created
+                });
+
+                viewModel.ObservableAssets.Should().HaveCount(5);
+                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+                viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+                viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+                viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+            }
         }
-
+        
         [Fact]
         public void NotifyCatalogChangeInvalidParametersTest()
         {
