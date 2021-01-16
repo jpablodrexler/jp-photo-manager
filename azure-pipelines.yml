@@ -45,7 +45,7 @@ steps:
     command: 'publish'
     publishWebProjects: false
     projects: '**/JPPhotoManager.UI.csproj'
-    arguments: '--configuration $(buildConfiguration) --no-build'
+    arguments: '--configuration $(buildConfiguration) --no-build -p:PublishSingleFile=false'
 
 - task: CopyFiles@2
   inputs:
