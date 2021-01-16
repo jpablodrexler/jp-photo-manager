@@ -52,15 +52,6 @@ steps:
     Contents: '**'
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
-- task: ArchiveFiles@2
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/azure-pipelines'), eq(variables['create-release'], true))
-  inputs:
-    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows/publish.zip'
-    includeRootFolder: false
-    archiveType: 'zip'
-    archiveFile: 'publish.zip'
-    replaceExistingArchive: true
-
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
@@ -78,4 +69,4 @@ steps:
     tag: 'v$(app-version)'
     title: 'v$(app-version)'
     isDraft: false
-    assets: 'publish.zip'
+    assets: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows/publish.zip'
