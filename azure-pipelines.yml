@@ -43,6 +43,7 @@ steps:
   displayName: 'dotnet publish'
   inputs:
     command: 'publish'
+    publishWebProjects: false
     projects: '**/JPPhotoManager.UI.csproj'
     arguments: '--configuration $(buildConfiguration) --no-build -p:PublishProfile=FolderProfile'
 
