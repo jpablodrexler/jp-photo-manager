@@ -39,6 +39,13 @@ steps:
     projects: '**/*Tests.csproj'
     arguments: '--configuration $(buildConfiguration) --no-build'
 
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet publish'
+  inputs:
+    command: 'publish'
+    projects: '**/JPPhotoManager.UI.csproj'
+    arguments: '--configuration $(buildConfiguration) --no-build -p:PublishProfile=FolderProfile'
+
 - task: CopyFiles@2
   inputs:
     Contents: '**'
