@@ -55,7 +55,7 @@ steps:
 - task: ArchiveFiles@2
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/azure-pipelines'), eq(variables['create-release'], true))
   inputs:
-    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows'
+    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows/publish.zip'
     includeRootFolder: false
     archiveType: 'zip'
     archiveFile: 'publish.zip'
