@@ -19,6 +19,7 @@ jobs:
         dotnet-version: 5.0.x
     - name: Restore dependencies
       run: dotnet restore
+      working-directory: JPPhotoManager 
     - name: Build
       run: dotnet build JPPhotoManager\JPPhotoManager.sln --configuration Release --no-restore
     - name: Test
