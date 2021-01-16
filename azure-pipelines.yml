@@ -39,19 +39,18 @@ steps:
     projects: '**/*Tests.csproj'
     arguments: '--configuration $(buildConfiguration) --no-build'
 
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet publish'
+  inputs:
+    command: 'publish'
+    publishWebProjects: false
+    projects: '**/JPPhotoManager.UI.csproj'
+    arguments: '--configuration $(buildConfiguration) --no-build -p:PublishSingleFile=false'
+
 - task: CopyFiles@2
   inputs:
     Contents: '**'
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
-
-- task: ArchiveFiles@2
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['create-release'], true))
-  inputs:
-    rootFolderOrFile: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows'
-    includeRootFolder: false
-    archiveType: 'zip'
-    archiveFile: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-v$(app-version).zip'
-    replaceExistingArchive: true
 
 - task: PublishBuildArtifacts@1
   inputs:
@@ -70,4 +69,4 @@ steps:
     tag: 'v$(app-version)'
     title: 'v$(app-version)'
     isDraft: false
-    assets: '$(Build.ArtifactStagingDirectory)/jp-photo-manager-v$(app-version).zip'
+    assets: '$(Build.ArtifactStagingDirectory)/JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows/publish.zip'
