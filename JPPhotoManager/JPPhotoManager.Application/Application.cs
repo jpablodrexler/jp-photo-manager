@@ -68,14 +68,14 @@ namespace JPPhotoManager.Application
             this.assetRepository.SaveCatalog(null);
         }
 
-        public List<ImportNewAssetsResult> ImportNewImages(StatusChangeCallback callback)
+        public List<ImportNewAssetsResult> ImportNewAssets(StatusChangeCallback callback)
         {
             return this.importNewAssetsService.Import(callback);
         }
 
-        public void CatalogImages(CatalogChangeCallback callback)
+        public void CatalogAssets(CatalogChangeCallback callback)
         {
-            this.catalogAssetsService.CatalogImages(callback);
+            this.catalogAssetsService.CatalogAssets(callback);
         }
 
         public void SetAsWallpaper(Asset asset, WallpaperStyle style)

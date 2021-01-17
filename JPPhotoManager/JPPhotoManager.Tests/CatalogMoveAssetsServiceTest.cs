@@ -1,4 +1,6 @@
-﻿using FluentAssertions;
+﻿using Autofac;
+using Autofac.Extras.Moq;
+using FluentAssertions;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
@@ -45,99 +47,109 @@ namespace JPPhotoManager.Tests
             }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CatalogFolderTest()
         {
-            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
-            userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
-            userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
-            userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                }))
+            {
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
 
-            IDatabase database = new Database();
-            IStorageService storageService = new StorageService(userConfigurationService.Object);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService.Object);
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService.Object,
-                    new DirectoryComparer());
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
-            var jpegFiles = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
+                var jpegFiles = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
                 .Select(f => Path.GetFileName(f));
 
-            var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
-                .Select(f => Path.GetFileName(f));
+                var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
+                    .Select(f => Path.GetFileName(f));
 
-            List<string> fileList = new List<string>();
-            fileList.AddRange(jpegFiles);
-            fileList.AddRange(pngFiles);
+                List<string> fileList = new List<string>();
+                fileList.AddRange(jpegFiles);
+                fileList.AddRange(pngFiles);
 
-            var statusChanges = new List<CatalogChangeCallbackEventArgs>();
-            
-            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+                var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
-            var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
+                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
 
-            var repositoryAssets = repository.GetAssets(dataDirectory);
-            processedAssets.Should().HaveSameCount(fileList);
-            repositoryAssets.Should().HaveSameCount(fileList);
-            exceptions.Should().BeEmpty();
+                var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
+                var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
 
-            processedAssets.Should().OnlyContain(a => fileList.Contains(a.FileName));
-            processedAssets.Should().OnlyContain(a => repositoryAssets.Contains(a));
-            repositoryAssets.Should().OnlyContain(a => processedAssets.Contains(a));
+                var repositoryAssets = repository.GetAssets(dataDirectory);
+                processedAssets.Should().HaveSameCount(fileList);
+                repositoryAssets.Should().HaveSameCount(fileList);
+                exceptions.Should().BeEmpty();
+
+                processedAssets.Should().OnlyContain(a => fileList.Contains(a.FileName));
+                processedAssets.Should().OnlyContain(a => repositoryAssets.Contains(a));
+                repositoryAssets.Should().OnlyContain(a => processedAssets.Contains(a));
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CatalogFolderLargerThanBatchSizeTest()
         {
-            int batchSize = 5;
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                }))
+            {
+                int batchSize = 5;
 
-            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
-            userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
-            userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
-            userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
 
-            IDatabase database = new Database();
-            IStorageService storageService = new StorageService(userConfigurationService.Object);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService.Object);
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService.Object,
-                    new DirectoryComparer());
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
-            var jpegFiles = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
-                .Select(f => Path.GetFileName(f));
+                var jpegFiles = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
+                    .Select(f => Path.GetFileName(f));
 
-            var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
-                .Select(f => Path.GetFileName(f));
+                var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
+                    .Select(f => Path.GetFileName(f));
 
-            List<string> fileList = new List<string>();
-            fileList.AddRange(jpegFiles);
-            fileList.AddRange(pngFiles);
+                List<string> fileList = new List<string>();
+                fileList.AddRange(jpegFiles);
+                fileList.AddRange(pngFiles);
 
-            var statusChanges = new List<CatalogChangeCallbackEventArgs>();
+                var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
 
-            var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
-            var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
+                var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
+                var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
 
-            var repositoryAssets = repository.GetAssets(dataDirectory);
-            fileList.Should().HaveCountGreaterThan(batchSize);
-            processedAssets.Should().HaveCount(batchSize);
-            repositoryAssets.Should().HaveCount(batchSize);
-            exceptions.Should().BeEmpty();
+                var repositoryAssets = repository.GetAssets(dataDirectory);
+                fileList.Should().HaveCountGreaterThan(batchSize);
+                processedAssets.Should().HaveCount(batchSize);
+                repositoryAssets.Should().HaveCount(batchSize);
+                exceptions.Should().BeEmpty();
 
-            processedAssets.Should().OnlyContain(a => fileList.Contains(a.FileName));
-            processedAssets.Should().OnlyContain(a => repositoryAssets.Contains(a));
-            repositoryAssets.Should().OnlyContain(a => processedAssets.Contains(a));
+                processedAssets.Should().OnlyContain(a => fileList.Contains(a.FileName));
+                processedAssets.Should().OnlyContain(a => repositoryAssets.Contains(a));
+                repositoryAssets.Should().OnlyContain(a => processedAssets.Contains(a));
+            }
         }
 
         [Fact]
@@ -173,7 +185,7 @@ namespace JPPhotoManager.Tests
 
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+            catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
 
             var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
             var repositoryAssets = repository.GetAssets(dataDirectory);
@@ -192,7 +204,7 @@ namespace JPPhotoManager.Tests
                     directoryComparerMock.Object);
 
             statusChanges.Clear();
-            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+            catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
             var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
 
             repositoryAssets.Should().Contain(a => a.FileName == deletedFile);
@@ -235,7 +247,7 @@ namespace JPPhotoManager.Tests
 
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+            catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
 
             var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
             var repositoryAssets = repository.GetAssets(dataDirectory);
@@ -256,7 +268,7 @@ namespace JPPhotoManager.Tests
                     directoryComparerMock.Object);
 
             statusChanges.Clear();
-            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+            catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
             var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
 
             repositoryAssetsAfterDelete.Should().HaveCount(fileList.Count - batchSize);
@@ -283,7 +295,7 @@ namespace JPPhotoManager.Tests
 
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+            catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
 
             statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).Should().BeEmpty();
             statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).Should().BeEmpty();
@@ -950,7 +962,7 @@ namespace JPPhotoManager.Tests
 
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
             
-            catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+            catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
 
             var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
@@ -985,7 +997,7 @@ namespace JPPhotoManager.Tests
 
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            Action action = () => catalogAssetsService.CatalogImages(e => statusChanges.Add(e));
+            Action action = () => catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
             action.Should().Throw<OperationCanceledException>();
             repository.Verify(r => r.SaveCatalog(It.IsAny<Folder>()), Times.Once);
         }

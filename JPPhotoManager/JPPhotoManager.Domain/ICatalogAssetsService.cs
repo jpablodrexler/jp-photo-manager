@@ -4,7 +4,7 @@ namespace JPPhotoManager.Domain
 {
     public interface ICatalogAssetsService
     {
-        void CatalogImages(CatalogChangeCallback callback);
+        void CatalogAssets(CatalogChangeCallback callback);
         Asset CreateAsset(string directoryName, string fileName);
     }
 }
