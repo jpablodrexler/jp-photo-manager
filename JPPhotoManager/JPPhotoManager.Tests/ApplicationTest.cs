@@ -54,7 +54,7 @@ namespace JPPhotoManager.Tests
             {
                 mock.Mock<IAssetRepository>().Setup(m => m.GetAssets(directory)).Returns(expectedResult);
 
-                var app = mock.Create<Application.Application>();
+                var app = mock.Container.Resolve<Application.Application>();
 
                 Asset[] assets = app.GetAssets(directory);
                 assets.Should().BeEquivalentTo(expectedResult);
@@ -71,7 +71,7 @@ namespace JPPhotoManager.Tests
         {
             using (var mock = AutoMock.GetLoose())
             {
-                var app = mock.Create<Application.Application>();
+                var app = mock.Container.Resolve<Application.Application>();
 
                 Func<Asset[]> function = () => app.GetAssets(directory);
                 function.Should().Throw<ArgumentException>();
@@ -101,7 +101,7 @@ namespace JPPhotoManager.Tests
                 var repository = mock.Container.Resolve<IAssetRepository>();
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
                 var storageService = mock.Container.Resolve<IStorageService>();
-                var app = mock.Create<Application.Application>();
+                var app = mock.Container.Resolve<Application.Application>();
 
                 Folder folder = repository.AddFolder(dataDirectory);
 
@@ -159,7 +159,7 @@ namespace JPPhotoManager.Tests
             {
                 var repository = mock.Container.Resolve<IAssetRepository>();
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
-                var app = mock.Create<Application.Application>();
+                var app = mock.Container.Resolve<Application.Application>();
 
                 repository.AddFolder(dataDirectory);
 
@@ -201,7 +201,7 @@ namespace JPPhotoManager.Tests
             {
                 var repository = mock.Container.Resolve<IAssetRepository>();
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
-                var app = mock.Create<Application.Application>();
+                var app = mock.Container.Resolve<Application.Application>();
 
                 repository.AddFolder(dataDirectory);
 
@@ -255,7 +255,7 @@ namespace JPPhotoManager.Tests
             {
                 var repository = mock.Container.Resolve<IAssetRepository>();
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
-                var app = mock.Create<Application.Application>();
+                var app = mock.Container.Resolve<Application.Application>();
 
                 Folder folder = repository.AddFolder(dataDirectory);
 
@@ -305,7 +305,7 @@ namespace JPPhotoManager.Tests
 
                 var repository = mock.Container.Resolve<IAssetRepository>();
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
-                var app = mock.Create<Application.Application>();
+                var app = mock.Container.Resolve<Application.Application>();
 
                 Folder folder = repository.AddFolder(dataDirectory);
 
@@ -360,7 +360,7 @@ namespace JPPhotoManager.Tests
 
                 var repository = mock.Container.Resolve<IAssetRepository>();
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
-                var app = mock.Create<Application.Application>();
+                var app = mock.Container.Resolve<Application.Application>();
 
                 repository.AddFolder(dataDirectory);
 
@@ -393,7 +393,7 @@ namespace JPPhotoManager.Tests
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                 }))
             {
-                var repository = mock.Create<IAssetRepository>();
+                var repository = mock.Container.Resolve<IAssetRepository>();
 
                 Folder folder = new Folder { FolderId = "1", Path = "C:\\Inexistent Folder" };
 
@@ -435,7 +435,7 @@ namespace JPPhotoManager.Tests
             {
                 UnencapsulatedAssetRepository repository = (UnencapsulatedAssetRepository)mock.Container.Resolve<IAssetRepository>();
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
-                var app = mock.Create<Application.Application>();
+                var app = mock.Container.Resolve<Application.Application>();
 
                 Folder folder = repository.AddFolder(dataDirectory);
                 Mock<IAssetHashCalculatorService> hashCalculator = new Mock<IAssetHashCalculatorService>();
