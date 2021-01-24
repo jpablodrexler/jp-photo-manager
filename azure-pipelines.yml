@@ -41,6 +41,7 @@ steps:
 
 - task: DotNetCoreCLI@2
   displayName: 'dotnet publish'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['create-release'], true))
   inputs:
     command: 'publish'
     publishWebProjects: false
