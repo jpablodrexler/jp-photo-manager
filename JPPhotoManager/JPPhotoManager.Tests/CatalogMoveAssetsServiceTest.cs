@@ -152,269 +152,297 @@ namespace JPPhotoManager.Tests
             }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CatalogFolderRemovesDeletedFileTest()
         {
-            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
-            userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
-            userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
-            userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
-
-            IDatabase database = new Database();
-            IStorageService storageService = new StorageService(userConfigurationService.Object);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService.Object);
-            IAssetHashCalculatorService assetHashCalculatorService = new AssetHashCalculatorService();
-            IDirectoryComparer directoryComparer = new DirectoryComparer();
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    assetHashCalculatorService,
-                    storageService,
-                    userConfigurationService.Object,
-                    directoryComparer);
-
-            var jpegFiles = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
-                .Select(f => Path.GetFileName(f));
-
-            var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
-                .Select(f => Path.GetFileName(f));
-
-            List<string> fileList = new List<string>();
-            fileList.AddRange(jpegFiles);
-            fileList.AddRange(pngFiles);
-
+            string appDataFolder = Path.Combine(dataDirectory, Guid.NewGuid().ToString());
+            int batchSize = 1000;
+            string deletedFile;
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
+            Asset[] repositoryAssets;
 
-            catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                }))
+            {
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(appDataFolder);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
 
-            var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
-            var repositoryAssets = repository.GetAssets(dataDirectory);
-            string deletedFile = fileList[0];
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
-            Mock<IDirectoryComparer> directoryComparerMock = new Mock<IDirectoryComparer>();
-            directoryComparerMock.Setup(
-                c => c.GetDeletedFileNames(It.IsAny<string[]>(), It.IsAny<List<Asset>>()))
-                .Returns(new string[] { deletedFile });
+                var jpegFiles = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
+                .Select(f => Path.GetFileName(f));
 
-            catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    assetHashCalculatorService,
-                    storageService,
-                    userConfigurationService.Object,
-                    directoryComparerMock.Object);
+                var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
+                    .Select(f => Path.GetFileName(f));
 
-            statusChanges.Clear();
-            catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
-            var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
+                List<string> fileList = new List<string>();
+                fileList.AddRange(jpegFiles);
+                fileList.AddRange(pngFiles);
 
-            repositoryAssets.Should().Contain(a => a.FileName == deletedFile);
-            repositoryAssetsAfterDelete.Should().NotContain(a => a.FileName == deletedFile);
-            statusChanges.Should().Contain(s => s.Asset != null && s.Asset.FileName == deletedFile);
+                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+
+                var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
+                repositoryAssets = repository.GetAssets(dataDirectory);
+                deletedFile = fileList[0];
+            }
+
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                }))
+            {
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(appDataFolder);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
+
+                mock.Mock<IDirectoryComparer>().Setup(
+                    c => c.GetDeletedFileNames(It.IsAny<string[]>(), It.IsAny<List<Asset>>()))
+                    .Returns(new string[] { deletedFile });
+
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+
+                statusChanges.Clear();
+                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
+
+                repositoryAssets.Should().Contain(a => a.FileName == deletedFile);
+                repositoryAssetsAfterDelete.Should().NotContain(a => a.FileName == deletedFile);
+                statusChanges.Should().Contain(s => s.Asset != null && s.Asset.FileName == deletedFile);
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CatalogFolderRemovesDeletedFileLargerThanBatchSizeTest()
         {
+            string appDataFolder = Path.Combine(dataDirectory, Guid.NewGuid().ToString());
             int batchSize = 1000;
-
-            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
-            userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
-            userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
-            userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
-
-            IDatabase database = new Database();
-            IStorageService storageService = new StorageService(userConfigurationService.Object);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService.Object);
-            IAssetHashCalculatorService assetHashCalculatorService = new AssetHashCalculatorService();
-            IDirectoryComparer directoryComparer = new DirectoryComparer();
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    assetHashCalculatorService,
-                    storageService,
-                    userConfigurationService.Object,
-                    directoryComparer);
-
-            var jpegFiles = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
-                .Select(f => Path.GetFileName(f));
-
-            var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
-                .Select(f => Path.GetFileName(f));
-
-            List<string> fileList = new List<string>();
-            fileList.AddRange(jpegFiles);
-            fileList.AddRange(pngFiles);
-
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
+            List<string> fileList = new List<string>();
 
-            catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                }))
+            {
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(appDataFolder);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
 
-            var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
-            var repositoryAssets = repository.GetAssets(dataDirectory);
-            
-            Mock<IDirectoryComparer> directoryComparerMock = new Mock<IDirectoryComparer>();
-            directoryComparerMock.Setup(
-                c => c.GetDeletedFileNames(It.IsAny<string[]>(), It.IsAny<List<Asset>>()))
-                .Returns(fileList.ToArray());
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
-            batchSize = 5;
-            userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
+                var jpegFiles = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
+                .Select(f => Path.GetFileName(f));
 
-            catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    assetHashCalculatorService,
-                    storageService,
-                    userConfigurationService.Object,
-                    directoryComparerMock.Object);
+                var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
+                    .Select(f => Path.GetFileName(f));
 
-            statusChanges.Clear();
-            catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
-            var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
+                fileList.AddRange(jpegFiles);
+                fileList.AddRange(pngFiles);
 
-            repositoryAssetsAfterDelete.Should().HaveCount(fileList.Count - batchSize);
+                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+
+                var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
+                var repositoryAssets = repository.GetAssets(dataDirectory);
+            }
+
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                }))
+            {
+                batchSize = 5;
+
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(appDataFolder);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
+
+                mock.Mock<IDirectoryComparer>().Setup(
+                    c => c.GetDeletedFileNames(It.IsAny<string[]>(), It.IsAny<List<Asset>>()))
+                    .Returns(fileList.ToArray());
+                
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+
+                statusChanges.Clear();
+                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
+
+                repositoryAssetsAfterDelete.Should().HaveCount(fileList.Count - batchSize);
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CatalogNonExistentFolderTest()
         {
-            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
-            userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(Path.Combine(dataDirectory, "NonExistent"));
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                }))
+            {
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(Path.Combine(dataDirectory, "NonExistent"));
+                
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
-            IDatabase database = new Database();
-            IStorageService storageService = new StorageService(userConfigurationService.Object);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService.Object);
-            IAssetHashCalculatorService assetHashCalculatorService = new AssetHashCalculatorService();
-            IDirectoryComparer directoryComparer = new DirectoryComparer();
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    assetHashCalculatorService,
-                    storageService,
-                    userConfigurationService.Object,
-                    directoryComparer);
+                var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            var statusChanges = new List<CatalogChangeCallbackEventArgs>();
+                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
 
-            catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
-
-            statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).Should().BeEmpty();
-            statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).Should().BeEmpty();
+                statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).Should().BeEmpty();
+                statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).Should().BeEmpty();
+            }
         }
 
-        [Fact]
-        public void CreateAssetTest1()
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
+        [Theory]
+        [InlineData("Image 2.jpg", 30197, 720, 1280, "0b6d010f85544871c307bb3a96028402f55fa29094908cdd0f74a8ec8d3fc3d4fbec995d98b89aafef3dcf5581c018fbb50481e33c7e45aef552d66c922f4078")]
+        [InlineData("Image 1.jpg", 29857, 720, 1280, "1fafae17c3c5c38d1205449eebdb9f5976814a5e54ec5797270c8ec467fe6d6d1190255cbaac11d9057c4b2697d90bc7116a46ed90c5ffb71e32e569c3b47fb9")]
+        public void CreateAssetTest(string fileName, int fileSize, int pixelHeight, int pixelWidth, string hash)
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            repository.AddFolder(dataDirectory);
 
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                }))
+            {
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
-            string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
-            File.Exists(imagePath).Should().BeTrue();
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
+                repository.AddFolder(dataDirectory);
 
-            asset.FileName.Should().Be("Image 2.jpg");
-            asset.FileSize.Should().Be(30197);
-            asset.Folder.Path.Should().Be(dataDirectory);
-            asset.FullPath.Should().Be(imagePath);
-            asset.PixelHeight.Should().Be(720);
-            asset.PixelWidth.Should().Be(1280);
-            asset.Hash.Should().Be("0b6d010f85544871c307bb3a96028402f55fa29094908cdd0f74a8ec8d3fc3d4fbec995d98b89aafef3dcf5581c018fbb50481e33c7e45aef552d66c922f4078");
-            asset.ThumbnailCreationDateTime.Should().NotBe(DateTime.MinValue);
-        }
+                string imagePath = Path.Combine(dataDirectory, fileName);
+                File.Exists(imagePath).Should().BeTrue();
+                Asset asset = catalogAssetsService.CreateAsset(dataDirectory, fileName);
 
-        [Fact]
-        public void CreateAssetTest2()
-        {
-            IDatabase database = new Database();
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            repository.AddFolder(dataDirectory);
-
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
-
-            string imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
-            File.Exists(imagePath).Should().BeTrue();
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
-
-            asset.FileName.Should().Be("Image 1.jpg");
-            asset.FileSize.Should().Be(29857);
-            asset.Folder.Path.Should().Be(dataDirectory);
-            asset.FullPath.Should().Be(imagePath);
-            asset.PixelHeight.Should().Be(720);
-            asset.PixelWidth.Should().Be(1280);
-            asset.Hash.Should().Be("1fafae17c3c5c38d1205449eebdb9f5976814a5e54ec5797270c8ec467fe6d6d1190255cbaac11d9057c4b2697d90bc7116a46ed90c5ffb71e32e569c3b47fb9");
-            asset.ThumbnailCreationDateTime.Should().NotBe(DateTime.MinValue);
+                asset.FileName.Should().Be(fileName);
+                asset.FileSize.Should().Be(fileSize);
+                asset.Folder.Path.Should().Be(dataDirectory);
+                asset.FullPath.Should().Be(imagePath);
+                asset.PixelHeight.Should().Be(pixelHeight);
+                asset.PixelWidth.Should().Be(pixelWidth);
+                asset.Hash.Should().Be(hash);
+                asset.ThumbnailCreationDateTime.Should().NotBe(DateTime.MinValue);
+            }
         }
 
         [Fact]
         public void CreateAssetOfDuplicatedFilesCompareHashesTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            repository.AddFolder(dataDirectory);
 
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                }))
+            {
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
-            string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
-            File.Exists(imagePath).Should().BeTrue();
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
+                repository.AddFolder(dataDirectory);
 
-            imagePath = Path.Combine(dataDirectory, "Image 2 duplicated.jpg");
-            File.Exists(imagePath).Should().BeTrue();
-            Asset duplicatedAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2 duplicated.jpg");
+                string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
+                File.Exists(imagePath).Should().BeTrue();
+                Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
 
-            Assert.NotEqual(asset.FileName, duplicatedAsset.FileName);
-            duplicatedAsset.Hash.Should().Be(asset.Hash);
+                imagePath = Path.Combine(dataDirectory, "Image 2 duplicated.jpg");
+                File.Exists(imagePath).Should().BeTrue();
+                Asset duplicatedAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2 duplicated.jpg");
+
+                Assert.NotEqual(asset.FileName, duplicatedAsset.FileName);
+                duplicatedAsset.Hash.Should().Be(asset.Hash);
+            }
         }
 
         [Fact]
         public void CreateAssetOfDifferentFilesCompareHashesTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            repository.AddFolder(dataDirectory);
 
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                }))
+            {
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
-            string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
-            File.Exists(imagePath).Should().BeTrue();
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
+                repository.AddFolder(dataDirectory);
 
-            imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
-            File.Exists(imagePath).Should().BeTrue();
-            Asset duplicatedAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
+                string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
+                File.Exists(imagePath).Should().BeTrue();
+                Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
 
-            duplicatedAsset.FileName.Should().NotBe(asset.FileName);
-            duplicatedAsset.Hash.Should().NotBe(asset.Hash);
+                imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
+                File.Exists(imagePath).Should().BeTrue();
+                Asset duplicatedAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
+
+                duplicatedAsset.FileName.Should().NotBe(asset.FileName);
+                duplicatedAsset.Hash.Should().NotBe(asset.Hash);
+            }
         }
 
         [Fact]
