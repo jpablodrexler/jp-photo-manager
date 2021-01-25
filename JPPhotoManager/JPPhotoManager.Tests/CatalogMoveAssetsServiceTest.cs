@@ -375,6 +375,7 @@ namespace JPPhotoManager.Tests
             }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CreateAssetOfDuplicatedFilesCompareHashesTest()
         {
@@ -410,6 +411,7 @@ namespace JPPhotoManager.Tests
             }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CreateAssetOfDifferentFilesCompareHashesTest()
         {
@@ -445,589 +447,653 @@ namespace JPPhotoManager.Tests
             }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void MoveExistingAssetTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            
-            Folder sourceFolder = repository.AddFolder(dataDirectory);
-            Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
+            {
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                    repository,
-                    storageService,
-                    catalogAssetsService);
+                Folder sourceFolder = repository.AddFolder(dataDirectory);
+                Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
-            string sourceImagePath = Path.Combine(dataDirectory, "Image 4.jpg");
-            string destinationImagePath = Path.Combine(imageDestinationDirectory, "Image 4.jpg");
-            File.Exists(sourceImagePath).Should().BeTrue();
-            File.Exists(destinationImagePath).Should().BeFalse();
+                string sourceImagePath = Path.Combine(dataDirectory, "Image 4.jpg");
+                string destinationImagePath = Path.Combine(imageDestinationDirectory, "Image 4.jpg");
+                File.Exists(sourceImagePath).Should().BeTrue();
+                File.Exists(destinationImagePath).Should().BeFalse();
 
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 4.jpg");
-            repository.SaveCatalog(sourceFolder);
-            repository.SaveCatalog(destinationFolder);
+                Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 4.jpg");
+                repository.SaveCatalog(sourceFolder);
+                repository.SaveCatalog(destinationFolder);
 
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
-            repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
+                repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
+                repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
 
-            moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
+                moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
 
-            File.Exists(sourceImagePath).Should().BeFalse();
-            File.Exists(destinationImagePath).Should().BeTrue();
+                File.Exists(sourceImagePath).Should().BeFalse();
+                File.Exists(destinationImagePath).Should().BeTrue();
 
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeFalse();
-            repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeTrue();
+                repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeFalse();
+                repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeTrue();
 
-            // Validates if the catalogued assets for the source folder are updated properly.
-            var assets = repository.GetCataloguedAssets(sourceFolder.Path);
-            assets.Should().NotContain(a => a.FileName == "Image 4.jpg");
+                // Validates if the catalogued assets for the source folder are updated properly.
+                var assets = repository.GetCataloguedAssets(sourceFolder.Path);
+                assets.Should().NotContain(a => a.FileName == "Image 4.jpg");
 
-            // Validates if the catalogued assets for the destination folder are updated properly.
-            assets = repository.GetCataloguedAssets(destinationFolder.Path);
-            assets.Should().ContainSingle(a => a.FileName == "Image 4.jpg");
+                // Validates if the catalogued assets for the destination folder are updated properly.
+                assets = repository.GetCataloguedAssets(destinationFolder.Path);
+                assets.Should().ContainSingle(a => a.FileName == "Image 4.jpg");
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void MoveNonExistingAssetTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            
-            Folder sourceFolder = repository.AddFolder(dataDirectory);
-            Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
-
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                    repository,
-                    storageService,
-                    catalogAssetsService);
-
-            string sourceImagePath = Path.Combine(dataDirectory, "Nonexistent Image.jpg");
-            string destinationImagePath = Path.Combine(imageDestinationDirectory, "Nonexistent Image.jpg");
-            File.Exists(sourceImagePath).Should().BeFalse();
-            File.Exists(destinationImagePath).Should().BeFalse();
-
-            Asset asset = new Asset
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
             {
-                FileName = "Nonexistent Image.jpg",
-                Folder = sourceFolder,
-                FolderId = sourceFolder.FolderId
-            };
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            asset.Folder.Should().Be(sourceFolder);
-            asset.Folder.Should().NotBe(destinationFolder);
+                Folder sourceFolder = repository.AddFolder(dataDirectory);
+                Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
-            Func<bool> function = () =>
-                moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false);
-            function.Should().Throw<ArgumentException>();
+                string sourceImagePath = Path.Combine(dataDirectory, "Nonexistent Image.jpg");
+                string destinationImagePath = Path.Combine(imageDestinationDirectory, "Nonexistent Image.jpg");
+                File.Exists(sourceImagePath).Should().BeFalse();
+                File.Exists(destinationImagePath).Should().BeFalse();
+
+                Asset asset = new Asset
+                {
+                    FileName = "Nonexistent Image.jpg",
+                    Folder = sourceFolder,
+                    FolderId = sourceFolder.FolderId
+                };
+
+                asset.Folder.Should().Be(sourceFolder);
+                asset.Folder.Should().NotBe(destinationFolder);
+
+                Func<bool> function = () =>
+                    moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false);
+                function.Should().Throw<ArgumentException>();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void MoveAssetToSamePathTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            
-            Folder sourceFolder = repository.AddFolder(dataDirectory);
 
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
+            {
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                    repository,
-                    storageService,
-                    catalogAssetsService);
+                Folder sourceFolder = repository.AddFolder(dataDirectory);
 
-            string sourceImagePath = Path.Combine(dataDirectory, "Image 5.jpg");
-            File.Exists(sourceImagePath).Should().BeTrue();
+                string sourceImagePath = Path.Combine(dataDirectory, "Image 5.jpg");
+                File.Exists(sourceImagePath).Should().BeTrue();
 
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 5.jpg");
-            repository.SaveCatalog(sourceFolder);
+                Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 5.jpg");
+                repository.SaveCatalog(sourceFolder);
 
-            repository.ContainsThumbnail(asset.Folder.Path, asset.FileName).Should().BeTrue();
+                repository.ContainsThumbnail(asset.Folder.Path, asset.FileName).Should().BeTrue();
 
-            moveAssetsService.MoveAsset(asset, sourceFolder, preserveOriginalFile: false).Should().BeFalse();
+                moveAssetsService.MoveAsset(asset, sourceFolder, preserveOriginalFile: false).Should().BeFalse();
 
-            File.Exists(sourceImagePath).Should().BeTrue();
+                File.Exists(sourceImagePath).Should().BeTrue();
 
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
+                repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void MoveAssetToNonCataloguedFolderTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            
-            Folder sourceFolder = repository.AddFolder(dataDirectory);
-            Folder destinationFolder = repository.GetFolderByPath(nonCataloguedImageDestinationDirectory);
 
-            destinationFolder.Should().BeNull();
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
+            {
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            destinationFolder = new Folder { Path = nonCataloguedImageDestinationDirectory };
-            
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
+                Folder sourceFolder = repository.AddFolder(dataDirectory);
+                Folder destinationFolder = repository.GetFolderByPath(nonCataloguedImageDestinationDirectory);
 
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                    repository,
-                    storageService,
-                    catalogAssetsService);
+                destinationFolder.Should().BeNull();
 
-            string sourceImagePath = Path.Combine(dataDirectory, "Image 7.jpg");
-            File.Exists(sourceImagePath).Should().BeTrue();
+                destinationFolder = new Folder { Path = nonCataloguedImageDestinationDirectory };
 
-            string destinationImagePath = Path.Combine(nonCataloguedImageDestinationDirectory, "Image 7.jpg");
-            File.Exists(destinationImagePath).Should().BeFalse();
+                string sourceImagePath = Path.Combine(dataDirectory, "Image 7.jpg");
+                File.Exists(sourceImagePath).Should().BeTrue();
 
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 7.jpg");
-            repository.SaveCatalog(sourceFolder);
+                string destinationImagePath = Path.Combine(nonCataloguedImageDestinationDirectory, "Image 7.jpg");
+                File.Exists(destinationImagePath).Should().BeFalse();
 
-            Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
+                Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 7.jpg");
+                repository.SaveCatalog(sourceFolder);
 
-            moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
+                Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
 
-            File.Exists(sourceImagePath).Should().BeFalse();
-            File.Exists(destinationImagePath).Should().BeTrue();
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeFalse();
+                moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
+
+                File.Exists(sourceImagePath).Should().BeFalse();
+                File.Exists(destinationImagePath).Should().BeTrue();
+                repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeFalse();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void MoveNullAssetTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            
-            Folder sourceFolder = repository.AddFolder(dataDirectory);
-            Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
+            {
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                    repository,
-                    storageService,
-                    catalogAssetsService);
+                Folder sourceFolder = repository.AddFolder(dataDirectory);
+                Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
-            Func<bool> function = () =>
-                moveAssetsService.MoveAsset(null, destinationFolder, preserveOriginalFile: false);
-            function.Should().Throw<ArgumentNullException>();
+                Func<bool> function = () =>
+                    moveAssetsService.MoveAsset(null, destinationFolder, preserveOriginalFile: false);
+                function.Should().Throw<ArgumentNullException>();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void MoveNullSourceFolderTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            
-            Folder sourceFolder = repository.AddFolder(dataDirectory);
-            Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
+            {
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                    repository,
-                    storageService,
-                    catalogAssetsService);
+                Folder sourceFolder = repository.AddFolder(dataDirectory);
+                Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
-            Func<bool> function = () =>
-                moveAssetsService.MoveAsset(new Asset { Folder = null }, destinationFolder, preserveOriginalFile: false);
-            function.Should().Throw<ArgumentNullException>();
+                Func<bool> function = () =>
+                    moveAssetsService.MoveAsset(new Asset { Folder = null }, destinationFolder, preserveOriginalFile: false);
+                function.Should().Throw<ArgumentNullException>();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void MoveNullDestinationFolderTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            
-            Folder sourceFolder = repository.AddFolder(dataDirectory);
-            Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
+            {
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                    repository,
-                    storageService,
-                    catalogAssetsService);
+                Folder sourceFolder = repository.AddFolder(dataDirectory);
+                Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
-            Func<bool> function = () =>
-                moveAssetsService.MoveAsset(new Asset { Folder = new Folder { } }, null, preserveOriginalFile: false);
-            function.Should().Throw<ArgumentNullException>();
+                Func<bool> function = () =>
+                    moveAssetsService.MoveAsset(new Asset { Folder = new Folder { } }, null, preserveOriginalFile: false);
+                function.Should().Throw<ArgumentNullException>();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CopyExistingAssetTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            
-            Folder sourceFolder = repository.AddFolder(dataDirectory);
-            Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
+            {
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                    repository,
-                    storageService,
-                    catalogAssetsService);
+                Folder sourceFolder = repository.AddFolder(dataDirectory);
+                Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
-            string sourceImagePath = Path.Combine(dataDirectory, "Image 5.jpg");
-            string destinationImagePath = Path.Combine(imageDestinationDirectory, "Image 5.jpg");
-            File.Exists(sourceImagePath).Should().BeTrue();
-            File.Exists(destinationImagePath).Should().BeFalse();
+                string sourceImagePath = Path.Combine(dataDirectory, "Image 5.jpg");
+                string destinationImagePath = Path.Combine(imageDestinationDirectory, "Image 5.jpg");
+                File.Exists(sourceImagePath).Should().BeTrue();
+                File.Exists(destinationImagePath).Should().BeFalse();
 
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 5.jpg");
-            repository.SaveCatalog(sourceFolder);
-            repository.SaveCatalog(destinationFolder);
+                Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 5.jpg");
+                repository.SaveCatalog(sourceFolder);
+                repository.SaveCatalog(destinationFolder);
 
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
-            repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
+                repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
+                repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
 
-            moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: true).Should().BeTrue();
+                moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: true).Should().BeTrue();
 
-            File.Exists(sourceImagePath).Should().BeTrue();
-            File.Exists(destinationImagePath).Should().BeTrue();
+                File.Exists(sourceImagePath).Should().BeTrue();
+                File.Exists(destinationImagePath).Should().BeTrue();
 
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
-            repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeTrue();
+                repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
+                repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeTrue();
 
-            // Validates if the catalogued assets for the source folder are updated properly.
-            var assets = repository.GetCataloguedAssets(sourceFolder.Path);
-            assets.Should().ContainSingle(a => a.FileName == "Image 5.jpg");
+                // Validates if the catalogued assets for the source folder are updated properly.
+                var assets = repository.GetCataloguedAssets(sourceFolder.Path);
+                assets.Should().ContainSingle(a => a.FileName == "Image 5.jpg");
 
-            // Validates if the catalogued assets for the destination folder are updated properly.
-            assets = repository.GetCataloguedAssets(destinationFolder.Path);
-            assets.Should().ContainSingle(a => a.FileName == "Image 5.jpg");
+                // Validates if the catalogued assets for the destination folder are updated properly.
+                assets = repository.GetCataloguedAssets(destinationFolder.Path);
+                assets.Should().ContainSingle(a => a.FileName == "Image 5.jpg");
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CopyNonExistingAssetTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            
-            Folder sourceFolder = repository.AddFolder(dataDirectory);
-            Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
-
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                    repository,
-                    storageService,
-                    catalogAssetsService);
-
-            string sourceImagePath = Path.Combine(dataDirectory, "Nonexistent Image.jpg");
-            string destinationImagePath = Path.Combine(imageDestinationDirectory, "Nonexistent Image.jpg");
-            File.Exists(sourceImagePath).Should().BeFalse();
-            File.Exists(destinationImagePath).Should().BeFalse();
-
-            Asset asset = new Asset
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
             {
-                FileName = "Nonexistent Image.jpg",
-                Folder = sourceFolder,
-                FolderId = sourceFolder.FolderId
-            };
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            asset.Folder.Should().Be(sourceFolder);
-            asset.Folder.Should().NotBe(destinationFolder);
+                Folder sourceFolder = repository.AddFolder(dataDirectory);
+                Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
-            Func<bool> function = () =>
-                moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: true);
-            function.Should().Throw<ArgumentException>();
+                string sourceImagePath = Path.Combine(dataDirectory, "Nonexistent Image.jpg");
+                string destinationImagePath = Path.Combine(imageDestinationDirectory, "Nonexistent Image.jpg");
+                File.Exists(sourceImagePath).Should().BeFalse();
+                File.Exists(destinationImagePath).Should().BeFalse();
+
+                Asset asset = new Asset
+                {
+                    FileName = "Nonexistent Image.jpg",
+                    Folder = sourceFolder,
+                    FolderId = sourceFolder.FolderId
+                };
+
+                asset.Folder.Should().Be(sourceFolder);
+                asset.Folder.Should().NotBe(destinationFolder);
+
+                Func<bool> function = () =>
+                    moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: true);
+                function.Should().Throw<ArgumentException>();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CopyAssetToSamePathTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            
-            Folder sourceFolder = repository.AddFolder(dataDirectory);
-            
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
 
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                    repository,
-                    storageService,
-                    catalogAssetsService);
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
+            {
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            string sourceImagePath = Path.Combine(dataDirectory, "Image 5.jpg");
-            File.Exists(sourceImagePath).Should().BeTrue();
-            
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 5.jpg");
-            repository.SaveCatalog(sourceFolder);
-            
-            Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
+                Folder sourceFolder = repository.AddFolder(dataDirectory);
 
-            moveAssetsService.MoveAsset(asset, sourceFolder, preserveOriginalFile: true).Should().BeFalse();
+                string sourceImagePath = Path.Combine(dataDirectory, "Image 5.jpg");
+                File.Exists(sourceImagePath).Should().BeTrue();
 
-            File.Exists(sourceImagePath).Should().BeTrue();
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
+                Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 5.jpg");
+                repository.SaveCatalog(sourceFolder);
+
+                Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
+
+                moveAssetsService.MoveAsset(asset, sourceFolder, preserveOriginalFile: true).Should().BeFalse();
+
+                File.Exists(sourceImagePath).Should().BeTrue();
+                repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void DeleteExistingImageTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            
-            Folder sourceFolder = repository.AddFolder(dataDirectory);
 
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
+            {
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                    repository,
-                    storageService,
-                    catalogAssetsService);
+                Folder sourceFolder = repository.AddFolder(dataDirectory);
 
-            string sourceImagePath = Path.Combine(dataDirectory, "Image 6.jpg");
-            File.Exists(sourceImagePath).Should().BeTrue();
+                string sourceImagePath = Path.Combine(dataDirectory, "Image 6.jpg");
+                File.Exists(sourceImagePath).Should().BeTrue();
 
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 6.jpg");
-            repository.SaveCatalog(sourceFolder);
+                Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 6.jpg");
+                repository.SaveCatalog(sourceFolder);
 
-            Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
+                Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
 
-            moveAssetsService.DeleteAsset(asset, deleteFile: true);
+                moveAssetsService.DeleteAsset(asset, deleteFile: true);
 
-            File.Exists(sourceImagePath).Should().BeFalse();
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeFalse();
+                File.Exists(sourceImagePath).Should().BeFalse();
+                repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeFalse();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void DeleteNonExistingImageTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            
-            Folder sourceFolder = repository.AddFolder(dataDirectory);
 
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
-
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                    repository,
-                    storageService,
-                    catalogAssetsService);
-
-            string sourceImagePath = Path.Combine(dataDirectory, "Nonexistent Image.jpg");
-            File.Exists(sourceImagePath).Should().BeFalse();
-
-            Asset asset = new Asset
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
             {
-                FileName = "Nonexistent Image.jpg",
-                Folder = sourceFolder,
-                FolderId = sourceFolder.FolderId
-            };
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            Action action = () =>
-                moveAssetsService.DeleteAsset(asset, deleteFile: true);
-            action.Should().Throw<ArgumentException>();
+                Folder sourceFolder = repository.AddFolder(dataDirectory);
+
+                string sourceImagePath = Path.Combine(dataDirectory, "Nonexistent Image.jpg");
+                File.Exists(sourceImagePath).Should().BeFalse();
+
+                Asset asset = new Asset
+                {
+                    FileName = "Nonexistent Image.jpg",
+                    Folder = sourceFolder,
+                    FolderId = sourceFolder.FolderId
+                };
+
+                Action action = () =>
+                    moveAssetsService.DeleteAsset(asset, deleteFile: true);
+                action.Should().Throw<ArgumentException>();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void DeleteNullAssetTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            
-            Folder sourceFolder = repository.AddFolder(dataDirectory);
 
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
+            {
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                    repository,
-                    storageService,
-                    catalogAssetsService);
+                Folder sourceFolder = repository.AddFolder(dataDirectory);
 
-            Action action = () =>
-                moveAssetsService.DeleteAsset(null, deleteFile: true);
-            action.Should().Throw<ArgumentNullException>();
+                Action action = () =>
+                    moveAssetsService.DeleteAsset(null, deleteFile: true);
+                action.Should().Throw<ArgumentNullException>();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void DeleteNullFolderTest()
         {
-            IDatabase database = new Database();
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            IStorageService storageService = new StorageService(userConfigurationService);
-            IAssetRepository repository = new AssetRepository(database, storageService, userConfigurationService);
-            
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService,
-                    userConfigurationService,
-                    new DirectoryComparer());
 
-            IMoveAssetsService moveAssetsService = new MoveAssetsService(
-                    repository,
-                    storageService,
-                    catalogAssetsService);
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
+            {
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            Action action = () =>
-                moveAssetsService.DeleteAsset(new Asset { Folder = null }, deleteFile: true);
-            action.Should().Throw<ArgumentNullException>();
+                Action action = () =>
+                    moveAssetsService.DeleteAsset(new Asset { Folder = null }, deleteFile: true);
+                action.Should().Throw<ArgumentNullException>();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void LogOnExceptionTest()
         {
-            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
-            userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
-            userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
-            userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
+            string appDataFolder = Path.Combine(dataDirectory, Guid.NewGuid().ToString());
 
-            Mock<IStorageService> storageService = new Mock<IStorageService>();
-            storageService.Setup(s => s.FolderExists(It.IsAny<string>())).Returns(true);
-            storageService.Setup(s => s.GetFileNames(It.IsAny<string>())).Throws(new IOException());
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
+            {
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(appDataFolder);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
 
-            IDatabase database = new Database();
-            IAssetRepository repository = new AssetRepository(database, new StorageService(userConfigurationService.Object), userConfigurationService.Object);
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository,
-                    new AssetHashCalculatorService(),
-                    storageService.Object,
-                    userConfigurationService.Object,
-                    new DirectoryComparer());
+                mock.Mock<IStorageService>().Setup(s => s.FolderExists(It.IsAny<string>())).Returns(true);
+                mock.Mock<IStorageService>().Setup(s => s.GetFileNames(It.IsAny<string>())).Throws(new IOException());
+                mock.Mock<IStorageService>().Setup(s => s.ResolveDataDirectory(It.IsAny<int>())).Returns(appDataFolder);
 
-            string[] fileList = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
+
+                string[] fileList = Directory.GetFiles(dataDirectory, "*.jp*g") // jpg and jpeg files
                 .Select(f => Path.GetFileName(f))
                 .ToArray();
 
-            var statusChanges = new List<CatalogChangeCallbackEventArgs>();
-            
-            catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
-            var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
+                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
 
-            var repositoryAssets = repository.GetAssets(dataDirectory);
-            processedAssets.Should().BeEmpty();
-            repositoryAssets.Should().BeEmpty();
-            exceptions.Should().ContainSingle();
+                var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
+                var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
+
+                var repositoryAssets = repository.GetAssets(dataDirectory);
+                processedAssets.Should().BeEmpty();
+                repositoryAssets.Should().BeEmpty();
+                exceptions.Should().ContainSingle();
+            }
         }
 
+        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void SaveCatalogOnOperationCanceledExceptionTest()
         {
-            Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            userConfigurationService.Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
-            userConfigurationService.Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
-            userConfigurationService.Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
-            userConfigurationService.Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
+            using (var mock = AutoMock.GetLoose(
+                cfg =>
+                {
+                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
+                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
+                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
+                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
+                }))
+            {
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
 
-            Mock<IStorageService> storageService = new Mock<IStorageService>();
-            storageService.Setup(s => s.FolderExists(It.IsAny<string>())).Returns(true);
-            storageService.Setup(s => s.GetFileNames(It.IsAny<string>())).Throws(new OperationCanceledException());
+                mock.Mock<IStorageService>().Setup(s => s.FolderExists(It.IsAny<string>())).Returns(true);
+                mock.Mock<IStorageService>().Setup(s => s.GetFileNames(It.IsAny<string>())).Throws(new OperationCanceledException());
 
-            Mock<IAssetRepository> repository = new Mock<IAssetRepository>();
-            
-            ICatalogAssetsService catalogAssetsService = new CatalogAssetsService(
-                    repository.Object,
-                    new AssetHashCalculatorService(),
-                    storageService.Object,
-                    userConfigurationService.Object,
-                    new DirectoryComparer());
+                var repository = mock.Container.Resolve<IAssetRepository>();
+                var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
+                var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            var statusChanges = new List<CatalogChangeCallbackEventArgs>();
+                var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            Action action = () => catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
-            action.Should().Throw<OperationCanceledException>();
-            repository.Verify(r => r.SaveCatalog(It.IsAny<Folder>()), Times.Once);
+                Action action = () => catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                action.Should().Throw<OperationCanceledException>();
+                mock.Mock<IAssetRepository>().Verify(r => r.SaveCatalog(It.IsAny<Folder>()), Times.Once);
+            }
         }
     }
 }
