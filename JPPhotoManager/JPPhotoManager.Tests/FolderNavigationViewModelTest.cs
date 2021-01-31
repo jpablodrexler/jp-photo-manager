@@ -21,7 +21,7 @@ namespace JPPhotoManager.Tests
                 Folder sourceFolder = new Folder { Path = @"D:\Data\Folder1" };
                 Folder selectedFolder = new Folder { Path = @"D:\Data\Folder2" };
 
-                var viewModel = mock.Create<FolderNavigationViewModel>(
+                var viewModel = mock.Container.Resolve<FolderNavigationViewModel>(
                     new NamedParameter("sourceFolder", sourceFolder),
                     new NamedParameter("lastSelectedFolder", selectedFolder),
                     new NamedParameter("recentTargetPaths", new List<string>()));
@@ -48,7 +48,7 @@ namespace JPPhotoManager.Tests
 
                 Folder sourceFolder = new Folder { Path = sourcePath };
 
-                var viewModel = mock.Create<FolderNavigationViewModel>(
+                var viewModel = mock.Container.Resolve<FolderNavigationViewModel>(
                     new NamedParameter("sourceFolder", sourceFolder),
                     new NamedParameter("lastSelectedFolder", null),
                     new NamedParameter("recentTargetPaths", new List<string>()));
@@ -67,7 +67,7 @@ namespace JPPhotoManager.Tests
 
                 Folder sourceFolder = null;
 
-                var viewModel = mock.Create<FolderNavigationViewModel>(
+                var viewModel = mock.Container.Resolve<FolderNavigationViewModel>(
                     new NamedParameter("sourceFolder", sourceFolder),
                     new NamedParameter("lastSelectedFolder", null),
                     new NamedParameter("recentTargetPaths", new List<string>()));
@@ -86,7 +86,7 @@ namespace JPPhotoManager.Tests
 
                 Folder sourceFolder = new Folder { Path = @"D:\Data\Folder1" };
 
-                var viewModel = mock.Create<FolderNavigationViewModel>(
+                var viewModel = mock.Container.Resolve<FolderNavigationViewModel>(
                     new NamedParameter("sourceFolder", sourceFolder),
                     new NamedParameter("lastSelectedFolder", null),
                     new NamedParameter("recentTargetPaths", new List<string>()));
