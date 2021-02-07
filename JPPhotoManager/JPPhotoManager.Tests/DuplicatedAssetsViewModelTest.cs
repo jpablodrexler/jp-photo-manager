@@ -33,10 +33,10 @@ namespace JPPhotoManager.Tests
                 FindDuplicatedAssetsViewModel viewModel = mock.Create<FindDuplicatedAssetsViewModel>();
                 viewModel.SetDuplicates(duplicatedAssetSets);
 
-                viewModel.DuplicatedAssetCollectionSetsPosition.Should().Be(0);
+                viewModel.DuplicatedAssetSetsPosition.Should().Be(0);
                 viewModel.DuplicatedAssetPosition.Should().Be(0);
-                viewModel.ObservableDuplicatedAssetCollectionSets.Should().ContainSingle();
-                viewModel.CurrentDuplicatedAssetCollection.Should().NotBeNull();
+                viewModel.DuplicatedAssetSetsCollection.Should().ContainSingle();
+                viewModel.CurrentDuplicatedAssetSet.Should().NotBeNull();
                 viewModel.CurrentDuplicatedAsset.Asset.FileName.Should().Be("Image 2.jpg");
 
                 viewModel.DuplicatedAssetPosition = 1;
@@ -57,13 +57,13 @@ namespace JPPhotoManager.Tests
                 FindDuplicatedAssetsViewModel viewModel = mock.Create<FindDuplicatedAssetsViewModel>();
                 viewModel.SetDuplicates(duplicatedAssetSets);
 
-                viewModel.DuplicatedAssetCollectionSetsPosition = -1;
+                viewModel.DuplicatedAssetSetsPosition = -1;
                 viewModel.DuplicatedAssetPosition = -1;
 
-                viewModel.ObservableDuplicatedAssetCollectionSets.Should().BeEmpty();
-                viewModel.DuplicatedAssetCollectionSetsPosition.Should().Be(-1);
+                viewModel.DuplicatedAssetSetsCollection.Should().BeEmpty();
+                viewModel.DuplicatedAssetSetsPosition.Should().Be(-1);
                 viewModel.DuplicatedAssetPosition.Should().Be(-1);
-                viewModel.CurrentDuplicatedAssetCollection.Should().BeNull();
+                viewModel.CurrentDuplicatedAssetSet.Should().BeNull();
                 viewModel.CurrentDuplicatedAsset.Should().BeNull();
             }
         }
