@@ -47,7 +47,7 @@ namespace JPPhotoManager.UI.ViewModels
 
                 if (asset != null && asset.ImageData == null)
                 {
-                    this.Application.LoadThumbnailAndFileInformation(asset);
+                    this.Application.LoadThumbnail(asset);
                 }
 
                 if (asset != null && asset.ImageData == null)

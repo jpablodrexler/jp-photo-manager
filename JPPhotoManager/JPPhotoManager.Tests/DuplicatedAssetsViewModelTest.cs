@@ -26,7 +26,7 @@ namespace JPPhotoManager.Tests
             using (var mock = AutoMock.GetLoose())
             {
                 mock.Mock<IApplication>().Setup(app => app.GetInitialFolder()).Returns(@"C:\");
-                mock.Mock<IApplication>().Setup(app => app.LoadThumbnailAndFileInformation(It.IsAny<Asset>()))
+                mock.Mock<IApplication>().Setup(app => app.LoadThumbnail(It.IsAny<Asset>()))
                     .Callback<Asset>(a => a.ImageData = new System.Windows.Media.Imaging.BitmapImage());
 
                 DuplicatedAssetsViewModel viewModel = mock.Create<DuplicatedAssetsViewModel>();
