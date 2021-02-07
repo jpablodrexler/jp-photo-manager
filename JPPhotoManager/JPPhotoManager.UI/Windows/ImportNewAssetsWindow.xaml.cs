@@ -180,7 +180,7 @@ namespace JPPhotoManager.UI.Windows
             return Task.Run(() =>
             {
                 this.Save(assetApp, imports);
-                var results = assetApp.ImportNewImages(e => Dispatcher.Invoke(() => ViewModel.NotifyImageImported(e)));
+                var results = assetApp.ImportNewAssets(e => Dispatcher.Invoke(() => ViewModel.NotifyImageImported(e)));
                 return new ObservableCollection<ImportNewAssetsResult>(results);
             });
         }

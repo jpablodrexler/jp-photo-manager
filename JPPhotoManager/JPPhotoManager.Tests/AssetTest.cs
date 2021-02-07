@@ -7,7 +7,7 @@ namespace JPPhotoManager.Tests
     public class AssetTest
     {
         [Fact]
-        public void SameFileAndFolderEqualTest()
+        public void GetHashCode_SameFileAndFolder_AreEqual()
         {
             Asset asset1 = new Asset
             {
@@ -26,7 +26,7 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
-        public void SameFileWithDifferentFolderNonEqualTest()
+        public void GetHashCode_SameFileWithDifferentFolder_AreNotEqual()
         {
             Asset asset1 = new Asset
             {
@@ -45,7 +45,7 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
-        public void OnlyOneFileNameNonEqualTest()
+        public void GetHashCode_OnlyOneFileName_AreNotEqual()
         {
             Asset asset1 = new Asset
             {
@@ -59,7 +59,7 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
-        public void DifferentFilesWithoutFolderNonEqualTest()
+        public void GetHashCode_DifferentFilesWithoutFolder_AreNotEqual()
         {
             Asset asset1 = new Asset
             {
@@ -76,7 +76,7 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
-        public void DifferentFilesAndFoldersNonEqualTest()
+        public void GetHashCode_DifferentFilesAndFolders_AreNotEqual()
         {
             Asset asset1 = new Asset
             {
@@ -95,7 +95,7 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
-        public void SameFileAndOnlyOneFolderNonEqualTest()
+        public void GetHashCode_SameFileAndOnlyOneFolder_AreNotEqual()
         {
             Asset asset1 = new Asset
             {
@@ -113,7 +113,7 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
-        public void OnlyOneObjectNonEqualTest()
+        public void Equal_OnlyOneObject_ReturnFalse()
         {
             Asset asset = new Asset
             {
@@ -125,7 +125,7 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
-        public void OneObjectComparedToItselfEqualTest()
+        public void Equal_OneObjectComparedToItself_ReturnTrue()
         {
             Asset asset = new Asset
             {
@@ -136,36 +136,19 @@ namespace JPPhotoManager.Tests
             asset.Should().Be(asset);
         }
 
-        [Fact]
-        public void ToStringWithFileNameTest()
+        [Theory]
+        [InlineData("Image1.jpg", "Image1.jpg")]
+        [InlineData("", "")]
+        [InlineData(null, null)]
+        public void ToString_ReturnFileName(string fileName, string expected)
         {
             Asset asset = new Asset
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
-                FileName = "Image1.jpg"
+                FileName = fileName
             };
 
-            asset.ToString().Should().Be("Image1.jpg");
-        }
-
-        [Fact]
-        public void ToStringWithoutFileNameTest()
-        {
-            Asset asset1 = new Asset
-            {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
-                FileName = null
-            };
-
-            asset1.ToString().Should().BeNull();
-
-            Asset asset2 = new Asset
-            {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
-                FileName = ""
-            };
-
-            asset2.ToString().Should().Be("");
+            asset.ToString().Should().Be(expected);
         }
     }
 }

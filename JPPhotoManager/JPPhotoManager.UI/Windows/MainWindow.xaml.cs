@@ -55,7 +55,7 @@ namespace JPPhotoManager.UI.Windows
         {
             return Task.Run(() =>
             {
-                assetApp.CatalogImages(
+                assetApp.CatalogAssets(
                     async (e) =>
                     {
                         // The InvokeAsync method is used to avoid freezing the application when the task is cancelled.

@@ -39,7 +39,7 @@ namespace JPPhotoManager.Application
 
         public Asset[] GetAssets(string directory)
         {
-            if (string.IsNullOrEmpty(directory))
+            if (string.IsNullOrWhiteSpace(directory))
             {
                 throw new ArgumentException("Directory cannot be null or empty.", directory);
             }
@@ -52,9 +52,8 @@ namespace JPPhotoManager.Application
             return this.assetRepository.GetAssets(directory);
         }
 
-        public void LoadThumbnailAndFileInformation(Asset asset)
+        public void LoadThumbnail(Asset asset)
         {
-            this.storageService.GetFileInformation(asset);
             asset.ImageData = this.assetRepository.LoadThumbnail(asset.Folder.Path, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
         }
 
@@ -71,14 +70,14 @@ namespace JPPhotoManager.Application
             this.assetRepository.SaveCatalog(null);
         }
 
-        public List<ImportNewAssetsResult> ImportNewImages(StatusChangeCallback callback)
+        public List<ImportNewAssetsResult> ImportNewAssets(StatusChangeCallback callback)
         {
             return this.importNewAssetsService.Import(callback);
         }
 
-        public void CatalogImages(CatalogChangeCallback callback)
+        public void CatalogAssets(CatalogChangeCallback callback)
         {
-            this.catalogAssetsService.CatalogImages(callback);
+            this.catalogAssetsService.CatalogAssets(callback);
         }
 
         public void SetAsWallpaper(Asset asset, WallpaperStyle style)

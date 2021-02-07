@@ -34,7 +34,7 @@ namespace JPPhotoManager.Domain
             this.directoryComparer = directoryComparer;
         }
 
-        public void CatalogImages(CatalogChangeCallback callback)
+        public void CatalogAssets(CatalogChangeCallback callback)
         {
             int cataloguedAssetsBatchCount = 0;
 
@@ -50,7 +50,7 @@ namespace JPPhotoManager.Domain
 	
 	            foreach (string path in rootFolders)
 	            {
-                    cataloguedAssetsBatchCount = this.CatalogImages(path, callback, cataloguedAssetsBatchCount);
+                    cataloguedAssetsBatchCount = this.CatalogAssets(path, callback, cataloguedAssetsBatchCount);
 	            }
 
                 Folder[] folders = this.assetRepository.GetFolders();
@@ -64,7 +64,7 @@ namespace JPPhotoManager.Domain
                     // TODO: This condition is meant to avoid cataloging the same folder twice. However, it only works with only one level of subfolders. Must be improved to support a complex directory tree.
                     if (!rootFolders.Any(p => string.Compare(p, f.Path, StringComparison.OrdinalIgnoreCase) == 0) && !rootFolders.Any(p => string.Compare(p, parentDirectory, StringComparison.OrdinalIgnoreCase) == 0))
                     {
-                        cataloguedAssetsBatchCount = this.CatalogImages(f.Path, callback, cataloguedAssetsBatchCount);
+                        cataloguedAssetsBatchCount = this.CatalogAssets(f.Path, callback, cataloguedAssetsBatchCount);
                     }
                 }
             }
@@ -89,7 +89,7 @@ namespace JPPhotoManager.Domain
             }
         }
 
-        private int CatalogImages(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount)
+        private int CatalogAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount)
         {
             this.currentFolderPath = directory;
             int batchSize = this.userConfigurationService.GetCatalogBatchSize();
@@ -185,7 +185,7 @@ namespace JPPhotoManager.Domain
 
                     foreach (var subdir in subdirectories)
                     {
-                        cataloguedAssetsBatchCount = this.CatalogImages(subdir.FullName, callback, cataloguedAssetsBatchCount);
+                        cataloguedAssetsBatchCount = this.CatalogAssets(subdir.FullName, callback, cataloguedAssetsBatchCount);
                     }
                 }
             }

@@ -1,5 +1,6 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
+using System;
 using System.Collections.Generic;
 using System.Windows;
 
@@ -41,6 +42,9 @@ namespace JPPhotoManager.UI.ViewModels
 
         public void SetDuplicates(List<List<Asset>> duplicatedAssets)
         {
+            if (duplicatedAssets == null)
+                throw new ArgumentNullException(nameof(duplicatedAssets));
+
             this._duplicatedAssets = duplicatedAssets;
             List<DuplicatedSetViewModel> collection = new List<DuplicatedSetViewModel>();
 
@@ -70,7 +74,7 @@ namespace JPPhotoManager.UI.ViewModels
 
                 if (assetViewModel != null && assetViewModel.Asset != null && assetViewModel.Asset.ImageData == null)
                 {
-                    this.Application.LoadThumbnailAndFileInformation(assetViewModel.Asset);
+                    this.Application.LoadThumbnail(assetViewModel.Asset);
                 }
 
                 if (assetViewModel != null && assetViewModel.Asset != null && assetViewModel.Asset.ImageData == null)

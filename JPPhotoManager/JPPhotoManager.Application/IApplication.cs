@@ -8,11 +8,11 @@ namespace JPPhotoManager.Application
     public interface IApplication
     {
         Asset[] GetAssets(string directory);
-        void LoadThumbnailAndFileInformation(Asset asset);
+        void LoadThumbnail(Asset asset);
         ImportNewAssetsConfiguration GetImportNewAssetsConfiguration();
         void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration);
-        List<ImportNewAssetsResult> ImportNewImages(StatusChangeCallback callback);
-        void CatalogImages(CatalogChangeCallback callback);
+        List<ImportNewAssetsResult> ImportNewAssets(StatusChangeCallback callback);
+        void CatalogAssets(CatalogChangeCallback callback);
         void SetAsWallpaper(Asset asset, WallpaperStyle style);
         List<List<Asset>> GetDuplicatedAssets();
         void RemoveDuplicatesFromParentFolder(List<List<Asset>> duplicatedAssetCollectionSets);

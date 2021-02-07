@@ -74,6 +74,15 @@ namespace JPPhotoManager.Domain
 
             result = result.Where(r => r.Count() > 1).ToList();
 
+            // Loads the file information for each asset.
+            foreach (List<Asset> duplicatedSet in result)
+            {
+                foreach (Asset asset in duplicatedSet)
+                {
+                    this.storageService.GetFileInformation(asset);
+                }
+            }
+
             return result;
         }
     }
