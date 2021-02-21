@@ -152,8 +152,7 @@ namespace JPPhotoManager.Infrastructure
                     {
                         FolderId = f[0],
                         Path = f[1]
-                    }
-                );
+                    });
             }
             catch (ArgumentException ex)
             {
@@ -187,8 +186,7 @@ namespace JPPhotoManager.Infrastructure
                         ThumbnailPixelHeight = int.Parse(f[7]),
                         ThumbnailCreationDateTime = DateTime.Parse(f[8]),
                         Hash = f[9]
-                    }
-                );
+                    });
             }
             catch (ArgumentException ex)
             {
@@ -215,8 +213,7 @@ namespace JPPhotoManager.Infrastructure
                         SourceDirectory = f[0],
                         DestinationDirectory = f[1],
                         IncludeSubFolders = bool.Parse(f[2])
-                    }
-                );
+                    });
             }
             catch (ArgumentException ex)
             {
