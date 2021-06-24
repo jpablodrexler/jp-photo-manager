@@ -59,10 +59,8 @@ namespace JPPhotoManager.Domain
                 
                 foreach (var f in folders)
                 {
-                    string parentDirectory = this.storageService.GetParentDirectory(f.Path);
-
-                    // TODO: This condition is meant to avoid cataloging the same folder twice. However, it only works with only one level of subfolders. Must be improved to support a complex directory tree.
-                    if (!rootFolders.Any(p => string.Compare(p, f.Path, StringComparison.OrdinalIgnoreCase) == 0) && !rootFolders.Any(p => string.Compare(p, parentDirectory, StringComparison.OrdinalIgnoreCase) == 0))
+                    if (!rootFolders.Any(p => string.Compare(p, f.Path, StringComparison.OrdinalIgnoreCase) == 0)
+                        && !storageService.FolderExists(f.Path))
                     {
                         cataloguedAssetsBatchCount = this.CatalogAssets(f.Path, callback, cataloguedAssetsBatchCount);
                     }
