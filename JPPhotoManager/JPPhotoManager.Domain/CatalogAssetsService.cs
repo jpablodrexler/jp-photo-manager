@@ -99,6 +99,12 @@ namespace JPPhotoManager.Domain
                 if (!this.assetRepository.FolderExists(directory))
                 {
                     this.assetRepository.AddFolder(directory);
+
+                    callback?.Invoke(new CatalogChangeCallbackEventArgs
+                    {
+                        Message = $"Folder {directory} added to catalog",
+                        Reason = ReasonEnum.Deleted
+                    });
                 }
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Inspecting folder " + directory });
@@ -137,7 +143,7 @@ namespace JPPhotoManager.Domain
                     {
                         Asset = newAsset,
                         CataloguedAssets = cataloguedAssets,
-                        Message = "Creating thumbnail for " + Path.Combine(directory, fileName),
+                        Message = $"Image {Path.Combine(directory, fileName)} added to catalog",
                         Reason = ReasonEnum.Created
                     });
 
@@ -168,6 +174,7 @@ namespace JPPhotoManager.Domain
                             FolderId = folder.FolderId,
                             Folder = folder
                         },
+                        Message = $"Image {Path.Combine(directory, fileName)} deleted from catalog",
                         Reason = ReasonEnum.Deleted
                     });
 
@@ -208,6 +215,13 @@ namespace JPPhotoManager.Domain
 
                         this.assetRepository.DeleteAsset(directory, asset.FileName);
                         cataloguedAssetsBatchCount++;
+
+                        callback?.Invoke(new CatalogChangeCallbackEventArgs
+                        {
+                            Asset = asset,
+                            Message = $"Image {Path.Combine(directory, asset.FileName)} deleted from catalog",
+                            Reason = ReasonEnum.Deleted
+                        });
                     }
 
                     cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
@@ -215,6 +229,12 @@ namespace JPPhotoManager.Domain
                     if (cataloguedAssets.Count == 0)
                     {
                         this.assetRepository.DeleteFolder(folder);
+
+                        callback?.Invoke(new CatalogChangeCallbackEventArgs
+                        {
+                            Message = "Folder " + directory + " deleted from catalog",
+                            Reason = ReasonEnum.Deleted
+                        });
                     }
 
                     if (this.assetRepository.HasChanges())
