@@ -23,16 +23,13 @@ namespace JPPhotoManager.Infrastructure
         private string dataDirectory;
         private readonly IDatabase database;
         private readonly IStorageService storageService;
-        private readonly IUserConfigurationService userConfigurationService;
-
         protected AssetCatalog AssetCatalog { get; private set; }
         protected Dictionary<string, Dictionary<string, byte[]>> Thumbnails { get; private set; }
 
-        public AssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService)
+        public AssetRepository(IDatabase database, IStorageService storageService)
         {
             this.database = database;
             this.storageService = storageService;
-            this.userConfigurationService = userConfigurationService;
             this.Thumbnails = new Dictionary<string, Dictionary<string, byte[]>>();
             this.Initialize();
         }
@@ -41,9 +38,7 @@ namespace JPPhotoManager.Infrastructure
         {
             if (!this.IsInitialized)
             {
-                this.dataDirectory = this.storageService.ResolveDataDirectory(STORAGE_VERSION);
-                var separatorChar = SEPARATOR.ToCharArray().First();
-                this.database.Initialize(this.dataDirectory, separatorChar);
+                this.InitializeDatabase();
                 this.ReadCatalog();
 
                 if (this.AssetCatalog == null)
@@ -55,6 +50,61 @@ namespace JPPhotoManager.Infrastructure
 
                 this.IsInitialized = true;
             }
+        }
+
+        private void InitializeDatabase()
+        {
+            this.dataDirectory = this.storageService.ResolveDataDirectory(STORAGE_VERSION);
+            var separatorChar = SEPARATOR.ToCharArray().First();
+            this.database.Initialize(this.dataDirectory, separatorChar);
+
+            this.database.SetDataTableProperties(new DataTableProperties
+            {
+                TableName = "Folder",
+                ColumnProperties = new ColumnProperties[]
+                {
+                    new ColumnProperties { ColumnName = "FolderId" },
+                    new ColumnProperties { ColumnName = "Path" }
+                }
+            });
+
+            this.database.SetDataTableProperties(new DataTableProperties
+            {
+                TableName = "Asset",
+                ColumnProperties = new ColumnProperties[]
+                {
+                    new ColumnProperties { ColumnName = "FolderId" },
+                    new ColumnProperties { ColumnName = "FileName" },
+                    new ColumnProperties { ColumnName = "FileSize" },
+                    new ColumnProperties { ColumnName = "ImageRotation" },
+                    new ColumnProperties { ColumnName = "PixelWidth" },
+                    new ColumnProperties { ColumnName = "PixelHeight" },
+                    new ColumnProperties { ColumnName = "ThumbnailPixelWidth" },
+                    new ColumnProperties { ColumnName = "ThumbnailPixelHeight" },
+                    new ColumnProperties { ColumnName = "ThumbnailCreationDateTime" },
+                    new ColumnProperties { ColumnName = "Hash" }
+                }
+            });
+
+            this.database.SetDataTableProperties(new DataTableProperties
+            {
+                TableName = "Import",
+                ColumnProperties = new ColumnProperties[]
+                {
+                    new ColumnProperties { ColumnName = "SourceDirectory" },
+                    new ColumnProperties { ColumnName = "DestinationDirectory" },
+                    new ColumnProperties { ColumnName = "IncludeSubFolders" }
+                }
+            });
+
+            this.database.SetDataTableProperties(new DataTableProperties
+            {
+                TableName = "RecentTargetPaths",
+                ColumnProperties = new ColumnProperties[]
+                {
+                    new ColumnProperties { ColumnName = "Path" }
+                }
+            });
         }
 
         private void ReadCatalog()
@@ -93,27 +143,16 @@ namespace JPPhotoManager.Infrastructure
 
         public List<Folder> ReadFolders()
         {
-            List<Folder> result = new List<Folder>();
+            List<Folder> result;
 
             try
             {
-                DataTable dataTable = database.ReadDataTable("Folder");
-
-                if (dataTable != null)
-                {
-                    for (int i = 0; i < dataTable.Rows.Count; i++)
+                result = database.ReadObjectList("Folder", f =>
+                    new Folder
                     {
-                        DataRow row = dataTable.Rows[i];
-
-                        Folder folder = new Folder
-                        {
-                            FolderId = row["FolderId"].ToString(),
-                            Path = row["Path"].ToString()
-                        };
-
-                        result.Add(folder);
-                    }
-                }
+                        FolderId = f[0],
+                        Path = f[1]
+                    });
             }
             catch (ArgumentException ex)
             {
@@ -130,35 +169,24 @@ namespace JPPhotoManager.Infrastructure
 
         public List<Asset> ReadAssets()
         {
-            List<Asset> result = new List<Asset>();
+            List<Asset> result;
             
             try
             {
-                DataTable dataTable = database.ReadDataTable("Asset");
-
-                if (dataTable != null)
-                {
-                    for (int i = 0; i < dataTable.Rows.Count; i++)
+                result = database.ReadObjectList("Asset", f =>
+                    new Asset
                     {
-                        DataRow row = dataTable.Rows[i];
-
-                        Asset asset = new Asset
-                        {
-                            FolderId = row["FolderId"].ToString(),
-                            FileName = row["FileName"].ToString(),
-                            FileSize = long.Parse(row["FileSize"].ToString()),
-                            ImageRotation = (Rotation)Enum.Parse(typeof(Rotation), row["ImageRotation"].ToString()),
-                            PixelWidth = int.Parse(row["PixelWidth"].ToString()),
-                            PixelHeight = int.Parse(row["PixelHeight"].ToString()),
-                            ThumbnailPixelWidth = int.Parse(row["ThumbnailPixelWidth"].ToString()),
-                            ThumbnailPixelHeight = int.Parse(row["ThumbnailPixelHeight"].ToString()),
-                            ThumbnailCreationDateTime = DateTime.Parse(row["ThumbnailCreationDateTime"].ToString()),
-                            Hash = row["Hash"].ToString()
-                        };
-
-                        result.Add(asset);
-                    }
-                }
+                        FolderId = f[0],
+                        FileName = f[1],
+                        FileSize = long.Parse(f[2]),
+                        ImageRotation = (Rotation)Enum.Parse(typeof(Rotation), f[3]),
+                        PixelWidth = int.Parse(f[4]),
+                        PixelHeight = int.Parse(f[5]),
+                        ThumbnailPixelWidth = int.Parse(f[6]),
+                        ThumbnailPixelHeight = int.Parse(f[7]),
+                        ThumbnailCreationDateTime = DateTime.Parse(f[8]),
+                        Hash = f[9]
+                    });
             }
             catch (ArgumentException ex)
             {
@@ -175,28 +203,17 @@ namespace JPPhotoManager.Infrastructure
 
         public List<ImportNewAssetsDirectoriesDefinition> ReadImportDefinitions()
         {
-            List<ImportNewAssetsDirectoriesDefinition> result = new List<ImportNewAssetsDirectoriesDefinition>();
+            List<ImportNewAssetsDirectoriesDefinition> result;
 
             try
             {
-                DataTable dataTable = database.ReadDataTable("Import");
-
-                if (dataTable != null)
-                {
-                    for (int i = 0; i < dataTable.Rows.Count; i++)
+                result = database.ReadObjectList("Import", f =>
+                    new ImportNewAssetsDirectoriesDefinition
                     {
-                        DataRow row = dataTable.Rows[i];
-
-                        ImportNewAssetsDirectoriesDefinition import = new ImportNewAssetsDirectoriesDefinition
-                        {
-                            SourceDirectory = row["SourceDirectory"].ToString(),
-                            DestinationDirectory = row["DestinationDirectory"].ToString(),
-                            IncludeSubFolders = bool.Parse(row["IncludeSubFolders"].ToString())
-                        };
-
-                        result.Add(import);
-                    }
-                }
+                        SourceDirectory = f[0],
+                        DestinationDirectory = f[1],
+                        IncludeSubFolders = bool.Parse(f[2])
+                    });
             }
             catch (ArgumentException ex)
             {
@@ -213,20 +230,11 @@ namespace JPPhotoManager.Infrastructure
 
         public List<string> ReadRecentTargetPaths()
         {
-            List<string> result = new List<string>();
+            List<string> result;
 
             try
             {
-                DataTable dataTable = database.ReadDataTable("RecentTargetPaths");
-
-                if (dataTable != null)
-                {
-                    for (int i = 0; i < dataTable.Rows.Count; i++)
-                    {
-                        DataRow row = dataTable.Rows[i];
-                        result.Add(row["Path"].ToString());
-                    }
-                }
+                result = database.ReadObjectList("RecentTargetPaths", f => f[0]);
             }
             catch (ArgumentException ex)
             {
@@ -243,86 +251,62 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteFolders(List<Folder> folders)
         {
-            DataTable table = new DataTable("Folder");
-            table.Columns.Add("FolderId");
-            table.Columns.Add("Path");
-            
-            foreach (Folder folder in folders)
+            this.database.WriteObjectList(folders, "Folder", (f, i) =>
             {
-                DataRow row = table.NewRow();
-                row["FolderId"] = folder.FolderId;
-                row["Path"] = folder.Path;
-                table.Rows.Add(row);
-            }
-
-            this.database.WriteDataTable(table);
+                return i switch
+                {
+                    0 => f.FolderId,
+                    1 => f.Path,
+                    _ => throw new ArgumentOutOfRangeException(nameof(i))
+                };
+            });
         }
 
         public void WriteAssets(List<Asset> assets)
         {
-            DataTable table = new DataTable("Asset");
-            table.Columns.Add("FolderId");
-            table.Columns.Add("FileName");
-            table.Columns.Add("FileSize");
-            table.Columns.Add("ImageRotation");
-            table.Columns.Add("PixelWidth");
-            table.Columns.Add("PixelHeight");
-            table.Columns.Add("ThumbnailPixelWidth");
-            table.Columns.Add("ThumbnailPixelHeight");
-            table.Columns.Add("ThumbnailCreationDateTime");
-            table.Columns.Add("Hash");
-
-            foreach (Asset asset in assets)
+            this.database.WriteObjectList(assets, "Asset", (a, i) =>
             {
-                DataRow row = table.NewRow();
-                row["FolderId"] = asset.FolderId;
-                row["FileName"] = asset.FileName;
-                row["FileSize"] = asset.FileSize;
-                row["ImageRotation"] = asset.ImageRotation;
-                row["PixelWidth"] = asset.PixelWidth;
-                row["PixelHeight"] = asset.PixelHeight;
-                row["ThumbnailPixelWidth"] = asset.ThumbnailPixelWidth;
-                row["ThumbnailPixelHeight"] = asset.ThumbnailPixelHeight;
-                row["ThumbnailCreationDateTime"] = asset.ThumbnailCreationDateTime;
-                row["Hash"] = asset.Hash;
-                table.Rows.Add(row);
-            }
-
-            this.database.WriteDataTable(table);
+                return i switch
+                {
+                    0 => a.FolderId,
+                    1 => a.FileName,
+                    2 => a.FileSize,
+                    3 => a.ImageRotation,
+                    4 => a.PixelWidth,
+                    5 => a.PixelHeight,
+                    6 => a.ThumbnailPixelWidth,
+                    7 => a.ThumbnailPixelHeight,
+                    8 => a.ThumbnailCreationDateTime,
+                    9 => a.Hash,
+                    _ => throw new ArgumentOutOfRangeException(nameof(i))
+                };
+            });
         }
 
         public void WriteImports(List<ImportNewAssetsDirectoriesDefinition> imports)
         {
-            DataTable table = new DataTable("Import");
-            table.Columns.Add("SourceDirectory");
-            table.Columns.Add("DestinationDirectory");
-            table.Columns.Add("IncludeSubFolders");
-
-            foreach (ImportNewAssetsDirectoriesDefinition import in imports)
+            this.database.WriteObjectList(imports, "Import", (d, i) =>
             {
-                DataRow row = table.NewRow();
-                row["SourceDirectory"] = import.SourceDirectory;
-                row["DestinationDirectory"] = import.DestinationDirectory;
-                row["IncludeSubFolders"] = import.IncludeSubFolders;
-                table.Rows.Add(row);
-            }
-
-            this.database.WriteDataTable(table);
+                return i switch
+                {
+                    0 => d.SourceDirectory,
+                    1 => d.DestinationDirectory,
+                    2 => d.IncludeSubFolders,
+                    _ => throw new ArgumentOutOfRangeException(nameof(i))
+                };
+            });
         }
 
         public void WriteRecentTargetPaths(List<string> recentTargetPaths)
         {
-            DataTable table = new DataTable("RecentTargetPaths");
-            table.Columns.Add("Path");
-
-            foreach (string path in recentTargetPaths)
+            this.database.WriteObjectList(recentTargetPaths, "RecentTargetPaths", (p, i) =>
             {
-                DataRow row = table.NewRow();
-                row["Path"] = path;
-                table.Rows.Add(row);
-            }
-
-            this.database.WriteDataTable(table);
+                return i switch
+                {
+                    0 => p,
+                    _ => throw new ArgumentOutOfRangeException(nameof(i))
+                };
+            });
         }
 
         public bool FolderHasThumbnails(Folder folder)

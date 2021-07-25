@@ -470,7 +470,7 @@ namespace JPPhotoManager.Tests
 
     class UnencapsulatedAssetRepository : AssetRepository
     {
-        public UnencapsulatedAssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService) : base(database, storageService, userConfigurationService)
+        public UnencapsulatedAssetRepository(IDatabase database, IStorageService storageService) : base(database, storageService)
         {
 
         }

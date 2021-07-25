@@ -59,10 +59,8 @@ namespace JPPhotoManager.Domain
                 
                 foreach (var f in folders)
                 {
-                    string parentDirectory = this.storageService.GetParentDirectory(f.Path);
-
-                    // TODO: This condition is meant to avoid cataloging the same folder twice. However, it only works with only one level of subfolders. Must be improved to support a complex directory tree.
-                    if (!rootFolders.Any(p => string.Compare(p, f.Path, StringComparison.OrdinalIgnoreCase) == 0) && !rootFolders.Any(p => string.Compare(p, parentDirectory, StringComparison.OrdinalIgnoreCase) == 0))
+                    if (!rootFolders.Any(p => string.Compare(p, f.Path, StringComparison.OrdinalIgnoreCase) == 0)
+                        && !storageService.FolderExists(f.Path))
                     {
                         cataloguedAssetsBatchCount = this.CatalogAssets(f.Path, callback, cataloguedAssetsBatchCount);
                     }
@@ -99,6 +97,12 @@ namespace JPPhotoManager.Domain
                 if (!this.assetRepository.FolderExists(directory))
                 {
                     this.assetRepository.AddFolder(directory);
+
+                    callback?.Invoke(new CatalogChangeCallbackEventArgs
+                    {
+                        Message = $"Folder {directory} added to catalog",
+                        Reason = ReasonEnum.Deleted
+                    });
                 }
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Inspecting folder " + directory });
@@ -137,7 +141,7 @@ namespace JPPhotoManager.Domain
                     {
                         Asset = newAsset,
                         CataloguedAssets = cataloguedAssets,
-                        Message = "Creating thumbnail for " + Path.Combine(directory, fileName),
+                        Message = $"Image {Path.Combine(directory, fileName)} added to catalog",
                         Reason = ReasonEnum.Created
                     });
 
@@ -168,6 +172,7 @@ namespace JPPhotoManager.Domain
                             FolderId = folder.FolderId,
                             Folder = folder
                         },
+                        Message = $"Image {Path.Combine(directory, fileName)} deleted from catalog",
                         Reason = ReasonEnum.Deleted
                     });
 
@@ -208,6 +213,13 @@ namespace JPPhotoManager.Domain
 
                         this.assetRepository.DeleteAsset(directory, asset.FileName);
                         cataloguedAssetsBatchCount++;
+
+                        callback?.Invoke(new CatalogChangeCallbackEventArgs
+                        {
+                            Asset = asset,
+                            Message = $"Image {Path.Combine(directory, asset.FileName)} deleted from catalog",
+                            Reason = ReasonEnum.Deleted
+                        });
                     }
 
                     cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
@@ -215,6 +227,12 @@ namespace JPPhotoManager.Domain
                     if (cataloguedAssets.Count == 0)
                     {
                         this.assetRepository.DeleteFolder(folder);
+
+                        callback?.Invoke(new CatalogChangeCallbackEventArgs
+                        {
+                            Message = "Folder " + directory + " deleted from catalog",
+                            Reason = ReasonEnum.Deleted
+                        });
                     }
 
                     if (this.assetRepository.HasChanges())
