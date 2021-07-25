@@ -268,7 +268,8 @@ namespace JPPhotoManager.UI.Windows
 
                 if (duplicates.Count > 0)
                 {
-                    DuplicatedAssetsViewModel viewModel = new DuplicatedAssetsViewModel(this.ViewModel.Application) { DuplicatedAssetCollectionSets = duplicates };
+                    FindDuplicatedAssetsViewModel viewModel = new FindDuplicatedAssetsViewModel(this.ViewModel.Application);
+                    viewModel.SetDuplicates(duplicates);
                     DuplicatedAssetsWindow duplicatedAssetsWindow = new DuplicatedAssetsWindow(viewModel);
                     duplicatedAssetsWindow.ShowDialog();
                 }

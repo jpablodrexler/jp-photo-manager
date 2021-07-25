@@ -4,6 +4,6 @@ namespace JPPhotoManager.Domain
 {
     public interface IFindDuplicatedAssetsService
     {
-        List<DuplicatedAssetCollection> GetDuplicatedAssets();
+        List<List<Asset>> GetDuplicatedAssets();
     }
 }

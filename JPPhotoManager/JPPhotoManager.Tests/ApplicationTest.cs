@@ -122,14 +122,13 @@ namespace JPPhotoManager.Tests
 
                 repository.SaveCatalog(folder);
 
-                List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
+                var duplicatedAssetSets = app.GetDuplicatedAssets();
                 duplicatedAssetSets.Should().ContainSingle();
 
-                DuplicatedAssetCollection duplicatedAssets = duplicatedAssetSets[0];
+                var duplicatedAssets = duplicatedAssetSets[0];
                 duplicatedAssets.Should().HaveCount(2);
                 duplicatedAssets[0].FileName.Should().Be("Image 2.jpg");
                 duplicatedAssets[1].FileName.Should().Be("Image 2 duplicated.jpg");
-                duplicatedAssets.Description.Should().Be("Image 2.jpg (2 duplicates)");
 
                 repository.ContainsThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName).Should().BeTrue();
                 repository.ContainsThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName).Should().BeTrue();
@@ -171,7 +170,7 @@ namespace JPPhotoManager.Tests
                 File.Exists(imagePath).Should().BeTrue();
                 Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
 
-                List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
+                var duplicatedAssetSets = app.GetDuplicatedAssets();
                 duplicatedAssetSets.Should().BeEmpty();
             }
         }
@@ -225,7 +224,7 @@ namespace JPPhotoManager.Tests
                 };
 
                 repository.AddAsset(inexistentAsset, null);
-                List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
+                var duplicatedAssetSets = app.GetDuplicatedAssets();
                 duplicatedAssetSets.Should().BeEmpty();
             }
         }
@@ -278,7 +277,7 @@ namespace JPPhotoManager.Tests
                 File.Exists(imagePath).Should().BeTrue();
                 Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
 
-                List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
+                var duplicatedAssetSets = app.GetDuplicatedAssets();
                 duplicatedAssetSets.Should().BeEmpty();
             }
         }
@@ -323,7 +322,7 @@ namespace JPPhotoManager.Tests
 
                 repository.SaveCatalog(folder);
 
-                List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
+                var duplicatedAssetSets = app.GetDuplicatedAssets();
                 duplicatedAssetSets.Should().ContainSingle();
 
                 List<Asset> duplicatedAssets = duplicatedAssetSets[0];
@@ -372,7 +371,7 @@ namespace JPPhotoManager.Tests
                 File.Exists(imagePath).Should().BeTrue();
                 Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
 
-                List<DuplicatedAssetCollection> duplicatedAssetSets = app.GetDuplicatedAssets();
+                var duplicatedAssetSets = app.GetDuplicatedAssets();
                 duplicatedAssetSets.Should().BeEmpty();
             }
         }

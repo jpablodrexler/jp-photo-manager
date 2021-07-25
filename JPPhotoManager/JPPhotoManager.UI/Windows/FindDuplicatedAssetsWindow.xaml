@@ -24,30 +24,38 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="400"/>
             <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="200"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <Label Grid.Row="0" Grid.Column="0" Foreground="#FFFFFFFF" Content="{Binding DuplicatedAssetCollectionSets.Count}" ContentStringFormat="Duplicated sets: {0}"/>
+        <Label Grid.Row="0" Grid.Column="0" Foreground="#FFFFFFFF" Content="{Binding DuplicatedAssetSetsCollection.Count}" ContentStringFormat="Duplicated sets: {0}"/>
         <Label Grid.Row="0" Grid.Column="1" x:Name="refreshLabel" Padding="5" MouseLeftButtonDown="RefreshLabel_MouseLeftButtonDown" Content="Refresh" Style="{StaticResource ButtonStyle}" />
-        <ListBox Grid.Row="1" Grid.RowSpan="2" Grid.Column="0" Background="#FF3C3C3C" ItemsSource="{Binding DuplicatedAssetCollectionSets}" SelectedIndex="{Binding DuplicatedAssetCollectionSetsPosition}">
-            <ListBox.ItemTemplate>
-                <ItemContainerTemplate>
-                    <Label Content="{Binding Description}" Foreground="#FFFFFFFF" />
-                </ItemContainerTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
-        <DataGrid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" ItemsSource="{Binding CurrentDuplicatedAssetCollection}" SelectedIndex="{Binding DuplicatedAssetPosition}" AutoGenerateColumns="False" CanUserReorderColumns="True" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C">
+        <DataGrid Grid.Row="1" Grid.RowSpan="3" Grid.Column="0" ItemsSource="{Binding DuplicatedAssetSetsCollection}" SelectedIndex="{Binding DuplicatedAssetSetsPosition}" AutoGenerateColumns="False" CanUserReorderColumns="True" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C">
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Setter Property="Background" Value="#FF3C3C3C"/>
                     <Setter Property="Foreground" Value="#FFFFFFFF"/>
+                    <Setter Property="Visibility" Value="{Binding Visible}"/>
                 </Style>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Path" Binding="{Binding FullPath}" Width="400"/>
-                <DataGridTextColumn Header="Image size" Binding="{ Binding Converter={StaticResource PixelSizeConverter}}" Width="100"/>
-                <DataGridTextColumn Header="File size" Binding="{ Binding FileSize, Converter={StaticResource FileSizeConverter}}" Width="60"/>
-                <DataGridTextColumn Header="File created" Binding="{ Binding FileCreationDateTime}" Width="150"/>
-                <DataGridTextColumn Header="File last modified" Binding="{ Binding FileModificationDateTime}" Width="150"/>
+                <DataGridTextColumn Header="File Name" Binding="{Binding FileName}" Width="300"/>
+                <DataGridTextColumn Header="Duplicates" Binding="{Binding DuplicatesCount}" Width="100"/>
+            </DataGrid.Columns>
+        </DataGrid>
+        <DataGrid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" ItemsSource="{Binding CurrentDuplicatedAssetSet}" SelectedIndex="{Binding DuplicatedAssetPosition}" AutoGenerateColumns="False" CanUserReorderColumns="True" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Background" Value="#FF3C3C3C"/>
+                    <Setter Property="Foreground" Value="#FFFFFFFF"/>
+                    <Setter Property="Visibility" Value="{Binding Visible}"/>
+                </Style>
+            </DataGrid.RowStyle>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Path" Binding="{Binding Asset.FullPath}" Width="400"/>
+                <DataGridTextColumn Header="Image size" Binding="{ Binding Asset, Converter={StaticResource PixelSizeConverter}}" Width="100"/>
+                <DataGridTextColumn Header="File size" Binding="{ Binding Asset.FileSize, Converter={StaticResource FileSizeConverter}}" Width="60"/>
+                <DataGridTextColumn Header="File created" Binding="{ Binding Asset.FileCreationDateTime}" Width="150"/>
+                <DataGridTextColumn Header="File last modified" Binding="{ Binding Asset.FileModificationDateTime}" Width="150"/>
                 <DataGridTemplateColumn Header="Actions" Width="50">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
@@ -59,7 +67,7 @@
                 </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
-        <Image Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" HorizontalAlignment="Center" Source="{ Binding CurrentDuplicatedAsset.ImageData }" Width="200" Height="150">
+        <Image Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" HorizontalAlignment="Center" Source="{ Binding CurrentDuplicatedAsset.Asset.ImageData }" Width="200" Height="150">
             <Image.Effect>
                 <DropShadowEffect/>
             </Image.Effect>

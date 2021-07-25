@@ -21,16 +21,17 @@ namespace JPPhotoManager.Domain
         /// </summary>
         /// <returns>A list of duplicated sets of assets (corresponding to the same image),
         /// where each item is a list of duplicated assets.</returns>
-        public List<DuplicatedAssetCollection> GetDuplicatedAssets()
+        public List<List<Asset>> GetDuplicatedAssets()
         {
-            List<DuplicatedAssetCollection> result = new List<DuplicatedAssetCollection>();
+            List<List<Asset>> result = new List<List<Asset>>();
             List<Asset> assets = this.assetRepository.GetCataloguedAssets();
             var assetGroups = assets.GroupBy(a => a.Hash);
             assetGroups = assetGroups.Where(g => g.Count() > 1);
 
+            // TODO: THIS THROWS AN INVALIDOPERATIONEXCEPTION IF NEW ASSETS ARE BEING CATALOGUED AT THE SAME TIME.
             foreach (var group in assetGroups)
             {
-                result.Add(new DuplicatedAssetCollection(group.ToList()));
+                result.Add(group.ToList());
             }
 
             // Removes stale assets, whose files no longer exists.

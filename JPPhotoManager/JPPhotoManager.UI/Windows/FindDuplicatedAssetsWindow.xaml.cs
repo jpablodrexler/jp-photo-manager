@@ -17,7 +17,7 @@ namespace JPPhotoManager.UI.Windows
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public DuplicatedAssetsWindow(DuplicatedAssetsViewModel viewModel)
+        public DuplicatedAssetsWindow(FindDuplicatedAssetsViewModel viewModel)
         {
             try
             {
@@ -31,22 +31,21 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        public DuplicatedAssetsViewModel ViewModel
+        public FindDuplicatedAssetsViewModel ViewModel
         {
-            get { return (DuplicatedAssetsViewModel)this.DataContext; }
+            get { return (FindDuplicatedAssetsViewModel)this.DataContext; }
         }
 
         private void DeleteLabel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             try
             {
-                Asset asset = (Asset)((FrameworkElement)e.Source).DataContext;
+                DuplicatedAssetViewModel viewModel = (DuplicatedAssetViewModel)((FrameworkElement)e.Source).DataContext;
+                Asset asset = viewModel.Asset;
 
                 if (MessageBox.Show($"Are you sure you want to delete {asset.FullPath}?", "Confirm", MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK)
                 {
-                    this.ViewModel.Application.DeleteAsset(asset, deleteFile: true);
-                    var duplicates = this.ViewModel.Application.GetDuplicatedAssets();
-                    this.ViewModel.DuplicatedAssetCollectionSets = duplicates;
+                    this.ViewModel.DeleteAsset(viewModel);
                 }
 
                 // TODO: IN THE LIST BOXES, IF THE FILENAME INCLUDES _ IT IS NOT BEING SHOWN.
