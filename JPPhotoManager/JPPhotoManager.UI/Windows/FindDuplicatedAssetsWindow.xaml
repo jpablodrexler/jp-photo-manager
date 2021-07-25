@@ -29,7 +29,6 @@
         </Grid.ColumnDefinitions>
         <Label Grid.Row="0" Grid.Column="0" Foreground="#FFFFFFFF" Content="{Binding DuplicatedAssetSetsCollection.Count}" ContentStringFormat="Duplicated sets: {0}"/>
         <Label Grid.Row="0" Grid.Column="1" x:Name="refreshLabel" Padding="5" MouseLeftButtonDown="RefreshLabel_MouseLeftButtonDown" Content="Refresh" Style="{StaticResource ButtonStyle}" />
-        <Label Grid.Row="0" Grid.Column="2" x:Name="deleteFromParentFolderLabel" Padding="5" MouseLeftButtonDown="DeleteFromParentFolderLabel_MouseLeftButtonDown" Content="Delete from parent folder" Style="{StaticResource ButtonStyle}" />
         <DataGrid Grid.Row="1" Grid.RowSpan="3" Grid.Column="0" ItemsSource="{Binding DuplicatedAssetSetsCollection}" SelectedIndex="{Binding DuplicatedAssetSetsPosition}" AutoGenerateColumns="False" CanUserReorderColumns="True" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C">
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
