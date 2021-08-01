@@ -43,7 +43,8 @@ namespace JPPhotoManager.Domain
             }
             
             return cataloguedAssets
-                .Where(ca => ca.FileModificationDateTime > ca.ThumbnailCreationDateTime)
+                .Where(ca => ca.FileCreationDateTime > ca.ThumbnailCreationDateTime ||
+                    ca.FileModificationDateTime > ca.ThumbnailCreationDateTime)
                 .Select(ca => ca.FileName)
                 .ToArray();
         }
