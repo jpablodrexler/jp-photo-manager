@@ -260,7 +260,7 @@ namespace JPPhotoManager.Tests
             ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
                 repositoryMock.Object,
                 storageServiceMock.Object,
-                new DirectoryComparer());
+                new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
@@ -371,7 +371,7 @@ namespace JPPhotoManager.Tests
             ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
                 repositoryMock.Object,
                 storageServiceMock.Object,
-                new DirectoryComparer());
+                new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
@@ -494,7 +494,7 @@ namespace JPPhotoManager.Tests
             ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
                 repositoryMock.Object,
                 storageServiceMock.Object,
-                new DirectoryComparer());
+                new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
@@ -630,7 +630,7 @@ namespace JPPhotoManager.Tests
             ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
                 repositoryMock.Object,
                 storageServiceMock.Object,
-                new DirectoryComparer());
+                new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
@@ -769,7 +769,7 @@ namespace JPPhotoManager.Tests
             ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
                 repositoryMock.Object,
                 storageServiceMock.Object,
-                new DirectoryComparer());
+                new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
@@ -892,7 +892,7 @@ namespace JPPhotoManager.Tests
             ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
                 repositoryMock.Object,
                 storageServiceMock.Object,
-                new DirectoryComparer());
+                new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
@@ -1076,7 +1076,7 @@ namespace JPPhotoManager.Tests
             ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
                 repositoryMock.Object,
                 storageServiceMock.Object,
-                new DirectoryComparer());
+                new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
@@ -1125,7 +1125,7 @@ namespace JPPhotoManager.Tests
             ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
                 repositoryMock.Object,
                 storageServiceMock.Object,
-                new DirectoryComparer());
+                new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
@@ -1178,7 +1178,7 @@ namespace JPPhotoManager.Tests
             ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
                 repositoryMock.Object,
                 storageServiceMock.Object,
-                new DirectoryComparer());
+                new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
@@ -1253,7 +1253,7 @@ namespace JPPhotoManager.Tests
             ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
                 repositoryMock.Object,
                 storageServiceMock.Object,
-                new DirectoryComparer());
+                new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
