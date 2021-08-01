@@ -1,5 +1,6 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
+using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
@@ -196,6 +197,22 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
+        private void UpdateAsset(Asset asset)
+        {
+            if (this.ObservableAssets != null)
+            {
+                var updatedAsset = this.ObservableAssets.FirstOrDefault(
+                    a => string.Compare(a.FileName, asset.FileName, StringComparison.OrdinalIgnoreCase) == 0);
+                
+                if (updatedAsset != null)
+                {
+                    RemoveAsset(updatedAsset);
+                    AddAsset(asset);
+                    this.NotifyPropertyChanged(nameof(ObservableAssets));
+                }
+            }
+        }
+
         public void RemoveAsset(Asset asset)
         {
             if (this.ObservableAssets != null)
@@ -304,7 +321,17 @@ namespace JPPhotoManager.UI.ViewModels
                         break;
 
                     case ReasonEnum.Updated:
-                        // TODO: IMPLEMENT.
+                        // If the files list is empty or belongs to other directory
+                        if ((this.ObservableAssets.Count == 0 || this.ObservableAssets[0].Folder.Path != this.CurrentFolder) && e.CataloguedAssets != null)
+                        {
+                            this.cataloguedAssets = e.CataloguedAssets.Where(a => a.ImageData != null).ToArray();
+                            this.SortAssets();
+                        }
+                        else
+                        {
+                            this.UpdateAsset(e.Asset);
+                        }
+
                         break;
 
                     case ReasonEnum.Deleted:

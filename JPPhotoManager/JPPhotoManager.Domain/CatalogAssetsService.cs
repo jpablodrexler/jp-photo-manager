@@ -94,152 +94,212 @@ namespace JPPhotoManager.Domain
             
             if (storageService.FolderExists(directory))
             {
-                if (!this.assetRepository.FolderExists(directory))
-                {
-                    this.assetRepository.AddFolder(directory);
-
-                    callback?.Invoke(new CatalogChangeCallbackEventArgs
-                    {
-                        Message = $"Folder {directory} added to catalog",
-                        Reason = ReasonEnum.Deleted
-                    });
-                }
-
-                callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Inspecting folder " + directory });
-                string[] fileNames = this.storageService.GetFileNames(directory);
-                Folder folder = this.assetRepository.GetFolderByPath(directory);
-                List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
-                bool folderHasThumbnails = this.assetRepository.FolderHasThumbnails(folder);
-
-                if (!folderHasThumbnails)
-                {
-                    foreach (var asset in cataloguedAssets)
-                    {
-                        asset.ImageData = LoadThumbnail(directory, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
-                    }
-                }
-
-                string[] newFileNames = directoryComparer.GetNewFileNames(fileNames, cataloguedAssets);
-                string[] deletedFileNames = directoryComparer.GetDeletedFileNames(fileNames, cataloguedAssets);
-                
-                foreach (var fileName in newFileNames)
-                {
-                    if (cataloguedAssetsBatchCount >= batchSize)
-                    {
-                        break;
-                    }
-
-                    Asset newAsset = CreateAsset(directory, fileName);
-                    newAsset.ImageData = LoadThumbnail(directory, fileName, newAsset.ThumbnailPixelWidth, newAsset.ThumbnailPixelHeight);
-                    
-                    if (!folderHasThumbnails)
-                    {
-                        cataloguedAssets.Add(newAsset);
-                    }
-
-                    callback?.Invoke(new CatalogChangeCallbackEventArgs
-                    {
-                        Asset = newAsset,
-                        CataloguedAssets = cataloguedAssets,
-                        Message = $"Image {Path.Combine(directory, fileName)} added to catalog",
-                        Reason = ReasonEnum.Created
-                    });
-
-                    cataloguedAssetsBatchCount++;
-                }
-
-                foreach (var fileName in deletedFileNames)
-                {
-                    if (cataloguedAssetsBatchCount >= batchSize)
-                    {
-                        break;
-                    }
-
-                    Asset deletedAsset = new Asset()
-                    {
-                        FileName = fileName,
-                        FolderId = folder.FolderId,
-                        Folder = folder
-                    };
-
-                    this.assetRepository.DeleteAsset(directory, fileName);
-
-                    callback?.Invoke(new CatalogChangeCallbackEventArgs
-                    {
-                        Asset = new Asset()
-                        {
-                            FileName = fileName,
-                            FolderId = folder.FolderId,
-                            Folder = folder
-                        },
-                        Message = $"Image {Path.Combine(directory, fileName)} deleted from catalog",
-                        Reason = ReasonEnum.Deleted
-                    });
-
-                    cataloguedAssetsBatchCount++;
-                }
-
-                if (this.assetRepository.HasChanges() || !folderHasThumbnails)
-                {
-                    this.assetRepository.SaveCatalog(folder);
-                }
-
-                if (cataloguedAssetsBatchCount < batchSize)
-                {
-                    var subdirectories = new DirectoryInfo(directory).EnumerateDirectories();
-
-                    foreach (var subdir in subdirectories)
-                    {
-                        cataloguedAssetsBatchCount = this.CatalogAssets(subdir.FullName, callback, cataloguedAssetsBatchCount);
-                    }
-                }
+                cataloguedAssetsBatchCount = CatalogExistingFolder(directory, callback, cataloguedAssetsBatchCount, batchSize);
             }
             else if (!string.IsNullOrEmpty(directory) && !storageService.FolderExists(directory))
             {
-                // If the folder doesn't exist anymore, the corresponding entry in the catalog and the thumbnails file are both deleted.
-                // TODO: This should be tested in a new test method, in which the non existent folder is explicitly added to the catalog.
-                Folder folder = this.assetRepository.GetFolderByPath(directory);
+                cataloguedAssetsBatchCount = CatalogNonExistingFolder(directory, callback, cataloguedAssetsBatchCount, batchSize);
+            }
 
-                if (folder != null)
+            return cataloguedAssetsBatchCount;
+        }
+
+        private int CatalogExistingFolder(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize)
+        {
+            if (!this.assetRepository.FolderExists(directory))
+            {
+                this.assetRepository.AddFolder(directory);
+
+                callback?.Invoke(new CatalogChangeCallbackEventArgs
                 {
-                    List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+                    Message = $"Folder {directory} added to catalog",
+                    Reason = ReasonEnum.Created
+                });
+            }
 
-                    foreach (var asset in cataloguedAssets)
-                    {
-                        if (cataloguedAssetsBatchCount >= batchSize)
-                        {
-                            break;
-                        }
+            callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Inspecting folder " + directory });
+            string[] fileNames = this.storageService.GetFileNames(directory);
+            Folder folder = this.assetRepository.GetFolderByPath(directory);
+            List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+            bool folderHasThumbnails = this.assetRepository.FolderHasThumbnails(folder);
 
-                        this.assetRepository.DeleteAsset(directory, asset.FileName);
-                        cataloguedAssetsBatchCount++;
-
-                        callback?.Invoke(new CatalogChangeCallbackEventArgs
-                        {
-                            Asset = asset,
-                            Message = $"Image {Path.Combine(directory, asset.FileName)} deleted from catalog",
-                            Reason = ReasonEnum.Deleted
-                        });
-                    }
-
-                    cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
-
-                    if (cataloguedAssets.Count == 0)
-                    {
-                        this.assetRepository.DeleteFolder(folder);
-
-                        callback?.Invoke(new CatalogChangeCallbackEventArgs
-                        {
-                            Message = "Folder " + directory + " deleted from catalog",
-                            Reason = ReasonEnum.Deleted
-                        });
-                    }
-
-                    if (this.assetRepository.HasChanges())
-                    {
-                        this.assetRepository.SaveCatalog(folder);
-                    }
+            if (!folderHasThumbnails)
+            {
+                foreach (var asset in cataloguedAssets)
+                {
+                    asset.ImageData = LoadThumbnail(directory, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
                 }
+            }
+
+            cataloguedAssetsBatchCount = CatalogNewAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, cataloguedAssets, folderHasThumbnails);
+            cataloguedAssetsBatchCount = CatalogUpdatedAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, cataloguedAssets, folderHasThumbnails);
+            cataloguedAssetsBatchCount = CatalogDeletedAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, folder, cataloguedAssets);
+
+            if (this.assetRepository.HasChanges() || !folderHasThumbnails)
+            {
+                this.assetRepository.SaveCatalog(folder);
+            }
+
+            if (cataloguedAssetsBatchCount < batchSize)
+            {
+                var subdirectories = new DirectoryInfo(directory).EnumerateDirectories();
+
+                foreach (var subdir in subdirectories)
+                {
+                    cataloguedAssetsBatchCount = this.CatalogAssets(subdir.FullName, callback, cataloguedAssetsBatchCount);
+                }
+            }
+
+            return cataloguedAssetsBatchCount;
+        }
+
+        private int CatalogNonExistingFolder(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize)
+        {
+            // If the folder doesn't exist anymore, the corresponding entry in the catalog and the thumbnails file are both deleted.
+            // TODO: This should be tested in a new test method, in which the non existent folder is explicitly added to the catalog.
+            Folder folder = this.assetRepository.GetFolderByPath(directory);
+
+            if (folder != null)
+            {
+                List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+
+                foreach (var asset in cataloguedAssets)
+                {
+                    if (cataloguedAssetsBatchCount >= batchSize)
+                    {
+                        break;
+                    }
+
+                    this.assetRepository.DeleteAsset(directory, asset.FileName);
+                    cataloguedAssetsBatchCount++;
+
+                    callback?.Invoke(new CatalogChangeCallbackEventArgs
+                    {
+                        Asset = asset,
+                        Message = $"Image {Path.Combine(directory, asset.FileName)} deleted from catalog",
+                        Reason = ReasonEnum.Deleted
+                    });
+                }
+
+                cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+
+                if (cataloguedAssets.Count == 0)
+                {
+                    this.assetRepository.DeleteFolder(folder);
+
+                    callback?.Invoke(new CatalogChangeCallbackEventArgs
+                    {
+                        Message = "Folder " + directory + " deleted from catalog",
+                        Reason = ReasonEnum.Deleted
+                    });
+                }
+
+                if (this.assetRepository.HasChanges())
+                {
+                    this.assetRepository.SaveCatalog(folder);
+                }
+            }
+
+            return cataloguedAssetsBatchCount;
+        }
+
+        private int CatalogNewAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize, string[] fileNames, List<Asset> cataloguedAssets, bool folderHasThumbnails)
+        {
+            string[] newFileNames = directoryComparer.GetNewFileNames(fileNames, cataloguedAssets);
+
+            foreach (var fileName in newFileNames)
+            {
+                if (cataloguedAssetsBatchCount >= batchSize)
+                {
+                    break;
+                }
+
+                Asset newAsset = CreateAsset(directory, fileName);
+                newAsset.ImageData = LoadThumbnail(directory, fileName, newAsset.ThumbnailPixelWidth, newAsset.ThumbnailPixelHeight);
+
+                if (!folderHasThumbnails)
+                {
+                    cataloguedAssets.Add(newAsset);
+                }
+
+                callback?.Invoke(new CatalogChangeCallbackEventArgs
+                {
+                    Asset = newAsset,
+                    CataloguedAssets = cataloguedAssets,
+                    Message = $"Image {Path.Combine(directory, fileName)} added to catalog",
+                    Reason = ReasonEnum.Created
+                });
+
+                cataloguedAssetsBatchCount++;
+            }
+
+            return cataloguedAssetsBatchCount;
+        }
+
+        private int CatalogUpdatedAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize, string[] fileNames, List<Asset> cataloguedAssets, bool folderHasThumbnails)
+        {
+            string[] updatedFileNames = directoryComparer.GetUpdatedFileNames(fileNames, cataloguedAssets);
+            Folder folder = this.assetRepository.GetFolderByPath(directory);
+
+            foreach (var fileName in updatedFileNames)
+            {
+                if (cataloguedAssetsBatchCount >= batchSize)
+                {
+                    break;
+                }
+
+                this.assetRepository.DeleteAsset(directory, fileName);
+
+                Asset updatedAsset = CreateAsset(directory, fileName);
+                updatedAsset.ImageData = LoadThumbnail(directory, fileName, updatedAsset.ThumbnailPixelWidth, updatedAsset.ThumbnailPixelHeight);
+
+                if (!folderHasThumbnails)
+                {
+                    cataloguedAssets.Add(updatedAsset);
+                }
+
+                callback?.Invoke(new CatalogChangeCallbackEventArgs
+                {
+                    Asset = updatedAsset,
+                    CataloguedAssets = cataloguedAssets,
+                    Message = $"Image {Path.Combine(directory, fileName)} updated in catalog",
+                    Reason = ReasonEnum.Updated
+                });
+
+                cataloguedAssetsBatchCount++;
+            }
+
+            return cataloguedAssetsBatchCount;
+        }
+
+        private int CatalogDeletedAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize, string[] fileNames, Folder folder, List<Asset> cataloguedAssets)
+        {
+            string[] deletedFileNames = directoryComparer.GetDeletedFileNames(fileNames, cataloguedAssets);
+
+            foreach (var fileName in deletedFileNames)
+            {
+                if (cataloguedAssetsBatchCount >= batchSize)
+                {
+                    break;
+                }
+
+                Asset deletedAsset = new Asset()
+                {
+                    FileName = fileName,
+                    FolderId = folder.FolderId,
+                    Folder = folder
+                };
+
+                this.assetRepository.DeleteAsset(directory, fileName);
+
+                callback?.Invoke(new CatalogChangeCallbackEventArgs
+                {
+                    Asset = deletedAsset,
+                    Message = $"Image {Path.Combine(directory, fileName)} deleted from catalog",
+                    Reason = ReasonEnum.Deleted
+                });
+
+                cataloguedAssetsBatchCount++;
             }
 
             return cataloguedAssetsBatchCount;
