@@ -8,6 +8,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Publish Release
+      # You may pin to the exact commit or the version.
+      # uses: eregon/publish-release@d6aee8c288e653387d895ee64d559fc0dd63339d
+      uses: eregon/publish-release@v1.0.3
+      with:
+        # The ID of the draft release to publish
+        release_id: ${{ github.sha }}
     - name: Github Release
       uses: elgohr/Github-Release-Action@v3.1
       env:
