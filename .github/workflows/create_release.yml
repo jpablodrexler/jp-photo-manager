@@ -1,13 +1,11 @@
 name: Create Release
 on: 
   push:
-    branches: 
-      - main
     tags:
       - v*
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - name: Github Release
