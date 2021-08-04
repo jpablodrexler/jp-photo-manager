@@ -2,7 +2,7 @@
 
 ![JPPhotoManager](JPPhotoManager/Images/AppIcon.png)
 
-[![.NET](https://github.com/jpablodrexler/jp-photo-manager/actions/workflows/dotnet.yml/badge.svg)](https://github.com/jpablodrexler/jp-photo-manager/actions/workflows/dotnet.yml)
+[![Test](https://github.com/jpablodrexler/jp-photo-manager/actions/workflows/test.yml/badge.svg)](https://github.com/jpablodrexler/jp-photo-manager/actions/workflows/test.yml)
 [![Build Status](https://dev.azure.com/jpablodrexler/jp-photo-manager/_apis/build/status/jpablodrexler.jp-photo-manager?branchName=main)](https://dev.azure.com/jpablodrexler/jp-photo-manager/_build/latest?definitionId=10&branchName=main)
 
 ## Features
