@@ -22,4 +22,4 @@ jobs:
     - name: Build
       run: dotnet build --no-restore --configuration Release JPPhotoManager/JPPhotoManager.sln
     - name: Test
-      run: dotnet test --no-build --verbosity normal JPPhotoManager/JPPhotoManager.sln
+      run: dotnet test --no-build --verbosity normal JPPhotoManager/JPPhotoManager.Tests/JPPhotoManager.Tests.csproj
