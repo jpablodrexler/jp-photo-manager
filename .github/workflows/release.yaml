@@ -24,6 +24,12 @@ jobs:
       run: dotnet test --no-build --configuration Release --verbosity normal JPPhotoManager/JPPhotoManager.Tests/JPPhotoManager.Tests.csproj
     - name: Publish
       run: dotnet publish --no-build --configuration Release -p:PublishSingleFile=false JPPhotoManager/JPPhotoManager.UI/JPPhotoManager.UI.csproj
+    - name: Archive Release
+      uses: thedoctor0/zip-release@master
+      with:
+        type: 'zip'
+        filename: 'publish.zip'
+        path: JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows/publish
     - uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.RELEASE_TOKEN }}"
