@@ -12,11 +12,15 @@ jobs:
 
     steps:
     - name: Get the version
-      id: version
+      id: get_version
       run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
       shell: bash
+    - name: Get the zip file name
+      id: get_zip_file_name
+      run: echo ::set-output name=ZIP_FILE_NAME::jp-photo-manager-v${{ steps.get_version.outputs.VERSION }}.zip
+      shell: bash
     - name: Echo
-      run: echo ${{ steps.version.outputs.VERSION }}
+      run: echo ${{ steps.get_version.outputs.VERSION }} ${{ steps.get_zip_file_name.outputs.ZIP_FILE_NAME }}
     - uses: actions/checkout@v2
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
@@ -25,7 +29,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore JPPhotoManager/JPPhotoManager.sln
     - name: Build
-      run: dotnet build --no-restore --configuration Release -p:Version="${{ steps.version.outputs.VERSION }}" JPPhotoManager/JPPhotoManager.sln
+      run: dotnet build --no-restore --configuration Release -p:Version="${{ steps.get_version.outputs.VERSION }}" JPPhotoManager/JPPhotoManager.sln
     - name: Test
       run: dotnet test --no-build --configuration Release --verbosity normal JPPhotoManager/JPPhotoManager.Tests/JPPhotoManager.Tests.csproj
     - name: Publish
@@ -34,7 +38,7 @@ jobs:
       uses: thedoctor0/zip-release@master
       with:
         type: 'zip'
-        filename: 'publish.zip'
+        filename: '${{ steps.get_zip_file_name.outputs.ZIP_FILE_NAME }}'
         path: .
         directory: JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows/publish
     - uses: "marvinpinto/action-automatic-releases@latest"
