@@ -29,12 +29,12 @@ jobs:
       with:
         type: 'zip'
         filename: 'publish.zip'
-        path: publish
-        directory: JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows
+        path: .
+        directory: JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows/publish
     - uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.RELEASE_TOKEN }}"
         prerelease: false
         files: |
           LICENSE
-          JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows/*.zip
+          JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows/publish/*.zip
