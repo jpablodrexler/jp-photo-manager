@@ -19,7 +19,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore JPPhotoManager/JPPhotoManager.sln
     - name: Build
-      run: dotnet build --no-restore --configuration Release -p:Version="${{ github.event_name }}" JPPhotoManager/JPPhotoManager.sln
+      run: dotnet build --no-restore --configuration Release -p:Version="${{ github.ref }}" JPPhotoManager/JPPhotoManager.sln
     - name: Test
       run: dotnet test --no-build --configuration Release --verbosity normal JPPhotoManager/JPPhotoManager.Tests/JPPhotoManager.Tests.csproj
     - name: Publish
