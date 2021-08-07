@@ -11,16 +11,12 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Get the tag
-      id: tag
-      run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\//}
-      shell: bash
-    - name: Get the v tag
-      id: vtag
-      run: echo ::set-output name=VTAG::${GITHUB_REF/refs\/tags\/v/}
+    - name: Get the version
+      id: version
+      run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
       shell: bash
     - name: Echo
-      run: echo ${{ steps.tag.outputs.TAG }} ${{ steps.vtag.outputs.VTAG }}
+      run: echo ${{ steps.version.outputs.VERSION }}
     - uses: actions/checkout@v2
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
@@ -29,7 +25,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore JPPhotoManager/JPPhotoManager.sln
     - name: Build
-      run: dotnet build --no-restore --configuration Release -p:Version="${{ github.ref }}" JPPhotoManager/JPPhotoManager.sln
+      run: dotnet build --no-restore --configuration Release -p:Version="${{ steps.version.outputs.VERSION }}" JPPhotoManager/JPPhotoManager.sln
     - name: Test
       run: dotnet test --no-build --configuration Release --verbosity normal JPPhotoManager/JPPhotoManager.Tests/JPPhotoManager.Tests.csproj
     - name: Publish
