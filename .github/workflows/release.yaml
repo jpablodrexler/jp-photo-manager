@@ -30,6 +30,7 @@ jobs:
         type: 'zip'
         filename: 'publish.zip'
         path: JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows/publish
+        directory: JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows/publish
     - uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.RELEASE_TOKEN }}"
