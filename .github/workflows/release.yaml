@@ -11,15 +11,12 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Extract tag name
+    - name: Get the tag
       id: tag
-      uses: actions/github-script@0.2.0
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          return context.payload.ref.replace(/\/refs\/tags\//, '');
+      run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\//}
+      shell: bash
     - name: Echo
-      run: echo ${{ steps.tag.outputs.result }}
+      run: echo ${{ steps.tag.outputs.TAG }}
     - uses: actions/checkout@v2
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
