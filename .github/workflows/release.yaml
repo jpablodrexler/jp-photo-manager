@@ -22,6 +22,8 @@ jobs:
       run: dotnet build --no-restore --configuration Release JPPhotoManager/JPPhotoManager.sln
     - name: Test
       run: dotnet test --no-build --configuration Release --verbosity normal JPPhotoManager/JPPhotoManager.Tests/JPPhotoManager.Tests.csproj
+    - name: Publish
+      run: dotnet publish --no-build --configuration Release -p:PublishSingleFile=false
     - uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.RELEASE_TOKEN }}"
