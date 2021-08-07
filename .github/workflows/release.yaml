@@ -37,4 +37,4 @@ jobs:
         prerelease: false
         files: |
           LICENSE
-          *.zip
+          JPPhotoManager/JPPhotoManager.UI/bin/Release/net5.0-windows/*.zip
