@@ -15,8 +15,12 @@ jobs:
       id: tag
       run: echo ::set-output name=TAG::${GITHUB_REF/refs\/tags\//}
       shell: bash
+    - name: Get the v tag
+      id: vtag
+      run: echo ::set-output name=VTAG::${GITHUB_REF/refs\/tags\/v/}
+      shell: bash
     - name: Echo
-      run: echo ${{ steps.tag.outputs.TAG }}
+      run: echo ${{ steps.tag.outputs.TAG }} ${{ steps.vtag.outputs.VTAG }}
     - uses: actions/checkout@v2
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
