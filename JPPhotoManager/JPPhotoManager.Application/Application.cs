@@ -112,7 +112,7 @@ namespace JPPhotoManager.Application
 
         public Folder[] GetFolders(Folder parentFolder, bool includeHidden)
         {
-            return this.storageService.GetFolders(parentFolder, includeHidden);
+            return this.assetRepository.GetFolders(parentFolder, includeHidden);
         }
 
         public string GetInitialFolder()
@@ -143,6 +143,12 @@ namespace JPPhotoManager.Application
         public List<string> GetRecentTargetPaths()
         {
             return this.assetRepository.GetRecentTargetPaths();
+        }
+
+        public Folder[] GetRootCatalogFolders()
+        {
+            string[] paths = this.userConfigurationService.GetRootCatalogFolderPaths();
+            return this.assetRepository.GetFoldersByPaths(paths);
         }
     }
 }

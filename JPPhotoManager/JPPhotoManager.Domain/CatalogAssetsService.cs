@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Windows.Media.Imaging;
 
@@ -40,31 +39,19 @@ namespace JPPhotoManager.Domain
 
             try
             {
-                // TODO: Allow the user to configure additional root folders.
-	            // TODO: Validate if some of the root folders are not valid or don't exist any longer.
-	            string[] rootFolders = new string[]
-	            {
-	                this.userConfigurationService.GetOneDriveDirectory(),
-	                this.userConfigurationService.GetPicturesDirectory()
-	            };
-	
-	            foreach (string path in rootFolders)
-	            {
-                    cataloguedAssetsBatchCount = this.CatalogAssets(path, callback, cataloguedAssetsBatchCount);
-	            }
+                Folder[] foldersToCatalog = GetFoldersToCatalog();
 
-                Folder[] folders = this.assetRepository.GetFolders();
+                // TODO: Since the root folders to catalog are combined in the same list
+                // with the catalogued sub-folders, the catalog process should keep a list
+                // of the already visited folders so they don't get catalogued twice
+                // in the same execution.
+
+                foreach (Folder folder in foldersToCatalog)
+                {
+                    cataloguedAssetsBatchCount = this.CatalogAssets(folder.Path, callback, cataloguedAssetsBatchCount);
+                }
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
-                
-                foreach (var f in folders)
-                {
-                    if (!rootFolders.Any(p => string.Compare(p, f.Path, StringComparison.OrdinalIgnoreCase) == 0)
-                        && !storageService.FolderExists(f.Path))
-                    {
-                        cataloguedAssetsBatchCount = this.CatalogAssets(f.Path, callback, cataloguedAssetsBatchCount);
-                    }
-                }
             }
             catch (OperationCanceledException)
             {
@@ -85,6 +72,21 @@ namespace JPPhotoManager.Domain
             {
                 callback?.Invoke(new CatalogChangeCallbackEventArgs { Message = string.Empty });
             }
+        }
+
+        private Folder[] GetFoldersToCatalog()
+        {
+            string[] rootPaths = this.userConfigurationService.GetRootCatalogFolderPaths();
+            
+            foreach (string root in rootPaths)
+            {
+                if (!this.assetRepository.FolderExists(root))
+                {
+                    this.assetRepository.AddFolder(root);
+                }
+            }
+
+            return this.assetRepository.GetFolders();
         }
 
         private int CatalogAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount)

@@ -478,6 +478,13 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
+        public Folder[] GetFolders(Folder parentFolder, bool includeHidden)
+        {
+            Folder[] folders = GetFolders();
+            folders = folders.Where(f => parentFolder.IsParentOf(f, null)).ToArray();
+            return folders;
+        }
+
         public Folder GetFolderByPath(string path)
         {
             Folder result = null;
@@ -488,6 +495,18 @@ namespace JPPhotoManager.Infrastructure
             }
 
             return result;
+        }
+
+        public Folder[] GetFoldersByPaths(string[] paths)
+        {
+            Folder[] folders = new Folder[paths.Length];
+
+            for (int i = 0; i < paths.Length; i++)
+            {
+                folders[i] = this.GetFolderByPath(paths[i]);
+            }
+
+            return folders;
         }
 
         private Folder GetFolderById(string folderId)

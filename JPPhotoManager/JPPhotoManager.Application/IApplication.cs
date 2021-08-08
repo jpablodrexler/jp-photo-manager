@@ -25,5 +25,6 @@ namespace JPPhotoManager.Application
         BitmapImage LoadBitmapImage(string imagePath, Rotation rotation);
         bool FileExists(string fullPath);
         List<string> GetRecentTargetPaths();
+        Folder[] GetRootCatalogFolders();
     }
 }

@@ -10,7 +10,9 @@ namespace JPPhotoManager.Domain
         Folder AddFolder(string path);
         bool FolderExists(string path);
         Folder[] GetFolders();
+        Folder[] GetFolders(Folder parentFolder, bool includeHidden);
         Folder GetFolderByPath(string path);
+        Folder[] GetFoldersByPaths(string[] paths);
         void SaveCatalog(Folder folder);
         List<Asset> GetCataloguedAssets();
         List<Asset> GetCataloguedAssets(string directory);
