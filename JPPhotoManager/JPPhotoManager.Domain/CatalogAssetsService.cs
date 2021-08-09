@@ -108,20 +108,28 @@ namespace JPPhotoManager.Domain
 
         private int CatalogExistingFolder(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize)
         {
+            Folder folder;
+
+            if (cataloguedAssetsBatchCount >= batchSize)
+            {
+                return cataloguedAssetsBatchCount;
+            }
+
             if (!this.assetRepository.FolderExists(directory))
             {
-                this.assetRepository.AddFolder(directory);
+                folder = this.assetRepository.AddFolder(directory);
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs
                 {
+                    Folder = folder,
                     Message = $"Folder {directory} added to catalog",
-                    Reason = ReasonEnum.Created
+                    Reason = ReasonEnum.FolderCreated
                 });
             }
 
             callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Inspecting folder " + directory });
             string[] fileNames = this.storageService.GetFileNames(directory);
-            Folder folder = this.assetRepository.GetFolderByPath(directory);
+            folder = this.assetRepository.GetFolderByPath(directory);
             List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
             bool folderHasThumbnails = this.assetRepository.FolderHasThumbnails(folder);
 
@@ -157,6 +165,11 @@ namespace JPPhotoManager.Domain
 
         private int CatalogNonExistingFolder(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize)
         {
+            if (cataloguedAssetsBatchCount >= batchSize)
+            {
+                return cataloguedAssetsBatchCount;
+            }
+
             // If the folder doesn't exist anymore, the corresponding entry in the catalog and the thumbnails file are both deleted.
             // TODO: This should be tested in a new test method, in which the non existent folder is explicitly added to the catalog.
             Folder folder = this.assetRepository.GetFolderByPath(directory);
@@ -179,7 +192,7 @@ namespace JPPhotoManager.Domain
                     {
                         Asset = asset,
                         Message = $"Image {Path.Combine(directory, asset.FileName)} deleted from catalog",
-                        Reason = ReasonEnum.Deleted
+                        Reason = ReasonEnum.AssetDeleted
                     });
                 }
 
@@ -191,8 +204,9 @@ namespace JPPhotoManager.Domain
 
                     callback?.Invoke(new CatalogChangeCallbackEventArgs
                     {
+                        Folder = folder,
                         Message = "Folder " + directory + " deleted from catalog",
-                        Reason = ReasonEnum.Deleted
+                        Reason = ReasonEnum.FolderDeleted
                     });
                 }
 
@@ -229,7 +243,7 @@ namespace JPPhotoManager.Domain
                     Asset = newAsset,
                     CataloguedAssets = cataloguedAssets,
                     Message = $"Image {Path.Combine(directory, fileName)} added to catalog",
-                    Reason = ReasonEnum.Created
+                    Reason = ReasonEnum.AssetCreated
                 });
 
                 cataloguedAssetsBatchCount++;
@@ -265,7 +279,7 @@ namespace JPPhotoManager.Domain
                     Asset = updatedAsset,
                     CataloguedAssets = cataloguedAssets,
                     Message = $"Image {Path.Combine(directory, fileName)} updated in catalog",
-                    Reason = ReasonEnum.Updated
+                    Reason = ReasonEnum.AssetUpdated
                 });
 
                 cataloguedAssetsBatchCount++;
@@ -298,7 +312,7 @@ namespace JPPhotoManager.Domain
                 {
                     Asset = deletedAsset,
                     Message = $"Image {Path.Combine(directory, fileName)} deleted from catalog",
-                    Reason = ReasonEnum.Deleted
+                    Reason = ReasonEnum.AssetDeleted
                 });
 
                 cataloguedAssetsBatchCount++;

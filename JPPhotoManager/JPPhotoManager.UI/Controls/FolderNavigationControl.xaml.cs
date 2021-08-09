@@ -28,12 +28,18 @@ namespace JPPhotoManager.UI.Controls
             InitializeComponent();
         }
 
-        public BaseViewModel<IApplication> ViewModel
+        public ApplicationViewModel ViewModel
         {
-            get { return (BaseViewModel<IApplication>)this.DataContext; }
+            get { return (ApplicationViewModel)this.DataContext; }
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            Initialize();
+            this.ViewModel.FolderAdded += ViewModel_FolderAdded;
+        }
+
+        private void ViewModel_FolderAdded(object sender, FolderAddedEventArgs e)
         {
             Initialize();
         }

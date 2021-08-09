@@ -8,9 +8,11 @@
 
     public enum ReasonEnum
     {
-        Created,
-        Updated,
-        Deleted
+        AssetCreated,
+        AssetUpdated,
+        AssetDeleted,
+        FolderCreated,
+        FolderDeleted
     }
 
     public enum WallpaperStyle
