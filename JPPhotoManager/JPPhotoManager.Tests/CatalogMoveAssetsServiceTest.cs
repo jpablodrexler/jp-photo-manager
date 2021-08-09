@@ -1089,6 +1089,7 @@ namespace JPPhotoManager.Tests
 
                 mock.Mock<IStorageService>().Setup(s => s.FolderExists(It.IsAny<string>())).Returns(true);
                 mock.Mock<IStorageService>().Setup(s => s.GetFileNames(It.IsAny<string>())).Throws(new OperationCanceledException());
+                mock.Mock<IAssetRepository>().Setup(a => a.GetFolders()).Returns(new Folder[] { new Folder { Path = dataDirectory } });
 
                 var repository = mock.Container.Resolve<IAssetRepository>();
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
