@@ -41,7 +41,9 @@ namespace JPPhotoManager.UI.Controls
 
         private void ViewModel_FolderAdded(object sender, FolderAddedEventArgs e)
         {
+            this.ViewModel.IsRefreshingFolders = true;
             Initialize();
+            this.ViewModel.IsRefreshingFolders = false;
         }
 
         // TODO: When a new folder is catalogued, this control should be notified so it can display it.
