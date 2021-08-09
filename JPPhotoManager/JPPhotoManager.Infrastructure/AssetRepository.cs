@@ -503,7 +503,7 @@ namespace JPPhotoManager.Infrastructure
 
             for (int i = 0; i < paths.Length; i++)
             {
-                folders[i] = this.GetFolderByPath(paths[i]);
+                folders[i] = this.AddFolder(paths[i]);
             }
 
             return folders;
