@@ -319,7 +319,7 @@ namespace JPPhotoManager.UI.ViewModels
         {
             this.StatusMessage = e?.Message;
 
-            switch (e.Reason)
+            switch (e?.Reason)
             {
                 case ReasonEnum.AssetCreated:
                     if (e?.Asset?.Folder?.Path == this.CurrentFolder)
