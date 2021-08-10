@@ -13,7 +13,13 @@ namespace JPPhotoManager.UI.ViewModels
         public Folder Folder { get; set; }
     }
 
+    public class FolderRemovedEventArgs
+    {
+        public Folder Folder { get; set; }
+    }
+
     public delegate void FolderAddedEventHandler(object sender, FolderAddedEventArgs e);
+    public delegate void FolderRemovedEventHandler(object sender, FolderRemovedEventArgs e);
 
     public class ApplicationViewModel : BaseViewModel<IApplication>
     {
@@ -33,6 +39,7 @@ namespace JPPhotoManager.UI.ViewModels
         public bool IsRefreshingFolders { get; set; }
 
         public event FolderAddedEventHandler FolderAdded;
+        public event FolderRemovedEventHandler FolderRemoved;
 
         public ApplicationViewModel(IApplication assetApp, SortCriteriaEnum initialSortCriteria = SortCriteriaEnum.FileName) : base(assetApp)
         {
@@ -248,6 +255,14 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
+        private void RemoveFolder(Folder folder)
+        {
+            if (this.FolderRemoved != null)
+            {
+                this.FolderRemoved(this, new FolderRemovedEventArgs { Folder = folder });
+            }
+        }
+
         private void UpdateAppTitle()
         {
             string title = null;
@@ -361,6 +376,10 @@ namespace JPPhotoManager.UI.ViewModels
 
                 case ReasonEnum.FolderCreated:
                     this.AddFolder(e.Folder);
+                    break;
+
+                case ReasonEnum.FolderDeleted:
+                    this.RemoveFolder(e.Folder);
                     break;
             }
         }

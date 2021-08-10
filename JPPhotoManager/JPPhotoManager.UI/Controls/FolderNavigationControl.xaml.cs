@@ -37,9 +37,17 @@ namespace JPPhotoManager.UI.Controls
         {
             Initialize();
             this.ViewModel.FolderAdded += ViewModel_FolderAdded;
+            this.ViewModel.FolderRemoved += ViewModel_FolderRemoved;
         }
 
         private void ViewModel_FolderAdded(object sender, FolderAddedEventArgs e)
+        {
+            this.ViewModel.IsRefreshingFolders = true;
+            Initialize();
+            this.ViewModel.IsRefreshingFolders = false;
+        }
+
+        private void ViewModel_FolderRemoved(object sender, FolderRemovedEventArgs e)
         {
             this.ViewModel.IsRefreshingFolders = true;
             Initialize();
