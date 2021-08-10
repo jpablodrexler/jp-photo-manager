@@ -12,7 +12,6 @@ namespace JPPhotoManager.Domain
         Folder[] GetFolders();
         Folder[] GetSubFolders(Folder parentFolder, bool includeHidden);
         Folder GetFolderByPath(string path);
-        Folder[] GetFoldersByPaths(string[] paths);
         void SaveCatalog(Folder folder);
         List<Asset> GetCataloguedAssets();
         List<Asset> GetCataloguedAssets(string directory);

@@ -148,7 +148,19 @@ namespace JPPhotoManager.Application
         public Folder[] GetRootCatalogFolders()
         {
             string[] paths = this.userConfigurationService.GetRootCatalogFolderPaths();
-            return this.assetRepository.GetFoldersByPaths(paths);
+            Folder[] folders = new Folder[paths.Length];
+
+            for (int i = 0; i < paths.Length; i++)
+            {
+                folders[i] = this.assetRepository.GetFolderByPath(paths[i]);
+
+                if (folders[i] == null)
+                {
+                    folders[i] = this.assetRepository.AddFolder(paths[i]);
+                }
+            }
+
+            return folders;
         }
     }
 }
