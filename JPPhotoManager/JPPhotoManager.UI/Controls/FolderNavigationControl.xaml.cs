@@ -82,7 +82,7 @@ namespace JPPhotoManager.UI.Controls
             {
                 item.Items.Clear();
 
-                Folder[] folders = this.ViewModel.Application.GetFolders((Folder)item.Tag, includeHidden);
+                Folder[] folders = this.ViewModel.Application.GetSubFolders((Folder)item.Tag, includeHidden);
                 folders = folders.OrderBy(f => f.Name).ToArray();
 
                 foreach (Folder folder in folders)

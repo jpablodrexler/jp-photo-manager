@@ -478,7 +478,7 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
-        public Folder[] GetFolders(Folder parentFolder, bool includeHidden)
+        public Folder[] GetSubFolders(Folder parentFolder, bool includeHidden)
         {
             Folder[] folders = GetFolders();
             folders = folders.Where(f => parentFolder.IsParentOf(f, null)).ToArray();

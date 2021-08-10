@@ -110,9 +110,9 @@ namespace JPPhotoManager.Application
             return this.storageService.GetDrives();
         }
 
-        public Folder[] GetFolders(Folder parentFolder, bool includeHidden)
+        public Folder[] GetSubFolders(Folder parentFolder, bool includeHidden)
         {
-            return this.assetRepository.GetFolders(parentFolder, includeHidden);
+            return this.assetRepository.GetSubFolders(parentFolder, includeHidden);
         }
 
         public string GetInitialFolder()
