@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Windows.Media.Imaging;
 
@@ -40,31 +39,19 @@ namespace JPPhotoManager.Domain
 
             try
             {
-                // TODO: Allow the user to configure additional root folders.
-	            // TODO: Validate if some of the root folders are not valid or don't exist any longer.
-	            string[] rootFolders = new string[]
-	            {
-	                this.userConfigurationService.GetOneDriveDirectory(),
-	                this.userConfigurationService.GetPicturesDirectory()
-	            };
-	
-	            foreach (string path in rootFolders)
-	            {
-                    cataloguedAssetsBatchCount = this.CatalogAssets(path, callback, cataloguedAssetsBatchCount);
-	            }
+                Folder[] foldersToCatalog = GetFoldersToCatalog();
 
-                Folder[] folders = this.assetRepository.GetFolders();
+                // TODO: Since the root folders to catalog are combined in the same list
+                // with the catalogued sub-folders, the catalog process should keep a list
+                // of the already visited folders so they don't get catalogued twice
+                // in the same execution.
+
+                foreach (Folder folder in foldersToCatalog)
+                {
+                    cataloguedAssetsBatchCount = this.CatalogAssets(folder.Path, callback, cataloguedAssetsBatchCount);
+                }
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
-                
-                foreach (var f in folders)
-                {
-                    if (!rootFolders.Any(p => string.Compare(p, f.Path, StringComparison.OrdinalIgnoreCase) == 0)
-                        && !storageService.FolderExists(f.Path))
-                    {
-                        cataloguedAssetsBatchCount = this.CatalogAssets(f.Path, callback, cataloguedAssetsBatchCount);
-                    }
-                }
             }
             catch (OperationCanceledException)
             {
@@ -87,6 +74,21 @@ namespace JPPhotoManager.Domain
             }
         }
 
+        private Folder[] GetFoldersToCatalog()
+        {
+            string[] rootPaths = this.userConfigurationService.GetRootCatalogFolderPaths();
+            
+            foreach (string root in rootPaths)
+            {
+                if (!this.assetRepository.FolderExists(root))
+                {
+                    this.assetRepository.AddFolder(root);
+                }
+            }
+
+            return this.assetRepository.GetFolders();
+        }
+
         private int CatalogAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount)
         {
             this.currentFolderPath = directory;
@@ -106,20 +108,28 @@ namespace JPPhotoManager.Domain
 
         private int CatalogExistingFolder(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize)
         {
+            Folder folder;
+
+            if (cataloguedAssetsBatchCount >= batchSize)
+            {
+                return cataloguedAssetsBatchCount;
+            }
+
             if (!this.assetRepository.FolderExists(directory))
             {
-                this.assetRepository.AddFolder(directory);
+                folder = this.assetRepository.AddFolder(directory);
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs
                 {
+                    Folder = folder,
                     Message = $"Folder {directory} added to catalog",
-                    Reason = ReasonEnum.Created
+                    Reason = ReasonEnum.FolderCreated
                 });
             }
 
             callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Inspecting folder " + directory });
             string[] fileNames = this.storageService.GetFileNames(directory);
-            Folder folder = this.assetRepository.GetFolderByPath(directory);
+            folder = this.assetRepository.GetFolderByPath(directory);
             List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
             bool folderHasThumbnails = this.assetRepository.FolderHasThumbnails(folder);
 
@@ -155,6 +165,11 @@ namespace JPPhotoManager.Domain
 
         private int CatalogNonExistingFolder(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize)
         {
+            if (cataloguedAssetsBatchCount >= batchSize)
+            {
+                return cataloguedAssetsBatchCount;
+            }
+
             // If the folder doesn't exist anymore, the corresponding entry in the catalog and the thumbnails file are both deleted.
             // TODO: This should be tested in a new test method, in which the non existent folder is explicitly added to the catalog.
             Folder folder = this.assetRepository.GetFolderByPath(directory);
@@ -177,7 +192,7 @@ namespace JPPhotoManager.Domain
                     {
                         Asset = asset,
                         Message = $"Image {Path.Combine(directory, asset.FileName)} deleted from catalog",
-                        Reason = ReasonEnum.Deleted
+                        Reason = ReasonEnum.AssetDeleted
                     });
                 }
 
@@ -189,8 +204,9 @@ namespace JPPhotoManager.Domain
 
                     callback?.Invoke(new CatalogChangeCallbackEventArgs
                     {
+                        Folder = folder,
                         Message = "Folder " + directory + " deleted from catalog",
-                        Reason = ReasonEnum.Deleted
+                        Reason = ReasonEnum.FolderDeleted
                     });
                 }
 
@@ -227,7 +243,7 @@ namespace JPPhotoManager.Domain
                     Asset = newAsset,
                     CataloguedAssets = cataloguedAssets,
                     Message = $"Image {Path.Combine(directory, fileName)} added to catalog",
-                    Reason = ReasonEnum.Created
+                    Reason = ReasonEnum.AssetCreated
                 });
 
                 cataloguedAssetsBatchCount++;
@@ -263,7 +279,7 @@ namespace JPPhotoManager.Domain
                     Asset = updatedAsset,
                     CataloguedAssets = cataloguedAssets,
                     Message = $"Image {Path.Combine(directory, fileName)} updated in catalog",
-                    Reason = ReasonEnum.Updated
+                    Reason = ReasonEnum.AssetUpdated
                 });
 
                 cataloguedAssetsBatchCount++;
@@ -296,7 +312,7 @@ namespace JPPhotoManager.Domain
                 {
                     Asset = deletedAsset,
                     Message = $"Image {Path.Combine(directory, fileName)} deleted from catalog",
-                    Reason = ReasonEnum.Deleted
+                    Reason = ReasonEnum.AssetDeleted
                 });
 
                 cataloguedAssetsBatchCount++;

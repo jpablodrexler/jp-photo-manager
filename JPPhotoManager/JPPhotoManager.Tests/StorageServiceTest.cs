@@ -87,31 +87,6 @@ namespace JPPhotoManager.Tests
         }
 
         [Fact]
-        public void GetFoldersWithoutHiddenTest()
-        {
-            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
-            string parentPath = Path.Combine(dataDirectory, "TestFolder");
-            Folder[] folders = storageService.GetFolders(new Folder { Path = parentPath }, false);
-
-            folders.Should().HaveCount(2);
-            folders[0].Name.Should().Be("TestSubFolder1");
-            folders[1].Name.Should().Be("TestSubFolder2");
-        }
-
-        [Fact]
-        public void GetFoldersWithHiddenTest()
-        {
-            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
-            string parentPath = Path.Combine(dataDirectory, "TestFolder");
-            Folder[] folders = storageService.GetFolders(new Folder { Path = parentPath }, true);
-
-            folders.Should().HaveCount(3);
-            folders[0].Name.Should().Be("TestHiddenSubFolder");
-            folders[1].Name.Should().Be("TestSubFolder1");
-            folders[2].Name.Should().Be("TestSubFolder2");
-        }
-
-        [Fact]
         public void GetSubDirectoriesTest()
         {
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));

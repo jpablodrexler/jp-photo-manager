@@ -18,12 +18,13 @@ namespace JPPhotoManager.Application
         void DeleteAsset(Asset asset, bool deleteFile);
         AboutInformation GetAboutInformation(Assembly assembly);
         Folder[] GetDrives();
-        Folder[] GetFolders(Folder parentFolder, bool includeHidden);
+        Folder[] GetSubFolders(Folder parentFolder, bool includeHidden);
         string GetInitialFolder();
         int GetCatalogCooldownMinutes();
         bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile);
         BitmapImage LoadBitmapImage(string imagePath, Rotation rotation);
         bool FileExists(string fullPath);
         List<string> GetRecentTargetPaths();
+        Folder[] GetRootCatalogFolders();
     }
 }

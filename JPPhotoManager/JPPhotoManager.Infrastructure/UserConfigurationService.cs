@@ -154,5 +154,18 @@ namespace JPPhotoManager.Infrastructure
         {
             return this.configuration.GetValue<int>(CATALOG_COOLDOWN_MINUTES);
         }
+
+        public string[] GetRootCatalogFolderPaths()
+        {
+            // TODO: Allow the user to configure additional root folders.
+            // TODO: Validate if some of the root folders are not valid or don't exist any longer.
+            string[] rootPaths = new string[]
+            {
+                this.GetOneDriveDirectory(),
+                this.GetPicturesDirectory()
+            };
+
+            return rootPaths;
+        }
     }
 }

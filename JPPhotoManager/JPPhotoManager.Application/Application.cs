@@ -110,9 +110,9 @@ namespace JPPhotoManager.Application
             return this.storageService.GetDrives();
         }
 
-        public Folder[] GetFolders(Folder parentFolder, bool includeHidden)
+        public Folder[] GetSubFolders(Folder parentFolder, bool includeHidden)
         {
-            return this.storageService.GetFolders(parentFolder, includeHidden);
+            return this.assetRepository.GetSubFolders(parentFolder, includeHidden);
         }
 
         public string GetInitialFolder()
@@ -143,6 +143,24 @@ namespace JPPhotoManager.Application
         public List<string> GetRecentTargetPaths()
         {
             return this.assetRepository.GetRecentTargetPaths();
+        }
+
+        public Folder[] GetRootCatalogFolders()
+        {
+            string[] paths = this.userConfigurationService.GetRootCatalogFolderPaths();
+            Folder[] folders = new Folder[paths.Length];
+
+            for (int i = 0; i < paths.Length; i++)
+            {
+                folders[i] = this.assetRepository.GetFolderByPath(paths[i]);
+
+                if (folders[i] == null)
+                {
+                    folders[i] = this.assetRepository.AddFolder(paths[i]);
+                }
+            }
+
+            return folders;
         }
     }
 }

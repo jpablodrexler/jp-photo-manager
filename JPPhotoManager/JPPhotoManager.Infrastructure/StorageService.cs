@@ -318,34 +318,6 @@ namespace JPPhotoManager.Infrastructure
             return drives.Select(d => new Folder { Path = d }).ToArray();
         }
 
-        public Folder[] GetFolders(Folder parentFolder, bool includeHidden)
-        {
-            Folder[] result = Array.Empty<Folder>();
-
-            try
-            {
-                string[] directories = Directory.GetDirectories(parentFolder.Path);
-                result = directories.Select(d => new Folder { Path = d }).ToArray();
-
-                if (!includeHidden)
-                {
-                    result = result.Where(f => !IsHiddenDirectory(f.Path)).ToArray();
-                }
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-
-            }
-
-            return result;
-        }
-
-        private bool IsHiddenDirectory(string path)
-        {
-            DirectoryInfo directoryInfo = new DirectoryInfo(path);
-            return directoryInfo.Attributes.HasFlag(FileAttributes.Hidden);
-        }
-
         public bool FileExists(Asset asset, Folder folder)
         {
             string fullPath = Path.Combine(folder.Path, asset.FileName);

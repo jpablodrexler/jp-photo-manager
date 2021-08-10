@@ -4,6 +4,7 @@ using JPPhotoManager.Infrastructure;
 using JPPhotoManager.UI.ViewModels;
 using log4net;
 using System;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -27,29 +28,38 @@ namespace JPPhotoManager.UI.Controls
             InitializeComponent();
         }
 
-        public BaseViewModel<IApplication> ViewModel
+        public ApplicationViewModel ViewModel
         {
-            get { return (BaseViewModel<IApplication>)this.DataContext; }
+            get { return (ApplicationViewModel)this.DataContext; }
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             Initialize();
+            this.ViewModel.FolderAdded += ViewModel_FolderAdded;
         }
 
+        private void ViewModel_FolderAdded(object sender, FolderAddedEventArgs e)
+        {
+            this.ViewModel.IsRefreshingFolders = true;
+            Initialize();
+            this.ViewModel.IsRefreshingFolders = false;
+        }
+
+        // TODO: When a new folder is catalogued, this control should be notified so it can display it.
         public void Initialize()
         {
             try
             {
                 foldersTreeView.Items.Clear();
-                Folder[] drives = this.ViewModel.Application.GetDrives();
-
-                foreach (Folder drive in drives)
+                Folder[] rootFolders = this.ViewModel.Application.GetRootCatalogFolders();
+                
+                foreach (Folder folder in rootFolders)
                 {
-                    TreeViewItem item = new TreeViewItem
+                    TreeViewItem item = new()
                     {
-                        Header = drive.Name,
-                        Tag = drive
+                        Header = folder.Name,
+                        Tag = folder
                     };
 
                     item.Items.Add(placeholderNode);
@@ -72,7 +82,8 @@ namespace JPPhotoManager.UI.Controls
             {
                 item.Items.Clear();
 
-                Folder[] folders = this.ViewModel.Application.GetFolders((Folder)item.Tag, includeHidden);
+                Folder[] folders = this.ViewModel.Application.GetSubFolders((Folder)item.Tag, includeHidden);
+                folders = folders.OrderBy(f => f.Name).ToArray();
 
                 foreach (Folder folder in folders)
                 {
@@ -82,9 +93,9 @@ namespace JPPhotoManager.UI.Controls
                         Tag = folder
                     };
 
-                    subitem.Items.Add(placeholderNode);
                     subitem.Expanded += new RoutedEventHandler(Item_Expanded);
                     item.Items.Add(subitem);
+                    AddSubItems(subitem, includeHidden);
                 }
             }
             catch (Exception ex)

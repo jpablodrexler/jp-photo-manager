@@ -213,7 +213,7 @@ namespace JPPhotoManager.Tests
                 {
                     Asset = newAsset,
                     Message = statusMessage,
-                    Reason = ReasonEnum.Created
+                    Reason = ReasonEnum.AssetCreated
                 });
 
                 viewModel.ObservableAssets.Should().HaveCount(6);
@@ -257,7 +257,7 @@ namespace JPPhotoManager.Tests
                     Asset = cataloguedAssets[4],
                     CataloguedAssets = cataloguedAssets,
                     Message = statusMessage,
-                    Reason = ReasonEnum.Created
+                    Reason = ReasonEnum.AssetCreated
                 });
 
                 viewModel.ObservableAssets.Should().HaveCount(5);
@@ -288,7 +288,7 @@ namespace JPPhotoManager.Tests
                 viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
                 {
                     Asset = newAsset,
-                    Reason = ReasonEnum.Created
+                    Reason = ReasonEnum.AssetCreated
                 });
 
                 viewModel.ObservableAssets.Should().ContainSingle();
@@ -323,7 +323,7 @@ namespace JPPhotoManager.Tests
                 viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
                 {
                     Asset = newAsset,
-                    Reason = ReasonEnum.Created
+                    Reason = ReasonEnum.AssetCreated
                 });
 
                 viewModel.ObservableAssets.Should().HaveCount(5);
@@ -364,13 +364,13 @@ namespace JPPhotoManager.Tests
                 viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
                 {
                     Asset = null,
-                    Reason = ReasonEnum.Created
+                    Reason = ReasonEnum.AssetCreated
                 });
 
                 viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
                 {
                     Asset = newAsset,
-                    Reason = ReasonEnum.Created
+                    Reason = ReasonEnum.AssetCreated
                 });
 
                 viewModel.ObservableAssets.Should().HaveCount(5);
@@ -422,13 +422,13 @@ namespace JPPhotoManager.Tests
                 viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
                 {
                     Asset = null,
-                    Reason = ReasonEnum.Created
+                    Reason = ReasonEnum.AssetCreated
                 });
 
                 viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
                 {
                     Asset = newAsset,
-                    Reason = ReasonEnum.Created
+                    Reason = ReasonEnum.AssetCreated
                 });
 
                 viewModel.ObservableAssets.Should().HaveCount(5);
@@ -468,7 +468,7 @@ namespace JPPhotoManager.Tests
                 {
                     Asset = assets[2],
                     Message = statusMessage,
-                    Reason = ReasonEnum.Deleted
+                    Reason = ReasonEnum.AssetDeleted
                 });
 
                 viewModel.ObservableAssets.Should().HaveCount(4);

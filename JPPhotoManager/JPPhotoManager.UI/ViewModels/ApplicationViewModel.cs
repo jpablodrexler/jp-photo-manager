@@ -8,6 +8,13 @@ using System.Windows;
 
 namespace JPPhotoManager.UI.ViewModels
 {
+    public class FolderAddedEventArgs
+    {
+        public Folder Folder { get; set; }
+    }
+
+    public delegate void FolderAddedEventHandler(object sender, FolderAddedEventArgs e);
+
     public class ApplicationViewModel : BaseViewModel<IApplication>
     {
         private AppModeEnum appMode;
@@ -24,6 +31,8 @@ namespace JPPhotoManager.UI.ViewModels
         public string Product { get; set; }
         public string Version { get; set; }
         public bool IsRefreshingFolders { get; set; }
+
+        public event FolderAddedEventHandler FolderAdded;
 
         public ApplicationViewModel(IApplication assetApp, SortCriteriaEnum initialSortCriteria = SortCriteriaEnum.FileName) : base(assetApp)
         {
@@ -231,6 +240,14 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
+        private void AddFolder(Folder folder)
+        {
+            if (this.FolderAdded != null)
+            {
+                this.FolderAdded(this, new FolderAddedEventArgs { Folder = folder });
+            }
+        }
+
         private void UpdateAppTitle()
         {
             string title = null;
@@ -302,11 +319,11 @@ namespace JPPhotoManager.UI.ViewModels
         {
             this.StatusMessage = e?.Message;
 
-            if (e?.Asset?.Folder?.Path == this.CurrentFolder)
+            switch (e?.Reason)
             {
-                switch (e.Reason)
-                {
-                    case ReasonEnum.Created:
+                case ReasonEnum.AssetCreated:
+                    if (e?.Asset?.Folder?.Path == this.CurrentFolder)
+                    {
                         // If the files list is empty or belongs to other directory
                         if ((this.ObservableAssets.Count == 0 || this.ObservableAssets[0].Folder.Path != this.CurrentFolder) && e.CataloguedAssets != null)
                         {
@@ -317,10 +334,13 @@ namespace JPPhotoManager.UI.ViewModels
                         {
                             this.AddAsset(e.Asset);
                         }
+                    }
                         
-                        break;
+                    break;
 
-                    case ReasonEnum.Updated:
+                case ReasonEnum.AssetUpdated:
+                    if (e?.Asset?.Folder?.Path == this.CurrentFolder)
+                    {
                         // If the files list is empty or belongs to other directory
                         if ((this.ObservableAssets.Count == 0 || this.ObservableAssets[0].Folder.Path != this.CurrentFolder) && e.CataloguedAssets != null)
                         {
@@ -331,13 +351,17 @@ namespace JPPhotoManager.UI.ViewModels
                         {
                             this.UpdateAsset(e.Asset);
                         }
+                    }
 
-                        break;
+                    break;
 
-                    case ReasonEnum.Deleted:
-                        this.RemoveAsset(e.Asset);
-                        break;
-                }
+                case ReasonEnum.AssetDeleted:
+                    this.RemoveAsset(e.Asset);
+                    break;
+
+                case ReasonEnum.FolderCreated:
+                    this.AddFolder(e.Folder);
+                    break;
             }
         }
 

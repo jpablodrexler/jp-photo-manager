@@ -19,9 +19,30 @@ namespace JPPhotoManager.Domain
             }
         }
 
+        // TODO: Remove storageService parameter.
         public bool IsParentOf(Folder otherFolder, IStorageService storageService)
         {
-            return string.Compare(storageService.GetParentDirectory(otherFolder.Path), this.Path, StringComparison.OrdinalIgnoreCase) == 0;
+            bool result;
+            string[] thisPathDirectories = this.Path.Split(System.IO.Path.DirectorySeparatorChar);
+            string[] otherPathDirectories = otherFolder.Path.Split(System.IO.Path.DirectorySeparatorChar);
+
+            result = (thisPathDirectories != null
+                && otherPathDirectories != null
+                && thisPathDirectories.Length == (otherPathDirectories.Length - 1));
+
+            if (result)
+            {
+                for (int i  = 0; i < thisPathDirectories.Length; i++)
+                {
+                    if (string.Compare(thisPathDirectories[i], otherPathDirectories[i], StringComparison.OrdinalIgnoreCase) != 0)
+                    {
+                        result = false;
+                        break;
+                    }
+                }
+            }
+
+            return result;
         }
 
         public override bool Equals(object obj)
