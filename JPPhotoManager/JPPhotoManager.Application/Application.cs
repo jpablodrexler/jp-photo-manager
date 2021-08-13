@@ -15,6 +15,7 @@ namespace JPPhotoManager.Application
         private readonly IFindDuplicatedAssetsService findDuplicatedAssetsService;
         private readonly IUserConfigurationService userConfigurationService;
         private readonly IStorageService storageService;
+        private readonly IProcessService processService;
 
         public Application(
             IImportNewAssetsService importNewAssetsService,
@@ -23,7 +24,8 @@ namespace JPPhotoManager.Application
             IFindDuplicatedAssetsService findDuplicatedAssetsService,
             IAssetRepository assetRepository,
             IUserConfigurationService userConfigurationService,
-            IStorageService storageService)
+            IStorageService storageService,
+            IProcessService processService)
         {
             this.importNewAssetsService = importNewAssetsService;
             this.catalogAssetsService = catalogAssetsService;
@@ -32,6 +34,7 @@ namespace JPPhotoManager.Application
             this.assetRepository = assetRepository;
             this.userConfigurationService = userConfigurationService;
             this.storageService = storageService;
+            this.processService = processService;
         }
 
         public Asset[] GetAssets(string directory)
@@ -161,6 +164,11 @@ namespace JPPhotoManager.Application
             }
 
             return folders;
+        }
+
+        public bool IsAlreadyRunning()
+        {
+            return this.processService.IsAlreadyRunning();
         }
     }
 }

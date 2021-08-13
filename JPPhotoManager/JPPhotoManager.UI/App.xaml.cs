@@ -38,8 +38,15 @@ namespace JPPhotoManager.UI
         {
             try
             {
-                var mainWindow = this.serviceProvider.GetService<MainWindow>();
-                mainWindow.Show();
+                if (!this.serviceProvider.GetService<Application.IApplication>().IsAlreadyRunning())
+                {
+                    var mainWindow = this.serviceProvider.GetService<MainWindow>();
+                    mainWindow.Show();
+                }
+                else
+                {
+                    this.Shutdown();
+                }
             }
             catch (Exception ex)
             {
@@ -59,6 +66,7 @@ namespace JPPhotoManager.UI
             services.AddSingleton(configuration);
             services.AddSingleton<IDatabase, Database>();
             services.AddSingleton<IDirectoryComparer, DirectoryComparer>();
+            services.AddSingleton<IProcessService, ProcessService>();
             services.AddSingleton<IUserConfigurationService, UserConfigurationService>();
             services.AddSingleton<IStorageService, StorageService>();
             services.AddSingleton<IAssetRepository, AssetRepository>();
