@@ -101,7 +101,11 @@ namespace JPPhotoManager.UI.ViewModels
             set
             {
                 this.viewerPosition = value;
-                this.NotifyPropertyChanged(nameof(ViewerPosition), nameof(CurrentAsset));
+                this.NotifyPropertyChanged(
+                    nameof(ViewerPosition),
+                    nameof(CanGoToPreviousAsset),
+                    nameof(CanGoToNextAsset),
+                    nameof(CurrentAsset));
                 this.UpdateAppTitle();
             }
         }
@@ -316,7 +320,7 @@ namespace JPPhotoManager.UI.ViewModels
 
         public void GoToPreviousAsset()
         {
-            if (this.ViewerPosition > 0)
+            if (this.CanGoToPreviousAsset)
             {
                 this.ViewerPosition--;
             }
@@ -324,9 +328,25 @@ namespace JPPhotoManager.UI.ViewModels
 
         public void GoToNextAsset()
         {
-            if (this.ViewerPosition < (this.ObservableAssets.Count - 1))
+            if (this.CanGoToNextAsset)
             {
                 this.ViewerPosition++;
+            }
+        }
+
+        public bool CanGoToPreviousAsset
+        {
+            get
+            {
+                return this.ViewerPosition > 0;
+            }
+        }
+
+        public bool CanGoToNextAsset
+        {
+            get
+            {
+                return this.ViewerPosition < (this.ObservableAssets?.Count - 1);
             }
         }
 

@@ -65,6 +65,64 @@ namespace JPPhotoManager.Tests
         }
 
         [Theory]
+        [InlineData(0, false)]
+        [InlineData(1, true)]
+        [InlineData(2, true)]
+        [InlineData(3, true)]
+        [InlineData(4, true)]
+        public void CanGoToPreviousAsset(int currentPosition, bool expected)
+        {
+            Asset[] assets = new Asset[]
+            {
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
+            };
+
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+                var viewModel = mock.Create<ApplicationViewModel>();
+
+                viewModel.SetAssets(assets);
+                viewModel.ViewerPosition = currentPosition;
+                viewModel.CanGoToPreviousAsset.Should().Be(expected);
+            }
+        }
+
+        [Theory]
+        [InlineData(0, true)]
+        [InlineData(1, true)]
+        [InlineData(2, true)]
+        [InlineData(3, true)]
+        [InlineData(4, false)]
+        public void CanGoToNextAsset(int currentPosition, bool expected)
+        {
+            Asset[] assets = new Asset[]
+            {
+                new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image2.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image3.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() },
+                new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
+            };
+
+            using (var mock = AutoMock.GetLoose())
+            {
+                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+
+                var viewModel = mock.Create<ApplicationViewModel>();
+
+                viewModel.SetAssets(assets);
+                viewModel.ViewerPosition = currentPosition;
+                viewModel.CanGoToNextAsset.Should().Be(expected);
+            }
+        }
+
+        [Theory]
         [InlineData(0, 1)]
         [InlineData(1, 2)]
         [InlineData(2, 3)]
