@@ -29,31 +29,39 @@
                 </Image.Effect>
             </Image>
         </ContentControl>
-        <Label x:Name="previousButton" Grid.Row="1" Grid.Column="0" FontSize="46" MouseLeftButtonDown="previousButton_MouseLeftButtonDown" Background="{x:Null}" BorderBrush="{x:Null}" FontFamily="Calibri">
+        <Label x:Name="previousButton" Grid.Row="1" Grid.Column="0" FontSize="46" IsEnabled="{ Binding CanGoToPreviousAsset }" MouseLeftButtonDown="previousButton_MouseLeftButtonDown" Background="{x:Null}" BorderBrush="{x:Null}" FontFamily="Calibri">
             <Label.Template>
                 <ControlTemplate>
                     <Grid>
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="←" Cursor="Hand" Foreground="White" Panel.ZIndex="1" Margin="5,5,0,0" />
+                        <TextBlock x:Name="Arrow" Grid.Row="0" Grid.Column="0" Text="←" Cursor="Hand" Foreground="White" Panel.ZIndex="1" Margin="5,5,0,0" />
                         <Ellipse x:Name="BackgroundEllipse" Grid.Row="0" Grid.Column="0" Cursor="Hand" Height="45" Width="45" Fill="#FF3C3C3C" Panel.ZIndex="0" Opacity="0.2"/>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="BackgroundEllipse" Property="Opacity" Value="0.4" />
                         </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Arrow" Property="Opacity" Value="0.2" />
+                            <Setter TargetName="BackgroundEllipse" Property="Opacity" Value="0.1" />
+                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Label.Template>
         </Label>
-        <Label x:Name="nextButton" Grid.Row="1" Grid.Column="2" FontSize="46" MouseLeftButtonDown="nextButton_MouseLeftButtonDown" Background="{x:Null}" BorderBrush="{x:Null}" FontFamily="Calibri">
+        <Label x:Name="nextButton" Grid.Row="1" Grid.Column="2" FontSize="46" IsEnabled="{ Binding CanGoToNextAsset }" MouseLeftButtonDown="nextButton_MouseLeftButtonDown" Background="{x:Null}" BorderBrush="{x:Null}" FontFamily="Calibri">
             <Label.Template>
                 <ControlTemplate>
                     <Grid>
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="→" Cursor="Hand" Foreground="White" Panel.ZIndex="1" Margin="5,5,0,0" />
+                        <TextBlock x:Name="Arrow" Grid.Row="0" Grid.Column="0" Text="→" Cursor="Hand" Foreground="White" Panel.ZIndex="1" Margin="5,5,0,0" />
                         <Ellipse x:Name="BackgroundEllipse" Grid.Row="0" Grid.Column="0" Cursor="Hand" Height="45" Width="45" Fill="#FF3C3C3C" Panel.ZIndex="0" Opacity="0.2"/>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="BackgroundEllipse" Property="Opacity" Value="0.4" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Arrow" Property="Opacity" Value="0.2" />
+                            <Setter TargetName="BackgroundEllipse" Property="Opacity" Value="0.1" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
