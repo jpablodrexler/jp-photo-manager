@@ -5,7 +5,7 @@ using System.Collections.ObjectModel;
 
 namespace JPPhotoManager.UI.ViewModels
 {
-    public class FolderNavigationViewModel : BaseViewModel<IApplication>
+    public class FolderNavigationViewModel : ApplicationViewModel
     {
         private string targetPath;
 
