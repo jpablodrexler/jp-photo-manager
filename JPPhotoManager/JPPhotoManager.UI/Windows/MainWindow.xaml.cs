@@ -113,6 +113,10 @@ namespace JPPhotoManager.UI.Windows
                 {
                     switch (e.Key)
                     {
+                        case Key.Delete:
+                            DeleteAsset();
+                            break;
+
                         case Key.PageUp:
                         case Key.Left:
                             this.ViewModel?.GoToPreviousAsset();
