@@ -4,8 +4,6 @@ using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.UI.ViewModels;
 using Moq;
-using System;
-using System.Collections.Generic;
 using Xunit;
 
 namespace JPPhotoManager.Tests

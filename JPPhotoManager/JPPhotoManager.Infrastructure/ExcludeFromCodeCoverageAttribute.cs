@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace JPPhotoManager.Infrastructure
+﻿namespace JPPhotoManager.Infrastructure
 {
     public class ExcludeFromCodeCoverageAttribute : Attribute
     {

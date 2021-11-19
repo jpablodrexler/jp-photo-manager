@@ -1,9 +1,6 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Text;
 using System.Windows;
 
 namespace JPPhotoManager.UI.ViewModels

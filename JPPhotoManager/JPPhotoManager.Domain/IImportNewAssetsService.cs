@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace JPPhotoManager.Domain
+﻿namespace JPPhotoManager.Domain
 {
     public interface IImportNewAssetsService
     {
