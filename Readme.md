@@ -31,7 +31,7 @@ Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoM
 * The application saves the catalog files in the following folder: `C:\Users\{username}\AppData\Local\JPPhotoManager`.
 
 ## Technologies used
-* [.NET 5.0](https://dotnet.microsoft.com/)
+* [.NET 6.0](https://dotnet.microsoft.com/)
 * [Windows Presentation Foundation](https://docs.microsoft.com/en-us/dotnet/framework/wpf/)
 * [xUnit](https://xunit.net/)
 * [Moq framework for .NET](https://github.com/moq/moq4)
