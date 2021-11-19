@@ -1,6 +1,7 @@
 ﻿using JPPhotoManager.Domain;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Win32;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -87,7 +88,7 @@ namespace JPPhotoManager.Infrastructure
         {
             string product = null;
             string copyright = null;
-            string version = "Version " + assembly.GetName().Version.ToString();
+            string version = "Version " + GetProductVersion();
             var attrs = assembly.GetCustomAttributes(typeof(AssemblyProductAttribute));
 
             if (attrs.SingleOrDefault() is AssemblyProductAttribute assemblyProduct)
@@ -110,6 +111,13 @@ namespace JPPhotoManager.Infrastructure
             };
 
             return aboutInformation;
+        }
+
+        private string GetProductVersion()
+        {
+            FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(this.GetType().Assembly.Location);
+
+            return fileVersionInfo.ProductVersion;
         }
 
         public string GetInitialFolder()
