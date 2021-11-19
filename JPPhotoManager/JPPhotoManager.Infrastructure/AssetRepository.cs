@@ -1,13 +1,9 @@
 using JPPhotoManager.Domain;
 using log4net;
 using SimplePortableDatabase;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Infrastructure

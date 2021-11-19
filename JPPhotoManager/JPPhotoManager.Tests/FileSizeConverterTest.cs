@@ -1,6 +1,5 @@
 ﻿using FluentAssertions;
 using JPPhotoManager.UI.Converters;
-using System;
 using System.Globalization;
 using Xunit;
 

@@ -1,5 +1,4 @@
 ﻿using JPPhotoManager.Domain;
-using System;
 using System.Diagnostics;
 
 namespace JPPhotoManager.Infrastructure

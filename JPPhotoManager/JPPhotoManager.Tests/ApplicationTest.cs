@@ -6,8 +6,6 @@ using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using SimplePortableDatabase;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using Xunit;
 

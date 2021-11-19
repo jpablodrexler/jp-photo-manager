@@ -3,7 +3,6 @@ using Autofac.Extras.Moq;
 using FluentAssertions;
 using JPPhotoManager.Domain;
 using Moq;
-using System.Collections.Generic;
 using System.IO;
 using Xunit;
 

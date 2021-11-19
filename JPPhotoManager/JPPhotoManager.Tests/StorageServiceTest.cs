@@ -3,8 +3,6 @@ using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Windows.Media.Imaging;
 using Xunit;

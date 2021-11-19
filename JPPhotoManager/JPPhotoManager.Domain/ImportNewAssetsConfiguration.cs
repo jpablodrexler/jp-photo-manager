@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace JPPhotoManager.Domain
+﻿namespace JPPhotoManager.Domain
 {
     public class ImportNewAssetsConfiguration
     {

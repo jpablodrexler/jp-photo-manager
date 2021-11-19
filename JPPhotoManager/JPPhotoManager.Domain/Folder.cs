@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace JPPhotoManager.Domain
+﻿namespace JPPhotoManager.Domain
 {
     public class Folder
     {

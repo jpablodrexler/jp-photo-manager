@@ -1,6 +1,4 @@
-﻿using System.Threading;
-
-namespace JPPhotoManager.Domain
+﻿namespace JPPhotoManager.Domain
 {
     public interface ICatalogAssetsService
     {

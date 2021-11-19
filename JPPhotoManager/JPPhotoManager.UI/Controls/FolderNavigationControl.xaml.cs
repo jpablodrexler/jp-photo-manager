@@ -1,4 +1,3 @@
-using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using JPPhotoManager.UI.ViewModels;

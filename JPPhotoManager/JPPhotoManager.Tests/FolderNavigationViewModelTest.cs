@@ -4,7 +4,6 @@ using FluentAssertions;
 using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.UI.ViewModels;
-using System.Collections.Generic;
 using Xunit;
 
 namespace JPPhotoManager.Tests
