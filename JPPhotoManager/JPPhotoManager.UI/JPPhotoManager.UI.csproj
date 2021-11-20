@@ -37,7 +37,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
-    <PackageReference Include="SimplePortableDatabase" Version="0.10.0" />
+    <PackageReference Include="SimplePortableDatabase" Version="0.11.0" />
   </ItemGroup>
 
   <ItemGroup>
