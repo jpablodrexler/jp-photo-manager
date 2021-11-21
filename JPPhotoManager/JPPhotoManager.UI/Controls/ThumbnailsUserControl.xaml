@@ -34,7 +34,15 @@
         </DataTemplate>
     </UserControl.Resources>
     <Grid>
-        <ListBox Name="thumbnailsListView" ItemsSource="{Binding ObservableAssets}" ItemTemplate="{DynamicResource ThumbnailDataTemplate}" Background="#FF3C3C3C" SelectedIndex="{Binding ViewerPosition}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch">
+        <ListBox Name="thumbnailsListView"
+                 ItemsSource="{Binding ObservableAssets}"
+                 ItemTemplate="{DynamicResource ThumbnailDataTemplate}"
+                 Background="#FF3C3C3C"
+                 SelectedIndex="{Binding ViewerPosition}"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 HorizontalContentAlignment="Stretch"
+                 SelectionMode="Extended"
+                 SelectionChanged="thumbnailsListView_SelectionChanged">
             <ListBox.ItemsPanel>
                 <ItemsPanelTemplate>
                     <VirtualizingStackPanel Orientation="Vertical"/>

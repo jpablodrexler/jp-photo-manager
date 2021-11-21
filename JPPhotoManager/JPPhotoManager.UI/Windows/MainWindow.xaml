@@ -21,9 +21,9 @@
                 </MenuItem>
                 <MenuItem Header="Find _Duplicates..." Click="FindDuplicates_Click" Style="{StaticResource MenuItemStyle}" />
                 <MenuItem Header="Import New Assets..." Click="ImportNewAssets_Click" Style="{StaticResource MenuItemStyle}" />
-                <MenuItem Header="Copy Asset (Ctrl+C)..." Click="CopyAsset_Click" Style="{StaticResource MenuItemStyle}" />
-                <MenuItem Header="Move Asset (Ctrl+M)..." Click="MoveAsset_Click" Style="{StaticResource MenuItemStyle}" />
-                <MenuItem Header="Delete Asset (Del)" Click="DeleteAsset_Click" Style="{StaticResource MenuItemStyle}" />
+                <MenuItem Header="Copy Assets (Ctrl+C)..." Click="CopyAssets_Click" Style="{StaticResource MenuItemStyle}" />
+                <MenuItem Header="Move Assets (Ctrl+M)..." Click="MoveAssets_Click" Style="{StaticResource MenuItemStyle}" />
+                <MenuItem Header="Delete Assets (Del)" Click="DeleteAssets_Click" Style="{StaticResource MenuItemStyle}" />
                 <MenuItem Header="_Exit" Style="{StaticResource MenuItemStyle}" />
             </MenuItem>
             <MenuItem Header="_View">

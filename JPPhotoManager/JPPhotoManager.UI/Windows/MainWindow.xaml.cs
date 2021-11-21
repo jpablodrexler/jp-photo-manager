@@ -4,7 +4,7 @@ using JPPhotoManager.Infrastructure;
 using JPPhotoManager.UI.ViewModels;
 using log4net;
 using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -101,11 +101,11 @@ namespace JPPhotoManager.UI.Windows
                     switch (e.Key)
                     {
                         case Key.C:
-                            MoveAsset(preserveOriginalFile: true);
+                            MoveAssets(preserveOriginalFile: true);
                             break;
 
                         case Key.M:
-                            MoveAsset(preserveOriginalFile: false);
+                            MoveAssets(preserveOriginalFile: false);
                             break;
                     }
                 }
@@ -114,7 +114,7 @@ namespace JPPhotoManager.UI.Windows
                     switch (e.Key)
                     {
                         case Key.Delete:
-                            DeleteAsset();
+                            DeleteAssets();
                             break;
 
                         case Key.PageUp:
@@ -316,50 +316,65 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        private void CopyAsset_Click(object sender, RoutedEventArgs e)
+        private void CopyAssets_Click(object sender, RoutedEventArgs e)
         {
-            MoveAsset(preserveOriginalFile: true);
+            MoveAssets(preserveOriginalFile: true);
         }
 
-        private void MoveAsset_Click(object sender, RoutedEventArgs e)
+        private void MoveAssets_Click(object sender, RoutedEventArgs e)
         {
-            MoveAsset(preserveOriginalFile: false);
+            MoveAssets(preserveOriginalFile: false);
         }
 
-        private void MoveAsset(bool preserveOriginalFile)
+        private void MoveAssets(bool preserveOriginalFile)
         {
             try
             {
-                var asset = this.ViewModel.CurrentAsset;
+                var assets = this.ViewModel.SelectedAssets;
 
-                if (asset != null)
+                if (assets != null && assets.Length > 0)
                 {
-                    List<string> recentTargetPaths = this.ViewModel.Application.GetRecentTargetPaths();
-                    FolderNavigationViewModel viewModel = new FolderNavigationViewModel(this.ViewModel.Application, asset.Folder, this.ViewModel.LastSelectedFolder, recentTargetPaths);
-                    FolderNavigationWindow folderNavigationWindow = new FolderNavigationWindow(viewModel);
+                    FolderNavigationWindow folderNavigationWindow = new(
+                        new FolderNavigationViewModel(
+                            this.ViewModel.Application,
+                            assets.First().Folder,
+                            this.ViewModel.LastSelectedFolder,
+                            this.ViewModel.Application.GetRecentTargetPaths()));
                     
                     folderNavigationWindow.Closed += (sender, e) =>
                     {
-                        if (viewModel.HasConfirmed)
+                        if (folderNavigationWindow.ViewModel.HasConfirmed)
                         {
-                            Folder destinationFolder = viewModel.SelectedFolder;
-                            bool result = this.ViewModel.Application.MoveAsset(asset, destinationFolder, preserveOriginalFile);
-                            this.ViewModel.LastSelectedFolder = viewModel.SelectedFolder;
+                            bool result = true;
+
+                            foreach (var asset in assets)
+                            {
+                                result = this.ViewModel.Application.MoveAsset(asset,
+                                    folderNavigationWindow.ViewModel.SelectedFolder,
+                                    preserveOriginalFile);
+
+                                if (!result)
+                                    break;
+                            }
 
                             if (result)
                             {
+                                this.ViewModel.LastSelectedFolder = folderNavigationWindow.ViewModel.SelectedFolder;
                                 this.ViewModel.IsRefreshingFolders = true;
                                 this.folderTreeView.Initialize();
                                 this.ViewModel.IsRefreshingFolders = false;
-                            }
 
-                            if (!preserveOriginalFile && result)
-                            {
-                                this.ViewModel.RemoveAsset(asset);
-
-                                if (this.ViewModel.AppMode == AppModeEnum.Viewer)
+                                if (!preserveOriginalFile)
                                 {
-                                    this.viewerUserControl.ShowImage();
+                                    foreach (var asset in assets)
+                                    {
+                                        this.ViewModel.RemoveAsset(asset);
+                                    }
+
+                                    if (this.ViewModel.AppMode == AppModeEnum.Viewer)
+                                    {
+                                        this.viewerUserControl.ShowImage();
+                                    }
                                 }
                             }
                         }
@@ -374,16 +389,20 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        private void DeleteAsset()
+        private void DeleteAssets()
         {
             try
             {
-                var asset = this.ViewModel.CurrentAsset;
+                var assets = this.ViewModel.SelectedAssets;
 
-                if (asset != null)
+                if (assets != null)
                 {
-                    this.ViewModel.Application.DeleteAsset(asset, deleteFile: true);
-                    this.ViewModel.RemoveAsset(asset);
+                    foreach (var asset in assets)
+                    {
+                        this.ViewModel.Application.DeleteAsset(asset, deleteFile: true);
+                        this.ViewModel.RemoveAsset(asset);
+                    }
+                    
                     ShowImage();
                 }
             }
@@ -393,9 +412,9 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        private void DeleteAsset_Click(object sender, RoutedEventArgs e)
+        private void DeleteAssets_Click(object sender, RoutedEventArgs e)
         {
-            DeleteAsset();
+            DeleteAssets();
         }
 
         private void SortAssetsByFileName_Click(object sender, RoutedEventArgs e)

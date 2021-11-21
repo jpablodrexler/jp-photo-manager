@@ -5,6 +5,7 @@ using JPPhotoManager.UI.ViewModels;
 using JPPhotoManager.UI.Windows;
 using log4net;
 using System;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
@@ -99,6 +100,11 @@ namespace JPPhotoManager.UI.Controls
             {
                 this.thumbnailsListView.ScrollIntoView(this.thumbnailsListView.SelectedItem);
             }
+        }
+
+        private void thumbnailsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            this.ViewModel.SelectedAssets = this.thumbnailsListView.SelectedItems.Cast<Asset>().ToArray();
         }
     }
 }
