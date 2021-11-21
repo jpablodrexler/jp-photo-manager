@@ -28,6 +28,7 @@ namespace JPPhotoManager.UI.ViewModels
         private string currentFolder;
         private Asset[] cataloguedAssets;
         private ObservableCollection<Asset> observableAssets;
+        private Asset[] selectedAssets;
         private string appTitle;
         private string statusMessage;
         private SortCriteriaEnum sortCriteria;
@@ -107,6 +108,16 @@ namespace JPPhotoManager.UI.ViewModels
                     nameof(CanGoToNextAsset),
                     nameof(CurrentAsset));
                 this.UpdateAppTitle();
+            }
+        }
+
+        public Asset[] SelectedAssets
+        {
+            get { return this.selectedAssets; }
+            set
+            {
+                this.selectedAssets = value;
+                this.NotifyPropertyChanged(nameof(SelectedAssets));
             }
         }
 
