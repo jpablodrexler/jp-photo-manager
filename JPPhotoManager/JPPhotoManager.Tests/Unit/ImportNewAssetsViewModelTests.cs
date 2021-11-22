@@ -7,9 +7,9 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Unit
 {
-    public class ImportNewAssetsViewModelTest
+    public class ImportNewAssetsViewModelTests
     {
         [Fact]
         public void ViewModelTest()

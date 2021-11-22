@@ -9,16 +9,16 @@ using SimplePortableDatabase;
 using System.IO;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Integration
 {
-    public class ApplicationTest
+    public class ApplicationTests
     {
         private string dataDirectory;
         private IConfigurationRoot configuration;
 
-        public ApplicationTest()
+        public ApplicationTests()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTest).Assembly.Location);
+            dataDirectory = Path.GetDirectoryName(typeof(ApplicationTests).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
 
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
@@ -26,62 +26,15 @@ namespace JPPhotoManager.Tests
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, Guid.NewGuid().ToString()))
                 .MockGetValue("appsettings:CatalogBatchSize", "100");
-                
+
             configuration = configurationMock.Object;
         }
 
         [Fact]
-        public void GetAssets_ValidDirectory_ReturnAssetsArray()
-        {
-            string directory = @"D:\Imágenes";
-            Asset[] expectedResult = new Asset[]
-                {
-                    new Asset
-                    {
-                        FileName = "dbzrrou-1d391dff-a336-4395-81a5-885a98685d93.jpg",
-                        Folder = new Folder { Path = @"D:\Imágenes\" }
-                    },
-                    new Asset
-                    {
-                        FileName = "dbxb0an-d90d6335-7b9c-4a7b-84aa-71501c73f63b.jpg",
-                        Folder = new Folder { Path = @"D:\Imágenes\" }
-                    }
-                };
-
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IAssetRepository>().Setup(m => m.GetAssets(directory)).Returns(expectedResult);
-
-                var app = mock.Container.Resolve<Application.Application>();
-
-                Asset[] assets = app.GetAssets(directory);
-                assets.Should().BeEquivalentTo(expectedResult);
-
-                mock.Mock<IAssetRepository>().VerifyAll();
-            }
-        }
-
-        [Theory]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData(" ")]
-        public void GetAssets_InvalidDirectory_Test(string directory)
-        {
-            using (var mock = AutoMock.GetLoose())
-            {
-                var app = mock.Container.Resolve<Application.Application>();
-
-                Func<Asset[]> function = () => app.GetAssets(directory);
-                function.Should().Throw<ArgumentException>();
-            }
-        }
-
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
-        [Fact]
         public void GetDuplicatedAssets_WithDuplicates_ReturnArray()
         {
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
-            
+
             using (var mock = AutoMock.GetLoose(
                 cfg =>
                 {
@@ -135,7 +88,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void GetDuplicatedAssets_WithoutDuplicates_ReturnEmptyArray()
         {
@@ -173,7 +125,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         /// <summary>
         /// Tests an scenario when the user searches for duplicates before an
         /// old entry gets deleted from the catalog.
@@ -227,7 +178,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         /// <summary>
         /// Tests an scenario when the user searches for duplicates before an
         /// old entry gets deleted from the catalog.
@@ -280,7 +230,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void GetDuplicatedAssets_WithDuplicatesHashCollisionWithDuplicated_ReturnArray()
         {
@@ -335,7 +284,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void GetDuplicatedAssets_WithDuplicatesHashCollisionWithNoDuplicated_ReturnEmptyArray()
         {
@@ -374,7 +322,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void AddAssets_ToNonExistingFolder_AddFolderToCatalog()
         {
@@ -412,7 +359,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void GetAssets_WithThumbnailNotFound_ReturnArrayIncludingAssetWithNoThumbnail()
         {

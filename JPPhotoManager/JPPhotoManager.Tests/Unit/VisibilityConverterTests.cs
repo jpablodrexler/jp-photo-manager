@@ -4,14 +4,14 @@ using System.Globalization;
 using System.Windows;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Unit
 {
     class NamedObject
     {
 
     }
 
-    public class VisibilityConverterTest
+    public class VisibilityConverterTests
     {
         [Fact]
         public void GetVisibilityVisibleTest()

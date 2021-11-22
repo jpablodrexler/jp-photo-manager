@@ -6,9 +6,9 @@ using Moq;
 using System.IO;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Unit
 {
-    public class ImportNewAssetsServiceTest
+    public class ImportNewAssetsServiceTests
     {
         [Fact]
         public void ImportNewImagesSourceEmptyDestinationEmptyTest()

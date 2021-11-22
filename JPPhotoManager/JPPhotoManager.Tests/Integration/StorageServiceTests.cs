@@ -7,16 +7,16 @@ using System.IO;
 using System.Windows.Media.Imaging;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Integration
 {
-    public class StorageServiceTest
+    public class StorageServiceTests
     {
         private string dataDirectory;
         private IConfigurationRoot configuration;
 
-        public StorageServiceTest()
+        public StorageServiceTests()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTest).Assembly.Location);
+            dataDirectory = Path.GetDirectoryName(typeof(StorageServiceTests).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
 
             string hiddenFolderPath = Path.Combine(dataDirectory, "TestFolder", "TestHiddenSubFolder");

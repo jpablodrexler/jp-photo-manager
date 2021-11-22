@@ -3,9 +3,9 @@ using Microsoft.Extensions.Configuration;
 using Moq;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Unit
 {
-    public class ConfigurationMockExtensionsTest
+    public class ConfigurationMockExtensionsTests
     {
         [Fact]
         public void ConfigurationMockTest()

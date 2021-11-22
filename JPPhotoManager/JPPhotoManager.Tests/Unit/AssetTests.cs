@@ -2,9 +2,9 @@
 using JPPhotoManager.Domain;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Unit
 {
-    public class AssetTest
+    public class AssetTests
     {
         [Fact]
         public void GetHashCode_SameFileAndFolder_AreEqual()

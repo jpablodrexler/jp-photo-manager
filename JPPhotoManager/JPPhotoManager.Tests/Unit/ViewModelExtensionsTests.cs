@@ -4,9 +4,9 @@ using JPPhotoManager.UI.ViewModels;
 using System.Collections.ObjectModel;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Unit
 {
-    public class ViewModelExtensionsTest
+    public class ViewModelExtensionsTests
     {
         [Fact]
         public void MoveUpSecondDefinitionTest()

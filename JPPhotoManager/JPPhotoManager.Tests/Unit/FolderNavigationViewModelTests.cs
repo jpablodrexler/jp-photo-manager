@@ -6,9 +6,9 @@ using JPPhotoManager.Domain;
 using JPPhotoManager.UI.ViewModels;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Unit
 {
-    public class FolderNavigationViewModelTest
+    public class FolderNavigationViewModelTests
     {
         [Fact]
         public void ViewModelTest()

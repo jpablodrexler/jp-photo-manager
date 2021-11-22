@@ -9,16 +9,16 @@ using SimplePortableDatabase;
 using System.IO;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Integration
 {
-    public class AssetRepositoryTest
+    public class AssetRepositoryTests
     {
         private string dataDirectory;
         private IConfigurationRoot configuration;
 
-        public AssetRepositoryTest()
+        public AssetRepositoryTests()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTest).Assembly.Location);
+            dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTests).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
 
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
@@ -26,11 +26,10 @@ namespace JPPhotoManager.Tests
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, Guid.NewGuid().ToString()))
                 .MockGetValue("appsettings:CatalogBatchSize", "100");
-                
+
             configuration = configurationMock.Object;
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void FolderExists_DataDirectory_ReturnTrue()
         {
@@ -54,7 +53,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void HasChanges_Initial_ReturnFalse()
         {
@@ -76,7 +74,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void HasChanges_AfterChange_ReturnTrue()
         {
@@ -106,7 +103,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void HasChanges_AfterSave_ReturnFalse()
         {
@@ -138,7 +134,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void IsAssetCatalogued_AssetNotInCatalog_ReturnFalse()
         {
@@ -166,7 +161,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void IsAssetCatalogued_AssetInCatalog_ReturnTrue()
         {
@@ -197,7 +191,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void IsAssetCatalogued_DeleteNonExistingAsset_ReturnFalse()
         {
@@ -230,7 +223,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void IsAssetCatalogued_DeleteExistingAsset_ReturnFalse()
         {
@@ -264,7 +256,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void GetImportNewAssetsConfiguration_ReturnArray()
         {
@@ -304,7 +295,7 @@ namespace JPPhotoManager.Tests
                 repository.SaveCatalog(null);
 
                 importConfiguration = repository.GetImportNewAssetsConfiguration();
-                
+
                 importConfiguration.Imports.Should().HaveCount(2);
                 importConfiguration.Imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
                 importConfiguration.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");

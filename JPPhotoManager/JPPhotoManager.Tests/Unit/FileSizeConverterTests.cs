@@ -3,9 +3,9 @@ using JPPhotoManager.UI.Converters;
 using System.Globalization;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Unit
 {
-    public class FileSizeConverterTest
+    public class FileSizeConverterTests
     {
         [Theory]
         [InlineData(656, "656 bytes")]
