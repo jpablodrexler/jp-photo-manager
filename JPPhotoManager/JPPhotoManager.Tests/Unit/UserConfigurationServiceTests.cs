@@ -7,16 +7,16 @@ using Moq;
 using System.IO;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Unit
 {
-    public class UserConfigurationServiceTest
+    public class UserConfigurationServiceTests
     {
         private string dataDirectory;
         private IConfigurationRoot configuration;
 
-        public UserConfigurationServiceTest()
+        public UserConfigurationServiceTests()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(UserConfigurationServiceTest).Assembly.Location);
+            dataDirectory = Path.GetDirectoryName(typeof(UserConfigurationServiceTests).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
 
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();

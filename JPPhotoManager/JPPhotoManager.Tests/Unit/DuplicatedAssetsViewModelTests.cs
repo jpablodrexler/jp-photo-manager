@@ -6,9 +6,9 @@ using JPPhotoManager.UI.ViewModels;
 using Moq;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Unit
 {
-    public class DuplicatedAssetsViewModelTest
+    public class DuplicatedAssetsViewModelTests
     {
         [Fact]
         public void ViewModelTest()

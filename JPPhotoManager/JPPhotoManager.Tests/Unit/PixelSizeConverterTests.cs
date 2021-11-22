@@ -4,9 +4,9 @@ using JPPhotoManager.UI.Converters;
 using System.Globalization;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Unit
 {
-    public class PixelSizeConverterTest
+    public class PixelSizeConverterTests
     {
         [Theory]
         [InlineData(1920, 1080, "1920x1080 pixels")]
