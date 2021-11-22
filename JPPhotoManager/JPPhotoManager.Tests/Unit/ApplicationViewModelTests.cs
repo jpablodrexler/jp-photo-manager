@@ -8,9 +8,9 @@ using System.Windows;
 using System.Windows.Media.Imaging;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Unit
 {
-    public class ApplicationViewModelTest
+    public class ApplicationViewModelTests
     {
         [Fact]
         public void ChangeAppMode_NoParameter_ChangeAppMode()

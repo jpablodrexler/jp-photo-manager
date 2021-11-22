@@ -5,15 +5,15 @@ using Moq;
 using System.IO;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Unit
 {
-    public class FolderTest
+    public class FolderTests
     {
         private string dataDirectory;
 
-        public FolderTest()
+        public FolderTests()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(FolderTest).Assembly.Location);
+            dataDirectory = Path.GetDirectoryName(typeof(FolderTests).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
         }
 
@@ -132,7 +132,7 @@ namespace JPPhotoManager.Tests
         [InlineData("TestFolder", "", false)]
         public void IsParentFolderTest(string testFolderPath1, string testFolderPath2, bool expected)
         {
-            dataDirectory = Path.GetDirectoryName(typeof(FolderTest).Assembly.Location);
+            dataDirectory = Path.GetDirectoryName(typeof(FolderTests).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
 
             string absoluteTestFolderPath1 = Path.Combine(dataDirectory, testFolderPath1);
