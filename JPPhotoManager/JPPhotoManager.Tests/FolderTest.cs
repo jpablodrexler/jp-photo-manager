@@ -132,7 +132,7 @@ namespace JPPhotoManager.Tests
         [InlineData("TestFolder", "", false)]
         public void IsParentFolderTest(string testFolderPath1, string testFolderPath2, bool expected)
         {
-            dataDirectory = Path.GetDirectoryName(typeof(CatalogMoveAssetsServiceTest).Assembly.Location);
+            dataDirectory = Path.GetDirectoryName(typeof(FolderTest).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
 
             string absoluteTestFolderPath1 = Path.Combine(dataDirectory, testFolderPath1);

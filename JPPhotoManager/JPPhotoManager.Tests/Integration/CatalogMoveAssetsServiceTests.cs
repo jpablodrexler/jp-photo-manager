@@ -9,18 +9,18 @@ using SimplePortableDatabase;
 using System.IO;
 using Xunit;
 
-namespace JPPhotoManager.Tests
+namespace JPPhotoManager.Tests.Integration
 {
-    public class CatalogMoveAssetsServiceTest
+    public class CatalogMoveAssetsServiceTests
     {
         private string dataDirectory;
         private string imageDestinationDirectory;
         private string nonCataloguedImageDestinationDirectory;
         private IConfigurationRoot configuration;
 
-        public CatalogMoveAssetsServiceTest()
+        public CatalogMoveAssetsServiceTests()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(CatalogMoveAssetsServiceTest).Assembly.Location);
+            dataDirectory = Path.GetDirectoryName(typeof(CatalogMoveAssetsServiceTests).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
             imageDestinationDirectory = Path.Combine(dataDirectory, "NewFolder");
             nonCataloguedImageDestinationDirectory = Path.Combine(dataDirectory, "NonCataloguedNewFolder");
@@ -44,7 +44,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CatalogFolderTest()
         {
@@ -96,7 +95,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CatalogFolderLargerThanBatchSizeTest()
         {
@@ -151,7 +149,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CatalogFolderRemovesDeletedFileTest()
         {
@@ -230,7 +227,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CatalogFolderRemovesDeletedFileLargerThanBatchSizeTest()
         {
@@ -294,7 +290,7 @@ namespace JPPhotoManager.Tests
                 mock.Mock<IDirectoryComparer>().Setup(
                     c => c.GetDeletedFileNames(It.IsAny<string[]>(), It.IsAny<List<Asset>>()))
                     .Returns(fileList.ToArray());
-                
+
                 var repository = mock.Container.Resolve<IAssetRepository>();
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
@@ -306,7 +302,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CatalogNonExistentFolderTest()
         {
@@ -323,7 +318,7 @@ namespace JPPhotoManager.Tests
             {
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(Path.Combine(dataDirectory, "NonExistent"));
-                
+
                 var repository = mock.Container.Resolve<IAssetRepository>();
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
@@ -336,7 +331,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Theory]
         [InlineData("Image 2.jpg", 30197, 720, 1280, "0b6d010f85544871c307bb3a96028402f55fa29094908cdd0f74a8ec8d3fc3d4fbec995d98b89aafef3dcf5581c018fbb50481e33c7e45aef552d66c922f4078")]
         [InlineData("Image 1.jpg", 29857, 720, 1280, "1fafae17c3c5c38d1205449eebdb9f5976814a5e54ec5797270c8ec467fe6d6d1190255cbaac11d9057c4b2697d90bc7116a46ed90c5ffb71e32e569c3b47fb9")]
@@ -376,7 +370,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CreateAssetOfDuplicatedFilesCompareHashesTest()
         {
@@ -412,7 +405,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CreateAssetOfDifferentFilesCompareHashesTest()
         {
@@ -448,7 +440,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void MoveExistingAssetTest()
         {
@@ -504,7 +495,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void MoveNonExistingAssetTest()
         {
@@ -551,7 +541,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void MoveAssetToSamePathTest()
         {
@@ -592,7 +581,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void MoveAssetToNonCataloguedFolderTest()
         {
@@ -641,7 +629,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void MoveNullAssetTest()
         {
@@ -672,7 +659,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void MoveNullSourceFolderTest()
         {
@@ -704,7 +690,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void MoveNullDestinationFolderTest()
         {
@@ -736,7 +721,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CopyExistingAssetTest()
         {
@@ -792,7 +776,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CopyNonExistingAssetTest()
         {
@@ -838,7 +821,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void CopyAssetToSamePathTest()
         {
@@ -878,7 +860,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void DeleteExistingImageTest()
         {
@@ -918,7 +899,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void DeleteNonExistingImageTest()
         {
@@ -958,7 +938,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void DeleteNullAssetTest()
         {
@@ -988,7 +967,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void DeleteNullFolderTest()
         {
@@ -1015,7 +993,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void LogOnExceptionTest()
         {
@@ -1064,7 +1041,6 @@ namespace JPPhotoManager.Tests
             }
         }
 
-        // TODO: MOVE TO INTEGRATION TESTS PROJECT
         [Fact]
         public void SaveCatalogOnOperationCanceledExceptionTest()
         {

@@ -16,7 +16,7 @@ namespace JPPhotoManager.Tests
 
         public StorageServiceTest()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTest).Assembly.Location);
+            dataDirectory = Path.GetDirectoryName(typeof(StorageServiceTest).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
 
             string hiddenFolderPath = Path.Combine(dataDirectory, "TestFolder", "TestHiddenSubFolder");
