@@ -263,24 +263,28 @@ namespace JPPhotoManager.Domain
                 }
 
                 this.assetRepository.DeleteAsset(directory, fileName);
+                string fullPath = Path.Combine(directory, fileName);
 
-                Asset updatedAsset = CreateAsset(directory, fileName);
-                updatedAsset.ImageData = LoadThumbnail(directory, fileName, updatedAsset.ThumbnailPixelWidth, updatedAsset.ThumbnailPixelHeight);
-
-                if (!folderHasThumbnails)
+                if (this.storageService.FileExists(fullPath))
                 {
-                    cataloguedAssets.Add(updatedAsset);
+                    Asset updatedAsset = CreateAsset(directory, fileName);
+                    updatedAsset.ImageData = LoadThumbnail(directory, fileName, updatedAsset.ThumbnailPixelWidth, updatedAsset.ThumbnailPixelHeight);
+
+                    if (!folderHasThumbnails)
+                    {
+                        cataloguedAssets.Add(updatedAsset);
+                    }
+
+                    callback?.Invoke(new CatalogChangeCallbackEventArgs
+                    {
+                        Asset = updatedAsset,
+                        CataloguedAssets = cataloguedAssets,
+                        Message = $"Image {fullPath} updated in catalog",
+                        Reason = ReasonEnum.AssetUpdated
+                    });
+
+                    cataloguedAssetsBatchCount++;
                 }
-
-                callback?.Invoke(new CatalogChangeCallbackEventArgs
-                {
-                    Asset = updatedAsset,
-                    CataloguedAssets = cataloguedAssets,
-                    Message = $"Image {Path.Combine(directory, fileName)} updated in catalog",
-                    Reason = ReasonEnum.AssetUpdated
-                });
-
-                cataloguedAssetsBatchCount++;
             }
 
             return cataloguedAssetsBatchCount;

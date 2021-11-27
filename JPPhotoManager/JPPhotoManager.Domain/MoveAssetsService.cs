@@ -78,17 +78,21 @@ namespace JPPhotoManager.Domain
 
                     if (result)
                     {
-                        if (!preserveOriginalFiles)
-                        {
-                            this.DeleteAssets(new Asset[] { asset }, deleteFiles: true, saveCatalog: false);
-                        }
-
                         if (!this.assetRepository.FolderExists(destinationFolder.Path))
                         {
                             destinationFolder = this.assetRepository.AddFolder(destinationFolder.Path);
                         }
 
-                        this.catalogAssetsService.CreateAsset(destinationFolder.Path, asset.FileName);
+                        if (preserveOriginalFiles)
+                        {
+                            this.catalogAssetsService.CreateAsset(destinationFolder.Path, asset.FileName);
+                        }
+                        else
+                        {
+                            this.storageService.DeleteFile(asset.Folder.Path, asset.FileName);
+                            asset.Folder = destinationFolder;
+                        }
+                        
                         AddTargetPathToRecent(destinationFolder);
                     }
                 }
