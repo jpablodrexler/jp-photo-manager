@@ -76,27 +76,20 @@ namespace JPPhotoManager.Domain
                 {
                     result = this.storageService.CopyImage(sourcePath, destinationPath);
 
-                    if (result)
+                    if (result && !isDestinationFolderInCatalog)
                     {
-                        if (!this.assetRepository.FolderExists(destinationFolder.Path))
-                        {
-                            destinationFolder = this.assetRepository.AddFolder(destinationFolder.Path);
-                        }
-
-                        if (preserveOriginalFiles)
-                        {
-                            this.catalogAssetsService.CreateAsset(destinationFolder.Path, asset.FileName);
-                        }
-                        else
-                        {
-                            this.storageService.DeleteFile(asset.Folder.Path, asset.FileName);
-                            asset.Folder = destinationFolder;
-                        }
-                        
-                        AddTargetPathToRecent(destinationFolder);
+                        destinationFolder = this.assetRepository.AddFolder(destinationFolder.Path);
+                        isDestinationFolderInCatalog = true;
                     }
                 }
             }
+
+            if (!preserveOriginalFiles)
+            {
+                this.DeleteAssets(assets, deleteFiles: true, saveCatalog: false);
+            }
+
+            AddTargetPathToRecent(destinationFolder);
 
             this.assetRepository.SaveCatalog(destinationFolder);
 
