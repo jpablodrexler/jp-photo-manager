@@ -133,7 +133,7 @@ namespace JPPhotoManager.UI.ViewModels
 
         public void DeleteAsset(DuplicatedAssetViewModel assetViewModel)
         {
-            this.Application.DeleteAsset(assetViewModel.Asset, deleteFile: true);
+            this.Application.DeleteAssets(new Asset[] { assetViewModel.Asset }, deleteFiles: true);
             assetViewModel.Visible = Visibility.Collapsed;
             this.NavigateToNextVisibleSet(this.DuplicatedAssetSetsPosition);
             // TODO: THE COUNTER DISPLAYED AT THE TOP OF THE SCREEN SHOULD BE UPDATED AS WELL BASED ON THE TOTAL OF DUPLICATED SETS WITH AT LEAST 2 VISIBLE ASSETS.

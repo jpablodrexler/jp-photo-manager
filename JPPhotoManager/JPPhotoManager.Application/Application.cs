@@ -96,9 +96,9 @@ namespace JPPhotoManager.Application
             return this.findDuplicatedAssetsService.GetDuplicatedAssets();
         }
 
-        public void DeleteAsset(Asset asset, bool deleteFile)
+        public void DeleteAssets(Asset[] assets, bool deleteFiles)
         {
-            this.moveAssetsService.DeleteAsset(asset, deleteFile);
+            this.moveAssetsService.DeleteAssets(assets, deleteFiles);
         }
 
         public AboutInformation GetAboutInformation(Assembly assembly)
@@ -126,9 +126,9 @@ namespace JPPhotoManager.Application
             return this.userConfigurationService.GetCatalogCooldownMinutes();
         }
 
-        public bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile)
+        public bool MoveAssets(Asset[] assets, Folder destinationFolder, bool preserveOriginalFiles)
         {
-            return this.moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile);
+            return this.moveAssetsService.MoveAssets(assets, destinationFolder, preserveOriginalFiles);
         }
 
         public BitmapImage LoadBitmapImage(string imagePath, Rotation rotation)

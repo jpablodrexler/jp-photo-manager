@@ -14,13 +14,13 @@ namespace JPPhotoManager.Application
         void CatalogAssets(CatalogChangeCallback callback);
         void SetAsWallpaper(Asset asset, WallpaperStyle style);
         List<List<Asset>> GetDuplicatedAssets();
-        void DeleteAsset(Asset asset, bool deleteFile);
+        void DeleteAssets(Asset[] assets, bool deleteFiles);
         AboutInformation GetAboutInformation(Assembly assembly);
         Folder[] GetDrives();
         Folder[] GetSubFolders(Folder parentFolder, bool includeHidden);
         string GetInitialFolder();
         int GetCatalogCooldownMinutes();
-        bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile);
+        bool MoveAssets(Asset[] assets, Folder destinationFolder, bool preserveOriginalFiles);
         BitmapImage LoadBitmapImage(string imagePath, Rotation rotation);
         bool FileExists(string fullPath);
         List<string> GetRecentTargetPaths();

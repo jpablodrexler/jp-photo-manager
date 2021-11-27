@@ -101,11 +101,11 @@ namespace JPPhotoManager.UI.Windows
                     switch (e.Key)
                     {
                         case Key.C:
-                            MoveAssets(preserveOriginalFile: true);
+                            MoveAssets(preserveOriginalFiles: true);
                             break;
 
                         case Key.M:
-                            MoveAssets(preserveOriginalFile: false);
+                            MoveAssets(preserveOriginalFiles: false);
                             break;
                     }
                 }
@@ -318,15 +318,15 @@ namespace JPPhotoManager.UI.Windows
 
         private void CopyAssets_Click(object sender, RoutedEventArgs e)
         {
-            MoveAssets(preserveOriginalFile: true);
+            MoveAssets(preserveOriginalFiles: true);
         }
 
         private void MoveAssets_Click(object sender, RoutedEventArgs e)
         {
-            MoveAssets(preserveOriginalFile: false);
+            MoveAssets(preserveOriginalFiles: false);
         }
 
-        private void MoveAssets(bool preserveOriginalFile)
+        private void MoveAssets(bool preserveOriginalFiles)
         {
             try
             {
@@ -347,15 +347,9 @@ namespace JPPhotoManager.UI.Windows
                         {
                             bool result = true;
 
-                            foreach (var asset in assets)
-                            {
-                                result = this.ViewModel.Application.MoveAsset(asset,
-                                    folderNavigationWindow.ViewModel.SelectedFolder,
-                                    preserveOriginalFile);
-
-                                if (!result)
-                                    break;
-                            }
+                            result = this.ViewModel.Application.MoveAssets(assets,
+                                folderNavigationWindow.ViewModel.SelectedFolder,
+                                preserveOriginalFiles);
 
                             if (result)
                             {
@@ -364,12 +358,9 @@ namespace JPPhotoManager.UI.Windows
                                 this.folderTreeView.Initialize();
                                 this.ViewModel.IsRefreshingFolders = false;
 
-                                if (!preserveOriginalFile)
+                                if (!preserveOriginalFiles)
                                 {
-                                    foreach (var asset in assets)
-                                    {
-                                        this.ViewModel.RemoveAsset(asset);
-                                    }
+                                    this.ViewModel.RemoveAssets(assets);
 
                                     if (this.ViewModel.AppMode == AppModeEnum.Viewer)
                                     {
@@ -397,12 +388,8 @@ namespace JPPhotoManager.UI.Windows
 
                 if (assets != null)
                 {
-                    foreach (var asset in assets)
-                    {
-                        this.ViewModel.Application.DeleteAsset(asset, deleteFile: true);
-                        this.ViewModel.RemoveAsset(asset);
-                    }
-                    
+                    this.ViewModel.Application.DeleteAssets(assets, deleteFiles: true);
+                    this.ViewModel.RemoveAssets(assets);
                     ShowImage();
                 }
             }

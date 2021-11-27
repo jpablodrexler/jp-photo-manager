@@ -561,7 +561,7 @@ namespace JPPhotoManager.Tests.Unit
 
                 viewModel.SetAssets(assets);
                 viewModel.ViewerPosition = currentPosition;
-                viewModel.RemoveAsset(assets[currentPosition]);
+                viewModel.RemoveAssets(new Asset[] { assets[currentPosition] });
 
                 viewModel.ViewerPosition.Should().Be(newPosition);
                 viewModel.ObservableAssets.Should().HaveCount(4);
@@ -585,7 +585,7 @@ namespace JPPhotoManager.Tests.Unit
                 viewModel.SetAssets(assets);
                 viewModel.ViewerPosition = 0;
 
-                viewModel.RemoveAsset(assets[0]);
+                viewModel.RemoveAssets(new Asset[] { assets[0] });
 
                 viewModel.ViewerPosition.Should().Be(-1);
                 viewModel.ObservableAssets.Should().BeEmpty();
@@ -606,7 +606,7 @@ namespace JPPhotoManager.Tests.Unit
                 viewModel.SetAssets(assets);
                 viewModel.ViewerPosition = -1;
 
-                viewModel.RemoveAsset(null);
+                viewModel.RemoveAssets(null);
 
                 viewModel.ViewerPosition.Should().Be(-1);
                 viewModel.ObservableAssets.Should().BeEmpty();
@@ -625,7 +625,7 @@ namespace JPPhotoManager.Tests.Unit
                 viewModel.SetAssets(null);
                 viewModel.ViewerPosition = -1;
 
-                viewModel.RemoveAsset(null);
+                viewModel.RemoveAssets(null);
 
                 viewModel.ViewerPosition.Should().Be(-1);
                 viewModel.ObservableAssets.Should().BeNull();

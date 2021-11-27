@@ -2,7 +2,7 @@
 {
     public interface IMoveAssetsService
     {
-        bool MoveAsset(Asset asset, Folder destinationFolder, bool preserveOriginalFile);
-        void DeleteAsset(Asset asset, bool deleteFile);
+        bool MoveAssets(Asset[] assets, Folder destinationFolder, bool preserveOriginalFile);
+        void DeleteAssets(Asset[] assets, bool deleteFile, bool saveCatalog = true);
     }
 }
