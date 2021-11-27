@@ -477,7 +477,7 @@ namespace JPPhotoManager.Tests.Integration
                 repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
                 repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
 
-                moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
+                moveAssetsService.MoveAssets(new Asset[] { asset }, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
 
                 File.Exists(sourceImagePath).Should().BeFalse();
                 File.Exists(destinationImagePath).Should().BeTrue();
@@ -536,7 +536,7 @@ namespace JPPhotoManager.Tests.Integration
                 asset.Folder.Should().NotBe(destinationFolder);
 
                 Func<bool> function = () =>
-                    moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false);
+                    moveAssetsService.MoveAssets(new Asset[] { asset }, destinationFolder, preserveOriginalFile: false);
                 function.Should().Throw<ArgumentException>();
             }
         }
@@ -573,7 +573,7 @@ namespace JPPhotoManager.Tests.Integration
 
                 repository.ContainsThumbnail(asset.Folder.Path, asset.FileName).Should().BeTrue();
 
-                moveAssetsService.MoveAsset(asset, sourceFolder, preserveOriginalFile: false).Should().BeFalse();
+                moveAssetsService.MoveAssets(new Asset[] { asset }, sourceFolder, preserveOriginalFile: false).Should().BeFalse();
 
                 File.Exists(sourceImagePath).Should().BeTrue();
 
@@ -621,7 +621,7 @@ namespace JPPhotoManager.Tests.Integration
 
                 Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
 
-                moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
+                moveAssetsService.MoveAssets(new Asset[] { asset }, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
 
                 File.Exists(sourceImagePath).Should().BeFalse();
                 File.Exists(destinationImagePath).Should().BeTrue();
@@ -654,7 +654,7 @@ namespace JPPhotoManager.Tests.Integration
                 Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
                 Func<bool> function = () =>
-                    moveAssetsService.MoveAsset(null, destinationFolder, preserveOriginalFile: false);
+                    moveAssetsService.MoveAssets(null, destinationFolder, preserveOriginalFile: false);
                 function.Should().Throw<ArgumentNullException>();
             }
         }
@@ -685,7 +685,7 @@ namespace JPPhotoManager.Tests.Integration
                 Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
                 Func<bool> function = () =>
-                    moveAssetsService.MoveAsset(new Asset { Folder = null }, destinationFolder, preserveOriginalFile: false);
+                    moveAssetsService.MoveAssets(new Asset[] { new Asset { Folder = null } }, destinationFolder, preserveOriginalFile: false);
                 function.Should().Throw<ArgumentNullException>();
             }
         }
@@ -716,7 +716,7 @@ namespace JPPhotoManager.Tests.Integration
                 Folder destinationFolder = repository.AddFolder(imageDestinationDirectory);
 
                 Func<bool> function = () =>
-                    moveAssetsService.MoveAsset(new Asset { Folder = new Folder { } }, null, preserveOriginalFile: false);
+                    moveAssetsService.MoveAssets(new Asset[] { new Asset { Folder = new Folder { } } }, null, preserveOriginalFile: false);
                 function.Should().Throw<ArgumentNullException>();
             }
         }
@@ -758,7 +758,7 @@ namespace JPPhotoManager.Tests.Integration
                 repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
                 repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
 
-                moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: true).Should().BeTrue();
+                moveAssetsService.MoveAssets(new Asset[] { asset }, destinationFolder, preserveOriginalFile: true).Should().BeTrue();
 
                 File.Exists(sourceImagePath).Should().BeTrue();
                 File.Exists(destinationImagePath).Should().BeTrue();
@@ -816,7 +816,7 @@ namespace JPPhotoManager.Tests.Integration
                 asset.Folder.Should().NotBe(destinationFolder);
 
                 Func<bool> function = () =>
-                    moveAssetsService.MoveAsset(asset, destinationFolder, preserveOriginalFile: true);
+                    moveAssetsService.MoveAssets(new Asset[] { asset }, destinationFolder, preserveOriginalFile: true);
                 function.Should().Throw<ArgumentException>();
             }
         }
@@ -853,7 +853,7 @@ namespace JPPhotoManager.Tests.Integration
 
                 Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
 
-                moveAssetsService.MoveAsset(asset, sourceFolder, preserveOriginalFile: true).Should().BeFalse();
+                moveAssetsService.MoveAssets(new Asset[] { asset }, sourceFolder, preserveOriginalFile: true).Should().BeFalse();
 
                 File.Exists(sourceImagePath).Should().BeTrue();
                 repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
@@ -892,7 +892,7 @@ namespace JPPhotoManager.Tests.Integration
 
                 Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
 
-                moveAssetsService.DeleteAsset(asset, deleteFile: true);
+                moveAssetsService.DeleteAssets(new Asset[] { asset }, deleteFile: true);
 
                 File.Exists(sourceImagePath).Should().BeFalse();
                 repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeFalse();
@@ -933,7 +933,7 @@ namespace JPPhotoManager.Tests.Integration
                 };
 
                 Action action = () =>
-                    moveAssetsService.DeleteAsset(asset, deleteFile: true);
+                    moveAssetsService.DeleteAssets(new Asset[] { asset }, deleteFile: true);
                 action.Should().Throw<ArgumentException>();
             }
         }
@@ -962,7 +962,7 @@ namespace JPPhotoManager.Tests.Integration
                 Folder sourceFolder = repository.AddFolder(dataDirectory);
 
                 Action action = () =>
-                    moveAssetsService.DeleteAsset(null, deleteFile: true);
+                    moveAssetsService.DeleteAssets(null, deleteFile: true);
                 action.Should().Throw<ArgumentNullException>();
             }
         }
@@ -988,7 +988,7 @@ namespace JPPhotoManager.Tests.Integration
                 var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
                 Action action = () =>
-                    moveAssetsService.DeleteAsset(new Asset { Folder = null }, deleteFile: true);
+                    moveAssetsService.DeleteAssets(new Asset[] { new Asset { Folder = null } }, deleteFile: true);
                 action.Should().Throw<ArgumentNullException>();
             }
         }

@@ -237,27 +237,30 @@ namespace JPPhotoManager.UI.ViewModels
                 
                 if (updatedAsset != null)
                 {
-                    RemoveAsset(updatedAsset);
+                    RemoveAssets(new Asset[] { updatedAsset });
                     AddAsset(asset);
                     this.NotifyPropertyChanged(nameof(ObservableAssets));
                 }
             }
         }
 
-        public void RemoveAsset(Asset asset)
+        public void RemoveAssets(Asset[] assets)
         {
-            if (this.ObservableAssets != null)
+            if (this.ObservableAssets != null && assets != null)
             {
-                int position = this.ViewerPosition;
-                this.ObservableAssets.Remove(asset);
-
-                if (position == this.ObservableAssets.Count)
+                foreach (var asset in assets)
                 {
-                    position--;
+                    int position = this.ViewerPosition;
+                    this.ObservableAssets.Remove(asset);
+
+                    if (position == this.ObservableAssets.Count)
+                    {
+                        position--;
+                    }
+
+                    this.ViewerPosition = position;
                 }
-
-                this.ViewerPosition = position;
-
+                
                 this.NotifyPropertyChanged(nameof(ObservableAssets));
             }
         }
@@ -402,7 +405,7 @@ namespace JPPhotoManager.UI.ViewModels
                     break;
 
                 case ReasonEnum.AssetDeleted:
-                    this.RemoveAsset(e.Asset);
+                    this.RemoveAssets(new Asset[] { e.Asset });
                     break;
 
                 case ReasonEnum.FolderCreated:
