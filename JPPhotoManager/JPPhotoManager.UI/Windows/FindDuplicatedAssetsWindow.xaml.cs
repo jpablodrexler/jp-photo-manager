@@ -42,11 +42,7 @@ namespace JPPhotoManager.UI.Windows
             {
                 DuplicatedAssetViewModel viewModel = (DuplicatedAssetViewModel)((FrameworkElement)e.Source).DataContext;
                 Asset asset = viewModel.Asset;
-
-                if (MessageBox.Show($"Are you sure you want to delete {asset.FullPath}?", "Confirm", MessageBoxButton.OKCancel, MessageBoxImage.Question) == MessageBoxResult.OK)
-                {
-                    this.ViewModel.DeleteAsset(viewModel);
-                }
+                this.ViewModel.DeleteAsset(viewModel);
 
                 // TODO: IN THE LIST BOXES, IF THE FILENAME INCLUDES _ IT IS NOT BEING SHOWN.
                 Console.WriteLine("Delete " + asset.FullPath);
