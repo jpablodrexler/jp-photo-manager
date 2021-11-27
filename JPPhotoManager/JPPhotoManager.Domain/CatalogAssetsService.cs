@@ -34,6 +34,7 @@ namespace JPPhotoManager.Domain
         public void CatalogAssets(CatalogChangeCallback callback)
         {
             int cataloguedAssetsBatchCount = 0;
+            List<string> visitedFolders = new List<string>();
 
             try
             {
@@ -46,7 +47,7 @@ namespace JPPhotoManager.Domain
 
                 foreach (Folder folder in foldersToCatalog)
                 {
-                    cataloguedAssetsBatchCount = this.CatalogAssets(folder.Path, callback, cataloguedAssetsBatchCount);
+                    cataloguedAssetsBatchCount = this.CatalogAssets(folder.Path, callback, cataloguedAssetsBatchCount, visitedFolders);
                 }
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
@@ -87,24 +88,29 @@ namespace JPPhotoManager.Domain
             return this.assetRepository.GetFolders();
         }
 
-        private int CatalogAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount)
+        private int CatalogAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, List<string> visitedFolders)
         {
-            this.currentFolderPath = directory;
-            int batchSize = this.userConfigurationService.GetCatalogBatchSize();
-            
-            if (storageService.FolderExists(directory))
+            if (!visitedFolders.Contains(directory))
             {
-                cataloguedAssetsBatchCount = CatalogExistingFolder(directory, callback, cataloguedAssetsBatchCount, batchSize);
-            }
-            else if (!string.IsNullOrEmpty(directory) && !storageService.FolderExists(directory))
-            {
-                cataloguedAssetsBatchCount = CatalogNonExistingFolder(directory, callback, cataloguedAssetsBatchCount, batchSize);
+                this.currentFolderPath = directory;
+                int batchSize = this.userConfigurationService.GetCatalogBatchSize();
+
+                if (storageService.FolderExists(directory))
+                {
+                    cataloguedAssetsBatchCount = CatalogExistingFolder(directory, callback, cataloguedAssetsBatchCount, batchSize, visitedFolders);
+                }
+                else if (!string.IsNullOrEmpty(directory) && !storageService.FolderExists(directory))
+                {
+                    cataloguedAssetsBatchCount = CatalogNonExistingFolder(directory, callback, cataloguedAssetsBatchCount, batchSize);
+                }
+
+                visitedFolders.Add(directory);
             }
 
             return cataloguedAssetsBatchCount;
         }
 
-        private int CatalogExistingFolder(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize)
+        private int CatalogExistingFolder(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize, List<string> visitedFolders)
         {
             Folder folder;
 
@@ -154,7 +160,7 @@ namespace JPPhotoManager.Domain
 
                 foreach (var subdir in subdirectories)
                 {
-                    cataloguedAssetsBatchCount = this.CatalogAssets(subdir.FullName, callback, cataloguedAssetsBatchCount);
+                    cataloguedAssetsBatchCount = this.CatalogAssets(subdir.FullName, callback, cataloguedAssetsBatchCount, visitedFolders);
                 }
             }
 
