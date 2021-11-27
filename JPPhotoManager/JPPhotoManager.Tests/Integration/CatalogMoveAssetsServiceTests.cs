@@ -483,15 +483,15 @@ namespace JPPhotoManager.Tests.Integration
                 File.Exists(destinationImagePath).Should().BeTrue();
 
                 repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeFalse();
-                repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeTrue();
+                repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
 
                 // Validates if the catalogued assets for the source folder are updated properly.
                 var assets = repository.GetCataloguedAssets(sourceFolder.Path);
                 assets.Should().NotContain(a => a.FileName == "Image 4.jpg");
 
-                // Validates if the catalogued assets for the destination folder are updated properly.
+                // Validates if the catalogued assets for the destination folder are not updated yet.
                 assets = repository.GetCataloguedAssets(destinationFolder.Path);
-                assets.Should().ContainSingle(a => a.FileName == "Image 4.jpg");
+                assets.Should().NotContain(a => a.FileName == "Image 4.jpg");
             }
         }
 
@@ -764,15 +764,15 @@ namespace JPPhotoManager.Tests.Integration
                 File.Exists(destinationImagePath).Should().BeTrue();
 
                 repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
-                repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeTrue();
+                repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
 
                 // Validates if the catalogued assets for the source folder are updated properly.
                 var assets = repository.GetCataloguedAssets(sourceFolder.Path);
                 assets.Should().ContainSingle(a => a.FileName == "Image 5.jpg");
 
-                // Validates if the catalogued assets for the destination folder are updated properly.
+                // Validates if the catalogued assets for the destination folder are not updated yet.
                 assets = repository.GetCataloguedAssets(destinationFolder.Path);
-                assets.Should().ContainSingle(a => a.FileName == "Image 5.jpg");
+                assets.Should().NotContain(a => a.FileName == "Image 5.jpg");
             }
         }
 
