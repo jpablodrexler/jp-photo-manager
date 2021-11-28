@@ -20,12 +20,11 @@
         /// where each item is a list of duplicated assets.</returns>
         public List<List<Asset>> GetDuplicatedAssets()
         {
-            List<List<Asset>> result = new List<List<Asset>>();
-            List<Asset> assets = this.assetRepository.GetCataloguedAssets();
+            List<List<Asset>> result = new();
+            List<Asset> assets = new(this.assetRepository.GetCataloguedAssets());
             var assetGroups = assets.GroupBy(a => a.Hash);
             assetGroups = assetGroups.Where(g => g.Count() > 1);
 
-            // TODO: THIS THROWS AN INVALIDOPERATIONEXCEPTION IF NEW ASSETS ARE BEING CATALOGUED AT THE SAME TIME.
             foreach (var group in assetGroups)
             {
                 result.Add(group.ToList());
@@ -34,7 +33,7 @@
             // Removes stale assets, whose files no longer exists.
             foreach (List<Asset> duplicatedSet in result)
             {
-                List<Asset> assetsToRemove = new List<Asset>();
+                List<Asset> assetsToRemove = new();
 
                 for (int i = 0; i < duplicatedSet.Count; i++)
                 {
@@ -53,7 +52,7 @@
             // Removes assets with same hash but different content.
             foreach (List<Asset> duplicatedSet in result)
             {
-                List<Asset> assetsToRemove = new List<Asset>();
+                List<Asset> assetsToRemove = new();
 
                 for (int i = 1; i < duplicatedSet.Count; i++)
                 {
@@ -69,7 +68,7 @@
                 }
             }
 
-            result = result.Where(r => r.Count() > 1).ToList();
+            result = result.Where(r => r.Count > 1).ToList();
 
             // Loads the file information for each asset.
             foreach (List<Asset> duplicatedSet in result)
