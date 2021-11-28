@@ -23,6 +23,8 @@ namespace JPPhotoManager.Infrastructure
         private const string ASSETS_DATA_FILE_PATH = "appsettings:AssetsDataFilePath";
         private const string FOLDERS_DATA_FILE_PATH = "appsettings:FoldersDataFilePath";
         private const string IMPORTS_DATA_FILE_PATH = "appsettings:ImportsDataFilePath";
+        private const string REPOSITORY_OWNER = "appsettings:Repository:Owner";
+        private const string REPOSITORY_NAME = "appsettings:Repository:Name";
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
@@ -156,6 +158,16 @@ namespace JPPhotoManager.Infrastructure
         public int GetCatalogCooldownMinutes()
         {
             return this.configuration.GetValue<int>(CATALOG_COOLDOWN_MINUTES);
+        }
+
+        public string GetRepositoryOwner()
+        {
+            return this.configuration.GetValue<string>(REPOSITORY_OWNER);
+        }
+
+        public string GetRepositoryName()
+        {
+            return this.configuration.GetValue<string>(REPOSITORY_NAME);
         }
 
         public string[] GetRootCatalogFolderPaths()

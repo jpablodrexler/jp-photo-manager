@@ -1,0 +1,62 @@
+﻿using Autofac;
+using Autofac.Extras.Moq;
+using FluentAssertions;
+using JPPhotoManager.Domain;
+using JPPhotoManager.Infrastructure;
+using Microsoft.Extensions.Configuration;
+using Moq;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Xunit;
+
+namespace JPPhotoManager.Tests.Integration
+{
+    public class ReleaseAvailabilityServiceTests
+    {
+        private string dataDirectory;
+        private IConfigurationRoot configuration;
+
+        public ReleaseAvailabilityServiceTests()
+        {
+            dataDirectory = Path.GetDirectoryName(typeof(ApplicationTests).Assembly.Location);
+            dataDirectory = Path.Combine(dataDirectory, "TestFiles");
+
+            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            configurationMock
+                .MockGetValue("appsettings:InitialDirectory", dataDirectory)
+                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, Guid.NewGuid().ToString()))
+                .MockGetValue("appsettings:CatalogBatchSize", "100")
+                .MockGetValue("appsettings:Repository:Owner", "jpablodrexler")
+                .MockGetValue("appsettings:Repository:Name", "jp-photo-manager");
+
+            configuration = configurationMock.Object;
+        }
+
+        [Fact]
+        public async void CheckLatestRelease_ValidUrl_ReturnReleaseData()
+        {
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+
+            using (var mock = AutoMock.GetLoose(
+               cfg =>
+               {
+                   cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
+                   cfg.RegisterType<GitHubReleaseAvailabilityService>().As<IReleaseAvailabilityService>().SingleInstance();
+               }))
+            {
+                var releaseAvailabilityService = mock.Container.Resolve<IReleaseAvailabilityService>();
+                var latestRelease = await releaseAvailabilityService.GetLatestRelease();
+
+                latestRelease.Should().NotBeNull();
+                latestRelease.Name.Should().NotBeNullOrWhiteSpace();
+                latestRelease.PublishedAt.Should().NotBeNull();
+                latestRelease.PublishedAt.Should().BeAfter(DateTime.MinValue);
+                latestRelease.PublishedAt.Should().BeBefore(DateTime.UtcNow);
+            }
+        }
+    }
+}
