@@ -43,7 +43,7 @@ namespace JPPhotoManager.Tests.Integration
                    cfg.RegisterType<GitHubReleaseAvailabilityService>().As<IReleaseAvailabilityService>().SingleInstance();
                }))
             {
-                var releaseAvailabilityService = mock.Container.Resolve<IReleaseAvailabilityService>();
+                var releaseAvailabilityService = mock.Create<IReleaseAvailabilityService>();
                 var latestRelease = await releaseAvailabilityService.GetLatestRelease();
 
                 latestRelease.Should().NotBeNull();
