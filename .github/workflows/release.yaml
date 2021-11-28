@@ -40,7 +40,7 @@ jobs:
         type: 'zip'
         filename: '${{ steps.get_zip_file_name.outputs.ZIP_FILE_NAME }}'
         path: .
-        directory: JPPhotoManager/JPPhotoManager.UI/bin/Release/net6.0-windows/publish
+        directory: JPPhotoManager/JPPhotoManager.UI/bin/Release/net6.0-windows10.0.17763.0/publish
     - uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.RELEASE_TOKEN }}"
