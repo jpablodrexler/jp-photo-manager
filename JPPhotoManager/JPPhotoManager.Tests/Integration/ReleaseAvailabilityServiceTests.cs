@@ -5,12 +5,7 @@ using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace JPPhotoManager.Tests.Integration
@@ -37,7 +32,7 @@ namespace JPPhotoManager.Tests.Integration
         }
 
         [Fact]
-        public async void CheckLatestRelease_ValidUrl_ReturnReleaseData()
+        public async void GetLatestRelease_ReturnReleaseData()
         {
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
 
