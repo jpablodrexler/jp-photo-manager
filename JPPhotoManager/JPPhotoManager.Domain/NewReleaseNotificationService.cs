@@ -19,33 +19,60 @@ namespace JPPhotoManager.Domain
 
         public async Task<Release> CheckNewRelease()
         {
-            Release latestRelease;
+            Release latestRelease = null;
 
             try
             {
                 var aboutInformation = this.userConfigurationService.GetAboutInformation(this.GetType().Assembly);
                 latestRelease = await this.releaseAvailabilityService.GetLatestRelease();
 
-                if (latestRelease != null)
+                if (aboutInformation != null && latestRelease != null)
                 {
-                    latestRelease.IsNewRelease = !string.IsNullOrEmpty(aboutInformation.Version)
-                        && !string.IsNullOrEmpty(latestRelease.Name)
-                        && string.Compare(aboutInformation.Version, latestRelease.Name, StringComparison.OrdinalIgnoreCase) != 0;
+                    latestRelease.IsNewRelease = IsNewRelease(aboutInformation.Version, latestRelease.Name);
                     latestRelease.Success = true;
                 }
             }
             catch (Exception ex)
             {
                 log.Error(ex);
-
-                latestRelease = new Release
-                {
-                    IsNewRelease = false,
-                    Success = false
-                };
             }
 
-            return latestRelease;
+            return latestRelease ?? new Release();
+        }
+
+        private bool IsNewRelease(string currentVersion, string latestReleaseName)
+        {
+            bool result = !string.IsNullOrEmpty(currentVersion) && !string.IsNullOrEmpty(latestReleaseName);
+
+            if (result)
+            {
+                var currentVersionNumbers = GetVersionNumbers(currentVersion);
+                var latestReleaseNumbers = GetVersionNumbers(latestReleaseName);
+                result = currentVersionNumbers.isValid && latestReleaseNumbers.isValid;
+
+                if (result)
+                {
+                    result = latestReleaseNumbers.major > currentVersionNumbers.major ||
+                        (latestReleaseNumbers.major == currentVersionNumbers.major
+                            && latestReleaseNumbers.minor > currentVersionNumbers.minor) ||
+                        (latestReleaseNumbers.major == currentVersionNumbers.major
+                            && latestReleaseNumbers.minor == currentVersionNumbers.minor
+                            && latestReleaseNumbers.build > currentVersionNumbers.build);
+                }
+            }
+
+            return result;
+        }
+
+        private (bool isValid, int major, int minor, int build) GetVersionNumbers(string version)
+        {
+            int major, minor = 0, build = 0;
+            var parts = version.Substring(1).Split(new[] { '.' });
+            bool isValid = int.TryParse(parts[0], out major)
+                && int.TryParse(parts[1], out minor)
+                && int.TryParse(parts[2], out build);
+
+            return (isValid, major, minor, build);
         }
     }
 }
