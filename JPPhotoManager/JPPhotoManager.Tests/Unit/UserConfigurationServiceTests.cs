@@ -44,7 +44,7 @@ namespace JPPhotoManager.Tests.Unit
             AboutInformation result = userConfigurationService.GetAboutInformation(typeof(App).Assembly);
             result.Product.Should().Be("JPPhotoManager");
             result.Version.Should().NotBeEmpty();
-            result.Version.Should().StartWith("Version ");
+            result.Version.Should().StartWith("v");
         }
 
         [Fact]

@@ -48,9 +48,10 @@ namespace JPPhotoManager.Tests.Integration
 
                 latestRelease.Should().NotBeNull();
                 latestRelease.Name.Should().NotBeNullOrWhiteSpace();
-                latestRelease.PublishedAt.Should().NotBeNull();
-                latestRelease.PublishedAt.Should().BeAfter(DateTime.MinValue);
-                latestRelease.PublishedAt.Should().BeBefore(DateTime.UtcNow);
+                latestRelease.PublishedOn.Should().NotBeNull();
+                latestRelease.PublishedOn.Should().BeAfter(DateTime.MinValue);
+                latestRelease.PublishedOn.Should().BeBefore(DateTime.UtcNow);
+                latestRelease.DownloadUrl.Should().NotBeNullOrWhiteSpace();
             }
         }
     }

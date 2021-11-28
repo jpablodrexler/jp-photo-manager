@@ -22,7 +22,8 @@ namespace JPPhotoManager.Infrastructure
             return new Domain.Release
             {
                 Name = release.Name,
-                PublishedAt = release.PublishedAt
+                PublishedOn = release.PublishedAt,
+                DownloadUrl = release.HtmlUrl
             };
         }
     }

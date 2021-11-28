@@ -3,7 +3,9 @@ using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using JPPhotoManager.UI.ViewModels;
 using log4net;
+using Microsoft.Toolkit.Uwp.Notifications;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -27,15 +29,17 @@ namespace JPPhotoManager.UI.Windows
     public partial class MainWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private readonly IApplication application;
         Task catalogTask;
 
-        public MainWindow(ApplicationViewModel viewModel)
+        public MainWindow(ApplicationViewModel viewModel, IApplication application)
         {
             try
             {
                 InitializeComponent();
 
-                var aboutInformation = viewModel.Application.GetAboutInformation(this.GetType().Assembly);
+                this.application = application;
+                var aboutInformation = application.GetAboutInformation(this.GetType().Assembly);
                 viewModel.Product = aboutInformation.Product;
                 viewModel.Version = aboutInformation.Version;
                 this.DataContext = viewModel;
@@ -51,36 +55,14 @@ namespace JPPhotoManager.UI.Windows
             get { return (ApplicationViewModel)this.DataContext; }
         }
 
-        private Task CatalogImages(IApplication assetApp)
-        {
-            return Task.Run(() =>
-            {
-                assetApp.CatalogAssets(
-                    async (e) =>
-                    {
-                        // The InvokeAsync method is used to avoid freezing the application when the task is cancelled.
-                        await Dispatcher.InvokeAsync(() => ViewModel.NotifyCatalogChange(e));
-                    });
-            }, CancellationToken.None);
-        }
-
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             try
             {
                 this.ViewModel?.ChangeAppMode(AppModeEnum.Thumbnails);
-                this.thumbnailsUserControl.GoToFolder(this.ViewModel.Application, this.ViewModel?.CurrentFolder);
+                this.thumbnailsUserControl.GoToFolder(this.application, this.ViewModel?.CurrentFolder);
                 this.folderTreeView.SelectedPath = this.ViewModel?.CurrentFolder;
-
-                ViewModel.StatusMessage = "Cataloging thumbnails for " + ViewModel.CurrentFolder;
-                int minutes = this.ViewModel.Application.GetCatalogCooldownMinutes();
-                
-                while (true)
-                {
-                    catalogTask = this.CatalogImages(this.ViewModel.Application);
-                    await catalogTask.ConfigureAwait(true);
-                    await Task.Delay(1000 * 60 * minutes, CancellationToken.None).ConfigureAwait(true);
-                }
+                await DoBackgroundWork();
             }
             catch (Exception ex)
             {
@@ -184,7 +166,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.thumbnailsUserControl.GoToFolder(this.ViewModel.Application, this.folderTreeView.SelectedPath);
+                this.thumbnailsUserControl.GoToFolder(this.application, this.folderTreeView.SelectedPath);
             }
             catch (Exception ex)
             {
@@ -196,7 +178,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.ViewModel.Application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Center);
+                this.application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Center);
             }
             catch (Exception ex)
             {
@@ -208,7 +190,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.ViewModel.Application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Fill);
+                this.application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Fill);
             }
             catch (Exception ex)
             {
@@ -220,7 +202,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.ViewModel.Application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Fit);
+                this.application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Fit);
             }
             catch (Exception ex)
             {
@@ -232,7 +214,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.ViewModel.Application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Span);
+                this.application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Span);
             }
             catch (Exception ex)
             {
@@ -244,7 +226,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.ViewModel.Application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Stretch);
+                this.application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Stretch);
             }
             catch (Exception ex)
             {
@@ -256,7 +238,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.ViewModel.Application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Tile);
+                this.application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Tile);
             }
             catch (Exception ex)
             {
@@ -268,11 +250,11 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                var duplicates = this.ViewModel.Application.GetDuplicatedAssets();
+                var duplicates = this.application.GetDuplicatedAssets();
 
                 if (duplicates.Count > 0)
                 {
-                    FindDuplicatedAssetsViewModel viewModel = new FindDuplicatedAssetsViewModel(this.ViewModel.Application);
+                    FindDuplicatedAssetsViewModel viewModel = new FindDuplicatedAssetsViewModel(this.application);
                     viewModel.SetDuplicates(duplicates);
                     DuplicatedAssetsWindow duplicatedAssetsWindow = new DuplicatedAssetsWindow(viewModel);
                     duplicatedAssetsWindow.ShowDialog();
@@ -292,7 +274,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                ImportNewAssetsViewModel viewModel = new ImportNewAssetsViewModel(this.ViewModel.Application);
+                ImportNewAssetsViewModel viewModel = new ImportNewAssetsViewModel(this.application);
                 ImportNewAssetsWindow importNewAssetsWindow = new ImportNewAssetsWindow(viewModel);
                 importNewAssetsWindow.ShowDialog();
             }
@@ -306,7 +288,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                var about = this.ViewModel.Application.GetAboutInformation(this.GetType().Assembly);
+                var about = this.application.GetAboutInformation(this.GetType().Assembly);
                 AboutWindow duplicatedAssetsWindow = new AboutWindow(about);
                 duplicatedAssetsWindow.ShowDialog();
             }
@@ -336,10 +318,10 @@ namespace JPPhotoManager.UI.Windows
                 {
                     FolderNavigationWindow folderNavigationWindow = new(
                         new FolderNavigationViewModel(
-                            this.ViewModel.Application,
+                            this.application,
                             assets.First().Folder,
                             this.ViewModel.LastSelectedFolder,
-                            this.ViewModel.Application.GetRecentTargetPaths()));
+                            this.application.GetRecentTargetPaths()));
                     
                     folderNavigationWindow.Closed += (sender, e) =>
                     {
@@ -347,7 +329,7 @@ namespace JPPhotoManager.UI.Windows
                         {
                             bool result = true;
 
-                            result = this.ViewModel.Application.MoveAssets(assets,
+                            result = this.application.MoveAssets(assets,
                                 folderNavigationWindow.ViewModel.SelectedFolder,
                                 preserveOriginalFiles);
 
@@ -388,7 +370,7 @@ namespace JPPhotoManager.UI.Windows
 
                 if (assets != null)
                 {
-                    this.ViewModel.Application.DeleteAssets(assets, deleteFiles: true);
+                    this.application.DeleteAssets(assets, deleteFiles: true);
                     this.ViewModel.RemoveAssets(assets);
                     ShowImage();
                 }
@@ -432,6 +414,67 @@ namespace JPPhotoManager.UI.Windows
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             e.Cancel = catalogTask != null && !catalogTask.IsCompleted;
+        }
+
+        private async Task DoBackgroundWork()
+        {
+            await CheckNewRelease();
+
+            ViewModel.StatusMessage = "Cataloging thumbnails for " + ViewModel.CurrentFolder;
+            int minutes = this.ViewModel.Application.GetCatalogCooldownMinutes();
+
+            while (true)
+            {
+                catalogTask = Task.Run(() =>
+                {
+                    this.application.CatalogAssets(
+                        async (e) =>
+                        {
+                            // The InvokeAsync method is used to avoid freezing the application when the task is cancelled.
+                            await Dispatcher.InvokeAsync(() => ViewModel.NotifyCatalogChange(e));
+                        });
+                }, CancellationToken.None);
+
+                await catalogTask.ConfigureAwait(true);
+                await Task.Delay(1000 * 60 * minutes, CancellationToken.None).ConfigureAwait(true);
+            }
+        }
+
+        private async Task CheckNewRelease()
+        {
+            var latestRelease = await this.application.CheckNewRelease().ConfigureAwait(true);
+
+            if (latestRelease != null && latestRelease.Success && latestRelease.IsNewRelease)
+            {
+                string newReleaseTitle = $"New Release {latestRelease.Name} available!";
+                string newReleaseMessage = $"There is a new release of the application: {latestRelease.Name}, " +
+                    $"published on {latestRelease.PublishedOn.Value.LocalDateTime.ToShortDateString()}! " +
+                    $"To download it please click here.";
+
+                new ToastContentBuilder()
+                    .AddArgument("action", "viewConversation")
+                    .AddArgument("conversationId", 10000)
+                    .AddArgument("releaseDownloadUrl", latestRelease.DownloadUrl)
+                    .AddText(newReleaseTitle)
+                    .AddText(newReleaseMessage)
+                    .Show();
+
+                // Listen to notification activation
+                ToastNotificationManagerCompat.OnActivated += toastArgs =>
+                {
+                    // Obtain the arguments from the notification
+                    ToastArguments args = ToastArguments.Parse(toastArgs.Argument);
+                    string releaseDownloadUrl = args["releaseDownloadUrl"];
+
+                    if (!string.IsNullOrWhiteSpace(releaseDownloadUrl))
+                    {
+                        Process process = new();
+                        process.StartInfo.FileName = releaseDownloadUrl;
+                        process.StartInfo.UseShellExecute = true;
+                        process.Start();
+                    }
+                };
+            }
         }
     }
 }

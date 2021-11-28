@@ -14,6 +14,7 @@ namespace JPPhotoManager.Application
         private readonly IUserConfigurationService userConfigurationService;
         private readonly IStorageService storageService;
         private readonly IProcessService processService;
+        private readonly INewReleaseNotificationService newReleaseNotificationService;
 
         public Application(
             IImportNewAssetsService importNewAssetsService,
@@ -23,7 +24,8 @@ namespace JPPhotoManager.Application
             IAssetRepository assetRepository,
             IUserConfigurationService userConfigurationService,
             IStorageService storageService,
-            IProcessService processService)
+            IProcessService processService,
+            INewReleaseNotificationService newReleaseNotificationService)
         {
             this.importNewAssetsService = importNewAssetsService;
             this.catalogAssetsService = catalogAssetsService;
@@ -33,6 +35,7 @@ namespace JPPhotoManager.Application
             this.userConfigurationService = userConfigurationService;
             this.storageService = storageService;
             this.processService = processService;
+            this.newReleaseNotificationService = newReleaseNotificationService;
         }
 
         public Asset[] GetAssets(string directory)
@@ -167,6 +170,11 @@ namespace JPPhotoManager.Application
         public bool IsAlreadyRunning()
         {
             return this.processService.IsAlreadyRunning();
+        }
+
+        public Task<Release> CheckNewRelease()
+        {
+            return this.newReleaseNotificationService.CheckNewRelease();
         }
     }
 }
