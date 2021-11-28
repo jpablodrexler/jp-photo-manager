@@ -37,3 +37,4 @@ Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoM
 * [Moq framework for .NET](https://github.com/moq/moq4)
 * [Fluent Assertions](https://fluentassertions.com/)
 * [log4net](https://logging.apache.org/log4net/)
+* [Octokit.net](https://octokitnet.readthedocs.io/en/latest/)
