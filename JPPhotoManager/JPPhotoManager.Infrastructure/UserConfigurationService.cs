@@ -90,7 +90,7 @@ namespace JPPhotoManager.Infrastructure
         {
             string product = null;
             string copyright = null;
-            string version = "Version " + GetProductVersion();
+            string version = "v" + GetProductVersion();
             var attrs = assembly.GetCustomAttributes(typeof(AssemblyProductAttribute));
 
             if (attrs.SingleOrDefault() is AssemblyProductAttribute assemblyProduct)

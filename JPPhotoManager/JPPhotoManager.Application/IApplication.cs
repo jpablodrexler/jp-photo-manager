@@ -26,5 +26,6 @@ namespace JPPhotoManager.Application
         List<string> GetRecentTargetPaths();
         Folder[] GetRootCatalogFolders();
         bool IsAlreadyRunning();
+        Task<Release> CheckNewRelease();
     }
 }

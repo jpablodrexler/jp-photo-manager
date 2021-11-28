@@ -36,7 +36,8 @@ namespace JPPhotoManager.Tests.Unit
                     .Returns(Task.FromResult(new Release
                     {
                         Name = latestReleaseName,
-                        PublishedAt = new DateTime(2021, 11, 27)
+                        PublishedOn = new DateTime(2021, 11, 27),
+                        DownloadUrl = $"https://github.com/jpablodrexler/jp-photo-manager/releases/tag/{latestReleaseName}"
                     }));
 
                 mock.Mock<IUserConfigurationService>().Setup(s => s.GetAboutInformation(It.IsAny<Assembly>()))
@@ -50,9 +51,10 @@ namespace JPPhotoManager.Tests.Unit
 
                 newReleaseResult.Should().NotBeNull();
                 newReleaseResult.Name.Should().Be(latestReleaseName);
-                newReleaseResult.PublishedAt.Should().NotBeNull();
-                newReleaseResult.PublishedAt.Should().BeAfter(DateTime.MinValue);
-                newReleaseResult.PublishedAt.Should().BeBefore(DateTime.UtcNow);
+                newReleaseResult.PublishedOn.Should().NotBeNull();
+                newReleaseResult.PublishedOn.Should().BeAfter(DateTime.MinValue);
+                newReleaseResult.PublishedOn.Should().BeBefore(DateTime.UtcNow);
+                newReleaseResult.DownloadUrl.Should().NotBeNullOrWhiteSpace();
                 newReleaseResult.IsNewRelease.Should().Be(isNewRelease);
                 newReleaseResult.Success.Should().BeTrue();
             }
