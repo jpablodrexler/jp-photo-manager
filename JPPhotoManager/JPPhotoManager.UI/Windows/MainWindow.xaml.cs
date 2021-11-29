@@ -386,6 +386,11 @@ namespace JPPhotoManager.UI.Windows
             DeleteAssets();
         }
 
+        private void Exit_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
+
         private void SortAssetsByFileName_Click(object sender, RoutedEventArgs e)
         {
             this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);

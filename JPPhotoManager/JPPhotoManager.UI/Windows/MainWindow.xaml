@@ -24,7 +24,7 @@
                 <MenuItem Header="Copy Assets (Ctrl+C)..." Click="CopyAssets_Click" Style="{StaticResource MenuItemStyle}" />
                 <MenuItem Header="Move Assets (Ctrl+M)..." Click="MoveAssets_Click" Style="{StaticResource MenuItemStyle}" />
                 <MenuItem Header="Delete Assets (Del)" Click="DeleteAssets_Click" Style="{StaticResource MenuItemStyle}" />
-                <MenuItem Header="_Exit" Style="{StaticResource MenuItemStyle}" />
+                <MenuItem Header="_Exit" Click="Exit_Click" Style="{StaticResource MenuItemStyle}" />
             </MenuItem>
             <MenuItem Header="_View">
                 <MenuItem Header="_Sort" Style="{StaticResource MenuItemStyle}" >
