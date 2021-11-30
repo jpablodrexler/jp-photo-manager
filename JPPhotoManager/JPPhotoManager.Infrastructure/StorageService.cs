@@ -1,6 +1,6 @@
-﻿using JPPhotoManager.Domain;
+﻿using JPPhotoManager.Common;
+using JPPhotoManager.Domain;
 using System.IO;
-using System.Text.Json;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Infrastructure
@@ -53,52 +53,14 @@ namespace JPPhotoManager.Infrastructure
             Directory.CreateDirectory(directory);
         }
 
-        public T ReadObjectFromJson<T>(string jsonFilePath)
+        public T ReadObjectFromJsonFile<T>(string jsonFilePath)
         {
-            T result = default(T);
-            string json;
-
-            if (File.Exists(jsonFilePath))
-            {
-                using (StreamReader reader = new StreamReader(jsonFilePath))
-                {
-                    json = reader.ReadToEnd();
-                }
-
-                result = JsonSerializer.Deserialize<T>(json);
-            }
-            
-            return result;
+            return FileHelper.ReadObjectFromJsonFile<T>(jsonFilePath);
         }
 
-        public void WriteObjectToJson(object anObject, string jsonFilePath)
+        public void WriteObjectToJsonFile(object anObject, string jsonFilePath)
         {
-            string json = JsonSerializer.Serialize(anObject, new JsonSerializerOptions { WriteIndented = true });
-
-            using (StreamWriter writer = new StreamWriter(jsonFilePath, false))
-            {
-                writer.Write(json);
-            }
-        }
-
-        public void WriteToCsvFile<T>(string dataFilePath, List<T> records, string[] headers, Func<T, object[]> mappingFunc)
-        {
-            var separator = Thread.CurrentThread.CurrentUICulture.TextInfo.ListSeparator;
-            
-            using (StreamWriter writer = new StreamWriter(dataFilePath, false))
-            {
-                writer.WriteLine(string.Join(separator, headers));
-
-                for (int i = 0; i < records.Count; i++)
-                {
-                    T record = records[i];
-                    string line = string.Join(separator, mappingFunc(record));
-                    writer.WriteLine(line);
-                }
-
-                writer.Flush();
-                writer.Close();
-            }
+            FileHelper.WriteObjectToJsonFile(anObject, jsonFilePath);
         }
 
         public void DeleteFile(string directory, string fileName)
@@ -124,162 +86,42 @@ namespace JPPhotoManager.Infrastructure
 
         public BitmapImage LoadBitmapImage(byte[] buffer, int width, int height)
         {
-            // TODO: If the stream is disposed by a using block, the thumbnail is not shown. Find a way to dispose of the stream.
-            MemoryStream stream = new MemoryStream(buffer);
-            BitmapImage thumbnailImage = new BitmapImage();
-            thumbnailImage.BeginInit();
-            thumbnailImage.CacheOption = BitmapCacheOption.None;
-            thumbnailImage.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-            thumbnailImage.StreamSource = stream;
-            thumbnailImage.DecodePixelWidth = width;
-            thumbnailImage.DecodePixelHeight = height;
-            thumbnailImage.EndInit();
-            thumbnailImage.Freeze();
-
-            return thumbnailImage;
+            return BitmapHelper.LoadBitmapImage(buffer, width, height);
         }
 
         public BitmapImage LoadBitmapImage(byte[] buffer, Rotation rotation, int width, int height)
         {
-            BitmapImage image = null;
-
-            using (MemoryStream stream = new MemoryStream(buffer))
-            {
-                image = new BitmapImage();
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-                image.StreamSource = stream;
-                image.Rotation = rotation;
-                image.DecodePixelWidth = width;
-                image.DecodePixelHeight = height;
-                image.EndInit();
-                image.Freeze();
-            }
-
-            return image;
+            return BitmapHelper.LoadBitmapImage(buffer, rotation, width, height);
         }
 
         public BitmapImage LoadBitmapImage(string imagePath, Rotation rotation)
         {
-            BitmapImage image = null;
-
-            if (File.Exists(imagePath))
-            {
-                image = new BitmapImage();
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-                image.UriSource = new Uri(imagePath);
-                image.Rotation = rotation;
-                image.EndInit();
-                image.Freeze();
-            }
-
-            return image;
+            return BitmapHelper.LoadBitmapImage(imagePath, rotation);
         }
 
         public BitmapImage LoadBitmapImage(byte[] buffer, Rotation rotation)
         {
-            BitmapImage image = new BitmapImage();
-
-            using (MemoryStream stream = new MemoryStream(buffer))
-            {
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad;
-                image.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-                image.StreamSource = stream;
-                image.Rotation = rotation;
-                image.EndInit();
-                image.Freeze();
-            }
-
-            return image;
+            return BitmapHelper.LoadBitmapImage(buffer, rotation);
         }
 
         public ushort? GetExifOrientation(byte[] buffer)
         {
-            ushort? result = null;
-            
-            using (MemoryStream stream = new MemoryStream(buffer))
-            {
-                BitmapFrame bitmapFrame = BitmapFrame.Create(stream);
-                BitmapMetadata bitmapMetadata = bitmapFrame.Metadata as BitmapMetadata;
-
-                if (bitmapMetadata != null && bitmapMetadata.ContainsQuery("System.Photo.Orientation"))
-                {
-                    object value = bitmapMetadata.GetQuery("System.Photo.Orientation");
-
-                    if (value != null)
-                    {
-                        result = (ushort)value;
-                    }
-                }
-            }
-
-            return result;
+            return ExifHelper.GetExifOrientation(buffer);
         }
 
         public Rotation GetImageRotation(ushort exifOrientation)
         {
-            Rotation rotation = Rotation.Rotate0;
-
-            switch (exifOrientation)
-            {
-                case 1:
-                    rotation = Rotation.Rotate0;
-                    break;
-                case 2:
-                    rotation = Rotation.Rotate0; // FlipX
-                    break;
-                case 3:
-                    rotation = Rotation.Rotate180;
-                    break;
-                case 4:
-                    rotation = Rotation.Rotate180; // FlipX
-                    break;
-                case 5:
-                    rotation = Rotation.Rotate90; // FlipX
-                    break;
-                case 6:
-                    rotation = Rotation.Rotate90;
-                    break;
-                case 7:
-                    rotation = Rotation.Rotate270; // FlipX
-                    break;
-                case 8:
-                    rotation = Rotation.Rotate270;
-                    break;
-                default:
-                    rotation = Rotation.Rotate0;
-                    break;
-            }
-
-            return rotation;
+            return ExifHelper.GetImageRotation(exifOrientation);
         }
 
         public byte[] GetJpegBitmapImage(BitmapImage thumbnailImage)
         {
-            return GetBitmapImage(thumbnailImage, new JpegBitmapEncoder());
+            return BitmapHelper.GetJpegBitmapImage(thumbnailImage);
         }
 
         public byte[] GetPngBitmapImage(BitmapImage thumbnailImage)
         {
-            return GetBitmapImage(thumbnailImage, new PngBitmapEncoder());
-        }
-
-        private byte[] GetBitmapImage(BitmapImage thumbnailImage, BitmapEncoder encoder)
-        {
-            byte[] imageBuffer;
-            encoder.Frames.Add(BitmapFrame.Create(thumbnailImage));
-
-            using (var memoryStream = new MemoryStream())
-            {
-                encoder.Save(memoryStream);
-                imageBuffer = memoryStream.ToArray();
-            }
-
-            return imageBuffer;
+            return BitmapHelper.GetPngBitmapImage(thumbnailImage);
         }
 
         public bool HasSameContent(Asset assetA, Asset assetB)

@@ -118,8 +118,8 @@ namespace JPPhotoManager.Tests.Integration
             string jsonPath = Path.Combine(dataDirectory, "test.json");
 
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
-            storageService.WriteObjectToJson(writtenList, jsonPath);
-            List<string> readList = storageService.ReadObjectFromJson<List<string>>(jsonPath);
+            storageService.WriteObjectToJsonFile(writtenList, jsonPath);
+            List<string> readList = storageService.ReadObjectFromJsonFile<List<string>>(jsonPath);
 
             readList.Should().HaveSameCount(writtenList);
             readList[0].Should().Be(writtenList[0]);

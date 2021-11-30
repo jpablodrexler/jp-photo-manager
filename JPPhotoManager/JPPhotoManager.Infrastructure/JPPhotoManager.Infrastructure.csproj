@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\JPPhotoManager.Common\JPPhotoManager.Common.csproj" />
     <ProjectReference Include="..\JPPhotoManager.Domain\JPPhotoManager.Domain.csproj" />
   </ItemGroup>
 
