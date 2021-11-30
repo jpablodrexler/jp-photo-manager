@@ -10,9 +10,8 @@ namespace JPPhotoManager.Domain
         List<DirectoryInfo> GetRecursiveSubDirectories(string directoryPath);
         string ResolveDataDirectory(int storageVersion);
         void CreateDirectory(string directory);
-        T ReadObjectFromJson<T>(string jsonFilePath);
-        void WriteObjectToJson(object anObject, string jsonFilePath);
-        void WriteToCsvFile<T>(string dataFilePath, List<T> records, string[] headers, Func<T, object[]> mappingFunc);
+        T ReadObjectFromJsonFile<T>(string jsonFilePath);
+        void WriteObjectToJsonFile(object anObject, string jsonFilePath);
         void DeleteFile(string directory, string fileName);
         string[] GetFileNames(string directory);
         byte[] GetFileBytes(string filePath);
