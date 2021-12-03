@@ -1,4 +1,6 @@
-﻿namespace JPPhotoManager.Domain
+﻿using JPPhotoManager.Domain.Interfaces;
+
+namespace JPPhotoManager.Domain
 {
     public class FindDuplicatedAssetsService : IFindDuplicatedAssetsService
     {

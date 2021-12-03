@@ -1,4 +1,5 @@
 ﻿using JPPhotoManager.Domain;
+using JPPhotoManager.Domain.Interfaces;
 using System.Reflection;
 using System.Windows.Media.Imaging;
 

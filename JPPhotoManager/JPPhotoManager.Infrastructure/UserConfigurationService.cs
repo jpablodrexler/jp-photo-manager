@@ -1,4 +1,5 @@
 ﻿using JPPhotoManager.Domain;
+using JPPhotoManager.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Win32;
 using System.Diagnostics;

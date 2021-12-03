@@ -1,5 +1,6 @@
 ﻿using JPPhotoManager.Common;
 using JPPhotoManager.Domain;
+using JPPhotoManager.Domain.Interfaces;
 using System.IO;
 using System.Windows.Media.Imaging;
 

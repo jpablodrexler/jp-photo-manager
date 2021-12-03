@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Windows.Media.Imaging;
 
-namespace JPPhotoManager.Domain
+namespace JPPhotoManager.Domain.Interfaces
 {
     public interface IStorageService
     {
