@@ -1,6 +1,6 @@
 ﻿using System.Windows.Media.Imaging;
 
-namespace JPPhotoManager.Domain
+namespace JPPhotoManager.Domain.Interfaces
 {
     public interface IAssetRepository
     {

@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using JPPhotoManager.Domain.Interfaces;
+using System.IO;
 
 namespace JPPhotoManager.Domain
 {
@@ -7,16 +8,13 @@ namespace JPPhotoManager.Domain
         private const int RECENT_TARGET_PATHS_MAX_COUNT = 20;
         private readonly IAssetRepository assetRepository;
         private readonly IStorageService storageService;
-        private readonly ICatalogAssetsService catalogAssetsService;
 
         public MoveAssetsService(
             IAssetRepository assetRepository,
-            IStorageService storageService,
-            ICatalogAssetsService catalogAssetsService)
+            IStorageService storageService)
         {
             this.assetRepository = assetRepository;
             this.storageService = storageService;
-            this.catalogAssetsService = catalogAssetsService;
         }
 
         public bool MoveAssets(Asset[] assets, Folder destinationFolder, bool preserveOriginalFiles)

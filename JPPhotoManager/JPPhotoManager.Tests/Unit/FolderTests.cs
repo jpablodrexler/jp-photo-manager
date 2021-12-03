@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using JPPhotoManager.Domain;
+using JPPhotoManager.Domain.Interfaces;
 using JPPhotoManager.Infrastructure;
 using Moq;
 using System.IO;

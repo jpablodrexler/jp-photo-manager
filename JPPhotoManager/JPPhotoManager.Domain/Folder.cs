@@ -1,4 +1,6 @@
-﻿namespace JPPhotoManager.Domain
+﻿using JPPhotoManager.Domain.Interfaces;
+
+namespace JPPhotoManager.Domain
 {
     public class Folder
     {
@@ -17,8 +19,7 @@
             }
         }
 
-        // TODO: Remove storageService parameter.
-        public bool IsParentOf(Folder otherFolder, IStorageService storageService)
+        public bool IsParentOf(Folder otherFolder)
         {
             bool result;
             string[] thisPathDirectories = this.Path.Split(System.IO.Path.DirectorySeparatorChar);

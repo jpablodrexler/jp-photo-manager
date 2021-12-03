@@ -2,6 +2,7 @@
 using Autofac.Extras.Moq;
 using FluentAssertions;
 using JPPhotoManager.Domain;
+using JPPhotoManager.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using System.IO;

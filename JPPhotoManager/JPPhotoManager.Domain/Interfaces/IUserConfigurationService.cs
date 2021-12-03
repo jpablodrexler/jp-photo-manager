@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace JPPhotoManager.Domain
+namespace JPPhotoManager.Domain.Interfaces
 {
     public interface IUserConfigurationService
     {

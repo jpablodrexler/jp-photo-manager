@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using JPPhotoManager.Domain.Interfaces;
+using System.IO;
 
 namespace JPPhotoManager.Domain
 {

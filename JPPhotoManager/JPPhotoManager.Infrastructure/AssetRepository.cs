@@ -1,4 +1,5 @@
 using JPPhotoManager.Domain;
+using JPPhotoManager.Domain.Interfaces;
 using log4net;
 using SimplePortableDatabase;
 using System.Data;
@@ -477,7 +478,7 @@ namespace JPPhotoManager.Infrastructure
         public Folder[] GetSubFolders(Folder parentFolder, bool includeHidden)
         {
             Folder[] folders = GetFolders();
-            folders = folders.Where(f => parentFolder.IsParentOf(f, null)).ToArray();
+            folders = folders.Where(f => parentFolder.IsParentOf(f)).ToArray();
             return folders;
         }
 
