@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using JPPhotoManager.Domain.Interfaces;
+using log4net;
 using System.Reflection;
 
 namespace JPPhotoManager.Domain
