@@ -29,7 +29,7 @@ namespace JPPhotoManager.Tests.Integration
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
-                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, Guid.NewGuid().ToString()))
+                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))
                 .MockGetValue("appsettings:CatalogBatchSize", "100");
 
             configuration = configurationMock.Object;
@@ -59,7 +59,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
             {
-                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()));
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
@@ -112,7 +112,7 @@ namespace JPPhotoManager.Tests.Integration
             {
                 int batchSize = 5;
 
-                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()));
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetCatalogBatchSize()).Returns(batchSize);
@@ -153,7 +153,7 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void CatalogFolderRemovesDeletedFileTest()
         {
-            string appDataFolder = Path.Combine(dataDirectory, Guid.NewGuid().ToString());
+            string appDataFolder = Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString());
             int batchSize = 1000;
             string deletedFile;
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
@@ -231,7 +231,7 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void CatalogFolderRemovesDeletedFileLargerThanBatchSizeTest()
         {
-            string appDataFolder = Path.Combine(dataDirectory, Guid.NewGuid().ToString());
+            string appDataFolder = Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString());
             int batchSize = 1000;
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
             List<string> fileList = new List<string>();
@@ -317,7 +317,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
             {
-                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()));
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(Path.Combine(dataDirectory, "NonExistent"));
 
                 var repository = mock.Container.Resolve<IAssetRepository>();
@@ -997,7 +997,7 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void LogOnExceptionTest()
         {
-            string appDataFolder = Path.Combine(dataDirectory, Guid.NewGuid().ToString());
+            string appDataFolder = Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString());
 
             using (var mock = AutoMock.GetLoose(
                 cfg =>
@@ -1055,7 +1055,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 }))
             {
-                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, Guid.NewGuid().ToString()));
+                mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()));
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(dataDirectory);
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetOneDriveDirectory()).Returns(dataDirectory);
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);

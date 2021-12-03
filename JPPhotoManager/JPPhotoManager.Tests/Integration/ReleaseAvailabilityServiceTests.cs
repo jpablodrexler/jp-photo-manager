@@ -24,7 +24,7 @@ namespace JPPhotoManager.Tests.Integration
             Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
-                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, Guid.NewGuid().ToString()))
+                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))
                 .MockGetValue("appsettings:CatalogBatchSize", "100")
                 .MockGetValue("appsettings:Repository:Owner", "jpablodrexler")
                 .MockGetValue("appsettings:Repository:Name", "jp-photo-manager");
