@@ -110,4 +110,7 @@
     <ProjectReference Include="..\JPPhotoManager.UI\JPPhotoManager.UI.csproj" />
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="rmdir /S /Q $(OutDir)TestFiles\ApplicationData\" />
+  </Target>
 </Project>
