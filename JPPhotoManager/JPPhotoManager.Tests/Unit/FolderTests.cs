@@ -140,8 +140,7 @@ namespace JPPhotoManager.Tests.Unit
             string absoluteTestFolderPath2 = Path.Combine(dataDirectory, testFolderPath2);
 
             Mock<IUserConfigurationService> userConfigurationService = new Mock<IUserConfigurationService>();
-            IStorageService storageService = new StorageService(userConfigurationService.Object);
-
+            
             Folder folder1 = new Folder
             {
                 Path = absoluteTestFolderPath1
@@ -152,7 +151,7 @@ namespace JPPhotoManager.Tests.Unit
                 Path = absoluteTestFolderPath2
             };
 
-            bool result = folder1.IsParentOf(folder2, storageService);
+            bool result = folder1.IsParentOf(folder2);
             result.Should().Be(expected);
         }
     }

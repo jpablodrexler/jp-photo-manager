@@ -4,6 +4,7 @@ using FluentAssertions;
 using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using JPPhotoManager.UI.ViewModels;
+using System.Collections.ObjectModel;
 using Xunit;
 
 namespace JPPhotoManager.Tests.Unit
@@ -20,11 +21,10 @@ namespace JPPhotoManager.Tests.Unit
                 Folder sourceFolder = new Folder { Path = @"D:\Data\Folder1" };
                 Folder selectedFolder = new Folder { Path = @"D:\Data\Folder2" };
 
-                var viewModel = mock.Container.Resolve<FolderNavigationViewModel>(
-                    new NamedParameter("sourceFolder", sourceFolder),
-                    new NamedParameter("lastSelectedFolder", selectedFolder),
-                    new NamedParameter("recentTargetPaths", new List<string>()));
-
+                var viewModel = mock.Container.Resolve<FolderNavigationViewModel>();
+                viewModel.SourceFolder = sourceFolder;
+                viewModel.LastSelectedFolder = selectedFolder;
+                viewModel.RecentTargetPaths = new ObservableCollection<string>();
                 viewModel.TargetPath = @"D:\Data\Folder2";
                 viewModel.HasConfirmed = true;
                 
@@ -47,11 +47,10 @@ namespace JPPhotoManager.Tests.Unit
 
                 Folder sourceFolder = new Folder { Path = sourcePath };
 
-                var viewModel = mock.Container.Resolve<FolderNavigationViewModel>(
-                    new NamedParameter("sourceFolder", sourceFolder),
-                    new NamedParameter("lastSelectedFolder", null),
-                    new NamedParameter("recentTargetPaths", new List<string>()));
-
+                var viewModel = mock.Container.Resolve<FolderNavigationViewModel>();
+                viewModel.SourceFolder = sourceFolder;
+                viewModel.LastSelectedFolder = null;
+                viewModel.RecentTargetPaths = new ObservableCollection<string>();
                 viewModel.TargetPath = selectedPath;
                 viewModel.CanConfirm.Should().Be(expected);
             }
