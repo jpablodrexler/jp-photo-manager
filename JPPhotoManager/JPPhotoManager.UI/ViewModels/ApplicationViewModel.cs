@@ -1,10 +1,13 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.UI.ViewModels
 {
@@ -456,6 +459,71 @@ namespace JPPhotoManager.UI.ViewModels
             result += this.SortAscending ? " ascending" : " descending";
 
             return result;
+        }
+
+        public Folder[] GetRootCatalogFolders()
+        {
+            return this.Application.GetRootCatalogFolders();
+        }
+
+        public Folder[] GetSubFolders(Folder parentFolder, bool includeHidden)
+        {
+            return this.Application.GetSubFolders(parentFolder, includeHidden);
+        }
+
+        public BitmapImage LoadCurrentAssetBitmapImage()
+        {
+            return this.Application.LoadBitmapImage(this.CurrentAsset.FullPath, this.CurrentAsset.ImageRotation);
+        }
+
+        public AboutInformation GetAboutInformation()
+        {
+            return this.Application.GetAboutInformation(this.GetType().Assembly);
+        }
+
+        public void SetAsWallpaper(WallpaperStyle wallpaperStyle)
+        {
+            this.Application.SetAsWallpaper(this.CurrentAsset, wallpaperStyle);
+        }
+
+        public Task<Release> CheckNewRelease()
+        {
+            return this.Application.CheckNewRelease();
+        }
+
+        public int GetCatalogCooldownMinutes()
+        {
+            return this.Application.GetCatalogCooldownMinutes();
+        }
+
+        public void CatalogAssets(CatalogChangeCallback callback)
+        {
+            this.Application.CatalogAssets(callback);
+        }
+
+        public void DeleteAssets(Asset[] assets, bool deleteFiles)
+        {
+            this.Application.DeleteAssets(assets, deleteFiles);
+        }
+
+        public bool MoveAssets(Asset[] assets, Folder destinationFolder, bool preserveOriginalFiles)
+        {
+            return this.Application.MoveAssets(assets, destinationFolder, preserveOriginalFiles);
+        }
+
+        public List<string> GetRecentTargetPaths()
+        {
+            return this.Application.GetRecentTargetPaths();
+        }
+
+        public List<List<Asset>> GetDuplicatedAssets()
+        {
+            return this.Application.GetDuplicatedAssets();
+        }
+
+        public Asset[] GetAssets(string directory)
+        {
+            return this.Application.GetAssets(directory);
         }
     }
 }

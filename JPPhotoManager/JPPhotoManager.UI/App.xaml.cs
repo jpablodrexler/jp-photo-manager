@@ -81,6 +81,9 @@ namespace JPPhotoManager.UI
             services.AddSingleton<Application.IApplication, Application.Application>();
             services.AddSingleton<MainWindow>();
             services.AddSingleton<ApplicationViewModel>();
+            services.AddTransient<FindDuplicatedAssetsViewModel>();
+            services.AddTransient<FolderNavigationViewModel>();
+            services.AddTransient<ImportNewAssetsViewModel>();
         }
     }
 }

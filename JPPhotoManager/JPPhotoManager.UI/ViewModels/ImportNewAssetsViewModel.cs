@@ -1,7 +1,9 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace JPPhotoManager.UI.ViewModels
 {
@@ -115,6 +117,28 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 this.Imports.MoveDown(definition);
             }
+        }
+
+        public ImportNewAssetsConfiguration GetImportNewAssetsConfiguration()
+        {
+            return this.Application.GetImportNewAssetsConfiguration();
+        }
+
+        public void Save()
+        {
+            ImportNewAssetsConfiguration configuration = new ImportNewAssetsConfiguration();
+            configuration.Imports.AddRange(this.Imports);
+            this.Application.SetImportNewAssetsConfiguration(configuration);
+        }
+
+        public Task<ObservableCollection<ImportNewAssetsResult>> Import(StatusChangeCallback callback)
+        {
+            return Task.Run(() =>
+            {
+                this.Save();
+                var results = this.Application.ImportNewAssets(callback);
+                return new ObservableCollection<ImportNewAssetsResult>(results);
+            });
         }
     }
 }

@@ -6,8 +6,7 @@ namespace JPPhotoManager.UI.ViewModels
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
-        // TODO: INJECT THIS OBJECT DIRECTLY TO THE WPF COMPONENTS INSTEAD OF HAVING THEM USE THIS PROPERTY.
-        public T Application { get; private set; }
+        protected T Application { get; private set; }
 
         public BaseViewModel(T application)
         {

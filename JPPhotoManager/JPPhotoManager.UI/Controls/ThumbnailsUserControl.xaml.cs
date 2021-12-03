@@ -40,14 +40,14 @@ namespace JPPhotoManager.UI.Controls
             get { return (ApplicationViewModel)this.DataContext; }
         }
 
-        public async void GoToFolder(IApplication assetApp, string selectedImagePath)
+        public async void GoToFolder(string selectedImagePath)
         {
             try
             {
                 if (!this.ViewModel.IsRefreshingFolders)
                 {
                     this.ViewModel.CurrentFolder = selectedImagePath;
-                    Asset[] assets = await GetAssets(assetApp, ViewModel.CurrentFolder).ConfigureAwait(true);
+                    Asset[] assets = await GetAssets(this.ViewModel.CurrentFolder).ConfigureAwait(true);
                     this.ViewModel.SetAssets(assets);
 
                     if (this.thumbnailsListView.Items.Count > 0)
@@ -63,9 +63,9 @@ namespace JPPhotoManager.UI.Controls
             }
         }
 
-        private Task<Asset[]> GetAssets(IApplication assetApp, string folder)
+        private Task<Asset[]> GetAssets(string folder)
         {
-            return Task.Run(() => assetApp.GetAssets(folder));
+            return Task.Run(() => this.ViewModel.GetAssets(folder));
         }
 
         private void ContentControl_MouseDown(object sender, MouseButtonEventArgs e)

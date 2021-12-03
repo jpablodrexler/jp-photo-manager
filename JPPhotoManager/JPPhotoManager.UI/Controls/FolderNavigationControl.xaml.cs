@@ -59,7 +59,7 @@ namespace JPPhotoManager.UI.Controls
             try
             {
                 foldersTreeView.Items.Clear();
-                Folder[] rootFolders = this.ViewModel.Application.GetRootCatalogFolders();
+                Folder[] rootFolders = this.ViewModel.GetRootCatalogFolders();
                 
                 foreach (Folder folder in rootFolders)
                 {
@@ -89,7 +89,7 @@ namespace JPPhotoManager.UI.Controls
             {
                 item.Items.Clear();
 
-                Folder[] folders = this.ViewModel.Application.GetSubFolders((Folder)item.Tag, includeHidden);
+                Folder[] folders = this.ViewModel.GetSubFolders((Folder)item.Tag, includeHidden);
                 folders = folders.OrderBy(f => f.Name).ToArray();
 
                 foreach (Folder folder in folders)
