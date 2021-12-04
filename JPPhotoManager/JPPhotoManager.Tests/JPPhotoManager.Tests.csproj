@@ -12,6 +12,8 @@
 	<FileVersion>1.0.0.0</FileVersion>
 
     <Product>JPPhotoManager</Product>
+
+    <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
   <ItemGroup>
