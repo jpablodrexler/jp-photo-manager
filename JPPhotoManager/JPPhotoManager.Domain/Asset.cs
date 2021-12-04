@@ -18,7 +18,7 @@ namespace JPPhotoManager.Domain
         public DateTime ThumbnailCreationDateTime { get; set; }
         public string Hash { get; set; }
         public BitmapImage ImageData { get; set; }
-        public string FullPath => this.Folder != null ? Path.Combine(this.Folder.Path, this.FileName) : this.FileName;
+        public string FullPath => Folder != null ? Path.Combine(Folder.Path, FileName) : FileName;
         public DateTime FileCreationDateTime { get; set; }
         public DateTime FileModificationDateTime { get; set; }
 
@@ -27,17 +27,17 @@ namespace JPPhotoManager.Domain
             
             Asset asset = obj as Asset;
 
-            return asset != null && asset.FolderId == this.FolderId && asset.FileName == this.FileName;
+            return asset != null && asset.FolderId == FolderId && asset.FileName == FileName;
         }
 
         public override int GetHashCode()
         {
-            return (!string.IsNullOrEmpty(this.FolderId) ? this.FolderId.GetHashCode() : base.GetHashCode()) + (!string.IsNullOrEmpty(this.FileName) ? this.FileName.GetHashCode() : base.GetHashCode());
+            return (!string.IsNullOrEmpty(FolderId) ? FolderId.GetHashCode() : base.GetHashCode()) + (!string.IsNullOrEmpty(FileName) ? FileName.GetHashCode() : base.GetHashCode());
         }
 
         public override string ToString()
         {
-            return this.FileName;
+            return FileName;
         }
     }
 }

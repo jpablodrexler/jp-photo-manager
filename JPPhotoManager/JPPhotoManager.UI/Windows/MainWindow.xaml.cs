@@ -39,10 +39,10 @@ namespace JPPhotoManager.UI.Windows
                 InitializeComponent();
 
                 this.application = application;
-                var aboutInformation = application.GetAboutInformation(this.GetType().Assembly);
+                var aboutInformation = application.GetAboutInformation(GetType().Assembly);
                 viewModel.Product = aboutInformation.Product;
                 viewModel.Version = aboutInformation.Version;
-                this.DataContext = viewModel;
+                DataContext = viewModel;
             }
             catch (Exception ex)
             {
@@ -52,16 +52,16 @@ namespace JPPhotoManager.UI.Windows
 
         public ApplicationViewModel ViewModel
         {
-            get { return (ApplicationViewModel)this.DataContext; }
+            get { return (ApplicationViewModel)DataContext; }
         }
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                this.ViewModel?.ChangeAppMode(AppModeEnum.Thumbnails);
-                this.thumbnailsUserControl.GoToFolder(this.application, this.ViewModel?.CurrentFolder);
-                this.folderTreeView.SelectedPath = this.ViewModel?.CurrentFolder;
+                ViewModel?.ChangeAppMode(AppModeEnum.Thumbnails);
+                thumbnailsUserControl.GoToFolder(application, ViewModel?.CurrentFolder);
+                folderTreeView.SelectedPath = ViewModel?.CurrentFolder;
                 await DoBackgroundWork();
             }
             catch (Exception ex)
@@ -101,18 +101,18 @@ namespace JPPhotoManager.UI.Windows
 
                         case Key.PageUp:
                         case Key.Left:
-                            this.ViewModel?.GoToPreviousAsset();
+                            ViewModel?.GoToPreviousAsset();
                             ShowImage();
                             break;
 
                         case Key.PageDown:
                         case Key.Right:
-                            this.ViewModel?.GoToNextAsset();
+                            ViewModel?.GoToNextAsset();
                             ShowImage();
                             break;
 
                         case Key.F1:
-                            this.ViewModel?.ChangeAppMode();
+                            ViewModel?.ChangeAppMode();
                             ShowImage();
                             break;
                     }
@@ -126,13 +126,13 @@ namespace JPPhotoManager.UI.Windows
 
         private void ShowImage()
         {
-            if (this.ViewModel.AppMode == AppModeEnum.Viewer)
+            if (ViewModel.AppMode == AppModeEnum.Viewer)
             {
-                this.viewerUserControl.ShowImage();
+                viewerUserControl.ShowImage();
             }
             else
             {
-                this.thumbnailsUserControl.ShowImage();
+                thumbnailsUserControl.ShowImage();
             }
         }
 
@@ -140,7 +140,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.ViewModel?.GoToAsset(e.Asset, AppModeEnum.Viewer);
+                ViewModel?.GoToAsset(e.Asset, AppModeEnum.Viewer);
                 ShowImage();
             }
             catch (Exception ex)
@@ -153,7 +153,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.ViewModel?.GoToAsset(e.Asset, AppModeEnum.Thumbnails);
+                ViewModel?.GoToAsset(e.Asset, AppModeEnum.Thumbnails);
                 ShowImage();
             }
             catch (Exception ex)
@@ -166,7 +166,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.thumbnailsUserControl.GoToFolder(this.application, this.folderTreeView.SelectedPath);
+                thumbnailsUserControl.GoToFolder(application, folderTreeView.SelectedPath);
             }
             catch (Exception ex)
             {
@@ -178,7 +178,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Center);
+                application.SetAsWallpaper(ViewModel?.CurrentAsset, WallpaperStyle.Center);
             }
             catch (Exception ex)
             {
@@ -190,7 +190,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Fill);
+                application.SetAsWallpaper(ViewModel?.CurrentAsset, WallpaperStyle.Fill);
             }
             catch (Exception ex)
             {
@@ -202,7 +202,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Fit);
+                application.SetAsWallpaper(ViewModel?.CurrentAsset, WallpaperStyle.Fit);
             }
             catch (Exception ex)
             {
@@ -214,7 +214,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Span);
+                application.SetAsWallpaper(ViewModel?.CurrentAsset, WallpaperStyle.Span);
             }
             catch (Exception ex)
             {
@@ -226,7 +226,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Stretch);
+                application.SetAsWallpaper(ViewModel?.CurrentAsset, WallpaperStyle.Stretch);
             }
             catch (Exception ex)
             {
@@ -238,7 +238,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.application.SetAsWallpaper(this.ViewModel?.CurrentAsset, WallpaperStyle.Tile);
+                application.SetAsWallpaper(ViewModel?.CurrentAsset, WallpaperStyle.Tile);
             }
             catch (Exception ex)
             {
@@ -250,11 +250,11 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                var duplicates = this.application.GetDuplicatedAssets();
+                var duplicates = application.GetDuplicatedAssets();
 
                 if (duplicates.Count > 0)
                 {
-                    FindDuplicatedAssetsViewModel viewModel = new FindDuplicatedAssetsViewModel(this.application);
+                    FindDuplicatedAssetsViewModel viewModel = new FindDuplicatedAssetsViewModel(application);
                     viewModel.SetDuplicates(duplicates);
                     DuplicatedAssetsWindow duplicatedAssetsWindow = new DuplicatedAssetsWindow(viewModel);
                     duplicatedAssetsWindow.ShowDialog();
@@ -274,7 +274,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                ImportNewAssetsViewModel viewModel = new ImportNewAssetsViewModel(this.application);
+                ImportNewAssetsViewModel viewModel = new ImportNewAssetsViewModel(application);
                 ImportNewAssetsWindow importNewAssetsWindow = new ImportNewAssetsWindow(viewModel);
                 importNewAssetsWindow.ShowDialog();
             }
@@ -288,7 +288,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                var about = this.application.GetAboutInformation(this.GetType().Assembly);
+                var about = application.GetAboutInformation(GetType().Assembly);
                 AboutWindow duplicatedAssetsWindow = new AboutWindow(about);
                 duplicatedAssetsWindow.ShowDialog();
             }
@@ -312,16 +312,16 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                var assets = this.ViewModel.SelectedAssets;
+                var assets = ViewModel.SelectedAssets;
 
                 if (assets != null && assets.Length > 0)
                 {
                     FolderNavigationWindow folderNavigationWindow = new(
                         new FolderNavigationViewModel(
-                            this.application,
+                            application,
                             assets.First().Folder,
-                            this.ViewModel.LastSelectedFolder,
-                            this.application.GetRecentTargetPaths()));
+                            ViewModel.LastSelectedFolder,
+                            application.GetRecentTargetPaths()));
                     
                     folderNavigationWindow.Closed += (sender, e) =>
                     {
@@ -329,24 +329,24 @@ namespace JPPhotoManager.UI.Windows
                         {
                             bool result = true;
 
-                            result = this.application.MoveAssets(assets,
+                            result = application.MoveAssets(assets,
                                 folderNavigationWindow.ViewModel.SelectedFolder,
                                 preserveOriginalFiles);
 
                             if (result)
                             {
-                                this.ViewModel.LastSelectedFolder = folderNavigationWindow.ViewModel.SelectedFolder;
-                                this.ViewModel.IsRefreshingFolders = true;
-                                this.folderTreeView.Initialize();
-                                this.ViewModel.IsRefreshingFolders = false;
+                                ViewModel.LastSelectedFolder = folderNavigationWindow.ViewModel.SelectedFolder;
+                                ViewModel.IsRefreshingFolders = true;
+                                folderTreeView.Initialize();
+                                ViewModel.IsRefreshingFolders = false;
 
                                 if (!preserveOriginalFiles)
                                 {
-                                    this.ViewModel.RemoveAssets(assets);
+                                    ViewModel.RemoveAssets(assets);
 
-                                    if (this.ViewModel.AppMode == AppModeEnum.Viewer)
+                                    if (ViewModel.AppMode == AppModeEnum.Viewer)
                                     {
-                                        this.viewerUserControl.ShowImage();
+                                        viewerUserControl.ShowImage();
                                     }
                                 }
                             }
@@ -366,12 +366,12 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                var assets = this.ViewModel.SelectedAssets;
+                var assets = ViewModel.SelectedAssets;
 
                 if (assets != null)
                 {
-                    this.application.DeleteAssets(assets, deleteFiles: true);
-                    this.ViewModel.RemoveAssets(assets);
+                    application.DeleteAssets(assets, deleteFiles: true);
+                    ViewModel.RemoveAssets(assets);
                     ShowImage();
                 }
             }
@@ -388,32 +388,32 @@ namespace JPPhotoManager.UI.Windows
 
         private void Exit_Click(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Close();
         }
 
         private void SortAssetsByFileName_Click(object sender, RoutedEventArgs e)
         {
-            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
+            ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
         }
 
         private void SortAssetsByFileSize_Click(object sender, RoutedEventArgs e)
         {
-            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileSize);
+            ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileSize);
         }
 
         private void SortAssetsByFileCreationDateTime_Click(object sender, RoutedEventArgs e)
         {
-            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
+            ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
         }
 
         private void SortAssetsByFileModificationDateTime_Click(object sender, RoutedEventArgs e)
         {
-            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileModificationDateTime);
+            ViewModel.SortAssetsByCriteria(SortCriteriaEnum.FileModificationDateTime);
         }
 
         private void SortAssetsByThumbnailCreationDateTime_Click(object sender, RoutedEventArgs e)
         {
-            this.ViewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
+            ViewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -426,13 +426,13 @@ namespace JPPhotoManager.UI.Windows
             await CheckNewRelease();
 
             ViewModel.StatusMessage = "Cataloging thumbnails for " + ViewModel.CurrentFolder;
-            int minutes = this.ViewModel.Application.GetCatalogCooldownMinutes();
+            int minutes = ViewModel.Application.GetCatalogCooldownMinutes();
 
             while (true)
             {
                 catalogTask = Task.Run(() =>
                 {
-                    this.application.CatalogAssets(
+                    application.CatalogAssets(
                         async (e) =>
                         {
                             // The InvokeAsync method is used to avoid freezing the application when the task is cancelled.
@@ -447,7 +447,7 @@ namespace JPPhotoManager.UI.Windows
 
         private async Task CheckNewRelease()
         {
-            var latestRelease = await this.application.CheckNewRelease().ConfigureAwait(true);
+            var latestRelease = await application.CheckNewRelease().ConfigureAwait(true);
 
             if (latestRelease != null && latestRelease.Success && latestRelease.IsNewRelease)
             {

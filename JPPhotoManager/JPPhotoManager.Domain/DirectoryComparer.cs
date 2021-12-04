@@ -37,7 +37,7 @@ namespace JPPhotoManager.Domain
         {
             foreach (Asset asset in cataloguedAssets)
             {
-                this.storageService.GetFileInformation(asset);
+                storageService.GetFileInformation(asset);
             }
             
             return cataloguedAssets

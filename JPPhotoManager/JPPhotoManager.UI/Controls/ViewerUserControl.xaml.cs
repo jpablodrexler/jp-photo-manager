@@ -33,15 +33,15 @@ namespace JPPhotoManager.UI.Controls
 
         private ApplicationViewModel ViewModel
         {
-            get { return (ApplicationViewModel)this.DataContext; }
+            get { return (ApplicationViewModel)DataContext; }
         }
 
         private void nextButton_MouseLeftButtonDown(object sender, RoutedEventArgs e)
         {
             try
             {
-                this.ViewModel?.GoToNextAsset();
-                this.ShowImage();
+                ViewModel?.GoToNextAsset();
+                ShowImage();
             }
             catch (Exception ex)
             {
@@ -53,8 +53,8 @@ namespace JPPhotoManager.UI.Controls
         {
             try
             {
-                this.ViewModel?.GoToPreviousAsset();
-                this.ShowImage();
+                ViewModel?.GoToPreviousAsset();
+                ShowImage();
             }
             catch (Exception ex)
             {
@@ -66,7 +66,7 @@ namespace JPPhotoManager.UI.Controls
         {
             try
             {
-                this.ThumbnailSelected?.Invoke(this, new ThumbnailSelectedEventArgs() { Asset = this.ViewModel.CurrentAsset });
+                ThumbnailSelected?.Invoke(this, new ThumbnailSelectedEventArgs() { Asset = ViewModel.CurrentAsset });
             }
             catch (Exception ex)
             {
@@ -76,20 +76,20 @@ namespace JPPhotoManager.UI.Controls
 
         public void ShowImage()
         {
-            if (this.ViewModel.ViewerPosition >= 0)
+            if (ViewModel.ViewerPosition >= 0)
             {
-                var source = this.ViewModel.Application.LoadBitmapImage(this.ViewModel.CurrentAsset.FullPath, this.ViewModel.CurrentAsset.ImageRotation);
+                var source = ViewModel.Application.LoadBitmapImage(ViewModel.CurrentAsset.FullPath, ViewModel.CurrentAsset.ImageRotation);
 
                 if (source != null)
                 {
-                    this.image.Source = source;
-                    this.backgroundImage.Source = source;
+                    image.Source = source;
+                    backgroundImage.Source = source;
                 }
             }
             else
             {
-                this.image.Source = null;
-                this.backgroundImage.Source = null;
+                image.Source = null;
+                backgroundImage.Source = null;
             }
         }
     }

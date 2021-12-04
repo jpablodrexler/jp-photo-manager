@@ -14,106 +14,106 @@ namespace JPPhotoManager.UI.ViewModels
 
         public ImportNewAssetsViewModel(IApplication assetApp) : base(assetApp)
         {
-            this.statusMessages = new ObservableCollection<string>();
+            statusMessages = new ObservableCollection<string>();
         }
 
         public ObservableCollection<ImportNewAssetsDirectoriesDefinition> Imports
         {
-            get { return this.imports; }
+            get { return imports; }
             set
             {
-                this.imports = value;
-                this.NotifyPropertyChanged(nameof(Imports));
+                imports = value;
+                NotifyPropertyChanged(nameof(Imports));
             }
         }
 
         public ObservableCollection<ImportNewAssetsResult> Results
         {
-            get { return this.results; }
+            get { return results; }
             set
             {
-                this.results = value;
-                this.NotifyPropertyChanged(nameof(Results));
-                this.NotifyPropertyChanged(nameof(CanViewResults));
+                results = value;
+                NotifyPropertyChanged(nameof(Results));
+                NotifyPropertyChanged(nameof(CanViewResults));
             }
         }
 
         public ObservableCollection<string> StatusMessages
         {
-            get { return this.statusMessages; }
+            get { return statusMessages; }
         }
 
         public ImportNewAssetsStepEnum Step
         {
-            get { return this.step; }
+            get { return step; }
             private set
             {
-                this.step = value;
-                this.NotifyPropertyChanged(nameof(Step), nameof(InputVisible), nameof(ResultsVisible), nameof(CanConfigure));
+                step = value;
+                NotifyPropertyChanged(nameof(Step), nameof(InputVisible), nameof(ResultsVisible), nameof(CanConfigure));
             }
         }
 
         public Visibility InputVisible
         {
-            get { return this.Step == ImportNewAssetsStepEnum.Configure || this.Step == ImportNewAssetsStepEnum.Import ? Visibility.Visible : Visibility.Hidden; }
+            get { return Step == ImportNewAssetsStepEnum.Configure || Step == ImportNewAssetsStepEnum.Import ? Visibility.Visible : Visibility.Hidden; }
         }
 
         public Visibility ResultsVisible
         {
-            get { return this.Step == ImportNewAssetsStepEnum.ViewResults ? Visibility.Visible : Visibility.Hidden; }
+            get { return Step == ImportNewAssetsStepEnum.ViewResults ? Visibility.Visible : Visibility.Hidden; }
         }
 
         public bool CanConfigure
         {
-            get { return this.Step == ImportNewAssetsStepEnum.Configure; }
+            get { return Step == ImportNewAssetsStepEnum.Configure; }
         }
 
         public bool CanViewResults
         {
-            get { return this.Step == ImportNewAssetsStepEnum.Import && this.Results != null && this.Results.Count > 0; }
+            get { return Step == ImportNewAssetsStepEnum.Import && Results != null && Results.Count > 0; }
         }
 
         public void AdvanceStep()
         {
-            switch (this.Step)
+            switch (Step)
             {
                 case ImportNewAssetsStepEnum.Configure:
-                    this.Step = ImportNewAssetsStepEnum.Import;
+                    Step = ImportNewAssetsStepEnum.Import;
                     break;
 
                 case ImportNewAssetsStepEnum.Import:
-                    this.Step = ImportNewAssetsStepEnum.ViewResults;
+                    Step = ImportNewAssetsStepEnum.ViewResults;
                     break;
             }
         }
 
         public void DeleteDefinition(ImportNewAssetsDirectoriesDefinition definition)
         {
-            if (this.Imports != null)
+            if (Imports != null)
             {
-                this.Imports.Remove(definition);
-                this.NotifyPropertyChanged(nameof(Imports));
+                Imports.Remove(definition);
+                NotifyPropertyChanged(nameof(Imports));
             }
         }
 
         public void NotifyImageImported(StatusChangeCallbackEventArgs e)
         {
-            this.StatusMessages.Add(e.NewStatus);
+            StatusMessages.Add(e.NewStatus);
         }
 
         public void MoveUpDefinition(ImportNewAssetsDirectoriesDefinition definition)
         {
-            if (this.Imports != null)
+            if (Imports != null)
             {
-                this.Imports.MoveUp(definition);
+                Imports.MoveUp(definition);
             }
         }
 
         public void MoveDownDefinition(ImportNewAssetsDirectoriesDefinition definition)
         {
-            if (this.Imports != null)
+            if (Imports != null)
             {
-                this.Imports.MoveDown(definition);
+                Imports.MoveDown(definition);
             }
         }
     }

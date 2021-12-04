@@ -46,47 +46,47 @@ namespace JPPhotoManager.Application
                 throw new ArgumentException("Directory cannot be null or empty.", directory);
             }
 
-            if (!this.assetRepository.FolderExists(directory))
+            if (!assetRepository.FolderExists(directory))
             {
-                this.assetRepository.AddFolder(directory);
+                assetRepository.AddFolder(directory);
             }
             
-            return this.assetRepository.GetAssets(directory);
+            return assetRepository.GetAssets(directory);
         }
 
         public void LoadThumbnail(Asset asset)
         {
-            asset.ImageData = this.assetRepository.LoadThumbnail(asset.Folder.Path, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
+            asset.ImageData = assetRepository.LoadThumbnail(asset.Folder.Path, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
         }
 
         public ImportNewAssetsConfiguration GetImportNewAssetsConfiguration()
         {
-            return this.assetRepository.GetImportNewAssetsConfiguration();
+            return assetRepository.GetImportNewAssetsConfiguration();
         }
 
         public void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration)
         {
             importConfiguration.Validate();
             importConfiguration.Normalize();
-            this.assetRepository.SetImportNewAssetsConfiguration(importConfiguration);
-            this.assetRepository.SaveCatalog(null);
+            assetRepository.SetImportNewAssetsConfiguration(importConfiguration);
+            assetRepository.SaveCatalog(null);
         }
 
         public List<ImportNewAssetsResult> ImportNewAssets(StatusChangeCallback callback)
         {
-            return this.importNewAssetsService.Import(callback);
+            return importNewAssetsService.Import(callback);
         }
 
         public void CatalogAssets(CatalogChangeCallback callback)
         {
-            this.catalogAssetsService.CatalogAssets(callback);
+            catalogAssetsService.CatalogAssets(callback);
         }
 
         public void SetAsWallpaper(Asset asset, WallpaperStyle style)
         {
             if (asset != null)
             {
-                this.userConfigurationService.SetAsWallpaper(asset, style);
+                userConfigurationService.SetAsWallpaper(asset, style);
             }
         }
 
@@ -97,71 +97,71 @@ namespace JPPhotoManager.Application
         /// where each item is a list of duplicated assets.</returns>
         public List<List<Asset>> GetDuplicatedAssets()
         {
-            return this.findDuplicatedAssetsService.GetDuplicatedAssets();
+            return findDuplicatedAssetsService.GetDuplicatedAssets();
         }
 
         public void DeleteAssets(Asset[] assets, bool deleteFiles)
         {
-            this.moveAssetsService.DeleteAssets(assets, deleteFiles);
+            moveAssetsService.DeleteAssets(assets, deleteFiles);
         }
 
         public AboutInformation GetAboutInformation(Assembly assembly)
         {
-            return this.userConfigurationService.GetAboutInformation(assembly);
+            return userConfigurationService.GetAboutInformation(assembly);
         }
 
         public Folder[] GetDrives()
         {
-            return this.storageService.GetDrives();
+            return storageService.GetDrives();
         }
 
         public Folder[] GetSubFolders(Folder parentFolder, bool includeHidden)
         {
-            return this.assetRepository.GetSubFolders(parentFolder, includeHidden);
+            return assetRepository.GetSubFolders(parentFolder, includeHidden);
         }
 
         public string GetInitialFolder()
         {
-            return this.userConfigurationService.GetInitialFolder();
+            return userConfigurationService.GetInitialFolder();
         }
 
         public int GetCatalogCooldownMinutes()
         {
-            return this.userConfigurationService.GetCatalogCooldownMinutes();
+            return userConfigurationService.GetCatalogCooldownMinutes();
         }
 
         public bool MoveAssets(Asset[] assets, Folder destinationFolder, bool preserveOriginalFiles)
         {
-            return this.moveAssetsService.MoveAssets(assets, destinationFolder, preserveOriginalFiles);
+            return moveAssetsService.MoveAssets(assets, destinationFolder, preserveOriginalFiles);
         }
 
         public BitmapImage LoadBitmapImage(string imagePath, Rotation rotation)
         {
-            return this.storageService.LoadBitmapImage(imagePath, rotation);
+            return storageService.LoadBitmapImage(imagePath, rotation);
         }
 
         public bool FileExists(string fullPath)
         {
-            return this.storageService.FileExists(fullPath);
+            return storageService.FileExists(fullPath);
         }
 
         public List<string> GetRecentTargetPaths()
         {
-            return this.assetRepository.GetRecentTargetPaths();
+            return assetRepository.GetRecentTargetPaths();
         }
 
         public Folder[] GetRootCatalogFolders()
         {
-            string[] paths = this.userConfigurationService.GetRootCatalogFolderPaths();
+            string[] paths = userConfigurationService.GetRootCatalogFolderPaths();
             Folder[] folders = new Folder[paths.Length];
 
             for (int i = 0; i < paths.Length; i++)
             {
-                folders[i] = this.assetRepository.GetFolderByPath(paths[i]);
+                folders[i] = assetRepository.GetFolderByPath(paths[i]);
 
                 if (folders[i] == null)
                 {
-                    folders[i] = this.assetRepository.AddFolder(paths[i]);
+                    folders[i] = assetRepository.AddFolder(paths[i]);
                 }
             }
 
@@ -170,12 +170,12 @@ namespace JPPhotoManager.Application
 
         public bool IsAlreadyRunning()
         {
-            return this.processService.IsAlreadyRunning();
+            return processService.IsAlreadyRunning();
         }
 
         public Task<Release> CheckNewRelease()
         {
-            return this.newReleaseNotificationService.CheckNewRelease();
+            return newReleaseNotificationService.CheckNewRelease();
         }
     }
 }

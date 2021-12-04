@@ -175,7 +175,7 @@ namespace JPPhotoManager.Infrastructure
         public bool CopyImage(string sourcePath, string destinationPath)
         {
             string destinationFolderPath = new FileInfo(destinationPath).Directory.FullName;
-            this.CreateDirectory(destinationFolderPath);
+            CreateDirectory(destinationFolderPath);
             File.Copy(sourcePath, destinationPath);
 
             return FileExists(sourcePath) && FileExists(destinationPath);

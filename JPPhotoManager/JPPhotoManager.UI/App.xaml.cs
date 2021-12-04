@@ -32,21 +32,21 @@ namespace JPPhotoManager.UI
 
             var serviceCollection = new ServiceCollection();
             ConfigureServices(serviceCollection);
-            this.serviceProvider = serviceCollection.BuildServiceProvider();
+            serviceProvider = serviceCollection.BuildServiceProvider();
         }
 
         private void App_OnStartup(object sender, StartupEventArgs e)
         {
             try
             {
-                if (!this.serviceProvider.GetService<Application.IApplication>().IsAlreadyRunning())
+                if (!serviceProvider.GetService<Application.IApplication>().IsAlreadyRunning())
                 {
-                    var mainWindow = this.serviceProvider.GetService<MainWindow>();
+                    var mainWindow = serviceProvider.GetService<MainWindow>();
                     mainWindow.Show();
                 }
                 else
                 {
-                    this.Shutdown();
+                    Shutdown();
                 }
             }
             catch (Exception ex)
