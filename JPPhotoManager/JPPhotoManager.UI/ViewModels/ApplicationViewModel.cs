@@ -267,21 +267,9 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
-        private void AddFolder(Folder folder)
-        {
-            if (FolderAdded != null)
-            {
-                FolderAdded(this, new FolderAddedEventArgs { Folder = folder });
-            }
-        }
+        private void AddFolder(Folder folder) => FolderAdded?.Invoke(this, new FolderAddedEventArgs { Folder = folder });
 
-        private void RemoveFolder(Folder folder)
-        {
-            if (FolderRemoved != null)
-            {
-                FolderRemoved(this, new FolderRemovedEventArgs { Folder = folder });
-            }
-        }
+        private void RemoveFolder(Folder folder) => FolderRemoved?.Invoke(this, new FolderRemovedEventArgs { Folder = folder });
 
         private void UpdateAppTitle()
         {
