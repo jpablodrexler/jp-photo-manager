@@ -14,6 +14,7 @@ JPPhotoManager is a desktop application that allows:
 * Import images from local folders (such as game screenshots folders)
 * Import images from shared folders in the local network
 * Export images to shared folders in the local network
+* Rename images in batches
 
 Soon will allow to:
 * Add your own metadata to the images
