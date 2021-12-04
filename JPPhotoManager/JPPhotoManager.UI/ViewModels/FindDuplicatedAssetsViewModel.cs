@@ -47,11 +47,11 @@ namespace JPPhotoManager.UI.ViewModels
                 throw new ArgumentNullException(nameof(duplicatedAssets));
 
             _duplicatedAssets = duplicatedAssets;
-            List<DuplicatedSetViewModel> collection = new List<DuplicatedSetViewModel>();
+            List<DuplicatedSetViewModel> collection = new();
 
             foreach (var duplicatedSet in duplicatedAssets)
             {
-                DuplicatedSetViewModel duplicatedSetViewModel = new DuplicatedSetViewModel();
+                DuplicatedSetViewModel duplicatedSetViewModel = new();
 
                 foreach (var asset in duplicatedSet)
                 {

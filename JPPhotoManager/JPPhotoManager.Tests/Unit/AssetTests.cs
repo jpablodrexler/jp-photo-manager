@@ -9,13 +9,13 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetHashCode_SameFileAndFolder_AreEqual()
         {
-            Asset asset1 = new Asset
+            Asset asset1 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 FileName = "Image1.jpg"
             };
 
-            Asset asset2 = new Asset
+            Asset asset2 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 FileName = "Image1.jpg"
@@ -28,13 +28,13 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetHashCode_SameFileWithDifferentFolder_AreNotEqual()
         {
-            Asset asset1 = new Asset
+            Asset asset1 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 FileName = "Image1.jpg"
             };
 
-            Asset asset2 = new Asset
+            Asset asset2 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417285",
                 FileName = "Image1.jpg"
@@ -47,12 +47,12 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetHashCode_OnlyOneFileName_AreNotEqual()
         {
-            Asset asset1 = new Asset
+            Asset asset1 = new()
             {
                 FileName = "Image1.jpg"
             };
 
-            Asset asset2 = new Asset();
+            Asset asset2 = new();
 
             asset1.Should().NotBe(asset2);
             asset1.GetHashCode().Should().NotBe(asset2.GetHashCode());
@@ -61,12 +61,12 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetHashCode_DifferentFilesWithoutFolder_AreNotEqual()
         {
-            Asset asset1 = new Asset
+            Asset asset1 = new()
             {
                 FileName = "Image1.jpg"
             };
 
-            Asset asset2 = new Asset
+            Asset asset2 = new()
             {
                 FileName = "Image2.jpg"
             };
@@ -78,13 +78,13 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetHashCode_DifferentFilesAndFolders_AreNotEqual()
         {
-            Asset asset1 = new Asset
+            Asset asset1 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 FileName = "Image1.jpg"
             };
 
-            Asset asset2 = new Asset
+            Asset asset2 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417285",
                 FileName = "Image2.jpg"
@@ -97,13 +97,13 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetHashCode_SameFileAndOnlyOneFolder_AreNotEqual()
         {
-            Asset asset1 = new Asset
+            Asset asset1 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 FileName = "Image1.jpg"
             };
 
-            Asset asset2 = new Asset
+            Asset asset2 = new()
             {
                 FileName = "Image1.jpg"
             };
@@ -115,7 +115,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void Equal_OnlyOneObject_ReturnFalse()
         {
-            Asset asset = new Asset
+            Asset asset = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 FileName = "Image1.jpg"
@@ -127,7 +127,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void Equal_OneObjectComparedToItself_ReturnTrue()
         {
-            Asset asset = new Asset
+            Asset asset = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 FileName = "Image1.jpg"
@@ -142,7 +142,7 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData(null, null)]
         public void ToString_ReturnFileName(string fileName, string expected)
         {
-            Asset asset = new Asset
+            Asset asset = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 FileName = fileName

@@ -377,7 +377,7 @@ namespace JPPhotoManager.Infrastructure
                             }
 
                             // Removes assets with no thumbnails.
-                            List<Asset> assetsToRemove = new List<Asset>();
+                            List<Asset> assetsToRemove = new();
 
                             for (int i = 0; i < assetsList.Count; i++)
                             {

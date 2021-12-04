@@ -13,8 +13,8 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData(1024, 768, "1024x768 pixels")]
         public void GetFormattedPixelSizeTest(int width, int height, string expected)
         {
-            PixelSizeConverter converter = new PixelSizeConverter();
-            Asset asset = new Asset
+            PixelSizeConverter converter = new();
+            Asset asset = new()
             {
                 PixelWidth = width,
                 PixelHeight = height
@@ -27,7 +27,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void ConvertBackTest()
         {
-            PixelSizeConverter converter = new PixelSizeConverter();
+            PixelSizeConverter converter = new();
             Func<object> function = () => converter.ConvertBack("1920x1080 pixels", typeof(string), null, new CultureInfo("en-US"));
             function.Should().Throw<NotImplementedException>();
         }

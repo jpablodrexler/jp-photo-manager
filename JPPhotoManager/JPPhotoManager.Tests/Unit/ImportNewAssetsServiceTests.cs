@@ -23,7 +23,7 @@ namespace JPPhotoManager.Tests.Unit
                 string sourceDirectory = @"C:\MyGame\Screenshots";
                 string destinationDirectory = @"C:\Images\MyGame";
 
-                ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+                ImportNewAssetsConfiguration importConfiguration = new();
 
                 importConfiguration.Imports.Add(
                     new ImportNewAssetsDirectoriesDefinition
@@ -78,7 +78,7 @@ namespace JPPhotoManager.Tests.Unit
                     "NewImage3.jpg"
                 };
 
-                ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+                ImportNewAssetsConfiguration importConfiguration = new();
 
                 importConfiguration.Imports.Add(
                     new ImportNewAssetsDirectoriesDefinition
@@ -154,7 +154,7 @@ namespace JPPhotoManager.Tests.Unit
                     "ExistingImage3.jpg"
                 };
 
-                ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+                ImportNewAssetsConfiguration importConfiguration = new();
 
                 importConfiguration.Imports.Add(
                     new ImportNewAssetsDirectoriesDefinition
@@ -225,7 +225,7 @@ namespace JPPhotoManager.Tests.Unit
                 "ExistingImage3.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+            ImportNewAssetsConfiguration importConfiguration = new();
 
             importConfiguration.Imports.Add(
                 new ImportNewAssetsDirectoriesDefinition
@@ -234,10 +234,10 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
             
-            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
-            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
-            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
-            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
+            Mock<IStorageService> storageServiceMock = new();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
             repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
                 .Returns(importConfiguration);
@@ -257,7 +257,7 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+            ImportNewAssetsService importNewAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
@@ -317,7 +317,7 @@ namespace JPPhotoManager.Tests.Unit
                 "ExistingImage2.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+            ImportNewAssetsConfiguration importConfiguration = new();
 
             importConfiguration.Imports.Add(
                 new ImportNewAssetsDirectoriesDefinition
@@ -333,10 +333,10 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = secondDestinationDirectory
                 });
             
-            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
-            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
-            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
-            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
+            Mock<IStorageService> storageServiceMock = new();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
             repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
                 .Returns(importConfiguration);
@@ -368,7 +368,7 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+            ImportNewAssetsService importNewAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
@@ -439,7 +439,7 @@ namespace JPPhotoManager.Tests.Unit
                 "ExistingImage5.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+            ImportNewAssetsConfiguration importConfiguration = new();
 
             importConfiguration.Imports.Add(
                 new ImportNewAssetsDirectoriesDefinition
@@ -448,10 +448,10 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
 
-            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
-            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
-            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
-            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
+            Mock<IStorageService> storageServiceMock = new();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
             repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
                 .Returns(importConfiguration);
@@ -491,7 +491,7 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+            ImportNewAssetsService importNewAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
@@ -565,7 +565,7 @@ namespace JPPhotoManager.Tests.Unit
                 "ExistingImage7.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+            ImportNewAssetsConfiguration importConfiguration = new();
 
             importConfiguration.Imports.Add(
                 new ImportNewAssetsDirectoriesDefinition
@@ -574,10 +574,10 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
 
-            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
-            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
-            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
-            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
+            Mock<IStorageService> storageServiceMock = new();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
             repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
                 .Returns(importConfiguration);
@@ -627,7 +627,7 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+            ImportNewAssetsService importNewAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
@@ -699,7 +699,7 @@ namespace JPPhotoManager.Tests.Unit
                 "ExistingImage5.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+            ImportNewAssetsConfiguration importConfiguration = new();
 
             importConfiguration.Imports.Add(
                 new ImportNewAssetsDirectoriesDefinition
@@ -709,10 +709,10 @@ namespace JPPhotoManager.Tests.Unit
                     IncludeSubFolders = true
                 });
 
-            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
-            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
-            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
-            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
+            Mock<IStorageService> storageServiceMock = new();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
             repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
                 .Returns(importConfiguration);
@@ -766,7 +766,7 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+            ImportNewAssetsService importNewAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
@@ -837,7 +837,7 @@ namespace JPPhotoManager.Tests.Unit
                 "ExistingImage5.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+            ImportNewAssetsConfiguration importConfiguration = new();
 
             importConfiguration.Imports.Add(
                 new ImportNewAssetsDirectoriesDefinition
@@ -846,10 +846,10 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
 
-            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
-            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
-            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
-            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
+            Mock<IStorageService> storageServiceMock = new();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
             repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
                 .Returns(importConfiguration);
@@ -889,7 +889,7 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+            ImportNewAssetsService importNewAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
@@ -915,7 +915,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void ValidateAllValidDefinitionsTest()
         {
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+            ImportNewAssetsConfiguration importConfiguration = new();
 
             importConfiguration.Imports.Add(
                 new ImportNewAssetsDirectoriesDefinition
@@ -952,7 +952,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void ValidateOneInvalidDefinitionTest()
         {
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+            ImportNewAssetsConfiguration importConfiguration = new();
 
             importConfiguration.Imports.Add(
                 new ImportNewAssetsDirectoriesDefinition
@@ -1001,7 +1001,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void NormalizeTest()
         {
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+            ImportNewAssetsConfiguration importConfiguration = new();
 
             importConfiguration.Imports.Add(
                 new ImportNewAssetsDirectoriesDefinition
@@ -1050,7 +1050,7 @@ namespace JPPhotoManager.Tests.Unit
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+            ImportNewAssetsConfiguration importConfiguration = new();
 
             importConfiguration.Imports.Add(
                 new ImportNewAssetsDirectoriesDefinition
@@ -1059,10 +1059,10 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
             
-            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
-            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
-            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
-            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
+            Mock<IStorageService> storageServiceMock = new();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
             repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
                 .Returns(importConfiguration);
@@ -1073,7 +1073,7 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.FolderExists(destinationDirectory))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+            ImportNewAssetsService importNewAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
@@ -1099,7 +1099,7 @@ namespace JPPhotoManager.Tests.Unit
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+            ImportNewAssetsConfiguration importConfiguration = new();
 
             importConfiguration.Imports.Add(
                 new ImportNewAssetsDirectoriesDefinition
@@ -1108,10 +1108,10 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
             
-            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
-            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
-            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
-            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
+            Mock<IStorageService> storageServiceMock = new();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
             repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
                 .Returns(importConfiguration);
@@ -1122,7 +1122,7 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.FolderExists(destinationDirectory))
                 .Returns(false);
 
-            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+            ImportNewAssetsService importNewAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
@@ -1149,7 +1149,7 @@ namespace JPPhotoManager.Tests.Unit
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"\\MyServer\MyGame";
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+            ImportNewAssetsConfiguration importConfiguration = new();
 
             importConfiguration.Imports.Add(
                 new ImportNewAssetsDirectoriesDefinition
@@ -1158,10 +1158,10 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
 
-            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
-            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
-            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
-            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
+            Mock<IStorageService> storageServiceMock = new();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
             repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
                 .Returns(importConfiguration);
@@ -1175,7 +1175,7 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.CreateDirectory(destinationDirectory))
                 .Throws(new DirectoryNotFoundException());
 
-            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+            ImportNewAssetsService importNewAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
@@ -1209,7 +1209,7 @@ namespace JPPhotoManager.Tests.Unit
                 "NewImage3.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+            ImportNewAssetsConfiguration importConfiguration = new();
 
             importConfiguration.Imports.Add(
                 new ImportNewAssetsDirectoriesDefinition
@@ -1219,10 +1219,10 @@ namespace JPPhotoManager.Tests.Unit
                     IncludeSubFolders = true
                 });
 
-            Mock<IAssetRepository> repositoryMock = new Mock<IAssetRepository>();
-            Mock<IAssetHashCalculatorService> hashCalculatorMock = new Mock<IAssetHashCalculatorService>();
-            Mock<IStorageService> storageServiceMock = new Mock<IStorageService>();
-            Mock<IUserConfigurationService> userConfigurationServiceMock = new Mock<IUserConfigurationService>();
+            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
+            Mock<IStorageService> storageServiceMock = new();
+            Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
             repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
                 .Returns(importConfiguration);
@@ -1250,7 +1250,7 @@ namespace JPPhotoManager.Tests.Unit
 
             storageServiceMock.Setup(s => s.GetSubDirectories(sourceSubDirectory)).Returns(new List<DirectoryInfo>());
 
-            ImportNewAssetsService importNewAssetsService = new ImportNewAssetsService(
+            ImportNewAssetsService importNewAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));

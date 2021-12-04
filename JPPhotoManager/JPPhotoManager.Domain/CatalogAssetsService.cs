@@ -37,7 +37,7 @@ namespace JPPhotoManager.Domain
             await Task.Run(() =>
             {
                 int cataloguedAssetsBatchCount = 0;
-                List<string> visitedFolders = new List<string>();
+                List<string> visitedFolders = new();
 
                 try
                 {
@@ -311,7 +311,7 @@ namespace JPPhotoManager.Domain
                     break;
                 }
 
-                Asset deletedAsset = new Asset()
+                Asset deletedAsset = new()
                 {
                     FileName = fileName,
                     FolderId = folder.FolderId,

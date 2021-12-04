@@ -19,7 +19,7 @@ namespace JPPhotoManager.Tests.Unit
             dataDirectory = Path.GetDirectoryName(typeof(UserConfigurationServiceTests).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
 
-            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
@@ -32,7 +32,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetPicturesDirectoryTest()
         {
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            UserConfigurationService userConfigurationService = new(configuration);
             string result = userConfigurationService.GetPicturesDirectory();
             result.Should().NotBeEmpty();
         }
@@ -40,7 +40,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetAboutInformationTest()
         {
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            UserConfigurationService userConfigurationService = new(configuration);
             AboutInformation result = userConfigurationService.GetAboutInformation(typeof(App).Assembly);
             result.Product.Should().Be("JPPhotoManager");
             result.Version.Should().NotBeEmpty();
@@ -50,7 +50,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetCatalogBatchSizeTest()
         {
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            UserConfigurationService userConfigurationService = new(configuration);
             int result = userConfigurationService.GetCatalogBatchSize();
             result.Should().Be(100);
         }
@@ -58,7 +58,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetCatalogCooldownMinutesTest()
         {
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            UserConfigurationService userConfigurationService = new(configuration);
             int result = userConfigurationService.GetCatalogCooldownMinutes();
             result.Should().Be(5);
         }
@@ -66,7 +66,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetInitialFolderConfiguredTest()
         {
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            UserConfigurationService userConfigurationService = new(configuration);
             string result = userConfigurationService.GetInitialFolder();
             result.Should().Be(dataDirectory);
         }
@@ -74,14 +74,14 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetInitialFolderNotConfiguredTest()
         {
-            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", "")
                 .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
                 .MockGetValue("appsettings:CatalogBatchSize", "100")
                 .MockGetValue("appsettings:CatalogCooldownMinutes", "5");
 
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configurationMock.Object);
+            UserConfigurationService userConfigurationService = new(configurationMock.Object);
             string expected = userConfigurationService.GetPicturesDirectory();
             string result = userConfigurationService.GetInitialFolder();
             result.Should().Be(expected);
@@ -90,14 +90,14 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetApplicationDataFolderConfiguredTest()
         {
-            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
                 .MockGetValue("appsettings:CatalogBatchSize", "100")
                 .MockGetValue("appsettings:CatalogCooldownMinutes", "5");
 
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configurationMock.Object);
+            UserConfigurationService userConfigurationService = new(configurationMock.Object);
             string result = userConfigurationService.GetApplicationDataFolder();
             result.Should().NotBeEmpty();
         }
@@ -105,14 +105,14 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetApplicationDataFolderNotConfiguredTest()
         {
-            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", "")
                 .MockGetValue("appsettings:CatalogBatchSize", "100")
                 .MockGetValue("appsettings:CatalogCooldownMinutes", "5");
 
-            UserConfigurationService userConfigurationService = new UserConfigurationService(configurationMock.Object);
+            UserConfigurationService userConfigurationService = new(configurationMock.Object);
             string result = userConfigurationService.GetApplicationDataFolder();
             result.Should().NotBeEmpty();
         }

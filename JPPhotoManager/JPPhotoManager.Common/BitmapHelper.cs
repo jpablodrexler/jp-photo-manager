@@ -7,7 +7,7 @@ namespace JPPhotoManager.Common
     {
         public static BitmapImage LoadBitmapImage(byte[] buffer, Rotation rotation)
         {
-            BitmapImage image = new BitmapImage();
+            BitmapImage image = new();
 
             using (MemoryStream stream = new(buffer))
             {
@@ -45,8 +45,8 @@ namespace JPPhotoManager.Common
         public static BitmapImage LoadBitmapImage(byte[] buffer, int width, int height)
         {
             // TODO: If the stream is disposed by a using block, the thumbnail is not shown. Find a way to dispose of the stream.
-            MemoryStream stream = new MemoryStream(buffer);
-            BitmapImage thumbnailImage = new BitmapImage();
+            MemoryStream stream = new(buffer);
+            BitmapImage thumbnailImage = new();
             thumbnailImage.BeginInit();
             thumbnailImage.CacheOption = BitmapCacheOption.None;
             thumbnailImage.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
@@ -63,7 +63,7 @@ namespace JPPhotoManager.Common
         {
             BitmapImage image = null;
 
-            using (MemoryStream stream = new MemoryStream(buffer))
+            using (MemoryStream stream = new(buffer))
             {
                 image = new BitmapImage();
                 image.BeginInit();

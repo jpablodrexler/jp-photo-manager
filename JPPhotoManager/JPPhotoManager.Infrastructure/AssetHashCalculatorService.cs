@@ -8,7 +8,7 @@ namespace JPPhotoManager.Infrastructure
     {
         public string CalculateHash(byte[] imageBytes)
         {
-            StringBuilder hashBuilder = new StringBuilder();
+            StringBuilder hashBuilder = new();
             byte[] hash = SHA512.Create().ComputeHash(imageBytes);
 
             foreach (byte hashByte in hash)

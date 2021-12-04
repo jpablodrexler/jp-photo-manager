@@ -179,7 +179,7 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData(4, 4)]
         public void GoToAsset_ChangeViewerPosition(int currentPosition, int goToAssetIndex)
         {
-            Folder folder = new Folder { Path = @"D:\Data" };
+            Folder folder = new() { Path = @"D:\Data" };
 
             Asset[] assets = new Asset[]
             {
@@ -212,7 +212,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GoToAsset_NotInList_KeepPosition()
         {
-            Folder folder = new Folder { Path = @"D:\Data" };
+            Folder folder = new() { Path = @"D:\Data" };
 
             Asset[] assets = new Asset[]
             {
@@ -223,7 +223,7 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), Folder = folder }
             };
 
-            Asset assetNotInList = new Asset { FileName = "ImageNotInList.jpg", ImageData = new BitmapImage(), Folder = folder };
+            Asset assetNotInList = new() { FileName = "ImageNotInList.jpg", ImageData = new BitmapImage(), Folder = folder };
 
             using (var mock = AutoMock.GetLoose())
             {
@@ -243,7 +243,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void NotifyCatalogChange_CreatedToNonEmptyListCurrentFolder_AddNewAssetToList()
         {
-            Folder folder = new Folder { Path = @"D:\Data" };
+            Folder folder = new() { Path = @"D:\Data" };
 
             Asset[] assets = new Asset[]
             {
@@ -254,7 +254,7 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), Folder = folder }
             };
 
-            Asset newAsset = new Asset { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = folder };
+            Asset newAsset = new() { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = folder };
             string statusMessage = "Creating thumbnail for NewImage.jpg";
 
             using (var mock = AutoMock.GetLoose())
@@ -286,7 +286,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void NotifyCatalogChange_CreatedToEmptyListCurrentFolderWithCataloguedAssets_AddAllCataloguedAssetsToList()
         {
-            Folder folder = new Folder { Path = @"D:\Data" };
+            Folder folder = new() { Path = @"D:\Data" };
             Asset[] assets = new Asset[] { };
             
             var cataloguedAssets = new List<Asset>
@@ -329,9 +329,9 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void NotifyCatalogChange_CreatedToEmptyListCurrentFolderWithoutCataloguedAssets_AddNewAssetToList()
         {
-            Folder folder = new Folder { Path = @"D:\Data" };
+            Folder folder = new() { Path = @"D:\Data" };
             Asset[] assets = new Asset[] { };
-            Asset newAsset = new Asset { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = folder };
+            Asset newAsset = new() { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = folder };
 
             using (var mock = AutoMock.GetLoose())
             {
@@ -354,7 +354,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void NotifyCatalogChange_CreatedToNonEmptyListDifferentFolder_KeepExistingList()
         {
-            Folder folder = new Folder { Path = @"D:\Data" };
+            Folder folder = new() { Path = @"D:\Data" };
 
             Asset[] assets = new Asset[]
             {
@@ -365,8 +365,8 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), Folder = folder }
             };
 
-            Folder newFolder = new Folder { Path = @"D:\NewFolder" };
-            Asset newAsset = new Asset { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = newFolder };
+            Folder newFolder = new() { Path = @"D:\NewFolder" };
+            Asset newAsset = new() { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = newFolder };
 
             using (var mock = AutoMock.GetLoose())
             {
@@ -394,7 +394,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void NotifyCatalogChange_NullFolder_IgnoreNewAsset()
         {
-            Folder folder = new Folder { Path = @"D:\Data" };
+            Folder folder = new() { Path = @"D:\Data" };
 
             Asset[] assets = new Asset[]
             {
@@ -405,7 +405,7 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), Folder = folder }
             };
 
-            Asset newAsset = new Asset { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = null };
+            Asset newAsset = new() { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = null };
 
             using (var mock = AutoMock.GetLoose())
             {
@@ -447,7 +447,7 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData("NewImage.jpg", "", "C:\\NewFolder")]
         public void NotifyCatalogChange_InvalidParameters_IgnoreAsset(string fileName, string folderId, string folderPath)
         {
-            Folder folder = new Folder { Path = @"D:\Data" };
+            Folder folder = new() { Path = @"D:\Data" };
 
             Asset[] assets = new Asset[]
             {
@@ -458,7 +458,7 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), Folder = folder }
             };
 
-            Asset newAsset = new Asset
+            Asset newAsset = new()
             {
                 FileName = fileName,
                 ImageData = new BitmapImage(),
@@ -499,7 +499,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void NotifyCatalogChange_DeletedInFromCurrentFolder_RemoveFromAssetList()
         {
-            Folder folder = new Folder { Path = @"D:\Data" };
+            Folder folder = new() { Path = @"D:\Data" };
             
             Asset[] assets = new Asset[]
             {
@@ -944,10 +944,10 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), FileCreationDateTime = new DateTime(2010, 8, 1) }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
+            Mock<IApplication> mockApp = new();
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+            ApplicationViewModel viewModel = new(mockApp.Object);
 
             viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
@@ -1022,10 +1022,10 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), FileModificationDateTime = new DateTime(2010, 8, 1) }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
+            Mock<IApplication> mockApp = new();
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+            ApplicationViewModel viewModel = new(mockApp.Object);
 
             viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileModificationDateTime);
@@ -1051,10 +1051,10 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), FileModificationDateTime = new DateTime(2010, 8, 1) }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
+            Mock<IApplication> mockApp = new();
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+            ApplicationViewModel viewModel = new(mockApp.Object);
 
             viewModel.SetAssets(assets);
 
@@ -1096,10 +1096,10 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), FileSize = 2030 }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
+            Mock<IApplication> mockApp = new();
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+            ApplicationViewModel viewModel = new(mockApp.Object);
 
             viewModel.SetAssets(assets);
             viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileSize);
@@ -1125,10 +1125,10 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), FileSize = 2030 }
             };
 
-            Mock<IApplication> mockApp = new Mock<IApplication>();
+            Mock<IApplication> mockApp = new();
             mockApp.Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-            ApplicationViewModel viewModel = new ApplicationViewModel(mockApp.Object);
+            ApplicationViewModel viewModel = new(mockApp.Object);
 
             viewModel.SetAssets(assets);
 

@@ -23,7 +23,7 @@ namespace JPPhotoManager.Tests.Integration
             string hiddenFolderPath = Path.Combine(dataDirectory, "TestFolder", "TestHiddenSubFolder");
             File.SetAttributes(hiddenFolderPath, File.GetAttributes(hiddenFolderPath) | FileAttributes.Hidden);
 
-            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
@@ -35,7 +35,7 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void ResolveCatalogPathTest1()
         {
-            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", "{ApplicationData}\\JPPhotoManager")
                 .MockGetValue("appsettings:ApplicationDataDirectory", "{ApplicationData}\\JPPhotoManager")
@@ -52,7 +52,7 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void ResolveCatalogPathTest2()
         {
-            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", "{ApplicationData}\\JPPhotoManager")
                 .MockGetValue("appsettings:ApplicationDataDirectory", "{ApplicationData}\\JPPhotoManager")
@@ -115,7 +115,7 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void WriteReadJsonTest()
         {
-            List<string> writtenList = new List<string> { "Value 1", "Value 2" };
+            List<string> writtenList = new() { "Value 1", "Value 2" };
             string jsonPath = Path.Combine(dataDirectory, "test.json");
 
             IStorageService storageService = new StorageService(new UserConfigurationService(configuration));

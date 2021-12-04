@@ -20,7 +20,7 @@ namespace JPPhotoManager.Tests.Unit
             dataDirectory = Path.GetDirectoryName(typeof(ApplicationTests).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
 
-            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))

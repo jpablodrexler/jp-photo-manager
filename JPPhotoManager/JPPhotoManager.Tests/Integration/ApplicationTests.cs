@@ -22,7 +22,7 @@ namespace JPPhotoManager.Tests.Integration
             dataDirectory = Path.GetDirectoryName(typeof(ApplicationTests).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
 
-            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))
@@ -165,7 +165,7 @@ namespace JPPhotoManager.Tests.Integration
                 imagePath = Path.Combine(dataDirectory, "Inexistent Image.jpg");
                 File.Exists(imagePath).Should().BeFalse();
 
-                Asset inexistentAsset = new Asset
+                Asset inexistentAsset = new()
                 {
                     FileName = "Inexistent Image.jpg",
                     Folder = asset.Folder,
@@ -340,7 +340,7 @@ namespace JPPhotoManager.Tests.Integration
             {
                 var repository = mock.Container.Resolve<IAssetRepository>();
 
-                Folder folder = new Folder { FolderId = "1", Path = "C:\\Inexistent Folder" };
+                Folder folder = new() { FolderId = "1", Path = "C:\\Inexistent Folder" };
 
                 string imagePath = Path.Combine(dataDirectory, "Inexistent Image.jpg");
                 File.Exists(imagePath).Should().BeFalse();
@@ -382,7 +382,7 @@ namespace JPPhotoManager.Tests.Integration
                 var app = mock.Container.Resolve<Application.Application>();
 
                 Folder folder = repository.AddFolder(dataDirectory);
-                Mock<IAssetHashCalculatorService> hashCalculator = new Mock<IAssetHashCalculatorService>();
+                Mock<IAssetHashCalculatorService> hashCalculator = new();
 
                 string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
                 File.Exists(imagePath).Should().BeTrue();

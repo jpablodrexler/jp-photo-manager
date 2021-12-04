@@ -33,10 +33,10 @@ namespace JPPhotoManager.Tests.Unit
                 }
             };
             
-            Mock<IApplication> mock = new Mock<IApplication>();
+            Mock<IApplication> mock = new();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
-            ImportNewAssetsViewModel viewModel = new ImportNewAssetsViewModel(mock.Object)
+            ImportNewAssetsViewModel viewModel = new(mock.Object)
             {
                 Imports = imports
             };
@@ -72,10 +72,10 @@ namespace JPPhotoManager.Tests.Unit
                 }
             };
 
-            Mock<IApplication> mock = new Mock<IApplication>();
+            Mock<IApplication> mock = new();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
-            ImportNewAssetsViewModel viewModel = new ImportNewAssetsViewModel(mock.Object)
+            ImportNewAssetsViewModel viewModel = new(mock.Object)
             {
                 Imports = imports
             };
@@ -103,9 +103,9 @@ namespace JPPhotoManager.Tests.Unit
                 }
             };
 
-            Mock<IApplication> mock = new Mock<IApplication>();
+            Mock<IApplication> mock = new();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
-            ImportNewAssetsViewModel viewModel = new ImportNewAssetsViewModel(mock.Object);
+            ImportNewAssetsViewModel viewModel = new(mock.Object);
 
             viewModel.Step.Should().Be(ImportNewAssetsStepEnum.Configure);
             viewModel.CanConfigure.Should().BeTrue();
@@ -161,10 +161,10 @@ namespace JPPhotoManager.Tests.Unit
                 }
             };
 
-            Mock<IApplication> mock = new Mock<IApplication>();
+            Mock<IApplication> mock = new();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
-            ImportNewAssetsViewModel viewModel = new ImportNewAssetsViewModel(mock.Object)
+            ImportNewAssetsViewModel viewModel = new(mock.Object)
             {
                 Imports = imports
             };
@@ -202,10 +202,10 @@ namespace JPPhotoManager.Tests.Unit
                 }
             };
 
-            Mock<IApplication> mock = new Mock<IApplication>();
+            Mock<IApplication> mock = new();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
-            ImportNewAssetsViewModel viewModel = new ImportNewAssetsViewModel(mock.Object)
+            ImportNewAssetsViewModel viewModel = new(mock.Object)
             {
                 Imports = imports
             };
@@ -224,10 +224,10 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void NotifyImportImageTest()
         {
-            Mock<IApplication> mock = new Mock<IApplication>();
+            Mock<IApplication> mock = new();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
-            ImportNewAssetsViewModel viewModel = new ImportNewAssetsViewModel(mock.Object);
+            ImportNewAssetsViewModel viewModel = new(mock.Object);
 
             viewModel.NotifyImageImported(new StatusChangeCallbackEventArgs
             {

@@ -16,7 +16,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetVisibilityVisibleTest()
         {
-            VisibilityConverter converter = new VisibilityConverter();
+            VisibilityConverter converter = new();
             Visibility result = (Visibility)converter.Convert("A string", typeof(object), null, new CultureInfo("en-US"));
             result.Should().Be(Visibility.Visible);
         }
@@ -24,7 +24,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void GetVisibilityHiddenTest()
         {
-            VisibilityConverter converter = new VisibilityConverter();
+            VisibilityConverter converter = new();
             Visibility result = (Visibility)converter.Convert(new NamedObject(), typeof(object), null, new CultureInfo("en-US"));
             result.Should().Be(Visibility.Hidden);
         }
@@ -32,7 +32,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void ConvertBackTest()
         {
-            VisibilityConverter converter = new VisibilityConverter();
+            VisibilityConverter converter = new();
             Func<object> function = () => converter.ConvertBack(Visibility.Visible, typeof(object), null, new CultureInfo("en-US"));
             function.Should().Throw<NotImplementedException>();
         }

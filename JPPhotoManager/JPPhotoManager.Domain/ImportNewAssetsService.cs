@@ -23,7 +23,7 @@ namespace JPPhotoManager.Domain
         {
             return await Task.Run(() =>
             {
-                List<ImportNewAssetsResult> result = new List<ImportNewAssetsResult>();
+                List<ImportNewAssetsResult> result = new();
                 var configuration = assetRepository.GetImportNewAssetsConfiguration();
 
                 foreach (var import in configuration.Imports)
@@ -37,7 +37,7 @@ namespace JPPhotoManager.Domain
 
         private void Import(string sourceDirectory, string destinationDirectory, bool includeSubFolders, StatusChangeCallback callback, List<ImportNewAssetsResult> resultList)
         {
-            ImportNewAssetsResult result = new ImportNewAssetsResult()
+            ImportNewAssetsResult result = new()
             {
                 SourceDirectory = sourceDirectory,
                 DestinationDirectory = destinationDirectory

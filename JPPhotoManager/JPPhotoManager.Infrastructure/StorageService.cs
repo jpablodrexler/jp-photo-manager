@@ -27,7 +27,7 @@ namespace JPPhotoManager.Infrastructure
 
         public List<DirectoryInfo> GetRecursiveSubDirectories(string directoryPath)
         {
-            List<DirectoryInfo> result = new List<DirectoryInfo>();
+            List<DirectoryInfo> result = new();
             GetRecursiveSubDirectories(directoryPath, result);
 
             return result;
@@ -185,7 +185,7 @@ namespace JPPhotoManager.Infrastructure
         {
             if (FileExists(asset.FullPath))
             {
-                FileInfo info = new FileInfo(asset.FullPath);
+                FileInfo info = new(asset.FullPath);
                 asset.FileCreationDateTime = info.CreationTime;
                 asset.FileModificationDateTime = info.LastWriteTime;
             }

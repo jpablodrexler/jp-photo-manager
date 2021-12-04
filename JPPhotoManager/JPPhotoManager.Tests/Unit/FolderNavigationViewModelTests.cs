@@ -17,8 +17,8 @@ namespace JPPhotoManager.Tests.Unit
             {
                 mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                Folder sourceFolder = new Folder { Path = @"D:\Data\Folder1" };
-                Folder selectedFolder = new Folder { Path = @"D:\Data\Folder2" };
+                Folder sourceFolder = new() { Path = @"D:\Data\Folder1" };
+                Folder selectedFolder = new() { Path = @"D:\Data\Folder2" };
 
                 var viewModel = mock.Container.Resolve<FolderNavigationViewModel>(
                     new NamedParameter("sourceFolder", sourceFolder),
@@ -45,7 +45,7 @@ namespace JPPhotoManager.Tests.Unit
             {
                 mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                Folder sourceFolder = new Folder { Path = sourcePath };
+                Folder sourceFolder = new() { Path = sourcePath };
 
                 var viewModel = mock.Container.Resolve<FolderNavigationViewModel>(
                     new NamedParameter("sourceFolder", sourceFolder),
@@ -83,7 +83,7 @@ namespace JPPhotoManager.Tests.Unit
             {
                 mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                Folder sourceFolder = new Folder { Path = @"D:\Data\Folder1" };
+                Folder sourceFolder = new() { Path = @"D:\Data\Folder1" };
 
                 var viewModel = mock.Container.Resolve<FolderNavigationViewModel>(
                     new NamedParameter("sourceFolder", sourceFolder),

@@ -12,7 +12,7 @@ namespace JPPhotoManager.Common
 
             if (File.Exists(jsonFilePath))
             {
-                using (StreamReader reader = new StreamReader(jsonFilePath))
+                using (StreamReader reader = new(jsonFilePath))
                 {
                     json = reader.ReadToEnd();
                 }
@@ -27,7 +27,7 @@ namespace JPPhotoManager.Common
         {
             string json = JsonSerializer.Serialize(anObject, new JsonSerializerOptions { WriteIndented = true });
 
-            using (StreamWriter writer = new StreamWriter(jsonFilePath, false))
+            using (StreamWriter writer = new(jsonFilePath, false))
             {
                 writer.Write(json);
             }

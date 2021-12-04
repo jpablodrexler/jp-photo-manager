@@ -170,7 +170,7 @@ namespace JPPhotoManager.UI.Windows
 
         private void Save(ObservableCollection<ImportNewAssetsDirectoriesDefinition> imports)
         {
-            ImportNewAssetsConfiguration configuration = new ImportNewAssetsConfiguration();
+            ImportNewAssetsConfiguration configuration = new();
             configuration.Imports.AddRange(imports);
             ViewModel.SetImportNewAssetsConfiguration(configuration);
         }

@@ -23,7 +23,7 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData(25073561600, "23.4 GB")]
         public void GetFormattedFileSizeTest(long size, string expected)
         {
-            FileSizeConverter converter = new FileSizeConverter();
+            FileSizeConverter converter = new();
             string result = (string)converter.Convert(size, typeof(long), null, new CultureInfo("en-US"));
             result.Should().Be(expected);
         }
@@ -31,7 +31,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void ConvertBackTest()
         {
-            FileSizeConverter converter = new FileSizeConverter();
+            FileSizeConverter converter = new();
             Func<object> function = () => converter.ConvertBack("17.3 KB", typeof(string), null, new CultureInfo("en-US"));
             function.Should().Throw<NotImplementedException>();
         }

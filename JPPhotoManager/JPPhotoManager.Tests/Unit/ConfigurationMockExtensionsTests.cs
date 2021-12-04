@@ -10,7 +10,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void ConfigurationMockTest()
         {
-            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", "dataDirectory1")
                 .MockGetValue("appsettings:ApplicationDataDirectory", "dataDirectory2")

@@ -21,13 +21,13 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void SameFileAndFolderEqualTest()
         {
-            Folder folder1 = new Folder
+            Folder folder1 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 Path = @"C:\Users\TestUser\Pictures"
             };
 
-            Folder folder2 = new Folder
+            Folder folder2 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 Path = @"C:\Users\TestUser\Pictures"
@@ -40,13 +40,13 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void DifferentPathNonEqualTest()
         {
-            Folder folder1 = new Folder
+            Folder folder1 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 Path = @"C:\Users\TestUser\Pictures"
             };
 
-            Folder folder2 = new Folder
+            Folder folder2 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 Path = @"C:\Users\TestUser\Pictures\MyAlbum"
@@ -59,13 +59,13 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void OnlyOnePathNonEqualTest()
         {
-            Folder folder1 = new Folder
+            Folder folder1 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 Path = @"C:\Users\TestUser\Pictures"
             };
 
-            Folder folder2 = new Folder
+            Folder folder2 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 Path = null
@@ -78,7 +78,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void OnlyOneObjectNonEqualTest()
         {
-            Folder folder = new Folder
+            Folder folder = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 Path = @"C:\Users\TestUser\Pictures"
@@ -90,7 +90,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void ToStringWithPathTest()
         {
-            Folder folder = new Folder
+            Folder folder = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 Path = @"C:\Users\TestUser\Pictures"
@@ -102,7 +102,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void ToStringWithoutPathTest()
         {
-            Folder folder1 = new Folder
+            Folder folder1 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 Path = null
@@ -110,7 +110,7 @@ namespace JPPhotoManager.Tests.Unit
 
             folder1.ToString().Should().BeNull();
 
-            Folder folder2 = new Folder
+            Folder folder2 = new()
             {
                 FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
                 Path = ""
@@ -139,12 +139,12 @@ namespace JPPhotoManager.Tests.Unit
             string absoluteTestFolderPath1 = Path.Combine(dataDirectory, testFolderPath1);
             string absoluteTestFolderPath2 = Path.Combine(dataDirectory, testFolderPath2);
 
-            Folder folder1 = new Folder
+            Folder folder1 = new()
             {
                 Path = absoluteTestFolderPath1
             };
 
-            Folder folder2 = new Folder
+            Folder folder2 = new()
             {
                 Path = absoluteTestFolderPath2
             };

@@ -106,7 +106,7 @@ namespace JPPhotoManager.Infrastructure
                 copyright = assemblyCopyright.Copyright;
             }
 
-            AboutInformation aboutInformation = new AboutInformation
+            AboutInformation aboutInformation = new()
             {
                 Product = product,
                 Author = copyright,

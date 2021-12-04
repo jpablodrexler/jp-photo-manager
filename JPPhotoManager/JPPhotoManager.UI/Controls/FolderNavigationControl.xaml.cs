@@ -94,7 +94,7 @@ namespace JPPhotoManager.UI.Controls
 
                 foreach (Folder folder in folders)
                 {
-                    TreeViewItem subitem = new TreeViewItem
+                    TreeViewItem subitem = new()
                     {
                         Header = folder.Name,
                         Tag = folder

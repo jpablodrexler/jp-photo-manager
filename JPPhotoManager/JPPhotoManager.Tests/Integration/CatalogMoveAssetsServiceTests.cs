@@ -26,7 +26,7 @@ namespace JPPhotoManager.Tests.Integration
             imageDestinationDirectory = Path.Combine(dataDirectory, "NewFolder");
             nonCataloguedImageDestinationDirectory = Path.Combine(dataDirectory, "NonCataloguedNewFolder");
 
-            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))
@@ -74,7 +74,7 @@ namespace JPPhotoManager.Tests.Integration
                 var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
                     .Select(f => Path.GetFileName(f));
 
-                List<string> fileList = new List<string>();
+                List<string> fileList = new();
                 fileList.AddRange(jpegFiles);
                 fileList.AddRange(pngFiles);
 
@@ -127,7 +127,7 @@ namespace JPPhotoManager.Tests.Integration
                 var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
                     .Select(f => Path.GetFileName(f));
 
-                List<string> fileList = new List<string>();
+                List<string> fileList = new();
                 fileList.AddRange(jpegFiles);
                 fileList.AddRange(pngFiles);
 
@@ -185,7 +185,7 @@ namespace JPPhotoManager.Tests.Integration
                 var pngFiles = Directory.GetFiles(dataDirectory, "*.png") // png files
                     .Select(f => Path.GetFileName(f));
 
-                List<string> fileList = new List<string>();
+                List<string> fileList = new();
                 fileList.AddRange(jpegFiles);
                 fileList.AddRange(pngFiles);
 
@@ -234,7 +234,7 @@ namespace JPPhotoManager.Tests.Integration
             string appDataFolder = Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString());
             int batchSize = 1000;
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
-            List<string> fileList = new List<string>();
+            List<string> fileList = new();
 
             using (var mock = AutoMock.GetLoose(
                 cfg =>
@@ -526,7 +526,7 @@ namespace JPPhotoManager.Tests.Integration
                 File.Exists(sourceImagePath).Should().BeFalse();
                 File.Exists(destinationImagePath).Should().BeFalse();
 
-                Asset asset = new Asset
+                Asset asset = new()
                 {
                     FileName = "Nonexistent Image.jpg",
                     Folder = sourceFolder,
@@ -806,7 +806,7 @@ namespace JPPhotoManager.Tests.Integration
                 File.Exists(sourceImagePath).Should().BeFalse();
                 File.Exists(destinationImagePath).Should().BeFalse();
 
-                Asset asset = new Asset
+                Asset asset = new()
                 {
                     FileName = "Nonexistent Image.jpg",
                     Folder = sourceFolder,
@@ -926,7 +926,7 @@ namespace JPPhotoManager.Tests.Integration
                 string sourceImagePath = Path.Combine(dataDirectory, "Nonexistent Image.jpg");
                 File.Exists(sourceImagePath).Should().BeFalse();
 
-                Asset asset = new Asset
+                Asset asset = new()
                 {
                     FileName = "Nonexistent Image.jpg",
                     Folder = sourceFolder,

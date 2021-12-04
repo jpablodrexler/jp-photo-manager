@@ -19,13 +19,13 @@ namespace JPPhotoManager.Domain
 
         private bool IsValidLocalPath(string directory)
         {
-            Regex regex = new Regex(LOCAL_PATH_PATTERN);
+            Regex regex = new(LOCAL_PATH_PATTERN);
             return regex.IsMatch(directory);
         }
 
         private bool IsValidRemotePath(string directory)
         {
-            Regex regex = new Regex(REMOTE_PATH_PATTERN);
+            Regex regex = new(REMOTE_PATH_PATTERN);
             return regex.IsMatch(directory);
         }
 

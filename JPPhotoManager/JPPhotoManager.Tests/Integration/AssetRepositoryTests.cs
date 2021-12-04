@@ -22,7 +22,7 @@ namespace JPPhotoManager.Tests.Integration
             dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTests).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
 
-            Mock<IConfigurationRoot> configurationMock = new Mock<IConfigurationRoot>();
+            Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))
@@ -276,7 +276,7 @@ namespace JPPhotoManager.Tests.Integration
             {
                 var repository = mock.Container.Resolve<IAssetRepository>();
 
-                ImportNewAssetsConfiguration importConfiguration = new ImportNewAssetsConfiguration();
+                ImportNewAssetsConfiguration importConfiguration = new();
 
                 importConfiguration.Imports.Add(
                     new ImportNewAssetsDirectoriesDefinition

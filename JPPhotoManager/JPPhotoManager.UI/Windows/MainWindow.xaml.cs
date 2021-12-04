@@ -254,9 +254,9 @@ namespace JPPhotoManager.UI.Windows
 
                 if (duplicates.Count > 0)
                 {
-                    FindDuplicatedAssetsViewModel viewModel = new FindDuplicatedAssetsViewModel(application);
+                    FindDuplicatedAssetsViewModel viewModel = new(application);
                     viewModel.SetDuplicates(duplicates);
-                    DuplicatedAssetsWindow duplicatedAssetsWindow = new DuplicatedAssetsWindow(viewModel);
+                    DuplicatedAssetsWindow duplicatedAssetsWindow = new(viewModel);
                     duplicatedAssetsWindow.ShowDialog();
                 }
                 else
@@ -274,8 +274,8 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                ImportNewAssetsViewModel viewModel = new ImportNewAssetsViewModel(application);
-                ImportNewAssetsWindow importNewAssetsWindow = new ImportNewAssetsWindow(viewModel);
+                ImportNewAssetsViewModel viewModel = new(application);
+                ImportNewAssetsWindow importNewAssetsWindow = new(viewModel);
                 importNewAssetsWindow.ShowDialog();
             }
             catch (Exception ex)
@@ -289,7 +289,7 @@ namespace JPPhotoManager.UI.Windows
             try
             {
                 var about = application.GetAboutInformation(GetType().Assembly);
-                AboutWindow duplicatedAssetsWindow = new AboutWindow(about);
+                AboutWindow duplicatedAssetsWindow = new(about);
                 duplicatedAssetsWindow.ShowDialog();
             }
             catch (Exception ex)

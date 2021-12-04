@@ -13,7 +13,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void ViewModelTest()
         {
-            List<List<Asset>> duplicatedAssetSets = new List<List<Asset>>
+            List<List<Asset>> duplicatedAssetSets = new()
             {
                 new List<Asset>(new List<Asset>
                 {
@@ -46,7 +46,7 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void ViewModel_EmptyDuplicatedAssetCollectionTest()
         {
-            List<List<Asset>> duplicatedAssetSets = new List<List<Asset>>();
+            List<List<Asset>> duplicatedAssetSets = new();
 
             using (var mock = AutoMock.GetLoose())
             {
@@ -77,7 +77,7 @@ namespace JPPhotoManager.Tests.Unit
 
                 FindDuplicatedAssetsViewModel viewModel = mock.Create<FindDuplicatedAssetsViewModel>();
 
-                Action action = new Action(() => viewModel.SetDuplicates(duplicatedAssetSets));
+                Action action = new(() => viewModel.SetDuplicates(duplicatedAssetSets));
                 action.Should().Throw<ArgumentNullException>();
             }
         }
