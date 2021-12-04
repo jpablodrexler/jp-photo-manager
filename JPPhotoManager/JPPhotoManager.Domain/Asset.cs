@@ -23,18 +23,24 @@ namespace JPPhotoManager.Domain
 
         public string ComputeNewName(string batchFormat, int ordinal)
         {
-            int ordinalStart = batchFormat.IndexOf("#");
-            int ordinalEnd = batchFormat.LastIndexOf("#");
+            string newName = FileName;
 
-            if (ordinalStart >= 0)
+            if (!string.IsNullOrWhiteSpace(batchFormat))
             {
-                string ordinalPlaceholder = batchFormat.Substring(ordinalStart, ordinalEnd - ordinalStart + 1);
-                string ordinalFormat = new('0', ordinalPlaceholder.Length);
-                string ordinalString = ordinal.ToString(ordinalFormat);
-                batchFormat = batchFormat.Replace(ordinalPlaceholder, ordinalString);
+                batchFormat = batchFormat.Trim();
+                int ordinalStart = batchFormat.IndexOf("#");
+                int ordinalEnd = batchFormat.LastIndexOf("#");
+
+                if (ordinalStart >= 0)
+                {
+                    string ordinalPlaceholder = batchFormat.Substring(ordinalStart, ordinalEnd - ordinalStart + 1);
+                    string ordinalFormat = new('0', ordinalPlaceholder.Length);
+                    string ordinalString = ordinal.ToString(ordinalFormat);
+                    newName = batchFormat.Replace(ordinalPlaceholder, ordinalString);
+                }
             }
 
-            return batchFormat;
+            return newName;
         }
 
         public override bool Equals(object obj)
