@@ -29,28 +29,28 @@ namespace JPPhotoManager.UI.Controls
 
         public ApplicationViewModel ViewModel
         {
-            get { return (ApplicationViewModel)this.DataContext; }
+            get { return (ApplicationViewModel)DataContext; }
         }
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             Initialize();
-            this.ViewModel.FolderAdded += ViewModel_FolderAdded;
-            this.ViewModel.FolderRemoved += ViewModel_FolderRemoved;
+            ViewModel.FolderAdded += ViewModel_FolderAdded;
+            ViewModel.FolderRemoved += ViewModel_FolderRemoved;
         }
 
         private void ViewModel_FolderAdded(object sender, FolderAddedEventArgs e)
         {
-            this.ViewModel.IsRefreshingFolders = true;
+            ViewModel.IsRefreshingFolders = true;
             Initialize();
-            this.ViewModel.IsRefreshingFolders = false;
+            ViewModel.IsRefreshingFolders = false;
         }
 
         private void ViewModel_FolderRemoved(object sender, FolderRemovedEventArgs e)
         {
-            this.ViewModel.IsRefreshingFolders = true;
+            ViewModel.IsRefreshingFolders = true;
             Initialize();
-            this.ViewModel.IsRefreshingFolders = false;
+            ViewModel.IsRefreshingFolders = false;
         }
 
         // TODO: When a new folder is catalogued, this control should be notified so it can display it.
@@ -59,7 +59,7 @@ namespace JPPhotoManager.UI.Controls
             try
             {
                 foldersTreeView.Items.Clear();
-                Folder[] rootFolders = this.ViewModel.Application.GetRootCatalogFolders();
+                Folder[] rootFolders = ViewModel.Application.GetRootCatalogFolders();
                 
                 foreach (Folder folder in rootFolders)
                 {
@@ -74,8 +74,8 @@ namespace JPPhotoManager.UI.Controls
                     foldersTreeView.Items.Add(item);
                 }
 
-                this.GoToFolder(this.SelectedPath);
-                this.isInitializing = false;
+                GoToFolder(SelectedPath);
+                isInitializing = false;
             }
             catch (Exception ex)
             {
@@ -89,7 +89,7 @@ namespace JPPhotoManager.UI.Controls
             {
                 item.Items.Clear();
 
-                Folder[] folders = this.ViewModel.Application.GetSubFolders((Folder)item.Tag, includeHidden);
+                Folder[] folders = ViewModel.Application.GetSubFolders((Folder)item.Tag, includeHidden);
                 folders = folders.OrderBy(f => f.Name).ToArray();
 
                 foreach (Folder folder in folders)
@@ -113,7 +113,7 @@ namespace JPPhotoManager.UI.Controls
 
         private void Item_Expanded(object sender, RoutedEventArgs e)
         {
-            if (this.isInitializing)
+            if (isInitializing)
                 return;
 
             TreeViewItem item = (TreeViewItem)sender;
@@ -142,8 +142,8 @@ namespace JPPhotoManager.UI.Controls
 
                 if (selectedTreeViewItem.Tag is Folder folder)
                 {
-                    this.SelectedPath = folder.Path;
-                    this.FolderSelected?.Invoke(this, new EventArgs());
+                    SelectedPath = folder.Path;
+                    FolderSelected?.Invoke(this, new EventArgs());
                 }
             }
             catch (Exception ex)
@@ -154,7 +154,7 @@ namespace JPPhotoManager.UI.Controls
 
         public void GoToFolder(string folderFullPath)
         {
-            foreach (var item in this.foldersTreeView.Items)
+            foreach (var item in foldersTreeView.Items)
             {
                 TreeViewItem treeViewItem = (TreeViewItem)item;
                 // TODO: SHOULD ASK THE USER IF HE WANTS TO SEE HIDDEN FOLDERS.

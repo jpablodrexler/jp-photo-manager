@@ -12,7 +12,7 @@ namespace JPPhotoManager.Domain
         {
             get
             {
-                string[] pathParts = this.Path.Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] pathParts = Path.Split(new char[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
                 string result = pathParts[pathParts.Length - 1];
 
                 return result;
@@ -22,7 +22,7 @@ namespace JPPhotoManager.Domain
         public bool IsParentOf(Folder otherFolder)
         {
             bool result;
-            string[] thisPathDirectories = this.Path.Split(System.IO.Path.DirectorySeparatorChar);
+            string[] thisPathDirectories = Path.Split(System.IO.Path.DirectorySeparatorChar);
             string[] otherPathDirectories = otherFolder.Path.Split(System.IO.Path.DirectorySeparatorChar);
 
             result = (thisPathDirectories != null
@@ -48,17 +48,17 @@ namespace JPPhotoManager.Domain
         {
             Folder folder = obj as Folder;
 
-            return folder != null && folder.Path == this.Path;
+            return folder != null && folder.Path == Path;
         }
 
         public override int GetHashCode()
         {
-            return this.Path != null ? this.Path.GetHashCode() : base.GetHashCode();
+            return Path != null ? Path.GetHashCode() : base.GetHashCode();
         }
 
         public override string ToString()
         {
-            return this.Path;
+            return Path;
         }
     }
 }

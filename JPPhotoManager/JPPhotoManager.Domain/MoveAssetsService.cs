@@ -47,7 +47,7 @@ namespace JPPhotoManager.Domain
             #endregion
 
             bool result = false;
-            var folder = this.assetRepository.GetFolderByPath(destinationFolder.Path);
+            var folder = assetRepository.GetFolderByPath(destinationFolder.Path);
             
             // If the folder is null, it means is not present in the catalog.
             // TODO: IF THE DESTINATION FOLDER IS NEW, THE FOLDER NAVIGATION CONTROL SHOULD DISPLAY IT WHEN THE USER GOES BACK TO THE MAIN WINDOW.
@@ -63,16 +63,16 @@ namespace JPPhotoManager.Domain
                 string sourcePath = asset.FullPath;
                 string destinationPath = Path.Combine(destinationFolder.Path, asset.FileName);
 
-                if (!this.storageService.FileExists(sourcePath))
+                if (!storageService.FileExists(sourcePath))
                 {
                     // This could happen if an image was moved or deleted outside the app.
                     // TODO: Instead of just failing, should remove the file from the catalog.
                     throw new ArgumentException(sourcePath);
                 }
 
-                if (this.storageService.FileExists(sourcePath) && !this.storageService.FileExists(destinationPath))
+                if (storageService.FileExists(sourcePath) && !storageService.FileExists(destinationPath))
                 {
-                    result = this.storageService.CopyImage(sourcePath, destinationPath);
+                    result = storageService.CopyImage(sourcePath, destinationPath);
 
                     if (!result)
                     {
@@ -81,7 +81,7 @@ namespace JPPhotoManager.Domain
 
                     if (result && !isDestinationFolderInCatalog)
                     {
-                        destinationFolder = this.assetRepository.AddFolder(destinationFolder.Path);
+                        destinationFolder = assetRepository.AddFolder(destinationFolder.Path);
                         isDestinationFolderInCatalog = true;
                     }
                 }
@@ -91,11 +91,11 @@ namespace JPPhotoManager.Domain
             {
                 if (!preserveOriginalFiles)
                 {
-                    this.DeleteAssets(assets, deleteFiles: true, saveCatalog: false);
+                    DeleteAssets(assets, deleteFiles: true, saveCatalog: false);
                 }
 
                 AddTargetPathToRecent(destinationFolder);
-                this.assetRepository.SaveCatalog(destinationFolder);
+                assetRepository.SaveCatalog(destinationFolder);
             }
             
             return result;
@@ -104,7 +104,7 @@ namespace JPPhotoManager.Domain
         // TODO: Extend automated tests to evaluate recent target paths.
         private void AddTargetPathToRecent(Folder destinationFolder)
         {
-            List<string> recentTargetPaths = this.assetRepository.GetRecentTargetPaths();
+            List<string> recentTargetPaths = assetRepository.GetRecentTargetPaths();
 
             if (recentTargetPaths.Contains(destinationFolder.Path))
                 recentTargetPaths.Remove(destinationFolder.Path);
@@ -112,7 +112,7 @@ namespace JPPhotoManager.Domain
             recentTargetPaths.Insert(0, destinationFolder.Path);
 
             recentTargetPaths = recentTargetPaths.Take(RECENT_TARGET_PATHS_MAX_COUNT).ToList();
-            this.assetRepository.SetRecentTargetPaths(recentTargetPaths);
+            assetRepository.SetRecentTargetPaths(recentTargetPaths);
         }
 
         public void DeleteAssets(Asset[] assets, bool deleteFiles, bool saveCatalog = true)
@@ -136,7 +136,7 @@ namespace JPPhotoManager.Domain
                     throw new ArgumentNullException(nameof(asset), "Asset.Folder cannot be null.");
                 }
 
-                if (deleteFiles && !this.storageService.FileExists(asset, asset.Folder))
+                if (deleteFiles && !storageService.FileExists(asset, asset.Folder))
                 {
                     throw new ArgumentException("File does not exist: " + asset.FullPath);
                 }
@@ -146,17 +146,17 @@ namespace JPPhotoManager.Domain
 
             foreach (Asset asset in assets)
             {
-                this.assetRepository.DeleteAsset(asset.Folder.Path, asset.FileName);
+                assetRepository.DeleteAsset(asset.Folder.Path, asset.FileName);
 
                 if (deleteFiles)
                 {
-                    this.storageService.DeleteFile(asset.Folder.Path, asset.FileName);
+                    storageService.DeleteFile(asset.Folder.Path, asset.FileName);
                 }
             }
 
             if (saveCatalog)
             {
-                this.assetRepository.SaveCatalog(assets.FirstOrDefault()?.Folder);
+                assetRepository.SaveCatalog(assets.FirstOrDefault()?.Folder);
             }
         }
     }

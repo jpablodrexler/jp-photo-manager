@@ -37,23 +37,23 @@ namespace JPPhotoManager.UI.Controls
 
         private ApplicationViewModel ViewModel
         {
-            get { return (ApplicationViewModel)this.DataContext; }
+            get { return (ApplicationViewModel)DataContext; }
         }
 
         public async void GoToFolder(IApplication assetApp, string selectedImagePath)
         {
             try
             {
-                if (!this.ViewModel.IsRefreshingFolders)
+                if (!ViewModel.IsRefreshingFolders)
                 {
-                    this.ViewModel.CurrentFolder = selectedImagePath;
+                    ViewModel.CurrentFolder = selectedImagePath;
                     Asset[] assets = await GetAssets(assetApp, ViewModel.CurrentFolder).ConfigureAwait(true);
-                    this.ViewModel.SetAssets(assets);
+                    ViewModel.SetAssets(assets);
 
-                    if (this.thumbnailsListView.Items.Count > 0)
+                    if (thumbnailsListView.Items.Count > 0)
                     {
-                        this.ViewModel.ViewerPosition = 0;
-                        this.thumbnailsListView.ScrollIntoView(this.thumbnailsListView.Items[0]);
+                        ViewModel.ViewerPosition = 0;
+                        thumbnailsListView.ScrollIntoView(thumbnailsListView.Items[0]);
                     }
                 }
             }
@@ -73,7 +73,7 @@ namespace JPPhotoManager.UI.Controls
             try
             {
                 Asset asset = (Asset)((FrameworkElement)sender).DataContext;
-                this.ViewModel?.GoToAsset(asset);
+                ViewModel?.GoToAsset(asset);
             }
             catch (Exception ex)
             {
@@ -86,7 +86,7 @@ namespace JPPhotoManager.UI.Controls
             try
             {
                 Asset asset = (Asset)((FrameworkElement)sender).DataContext;
-                this.ThumbnailSelected?.Invoke(this, new ThumbnailSelectedEventArgs() { Asset = asset });
+                ThumbnailSelected?.Invoke(this, new ThumbnailSelectedEventArgs() { Asset = asset });
             }
             catch (Exception ex)
             {
@@ -96,15 +96,15 @@ namespace JPPhotoManager.UI.Controls
 
         public void ShowImage()
         {
-            if (this.thumbnailsListView.Items.Count > 0 && this.thumbnailsListView.SelectedItem != null)
+            if (thumbnailsListView.Items.Count > 0 && thumbnailsListView.SelectedItem != null)
             {
-                this.thumbnailsListView.ScrollIntoView(this.thumbnailsListView.SelectedItem);
+                thumbnailsListView.ScrollIntoView(thumbnailsListView.SelectedItem);
             }
         }
 
         private void thumbnailsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            this.ViewModel.SelectedAssets = this.thumbnailsListView.SelectedItems.Cast<Asset>().ToArray();
+            ViewModel.SelectedAssets = thumbnailsListView.SelectedItems.Cast<Asset>().ToArray();
         }
     }
 }

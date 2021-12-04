@@ -11,14 +11,14 @@ namespace JPPhotoManager.UI.ViewModels
 
         public BaseViewModel(T application)
         {
-            this.Application = application;
+            Application = application;
         }
 
         protected void NotifyPropertyChanged(params string[] propertyNames)
         {
             foreach (string propertyName in propertyNames)
             {
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             }
         }
     }

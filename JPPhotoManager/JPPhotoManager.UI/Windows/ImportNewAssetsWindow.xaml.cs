@@ -27,8 +27,8 @@ namespace JPPhotoManager.UI.Windows
             {
                 InitializeComponent();
 
-                this.DataContext = viewModel;
-                this.Initialize();
+                DataContext = viewModel;
+                Initialize();
             }
             catch (Exception ex)
             {
@@ -38,26 +38,26 @@ namespace JPPhotoManager.UI.Windows
 
         public ImportNewAssetsViewModel ViewModel
         {
-            get { return (ImportNewAssetsViewModel)this.DataContext; }
+            get { return (ImportNewAssetsViewModel)DataContext; }
         }
 
         private void Initialize()
         {
-            var configuration = this.ViewModel.Application.GetImportNewAssetsConfiguration();
+            var configuration = ViewModel.Application.GetImportNewAssetsConfiguration();
 
             if (configuration == null)
             {
                 configuration = new ImportNewAssetsConfiguration();
             }
 
-            this.ViewModel.Imports = new ObservableCollection<ImportNewAssetsDirectoriesDefinition>(configuration.Imports);
+            ViewModel.Imports = new ObservableCollection<ImportNewAssetsDirectoriesDefinition>(configuration.Imports);
         }
 
         private void DeleteLabel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             try
             {
-                this.DeleteDefinition(((TextBlock)e.Source).DataContext);
+                DeleteDefinition(((TextBlock)e.Source).DataContext);
             }
             catch (Exception ex)
             {
@@ -69,7 +69,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.MoveUpDefinition(((TextBlock)e.Source).DataContext);
+                MoveUpDefinition(((TextBlock)e.Source).DataContext);
             }
             catch (Exception ex)
             {
@@ -81,7 +81,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.MoveDownDefinition(((TextBlock)e.Source).DataContext);
+                MoveDownDefinition(((TextBlock)e.Source).DataContext);
             }
             catch (Exception ex)
             {
@@ -93,8 +93,8 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.Cursor = Cursors.Wait;
-                this.Save(this.ViewModel.Application, this.ViewModel.Imports);
+                Cursor = Cursors.Wait;
+                Save(ViewModel.Application, ViewModel.Imports);
             }
             catch (Exception ex)
             {
@@ -102,7 +102,7 @@ namespace JPPhotoManager.UI.Windows
             }
             finally
             {
-                this.Cursor = Cursors.Arrow;
+                Cursor = Cursors.Arrow;
             }
         }
 
@@ -110,9 +110,9 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.Cursor = Cursors.Wait;
-                this.ViewModel.AdvanceStep();
-                this.ViewModel.Results = await this.Import(this.ViewModel.Application, this.ViewModel.Imports).ConfigureAwait(true);
+                Cursor = Cursors.Wait;
+                ViewModel.AdvanceStep();
+                ViewModel.Results = await Import(ViewModel.Application, ViewModel.Imports).ConfigureAwait(true);
             }
             catch (Exception ex)
             {
@@ -120,7 +120,7 @@ namespace JPPhotoManager.UI.Windows
             }
             finally
             {
-                this.Cursor = Cursors.Arrow;
+                Cursor = Cursors.Arrow;
             }
         }
 
@@ -128,8 +128,8 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.Cursor = Cursors.Wait;
-                this.ViewModel.AdvanceStep();
+                Cursor = Cursors.Wait;
+                ViewModel.AdvanceStep();
             }
             catch (Exception ex)
             {
@@ -137,7 +137,7 @@ namespace JPPhotoManager.UI.Windows
             }
             finally
             {
-                this.Cursor = Cursors.Arrow;
+                Cursor = Cursors.Arrow;
             }
         }
 
@@ -146,7 +146,7 @@ namespace JPPhotoManager.UI.Windows
             // Evaluates if it is an existing item or the NewItemPlaceholder.
             if (selected is ImportNewAssetsDirectoriesDefinition definition)
             {
-                this.ViewModel.DeleteDefinition(definition);
+                ViewModel.DeleteDefinition(definition);
             }
         }
 
@@ -155,7 +155,7 @@ namespace JPPhotoManager.UI.Windows
             // Evaluates if it is an existing item or the NewItemPlaceholder.
             if (selected is ImportNewAssetsDirectoriesDefinition definition)
             {
-                this.ViewModel.MoveUpDefinition(definition);
+                ViewModel.MoveUpDefinition(definition);
             }
         }
 
@@ -164,7 +164,7 @@ namespace JPPhotoManager.UI.Windows
             // Evaluates if it is an existing item or the NewItemPlaceholder.
             if (selected is ImportNewAssetsDirectoriesDefinition definition)
             {
-                this.ViewModel.MoveDownDefinition(definition);
+                ViewModel.MoveDownDefinition(definition);
             }
         }
 
@@ -179,7 +179,7 @@ namespace JPPhotoManager.UI.Windows
         {
             return Task.Run(() =>
             {
-                this.Save(assetApp, imports);
+                Save(assetApp, imports);
                 var results = assetApp.ImportNewAssets(e => Dispatcher.Invoke(() => ViewModel.NotifyImageImported(e)));
                 return new ObservableCollection<ImportNewAssetsResult>(results);
             });

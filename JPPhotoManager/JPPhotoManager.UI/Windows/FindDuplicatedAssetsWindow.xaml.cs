@@ -23,7 +23,7 @@ namespace JPPhotoManager.UI.Windows
             {
                 InitializeComponent();
 
-                this.DataContext = viewModel;
+                DataContext = viewModel;
             }
             catch (Exception ex)
             {
@@ -33,7 +33,7 @@ namespace JPPhotoManager.UI.Windows
 
         public FindDuplicatedAssetsViewModel ViewModel
         {
-            get { return (FindDuplicatedAssetsViewModel)this.DataContext; }
+            get { return (FindDuplicatedAssetsViewModel)DataContext; }
         }
 
         private void DeleteLabel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -42,7 +42,7 @@ namespace JPPhotoManager.UI.Windows
             {
                 DuplicatedAssetViewModel viewModel = (DuplicatedAssetViewModel)((FrameworkElement)e.Source).DataContext;
                 Asset asset = viewModel.Asset;
-                this.ViewModel.DeleteAsset(viewModel);
+                ViewModel.DeleteAsset(viewModel);
 
                 // TODO: IN THE LIST BOXES, IF THE FILENAME INCLUDES _ IT IS NOT BEING SHOWN.
                 Console.WriteLine("Delete " + asset.FullPath);
@@ -57,7 +57,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                this.ViewModel.Refresh();
+                ViewModel.Refresh();
             }
             catch (Exception ex)
             {

@@ -11,9 +11,9 @@ namespace JPPhotoManager.UI.ViewModels
 
         public FolderNavigationViewModel(IApplication assetApp, Folder sourceFolder, Folder lastSelectedFolder, List<string> recentTargetPaths): base(assetApp)
         {
-            this.SourceFolder = sourceFolder;
-            this.LastSelectedFolder = lastSelectedFolder;
-            this.RecentTargetPaths = new ObservableCollection<string>(recentTargetPaths);
+            SourceFolder = sourceFolder;
+            LastSelectedFolder = lastSelectedFolder;
+            RecentTargetPaths = new ObservableCollection<string>(recentTargetPaths);
         }
 
         public Folder SourceFolder { get; private set; }
@@ -22,7 +22,7 @@ namespace JPPhotoManager.UI.ViewModels
         {
             get
             {
-                return !string.IsNullOrEmpty(this.TargetPath) ? new Folder { Path = this.TargetPath } : null;
+                return !string.IsNullOrEmpty(TargetPath) ? new Folder { Path = TargetPath } : null;
             }
         }
 
@@ -30,9 +30,9 @@ namespace JPPhotoManager.UI.ViewModels
         {
             get
             {
-                return this.SourceFolder != null
-                    && this.SelectedFolder != null
-                    && this.SourceFolder.Path != this.SelectedFolder.Path;
+                return SourceFolder != null
+                    && SelectedFolder != null
+                    && SourceFolder.Path != SelectedFolder.Path;
             }
         }
 
@@ -42,11 +42,11 @@ namespace JPPhotoManager.UI.ViewModels
 
         public string TargetPath
         {
-            get { return this.targetPath; }
+            get { return targetPath; }
             set
             {
-                this.targetPath = !string.IsNullOrEmpty(value) && value.EndsWith("\\") ? value.Substring(0, value.Length - 1) : value;
-                this.NotifyPropertyChanged(nameof(TargetPath), nameof(SelectedFolder), nameof(CanConfirm));
+                targetPath = !string.IsNullOrEmpty(value) && value.EndsWith("\\") ? value.Substring(0, value.Length - 1) : value;
+                NotifyPropertyChanged(nameof(TargetPath), nameof(SelectedFolder), nameof(CanConfirm));
             }
         }
     }

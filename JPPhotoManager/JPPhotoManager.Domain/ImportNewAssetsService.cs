@@ -22,11 +22,11 @@ namespace JPPhotoManager.Domain
         public List<ImportNewAssetsResult> Import(StatusChangeCallback callback)
         {
             List<ImportNewAssetsResult> result = new List<ImportNewAssetsResult>();
-            var configuration = this.assetRepository.GetImportNewAssetsConfiguration();
+            var configuration = assetRepository.GetImportNewAssetsConfiguration();
 
             foreach (var import in configuration.Imports)
             {
-                this.Import(import.SourceDirectory, import.DestinationDirectory, import.IncludeSubFolders, callback, result);
+                Import(import.SourceDirectory, import.DestinationDirectory, import.IncludeSubFolders, callback, result);
             }
 
             return result;
@@ -40,7 +40,7 @@ namespace JPPhotoManager.Domain
                 DestinationDirectory = destinationDirectory
             };
 
-            if (!this.storageService.FolderExists(sourceDirectory))
+            if (!storageService.FolderExists(sourceDirectory))
             {
                 result.Message = $"Source directory '{sourceDirectory}' not found.";
                 resultList.Add(result);
@@ -49,14 +49,14 @@ namespace JPPhotoManager.Domain
             {
                 try
                 {
-                    if (!this.storageService.FolderExists(destinationDirectory))
+                    if (!storageService.FolderExists(destinationDirectory))
                     {
-                        this.storageService.CreateDirectory(destinationDirectory);
+                        storageService.CreateDirectory(destinationDirectory);
                     }
 
-                    string[] sourceFileNames = this.storageService.GetFileNames(sourceDirectory);
-                    string[] destinationFileNames = this.storageService.GetFileNames(destinationDirectory);
-                    string[] newFileNames = this.directoryComparer.GetNewFileNames(sourceFileNames, destinationFileNames);
+                    string[] sourceFileNames = storageService.GetFileNames(sourceDirectory);
+                    string[] destinationFileNames = storageService.GetFileNames(destinationDirectory);
+                    string[] newFileNames = directoryComparer.GetNewFileNames(sourceFileNames, destinationFileNames);
                     newFileNames = GetFilesNotAlreadyInDestinationSubDirectories(newFileNames, destinationDirectory);
 
                     foreach (string newImage in newFileNames)
@@ -64,7 +64,7 @@ namespace JPPhotoManager.Domain
                         string sourcePath = Path.Combine(sourceDirectory, newImage);
                         string destinationPath = Path.Combine(destinationDirectory, newImage);
 
-                        if (this.storageService.CopyImage(sourcePath, destinationPath))
+                        if (storageService.CopyImage(sourcePath, destinationPath))
                         {
                             result.ImportedImages++;
                             callback(new StatusChangeCallbackEventArgs { NewStatus = $"Image '{sourcePath}' imported to '{destinationPath}'" });
@@ -90,13 +90,13 @@ namespace JPPhotoManager.Domain
 
                     if (includeSubFolders)
                     {
-                        var subdirectories = this.storageService.GetSubDirectories(sourceDirectory);
+                        var subdirectories = storageService.GetSubDirectories(sourceDirectory);
 
                         if (subdirectories != null)
                         {
                             foreach (var subdir in subdirectories)
                             {
-                                this.Import(subdir.FullName, Path.Combine(destinationDirectory, subdir.Name), includeSubFolders, callback, resultList);
+                                Import(subdir.FullName, Path.Combine(destinationDirectory, subdir.Name), includeSubFolders, callback, resultList);
                             }
                         }
                     }
@@ -116,14 +116,14 @@ namespace JPPhotoManager.Domain
 
         private string[] GetFilesNotAlreadyInDestinationSubDirectories(string[] newFileNames, string destinationDirectory)
         {
-            List<DirectoryInfo> destinationSubDirectories = this.storageService.GetRecursiveSubDirectories(destinationDirectory);
+            List<DirectoryInfo> destinationSubDirectories = storageService.GetRecursiveSubDirectories(destinationDirectory);
 
             if (destinationSubDirectories != null)
             {
                 foreach (var dir in destinationSubDirectories)
                 {
-                    string[] destinationFileNames = this.storageService.GetFileNames(dir.FullName);
-                    newFileNames = this.directoryComparer.GetNewFileNames(newFileNames, destinationFileNames);
+                    string[] destinationFileNames = storageService.GetFileNames(dir.FullName);
+                    newFileNames = directoryComparer.GetNewFileNames(newFileNames, destinationFileNames);
                 }
             }
 

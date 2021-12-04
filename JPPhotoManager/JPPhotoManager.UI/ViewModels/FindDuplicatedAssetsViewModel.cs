@@ -21,23 +21,23 @@ namespace JPPhotoManager.UI.ViewModels
 
         public List<DuplicatedSetViewModel> DuplicatedAssetSetsCollection
         {
-            get { return this._collection; }
+            get { return _collection; }
             private set
             {
-                this._collection = value;
-                this.NotifyPropertyChanged(nameof(DuplicatedAssetSetsCollection));
-                this.DuplicatedAssetSetsPosition = 0;
+                _collection = value;
+                NotifyPropertyChanged(nameof(DuplicatedAssetSetsCollection));
+                DuplicatedAssetSetsPosition = 0;
             }
         }
 
         public int DuplicatedAssetSetsPosition
         {
-            get { return this._duplicatedAssetSetsPosition; }
+            get { return _duplicatedAssetSetsPosition; }
             set
             {
-                this._duplicatedAssetSetsPosition = value;
-                this.NotifyPropertyChanged(nameof(DuplicatedAssetSetsPosition), nameof(CurrentDuplicatedAssetSet));
-                this.DuplicatedAssetPosition = 0;
+                _duplicatedAssetSetsPosition = value;
+                NotifyPropertyChanged(nameof(DuplicatedAssetSetsPosition), nameof(CurrentDuplicatedAssetSet));
+                DuplicatedAssetPosition = 0;
             }
         }
 
@@ -46,7 +46,7 @@ namespace JPPhotoManager.UI.ViewModels
             if (duplicatedAssets == null)
                 throw new ArgumentNullException(nameof(duplicatedAssets));
 
-            this._duplicatedAssets = duplicatedAssets;
+            _duplicatedAssets = duplicatedAssets;
             List<DuplicatedSetViewModel> collection = new List<DuplicatedSetViewModel>();
 
             foreach (var duplicatedSet in duplicatedAssets)
@@ -56,7 +56,7 @@ namespace JPPhotoManager.UI.ViewModels
                 foreach (var asset in duplicatedSet)
                 {
                     duplicatedSetViewModel.Add(
-                        new DuplicatedAssetViewModel(this.Application)
+                        new DuplicatedAssetViewModel(Application)
                         {
                             Asset = asset,
                             Visible = Visibility.Visible,
@@ -67,21 +67,21 @@ namespace JPPhotoManager.UI.ViewModels
                 collection.Add(duplicatedSetViewModel);
             }
 
-            this.DuplicatedAssetSetsCollection = collection;
+            DuplicatedAssetSetsCollection = collection;
         }
 
         public int DuplicatedAssetPosition
         {
-            get { return this._duplicatedAssetPosition; }
+            get { return _duplicatedAssetPosition; }
             set
             {
-                this._duplicatedAssetPosition = value;
+                _duplicatedAssetPosition = value;
 
                 DuplicatedAssetViewModel assetViewModel = CurrentDuplicatedAsset;
 
                 if (assetViewModel != null && assetViewModel.Asset != null && assetViewModel.Asset.ImageData == null)
                 {
-                    this.Application.LoadThumbnail(assetViewModel.Asset);
+                    Application.LoadThumbnail(assetViewModel.Asset);
                 }
 
                 if (assetViewModel != null && assetViewModel.Asset != null && assetViewModel.Asset.ImageData == null)
@@ -90,7 +90,7 @@ namespace JPPhotoManager.UI.ViewModels
                 }
                 else
                 {
-                    this.NotifyPropertyChanged(nameof(DuplicatedAssetPosition), nameof(CurrentDuplicatedAsset));
+                    NotifyPropertyChanged(nameof(DuplicatedAssetPosition), nameof(CurrentDuplicatedAsset));
                 }
             }
         }
@@ -101,9 +101,9 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 DuplicatedSetViewModel result = null;
 
-                if (this.DuplicatedAssetSetsCollection != null && this.DuplicatedAssetSetsCollection.Count > 0 && this.DuplicatedAssetSetsPosition >= 0)
+                if (DuplicatedAssetSetsCollection != null && DuplicatedAssetSetsCollection.Count > 0 && DuplicatedAssetSetsPosition >= 0)
                 {
-                    result = this.DuplicatedAssetSetsCollection[this.DuplicatedAssetSetsPosition];
+                    result = DuplicatedAssetSetsCollection[DuplicatedAssetSetsPosition];
                 }
 
                 return result;
@@ -116,9 +116,9 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 DuplicatedAssetViewModel result = null;
 
-                if (this.CurrentDuplicatedAssetSet != null && this.CurrentDuplicatedAssetSet.Count > 0 && this.DuplicatedAssetPosition >= 0)
+                if (CurrentDuplicatedAssetSet != null && CurrentDuplicatedAssetSet.Count > 0 && DuplicatedAssetPosition >= 0)
                 {
-                    result = this.CurrentDuplicatedAssetSet[this.DuplicatedAssetPosition];
+                    result = CurrentDuplicatedAssetSet[DuplicatedAssetPosition];
                 }
 
                 return result;
@@ -127,47 +127,47 @@ namespace JPPhotoManager.UI.ViewModels
 
         public void Refresh()
         {
-            var duplicates = this.Application.GetDuplicatedAssets();
+            var duplicates = Application.GetDuplicatedAssets();
             SetDuplicates(duplicates);
         }
 
         public void DeleteAsset(DuplicatedAssetViewModel assetViewModel)
         {
-            this.Application.DeleteAssets(new Asset[] { assetViewModel.Asset }, deleteFiles: true);
+            Application.DeleteAssets(new Asset[] { assetViewModel.Asset }, deleteFiles: true);
             assetViewModel.Visible = Visibility.Collapsed;
-            this.NavigateToNextVisibleSet(this.DuplicatedAssetSetsPosition);
+            NavigateToNextVisibleSet(DuplicatedAssetSetsPosition);
             // TODO: THE COUNTER DISPLAYED AT THE TOP OF THE SCREEN SHOULD BE UPDATED AS WELL BASED ON THE TOTAL OF DUPLICATED SETS WITH AT LEAST 2 VISIBLE ASSETS.
         }
 
         private void NavigateToNextVisibleSet(int currentIndex)
         {
-            var nextVisibleSet = this.DuplicatedAssetSetsCollection
+            var nextVisibleSet = DuplicatedAssetSetsCollection
                 .Where(s => s.Visible == Visibility.Visible
-                    && this.DuplicatedAssetSetsCollection.IndexOf(s) > currentIndex)
+                    && DuplicatedAssetSetsCollection.IndexOf(s) > currentIndex)
                 .FirstOrDefault();
 
             if (nextVisibleSet != null)
             {
-                int nextIndex = this.DuplicatedAssetSetsCollection.IndexOf(nextVisibleSet);
-                this.DuplicatedAssetSetsPosition = nextIndex;
+                int nextIndex = DuplicatedAssetSetsCollection.IndexOf(nextVisibleSet);
+                DuplicatedAssetSetsPosition = nextIndex;
             }
             else
             {
-                this.NavigateToPreviousVisibleSet(currentIndex);
+                NavigateToPreviousVisibleSet(currentIndex);
             }
         }
 
         private void NavigateToPreviousVisibleSet(int currentIndex)
         {
-            var previousVisibleSet = this.DuplicatedAssetSetsCollection
+            var previousVisibleSet = DuplicatedAssetSetsCollection
                 .Where(s => s.Visible == Visibility.Visible
-                    && this.DuplicatedAssetSetsCollection.IndexOf(s) < currentIndex)
+                    && DuplicatedAssetSetsCollection.IndexOf(s) < currentIndex)
                 .LastOrDefault();
 
             if (previousVisibleSet != null)
             {
-                int nextIndex = this.DuplicatedAssetSetsCollection.IndexOf(previousVisibleSet);
-                this.DuplicatedAssetSetsPosition = nextIndex;
+                int nextIndex = DuplicatedAssetSetsCollection.IndexOf(previousVisibleSet);
+                DuplicatedAssetSetsPosition = nextIndex;
             }
             else
             {
@@ -187,24 +187,24 @@ namespace JPPhotoManager.UI.ViewModels
 
         public Asset Asset
         {
-            get { return this.asset; }
+            get { return asset; }
             set
             {
-                this.asset = value;
-                this.NotifyPropertyChanged(nameof(Asset));
+                asset = value;
+                NotifyPropertyChanged(nameof(Asset));
             }
         }
 
         public Visibility Visible
         {
-            get { return this.visible; }
+            get { return visible; }
             set
             {
-                this.visible = value;
-                this.NotifyPropertyChanged(nameof(Visible));
+                visible = value;
+                NotifyPropertyChanged(nameof(Visible));
 
-                if (this.ParentViewModel != null)
-                    this.ParentViewModel.NotifyAssetChanged(this);
+                if (ParentViewModel != null)
+                    ParentViewModel.NotifyAssetChanged(this);
             }
         }
 
@@ -219,7 +219,7 @@ namespace JPPhotoManager.UI.ViewModels
         {
             foreach (string propertyName in propertyNames)
             {
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             }
         }
 
@@ -235,20 +235,20 @@ namespace JPPhotoManager.UI.ViewModels
 
         public int DuplicatesCount
         {
-            get { return this.GetVisibleDuplicates(); }
+            get { return GetVisibleDuplicates(); }
         }
 
         public Visibility Visible
         {
             get
             {
-                return this.GetVisibleDuplicates() > 1 ? Visibility.Visible : Visibility.Collapsed;
+                return GetVisibleDuplicates() > 1 ? Visibility.Visible : Visibility.Collapsed;
             }
         }
 
         public void NotifyAssetChanged(DuplicatedAssetViewModel asset)
         {
-            this.NotifyPropertyChanged(nameof(DuplicatesCount), nameof(Visible));
+            NotifyPropertyChanged(nameof(DuplicatesCount), nameof(Visible));
         }
     }
 }

@@ -27,35 +27,35 @@ namespace JPPhotoManager.Infrastructure
         {
             this.database = database;
             this.storageService = storageService;
-            this.Thumbnails = new Dictionary<string, Dictionary<string, byte[]>>();
-            this.Initialize();
+            Thumbnails = new Dictionary<string, Dictionary<string, byte[]>>();
+            Initialize();
         }
 
         private void Initialize()
         {
-            if (!this.IsInitialized)
+            if (!IsInitialized)
             {
-                this.InitializeDatabase();
-                this.ReadCatalog();
+                InitializeDatabase();
+                ReadCatalog();
 
-                if (this.AssetCatalog == null)
+                if (AssetCatalog == null)
                 {
-                    this.AssetCatalog = new AssetCatalog();
-                    this.AssetCatalog.StorageVersion = STORAGE_VERSION;
+                    AssetCatalog = new AssetCatalog();
+                    AssetCatalog.StorageVersion = STORAGE_VERSION;
                     SaveCatalog(null);
                 }
 
-                this.IsInitialized = true;
+                IsInitialized = true;
             }
         }
 
         private void InitializeDatabase()
         {
-            this.dataDirectory = this.storageService.ResolveDataDirectory(STORAGE_VERSION);
+            dataDirectory = storageService.ResolveDataDirectory(STORAGE_VERSION);
             var separatorChar = SEPARATOR.ToCharArray().First();
-            this.database.Initialize(this.dataDirectory, separatorChar);
+            database.Initialize(dataDirectory, separatorChar);
 
-            this.database.SetDataTableProperties(new DataTableProperties
+            database.SetDataTableProperties(new DataTableProperties
             {
                 TableName = "Folder",
                 ColumnProperties = new ColumnProperties[]
@@ -65,7 +65,7 @@ namespace JPPhotoManager.Infrastructure
                 }
             });
 
-            this.database.SetDataTableProperties(new DataTableProperties
+            database.SetDataTableProperties(new DataTableProperties
             {
                 TableName = "Asset",
                 ColumnProperties = new ColumnProperties[]
@@ -83,7 +83,7 @@ namespace JPPhotoManager.Infrastructure
                 }
             });
 
-            this.database.SetDataTableProperties(new DataTableProperties
+            database.SetDataTableProperties(new DataTableProperties
             {
                 TableName = "Import",
                 ColumnProperties = new ColumnProperties[]
@@ -94,7 +94,7 @@ namespace JPPhotoManager.Infrastructure
                 }
             });
 
-            this.database.SetDataTableProperties(new DataTableProperties
+            database.SetDataTableProperties(new DataTableProperties
             {
                 TableName = "RecentTargetPaths",
                 ColumnProperties = new ColumnProperties[]
@@ -106,34 +106,34 @@ namespace JPPhotoManager.Infrastructure
 
         private void ReadCatalog()
         {
-            this.AssetCatalog = new AssetCatalog();
-            this.AssetCatalog.Assets.Clear();
-            this.AssetCatalog.Assets.AddRange(ReadAssets());
-            this.AssetCatalog.Folders.Clear();
-            this.AssetCatalog.Folders.AddRange(ReadFolders());
-            this.AssetCatalog.ImportNewAssetsConfiguration.Imports.Clear();
-            this.AssetCatalog.ImportNewAssetsConfiguration.Imports.AddRange(ReadImportDefinitions());
-            this.AssetCatalog.Assets.ForEach(a => a.Folder = GetFolderById(a.FolderId));
-            this.AssetCatalog.RecentTargetPaths.AddRange(ReadRecentTargetPaths());
+            AssetCatalog = new AssetCatalog();
+            AssetCatalog.Assets.Clear();
+            AssetCatalog.Assets.AddRange(ReadAssets());
+            AssetCatalog.Folders.Clear();
+            AssetCatalog.Folders.AddRange(ReadFolders());
+            AssetCatalog.ImportNewAssetsConfiguration.Imports.Clear();
+            AssetCatalog.ImportNewAssetsConfiguration.Imports.AddRange(ReadImportDefinitions());
+            AssetCatalog.Assets.ForEach(a => a.Folder = GetFolderById(a.FolderId));
+            AssetCatalog.RecentTargetPaths.AddRange(ReadRecentTargetPaths());
         }
 
         public void SaveCatalog(Folder folder)
         {
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                if (this.AssetCatalog.HasChanges)
+                if (AssetCatalog.HasChanges)
                 {
-                    WriteAssets(this.AssetCatalog.Assets);
-                    WriteFolders(this.AssetCatalog.Folders);
-                    WriteImports(this.AssetCatalog.ImportNewAssetsConfiguration.Imports);
-                    WriteRecentTargetPaths(this.AssetCatalog.RecentTargetPaths);
+                    WriteAssets(AssetCatalog.Assets);
+                    WriteFolders(AssetCatalog.Folders);
+                    WriteImports(AssetCatalog.ImportNewAssetsConfiguration.Imports);
+                    WriteRecentTargetPaths(AssetCatalog.RecentTargetPaths);
                 }
                 
-                this.AssetCatalog.HasChanges = false;
+                AssetCatalog.HasChanges = false;
 
                 if (Thumbnails != null && folder != null && Thumbnails.ContainsKey(folder.Path))
                 {
-                    this.SaveThumbnails(Thumbnails[folder.Path], folder.ThumbnailsFilename);
+                    SaveThumbnails(Thumbnails[folder.Path], folder.ThumbnailsFilename);
                 }
             }
         }
@@ -248,7 +248,7 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteFolders(List<Folder> folders)
         {
-            this.database.WriteObjectList(folders, "Folder", (f, i) =>
+            database.WriteObjectList(folders, "Folder", (f, i) =>
             {
                 return i switch
                 {
@@ -261,7 +261,7 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteAssets(List<Asset> assets)
         {
-            this.database.WriteObjectList(assets, "Asset", (a, i) =>
+            database.WriteObjectList(assets, "Asset", (a, i) =>
             {
                 return i switch
                 {
@@ -282,7 +282,7 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteImports(List<ImportNewAssetsDirectoriesDefinition> imports)
         {
-            this.database.WriteObjectList(imports, "Import", (d, i) =>
+            database.WriteObjectList(imports, "Import", (d, i) =>
             {
                 return i switch
                 {
@@ -296,7 +296,7 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteRecentTargetPaths(List<string> recentTargetPaths)
         {
-            this.database.WriteObjectList(recentTargetPaths, "RecentTargetPaths", (p, i) =>
+            database.WriteObjectList(recentTargetPaths, "RecentTargetPaths", (p, i) =>
             {
                 return i switch
                 {
@@ -308,7 +308,7 @@ namespace JPPhotoManager.Infrastructure
 
         public bool FolderHasThumbnails(Folder folder)
         {
-            string thumbnailsFilePath = this.database.ResolveBlobFilePath(dataDirectory, folder.ThumbnailsFilename);
+            string thumbnailsFilePath = database.ResolveBlobFilePath(dataDirectory, folder.ThumbnailsFilename);
             // TODO: Implement through the NuGet package.
             return File.Exists(thumbnailsFilePath);
         }
@@ -316,14 +316,14 @@ namespace JPPhotoManager.Infrastructure
         private void DeleteThumbnails(Folder folder)
         {
             // TODO: Implement through the NuGet package.
-            string thumbnailsFilePath = this.database.ResolveBlobFilePath(dataDirectory, folder.ThumbnailsFilename);
+            string thumbnailsFilePath = database.ResolveBlobFilePath(dataDirectory, folder.ThumbnailsFilename);
             File.Delete(thumbnailsFilePath);
         }
 
         protected virtual Dictionary<string, byte[]> GetThumbnails(string thumbnailsFileName, out bool isNewFile)
         {
             isNewFile = false;
-            Dictionary<string, byte[]> thumbnails = (Dictionary<string, byte[]>)this.database.ReadBlob(thumbnailsFileName);
+            Dictionary<string, byte[]> thumbnails = (Dictionary<string, byte[]>)database.ReadBlob(thumbnailsFileName);
             
             if (thumbnails == null)
             {
@@ -338,9 +338,9 @@ namespace JPPhotoManager.Infrastructure
         {
             bool result = false;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                result = this.AssetCatalog.HasChanges;
+                result = AssetCatalog.HasChanges;
             }
 
             return result;
@@ -348,7 +348,7 @@ namespace JPPhotoManager.Infrastructure
 
         private void SaveThumbnails(Dictionary<string, byte[]> thumbnails, string thumbnailsFileName)
         {
-            this.database.WriteBlob(thumbnails, thumbnailsFileName);
+            database.WriteBlob(thumbnails, thumbnailsFileName);
         }
 
         public Asset[] GetAssets(string directory)
@@ -357,7 +357,7 @@ namespace JPPhotoManager.Infrastructure
 
             try
             {
-                lock (this.AssetCatalog)
+                lock (AssetCatalog)
                 {
                     Folder folder = GetFolderByPath(directory);
 
@@ -372,7 +372,7 @@ namespace JPPhotoManager.Infrastructure
                             {
                                 if (thumbnails.ContainsKey(asset.FileName))
                                 {
-                                    asset.ImageData = this.storageService.LoadBitmapImage(thumbnails[asset.FileName], asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
+                                    asset.ImageData = storageService.LoadBitmapImage(thumbnails[asset.FileName], asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
                                 }
                             }
 
@@ -395,7 +395,7 @@ namespace JPPhotoManager.Infrastructure
 
                         foreach (Asset asset in assetsList)
                         {
-                            this.storageService.GetFileInformation(asset);
+                            storageService.GetFileInformation(asset);
                         }
                     }
                 }
@@ -412,9 +412,9 @@ namespace JPPhotoManager.Infrastructure
         {
             bool result = false;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                result = this.AssetCatalog.Folders.Any(f => f.Path == path);
+                result = AssetCatalog.Folders.Any(f => f.Path == path);
             }
 
             return result;
@@ -424,7 +424,7 @@ namespace JPPhotoManager.Infrastructure
         {
             Folder folder;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
                 string folderId = Guid.NewGuid().ToString();
 
@@ -434,8 +434,8 @@ namespace JPPhotoManager.Infrastructure
                     Path = path
                 };
 
-                this.AssetCatalog.Folders.Add(folder);
-                this.AssetCatalog.HasChanges = true;
+                AssetCatalog.Folders.Add(folder);
+                AssetCatalog.HasChanges = true;
             }
 
             return folder;
@@ -443,23 +443,23 @@ namespace JPPhotoManager.Infrastructure
 
         public void AddAsset(Asset asset, byte[] thumbnailData)
         {
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
                 Folder folder = GetFolderById(asset.FolderId);
 
                 if (folder == null)
                 {
-                    this.AddFolder(asset.Folder.Path);
+                    AddFolder(asset.Folder.Path);
                 }
 
-                if (!this.Thumbnails.ContainsKey(asset.Folder.Path))
+                if (!Thumbnails.ContainsKey(asset.Folder.Path))
                 {
-                    this.Thumbnails[asset.Folder.Path] = this.GetThumbnails(asset.Folder.ThumbnailsFilename, out bool isNewFile);
+                    Thumbnails[asset.Folder.Path] = GetThumbnails(asset.Folder.ThumbnailsFilename, out bool isNewFile);
                 }
 
-                this.Thumbnails[asset.Folder.Path][asset.FileName] = thumbnailData;
-                this.AssetCatalog.Assets.Add(asset);
-                this.AssetCatalog.HasChanges = true;
+                Thumbnails[asset.Folder.Path][asset.FileName] = thumbnailData;
+                AssetCatalog.Assets.Add(asset);
+                AssetCatalog.HasChanges = true;
             }
         }
 
@@ -467,9 +467,9 @@ namespace JPPhotoManager.Infrastructure
         {
             Folder[] result;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                result = this.AssetCatalog.Folders.ToArray();
+                result = AssetCatalog.Folders.ToArray();
             }
 
             return result;
@@ -486,9 +486,9 @@ namespace JPPhotoManager.Infrastructure
         {
             Folder result = null;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                result = this.AssetCatalog.Folders.FirstOrDefault(f => f.Path == path);
+                result = AssetCatalog.Folders.FirstOrDefault(f => f.Path == path);
             }
 
             return result;
@@ -498,9 +498,9 @@ namespace JPPhotoManager.Infrastructure
         {
             Folder result = null;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                result = this.AssetCatalog.Folders.FirstOrDefault(f => f.FolderId == folderId);
+                result = AssetCatalog.Folders.FirstOrDefault(f => f.FolderId == folderId);
             }
 
             return result;
@@ -510,9 +510,9 @@ namespace JPPhotoManager.Infrastructure
         {
             List<Asset> result = null;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                result = this.AssetCatalog.Assets.Where(a => a.FolderId == folderId).ToList();
+                result = AssetCatalog.Assets.Where(a => a.FolderId == folderId).ToList();
             }
 
             return result;
@@ -522,9 +522,9 @@ namespace JPPhotoManager.Infrastructure
         {
             Asset result = null;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                result = this.AssetCatalog.Assets.FirstOrDefault(a => a.FolderId == folderId && a.FileName == fileName);
+                result = AssetCatalog.Assets.FirstOrDefault(a => a.FolderId == folderId && a.FileName == fileName);
             }
 
             return result;
@@ -532,7 +532,7 @@ namespace JPPhotoManager.Infrastructure
 
         public void DeleteAsset(string directory, string fileName)
         {
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
                 Folder folder = GetFolderByPath(directory);
 
@@ -540,20 +540,20 @@ namespace JPPhotoManager.Infrastructure
                 {
                     Asset deletedAsset = GetAssetByFolderIdFileName(folder.FolderId, fileName);
 
-                    if (!this.Thumbnails.ContainsKey(folder.Path))
+                    if (!Thumbnails.ContainsKey(folder.Path))
                     {
-                        this.Thumbnails[folder.Path] = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
+                        Thumbnails[folder.Path] = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
                     }
 
-                    if (this.Thumbnails.ContainsKey(folder.Path))
+                    if (Thumbnails.ContainsKey(folder.Path))
                     {
-                        this.Thumbnails[folder.Path].Remove(fileName);
+                        Thumbnails[folder.Path].Remove(fileName);
                     }
                     
                     if (deletedAsset != null)
                     {
-                        this.AssetCatalog.Assets.Remove(deletedAsset);
-                        this.AssetCatalog.HasChanges = true;
+                        AssetCatalog.Assets.Remove(deletedAsset);
+                        AssetCatalog.HasChanges = true;
                     }
                 }
             }
@@ -561,22 +561,22 @@ namespace JPPhotoManager.Infrastructure
 
         public void DeleteFolder(Folder folder)
         {
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
                 if (folder != null)
                 {
-                    if (this.Thumbnails.ContainsKey(folder.Path))
+                    if (Thumbnails.ContainsKey(folder.Path))
                     {
-                        this.Thumbnails.Remove(folder.Path);
+                        Thumbnails.Remove(folder.Path);
                     }
 
-                    if (this.FolderHasThumbnails(folder))
+                    if (FolderHasThumbnails(folder))
                     {
-                        this.DeleteThumbnails(folder);
+                        DeleteThumbnails(folder);
                     }
 
-                    this.AssetCatalog.Folders.Remove(folder);
-                    this.AssetCatalog.HasChanges = true;
+                    AssetCatalog.Folders.Remove(folder);
+                    AssetCatalog.HasChanges = true;
                 }
             }
         }
@@ -585,9 +585,9 @@ namespace JPPhotoManager.Infrastructure
         {
             List<Asset> cataloguedAssets = null;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                cataloguedAssets = this.AssetCatalog.Assets;
+                cataloguedAssets = AssetCatalog.Assets;
             }
 
             return cataloguedAssets;
@@ -597,13 +597,13 @@ namespace JPPhotoManager.Infrastructure
         {
             List<Asset> cataloguedAssets = null;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
                 Folder folder = GetFolderByPath(directory);
 
                 if (folder != null)
                 {
-                    cataloguedAssets = this.AssetCatalog.Assets.Where(a => a.FolderId == folder.FolderId).ToList();
+                    cataloguedAssets = AssetCatalog.Assets.Where(a => a.FolderId == folder.FolderId).ToList();
                 }
             }
 
@@ -614,7 +614,7 @@ namespace JPPhotoManager.Infrastructure
         {
             bool result = false;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
                 Folder folder = GetFolderByPath(directoryName);
                 result = folder != null && GetAssetByFolderIdFileName(folder.FolderId, fileName) != null;
@@ -627,15 +627,15 @@ namespace JPPhotoManager.Infrastructure
         {
             bool result = false;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                if (!this.Thumbnails.ContainsKey(directoryName))
+                if (!Thumbnails.ContainsKey(directoryName))
                 {
                     Folder folder = GetFolderByPath(directoryName);
-                    this.Thumbnails[directoryName] = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
+                    Thumbnails[directoryName] = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
                 }
 
-                result = this.Thumbnails[directoryName].ContainsKey(fileName);
+                result = Thumbnails[directoryName].ContainsKey(fileName);
             }
 
             return result;
@@ -645,23 +645,23 @@ namespace JPPhotoManager.Infrastructure
         {
             BitmapImage result = null;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                if (!this.Thumbnails.ContainsKey(directoryName))
+                if (!Thumbnails.ContainsKey(directoryName))
                 {
                     Folder folder = GetFolderByPath(directoryName);
-                    this.Thumbnails[directoryName] = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
+                    Thumbnails[directoryName] = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
                 }
 
                 if (Thumbnails[directoryName].ContainsKey(fileName))
                 {
-                    result = this.storageService.LoadBitmapImage(Thumbnails[directoryName][fileName], width, height);
+                    result = storageService.LoadBitmapImage(Thumbnails[directoryName][fileName], width, height);
                 }
                 else
                 {
-                    this.DeleteAsset(directoryName, fileName);
+                    DeleteAsset(directoryName, fileName);
                     Folder folder = GetFolderByPath(directoryName);
-                    this.SaveCatalog(folder);
+                    SaveCatalog(folder);
                 }
             }
 
@@ -672,9 +672,9 @@ namespace JPPhotoManager.Infrastructure
         {
             ImportNewAssetsConfiguration result;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                result = this.AssetCatalog.ImportNewAssetsConfiguration;
+                result = AssetCatalog.ImportNewAssetsConfiguration;
             }
 
             return result;
@@ -682,10 +682,10 @@ namespace JPPhotoManager.Infrastructure
 
         public void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration)
         {
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                this.AssetCatalog.ImportNewAssetsConfiguration = importConfiguration;
-                this.AssetCatalog.HasChanges = true;
+                AssetCatalog.ImportNewAssetsConfiguration = importConfiguration;
+                AssetCatalog.HasChanges = true;
             }
         }
 
@@ -693,9 +693,9 @@ namespace JPPhotoManager.Infrastructure
         {
             List<string> result = null;
 
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                result = this.AssetCatalog.RecentTargetPaths;
+                result = AssetCatalog.RecentTargetPaths;
             }
 
             return result;
@@ -703,10 +703,10 @@ namespace JPPhotoManager.Infrastructure
 
         public void SetRecentTargetPaths(List<string> recentTargetPaths)
         {
-            lock (this.AssetCatalog)
+            lock (AssetCatalog)
             {
-                this.AssetCatalog.RecentTargetPaths = recentTargetPaths;
-                this.AssetCatalog.HasChanges = true;
+                AssetCatalog.RecentTargetPaths = recentTargetPaths;
+                AssetCatalog.HasChanges = true;
             }
         }
     }

@@ -23,7 +23,7 @@ namespace JPPhotoManager.Domain
         public List<List<Asset>> GetDuplicatedAssets()
         {
             List<List<Asset>> result = new();
-            List<Asset> assets = new(this.assetRepository.GetCataloguedAssets());
+            List<Asset> assets = new(assetRepository.GetCataloguedAssets());
             var assetGroups = assets.GroupBy(a => a.Hash);
             assetGroups = assetGroups.Where(g => g.Count() > 1);
 
@@ -58,7 +58,7 @@ namespace JPPhotoManager.Domain
 
                 for (int i = 1; i < duplicatedSet.Count; i++)
                 {
-                    if (!this.storageService.HasSameContent(duplicatedSet[0], duplicatedSet[i]))
+                    if (!storageService.HasSameContent(duplicatedSet[0], duplicatedSet[i]))
                     {
                         assetsToRemove.Add(duplicatedSet[i]);
                     }
@@ -77,7 +77,7 @@ namespace JPPhotoManager.Domain
             {
                 foreach (Asset asset in duplicatedSet)
                 {
-                    this.storageService.GetFileInformation(asset);
+                    storageService.GetFileInformation(asset);
                 }
             }
 

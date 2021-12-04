@@ -21,8 +21,8 @@ namespace JPPhotoManager.UI.Windows
             {
                 InitializeComponent();
 
-                this.DataContext = aboutInformation;
-                this.Title = $"About {aboutInformation.Product} {aboutInformation.Version}";
+                DataContext = aboutInformation;
+                Title = $"About {aboutInformation.Product} {aboutInformation.Version}";
             }
             catch (Exception ex)
             {
@@ -32,7 +32,7 @@ namespace JPPhotoManager.UI.Windows
 
         private void ConfirmButton_MouseLeftButtonDown(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Close();
         }
     }
 }

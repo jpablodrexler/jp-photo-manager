@@ -48,7 +48,7 @@ namespace JPPhotoManager.Domain
 
                 foreach (Folder folder in foldersToCatalog)
                 {
-                    cataloguedAssetsBatchCount = this.CatalogAssets(folder.Path, callback, cataloguedAssetsBatchCount, visitedFolders);
+                    cataloguedAssetsBatchCount = CatalogAssets(folder.Path, callback, cataloguedAssetsBatchCount, visitedFolders);
                 }
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
@@ -59,8 +59,8 @@ namespace JPPhotoManager.Domain
                 // there is a risk that it happens while saving the catalog files.
                 // This could result in the files being damaged.
                 // Therefore the application saves the files before the task is completly shut down.
-                Folder currentFolder = this.assetRepository.GetFolderByPath(currentFolderPath);
-                this.assetRepository.SaveCatalog(currentFolder);
+                Folder currentFolder = assetRepository.GetFolderByPath(currentFolderPath);
+                assetRepository.SaveCatalog(currentFolder);
                 throw;
             }
             catch (Exception ex)
@@ -76,25 +76,25 @@ namespace JPPhotoManager.Domain
 
         private Folder[] GetFoldersToCatalog()
         {
-            string[] rootPaths = this.userConfigurationService.GetRootCatalogFolderPaths();
+            string[] rootPaths = userConfigurationService.GetRootCatalogFolderPaths();
             
             foreach (string root in rootPaths)
             {
-                if (!this.assetRepository.FolderExists(root))
+                if (!assetRepository.FolderExists(root))
                 {
-                    this.assetRepository.AddFolder(root);
+                    assetRepository.AddFolder(root);
                 }
             }
 
-            return this.assetRepository.GetFolders();
+            return assetRepository.GetFolders();
         }
 
         private int CatalogAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, List<string> visitedFolders)
         {
             if (!visitedFolders.Contains(directory))
             {
-                this.currentFolderPath = directory;
-                int batchSize = this.userConfigurationService.GetCatalogBatchSize();
+                currentFolderPath = directory;
+                int batchSize = userConfigurationService.GetCatalogBatchSize();
 
                 if (storageService.FolderExists(directory))
                 {
@@ -120,9 +120,9 @@ namespace JPPhotoManager.Domain
                 return cataloguedAssetsBatchCount;
             }
 
-            if (!this.assetRepository.FolderExists(directory))
+            if (!assetRepository.FolderExists(directory))
             {
-                folder = this.assetRepository.AddFolder(directory);
+                folder = assetRepository.AddFolder(directory);
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs
                 {
@@ -133,10 +133,10 @@ namespace JPPhotoManager.Domain
             }
 
             callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Inspecting folder " + directory });
-            string[] fileNames = this.storageService.GetFileNames(directory);
-            folder = this.assetRepository.GetFolderByPath(directory);
-            List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
-            bool folderHasThumbnails = this.assetRepository.FolderHasThumbnails(folder);
+            string[] fileNames = storageService.GetFileNames(directory);
+            folder = assetRepository.GetFolderByPath(directory);
+            List<Asset> cataloguedAssets = assetRepository.GetCataloguedAssets(directory);
+            bool folderHasThumbnails = assetRepository.FolderHasThumbnails(folder);
 
             if (!folderHasThumbnails)
             {
@@ -150,9 +150,9 @@ namespace JPPhotoManager.Domain
             cataloguedAssetsBatchCount = CatalogUpdatedAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, cataloguedAssets, folderHasThumbnails);
             cataloguedAssetsBatchCount = CatalogDeletedAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, folder, cataloguedAssets);
 
-            if (this.assetRepository.HasChanges() || !folderHasThumbnails)
+            if (assetRepository.HasChanges() || !folderHasThumbnails)
             {
-                this.assetRepository.SaveCatalog(folder);
+                assetRepository.SaveCatalog(folder);
             }
 
             if (cataloguedAssetsBatchCount < batchSize)
@@ -161,7 +161,7 @@ namespace JPPhotoManager.Domain
 
                 foreach (var subdir in subdirectories)
                 {
-                    cataloguedAssetsBatchCount = this.CatalogAssets(subdir.FullName, callback, cataloguedAssetsBatchCount, visitedFolders);
+                    cataloguedAssetsBatchCount = CatalogAssets(subdir.FullName, callback, cataloguedAssetsBatchCount, visitedFolders);
                 }
             }
 
@@ -177,11 +177,11 @@ namespace JPPhotoManager.Domain
 
             // If the folder doesn't exist anymore, the corresponding entry in the catalog and the thumbnails file are both deleted.
             // TODO: This should be tested in a new test method, in which the non existent folder is explicitly added to the catalog.
-            Folder folder = this.assetRepository.GetFolderByPath(directory);
+            Folder folder = assetRepository.GetFolderByPath(directory);
 
             if (folder != null)
             {
-                List<Asset> cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+                List<Asset> cataloguedAssets = assetRepository.GetCataloguedAssets(directory);
 
                 foreach (var asset in cataloguedAssets)
                 {
@@ -190,7 +190,7 @@ namespace JPPhotoManager.Domain
                         break;
                     }
 
-                    this.assetRepository.DeleteAsset(directory, asset.FileName);
+                    assetRepository.DeleteAsset(directory, asset.FileName);
                     cataloguedAssetsBatchCount++;
 
                     callback?.Invoke(new CatalogChangeCallbackEventArgs
@@ -201,11 +201,11 @@ namespace JPPhotoManager.Domain
                     });
                 }
 
-                cataloguedAssets = this.assetRepository.GetCataloguedAssets(directory);
+                cataloguedAssets = assetRepository.GetCataloguedAssets(directory);
 
                 if (cataloguedAssets.Count == 0)
                 {
-                    this.assetRepository.DeleteFolder(folder);
+                    assetRepository.DeleteFolder(folder);
 
                     callback?.Invoke(new CatalogChangeCallbackEventArgs
                     {
@@ -215,9 +215,9 @@ namespace JPPhotoManager.Domain
                     });
                 }
 
-                if (this.assetRepository.HasChanges())
+                if (assetRepository.HasChanges())
                 {
-                    this.assetRepository.SaveCatalog(folder);
+                    assetRepository.SaveCatalog(folder);
                 }
             }
 
@@ -260,7 +260,7 @@ namespace JPPhotoManager.Domain
         private int CatalogUpdatedAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize, string[] fileNames, List<Asset> cataloguedAssets, bool folderHasThumbnails)
         {
             string[] updatedFileNames = directoryComparer.GetUpdatedFileNames(fileNames, cataloguedAssets);
-            Folder folder = this.assetRepository.GetFolderByPath(directory);
+            Folder folder = assetRepository.GetFolderByPath(directory);
 
             foreach (var fileName in updatedFileNames)
             {
@@ -269,10 +269,10 @@ namespace JPPhotoManager.Domain
                     break;
                 }
 
-                this.assetRepository.DeleteAsset(directory, fileName);
+                assetRepository.DeleteAsset(directory, fileName);
                 string fullPath = Path.Combine(directory, fileName);
 
-                if (this.storageService.FileExists(fullPath))
+                if (storageService.FileExists(fullPath))
                 {
                     Asset updatedAsset = CreateAsset(directory, fileName);
                     updatedAsset.ImageData = LoadThumbnail(directory, fileName, updatedAsset.ThumbnailPixelWidth, updatedAsset.ThumbnailPixelHeight);
@@ -315,7 +315,7 @@ namespace JPPhotoManager.Domain
                     Folder = folder
                 };
 
-                this.assetRepository.DeleteAsset(directory, fileName);
+                assetRepository.DeleteAsset(directory, fileName);
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs
                 {
@@ -334,9 +334,9 @@ namespace JPPhotoManager.Domain
         {
             BitmapImage thumbnailImage = null;
 
-            if (this.assetRepository.ContainsThumbnail(directoryName, fileName))
+            if (assetRepository.ContainsThumbnail(directoryName, fileName))
             {
-                thumbnailImage = this.assetRepository.LoadThumbnail(directoryName, fileName, width, height);
+                thumbnailImage = assetRepository.LoadThumbnail(directoryName, fileName, width, height);
             }
 
             return thumbnailImage;
@@ -349,13 +349,13 @@ namespace JPPhotoManager.Domain
             const double MAX_WIDTH = 200;
             const double MAX_HEIGHT = 150;
 
-            if (!this.assetRepository.IsAssetCatalogued(directoryName, fileName))
+            if (!assetRepository.IsAssetCatalogued(directoryName, fileName))
             {
                 string imagePath = Path.Combine(directoryName, fileName);
-                byte[] imageBytes = this.storageService.GetFileBytes(imagePath);
-                ushort? exifOrientation = this.storageService.GetExifOrientation(imageBytes);
-                Rotation rotation = exifOrientation.HasValue ? this.storageService.GetImageRotation(exifOrientation.Value) : Rotation.Rotate0;
-                BitmapImage originalImage = this.storageService.LoadBitmapImage(imageBytes, rotation);
+                byte[] imageBytes = storageService.GetFileBytes(imagePath);
+                ushort? exifOrientation = storageService.GetExifOrientation(imageBytes);
+                Rotation rotation = exifOrientation.HasValue ? storageService.GetImageRotation(exifOrientation.Value) : Rotation.Rotate0;
+                BitmapImage originalImage = storageService.LoadBitmapImage(imageBytes, rotation);
 
                 double originalDecodeWidth = originalImage.PixelWidth;
                 double originalDecodeHeight = originalImage.PixelHeight;
@@ -377,13 +377,13 @@ namespace JPPhotoManager.Domain
                     thumbnailDecodeWidth = (percentage * originalDecodeWidth) / 100d;
                 }
 
-                BitmapImage thumbnailImage = this.storageService.LoadBitmapImage(imageBytes,
+                BitmapImage thumbnailImage = storageService.LoadBitmapImage(imageBytes,
                     rotation,
                     Convert.ToInt32(thumbnailDecodeWidth),
                     Convert.ToInt32(thumbnailDecodeHeight));
                 bool isPng = imagePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase);
-                byte[] thumbnailBuffer = isPng ? this.storageService.GetPngBitmapImage(thumbnailImage) : this.storageService.GetJpegBitmapImage(thumbnailImage);
-                Folder folder = this.assetRepository.GetFolderByPath(directoryName);
+                byte[] thumbnailBuffer = isPng ? storageService.GetPngBitmapImage(thumbnailImage) : storageService.GetJpegBitmapImage(thumbnailImage);
+                Folder folder = assetRepository.GetFolderByPath(directoryName);
 
                 asset = new Asset
                 {
@@ -397,10 +397,10 @@ namespace JPPhotoManager.Domain
                     ThumbnailPixelHeight = Convert.ToInt32(thumbnailDecodeHeight),
                     ImageRotation = rotation,
                     ThumbnailCreationDateTime = DateTime.Now,
-                    Hash = this.assetHashCalculatorService.CalculateHash(imageBytes)
+                    Hash = assetHashCalculatorService.CalculateHash(imageBytes)
                 };
 
-                this.assetRepository.AddAsset(asset, thumbnailBuffer);
+                assetRepository.AddAsset(asset, thumbnailBuffer);
             }
 
             return asset;

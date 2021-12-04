@@ -118,14 +118,14 @@ namespace JPPhotoManager.Infrastructure
 
         private string GetProductVersion()
         {
-            FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(this.GetType().Assembly.Location);
+            FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(GetType().Assembly.Location);
 
             return fileVersionInfo.ProductVersion;
         }
 
         public string GetInitialFolder()
         {
-            string result = this.configuration.GetValue<string>(INITIAL_DIRECTORY_KEY);
+            string result = configuration.GetValue<string>(INITIAL_DIRECTORY_KEY);
 
             if (string.IsNullOrEmpty(result))
             {
@@ -139,7 +139,7 @@ namespace JPPhotoManager.Infrastructure
 
         public string GetApplicationDataFolder()
         {
-            string result = this.configuration.GetValue<string>(APPLICATION_DATA_DIRECTORY_KEY);
+            string result = configuration.GetValue<string>(APPLICATION_DATA_DIRECTORY_KEY);
 
             if (string.IsNullOrEmpty(result))
             {
@@ -153,22 +153,22 @@ namespace JPPhotoManager.Infrastructure
 
         public int GetCatalogBatchSize()
         {
-            return this.configuration.GetValue<int>(CATALOG_BATCH_SIZE_KEY);
+            return configuration.GetValue<int>(CATALOG_BATCH_SIZE_KEY);
         }
 
         public int GetCatalogCooldownMinutes()
         {
-            return this.configuration.GetValue<int>(CATALOG_COOLDOWN_MINUTES);
+            return configuration.GetValue<int>(CATALOG_COOLDOWN_MINUTES);
         }
 
         public string GetRepositoryOwner()
         {
-            return this.configuration.GetValue<string>(REPOSITORY_OWNER);
+            return configuration.GetValue<string>(REPOSITORY_OWNER);
         }
 
         public string GetRepositoryName()
         {
-            return this.configuration.GetValue<string>(REPOSITORY_NAME);
+            return configuration.GetValue<string>(REPOSITORY_NAME);
         }
 
         public string[] GetRootCatalogFolderPaths()
@@ -177,8 +177,8 @@ namespace JPPhotoManager.Infrastructure
             // TODO: Validate if some of the root folders are not valid or don't exist any longer.
             string[] rootPaths = new string[]
             {
-                this.GetOneDriveDirectory(),
-                this.GetPicturesDirectory()
+                GetOneDriveDirectory(),
+                GetPicturesDirectory()
             };
 
             return rootPaths;

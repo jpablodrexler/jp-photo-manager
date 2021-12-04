@@ -4,21 +4,21 @@
     {
         public ImportNewAssetsConfiguration()
         {
-            this.Imports = new List<ImportNewAssetsDirectoriesDefinition>();
+            Imports = new List<ImportNewAssetsDirectoriesDefinition>();
         }
 
         public List<ImportNewAssetsDirectoriesDefinition> Imports { get; }
 
         public void Validate()
         {
-            var validImports = this.Imports.Where(d => d.IsValid()).ToList();
-            this.Imports.Clear();
-            this.Imports.AddRange(validImports);
+            var validImports = Imports.Where(d => d.IsValid()).ToList();
+            Imports.Clear();
+            Imports.AddRange(validImports);
         }
 
         public void Normalize()
         {
-            this.Imports.ForEach(d => d.Normalize());
+            Imports.ForEach(d => d.Normalize());
         }
     }
 }

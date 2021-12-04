@@ -24,8 +24,8 @@ namespace JPPhotoManager.Domain
 
             try
             {
-                var aboutInformation = this.userConfigurationService.GetAboutInformation(this.GetType().Assembly);
-                latestRelease = await this.releaseAvailabilityService.GetLatestRelease();
+                var aboutInformation = userConfigurationService.GetAboutInformation(GetType().Assembly);
+                latestRelease = await releaseAvailabilityService.GetLatestRelease();
 
                 if (aboutInformation != null && latestRelease != null)
                 {

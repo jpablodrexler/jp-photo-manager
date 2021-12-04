@@ -22,8 +22,8 @@ namespace JPPhotoManager.UI.Windows
             {
                 InitializeComponent();
 
-                this.DataContext = viewModel;
-                this.folderTreeView.SelectedPath = viewModel.LastSelectedFolder != null ? viewModel.LastSelectedFolder.Path : viewModel.SourceFolder.Path;
+                DataContext = viewModel;
+                folderTreeView.SelectedPath = viewModel.LastSelectedFolder != null ? viewModel.LastSelectedFolder.Path : viewModel.SourceFolder.Path;
             }
             catch (Exception ex)
             {
@@ -33,12 +33,12 @@ namespace JPPhotoManager.UI.Windows
 
         public FolderNavigationViewModel ViewModel
         {
-            get { return (FolderNavigationViewModel)this.DataContext; }
+            get { return (FolderNavigationViewModel)DataContext; }
         }
 
         private void FolderTreeView_FolderSelected(object sender, EventArgs e)
         {
-            this.ViewModel.TargetPath = this.folderTreeView.SelectedPath;
+            ViewModel.TargetPath = folderTreeView.SelectedPath;
         }
 
         private void Confirm_MouseLeftButtonDown(object sender, RoutedEventArgs e)
@@ -69,14 +69,14 @@ namespace JPPhotoManager.UI.Windows
         {
             // TODO: SHOULD VALIDATE IF THE PATH IS VALID.
             //this.ViewModel.SelectedFolder = new Domain.Folder { Path = this.ViewModel.TargetPath };
-            this.ViewModel.HasConfirmed = true;
-            this.Close();
+            ViewModel.HasConfirmed = true;
+            Close();
         }
 
         private void Cancel()
         {
-            this.ViewModel.HasConfirmed = false;
-            this.Close();
+            ViewModel.HasConfirmed = false;
+            Close();
         }
     }
 }
