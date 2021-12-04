@@ -46,7 +46,7 @@ namespace JPPhotoManager.Tests.Integration
         }
 
         [Fact]
-        public void CatalogFolderTest()
+        public async void CatalogFolderTest()
         {
             using (var mock = AutoMock.GetLoose(
                 cfg =>
@@ -80,7 +80,7 @@ namespace JPPhotoManager.Tests.Integration
 
                 var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
 
                 var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
                 var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
@@ -97,7 +97,7 @@ namespace JPPhotoManager.Tests.Integration
         }
 
         [Fact]
-        public void CatalogFolderLargerThanBatchSizeTest()
+        public async void CatalogFolderLargerThanBatchSizeTest()
         {
             using (var mock = AutoMock.GetLoose(
                 cfg =>
@@ -133,7 +133,7 @@ namespace JPPhotoManager.Tests.Integration
 
                 var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
 
                 var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
                 var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
@@ -151,7 +151,7 @@ namespace JPPhotoManager.Tests.Integration
         }
 
         [Fact]
-        public void CatalogFolderRemovesDeletedFileTest()
+        public async void CatalogFolderRemovesDeletedFileTest()
         {
             string appDataFolder = Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString());
             int batchSize = 1000;
@@ -189,7 +189,7 @@ namespace JPPhotoManager.Tests.Integration
                 fileList.AddRange(jpegFiles);
                 fileList.AddRange(pngFiles);
 
-                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
 
                 var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
                 repositoryAssets = repository.GetAssets(dataDirectory);
@@ -219,7 +219,7 @@ namespace JPPhotoManager.Tests.Integration
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
                 statusChanges.Clear();
-                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
                 var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
 
                 repositoryAssets.Should().Contain(a => a.FileName == deletedFile);
@@ -229,7 +229,7 @@ namespace JPPhotoManager.Tests.Integration
         }
 
         [Fact]
-        public void CatalogFolderRemovesDeletedFileLargerThanBatchSizeTest()
+        public async void CatalogFolderRemovesDeletedFileLargerThanBatchSizeTest()
         {
             string appDataFolder = Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString());
             int batchSize = 1000;
@@ -265,7 +265,7 @@ namespace JPPhotoManager.Tests.Integration
                 fileList.AddRange(jpegFiles);
                 fileList.AddRange(pngFiles);
 
-                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
 
                 var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
                 var repositoryAssets = repository.GetAssets(dataDirectory);
@@ -296,7 +296,7 @@ namespace JPPhotoManager.Tests.Integration
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
                 statusChanges.Clear();
-                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
                 var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
 
                 repositoryAssetsAfterDelete.Should().HaveCount(fileList.Count - batchSize);
@@ -995,7 +995,7 @@ namespace JPPhotoManager.Tests.Integration
         }
 
         [Fact]
-        public void LogOnExceptionTest()
+        public async void LogOnExceptionTest()
         {
             string appDataFolder = Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString());
 
@@ -1030,7 +1030,7 @@ namespace JPPhotoManager.Tests.Integration
 
                 var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-                catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
 
                 var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
                 var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
@@ -1043,7 +1043,7 @@ namespace JPPhotoManager.Tests.Integration
         }
 
         [Fact]
-        public void SaveCatalogOnOperationCanceledExceptionTest()
+        public async void SaveCatalogOnOperationCanceledExceptionTest()
         {
             using (var mock = AutoMock.GetLoose(
                 cfg =>
@@ -1071,8 +1071,8 @@ namespace JPPhotoManager.Tests.Integration
 
                 var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-                Action action = () => catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
-                action.Should().Throw<OperationCanceledException>();
+                Func<Task> func = async () => await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                await func.Should().ThrowAsync<OperationCanceledException>();
                 mock.Mock<IAssetRepository>().Verify(r => r.SaveCatalog(It.IsAny<Folder>()), Times.Once);
             }
         }
