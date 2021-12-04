@@ -32,7 +32,7 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = @"C:\Images\MyGame3"
                 }
             };
-            
+
             Mock<IApplication> mock = new();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
@@ -123,7 +123,7 @@ namespace JPPhotoManager.Tests.Unit
             viewModel.ResultsVisible.Should().Be(Visibility.Hidden);
 
             viewModel.AdvanceStep();
-            
+
             viewModel.Step.Should().Be(ImportNewAssetsStepEnum.ViewResults);
             viewModel.CanConfigure.Should().BeFalse();
             viewModel.CanViewResults.Should().BeFalse();
@@ -233,7 +233,7 @@ namespace JPPhotoManager.Tests.Unit
             {
                 NewStatus = @"2 images imported from C:\MyGame1\Screenshots to C:\Images\MyGame1"
             });
-            
+
             viewModel.StatusMessages.Should().ContainSingle();
             viewModel.StatusMessages[0].Should().Be(@"2 images imported from C:\MyGame1\Screenshots to C:\Images\MyGame1");
 

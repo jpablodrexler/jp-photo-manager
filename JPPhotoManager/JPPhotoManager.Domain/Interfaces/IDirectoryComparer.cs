@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace JPPhotoManager.Domain.Interfaces
+﻿namespace JPPhotoManager.Domain.Interfaces
 {
     public interface IDirectoryComparer
     {

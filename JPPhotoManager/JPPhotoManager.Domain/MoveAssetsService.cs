@@ -48,7 +48,7 @@ namespace JPPhotoManager.Domain
 
             bool result = false;
             var folder = assetRepository.GetFolderByPath(destinationFolder.Path);
-            
+
             // If the folder is null, it means is not present in the catalog.
             // TODO: IF THE DESTINATION FOLDER IS NEW, THE FOLDER NAVIGATION CONTROL SHOULD DISPLAY IT WHEN THE USER GOES BACK TO THE MAIN WINDOW.
             bool isDestinationFolderInCatalog = folder != null;
@@ -97,7 +97,7 @@ namespace JPPhotoManager.Domain
                 AddTargetPathToRecent(destinationFolder);
                 assetRepository.SaveCatalog(destinationFolder);
             }
-            
+
             return result;
         }
 

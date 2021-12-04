@@ -80,7 +80,7 @@ namespace JPPhotoManager.Domain
         private Folder[] GetFoldersToCatalog()
         {
             string[] rootPaths = userConfigurationService.GetRootCatalogFolderPaths();
-            
+
             foreach (string root in rootPaths)
             {
                 if (!assetRepository.FolderExists(root))
@@ -348,7 +348,7 @@ namespace JPPhotoManager.Domain
         public Asset CreateAsset(string directoryName, string fileName)
         {
             Asset asset = null;
-            
+
             const double MAX_WIDTH = 200;
             const double MAX_HEIGHT = 150;
 

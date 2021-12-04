@@ -1,6 +1,5 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows;
@@ -122,7 +121,7 @@ namespace JPPhotoManager.UI.ViewModels
         public ImportNewAssetsConfiguration GetImportNewAssetsConfiguration() => Application.GetImportNewAssetsConfiguration();
 
         public void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration) => Application.SetImportNewAssetsConfiguration(importConfiguration);
-        
+
         public async Task<ObservableCollection<ImportNewAssetsResult>> ImportNewAssets(StatusChangeCallback callback)
         {
             var results = await Application.ImportNewAssets(callback);

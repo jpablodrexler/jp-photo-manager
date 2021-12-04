@@ -22,7 +22,7 @@ namespace JPPhotoManager.UI.Controls
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public event ThumbnailSelectedEventHandler ThumbnailSelected;
-        
+
         public ThumbnailsUserControl()
         {
             try

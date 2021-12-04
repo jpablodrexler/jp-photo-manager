@@ -322,7 +322,7 @@ namespace JPPhotoManager.UI.Windows
                             assets.First().Folder,
                             ViewModel.LastSelectedFolder,
                             application.GetRecentTargetPaths()));
-                    
+
                     folderNavigationWindow.Closed += (sender, e) =>
                     {
                         if (folderNavigationWindow.ViewModel.HasConfirmed)

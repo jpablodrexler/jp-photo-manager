@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Domain
@@ -24,7 +23,6 @@ namespace JPPhotoManager.Domain
 
         public override bool Equals(object obj)
         {
-            
             Asset asset = obj as Asset;
 
             return asset != null && asset.FolderId == FolderId && asset.FileName == FileName;

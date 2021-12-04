@@ -9,7 +9,7 @@ namespace JPPhotoManager.UI.ViewModels
     {
         private string targetPath;
 
-        public FolderNavigationViewModel(IApplication assetApp, Folder sourceFolder, Folder lastSelectedFolder, List<string> recentTargetPaths): base(assetApp)
+        public FolderNavigationViewModel(IApplication assetApp, Folder sourceFolder, Folder lastSelectedFolder, List<string> recentTargetPaths) : base(assetApp)
         {
             SourceFolder = sourceFolder;
             LastSelectedFolder = lastSelectedFolder;

@@ -128,7 +128,7 @@ namespace JPPhotoManager.Infrastructure
                     WriteImports(AssetCatalog.ImportNewAssetsConfiguration.Imports);
                     WriteRecentTargetPaths(AssetCatalog.RecentTargetPaths);
                 }
-                
+
                 AssetCatalog.HasChanges = false;
 
                 if (Thumbnails != null && folder != null && Thumbnails.ContainsKey(folder.Path))
@@ -167,7 +167,7 @@ namespace JPPhotoManager.Infrastructure
         public List<Asset> ReadAssets()
         {
             List<Asset> result;
-            
+
             try
             {
                 result = database.ReadObjectList("Asset", f =>
@@ -194,7 +194,7 @@ namespace JPPhotoManager.Infrastructure
                     $"LastReadFileRaw: {database.Diagnostics.LastReadFileRaw}",
                     ex);
             }
-            
+
             return result;
         }
 
@@ -221,7 +221,7 @@ namespace JPPhotoManager.Infrastructure
                     $"LastReadFileRaw: {database.Diagnostics.LastReadFileRaw}",
                     ex);
             }
-            
+
             return result;
         }
 
@@ -324,7 +324,7 @@ namespace JPPhotoManager.Infrastructure
         {
             isNewFile = false;
             Dictionary<string, byte[]> thumbnails = (Dictionary<string, byte[]>)database.ReadBlob(thumbnailsFileName);
-            
+
             if (thumbnails == null)
             {
                 thumbnails = new Dictionary<string, byte[]>();
@@ -549,7 +549,7 @@ namespace JPPhotoManager.Infrastructure
                     {
                         Thumbnails[folder.Path].Remove(fileName);
                     }
-                    
+
                     if (deletedAsset != null)
                     {
                         AssetCatalog.Assets.Remove(deletedAsset);

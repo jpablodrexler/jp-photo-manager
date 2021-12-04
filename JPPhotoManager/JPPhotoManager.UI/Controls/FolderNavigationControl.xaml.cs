@@ -60,7 +60,7 @@ namespace JPPhotoManager.UI.Controls
             {
                 foldersTreeView.Items.Clear();
                 Folder[] rootFolders = ViewModel.GetRootCatalogFolders();
-                
+
                 foreach (Folder folder in rootFolders)
                 {
                     TreeViewItem item = new()

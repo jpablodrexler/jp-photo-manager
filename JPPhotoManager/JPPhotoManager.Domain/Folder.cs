@@ -1,6 +1,4 @@
-﻿using JPPhotoManager.Domain.Interfaces;
-
-namespace JPPhotoManager.Domain
+﻿namespace JPPhotoManager.Domain
 {
     public class Folder
     {
@@ -31,7 +29,7 @@ namespace JPPhotoManager.Domain
 
             if (result)
             {
-                for (int i  = 0; i < thisPathDirectories.Length; i++)
+                for (int i = 0; i < thisPathDirectories.Length; i++)
                 {
                     if (string.Compare(thisPathDirectories[i], otherPathDirectories[i], StringComparison.OrdinalIgnoreCase) != 0)
                     {

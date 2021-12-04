@@ -50,7 +50,7 @@ namespace JPPhotoManager.Application
             {
                 assetRepository.AddFolder(directory);
             }
-            
+
             return assetRepository.GetAssets(directory);
         }
 
@@ -75,7 +75,7 @@ namespace JPPhotoManager.Application
         public async Task<List<ImportNewAssetsResult>> ImportNewAssets(StatusChangeCallback callback) => await importNewAssetsService.Import(callback);
 
         public async Task CatalogAssets(CatalogChangeCallback callback) => await catalogAssetsService.CatalogAssets(callback);
-        
+
         public void SetAsWallpaper(Asset asset, WallpaperStyle style)
         {
             if (asset != null)

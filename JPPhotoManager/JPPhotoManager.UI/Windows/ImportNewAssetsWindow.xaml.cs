@@ -1,5 +1,4 @@
-﻿using JPPhotoManager.Application;
-using JPPhotoManager.Domain;
+﻿using JPPhotoManager.Domain;
 using JPPhotoManager.Infrastructure;
 using JPPhotoManager.UI.ViewModels;
 using log4net;

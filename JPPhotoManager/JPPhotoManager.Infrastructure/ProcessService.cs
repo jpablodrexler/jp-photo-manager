@@ -16,7 +16,7 @@ namespace JPPhotoManager.Infrastructure
             foreach (Process process in processes)
             {
                 result = process.Id != currentProcessId;
-                
+
                 if (result)
                 {
                     break;

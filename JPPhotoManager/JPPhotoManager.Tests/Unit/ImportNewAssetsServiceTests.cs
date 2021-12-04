@@ -233,7 +233,7 @@ namespace JPPhotoManager.Tests.Unit
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory
                 });
-            
+
             Mock<IAssetRepository> repositoryMock = new();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
             Mock<IStorageService> storageServiceMock = new();
@@ -332,7 +332,7 @@ namespace JPPhotoManager.Tests.Unit
                     SourceDirectory = secondSourceDirectory,
                     DestinationDirectory = secondDestinationDirectory
                 });
-            
+
             Mock<IAssetRepository> repositoryMock = new();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
             Mock<IStorageService> storageServiceMock = new();
@@ -937,7 +937,7 @@ namespace JPPhotoManager.Tests.Unit
                     SourceDirectory = @"\\MyServer\Images",
                     DestinationDirectory = @"C:\Images"
                 });
-            
+
             importConfiguration.Validate();
 
             importConfiguration.Imports.Should().HaveCount(3);
@@ -988,7 +988,7 @@ namespace JPPhotoManager.Tests.Unit
                     SourceDirectory = @"Invalid@Value.com",
                     DestinationDirectory = @"Invalid@Value.com"
                 });
-            
+
             importConfiguration.Validate();
 
             importConfiguration.Imports.Should().HaveCount(2);
@@ -1030,7 +1030,7 @@ namespace JPPhotoManager.Tests.Unit
                     SourceDirectory = @"\\\\\MyServer\Screenshots\\\",
                     DestinationDirectory = @"C:\Images\\\\\"
                 });
-            
+
             importConfiguration.Normalize();
 
             importConfiguration.Imports.Should().HaveCount(4);
@@ -1058,7 +1058,7 @@ namespace JPPhotoManager.Tests.Unit
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory
                 });
-            
+
             Mock<IAssetRepository> repositoryMock = new();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
             Mock<IStorageService> storageServiceMock = new();
@@ -1107,7 +1107,7 @@ namespace JPPhotoManager.Tests.Unit
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory
                 });
-            
+
             Mock<IAssetRepository> repositoryMock = new();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
             Mock<IStorageService> storageServiceMock = new();

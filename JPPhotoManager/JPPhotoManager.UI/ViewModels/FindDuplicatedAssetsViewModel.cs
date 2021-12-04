@@ -14,10 +14,10 @@ namespace JPPhotoManager.UI.ViewModels
         private List<DuplicatedSetViewModel> _collection;
         private int _duplicatedAssetSetsPosition;
         private int _duplicatedAssetPosition;
-		
-		public FindDuplicatedAssetsViewModel(IApplication assetApp) : base(assetApp)
-		{
-		}
+
+        public FindDuplicatedAssetsViewModel(IApplication assetApp) : base(assetApp)
+        {
+        }
 
         public List<DuplicatedSetViewModel> DuplicatedAssetSetsCollection
         {

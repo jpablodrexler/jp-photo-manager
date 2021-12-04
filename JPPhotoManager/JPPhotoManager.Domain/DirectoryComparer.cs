@@ -39,7 +39,7 @@ namespace JPPhotoManager.Domain
             {
                 storageService.GetFileInformation(asset);
             }
-            
+
             return cataloguedAssets
                 .Where(ca => ca.FileCreationDateTime > ca.ThumbnailCreationDateTime ||
                     ca.FileModificationDateTime > ca.ThumbnailCreationDateTime)

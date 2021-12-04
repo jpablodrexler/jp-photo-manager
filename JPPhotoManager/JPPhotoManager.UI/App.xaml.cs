@@ -24,7 +24,7 @@ namespace JPPhotoManager.UI
         private readonly ServiceProvider serviceProvider;
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         // TODO: Add a global exception handler.
-        
+
         public App()
         {
             var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());

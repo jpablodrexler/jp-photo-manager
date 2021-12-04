@@ -46,7 +46,7 @@ namespace JPPhotoManager.UI.Converters
                     decimal_value = bytes / ONE_GIGABYTE;
                     unit = GIGABYTE_UNIT;
                 }
-                
+
                 result = decimal_value.ToString("0.0", culture) + " " + unit;
             }
 

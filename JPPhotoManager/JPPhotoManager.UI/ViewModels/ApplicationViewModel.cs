@@ -236,7 +236,7 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 var updatedAsset = ObservableAssets.FirstOrDefault(
                     a => string.Compare(a.FileName, asset.FileName, StringComparison.OrdinalIgnoreCase) == 0);
-                
+
                 if (updatedAsset != null)
                 {
                     RemoveAssets(new Asset[] { updatedAsset });
@@ -262,7 +262,7 @@ namespace JPPhotoManager.UI.ViewModels
 
                     ViewerPosition = position;
                 }
-                
+
                 NotifyPropertyChanged(nameof(ObservableAssets));
             }
         }
@@ -374,7 +374,7 @@ namespace JPPhotoManager.UI.ViewModels
                             AddAsset(e.Asset);
                         }
                     }
-                        
+
                     break;
 
                 case ReasonEnum.AssetUpdated:

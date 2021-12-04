@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace JPPhotoManager.Domain
+﻿namespace JPPhotoManager.Domain
 {
     public delegate void StatusChangeCallback(StatusChangeCallbackEventArgs e);
     public delegate void CatalogChangeCallback(CatalogChangeCallbackEventArgs e);

@@ -282,13 +282,13 @@ namespace JPPhotoManager.Tests.Unit
                 viewModel.StatusMessage.Should().Be(statusMessage);
             }
         }
-        
+
         [Fact]
         public void NotifyCatalogChange_CreatedToEmptyListCurrentFolderWithCataloguedAssets_AddAllCataloguedAssetsToList()
         {
             Folder folder = new() { Path = @"D:\Data" };
             Asset[] assets = new Asset[] { };
-            
+
             var cataloguedAssets = new List<Asset>
             {
                 new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), Folder = folder },
@@ -390,7 +390,7 @@ namespace JPPhotoManager.Tests.Unit
                 viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
             }
         }
-        
+
         [Fact]
         public void NotifyCatalogChange_NullFolder_IgnoreNewAsset()
         {
@@ -495,12 +495,12 @@ namespace JPPhotoManager.Tests.Unit
                 viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
             }
         }
-        
+
         [Fact]
         public void NotifyCatalogChange_DeletedInFromCurrentFolder_RemoveFromAssetList()
         {
             Folder folder = new() { Path = @"D:\Data" };
-            
+
             Asset[] assets = new Asset[]
             {
                 new Asset { FileName="Image1.jpg", ImageData = new BitmapImage(), Folder = folder },

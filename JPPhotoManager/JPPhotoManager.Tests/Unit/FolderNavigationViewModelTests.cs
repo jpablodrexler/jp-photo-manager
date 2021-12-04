@@ -27,7 +27,7 @@ namespace JPPhotoManager.Tests.Unit
 
                 viewModel.TargetPath = @"D:\Data\Folder2";
                 viewModel.HasConfirmed = true;
-                
+
                 viewModel.SourceFolder.Path.Should().Be(@"D:\Data\Folder1");
                 viewModel.LastSelectedFolder.Path.Should().Be(@"D:\Data\Folder2");
                 viewModel.TargetPath.Should().Be(@"D:\Data\Folder2");
