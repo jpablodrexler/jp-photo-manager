@@ -32,46 +32,49 @@ namespace JPPhotoManager.Domain
             this.directoryComparer = directoryComparer;
         }
 
-        public void CatalogAssets(CatalogChangeCallback callback)
+        public async Task CatalogAssets(CatalogChangeCallback callback)
         {
-            int cataloguedAssetsBatchCount = 0;
-            List<string> visitedFolders = new List<string>();
-
-            try
+            await Task.Run(() =>
             {
-                Folder[] foldersToCatalog = GetFoldersToCatalog();
+                int cataloguedAssetsBatchCount = 0;
+                List<string> visitedFolders = new List<string>();
 
-                // TODO: Since the root folders to catalog are combined in the same list
-                // with the catalogued sub-folders, the catalog process should keep a list
-                // of the already visited folders so they don't get catalogued twice
-                // in the same execution.
-
-                foreach (Folder folder in foldersToCatalog)
+                try
                 {
-                    cataloguedAssetsBatchCount = CatalogAssets(folder.Path, callback, cataloguedAssetsBatchCount, visitedFolders);
-                }
+                    Folder[] foldersToCatalog = GetFoldersToCatalog();
 
-                callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
-            }
-            catch (OperationCanceledException)
-            {
-                // If the catalog background process is cancelled,
-                // there is a risk that it happens while saving the catalog files.
-                // This could result in the files being damaged.
-                // Therefore the application saves the files before the task is completly shut down.
-                Folder currentFolder = assetRepository.GetFolderByPath(currentFolderPath);
-                assetRepository.SaveCatalog(currentFolder);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-                callback?.Invoke(new CatalogChangeCallbackEventArgs { Exception = ex });
-            }
-            finally
-            {
-                callback?.Invoke(new CatalogChangeCallbackEventArgs { Message = string.Empty });
-            }
+                    // TODO: Since the root folders to catalog are combined in the same list
+                    // with the catalogued sub-folders, the catalog process should keep a list
+                    // of the already visited folders so they don't get catalogued twice
+                    // in the same execution.
+
+                    foreach (Folder folder in foldersToCatalog)
+                    {
+                        cataloguedAssetsBatchCount = CatalogAssets(folder.Path, callback, cataloguedAssetsBatchCount, visitedFolders);
+                    }
+
+                    callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
+                }
+                catch (OperationCanceledException)
+                {
+                    // If the catalog background process is cancelled,
+                    // there is a risk that it happens while saving the catalog files.
+                    // This could result in the files being damaged.
+                    // Therefore the application saves the files before the task is completly shut down.
+                    Folder currentFolder = assetRepository.GetFolderByPath(currentFolderPath);
+                    assetRepository.SaveCatalog(currentFolder);
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                    callback?.Invoke(new CatalogChangeCallbackEventArgs { Exception = ex });
+                }
+                finally
+                {
+                    callback?.Invoke(new CatalogChangeCallbackEventArgs { Message = string.Empty });
+                }
+            });
         }
 
         private Folder[] GetFoldersToCatalog()

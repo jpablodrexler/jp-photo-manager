@@ -19,17 +19,20 @@ namespace JPPhotoManager.Domain
             this.directoryComparer = directoryComparer;
         }
 
-        public List<ImportNewAssetsResult> Import(StatusChangeCallback callback)
+        public async Task<List<ImportNewAssetsResult>> Import(StatusChangeCallback callback)
         {
-            List<ImportNewAssetsResult> result = new List<ImportNewAssetsResult>();
-            var configuration = assetRepository.GetImportNewAssetsConfiguration();
-
-            foreach (var import in configuration.Imports)
+            return await Task.Run(() =>
             {
-                Import(import.SourceDirectory, import.DestinationDirectory, import.IncludeSubFolders, callback, result);
-            }
+                List<ImportNewAssetsResult> result = new List<ImportNewAssetsResult>();
+                var configuration = assetRepository.GetImportNewAssetsConfiguration();
 
-            return result;
+                foreach (var import in configuration.Imports)
+                {
+                    Import(import.SourceDirectory, import.DestinationDirectory, import.IncludeSubFolders, callback, result);
+                }
+
+                return result;
+            });
         }
 
         private void Import(string sourceDirectory, string destinationDirectory, bool includeSubFolders, StatusChangeCallback callback, List<ImportNewAssetsResult> resultList)

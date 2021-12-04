@@ -8,7 +8,7 @@ using System.Windows;
 
 namespace JPPhotoManager.UI.ViewModels
 {
-    public class FindDuplicatedAssetsViewModel : BaseViewModel<IApplication>
+    public class FindDuplicatedAssetsViewModel : BaseViewModel
     {
         private List<List<Asset>> _duplicatedAssets;
         private List<DuplicatedSetViewModel> _collection;
@@ -176,7 +176,7 @@ namespace JPPhotoManager.UI.ViewModels
         }
     }
 
-    public class DuplicatedAssetViewModel : BaseViewModel<IApplication>
+    public class DuplicatedAssetViewModel : BaseViewModel
     {
         private Asset asset;
         private Visibility visible;

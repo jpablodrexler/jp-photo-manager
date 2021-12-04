@@ -72,16 +72,10 @@ namespace JPPhotoManager.Application
             assetRepository.SaveCatalog(null);
         }
 
-        public List<ImportNewAssetsResult> ImportNewAssets(StatusChangeCallback callback)
-        {
-            return importNewAssetsService.Import(callback);
-        }
+        public async Task<List<ImportNewAssetsResult>> ImportNewAssets(StatusChangeCallback callback) => await importNewAssetsService.Import(callback);
 
-        public void CatalogAssets(CatalogChangeCallback callback)
-        {
-            catalogAssetsService.CatalogAssets(callback);
-        }
-
+        public async Task CatalogAssets(CatalogChangeCallback callback) => await catalogAssetsService.CatalogAssets(callback);
+        
         public void SetAsWallpaper(Asset asset, WallpaperStyle style)
         {
             if (asset != null)
@@ -95,60 +89,27 @@ namespace JPPhotoManager.Application
         /// </summary>
         /// <returns>A list of duplicated sets of assets (corresponding to the same image),
         /// where each item is a list of duplicated assets.</returns>
-        public List<List<Asset>> GetDuplicatedAssets()
-        {
-            return findDuplicatedAssetsService.GetDuplicatedAssets();
-        }
+        public List<List<Asset>> GetDuplicatedAssets() => findDuplicatedAssetsService.GetDuplicatedAssets();
 
-        public void DeleteAssets(Asset[] assets, bool deleteFiles)
-        {
-            moveAssetsService.DeleteAssets(assets, deleteFiles);
-        }
+        public void DeleteAssets(Asset[] assets, bool deleteFiles) => moveAssetsService.DeleteAssets(assets, deleteFiles);
 
-        public AboutInformation GetAboutInformation(Assembly assembly)
-        {
-            return userConfigurationService.GetAboutInformation(assembly);
-        }
+        public AboutInformation GetAboutInformation(Assembly assembly) => userConfigurationService.GetAboutInformation(assembly);
 
-        public Folder[] GetDrives()
-        {
-            return storageService.GetDrives();
-        }
+        public Folder[] GetDrives() => storageService.GetDrives();
 
-        public Folder[] GetSubFolders(Folder parentFolder, bool includeHidden)
-        {
-            return assetRepository.GetSubFolders(parentFolder, includeHidden);
-        }
+        public Folder[] GetSubFolders(Folder parentFolder, bool includeHidden) => assetRepository.GetSubFolders(parentFolder, includeHidden);
 
-        public string GetInitialFolder()
-        {
-            return userConfigurationService.GetInitialFolder();
-        }
+        public string GetInitialFolder() => userConfigurationService.GetInitialFolder();
 
-        public int GetCatalogCooldownMinutes()
-        {
-            return userConfigurationService.GetCatalogCooldownMinutes();
-        }
+        public int GetCatalogCooldownMinutes() => userConfigurationService.GetCatalogCooldownMinutes();
 
-        public bool MoveAssets(Asset[] assets, Folder destinationFolder, bool preserveOriginalFiles)
-        {
-            return moveAssetsService.MoveAssets(assets, destinationFolder, preserveOriginalFiles);
-        }
+        public bool MoveAssets(Asset[] assets, Folder destinationFolder, bool preserveOriginalFiles) => moveAssetsService.MoveAssets(assets, destinationFolder, preserveOriginalFiles);
 
-        public BitmapImage LoadBitmapImage(string imagePath, Rotation rotation)
-        {
-            return storageService.LoadBitmapImage(imagePath, rotation);
-        }
+        public BitmapImage LoadBitmapImage(string imagePath, Rotation rotation) => storageService.LoadBitmapImage(imagePath, rotation);
 
-        public bool FileExists(string fullPath)
-        {
-            return storageService.FileExists(fullPath);
-        }
+        public bool FileExists(string fullPath) => storageService.FileExists(fullPath);
 
-        public List<string> GetRecentTargetPaths()
-        {
-            return assetRepository.GetRecentTargetPaths();
-        }
+        public List<string> GetRecentTargetPaths() => assetRepository.GetRecentTargetPaths();
 
         public Folder[] GetRootCatalogFolders()
         {
@@ -168,14 +129,8 @@ namespace JPPhotoManager.Application
             return folders;
         }
 
-        public bool IsAlreadyRunning()
-        {
-            return processService.IsAlreadyRunning();
-        }
+        public bool IsAlreadyRunning() => processService.IsAlreadyRunning();
 
-        public Task<Release> CheckNewRelease()
-        {
-            return newReleaseNotificationService.CheckNewRelease();
-        }
+        public async Task<Release> CheckNewRelease() => await newReleaseNotificationService.CheckNewRelease();
     }
 }

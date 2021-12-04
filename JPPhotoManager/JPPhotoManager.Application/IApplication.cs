@@ -10,8 +10,8 @@ namespace JPPhotoManager.Application
         void LoadThumbnail(Asset asset);
         ImportNewAssetsConfiguration GetImportNewAssetsConfiguration();
         void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration);
-        List<ImportNewAssetsResult> ImportNewAssets(StatusChangeCallback callback);
-        void CatalogAssets(CatalogChangeCallback callback);
+        Task<List<ImportNewAssetsResult>> ImportNewAssets(StatusChangeCallback callback);
+        Task CatalogAssets(CatalogChangeCallback callback);
         void SetAsWallpaper(Asset asset, WallpaperStyle style);
         List<List<Asset>> GetDuplicatedAssets();
         void DeleteAssets(Asset[] assets, bool deleteFiles);
