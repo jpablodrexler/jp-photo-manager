@@ -46,6 +46,7 @@ namespace JPPhotoManager.UI.Windows
 
                 // TODO: IN THE LIST BOXES, IF THE FILENAME INCLUDES _ IT IS NOT BEING SHOWN.
                 Console.WriteLine("Delete " + asset.FullPath);
+                // TODO: IF THE USER IS VIEWING THE FOLDER IN WHICH THE DUPLICATE WAS STORED, THE THUMBNAILS LIST WON'T REFRESH
             }
             catch (Exception ex)
             {
