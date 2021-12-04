@@ -1,11 +1,13 @@
 ﻿using JPPhotoManager.Application;
 using JPPhotoManager.Domain;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace JPPhotoManager.UI.ViewModels
 {
-    public class ImportNewAssetsViewModel : BaseViewModel<IApplication>
+    public class ImportNewAssetsViewModel : BaseViewModel
     {
         private ObservableCollection<ImportNewAssetsDirectoriesDefinition> imports;
         private ObservableCollection<ImportNewAssetsResult> results;
@@ -115,6 +117,17 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 Imports.MoveDown(definition);
             }
+        }
+
+        public ImportNewAssetsConfiguration GetImportNewAssetsConfiguration() => Application.GetImportNewAssetsConfiguration();
+
+        public void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration) => Application.SetImportNewAssetsConfiguration(importConfiguration);
+        
+        public async Task<ObservableCollection<ImportNewAssetsResult>> ImportNewAssets(StatusChangeCallback callback)
+        {
+            var results = await Application.ImportNewAssets(callback);
+
+            return new ObservableCollection<ImportNewAssetsResult>(results);
         }
     }
 }

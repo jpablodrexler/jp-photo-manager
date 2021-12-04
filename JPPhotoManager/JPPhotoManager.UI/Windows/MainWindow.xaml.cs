@@ -426,19 +426,16 @@ namespace JPPhotoManager.UI.Windows
             await CheckNewRelease();
 
             ViewModel.StatusMessage = "Cataloging thumbnails for " + ViewModel.CurrentFolder;
-            int minutes = ViewModel.Application.GetCatalogCooldownMinutes();
+            int minutes = ViewModel.GetCatalogCooldownMinutes();
 
             while (true)
             {
-                catalogTask = Task.Run(() =>
-                {
-                    application.CatalogAssets(
-                        async (e) =>
-                        {
-                            // The InvokeAsync method is used to avoid freezing the application when the task is cancelled.
-                            await Dispatcher.InvokeAsync(() => ViewModel.NotifyCatalogChange(e));
-                        });
-                }, CancellationToken.None);
+                catalogTask = ViewModel.CatalogAssets(
+                    async (e) =>
+                    {
+                        // The InvokeAsync method is used to avoid freezing the application when the task is cancelled.
+                        await Dispatcher.InvokeAsync(() => ViewModel.NotifyCatalogChange(e));
+                    });
 
                 await catalogTask.ConfigureAwait(true);
                 await Task.Delay(1000 * 60 * minutes, CancellationToken.None).ConfigureAwait(true);

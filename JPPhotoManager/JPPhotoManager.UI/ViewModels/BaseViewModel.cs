@@ -1,15 +1,20 @@
-﻿using System.ComponentModel;
+﻿using JPPhotoManager.Application;
+using System.ComponentModel;
 
 namespace JPPhotoManager.UI.ViewModels
 {
-    public abstract class BaseViewModel<T> : INotifyPropertyChanged
+    public abstract class BaseViewModel : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
-        // TODO: INJECT THIS OBJECT DIRECTLY TO THE WPF COMPONENTS INSTEAD OF HAVING THEM USE THIS PROPERTY.
-        public T Application { get; private set; }
+        /// <summary>
+        /// Gets or sets the application object.
+        /// This property is declared as protected so the views
+        /// always use the view model as a facade to the application object.
+        /// </summary>
+        protected IApplication Application { get; private set; }
 
-        public BaseViewModel(T application)
+        public BaseViewModel(IApplication application)
         {
             Application = application;
         }

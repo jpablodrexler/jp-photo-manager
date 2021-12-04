@@ -43,7 +43,7 @@ namespace JPPhotoManager.UI.Windows
 
         private void Initialize()
         {
-            var configuration = ViewModel.Application.GetImportNewAssetsConfiguration();
+            var configuration = ViewModel.GetImportNewAssetsConfiguration();
 
             if (configuration == null)
             {
@@ -94,7 +94,7 @@ namespace JPPhotoManager.UI.Windows
             try
             {
                 Cursor = Cursors.Wait;
-                Save(ViewModel.Application, ViewModel.Imports);
+                Save(ViewModel.Imports);
             }
             catch (Exception ex)
             {
@@ -112,7 +112,7 @@ namespace JPPhotoManager.UI.Windows
             {
                 Cursor = Cursors.Wait;
                 ViewModel.AdvanceStep();
-                ViewModel.Results = await Import(ViewModel.Application, ViewModel.Imports).ConfigureAwait(true);
+                ViewModel.Results = await Import().ConfigureAwait(true);
             }
             catch (Exception ex)
             {
@@ -168,21 +168,17 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        private void Save(IApplication assetApp, ObservableCollection<ImportNewAssetsDirectoriesDefinition> imports)
+        private void Save(ObservableCollection<ImportNewAssetsDirectoriesDefinition> imports)
         {
             ImportNewAssetsConfiguration configuration = new ImportNewAssetsConfiguration();
             configuration.Imports.AddRange(imports);
-            assetApp.SetImportNewAssetsConfiguration(configuration);
+            ViewModel.SetImportNewAssetsConfiguration(configuration);
         }
 
-        private Task<ObservableCollection<ImportNewAssetsResult>> Import(IApplication assetApp, ObservableCollection<ImportNewAssetsDirectoriesDefinition> imports)
+        private async Task<ObservableCollection<ImportNewAssetsResult>> Import()
         {
-            return Task.Run(() =>
-            {
-                Save(assetApp, imports);
-                var results = assetApp.ImportNewAssets(e => Dispatcher.Invoke(() => ViewModel.NotifyImageImported(e)));
-                return new ObservableCollection<ImportNewAssetsResult>(results);
-            });
+            Save(ViewModel.Imports);
+            return await ViewModel.ImportNewAssets(e => Dispatcher.Invoke(() => ViewModel.NotifyImageImported(e)));
         }
     }
 }

@@ -4,7 +4,9 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.UI.ViewModels
 {
@@ -21,7 +23,7 @@ namespace JPPhotoManager.UI.ViewModels
     public delegate void FolderAddedEventHandler(object sender, FolderAddedEventArgs e);
     public delegate void FolderRemovedEventHandler(object sender, FolderRemovedEventArgs e);
 
-    public class ApplicationViewModel : BaseViewModel<IApplication>
+    public class ApplicationViewModel : BaseViewModel
     {
         private AppModeEnum appMode;
         private int viewerPosition;
@@ -457,5 +459,15 @@ namespace JPPhotoManager.UI.ViewModels
 
             return result;
         }
+
+        public async Task CatalogAssets(CatalogChangeCallback callback) => await Application.CatalogAssets(callback);
+
+        public int GetCatalogCooldownMinutes() => Application.GetCatalogCooldownMinutes();
+
+        public Folder[] GetRootCatalogFolders() => Application.GetRootCatalogFolders();
+
+        public Folder[] GetSubFolders(Folder parentFolder, bool includeHidden) => Application.GetSubFolders(parentFolder, includeHidden);
+
+        public BitmapImage LoadBitmapImage() => Application.LoadBitmapImage(CurrentAsset.FullPath, CurrentAsset.ImageRotation);
     }
 }

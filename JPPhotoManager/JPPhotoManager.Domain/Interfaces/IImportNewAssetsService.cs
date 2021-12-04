@@ -2,6 +2,6 @@
 {
     public interface IImportNewAssetsService
     {
-        List<ImportNewAssetsResult> Import(StatusChangeCallback callback);
+        Task<List<ImportNewAssetsResult>> Import(StatusChangeCallback callback);
     }
 }

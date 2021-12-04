@@ -12,7 +12,7 @@ namespace JPPhotoManager.Tests.Unit
     public class ImportNewAssetsServiceTests
     {
         [Fact]
-        public void ImportNewImagesSourceEmptyDestinationEmptyTest()
+        public async void ImportNewImagesSourceEmptyDestinationEmptyTest()
         {
             using (var mock = AutoMock.GetLoose(
                 cfg =>
@@ -45,7 +45,7 @@ namespace JPPhotoManager.Tests.Unit
 
                 var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
-                var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+                var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
 
                 mock.Mock<IAssetRepository>().Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
                 mock.Mock<IStorageService>().Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -60,7 +60,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void ImportNewImagesSourceNotEmptyDestinationEmptyTest()
+        public async void ImportNewImagesSourceNotEmptyDestinationEmptyTest()
         {
             using (var mock = AutoMock.GetLoose(
                 cfg =>
@@ -106,7 +106,7 @@ namespace JPPhotoManager.Tests.Unit
 
                 var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
-                var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+                var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
 
                 mock.Mock<IAssetRepository>().Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
                 mock.Mock<IStorageService>().Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -126,7 +126,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void ImportNewImagesSourceNotEmptyDestinationNotEmptyMultipleNewImagesTest()
+        public async void ImportNewImagesSourceNotEmptyDestinationNotEmptyMultipleNewImagesTest()
         {
             using (var mock = AutoMock.GetLoose(
                 cfg =>
@@ -185,7 +185,7 @@ namespace JPPhotoManager.Tests.Unit
 
                 var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
-                var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+                var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
 
                 mock.Mock<IAssetRepository>().Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
                 mock.Mock<IStorageService>().Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -205,7 +205,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void ImportNewImagesSourceNotEmptyDestinationNotEmptyOneNewImageTest()
+        public async void ImportNewImagesSourceNotEmptyDestinationNotEmptyOneNewImageTest()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
@@ -264,7 +264,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
-            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -279,7 +279,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void ImportNewImagesSourceNotEmptyDestinationNotEmptyTwoDefinitionsTest()
+        public async void ImportNewImagesSourceNotEmptyDestinationNotEmptyTwoDefinitionsTest()
         {
             string firstSourceDirectory = @"C:\MyFirstGame\Screenshots";
             string firstDestinationDirectory = @"C:\Images\MyFirstGame";
@@ -375,7 +375,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
-            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(firstSourceDirectory), Times.Once);
@@ -403,7 +403,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void ImportNewImagesSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesSingleLevelWithoutSourceSubDirectories()
+        public async void ImportNewImagesSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesSingleLevelWithoutSourceSubDirectories()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
@@ -498,7 +498,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
-            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -520,7 +520,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void ImportNewImagesSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesMultipleLevelsWithoutSourceSubDirectories()
+        public async void ImportNewImagesSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesMultipleLevelsWithoutSourceSubDirectories()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
@@ -634,7 +634,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
-            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -656,7 +656,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void ImportNewImagesSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesWithSourceSubDirectories()
+        public async void ImportNewImagesSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesWithSourceSubDirectories()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string sourceSubDirectory = @"C:\MyGame\Screenshots\SubDirectory";
@@ -773,7 +773,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
-            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -804,7 +804,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void ImportNewImagesSourceNotEmptyDestinationNotEmptyAllSourceImagesInTargetSubDirectories()
+        public async void ImportNewImagesSourceNotEmptyDestinationNotEmptyAllSourceImagesInTargetSubDirectories()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
@@ -896,7 +896,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
-            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -1045,7 +1045,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void ImportNewImagesInexistentSourceDirectory()
+        public async void ImportNewImagesInexistentSourceDirectory()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
@@ -1080,7 +1080,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
-            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Never);
@@ -1094,7 +1094,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void ImportNewImagesInexistentDestinationDirectory()
+        public async void ImportNewImagesInexistentDestinationDirectory()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
@@ -1129,7 +1129,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
-            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.CreateDirectory(destinationDirectory), Times.Once);
@@ -1144,7 +1144,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void ImportNewImagesInaccessibleDestinationDirectory()
+        public async void ImportNewImagesInaccessibleDestinationDirectory()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"\\MyServer\MyGame";
@@ -1182,7 +1182,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
-            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Never);
@@ -1196,7 +1196,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void ImportNewImagesSourceNotEmptyDestinationEmptyIncludingSubFoldersTest()
+        public async void ImportNewImagesSourceNotEmptyDestinationEmptyIncludingSubFoldersTest()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string sourceSubDirectory = @"C:\MyGame\Screenshots\SubDirectory";
@@ -1257,7 +1257,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var statusChanges = new List<StatusChangeCallbackEventArgs>();
 
-            var result = importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
