@@ -21,6 +21,22 @@ namespace JPPhotoManager.Domain
         public DateTime FileCreationDateTime { get; set; }
         public DateTime FileModificationDateTime { get; set; }
 
+        public string ComputeNewName(string batchFormat, int ordinal)
+        {
+            int ordinalStart = batchFormat.IndexOf("#");
+            int ordinalEnd = batchFormat.LastIndexOf("#");
+
+            if (ordinalStart >= 0)
+            {
+                string ordinalPlaceholder = batchFormat.Substring(ordinalStart, ordinalEnd - ordinalStart + 1);
+                string ordinalFormat = new('0', ordinalPlaceholder.Length);
+                string ordinalString = ordinal.ToString(ordinalFormat);
+                batchFormat = batchFormat.Replace(ordinalPlaceholder, ordinalString);
+            }
+
+            return batchFormat;
+        }
+
         public override bool Equals(object obj)
         {
             Asset asset = obj as Asset;
