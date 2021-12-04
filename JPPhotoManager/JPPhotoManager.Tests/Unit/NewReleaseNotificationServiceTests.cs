@@ -27,132 +27,122 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData("a.b.c", "a.b.c", false)]
         public async void CheckNewRelease(string currentVersion, string latestReleaseName, bool isNewRelease)
         {
-            using (var mock = AutoMock.GetLoose(
+            using var mock = AutoMock.GetLoose(
                cfg =>
                {
                    cfg.RegisterType<NewReleaseNotificationService>().As<INewReleaseNotificationService>().SingleInstance();
-               }))
-            {
-                mock.Mock<IReleaseAvailabilityService>().Setup(s => s.GetLatestRelease())
-                    .Returns(Task.FromResult(new Release
-                    {
-                        Name = latestReleaseName,
-                        PublishedOn = new DateTime(2021, 11, 27),
-                        DownloadUrl = $"https://github.com/jpablodrexler/jp-photo-manager/releases/tag/{latestReleaseName}"
-                    }));
+               });
+            mock.Mock<IReleaseAvailabilityService>().Setup(s => s.GetLatestRelease())
+                .Returns(Task.FromResult(new Release
+                {
+                    Name = latestReleaseName,
+                    PublishedOn = new DateTime(2021, 11, 27),
+                    DownloadUrl = $"https://github.com/jpablodrexler/jp-photo-manager/releases/tag/{latestReleaseName}"
+                }));
 
-                mock.Mock<IUserConfigurationService>().Setup(s => s.GetAboutInformation(It.IsAny<Assembly>()))
-                    .Returns(new AboutInformation
-                    {
-                        Version = currentVersion
-                    });
+            mock.Mock<IUserConfigurationService>().Setup(s => s.GetAboutInformation(It.IsAny<Assembly>()))
+                .Returns(new AboutInformation
+                {
+                    Version = currentVersion
+                });
 
-                var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
-                var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
+            var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
+            var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
 
-                newReleaseResult.Should().NotBeNull();
-                newReleaseResult.Name.Should().Be(latestReleaseName);
-                newReleaseResult.PublishedOn.Should().NotBeNull();
-                newReleaseResult.PublishedOn.Should().BeAfter(DateTime.MinValue);
-                newReleaseResult.PublishedOn.Should().BeBefore(DateTime.UtcNow);
-                newReleaseResult.DownloadUrl.Should().NotBeNullOrWhiteSpace();
-                newReleaseResult.IsNewRelease.Should().Be(isNewRelease);
-                newReleaseResult.Success.Should().BeTrue();
-            }
+            newReleaseResult.Should().NotBeNull();
+            newReleaseResult.Name.Should().Be(latestReleaseName);
+            newReleaseResult.PublishedOn.Should().NotBeNull();
+            newReleaseResult.PublishedOn.Should().BeAfter(DateTime.MinValue);
+            newReleaseResult.PublishedOn.Should().BeBefore(DateTime.UtcNow);
+            newReleaseResult.DownloadUrl.Should().NotBeNullOrWhiteSpace();
+            newReleaseResult.IsNewRelease.Should().Be(isNewRelease);
+            newReleaseResult.Success.Should().BeTrue();
         }
 
         [Fact]
         public async void CheckNewRelease_GetLatestReleaseThrowsException_ReturnFalse()
         {
-            using (var mock = AutoMock.GetLoose(
+            using var mock = AutoMock.GetLoose(
                cfg =>
                {
                    cfg.RegisterType<NewReleaseNotificationService>().As<INewReleaseNotificationService>().SingleInstance();
-               }))
-            {
-                mock.Mock<IReleaseAvailabilityService>().Setup(s => s.GetLatestRelease())
-                    .Throws<Exception>();
+               });
+            mock.Mock<IReleaseAvailabilityService>().Setup(s => s.GetLatestRelease())
+                .Throws<Exception>();
 
-                mock.Mock<IUserConfigurationService>().Setup(s => s.GetAboutInformation(It.IsAny<Assembly>()))
-                    .Returns(new AboutInformation
-                    {
-                        Version = "v1.0.0"
-                    });
+            mock.Mock<IUserConfigurationService>().Setup(s => s.GetAboutInformation(It.IsAny<Assembly>()))
+                .Returns(new AboutInformation
+                {
+                    Version = "v1.0.0"
+                });
 
-                var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
-                var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
+            var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
+            var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
 
-                newReleaseResult.Should().NotBeNull();
-                newReleaseResult.Name.Should().BeNullOrEmpty();
-                newReleaseResult.IsNewRelease.Should().BeFalse();
-                newReleaseResult.Success.Should().BeFalse();
-            }
+            newReleaseResult.Should().NotBeNull();
+            newReleaseResult.Name.Should().BeNullOrEmpty();
+            newReleaseResult.IsNewRelease.Should().BeFalse();
+            newReleaseResult.Success.Should().BeFalse();
         }
 
         [Fact]
         public async void CheckNewRelease_GetAboutInformationThrowsException_ReturnFalse()
         {
-            using (var mock = AutoMock.GetLoose(
+            using var mock = AutoMock.GetLoose(
                cfg =>
                {
                    cfg.RegisterType<NewReleaseNotificationService>().As<INewReleaseNotificationService>().SingleInstance();
-               }))
-            {
-                mock.Mock<IUserConfigurationService>().Setup(s => s.GetAboutInformation(It.IsAny<Assembly>()))
-                    .Throws<Exception>();
+               });
+            mock.Mock<IUserConfigurationService>().Setup(s => s.GetAboutInformation(It.IsAny<Assembly>()))
+                .Throws<Exception>();
 
-                var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
-                var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
+            var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
+            var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
 
-                newReleaseResult.Should().NotBeNull();
-                newReleaseResult.Name.Should().BeNullOrEmpty();
-                newReleaseResult.IsNewRelease.Should().BeFalse();
-                newReleaseResult.Success.Should().BeFalse();
-            }
+            newReleaseResult.Should().NotBeNull();
+            newReleaseResult.Name.Should().BeNullOrEmpty();
+            newReleaseResult.IsNewRelease.Should().BeFalse();
+            newReleaseResult.Success.Should().BeFalse();
         }
 
         [Fact]
         public async void CheckNewRelease_GetAboutInformationNull_ReturnFalse()
         {
-            using (var mock = AutoMock.GetLoose(
+            using var mock = AutoMock.GetLoose(
                cfg =>
                {
                    cfg.RegisterType<NewReleaseNotificationService>().As<INewReleaseNotificationService>().SingleInstance();
-               }))
-            {
-                var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
-                var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
+               });
+            var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
+            var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
 
-                newReleaseResult.Should().NotBeNull();
-                newReleaseResult.Name.Should().BeNullOrEmpty();
-                newReleaseResult.IsNewRelease.Should().BeFalse();
-                newReleaseResult.Success.Should().BeFalse();
-            }
+            newReleaseResult.Should().NotBeNull();
+            newReleaseResult.Name.Should().BeNullOrEmpty();
+            newReleaseResult.IsNewRelease.Should().BeFalse();
+            newReleaseResult.Success.Should().BeFalse();
         }
 
         [Fact]
         public async void CheckNewRelease_GetLatestReleaseNull_ReturnFalse()
         {
-            using (var mock = AutoMock.GetLoose(
+            using var mock = AutoMock.GetLoose(
                cfg =>
                {
                    cfg.RegisterType<NewReleaseNotificationService>().As<INewReleaseNotificationService>().SingleInstance();
-               }))
-            {
-                mock.Mock<IUserConfigurationService>().Setup(s => s.GetAboutInformation(It.IsAny<Assembly>()))
-                    .Returns(new AboutInformation
-                    {
-                        Version = "v1.0.0"
-                    });
+               });
+            mock.Mock<IUserConfigurationService>().Setup(s => s.GetAboutInformation(It.IsAny<Assembly>()))
+                .Returns(new AboutInformation
+                {
+                    Version = "v1.0.0"
+                });
 
-                var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
-                var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
+            var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
+            var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
 
-                newReleaseResult.Should().NotBeNull();
-                newReleaseResult.Name.Should().BeNullOrEmpty();
-                newReleaseResult.IsNewRelease.Should().BeFalse();
-                newReleaseResult.Success.Should().BeFalse();
-            }
+            newReleaseResult.Should().NotBeNull();
+            newReleaseResult.Name.Should().BeNullOrEmpty();
+            newReleaseResult.IsNewRelease.Should().BeFalse();
+            newReleaseResult.Success.Should().BeFalse();
         }
     }
 }

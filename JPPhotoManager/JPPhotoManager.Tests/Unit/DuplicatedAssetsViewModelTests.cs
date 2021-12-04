@@ -22,25 +22,23 @@ namespace JPPhotoManager.Tests.Unit
                 })
             };
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(app => app.GetInitialFolder()).Returns(@"C:\");
-                mock.Mock<IApplication>().Setup(app => app.LoadThumbnail(It.IsAny<Asset>()))
-                    .Callback<Asset>(a => a.ImageData = new System.Windows.Media.Imaging.BitmapImage());
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(app => app.GetInitialFolder()).Returns(@"C:\");
+            mock.Mock<IApplication>().Setup(app => app.LoadThumbnail(It.IsAny<Asset>()))
+                .Callback<Asset>(a => a.ImageData = new System.Windows.Media.Imaging.BitmapImage());
 
-                FindDuplicatedAssetsViewModel viewModel = mock.Create<FindDuplicatedAssetsViewModel>();
-                viewModel.SetDuplicates(duplicatedAssetSets);
+            FindDuplicatedAssetsViewModel viewModel = mock.Create<FindDuplicatedAssetsViewModel>();
+            viewModel.SetDuplicates(duplicatedAssetSets);
 
-                viewModel.DuplicatedAssetSetsPosition.Should().Be(0);
-                viewModel.DuplicatedAssetPosition.Should().Be(0);
-                viewModel.DuplicatedAssetSetsCollection.Should().ContainSingle();
-                viewModel.CurrentDuplicatedAssetSet.Should().NotBeNull();
-                viewModel.CurrentDuplicatedAsset.Asset.FileName.Should().Be("Image 2.jpg");
+            viewModel.DuplicatedAssetSetsPosition.Should().Be(0);
+            viewModel.DuplicatedAssetPosition.Should().Be(0);
+            viewModel.DuplicatedAssetSetsCollection.Should().ContainSingle();
+            viewModel.CurrentDuplicatedAssetSet.Should().NotBeNull();
+            viewModel.CurrentDuplicatedAsset.Asset.FileName.Should().Be("Image 2.jpg");
 
-                viewModel.DuplicatedAssetPosition = 1;
+            viewModel.DuplicatedAssetPosition = 1;
 
-                viewModel.CurrentDuplicatedAsset.Asset.FileName.Should().Be("Image 2 duplicated.jpg");
-            }
+            viewModel.CurrentDuplicatedAsset.Asset.FileName.Should().Be("Image 2 duplicated.jpg");
         }
 
         [Fact]
@@ -48,22 +46,20 @@ namespace JPPhotoManager.Tests.Unit
         {
             List<List<Asset>> duplicatedAssetSets = new();
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(app => app.GetInitialFolder()).Returns(@"C:\");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
-                FindDuplicatedAssetsViewModel viewModel = mock.Create<FindDuplicatedAssetsViewModel>();
-                viewModel.SetDuplicates(duplicatedAssetSets);
+            FindDuplicatedAssetsViewModel viewModel = mock.Create<FindDuplicatedAssetsViewModel>();
+            viewModel.SetDuplicates(duplicatedAssetSets);
 
-                viewModel.DuplicatedAssetSetsPosition = -1;
-                viewModel.DuplicatedAssetPosition = -1;
+            viewModel.DuplicatedAssetSetsPosition = -1;
+            viewModel.DuplicatedAssetPosition = -1;
 
-                viewModel.DuplicatedAssetSetsCollection.Should().BeEmpty();
-                viewModel.DuplicatedAssetSetsPosition.Should().Be(-1);
-                viewModel.DuplicatedAssetPosition.Should().Be(-1);
-                viewModel.CurrentDuplicatedAssetSet.Should().BeNull();
-                viewModel.CurrentDuplicatedAsset.Should().BeNull();
-            }
+            viewModel.DuplicatedAssetSetsCollection.Should().BeEmpty();
+            viewModel.DuplicatedAssetSetsPosition.Should().Be(-1);
+            viewModel.DuplicatedAssetPosition.Should().Be(-1);
+            viewModel.CurrentDuplicatedAssetSet.Should().BeNull();
+            viewModel.CurrentDuplicatedAsset.Should().BeNull();
         }
 
         [Fact]
@@ -71,15 +67,13 @@ namespace JPPhotoManager.Tests.Unit
         {
             List<List<Asset>> duplicatedAssetSets = null;
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(app => app.GetInitialFolder()).Returns(@"C:\");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
-                FindDuplicatedAssetsViewModel viewModel = mock.Create<FindDuplicatedAssetsViewModel>();
+            FindDuplicatedAssetsViewModel viewModel = mock.Create<FindDuplicatedAssetsViewModel>();
 
-                Action action = new(() => viewModel.SetDuplicates(duplicatedAssetSets));
-                action.Should().Throw<ArgumentNullException>();
-            }
+            Action action = new(() => viewModel.SetDuplicates(duplicatedAssetSets));
+            action.Should().Throw<ArgumentNullException>();
         }
     }
 }

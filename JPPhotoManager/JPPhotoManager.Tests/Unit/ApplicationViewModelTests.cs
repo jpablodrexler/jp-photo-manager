@@ -15,20 +15,18 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void ChangeAppMode_NoParameter_ChangeAppMode()
         {
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(app => app.GetInitialFolder()).Returns(@"C:\");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.AppMode.Should().Be(AppModeEnum.Thumbnails);
-                viewModel.ChangeAppMode();
-                viewModel.AppMode.Should().Be(AppModeEnum.Viewer);
-                viewModel.ChangeAppMode();
-                viewModel.AppMode.Should().Be(AppModeEnum.Thumbnails);
-                viewModel.ChangeAppMode(AppModeEnum.Viewer);
-                viewModel.AppMode.Should().Be(AppModeEnum.Viewer);
-            }
+            viewModel.AppMode.Should().Be(AppModeEnum.Thumbnails);
+            viewModel.ChangeAppMode();
+            viewModel.AppMode.Should().Be(AppModeEnum.Viewer);
+            viewModel.ChangeAppMode();
+            viewModel.AppMode.Should().Be(AppModeEnum.Thumbnails);
+            viewModel.ChangeAppMode(AppModeEnum.Viewer);
+            viewModel.AppMode.Should().Be(AppModeEnum.Viewer);
         }
 
         [Theory]
@@ -48,18 +46,16 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
             };
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.SetAssets(assets);
-                viewModel.ViewerPosition = currentPosition;
-                viewModel.GoToPreviousAsset();
+            viewModel.SetAssets(assets);
+            viewModel.ViewerPosition = currentPosition;
+            viewModel.GoToPreviousAsset();
 
-                viewModel.ViewerPosition.Should().Be(expected);
-            }
+            viewModel.ViewerPosition.Should().Be(expected);
         }
 
         [Theory]
@@ -79,16 +75,14 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
             };
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.SetAssets(assets);
-                viewModel.ViewerPosition = currentPosition;
-                viewModel.CanGoToPreviousAsset.Should().Be(expected);
-            }
+            viewModel.SetAssets(assets);
+            viewModel.ViewerPosition = currentPosition;
+            viewModel.CanGoToPreviousAsset.Should().Be(expected);
         }
 
         [Theory]
@@ -108,16 +102,14 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
             };
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.SetAssets(assets);
-                viewModel.ViewerPosition = currentPosition;
-                viewModel.CanGoToNextAsset.Should().Be(expected);
-            }
+            viewModel.SetAssets(assets);
+            viewModel.ViewerPosition = currentPosition;
+            viewModel.CanGoToNextAsset.Should().Be(expected);
         }
 
         [Theory]
@@ -137,18 +129,16 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
             };
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns("D:\\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.SetAssets(assets);
-                viewModel.ViewerPosition = currentPosition;
-                viewModel.GoToNextAsset();
+            viewModel.SetAssets(assets);
+            viewModel.ViewerPosition = currentPosition;
+            viewModel.GoToNextAsset();
 
-                viewModel.ViewerPosition.Should().Be(expected);
-            }
+            viewModel.ViewerPosition.Should().Be(expected);
         }
 
         [Theory]
@@ -190,23 +180,21 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage(), Folder = folder }
             };
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
-                mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image1.jpg")).Returns(true);
-                mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image2.jpg")).Returns(true);
-                mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image3.jpg")).Returns(true);
-                mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image4.jpg")).Returns(true);
-                mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image5.jpg")).Returns(true);
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+            mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image1.jpg")).Returns(true);
+            mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image2.jpg")).Returns(true);
+            mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image3.jpg")).Returns(true);
+            mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image4.jpg")).Returns(true);
+            mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image5.jpg")).Returns(true);
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.SetAssets(assets);
-                viewModel.ViewerPosition = currentPosition;
-                viewModel.GoToAsset(assets[goToAssetIndex]);
+            viewModel.SetAssets(assets);
+            viewModel.ViewerPosition = currentPosition;
+            viewModel.GoToAsset(assets[goToAssetIndex]);
 
-                viewModel.ViewerPosition.Should().Be(goToAssetIndex);
-            }
+            viewModel.ViewerPosition.Should().Be(goToAssetIndex);
         }
 
         [Fact]
@@ -225,19 +213,17 @@ namespace JPPhotoManager.Tests.Unit
 
             Asset assetNotInList = new() { FileName = "ImageNotInList.jpg", ImageData = new BitmapImage(), Folder = folder };
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
-                mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image3.jpg")).Returns(true);
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+            mock.Mock<IApplication>().Setup(a => a.FileExists(@"D:\Data\Image3.jpg")).Returns(true);
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.SetAssets(assets);
-                viewModel.ViewerPosition = 4;
-                viewModel.GoToAsset(assetNotInList);
+            viewModel.SetAssets(assets);
+            viewModel.ViewerPosition = 4;
+            viewModel.GoToAsset(assetNotInList);
 
-                viewModel.ViewerPosition.Should().Be(4);
-            }
+            viewModel.ViewerPosition.Should().Be(4);
         }
 
         [Fact]
@@ -257,37 +243,35 @@ namespace JPPhotoManager.Tests.Unit
             Asset newAsset = new() { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = folder };
             string statusMessage = "Creating thumbnail for NewImage.jpg";
 
-            using (var mock = AutoMock.GetLoose())
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+
+            var viewModel = mock.Create<ApplicationViewModel>();
+
+            viewModel.SetAssets(assets);
+
+            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
             {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+                Asset = newAsset,
+                Message = statusMessage,
+                Reason = ReasonEnum.AssetCreated
+            });
 
-                var viewModel = mock.Create<ApplicationViewModel>();
-
-                viewModel.SetAssets(assets);
-
-                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
-                {
-                    Asset = newAsset,
-                    Message = statusMessage,
-                    Reason = ReasonEnum.AssetCreated
-                });
-
-                viewModel.ObservableAssets.Should().HaveCount(6);
-                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-                viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-                viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-                viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
-                viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-                viewModel.ObservableAssets[5].FileName.Should().Be("NewImage.jpg");
-                viewModel.StatusMessage.Should().Be(statusMessage);
-            }
+            viewModel.ObservableAssets.Should().HaveCount(6);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+            viewModel.ObservableAssets[5].FileName.Should().Be("NewImage.jpg");
+            viewModel.StatusMessage.Should().Be(statusMessage);
         }
 
         [Fact]
         public void NotifyCatalogChange_CreatedToEmptyListCurrentFolderWithCataloguedAssets_AddAllCataloguedAssetsToList()
         {
             Folder folder = new() { Path = @"D:\Data" };
-            Asset[] assets = new Asset[] { };
+            Asset[] assets = Array.Empty<Asset>();
 
             var cataloguedAssets = new List<Asset>
             {
@@ -300,55 +284,51 @@ namespace JPPhotoManager.Tests.Unit
 
             string statusMessage = "Creating thumbnail for Image5.jpg";
 
-            using (var mock = AutoMock.GetLoose())
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+
+            var viewModel = mock.Create<ApplicationViewModel>();
+
+            viewModel.SetAssets(assets);
+
+            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
             {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+                Asset = cataloguedAssets[4],
+                CataloguedAssets = cataloguedAssets,
+                Message = statusMessage,
+                Reason = ReasonEnum.AssetCreated
+            });
 
-                var viewModel = mock.Create<ApplicationViewModel>();
-
-                viewModel.SetAssets(assets);
-
-                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
-                {
-                    Asset = cataloguedAssets[4],
-                    CataloguedAssets = cataloguedAssets,
-                    Message = statusMessage,
-                    Reason = ReasonEnum.AssetCreated
-                });
-
-                viewModel.ObservableAssets.Should().HaveCount(5);
-                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-                viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-                viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-                viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
-                viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-                viewModel.StatusMessage.Should().Be(statusMessage);
-            }
+            viewModel.ObservableAssets.Should().HaveCount(5);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+            viewModel.StatusMessage.Should().Be(statusMessage);
         }
 
         [Fact]
         public void NotifyCatalogChange_CreatedToEmptyListCurrentFolderWithoutCataloguedAssets_AddNewAssetToList()
         {
             Folder folder = new() { Path = @"D:\Data" };
-            Asset[] assets = new Asset[] { };
+            Asset[] assets = Array.Empty<Asset>();
             Asset newAsset = new() { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = folder };
 
-            using (var mock = AutoMock.GetLoose())
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+
+            var viewModel = mock.Create<ApplicationViewModel>();
+
+            viewModel.SetAssets(assets);
+
+            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
             {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+                Asset = newAsset,
+                Reason = ReasonEnum.AssetCreated
+            });
 
-                var viewModel = mock.Create<ApplicationViewModel>();
-
-                viewModel.SetAssets(assets);
-
-                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
-                {
-                    Asset = newAsset,
-                    Reason = ReasonEnum.AssetCreated
-                });
-
-                viewModel.ObservableAssets.Should().ContainSingle();
-            }
+            viewModel.ObservableAssets.Should().ContainSingle();
         }
 
         [Fact]
@@ -368,27 +348,25 @@ namespace JPPhotoManager.Tests.Unit
             Folder newFolder = new() { Path = @"D:\NewFolder" };
             Asset newAsset = new() { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = newFolder };
 
-            using (var mock = AutoMock.GetLoose())
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+
+            var viewModel = mock.Create<ApplicationViewModel>();
+
+            viewModel.SetAssets(assets);
+
+            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
             {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+                Asset = newAsset,
+                Reason = ReasonEnum.AssetCreated
+            });
 
-                var viewModel = mock.Create<ApplicationViewModel>();
-
-                viewModel.SetAssets(assets);
-
-                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
-                {
-                    Asset = newAsset,
-                    Reason = ReasonEnum.AssetCreated
-                });
-
-                viewModel.ObservableAssets.Should().HaveCount(5);
-                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-                viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-                viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-                viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
-                viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-            }
+            viewModel.ObservableAssets.Should().HaveCount(5);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
         }
 
         [Fact]
@@ -407,35 +385,33 @@ namespace JPPhotoManager.Tests.Unit
 
             Asset newAsset = new() { FileName = "NewImage.jpg", ImageData = new BitmapImage(), Folder = null };
 
-            using (var mock = AutoMock.GetLoose())
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+
+            var viewModel = mock.Create<ApplicationViewModel>();
+
+            viewModel.SetAssets(assets);
+
+            viewModel.NotifyCatalogChange(null);
+
+            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
             {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+                Asset = null,
+                Reason = ReasonEnum.AssetCreated
+            });
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+            {
+                Asset = newAsset,
+                Reason = ReasonEnum.AssetCreated
+            });
 
-                viewModel.SetAssets(assets);
-
-                viewModel.NotifyCatalogChange(null);
-
-                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
-                {
-                    Asset = null,
-                    Reason = ReasonEnum.AssetCreated
-                });
-
-                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
-                {
-                    Asset = newAsset,
-                    Reason = ReasonEnum.AssetCreated
-                });
-
-                viewModel.ObservableAssets.Should().HaveCount(5);
-                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-                viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-                viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-                viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
-                viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-            }
+            viewModel.ObservableAssets.Should().HaveCount(5);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
         }
 
         [Theory]
@@ -465,35 +441,33 @@ namespace JPPhotoManager.Tests.Unit
                 Folder = new Folder { FolderId = folderId, Path = folderPath }
             };
 
-            using (var mock = AutoMock.GetLoose())
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+
+            var viewModel = mock.Create<ApplicationViewModel>();
+
+            viewModel.SetAssets(assets);
+
+            viewModel.NotifyCatalogChange(null);
+
+            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
             {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+                Asset = null,
+                Reason = ReasonEnum.AssetCreated
+            });
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
+            {
+                Asset = newAsset,
+                Reason = ReasonEnum.AssetCreated
+            });
 
-                viewModel.SetAssets(assets);
-
-                viewModel.NotifyCatalogChange(null);
-
-                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
-                {
-                    Asset = null,
-                    Reason = ReasonEnum.AssetCreated
-                });
-
-                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
-                {
-                    Asset = newAsset,
-                    Reason = ReasonEnum.AssetCreated
-                });
-
-                viewModel.ObservableAssets.Should().HaveCount(5);
-                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-                viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-                viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-                viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
-                viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-            }
+            viewModel.ObservableAssets.Should().HaveCount(5);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
         }
 
         [Fact]
@@ -512,28 +486,26 @@ namespace JPPhotoManager.Tests.Unit
 
             string statusMessage = "Removing thumbnail for Image3.jpg";
 
-            using (var mock = AutoMock.GetLoose())
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+
+            var viewModel = mock.Create<ApplicationViewModel>();
+
+            viewModel.SetAssets(assets);
+
+            viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
             {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+                Asset = assets[2],
+                Message = statusMessage,
+                Reason = ReasonEnum.AssetDeleted
+            });
 
-                var viewModel = mock.Create<ApplicationViewModel>();
-
-                viewModel.SetAssets(assets);
-
-                viewModel.NotifyCatalogChange(new CatalogChangeCallbackEventArgs
-                {
-                    Asset = assets[2],
-                    Message = statusMessage,
-                    Reason = ReasonEnum.AssetDeleted
-                });
-
-                viewModel.ObservableAssets.Should().HaveCount(4);
-                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-                viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-                viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
-                viewModel.ObservableAssets[3].FileName.Should().Be("Image5.jpg");
-                viewModel.StatusMessage.Should().Be(statusMessage);
-            }
+            viewModel.ObservableAssets.Should().HaveCount(4);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image5.jpg");
+            viewModel.StatusMessage.Should().Be(statusMessage);
         }
 
         [Theory]
@@ -553,19 +525,17 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
             };
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.SetAssets(assets);
-                viewModel.ViewerPosition = currentPosition;
-                viewModel.RemoveAssets(new Asset[] { assets[currentPosition] });
+            viewModel.SetAssets(assets);
+            viewModel.ViewerPosition = currentPosition;
+            viewModel.RemoveAssets(new Asset[] { assets[currentPosition] });
 
-                viewModel.ViewerPosition.Should().Be(newPosition);
-                viewModel.ObservableAssets.Should().HaveCount(4);
-            }
+            viewModel.ViewerPosition.Should().Be(newPosition);
+            viewModel.ObservableAssets.Should().HaveCount(4);
         }
 
         [Fact]
@@ -576,60 +546,54 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image1.jpg", ImageData = new BitmapImage() }
             };
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.SetAssets(assets);
-                viewModel.ViewerPosition = 0;
+            viewModel.SetAssets(assets);
+            viewModel.ViewerPosition = 0;
 
-                viewModel.RemoveAssets(new Asset[] { assets[0] });
+            viewModel.RemoveAssets(new Asset[] { assets[0] });
 
-                viewModel.ViewerPosition.Should().Be(-1);
-                viewModel.ObservableAssets.Should().BeEmpty();
-            }
+            viewModel.ViewerPosition.Should().Be(-1);
+            viewModel.ObservableAssets.Should().BeEmpty();
         }
 
         [Fact]
         public void RemoveAsset_NullAssetFromEmptyAssetList_EmptyAssetList()
         {
-            Asset[] assets = new Asset[] { };
+            Asset[] assets = Array.Empty<Asset>();
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.SetAssets(assets);
-                viewModel.ViewerPosition = -1;
+            viewModel.SetAssets(assets);
+            viewModel.ViewerPosition = -1;
 
-                viewModel.RemoveAssets(null);
+            viewModel.RemoveAssets(null);
 
-                viewModel.ViewerPosition.Should().Be(-1);
-                viewModel.ObservableAssets.Should().BeEmpty();
-            }
+            viewModel.ViewerPosition.Should().Be(-1);
+            viewModel.ObservableAssets.Should().BeEmpty();
         }
 
         [Fact]
         public void RemoveAsset_NullAssetFromNullAssetList_NullAssetList()
         {
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.SetAssets(null);
-                viewModel.ViewerPosition = -1;
+            viewModel.SetAssets(null);
+            viewModel.ViewerPosition = -1;
 
-                viewModel.RemoveAssets(null);
+            viewModel.RemoveAssets(null);
 
-                viewModel.ViewerPosition.Should().Be(-1);
-                viewModel.ObservableAssets.Should().BeNull();
-            }
+            viewModel.ViewerPosition.Should().Be(-1);
+            viewModel.ObservableAssets.Should().BeNull();
         }
 
         [Theory]
@@ -637,16 +601,14 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData(AppModeEnum.Viewer, Visibility.Hidden)]
         public void ThumbnailsVisible_ChangeAppMode_RefreshThumbnailsVisible(AppModeEnum appMode, Visibility expected)
         {
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.ChangeAppMode(appMode);
+            viewModel.ChangeAppMode(appMode);
 
-                viewModel.ThumbnailsVisible.Should().Be(expected);
-            }
+            viewModel.ThumbnailsVisible.Should().Be(expected);
         }
 
         [Theory]
@@ -654,16 +616,14 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData(AppModeEnum.Thumbnails, Visibility.Hidden)]
         public void ViewerVisible_ChangeAppMode_RefreshViewerVisible(AppModeEnum appMode, Visibility expected)
         {
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.ChangeAppMode(appMode);
+            viewModel.ChangeAppMode(appMode);
 
-                viewModel.ViewerVisible.Should().Be(expected);
-            }
+            viewModel.ViewerVisible.Should().Be(expected);
         }
 
         [Theory]
@@ -680,20 +640,18 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image5.jpg", ImageData = new BitmapImage() }
             };
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.Product = "JPPhotoManager";
-                viewModel.Version = "v1.0.0.0";
-                viewModel.ChangeAppMode(appMode);
-                viewModel.SetAssets(assets);
-                viewModel.ViewerPosition = 3;
+            viewModel.Product = "JPPhotoManager";
+            viewModel.Version = "v1.0.0.0";
+            viewModel.ChangeAppMode(appMode);
+            viewModel.SetAssets(assets);
+            viewModel.ViewerPosition = 3;
 
-                viewModel.AppTitle.Should().Be(expected);
-            }
+            viewModel.AppTitle.Should().Be(expected);
         }
 
         [Fact]
@@ -701,36 +659,32 @@ namespace JPPhotoManager.Tests.Unit
         {
             Asset[] assets = null;
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.SetAssets(assets);
-                viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
+            viewModel.SetAssets(assets);
+            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
 
-                viewModel.ObservableAssets.Should().BeNull();
-            }
+            viewModel.ObservableAssets.Should().BeNull();
         }
 
         [Fact]
         public void SortAssetsByCriteria_EmptyAssetList_AssetListIsEmpty()
         {
-            Asset[] assets = new Asset[] { };
+            Asset[] assets = Array.Empty<Asset>();
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.SetAssets(assets);
-                viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
+            viewModel.SetAssets(assets);
+            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
 
-                viewModel.ObservableAssets.Should().NotBeNull();
-                viewModel.ObservableAssets.Should().BeEmpty();
-            }
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().BeEmpty();
         }
 
         [Theory]
@@ -755,19 +709,17 @@ namespace JPPhotoManager.Tests.Unit
                 }
             };
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.SetAssets(assets);
-                viewModel.SortAssetsByCriteria(sortCriteria);
+            viewModel.SetAssets(assets);
+            viewModel.SortAssetsByCriteria(sortCriteria);
 
-                viewModel.ObservableAssets.Should().NotBeNull();
-                viewModel.ObservableAssets.Should().ContainSingle();
-                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-            }
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().ContainSingle();
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
         }
 
         [Fact]
@@ -782,24 +734,22 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() }
             };
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
-                viewModel.SortAssetsByCriteria(SortCriteriaEnum.Undefined);
+            var viewModel = mock.Create<ApplicationViewModel>();
+            viewModel.SortAssetsByCriteria(SortCriteriaEnum.Undefined);
 
-                viewModel.SetAssets(assets);
-                viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
+            viewModel.SetAssets(assets);
+            viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
 
-                viewModel.ObservableAssets.Should().NotBeNull();
-                viewModel.ObservableAssets.Should().HaveCount(5);
-                viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-                viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-                viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-                viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
-                viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-            }
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().HaveCount(5);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
         }
 
         [Fact]
@@ -814,40 +764,38 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image4.jpg", ImageData = new BitmapImage() }
             };
 
-            using (var mock = AutoMock.GetLoose())
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+
+            var viewModel = mock.Create<ApplicationViewModel>();
+            viewModel.SortAssetsByCriteria(SortCriteriaEnum.Undefined);
+
+            viewModel.SetAssets(assets);
+
+            for (int i = 0; i < 10; i++)
             {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+                viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
 
-                var viewModel = mock.Create<ApplicationViewModel>();
-                viewModel.SortAssetsByCriteria(SortCriteriaEnum.Undefined);
+                viewModel.ObservableAssets.Should().NotBeNull();
+                viewModel.ObservableAssets.Should().HaveCount(5);
 
-                viewModel.SetAssets(assets);
-
-                for (int i = 0; i < 10; i++)
+                if (i % 2 == 0) // Ascending
                 {
-                    viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileName);
-
-                    viewModel.ObservableAssets.Should().NotBeNull();
-                    viewModel.ObservableAssets.Should().HaveCount(5);
-
-                    if (i % 2 == 0) // Ascending
-                    {
-                        viewModel.SortAscending.Should().BeTrue();
-                        viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
-                        viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-                        viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-                        viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
-                        viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-                    }
-                    else // Descending
-                    {
-                        viewModel.SortAscending.Should().BeFalse();
-                        viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
-                        viewModel.ObservableAssets[1].FileName.Should().Be("Image4.jpg");
-                        viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
-                        viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
-                        viewModel.ObservableAssets[4].FileName.Should().Be("Image1.jpg");
-                    }
+                    viewModel.SortAscending.Should().BeTrue();
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+                }
+                else // Descending
+                {
+                    viewModel.SortAscending.Should().BeFalse();
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image3.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image1.jpg");
                 }
             }
         }
@@ -864,23 +812,21 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), ThumbnailCreationDateTime = new DateTime(2010, 8, 1) }
             };
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+            var viewModel = mock.Create<ApplicationViewModel>();
 
-                viewModel.SetAssets(assets);
-                viewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
+            viewModel.SetAssets(assets);
+            viewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
 
-                viewModel.ObservableAssets.Should().NotBeNull();
-                viewModel.ObservableAssets.Should().HaveCount(5);
-                viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
-                viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
-                viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
-                viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
-                viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-            }
+            viewModel.ObservableAssets.Should().NotBeNull();
+            viewModel.ObservableAssets.Should().HaveCount(5);
+            viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
+            viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
+            viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+            viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+            viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
         }
 
         [Fact]
@@ -895,39 +841,37 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), ThumbnailCreationDateTime = new DateTime(2010, 8, 1) }
             };
 
-            using (var mock = AutoMock.GetLoose())
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+
+            var viewModel = mock.Create<ApplicationViewModel>();
+
+            viewModel.SetAssets(assets);
+
+            for (int i = 0; i < 10; i++)
             {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+                viewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+                viewModel.ObservableAssets.Should().NotBeNull();
+                viewModel.ObservableAssets.Should().HaveCount(5);
 
-                viewModel.SetAssets(assets);
-
-                for (int i = 0; i < 10; i++)
+                if (i % 2 == 0) // Ascending
                 {
-                    viewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
-
-                    viewModel.ObservableAssets.Should().NotBeNull();
-                    viewModel.ObservableAssets.Should().HaveCount(5);
-
-                    if (i % 2 == 0) // Ascending
-                    {
-                        viewModel.SortAscending.Should().BeTrue();
-                        viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
-                        viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
-                        viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
-                        viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
-                        viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-                    }
-                    else // Descending
-                    {
-                        viewModel.SortAscending.Should().BeFalse();
-                        viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
-                        viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-                        viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
-                        viewModel.ObservableAssets[3].FileName.Should().Be("Image1.jpg");
-                        viewModel.ObservableAssets[4].FileName.Should().Be("Image3.jpg");
-                    }
+                    viewModel.SortAscending.Should().BeTrue();
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+                }
+                else // Descending
+                {
+                    viewModel.SortAscending.Should().BeFalse();
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image3.jpg");
                 }
             }
         }
@@ -973,39 +917,37 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset { FileName="Image4.jpg", ImageData = new BitmapImage(), FileCreationDateTime = new DateTime(2010, 8, 1) }
             };
 
-            using (var mock = AutoMock.GetLoose())
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+
+            var viewModel = mock.Create<ApplicationViewModel>();
+
+            viewModel.SetAssets(assets);
+
+            for (int i = 0; i < 10; i++)
             {
-                mock.Mock<IApplication>().Setup(a => a.GetInitialFolder()).Returns(@"D:\Data");
+                viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
 
-                var viewModel = mock.Create<ApplicationViewModel>();
+                viewModel.ObservableAssets.Should().NotBeNull();
+                viewModel.ObservableAssets.Should().HaveCount(5);
 
-                viewModel.SetAssets(assets);
-
-                for (int i = 0; i < 10; i++)
+                if (i % 2 == 0) // Ascending
                 {
-                    viewModel.SortAssetsByCriteria(SortCriteriaEnum.FileCreationDateTime);
-
-                    viewModel.ObservableAssets.Should().NotBeNull();
-                    viewModel.ObservableAssets.Should().HaveCount(5);
-
-                    if (i % 2 == 0) // Ascending
-                    {
-                        viewModel.SortAscending.Should().BeTrue();
-                        viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
-                        viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
-                        viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
-                        viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
-                        viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
-                    }
-                    else // Descending
-                    {
-                        viewModel.SortAscending.Should().BeFalse();
-                        viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
-                        viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
-                        viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
-                        viewModel.ObservableAssets[3].FileName.Should().Be("Image1.jpg");
-                        viewModel.ObservableAssets[4].FileName.Should().Be("Image3.jpg");
-                    }
+                    viewModel.SortAscending.Should().BeTrue();
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image3.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image5.jpg");
+                }
+                else // Descending
+                {
+                    viewModel.SortAscending.Should().BeFalse();
+                    viewModel.ObservableAssets[0].FileName.Should().Be("Image5.jpg");
+                    viewModel.ObservableAssets[1].FileName.Should().Be("Image2.jpg");
+                    viewModel.ObservableAssets[2].FileName.Should().Be("Image4.jpg");
+                    viewModel.ObservableAssets[3].FileName.Should().Be("Image1.jpg");
+                    viewModel.ObservableAssets[4].FileName.Should().Be("Image3.jpg");
                 }
             }
         }

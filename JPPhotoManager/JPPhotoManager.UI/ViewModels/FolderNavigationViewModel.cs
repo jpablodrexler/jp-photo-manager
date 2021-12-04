@@ -36,7 +36,6 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
-        public Folder LastSelectedFolder { get; private set; }
         public bool HasConfirmed { get; set; }
         public ObservableCollection<string> RecentTargetPaths { get; private set; }
 
@@ -45,7 +44,7 @@ namespace JPPhotoManager.UI.ViewModels
             get { return targetPath; }
             set
             {
-                targetPath = !string.IsNullOrEmpty(value) && value.EndsWith("\\") ? value.Substring(0, value.Length - 1) : value;
+                targetPath = !string.IsNullOrEmpty(value) && value.EndsWith("\\") ? value[0..^1] : value;
                 NotifyPropertyChanged(nameof(TargetPath), nameof(SelectedFolder), nameof(CanConfirm));
             }
         }

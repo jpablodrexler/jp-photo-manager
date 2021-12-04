@@ -3,8 +3,6 @@ using Autofac.Extras.Moq;
 using FluentAssertions;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Domain.Interfaces;
-using Microsoft.Extensions.Configuration;
-using Moq;
 using System.IO;
 using Xunit;
 
@@ -12,21 +10,12 @@ namespace JPPhotoManager.Tests.Unit
 {
     public class ApplicationTests
     {
-        private string dataDirectory;
-        private IConfigurationRoot configuration;
+        private readonly string dataDirectory;
 
         public ApplicationTests()
         {
             dataDirectory = Path.GetDirectoryName(typeof(ApplicationTests).Assembly.Location);
             dataDirectory = Path.Combine(dataDirectory, "TestFiles");
-
-            Mock<IConfigurationRoot> configurationMock = new();
-            configurationMock
-                .MockGetValue("appsettings:InitialDirectory", dataDirectory)
-                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))
-                .MockGetValue("appsettings:CatalogBatchSize", "100");
-
-            configuration = configurationMock.Object;
         }
 
         [Fact]
@@ -47,17 +36,15 @@ namespace JPPhotoManager.Tests.Unit
                 }
             };
 
-            using (var mock = AutoMock.GetLoose())
-            {
-                mock.Mock<IAssetRepository>().Setup(m => m.GetAssets(directory)).Returns(expectedResult);
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IAssetRepository>().Setup(m => m.GetAssets(directory)).Returns(expectedResult);
 
-                var app = mock.Container.Resolve<Application.Application>();
+            var app = mock.Container.Resolve<Application.Application>();
 
-                Asset[] assets = app.GetAssets(directory);
-                assets.Should().BeEquivalentTo(expectedResult);
+            Asset[] assets = app.GetAssets(directory);
+            assets.Should().BeEquivalentTo(expectedResult);
 
-                mock.Mock<IAssetRepository>().VerifyAll();
-            }
+            mock.Mock<IAssetRepository>().VerifyAll();
         }
 
         [Theory]
@@ -66,13 +53,11 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData(" ")]
         public void GetAssets_InvalidDirectory_Test(string directory)
         {
-            using (var mock = AutoMock.GetLoose())
-            {
-                var app = mock.Container.Resolve<Application.Application>();
+            using var mock = AutoMock.GetLoose();
+            var app = mock.Container.Resolve<Application.Application>();
 
-                Func<Asset[]> function = () => app.GetAssets(directory);
-                function.Should().Throw<ArgumentException>();
-            }
+            Func<Asset[]> function = () => app.GetAssets(directory);
+            function.Should().Throw<ArgumentException>();
         }
     }
 }

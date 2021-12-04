@@ -27,10 +27,8 @@ namespace JPPhotoManager.Common
         {
             string json = JsonSerializer.Serialize(anObject, new JsonSerializerOptions { WriteIndented = true });
 
-            using (StreamWriter writer = new(jsonFilePath, false))
-            {
-                writer.Write(json);
-            }
+            using StreamWriter writer = new(jsonFilePath, false);
+            writer.Write(json);
         }
     }
 }

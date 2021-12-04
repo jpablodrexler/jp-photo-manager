@@ -68,7 +68,7 @@ namespace JPPhotoManager.Domain
         private (bool isValid, int major, int minor, int build) GetVersionNumbers(string version)
         {
             int major, minor = 0, build = 0;
-            var parts = version.Substring(1).Split(new[] { '.' });
+            var parts = version[1..].Split(new[] { '.' });
             bool isValid = int.TryParse(parts[0], out major)
                 && int.TryParse(parts[1], out minor)
                 && int.TryParse(parts[2], out build);

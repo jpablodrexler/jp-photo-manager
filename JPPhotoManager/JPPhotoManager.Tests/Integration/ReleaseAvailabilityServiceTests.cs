@@ -36,23 +36,21 @@ namespace JPPhotoManager.Tests.Integration
         {
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
 
-            using (var mock = AutoMock.GetLoose(
+            using var mock = AutoMock.GetLoose(
                cfg =>
                {
                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                    cfg.RegisterType<GitHubReleaseAvailabilityService>().As<IReleaseAvailabilityService>().SingleInstance();
-               }))
-            {
-                var releaseAvailabilityService = mock.Create<IReleaseAvailabilityService>();
-                var latestRelease = await releaseAvailabilityService.GetLatestRelease();
+               });
+            var releaseAvailabilityService = mock.Create<IReleaseAvailabilityService>();
+            var latestRelease = await releaseAvailabilityService.GetLatestRelease();
 
-                latestRelease.Should().NotBeNull();
-                latestRelease.Name.Should().NotBeNullOrWhiteSpace();
-                latestRelease.PublishedOn.Should().NotBeNull();
-                latestRelease.PublishedOn.Should().BeAfter(DateTime.MinValue);
-                latestRelease.PublishedOn.Should().BeBefore(DateTime.UtcNow);
-                latestRelease.DownloadUrl.Should().NotBeNullOrWhiteSpace();
-            }
+            latestRelease.Should().NotBeNull();
+            latestRelease.Name.Should().NotBeNullOrWhiteSpace();
+            latestRelease.PublishedOn.Should().NotBeNull();
+            latestRelease.PublishedOn.Should().BeAfter(DateTime.MinValue);
+            latestRelease.PublishedOn.Should().BeBefore(DateTime.UtcNow);
+            latestRelease.DownloadUrl.Should().NotBeNullOrWhiteSpace();
         }
     }
 }
