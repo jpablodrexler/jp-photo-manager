@@ -152,7 +152,7 @@ namespace JPPhotoManager.Tests.Unit
                 Path = absoluteTestFolderPath2
             };
 
-            bool result = folder1.IsParentOf(folder2, storageService);
+            bool result = folder1.IsParentOf(folder2);
             result.Should().Be(expected);
         }
     }
