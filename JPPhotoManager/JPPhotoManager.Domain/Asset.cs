@@ -25,26 +25,41 @@ namespace JPPhotoManager.Domain
 
         public string ComputeNewName(string batchFormat, int ordinal)
         {
-            string newName = FileName;
-
             if (!string.IsNullOrWhiteSpace(batchFormat))
             {
                 batchFormat = batchFormat.Trim();
-                int ordinalStart = batchFormat.IndexOf("#");
-                int ordinalEnd = batchFormat.LastIndexOf("#");
 
-                if (ordinalStart >= 0)
+                // If the batch format is just an extension,
+                // return the current filename.
+                if (batchFormat.IndexOf(".") == 0)
                 {
-                    string ordinalPlaceholder = batchFormat.Substring(ordinalStart, ordinalEnd - ordinalStart + 1);
-                    string ordinalFormat = new('0', ordinalPlaceholder.Length);
-                    string ordinalString = ordinal.ToString(ordinalFormat);
-                    newName = batchFormat.Replace(ordinalPlaceholder, ordinalString);
+                    batchFormat = FileName;
+                }
+                else
+                {
+                    int ordinalStart = batchFormat.IndexOf("<#");
+                    int ordinalEnd = batchFormat.LastIndexOf("#>");
+
+                    if (ordinalStart >= 0)
+                    {
+                        string ordinalPlaceholder = batchFormat.Substring(ordinalStart + 1, ordinalEnd - ordinalStart);
+                        string ordinalFormat = new('0', ordinalPlaceholder.Length);
+                        string ordinalString = ordinal.ToString(ordinalFormat);
+                        batchFormat = batchFormat.Replace("<" + ordinalPlaceholder + ">", ordinalString);
+                    }
+
+                    batchFormat = batchFormat.Replace("<PixelWidth>", PixelWidth.ToString(), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<PixelHeight>", PixelHeight.ToString(), StringComparison.OrdinalIgnoreCase);
                 }
             }
+            else
+            {
+                batchFormat = FileName;
+            }
 
-            string newFullPath = Folder != null ? Path.Combine(Folder.Path, newName) : newName;
+            string newFullPath = Folder != null ? Path.Combine(Folder.Path, batchFormat) : batchFormat;
 
-            return newFullPath.Length <= MAX_PATH_LENGTH ? newName : string.Empty;
+            return newFullPath.Length <= MAX_PATH_LENGTH ? batchFormat : string.Empty;
         }
 
         public override bool Equals(object obj)
