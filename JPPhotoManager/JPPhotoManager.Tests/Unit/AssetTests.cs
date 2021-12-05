@@ -150,5 +150,120 @@ namespace JPPhotoManager.Tests.Unit
 
             asset.ToString().Should().Be(expected);
         }
+
+        [Theory]
+        [InlineData("MyImage.jpg", null, 1, "MyImage.jpg")]
+        [InlineData("MyImage.jpg", "", 1, "MyImage.jpg")]
+        [InlineData("MyImage.jpg", " ", 1, "MyImage.jpg")]
+        [InlineData("MyImage.jpg", "  ", 1, "MyImage.jpg")]
+        [InlineData("MyImage.jpg", ".jpg", 1, "MyImage.jpg")]
+        [InlineData("MyImage.jpg", "#.jpg", 1, "1.jpg")]
+        [InlineData("MyImage.jpg", "##.jpg", 1, "01.jpg")]
+        [InlineData("MyImage.jpg", "###.jpg", 1, "001.jpg")]
+        [InlineData("MyImage.jpg", "####.jpg", 1, "0001.jpg")]
+        [InlineData("MyImage.jpg", "#####.jpg", 1, "00001.jpg")]
+        [InlineData("MyImage.jpg", "######.jpg", 1, "000001.jpg")]
+        [InlineData("MyImage.jpg", "#######.jpg", 1, "0000001.jpg")]
+        [InlineData("MyImage.jpg", "########.jpg", 1, "00000001.jpg")]
+        [InlineData("MyImage.jpg", "#########.jpg", 1, "000000001.jpg")]
+        [InlineData("MyImage.jpg", "##########.jpg", 1, "0000000001.jpg")]
+        [InlineData("MyImage.jpg", "##_Image.jpg", 1, "01_Image.jpg")]
+        [InlineData("MyImage.jpg", "Image_##.jpg", 1, "Image_01.jpg")]
+        [InlineData("MyImage.jpg", "My_##_Image.jpg", 1, "My_01_Image.jpg")]
+        [InlineData("MyImage.jpg", "#.jpg", 2, "2.jpg")]
+        [InlineData("MyImage.jpg", "##.jpg", 2, "02.jpg")]
+        [InlineData("MyImage.jpg", "###.jpg", 2, "002.jpg")]
+        [InlineData("MyImage.jpg", "####.jpg", 2, "0002.jpg")]
+        [InlineData("MyImage.jpg", "#####.jpg", 2, "00002.jpg")]
+        [InlineData("MyImage.jpg", "######.jpg", 2, "000002.jpg")]
+        [InlineData("MyImage.jpg", "#######.jpg", 2, "0000002.jpg")]
+        [InlineData("MyImage.jpg", "########.jpg", 2, "00000002.jpg")]
+        [InlineData("MyImage.jpg", "#########.jpg", 2, "000000002.jpg")]
+        [InlineData("MyImage.jpg", "##########.jpg", 2, "0000000002.jpg")]
+        [InlineData("MyImage.jpg", "##_Image.jpg", 2, "02_Image.jpg")]
+        [InlineData("MyImage.jpg", "Image_##.jpg", 2, "Image_02.jpg")]
+        [InlineData("MyImage.jpg", "My_##_Image.jpg", 2, "My_02_Image.jpg")]
+        [InlineData("MyImage.png", ".png", 1, "MyImage.png")]
+        [InlineData("MyImage.png", "#.png", 1, "1.png")]
+        [InlineData("MyImage.png", "##.png", 1, "01.png")]
+        [InlineData("MyImage.png", "###.png", 1, "001.png")]
+        [InlineData("MyImage.png", "####.png", 1, "0001.png")]
+        [InlineData("MyImage.png", "#####.png", 1, "00001.png")]
+        [InlineData("MyImage.png", "######.png", 1, "000001.png")]
+        [InlineData("MyImage.jpg", "#######.png", 1, "0000001.png")]
+        [InlineData("MyImage.jpg", "########.png", 1, "00000001.png")]
+        [InlineData("MyImage.jpg", "#########.png", 1, "000000001.png")]
+        [InlineData("MyImage.jpg", "##########.png", 1, "0000000001.png")]
+        [InlineData("MyImage.JPG", ".JPG", 1, "MyImage.JPG")]
+        [InlineData("MyImage.JPG", "#.JPG", 1, "1.JPG")]
+        [InlineData("MyImage.JPG", "##.JPG", 1, "01.JPG")]
+        [InlineData("MyImage.JPG", "###.JPG", 1, "001.JPG")]
+        [InlineData("MyImage.JPG", "####.JPG", 1, "0001.JPG")]
+        [InlineData("MyImage.JPG", "#####.JPG", 1, "00001.JPG")]
+        [InlineData("MyImage.JPG", "######.JPG", 1, "000001.JPG")]
+        [InlineData("MyImage.JPG", "#######.JPG", 1, "0000001.JPG")]
+        [InlineData("MyImage.JPG", "########.JPG", 1, "00000001.JPG")]
+        [InlineData("MyImage.JPG", "#########.JPG", 1, "000000001.JPG")]
+        [InlineData("MyImage.JPG", "##########.JPG", 1, "0000000001.JPG")]
+        [InlineData("MyImage.jpg", ".jpg ", 1, "MyImage.jpg")]
+        [InlineData("MyImage.jpg", "#.jpg ", 1, "1.jpg")]
+        [InlineData("MyImage.jpg", "##.jpg ", 1, "01.jpg")]
+        [InlineData("MyImage.jpg", "###.jpg ", 1, "001.jpg")]
+        [InlineData("MyImage.jpg", "####.jpg ", 1, "0001.jpg")]
+        [InlineData("MyImage.jpg", "#####.jpg ", 1, "00001.jpg")]
+        [InlineData("MyImage.jpg", "######.jpg ", 1, "000001.jpg")]
+        [InlineData("MyImage.jpg", "#######.jpg ", 1, "0000001.jpg")]
+        [InlineData("MyImage.jpg", "########.jpg ", 1, "00000001.jpg")]
+        [InlineData("MyImage.jpg", "#########.jpg ", 1, "000000001.jpg")]
+        [InlineData("MyImage.jpg", "##########.jpg ", 1, "0000000001.jpg")]
+        [InlineData("MyImage.jpg", " .jpg", 1, "MyImage.jpg")]
+        [InlineData("MyImage.jpg", " #.jpg", 1, "1.jpg")]
+        [InlineData("MyImage.jpg", " ##.jpg", 1, "01.jpg")]
+        [InlineData("MyImage.jpg", " ###.jpg", 1, "001.jpg")]
+        [InlineData("MyImage.jpg", " ####.jpg", 1, "0001.jpg")]
+        [InlineData("MyImage.jpg", " #####.jpg", 1, "00001.jpg")]
+        [InlineData("MyImage.jpg", " ######.jpg", 1, "000001.jpg")]
+        [InlineData("MyImage.jpg", " #######.jpg", 1, "0000001.jpg")]
+        [InlineData("MyImage.jpg", " ########.jpg", 1, "00000001.jpg")]
+        [InlineData("MyImage.jpg", " #########.jpg", 1, "000000001.jpg")]
+        [InlineData("MyImage.jpg", " ##########.jpg", 1, "0000000001.jpg")]
+        [InlineData("MyImage.jpg", " .jpg ", 1, "MyImage.jpg")]
+        [InlineData("MyImage.jpg", " #.jpg ", 1, "1.jpg")]
+        [InlineData("MyImage.jpg", " ##.jpg ", 1, "01.jpg")]
+        [InlineData("MyImage.jpg", " ###.jpg ", 1, "001.jpg")]
+        [InlineData("MyImage.jpg", " ####.jpg ", 1, "0001.jpg")]
+        [InlineData("MyImage.jpg", " #####.jpg ", 1, "00001.jpg")]
+        [InlineData("MyImage.jpg", " ######.jpg ", 1, "000001.jpg")]
+        [InlineData("MyImage.jpg", " #######.jpg ", 1, "0000001.jpg")]
+        [InlineData("MyImage.jpg", " ########.jpg ", 1, "00000001.jpg")]
+        [InlineData("MyImage.jpg", " #########.jpg ", 1, "000000001.jpg")]
+        [InlineData("MyImage.jpg", " ##########.jpg ", 1, "0000000001.jpg")]
+        [InlineData("MyImage.jpg", " ##.jpg ", 542, "542.jpg")]
+        public void ComputeNewName_ReturnNewName(string existingName, string batchFormat, int ordinal, string expectedNewName)
+        {
+            Asset asset = new()
+            {
+                FileName = existingName
+            };
+
+            string newName = asset.ComputeNewName(batchFormat, ordinal);
+            newName.Should().Be(expectedNewName);
+        }
+
+        [Fact]
+        public void ComputeNewName_ResultLongerThanMaxPathLength_ReturnEmptyNewName()
+        {
+            Asset asset = new()
+            {
+                FileName = new string('1', 256) + ".jpg",
+                Folder = new Folder
+                {
+                    Path = @"C:\Users\user1\Pictures\Pictures Folder with long name\"
+                }
+            };
+
+            string newName = asset.ComputeNewName($"{asset.FileName}_#.jpg", int.MaxValue);
+            newName.Should().BeNullOrEmpty(newName);
+        }
     }
 }

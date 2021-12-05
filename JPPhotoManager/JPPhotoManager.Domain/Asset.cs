@@ -5,6 +5,8 @@ namespace JPPhotoManager.Domain
 {
     public class Asset
     {
+        private const int MAX_PATH_LENGTH = 256;
+
         public string FolderId { get; set; }
         public Folder Folder { get; set; }
         public string FileName { get; set; }
@@ -40,7 +42,9 @@ namespace JPPhotoManager.Domain
                 }
             }
 
-            return newName;
+            string newFullPath = Folder != null ? Path.Combine(Folder.Path, newName) : newName;
+
+            return newFullPath.Length <= MAX_PATH_LENGTH ? newName : string.Empty;
         }
 
         public override bool Equals(object obj)
