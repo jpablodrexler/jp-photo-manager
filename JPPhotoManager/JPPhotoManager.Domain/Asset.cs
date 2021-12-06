@@ -50,6 +50,10 @@ namespace JPPhotoManager.Domain
 
                     batchFormat = batchFormat.Replace("<PixelWidth>", PixelWidth.ToString(), StringComparison.OrdinalIgnoreCase);
                     batchFormat = batchFormat.Replace("<PixelHeight>", PixelHeight.ToString(), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<CreationDate>", FileCreationDateTime.ToString("yyyyMMdd"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<CreationTime>", FileCreationDateTime.ToString("HHmmss"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<ModificationDate>", FileModificationDateTime.ToString("yyyyMMdd"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<ModificationTime>", FileModificationDateTime.ToString("HHmmss"), StringComparison.OrdinalIgnoreCase);
                 }
             }
             else
