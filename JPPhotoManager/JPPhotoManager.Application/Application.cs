@@ -14,6 +14,7 @@ namespace JPPhotoManager.Application
         private readonly IFindDuplicatedAssetsService findDuplicatedAssetsService;
         private readonly IUserConfigurationService userConfigurationService;
         private readonly IStorageService storageService;
+        private readonly IBatchRenameService batchRenameService;
         private readonly IProcessService processService;
         private readonly INewReleaseNotificationService newReleaseNotificationService;
 
@@ -25,6 +26,7 @@ namespace JPPhotoManager.Application
             IAssetRepository assetRepository,
             IUserConfigurationService userConfigurationService,
             IStorageService storageService,
+            IBatchRenameService batchRenameService,
             IProcessService processService,
             INewReleaseNotificationService newReleaseNotificationService)
         {
@@ -35,6 +37,7 @@ namespace JPPhotoManager.Application
             this.assetRepository = assetRepository;
             this.userConfigurationService = userConfigurationService;
             this.storageService = storageService;
+            this.batchRenameService = batchRenameService;
             this.processService = processService;
             this.newReleaseNotificationService = newReleaseNotificationService;
         }
@@ -72,19 +75,7 @@ namespace JPPhotoManager.Application
             assetRepository.SaveCatalog(null);
         }
 
-        public BatchRenameResult BatchRename(Asset[] sourceAssets, string batchFormat)
-        {
-            BatchRenameResult batchRenameResult = new ();
-
-            for (int i = 0; i < sourceAssets.Length; i++)
-            {
-                string newName = sourceAssets[i].ComputeTargetFileName(batchFormat, i + 1);
-                batchRenameResult.SourceAssets.Add(sourceAssets[i]);
-                batchRenameResult.TargetFileNames.Add(newName);
-            }
-
-            return batchRenameResult;
-        }
+        public BatchRenameResult BatchRename(Asset[] sourceAssets, string batchFormat) => batchRenameService.BatchRename(sourceAssets, batchFormat);
 
         public async Task<List<ImportNewAssetsResult>> ImportNewAssets(StatusChangeCallback callback) => await importNewAssetsService.Import(callback);
 
