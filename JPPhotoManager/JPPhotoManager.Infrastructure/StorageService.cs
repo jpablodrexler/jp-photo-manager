@@ -181,6 +181,15 @@ namespace JPPhotoManager.Infrastructure
             return FileExists(sourcePath) && FileExists(destinationPath);
         }
 
+        public bool MoveImage(string sourcePath, string destinationPath)
+        {
+            string destinationFolderPath = new FileInfo(destinationPath).Directory.FullName;
+            CreateDirectory(destinationFolderPath);
+            File.Move(sourcePath, destinationPath);
+
+            return !FileExists(sourcePath) && FileExists(destinationPath);
+        }
+
         public void GetFileInformation(Asset asset)
         {
             if (FileExists(asset.FullPath))

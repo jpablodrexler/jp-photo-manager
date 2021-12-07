@@ -59,43 +59,5 @@ namespace JPPhotoManager.Tests.Unit
             Func<Asset[]> function = () => app.GetAssets(directory);
             function.Should().Throw<ArgumentException>();
         }
-
-        [Fact]
-        public void BatchRename_Test()
-        {
-            string directory = @"C:\My Images\My Folder";
-            Asset[] sourceAssets = new Asset[]
-            {
-                new Asset
-                {
-                    FileName = "MyFirstImage.jpg",
-                    Folder = new Folder { Path = directory }
-                },
-                new Asset
-                {
-                    FileName = "MySecondImage.jpg",
-                    Folder = new Folder { Path = directory }
-                },
-                new Asset
-                {
-                    FileName = "MyThirdImage.jpg",
-                    Folder = new Folder { Path = directory }
-                }
-            };
-
-            using var mock = AutoMock.GetLoose();
-            var app = mock.Container.Resolve<Application.Application>();
-            var renameResult = app.BatchRename(sourceAssets, "Image_<##>.jpg");
-
-            renameResult.SourceAssets.Should().HaveCount(sourceAssets.Length);
-            renameResult.SourceAssets[0].Should().Be(sourceAssets[0]);
-            renameResult.SourceAssets[1].Should().Be(sourceAssets[1]);
-            renameResult.SourceAssets[2].Should().Be(sourceAssets[2]);
-
-            renameResult.TargetFileNames.Should().HaveCount(sourceAssets.Length);
-            renameResult.TargetFileNames[0].Should().Be("Image_01.jpg");
-            renameResult.TargetFileNames[1].Should().Be("Image_02.jpg");
-            renameResult.TargetFileNames[2].Should().Be("Image_03.jpg");
-        }
     }
 }
