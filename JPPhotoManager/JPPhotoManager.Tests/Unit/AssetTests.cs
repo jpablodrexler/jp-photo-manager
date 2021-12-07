@@ -254,7 +254,7 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData("MyImage.jpg", "MyImage_<ModificationDate>-<ModificationTime>.jpg ", 1, "MyImage_20211210-213522.jpg")]
         [InlineData("MyImage.jpg", "MyImage_<#> - <ModificationDate>-<ModificationTime>.jpg ", 1, "MyImage_1 - 20211210-213522.jpg")]
         [InlineData("MyImage.jpg", "MyImage_<#> - <modificationdate>-<modificationtime>.jpg ", 1, "MyImage_1 - 20211210-213522.jpg")]
-        public void ComputeNewName_ReturnNewName(string existingFileName,
+        public void ComputeTargetFileName_ReturnTargetFileName(string existingFileName,
             string batchFormat,
             int ordinal,
             string expectedNewName)
@@ -268,8 +268,8 @@ namespace JPPhotoManager.Tests.Unit
                 FileModificationDateTime = DateTime.Parse("2021-12-10T21:35:22")
             };
 
-            string newName = asset.ComputeNewName(batchFormat, ordinal);
-            newName.Should().Be(expectedNewName);
+            string targetFileName = asset.ComputeTargetFileName(batchFormat, ordinal);
+            targetFileName.Should().Be(expectedNewName);
         }
 
         [Fact]
@@ -284,7 +284,7 @@ namespace JPPhotoManager.Tests.Unit
                 }
             };
 
-            string newName = asset.ComputeNewName($"{asset.FileName}_#.jpg", int.MaxValue);
+            string newName = asset.ComputeTargetFileName($"{asset.FileName}_#.jpg", int.MaxValue);
             newName.Should().BeNullOrEmpty(newName);
         }
     }
