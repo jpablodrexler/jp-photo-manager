@@ -72,6 +72,20 @@ namespace JPPhotoManager.Application
             assetRepository.SaveCatalog(null);
         }
 
+        public BatchRenameResult BatchRename(Asset[] sourceAssets, string batchFormat)
+        {
+            BatchRenameResult batchRenameResult = new ();
+
+            for (int i = 0; i < sourceAssets.Length; i++)
+            {
+                string newName = sourceAssets[i].ComputeTargetFileName(batchFormat, i + 1);
+                batchRenameResult.SourceAssets.Add(sourceAssets[i]);
+                batchRenameResult.TargetFileNames.Add(newName);
+            }
+
+            return batchRenameResult;
+        }
+
         public async Task<List<ImportNewAssetsResult>> ImportNewAssets(StatusChangeCallback callback) => await importNewAssetsService.Import(callback);
 
         public async Task CatalogAssets(CatalogChangeCallback callback) => await catalogAssetsService.CatalogAssets(callback);

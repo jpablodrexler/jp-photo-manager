@@ -23,7 +23,7 @@ namespace JPPhotoManager.Domain
         public DateTime FileCreationDateTime { get; set; }
         public DateTime FileModificationDateTime { get; set; }
 
-        public string ComputeNewName(string batchFormat, int ordinal)
+        public string ComputeTargetFileName(string batchFormat, int ordinal)
         {
             if (!string.IsNullOrWhiteSpace(batchFormat))
             {
