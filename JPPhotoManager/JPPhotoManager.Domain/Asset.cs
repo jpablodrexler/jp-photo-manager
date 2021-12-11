@@ -33,10 +33,24 @@ namespace JPPhotoManager.Domain
                 isValid = !batchFormat.StartsWith(".")
                     && !batchFormat.EndsWith(".")
                     && !batchFormat.EndsWith("<")
-                    && !batchFormat.EndsWith(">");
+                    && !batchFormat.EndsWith(">")
+                    && !HasUnclosedTags(batchFormat)
+                    && !HasUnopenedTags(batchFormat);
             }
 
             return isValid;
+        }
+
+        private static bool HasUnclosedTags(string batchFormat)
+        {
+            // TODO: ADD LOGIC
+            return false;
+        }
+
+        private static bool HasUnopenedTags(string batchFormat)
+        {
+            // TODO: ADD LOGIC
+            return false;
         }
 
         public string ComputeTargetFileName(string batchFormat, int ordinal)
