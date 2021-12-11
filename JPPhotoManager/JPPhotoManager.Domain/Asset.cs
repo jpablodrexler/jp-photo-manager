@@ -25,7 +25,18 @@ namespace JPPhotoManager.Domain
 
         public static bool IsValidBatchFormat(string batchFormat)
         {
-            return !string.IsNullOrWhiteSpace(batchFormat);
+            bool isValid = !string.IsNullOrWhiteSpace(batchFormat);
+
+            if (isValid)
+            {
+                batchFormat = batchFormat.Trim();
+                isValid = !batchFormat.StartsWith(".")
+                    && !batchFormat.EndsWith(".")
+                    && !batchFormat.EndsWith("<")
+                    && !batchFormat.EndsWith(">");
+            }
+
+            return isValid;
         }
 
         public string ComputeTargetFileName(string batchFormat, int ordinal)
