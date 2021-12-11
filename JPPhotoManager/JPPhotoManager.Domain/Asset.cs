@@ -23,9 +23,16 @@ namespace JPPhotoManager.Domain
         public DateTime FileCreationDateTime { get; set; }
         public DateTime FileModificationDateTime { get; set; }
 
+        public static bool IsValidBatchFormat(string batchFormat)
+        {
+            return !string.IsNullOrWhiteSpace(batchFormat);
+        }
+
         public string ComputeTargetFileName(string batchFormat, int ordinal)
         {
-            if (!string.IsNullOrWhiteSpace(batchFormat))
+            bool isValid = IsValidBatchFormat(batchFormat);
+
+            if (isValid)
             {
                 batchFormat = batchFormat.Trim();
 
@@ -63,7 +70,7 @@ namespace JPPhotoManager.Domain
 
             string newFullPath = Folder != null ? Path.Combine(Folder.Path, batchFormat) : batchFormat;
 
-            return newFullPath.Length <= MAX_PATH_LENGTH ? batchFormat : string.Empty;
+            return isValid && newFullPath.Length <= MAX_PATH_LENGTH ? batchFormat : string.Empty;
         }
 
         public override bool Equals(object obj)
