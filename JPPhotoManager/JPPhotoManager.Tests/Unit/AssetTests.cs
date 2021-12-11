@@ -152,10 +152,10 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Theory]
-        [InlineData("MyImage.jpg", null, 1, "MyImage.jpg")]
-        [InlineData("MyImage.jpg", "", 1, "MyImage.jpg")]
-        [InlineData("MyImage.jpg", " ", 1, "MyImage.jpg")]
-        [InlineData("MyImage.jpg", "  ", 1, "MyImage.jpg")]
+        [InlineData("MyImage.jpg", null, 1, "")]
+        [InlineData("MyImage.jpg", "", 1, "")]
+        [InlineData("MyImage.jpg", " ", 1, "")]
+        [InlineData("MyImage.jpg", "  ", 1, "")]
         [InlineData("MyImage.jpg", ".jpg", 1, "MyImage.jpg")]
         [InlineData("MyImage.jpg", "<#>.jpg", 1, "1.jpg")]
         [InlineData("MyImage.jpg", "<##>.jpg", 1, "01.jpg")]
