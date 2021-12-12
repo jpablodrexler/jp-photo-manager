@@ -25,6 +25,3 @@ jobs:
       run: dotnet build --no-restore --configuration Release JPPhotoManager/JPPhotoManager.sln
     - name: Test
       run: dotnet test --no-build --configuration Release --verbosity normal JPPhotoManager/JPPhotoManager.Tests/JPPhotoManager.Tests.csproj
-    - name: Test with coverage
-      shell: cmd
-      run: cd JPPhotoManager && .\test-with-coverage.bat
