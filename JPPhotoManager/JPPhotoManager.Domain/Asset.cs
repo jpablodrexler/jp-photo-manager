@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Text.RegularExpressions;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Domain
@@ -33,24 +34,42 @@ namespace JPPhotoManager.Domain
                 isValid = !batchFormat.StartsWith(".")
                     && !batchFormat.EndsWith(".")
                     && !batchFormat.EndsWith("<")
-                    && !batchFormat.EndsWith(">")
-                    && !HasUnclosedTags(batchFormat)
-                    && !HasUnopenedTags(batchFormat);
+                    && !batchFormat.EndsWith(">");
+
+                Regex regex = new("(<[#A-Za-z0-9]*>)", RegexOptions.IgnoreCase);
+                var matches = regex.Matches(batchFormat);
+                var remainingBatchFormat = batchFormat;
+
+                // Identifies if the complete tags have supported expressions.
+                foreach (Match match in matches)
+                {
+                    string tag = match.Value[1..^1];
+                    isValid = isValid
+                        && match.Success
+                        && (string.Compare(tag, "#", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "##", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "###", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "####", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "#####", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "######", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "#######", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "########", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "#########", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "##########", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "PixelWidth", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "PixelHeight", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "CreationDate", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "CreationTime", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "ModificationDate", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "ModificationTime", StringComparison.OrdinalIgnoreCase) == 0);
+                    remainingBatchFormat = remainingBatchFormat.Replace(match.Value, string.Empty);
+                }
+
+                // Identifies if the batch format has any unexpected values after removing the complete tags.
+                isValid = isValid && remainingBatchFormat.IndexOfAny(new[] { '<', '>', '?' }) < 0;
             }
 
             return isValid;
-        }
-
-        private static bool HasUnclosedTags(string batchFormat)
-        {
-            // TODO: ADD LOGIC
-            return false;
-        }
-
-        private static bool HasUnopenedTags(string batchFormat)
-        {
-            // TODO: ADD LOGIC
-            return false;
         }
 
         public string ComputeTargetFileName(string batchFormat, int ordinal)

@@ -390,6 +390,10 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData("MyImage_<CreationDate><.jpg", false)]
         [InlineData("MyImage_<Whatever>.jpg", false)]
         [InlineData("MyImage_<CreationDate><Whatever>.jpg", false)]
+        [InlineData("MyImage_<CreationDate><Whatever><.jpg", false)]
+        [InlineData("MyImage_><CreationDate><Whatever><.jpg", false)]
+        [InlineData("MyImage_><><CreationDate><Whatever><><.jpg", false)]
+        [InlineData("MyImage_>><CreationDate><Whatever>>.jpg", false)]
         [InlineData("MyImage_#..", false)]
         [InlineData("MyImage_#_..", false)]
         public void IsValidBatchFormat_ReturnIsValid(string batchFormat, bool expectedIsValid)
