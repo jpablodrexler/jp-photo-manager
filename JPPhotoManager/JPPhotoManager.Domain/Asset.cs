@@ -66,7 +66,8 @@ namespace JPPhotoManager.Domain
                 }
 
                 // Identifies if the batch format has any unexpected values after removing the complete tags.
-                isValid = isValid && remainingBatchFormat.IndexOfAny(new[] { '<', '>', '?' }) < 0;
+                isValid = isValid && remainingBatchFormat
+                    .IndexOfAny(new[] { '\\', '/', ':', '*', '?', '"', '<', '>', '|' }) < 0;
             }
 
             return isValid;
