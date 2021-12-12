@@ -27,4 +27,4 @@ jobs:
       run: dotnet test --no-build --configuration Release --verbosity normal JPPhotoManager/JPPhotoManager.Tests/JPPhotoManager.Tests.csproj
     - name: Test with coverage
       shell: cmd
-      run: .\test-with-coverage.bat
+      run: .\JPPhotoManager\test-with-coverage.bat
