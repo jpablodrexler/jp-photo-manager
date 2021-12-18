@@ -63,7 +63,7 @@ namespace JPPhotoManager.Domain
                         || string.Compare(tag, "CreationDate:yyyy", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "CreationDate:M", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "CreationDate:MM", StringComparison.OrdinalIgnoreCase) == 0
-                        || string.Compare(tag, "CreationDate:MMM", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "CreationDate:MMMM", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "CreationDate:d", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "CreationDate:dd", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "CreationTime", StringComparison.OrdinalIgnoreCase) == 0
@@ -72,7 +72,7 @@ namespace JPPhotoManager.Domain
                         || string.Compare(tag, "ModificationDate:yyyy", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "ModificationDate:M", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "ModificationDate:MM", StringComparison.OrdinalIgnoreCase) == 0
-                        || string.Compare(tag, "ModificationDate:MMM", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "ModificationDate:MMMM", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "ModificationDate:d", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "ModificationDate:dd", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "ModificationTime", StringComparison.OrdinalIgnoreCase) == 0);
