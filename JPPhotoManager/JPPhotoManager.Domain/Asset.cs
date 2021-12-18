@@ -36,7 +36,7 @@ namespace JPPhotoManager.Domain
                     && !batchFormat.EndsWith("<")
                     && !batchFormat.EndsWith(">");
 
-                Regex regex = new("(<[#A-Za-z0-9]*>)", RegexOptions.IgnoreCase);
+                Regex regex = new("(<[#A-Za-z0-9:]*>)", RegexOptions.IgnoreCase);
                 var matches = regex.Matches(batchFormat);
                 var remainingBatchFormat = batchFormat;
 
@@ -59,15 +59,29 @@ namespace JPPhotoManager.Domain
                         || string.Compare(tag, "PixelWidth", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "PixelHeight", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "CreationDate", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "CreationDate:yy", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "CreationDate:yyyy", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "CreationDate:M", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "CreationDate:MM", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "CreationDate:MMM", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "CreationDate:d", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "CreationDate:dd", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "CreationTime", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "ModificationDate", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "ModificationDate:yy", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "ModificationDate:yyyy", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "ModificationDate:M", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "ModificationDate:MM", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "ModificationDate:MMM", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "ModificationDate:d", StringComparison.OrdinalIgnoreCase) == 0
+                        || string.Compare(tag, "ModificationDate:dd", StringComparison.OrdinalIgnoreCase) == 0
                         || string.Compare(tag, "ModificationTime", StringComparison.OrdinalIgnoreCase) == 0);
                     remainingBatchFormat = remainingBatchFormat.Replace(match.Value, string.Empty);
                 }
 
                 // Identifies if the batch format has any unexpected values after removing the complete tags.
                 isValid = isValid && remainingBatchFormat
-                    .IndexOfAny(new[] { '\\', '/', ':', '*', '?', '"', '<', '>', '|' }) < 0;
+                    .IndexOfAny(new[] { '/', ':', '*', '?', '"', '<', '>', '|' }) < 0;
             }
 
             return isValid;
@@ -103,8 +117,20 @@ namespace JPPhotoManager.Domain
                     batchFormat = batchFormat.Replace("<PixelWidth>", PixelWidth.ToString(), StringComparison.OrdinalIgnoreCase);
                     batchFormat = batchFormat.Replace("<PixelHeight>", PixelHeight.ToString(), StringComparison.OrdinalIgnoreCase);
                     batchFormat = batchFormat.Replace("<CreationDate>", FileCreationDateTime.ToString("yyyyMMdd"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<CreationDate:yy>", FileCreationDateTime.ToString("yy"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<CreationDate:yyyy>", FileCreationDateTime.ToString("yyyy"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<CreationDate:M>", FileCreationDateTime.ToString("M"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<CreationDate:MM>", FileCreationDateTime.ToString("MM"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<CreationDate:MMMM>", FileCreationDateTime.ToString("MMMM"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<CreationDate:d>", FileCreationDateTime.ToString("d"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<CreationDate:dd>", FileCreationDateTime.ToString("dd"), StringComparison.OrdinalIgnoreCase);
                     batchFormat = batchFormat.Replace("<CreationTime>", FileCreationDateTime.ToString("HHmmss"), StringComparison.OrdinalIgnoreCase);
                     batchFormat = batchFormat.Replace("<ModificationDate>", FileModificationDateTime.ToString("yyyyMMdd"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<ModificationDate:yy>", FileModificationDateTime.ToString("yy"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<ModificationDate:yyyy>", FileModificationDateTime.ToString("yyyy"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<ModificationDate:M>", FileModificationDateTime.ToString("M"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<ModificationDate:MM>", FileModificationDateTime.ToString("MM"), StringComparison.OrdinalIgnoreCase);
+                    batchFormat = batchFormat.Replace("<ModificationDate:MMMM>", FileModificationDateTime.ToString("MMMM"), StringComparison.OrdinalIgnoreCase);
                     batchFormat = batchFormat.Replace("<ModificationTime>", FileModificationDateTime.ToString("HHmmss"), StringComparison.OrdinalIgnoreCase);
                 }
             }
