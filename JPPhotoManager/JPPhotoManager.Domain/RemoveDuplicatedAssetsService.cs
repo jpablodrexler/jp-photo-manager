@@ -31,8 +31,6 @@ namespace JPPhotoManager.Domain
         // TODO: ADD LOGIC SO THE CONDITION OF PARENT FOLDER CAN CONSIDER N LEVELS
         private void RemoveDuplicatesFromParentFolder(List<Asset> duplicatedSet)
         {
-            // TODO: THIS CONDITION SHOULD BE ENCAPSULATED IN A STRATEGY PATTERN
-
             // If the first directory is parent of the second directory
             if (duplicatedSet[0].Folder.IsParentOf(duplicatedSet[1].Folder))
             {
