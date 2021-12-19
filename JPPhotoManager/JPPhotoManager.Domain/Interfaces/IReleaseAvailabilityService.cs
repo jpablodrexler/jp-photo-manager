@@ -2,6 +2,6 @@
 {
     public interface IReleaseAvailabilityService
     {
-        Task<Release> GetLatestRelease();
+        Task<Release> GetLatestReleaseAsync();
     }
 }

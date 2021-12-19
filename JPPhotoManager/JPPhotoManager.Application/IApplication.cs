@@ -10,8 +10,8 @@ namespace JPPhotoManager.Application
         void LoadThumbnail(Asset asset);
         ImportNewAssetsConfiguration GetImportNewAssetsConfiguration();
         void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration);
-        Task<List<ImportNewAssetsResult>> ImportNewAssets(StatusChangeCallback callback);
-        Task CatalogAssets(CatalogChangeCallback callback);
+        Task<List<ImportNewAssetsResult>> ImportNewAssetsAsync(ProcessStatusChangedCallback callback);
+        Task CatalogAssetsAsync(CatalogChangeCallback callback);
         void SetAsWallpaper(Asset asset, WallpaperStyle style);
         List<List<Asset>> GetDuplicatedAssets();
         void DeleteAssets(Asset[] assets, bool deleteFiles);
@@ -26,6 +26,6 @@ namespace JPPhotoManager.Application
         List<string> GetRecentTargetPaths();
         Folder[] GetRootCatalogFolders();
         bool IsAlreadyRunning();
-        Task<Release> CheckNewRelease();
+        Task<Release> CheckNewReleaseAsyc();
     }
 }

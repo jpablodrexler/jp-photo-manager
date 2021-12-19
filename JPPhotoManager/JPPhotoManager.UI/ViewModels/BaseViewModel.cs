@@ -14,7 +14,7 @@ namespace JPPhotoManager.UI.ViewModels
         /// </summary>
         protected IApplication Application { get; private set; }
 
-        public BaseViewModel(IApplication application)
+        protected BaseViewModel(IApplication application)
         {
             Application = application;
         }

@@ -2,7 +2,7 @@
 {
     public interface ICatalogAssetsService
     {
-        Task CatalogAssets(CatalogChangeCallback callback);
+        Task CatalogAssetsAsync(CatalogChangeCallback callback);
         Asset CreateAsset(string directoryName, string fileName);
     }
 }

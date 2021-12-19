@@ -72,9 +72,9 @@ namespace JPPhotoManager.Application
             assetRepository.SaveCatalog(null);
         }
 
-        public async Task<List<ImportNewAssetsResult>> ImportNewAssets(StatusChangeCallback callback) => await importNewAssetsService.Import(callback);
+        public async Task<List<ImportNewAssetsResult>> ImportNewAssetsAsync(ProcessStatusChangedCallback callback) => await importNewAssetsService.ImportAsync(callback);
 
-        public async Task CatalogAssets(CatalogChangeCallback callback) => await catalogAssetsService.CatalogAssets(callback);
+        public async Task CatalogAssetsAsync(CatalogChangeCallback callback) => await catalogAssetsService.CatalogAssetsAsync(callback);
 
         public void SetAsWallpaper(Asset asset, WallpaperStyle style)
         {
@@ -131,6 +131,6 @@ namespace JPPhotoManager.Application
 
         public bool IsAlreadyRunning() => processService.IsAlreadyRunning();
 
-        public async Task<Release> CheckNewRelease() => await newReleaseNotificationService.CheckNewRelease();
+        public async Task<Release> CheckNewReleaseAsyc() => await newReleaseNotificationService.CheckNewReleaseAsync();
     }
 }

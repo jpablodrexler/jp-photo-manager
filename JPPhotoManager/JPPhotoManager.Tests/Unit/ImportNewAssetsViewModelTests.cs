@@ -107,7 +107,7 @@ namespace JPPhotoManager.Tests.Unit
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
             ImportNewAssetsViewModel viewModel = new(mock.Object);
 
-            viewModel.Step.Should().Be(ImportNewAssetsStepEnum.Configure);
+            viewModel.Step.Should().Be(ProcessStepEnum.Configure);
             viewModel.CanConfigure.Should().BeTrue();
             viewModel.CanViewResults.Should().BeFalse();
             viewModel.InputVisible.Should().Be(Visibility.Visible);
@@ -116,7 +116,7 @@ namespace JPPhotoManager.Tests.Unit
             viewModel.AdvanceStep();
             viewModel.Results = results;
 
-            viewModel.Step.Should().Be(ImportNewAssetsStepEnum.Import);
+            viewModel.Step.Should().Be(ProcessStepEnum.Import);
             viewModel.CanConfigure.Should().BeFalse();
             viewModel.CanViewResults.Should().BeTrue();
             viewModel.InputVisible.Should().Be(Visibility.Visible);
@@ -124,7 +124,7 @@ namespace JPPhotoManager.Tests.Unit
 
             viewModel.AdvanceStep();
 
-            viewModel.Step.Should().Be(ImportNewAssetsStepEnum.ViewResults);
+            viewModel.Step.Should().Be(ProcessStepEnum.ViewResults);
             viewModel.CanConfigure.Should().BeFalse();
             viewModel.CanViewResults.Should().BeFalse();
             viewModel.InputVisible.Should().Be(Visibility.Hidden);
@@ -132,7 +132,7 @@ namespace JPPhotoManager.Tests.Unit
 
             viewModel.AdvanceStep();
 
-            viewModel.Step.Should().Be(ImportNewAssetsStepEnum.ViewResults);
+            viewModel.Step.Should().Be(ProcessStepEnum.ViewResults);
             viewModel.CanConfigure.Should().BeFalse();
             viewModel.CanViewResults.Should().BeFalse();
             viewModel.InputVisible.Should().Be(Visibility.Hidden);
@@ -229,29 +229,29 @@ namespace JPPhotoManager.Tests.Unit
 
             ImportNewAssetsViewModel viewModel = new(mock.Object);
 
-            viewModel.NotifyImageImported(new StatusChangeCallbackEventArgs
+            viewModel.NotifyProcessStatusChanged(new ProcessStatusChangedCallbackEventArgs
             {
                 NewStatus = @"2 images imported from C:\MyGame1\Screenshots to C:\Images\MyGame1"
             });
 
-            viewModel.StatusMessages.Should().ContainSingle();
-            viewModel.StatusMessages[0].Should().Be(@"2 images imported from C:\MyGame1\Screenshots to C:\Images\MyGame1");
+            viewModel.ProcessStatusMessages.Should().ContainSingle();
+            viewModel.ProcessStatusMessages[0].Should().Be(@"2 images imported from C:\MyGame1\Screenshots to C:\Images\MyGame1");
 
-            viewModel.NotifyImageImported(new StatusChangeCallbackEventArgs
+            viewModel.NotifyProcessStatusChanged(new ProcessStatusChangedCallbackEventArgs
             {
                 NewStatus = @"2 images imported from C:\MyGame2\Screenshots to C:\Images\MyGame2"
             });
 
-            viewModel.StatusMessages.Should().HaveCount(2);
-            viewModel.StatusMessages[1].Should().Be(@"2 images imported from C:\MyGame2\Screenshots to C:\Images\MyGame2");
+            viewModel.ProcessStatusMessages.Should().HaveCount(2);
+            viewModel.ProcessStatusMessages[1].Should().Be(@"2 images imported from C:\MyGame2\Screenshots to C:\Images\MyGame2");
 
-            viewModel.NotifyImageImported(new StatusChangeCallbackEventArgs
+            viewModel.NotifyProcessStatusChanged(new ProcessStatusChangedCallbackEventArgs
             {
                 NewStatus = @"2 images imported from C:\MyGame3\Screenshots to C:\Images\MyGame3"
             });
 
-            viewModel.StatusMessages.Should().HaveCount(3);
-            viewModel.StatusMessages[2].Should().Be(@"2 images imported from C:\MyGame3\Screenshots to C:\Images\MyGame3");
+            viewModel.ProcessStatusMessages.Should().HaveCount(3);
+            viewModel.ProcessStatusMessages[2].Should().Be(@"2 images imported from C:\MyGame3\Screenshots to C:\Images\MyGame3");
         }
     }
 }

@@ -2,89 +2,24 @@
 using JPPhotoManager.Domain;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using System.Windows;
 
 namespace JPPhotoManager.UI.ViewModels
 {
-    public class ImportNewAssetsViewModel : BaseViewModel
+    public class ImportNewAssetsViewModel : BaseProcessViewModel<ImportNewAssetsConfiguration, ImportNewAssetsResult>
     {
-        private ObservableCollection<ImportNewAssetsDirectoriesDefinition> imports;
-        private ObservableCollection<ImportNewAssetsResult> results;
-        private ObservableCollection<string> statusMessages;
-        private ImportNewAssetsStepEnum step = ImportNewAssetsStepEnum.Configure;
-
+        private ObservableCollection<ImportNewAssetsDirectoriesDefinition>? imports;
+        
         public ImportNewAssetsViewModel(IApplication assetApp) : base(assetApp)
         {
-            statusMessages = new ObservableCollection<string>();
         }
 
-        public ObservableCollection<ImportNewAssetsDirectoriesDefinition> Imports
+        public ObservableCollection<ImportNewAssetsDirectoriesDefinition>? Imports
         {
             get { return imports; }
             set
             {
                 imports = value;
                 NotifyPropertyChanged(nameof(Imports));
-            }
-        }
-
-        public ObservableCollection<ImportNewAssetsResult> Results
-        {
-            get { return results; }
-            set
-            {
-                results = value;
-                NotifyPropertyChanged(nameof(Results));
-                NotifyPropertyChanged(nameof(CanViewResults));
-            }
-        }
-
-        public ObservableCollection<string> StatusMessages
-        {
-            get { return statusMessages; }
-        }
-
-        public ImportNewAssetsStepEnum Step
-        {
-            get { return step; }
-            private set
-            {
-                step = value;
-                NotifyPropertyChanged(nameof(Step), nameof(InputVisible), nameof(ResultsVisible), nameof(CanConfigure));
-            }
-        }
-
-        public Visibility InputVisible
-        {
-            get { return Step == ImportNewAssetsStepEnum.Configure || Step == ImportNewAssetsStepEnum.Import ? Visibility.Visible : Visibility.Hidden; }
-        }
-
-        public Visibility ResultsVisible
-        {
-            get { return Step == ImportNewAssetsStepEnum.ViewResults ? Visibility.Visible : Visibility.Hidden; }
-        }
-
-        public bool CanConfigure
-        {
-            get { return Step == ImportNewAssetsStepEnum.Configure; }
-        }
-
-        public bool CanViewResults
-        {
-            get { return Step == ImportNewAssetsStepEnum.Import && Results != null && Results.Count > 0; }
-        }
-
-        public void AdvanceStep()
-        {
-            switch (Step)
-            {
-                case ImportNewAssetsStepEnum.Configure:
-                    Step = ImportNewAssetsStepEnum.Import;
-                    break;
-
-                case ImportNewAssetsStepEnum.Import:
-                    Step = ImportNewAssetsStepEnum.ViewResults;
-                    break;
             }
         }
 
@@ -95,11 +30,6 @@ namespace JPPhotoManager.UI.ViewModels
                 Imports.Remove(definition);
                 NotifyPropertyChanged(nameof(Imports));
             }
-        }
-
-        public void NotifyImageImported(StatusChangeCallbackEventArgs e)
-        {
-            StatusMessages.Add(e.NewStatus);
         }
 
         public void MoveUpDefinition(ImportNewAssetsDirectoriesDefinition definition)
@@ -118,15 +48,14 @@ namespace JPPhotoManager.UI.ViewModels
             }
         }
 
-        public ImportNewAssetsConfiguration GetImportNewAssetsConfiguration() => Application.GetImportNewAssetsConfiguration();
+        public override ImportNewAssetsConfiguration GetProcessConfiguration() => Application.GetImportNewAssetsConfiguration();
 
-        public void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration) => Application.SetImportNewAssetsConfiguration(importConfiguration);
+        public override void SetProcessConfiguration(ImportNewAssetsConfiguration configuration) => Application.SetImportNewAssetsConfiguration(configuration);
 
-        public async Task<ObservableCollection<ImportNewAssetsResult>> ImportNewAssets(StatusChangeCallback callback)
+        public override async Task RunProcessAsync(ProcessStatusChangedCallback callback)
         {
-            var results = await Application.ImportNewAssets(callback);
-
-            return new ObservableCollection<ImportNewAssetsResult>(results);
+            var results = await Application.ImportNewAssetsAsync(callback);
+            Results = new ObservableCollection<ImportNewAssetsResult>(results);
         }
     }
 }

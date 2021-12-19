@@ -32,7 +32,7 @@ namespace JPPhotoManager.Tests.Unit
                {
                    cfg.RegisterType<NewReleaseNotificationService>().As<INewReleaseNotificationService>().SingleInstance();
                });
-            mock.Mock<IReleaseAvailabilityService>().Setup(s => s.GetLatestRelease())
+            mock.Mock<IReleaseAvailabilityService>().Setup(s => s.GetLatestReleaseAsync())
                 .Returns(Task.FromResult(new Release
                 {
                     Name = latestReleaseName,
@@ -47,7 +47,7 @@ namespace JPPhotoManager.Tests.Unit
                 });
 
             var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
-            var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
+            var newReleaseResult = await newReleaseNotificationService.CheckNewReleaseAsync();
 
             newReleaseResult.Should().NotBeNull();
             newReleaseResult.Name.Should().Be(latestReleaseName);
@@ -67,7 +67,7 @@ namespace JPPhotoManager.Tests.Unit
                {
                    cfg.RegisterType<NewReleaseNotificationService>().As<INewReleaseNotificationService>().SingleInstance();
                });
-            mock.Mock<IReleaseAvailabilityService>().Setup(s => s.GetLatestRelease())
+            mock.Mock<IReleaseAvailabilityService>().Setup(s => s.GetLatestReleaseAsync())
                 .Throws<Exception>();
 
             mock.Mock<IUserConfigurationService>().Setup(s => s.GetAboutInformation(It.IsAny<Assembly>()))
@@ -77,7 +77,7 @@ namespace JPPhotoManager.Tests.Unit
                 });
 
             var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
-            var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
+            var newReleaseResult = await newReleaseNotificationService.CheckNewReleaseAsync();
 
             newReleaseResult.Should().NotBeNull();
             newReleaseResult.Name.Should().BeNullOrEmpty();
@@ -97,7 +97,7 @@ namespace JPPhotoManager.Tests.Unit
                 .Throws<Exception>();
 
             var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
-            var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
+            var newReleaseResult = await newReleaseNotificationService.CheckNewReleaseAsync();
 
             newReleaseResult.Should().NotBeNull();
             newReleaseResult.Name.Should().BeNullOrEmpty();
@@ -114,7 +114,7 @@ namespace JPPhotoManager.Tests.Unit
                    cfg.RegisterType<NewReleaseNotificationService>().As<INewReleaseNotificationService>().SingleInstance();
                });
             var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
-            var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
+            var newReleaseResult = await newReleaseNotificationService.CheckNewReleaseAsync();
 
             newReleaseResult.Should().NotBeNull();
             newReleaseResult.Name.Should().BeNullOrEmpty();
@@ -137,7 +137,7 @@ namespace JPPhotoManager.Tests.Unit
                 });
 
             var newReleaseNotificationService = mock.Create<INewReleaseNotificationService>();
-            var newReleaseResult = await newReleaseNotificationService.CheckNewRelease();
+            var newReleaseResult = await newReleaseNotificationService.CheckNewReleaseAsync();
 
             newReleaseResult.Should().NotBeNull();
             newReleaseResult.Name.Should().BeNullOrEmpty();

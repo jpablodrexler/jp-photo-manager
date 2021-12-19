@@ -444,7 +444,7 @@ namespace JPPhotoManager.UI.Windows
 
         private async Task CheckNewRelease()
         {
-            var latestRelease = await application.CheckNewRelease().ConfigureAwait(true);
+            var latestRelease = await application.CheckNewReleaseAsyc().ConfigureAwait(true);
 
             if (latestRelease != null && latestRelease.Success && latestRelease.IsNewRelease)
             {

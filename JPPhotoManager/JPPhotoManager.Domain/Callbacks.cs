@@ -1,9 +1,9 @@
 ﻿namespace JPPhotoManager.Domain
 {
-    public delegate void StatusChangeCallback(StatusChangeCallbackEventArgs e);
+    public delegate void ProcessStatusChangedCallback(ProcessStatusChangedCallbackEventArgs e);
     public delegate void CatalogChangeCallback(CatalogChangeCallbackEventArgs e);
 
-    public class StatusChangeCallbackEventArgs
+    public class ProcessStatusChangedCallbackEventArgs
     {
         public string NewStatus { get; set; }
     }
