@@ -25,7 +25,7 @@
         Tile
     }
 
-    public enum ImportNewAssetsStepEnum
+    public enum ProcessStepEnum
     {
         Configure,
         Import,

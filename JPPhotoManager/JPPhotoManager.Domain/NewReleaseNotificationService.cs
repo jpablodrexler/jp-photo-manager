@@ -18,14 +18,14 @@ namespace JPPhotoManager.Domain
             this.releaseAvailabilityService = releaseAvailabilityService;
         }
 
-        public async Task<Release> CheckNewRelease()
+        public async Task<Release> CheckNewReleaseAsync()
         {
             Release latestRelease = null;
 
             try
             {
                 var aboutInformation = userConfigurationService.GetAboutInformation(GetType().Assembly);
-                latestRelease = await releaseAvailabilityService.GetLatestRelease();
+                latestRelease = await releaseAvailabilityService.GetLatestReleaseAsync();
 
                 if (aboutInformation != null && latestRelease != null)
                 {

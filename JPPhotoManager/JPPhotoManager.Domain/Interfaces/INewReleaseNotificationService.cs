@@ -2,6 +2,6 @@
 {
     public interface INewReleaseNotificationService
     {
-        Task<Release> CheckNewRelease();
+        Task<Release> CheckNewReleaseAsync();
     }
 }
