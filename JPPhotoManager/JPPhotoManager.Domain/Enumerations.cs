@@ -28,7 +28,7 @@
     public enum ProcessStepEnum
     {
         Configure,
-        Import,
+        Run,
         ViewResults
     }
 
