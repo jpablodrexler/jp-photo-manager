@@ -79,7 +79,7 @@ namespace JPPhotoManager.Tests.Integration
 
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+            await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
 
             var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
@@ -130,7 +130,7 @@ namespace JPPhotoManager.Tests.Integration
 
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+            await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
 
             var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
@@ -185,7 +185,7 @@ namespace JPPhotoManager.Tests.Integration
                 fileList.AddRange(jpegFiles);
                 fileList.AddRange(pngFiles);
 
-                await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
 
                 var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
                 repositoryAssets = repository.GetAssets(dataDirectory);
@@ -215,7 +215,7 @@ namespace JPPhotoManager.Tests.Integration
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
                 statusChanges.Clear();
-                await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
                 var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
 
                 repositoryAssets.Should().Contain(a => a.FileName == deletedFile);
@@ -261,7 +261,7 @@ namespace JPPhotoManager.Tests.Integration
                 fileList.AddRange(jpegFiles);
                 fileList.AddRange(pngFiles);
 
-                await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
 
                 var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
                 var repositoryAssets = repository.GetAssets(dataDirectory);
@@ -292,7 +292,7 @@ namespace JPPhotoManager.Tests.Integration
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
                 statusChanges.Clear();
-                await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+                await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
                 var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
 
                 repositoryAssetsAfterDelete.Should().HaveCount(fileList.Count - batchSize);
@@ -320,7 +320,7 @@ namespace JPPhotoManager.Tests.Integration
 
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+            catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
 
             statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).Should().BeEmpty();
             statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).Should().BeEmpty();
@@ -989,7 +989,7 @@ namespace JPPhotoManager.Tests.Integration
 
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+            await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
 
             var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
@@ -1028,7 +1028,7 @@ namespace JPPhotoManager.Tests.Integration
 
             var statusChanges = new List<CatalogChangeCallbackEventArgs>();
 
-            Func<Task> func = async () => await catalogAssetsService.CatalogAssets(e => statusChanges.Add(e));
+            Func<Task> func = async () => await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
             await func.Should().ThrowAsync<OperationCanceledException>();
             mock.Mock<IAssetRepository>().Verify(r => r.SaveCatalog(It.IsAny<Folder>()), Times.Once);
         }

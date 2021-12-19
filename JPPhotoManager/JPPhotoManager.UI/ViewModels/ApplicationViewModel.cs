@@ -448,7 +448,7 @@ namespace JPPhotoManager.UI.ViewModels
             return result;
         }
 
-        public async Task CatalogAssets(CatalogChangeCallback callback) => await Application.CatalogAssets(callback);
+        public async Task CatalogAssets(CatalogChangeCallback callback) => await Application.CatalogAssetsAsync(callback);
 
         public int GetCatalogCooldownMinutes() => Application.GetCatalogCooldownMinutes();
 

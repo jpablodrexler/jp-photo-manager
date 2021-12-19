@@ -32,7 +32,7 @@ namespace JPPhotoManager.Domain
             this.directoryComparer = directoryComparer;
         }
 
-        public async Task CatalogAssets(CatalogChangeCallback callback)
+        public async Task CatalogAssetsAsync(CatalogChangeCallback callback)
         {
             await Task.Run(() =>
             {

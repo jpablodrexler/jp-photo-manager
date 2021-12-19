@@ -42,7 +42,7 @@ namespace JPPhotoManager.UI.Windows
 
         private void Initialize()
         {
-            var configuration = ViewModel.GetImportNewAssetsConfiguration();
+            var configuration = ViewModel.GetProcessConfiguration();
 
             if (configuration == null)
             {
@@ -111,7 +111,7 @@ namespace JPPhotoManager.UI.Windows
             {
                 Cursor = Cursors.Wait;
                 ViewModel.AdvanceStep();
-                ViewModel.Results = await Import().ConfigureAwait(true);
+                await RunProcess().ConfigureAwait(true);
             }
             catch (Exception ex)
             {
@@ -171,13 +171,13 @@ namespace JPPhotoManager.UI.Windows
         {
             ImportNewAssetsConfiguration configuration = new();
             configuration.Imports.AddRange(imports);
-            ViewModel.SetImportNewAssetsConfiguration(configuration);
+            ViewModel.SetProcessConfiguration(configuration);
         }
 
-        private async Task<ObservableCollection<ImportNewAssetsResult>> Import()
+        private async Task RunProcess()
         {
             Save(ViewModel.Imports);
-            return await ViewModel.ImportNewAssets(e => Dispatcher.Invoke(() => ViewModel.NotifyImageImported(e)));
+            await ViewModel.RunProcessAsync(e => Dispatcher.Invoke(() => ViewModel.NotifyProcessStatusChanged(e)));
         }
     }
 }

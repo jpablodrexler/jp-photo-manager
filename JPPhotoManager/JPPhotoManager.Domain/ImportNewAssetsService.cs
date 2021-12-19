@@ -19,7 +19,7 @@ namespace JPPhotoManager.Domain
             this.directoryComparer = directoryComparer;
         }
 
-        public async Task<List<ImportNewAssetsResult>> Import(StatusChangeCallback callback)
+        public async Task<List<ImportNewAssetsResult>> ImportAsync(ProcessStatusChangedCallback callback)
         {
             return await Task.Run(() =>
             {
@@ -35,7 +35,7 @@ namespace JPPhotoManager.Domain
             });
         }
 
-        private void Import(string sourceDirectory, string destinationDirectory, bool includeSubFolders, StatusChangeCallback callback, List<ImportNewAssetsResult> resultList)
+        private void Import(string sourceDirectory, string destinationDirectory, bool includeSubFolders, ProcessStatusChangedCallback callback, List<ImportNewAssetsResult> resultList)
         {
             ImportNewAssetsResult result = new()
             {
@@ -70,7 +70,7 @@ namespace JPPhotoManager.Domain
                         if (storageService.CopyImage(sourcePath, destinationPath))
                         {
                             result.ImportedImages++;
-                            callback(new StatusChangeCallbackEventArgs { NewStatus = $"Image '{sourcePath}' imported to '{destinationPath}'" });
+                            callback(new ProcessStatusChangedCallbackEventArgs { NewStatus = $"'{sourcePath}' => '{destinationPath}'" });
                         }
                     }
 

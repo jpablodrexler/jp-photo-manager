@@ -12,7 +12,7 @@ namespace JPPhotoManager.Infrastructure
             this.userConfigurationService = userConfigurationService;
         }
 
-        public async Task<Domain.Release> GetLatestRelease()
+        public async Task<Domain.Release> GetLatestReleaseAsync()
         {
             var repositoryName = userConfigurationService.GetRepositoryName();
             var repositoryOwner = userConfigurationService.GetRepositoryOwner();

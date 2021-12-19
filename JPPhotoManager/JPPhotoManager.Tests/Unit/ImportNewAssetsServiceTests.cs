@@ -42,9 +42,9 @@ namespace JPPhotoManager.Tests.Unit
 
             ImportNewAssetsService importNewAssetsService = mock.Container.Resolve<ImportNewAssetsService>();
 
-            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+            var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
 
             mock.Mock<IAssetRepository>().Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -101,9 +101,9 @@ namespace JPPhotoManager.Tests.Unit
 
             ImportNewAssetsService importNewAssetsService = mock.Container.Resolve<ImportNewAssetsService>();
 
-            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+            var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
 
             mock.Mock<IAssetRepository>().Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -116,9 +116,9 @@ namespace JPPhotoManager.Tests.Unit
             result[0].ImportedImages.Should().Be(3);
             result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             statusChanges.Should().HaveCount(3);
-            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'");
-            statusChanges[1].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'");
-            statusChanges[2].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'");
+            statusChanges[0].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyGame\NewImage1.jpg'");
+            statusChanges[1].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage2.jpg' => 'C:\Images\MyGame\NewImage2.jpg'");
+            statusChanges[2].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage3.jpg' => 'C:\Images\MyGame\NewImage3.jpg'");
         }
 
         [Fact]
@@ -178,9 +178,9 @@ namespace JPPhotoManager.Tests.Unit
 
             ImportNewAssetsService importNewAssetsService = mock.Container.Resolve<ImportNewAssetsService>();
 
-            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+            var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
 
             mock.Mock<IAssetRepository>().Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -193,9 +193,9 @@ namespace JPPhotoManager.Tests.Unit
             result[0].ImportedImages.Should().Be(3);
             result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             statusChanges.Should().HaveCount(3);
-            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'");
-            statusChanges[1].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'");
-            statusChanges[2].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'");
+            statusChanges[0].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyGame\NewImage1.jpg'");
+            statusChanges[1].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage2.jpg' => 'C:\Images\MyGame\NewImage2.jpg'");
+            statusChanges[2].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage3.jpg' => 'C:\Images\MyGame\NewImage3.jpg'");
         }
 
         [Fact]
@@ -256,9 +256,9 @@ namespace JPPhotoManager.Tests.Unit
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
-            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+            var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -269,7 +269,7 @@ namespace JPPhotoManager.Tests.Unit
             result[0].ImportedImages.Should().Be(1);
             result[0].Message.Should().Be(@"1 image imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             statusChanges.Should().ContainSingle();
-            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'");
+            statusChanges[0].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyGame\NewImage1.jpg'");
         }
 
         [Fact]
@@ -367,9 +367,9 @@ namespace JPPhotoManager.Tests.Unit
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
-            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+            var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(firstSourceDirectory), Times.Once);
@@ -389,11 +389,11 @@ namespace JPPhotoManager.Tests.Unit
             result[1].ImportedImages.Should().Be(2);
             result[1].Message.Should().Be(@"2 images imported from 'C:\MySecondGame\Screenshots' to 'C:\Images\MySecondGame'.");
             statusChanges.Should().HaveCount(5);
-            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyFirstGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyFirstGame\NewImage1.jpg'");
-            statusChanges[1].NewStatus.Should().Be(@$"Image 'C:\MyFirstGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyFirstGame\NewImage2.jpg'");
-            statusChanges[2].NewStatus.Should().Be(@$"Image 'C:\MyFirstGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyFirstGame\NewImage3.jpg'");
-            statusChanges[3].NewStatus.Should().Be(@$"Image 'C:\MySecondGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MySecondGame\NewImage1.jpg'");
-            statusChanges[4].NewStatus.Should().Be(@$"Image 'C:\MySecondGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MySecondGame\NewImage2.jpg'");
+            statusChanges[0].NewStatus.Should().Be(@$"'C:\MyFirstGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyFirstGame\NewImage1.jpg'");
+            statusChanges[1].NewStatus.Should().Be(@$"'C:\MyFirstGame\Screenshots\NewImage2.jpg' => 'C:\Images\MyFirstGame\NewImage2.jpg'");
+            statusChanges[2].NewStatus.Should().Be(@$"'C:\MyFirstGame\Screenshots\NewImage3.jpg' => 'C:\Images\MyFirstGame\NewImage3.jpg'");
+            statusChanges[3].NewStatus.Should().Be(@$"'C:\MySecondGame\Screenshots\NewImage1.jpg' => 'C:\Images\MySecondGame\NewImage1.jpg'");
+            statusChanges[4].NewStatus.Should().Be(@$"'C:\MySecondGame\Screenshots\NewImage2.jpg' => 'C:\Images\MySecondGame\NewImage2.jpg'");
         }
 
         [Fact]
@@ -490,9 +490,9 @@ namespace JPPhotoManager.Tests.Unit
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
-            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+            var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -508,9 +508,9 @@ namespace JPPhotoManager.Tests.Unit
             result[0].ImportedImages.Should().Be(3);
             result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             statusChanges.Should().HaveCount(3);
-            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'");
-            statusChanges[1].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'");
-            statusChanges[2].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'");
+            statusChanges[0].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyGame\NewImage1.jpg'");
+            statusChanges[1].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage2.jpg' => 'C:\Images\MyGame\NewImage2.jpg'");
+            statusChanges[2].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage3.jpg' => 'C:\Images\MyGame\NewImage3.jpg'");
         }
 
         [Fact]
@@ -626,9 +626,9 @@ namespace JPPhotoManager.Tests.Unit
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
-            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+            var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -644,9 +644,9 @@ namespace JPPhotoManager.Tests.Unit
             result[0].ImportedImages.Should().Be(3);
             result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             statusChanges.Should().HaveCount(3);
-            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'");
-            statusChanges[1].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'");
-            statusChanges[2].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'");
+            statusChanges[0].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyGame\NewImage1.jpg'");
+            statusChanges[1].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage2.jpg' => 'C:\Images\MyGame\NewImage2.jpg'");
+            statusChanges[2].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage3.jpg' => 'C:\Images\MyGame\NewImage3.jpg'");
         }
 
         [Fact]
@@ -765,9 +765,9 @@ namespace JPPhotoManager.Tests.Unit
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
-            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+            var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -790,11 +790,11 @@ namespace JPPhotoManager.Tests.Unit
             result[1].ImportedImages.Should().Be(2);
             result[1].Message.Should().Be(@"2 images imported from 'C:\MyGame\Screenshots\SubDirectory' to 'C:\Images\MyGame\SubDirectory'.");
             statusChanges.Should().HaveCount(5);
-            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'");
-            statusChanges[1].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'");
-            statusChanges[2].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'");
-            statusChanges[3].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\SubDirectory\NewImage4.jpg' imported to 'C:\Images\MyGame\SubDirectory\NewImage4.jpg'");
-            statusChanges[4].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\SubDirectory\NewImage5.jpg' imported to 'C:\Images\MyGame\SubDirectory\NewImage5.jpg'");
+            statusChanges[0].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyGame\NewImage1.jpg'");
+            statusChanges[1].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage2.jpg' => 'C:\Images\MyGame\NewImage2.jpg'");
+            statusChanges[2].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage3.jpg' => 'C:\Images\MyGame\NewImage3.jpg'");
+            statusChanges[3].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\SubDirectory\NewImage4.jpg' => 'C:\Images\MyGame\SubDirectory\NewImage4.jpg'");
+            statusChanges[4].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\SubDirectory\NewImage5.jpg' => 'C:\Images\MyGame\SubDirectory\NewImage5.jpg'");
         }
 
         [Fact]
@@ -888,9 +888,9 @@ namespace JPPhotoManager.Tests.Unit
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
-            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+            var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -1072,9 +1072,9 @@ namespace JPPhotoManager.Tests.Unit
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
-            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+            var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Never);
@@ -1121,9 +1121,9 @@ namespace JPPhotoManager.Tests.Unit
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
-            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+            var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.CreateDirectory(destinationDirectory), Times.Once);
@@ -1174,9 +1174,9 @@ namespace JPPhotoManager.Tests.Unit
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
-            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+            var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Never);
@@ -1249,9 +1249,9 @@ namespace JPPhotoManager.Tests.Unit
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
-            var statusChanges = new List<StatusChangeCallbackEventArgs>();
+            var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.Import(e => statusChanges.Add(e));
+            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
 
             repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
@@ -1268,9 +1268,9 @@ namespace JPPhotoManager.Tests.Unit
             result[1].ImportedImages.Should().Be(0);
             result[1].Message.Should().Be(@"No images imported from 'C:\MyGame\Screenshots\SubDirectory' to 'C:\Images\MyGame\SubDirectory'.");
             statusChanges.Should().HaveCount(3);
-            statusChanges[0].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage1.jpg' imported to 'C:\Images\MyGame\NewImage1.jpg'");
-            statusChanges[1].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage2.jpg' imported to 'C:\Images\MyGame\NewImage2.jpg'");
-            statusChanges[2].NewStatus.Should().Be(@$"Image 'C:\MyGame\Screenshots\NewImage3.jpg' imported to 'C:\Images\MyGame\NewImage3.jpg'");
+            statusChanges[0].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyGame\NewImage1.jpg'");
+            statusChanges[1].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage2.jpg' => 'C:\Images\MyGame\NewImage2.jpg'");
+            statusChanges[2].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage3.jpg' => 'C:\Images\MyGame\NewImage3.jpg'");
         }
     }
 }
