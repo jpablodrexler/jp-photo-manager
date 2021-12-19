@@ -51,25 +51,6 @@ namespace JPPhotoManager.Domain
                 }
             }
 
-            // Removes assets with same hash but different content.
-            foreach (List<Asset> duplicatedSet in result)
-            {
-                List<Asset> assetsToRemove = new();
-
-                for (int i = 1; i < duplicatedSet.Count; i++)
-                {
-                    if (!storageService.HasSameContent(duplicatedSet[0], duplicatedSet[i]))
-                    {
-                        assetsToRemove.Add(duplicatedSet[i]);
-                    }
-                }
-
-                foreach (Asset asset in assetsToRemove)
-                {
-                    duplicatedSet.Remove(asset);
-                }
-            }
-
             result = result.Where(r => r.Count > 1).ToList();
 
             // Loads the file information for each asset.
