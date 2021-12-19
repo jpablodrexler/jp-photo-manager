@@ -56,7 +56,7 @@ namespace JPPhotoManager.UI.ViewModels
         {
             get
             {
-                return Step == ProcessStepEnum.Configure || Step == ProcessStepEnum.Import ?
+                return Step == ProcessStepEnum.Configure || Step == ProcessStepEnum.Run ?
                     Visibility.Visible : Visibility.Hidden;
             }
         }
@@ -73,7 +73,7 @@ namespace JPPhotoManager.UI.ViewModels
 
         public bool CanViewResults
         {
-            get { return Step == ProcessStepEnum.Import && Results != null && Results.Count > 0; }
+            get { return Step == ProcessStepEnum.Run && Results != null && Results.Count > 0; }
         }
 
         public void AdvanceStep()
@@ -81,10 +81,10 @@ namespace JPPhotoManager.UI.ViewModels
             switch (Step)
             {
                 case ProcessStepEnum.Configure:
-                    Step = ProcessStepEnum.Import;
+                    Step = ProcessStepEnum.Run;
                     break;
 
-                case ProcessStepEnum.Import:
+                case ProcessStepEnum.Run:
                     Step = ProcessStepEnum.ViewResults;
                     break;
             }

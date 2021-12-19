@@ -116,7 +116,7 @@ namespace JPPhotoManager.Tests.Unit
             viewModel.AdvanceStep();
             viewModel.Results = results;
 
-            viewModel.Step.Should().Be(ProcessStepEnum.Import);
+            viewModel.Step.Should().Be(ProcessStepEnum.Run);
             viewModel.CanConfigure.Should().BeFalse();
             viewModel.CanViewResults.Should().BeTrue();
             viewModel.InputVisible.Should().Be(Visibility.Visible);
