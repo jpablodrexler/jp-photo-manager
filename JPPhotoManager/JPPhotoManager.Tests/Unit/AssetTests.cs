@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using JPPhotoManager.Domain;
+using System.Globalization;
 using Xunit;
 
 namespace JPPhotoManager.Tests.Unit
@@ -259,7 +260,6 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData("MyImage.jpg", "<CreationDate:yyyy>\\MyImage_<#>.jpg", 1, "2021\\MyImage_1.jpg")]
         [InlineData("MyImage.jpg", "<CreationDate:MM>\\MyImage_<#>.jpg", 1, "12\\MyImage_1.jpg")]
         [InlineData("MyImage.jpg", "<CreationDate:MMMM>\\MyImage_<#>.jpg", 1, "December\\MyImage_1.jpg")]
-        [InlineData("MyImage.jpg", "<CreationDate:d>\\MyImage_<#>.jpg", 1, "6\\MyImage_1.jpg")]
         [InlineData("MyImage.jpg", "<CreationDate:dd>\\MyImage_<#>.jpg", 1, "06\\MyImage_1.jpg")]
         [InlineData("MyImage.jpg", "<CreationDate:yyyy>\\<CreationDate:MM>\\MyImage_<#>.jpg", 1, "2021\\12\\MyImage_1.jpg")]
         [InlineData("MyImage.jpg", "<CreationDate:yyyy>\\<CreationDate:MM>\\<CreationDate:dd>\\MyImage_<#>.jpg", 1, "2021\\12\\06\\MyImage_1.jpg")]
@@ -268,11 +268,19 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData("MyImage.jpg", "<ModificationDate:yyyy>\\MyImage_<#>.jpg", 1, "2021\\MyImage_1.jpg")]
         [InlineData("MyImage.jpg", "<ModificationDate:MM>\\MyImage_<#>.jpg", 1, "12\\MyImage_1.jpg")]
         [InlineData("MyImage.jpg", "<ModificationDate:MMMM>\\MyImage_<#>.jpg", 1, "December\\MyImage_1.jpg")]
-        [InlineData("MyImage.jpg", "<ModificationDate:d>\\MyImage_<#>.jpg", 1, "10\\MyImage_1.jpg")]
         [InlineData("MyImage.jpg", "<ModificationDate:dd>\\MyImage_<#>.jpg", 1, "10\\MyImage_1.jpg")]
         [InlineData("MyImage.jpg", "<ModificationDate:yyyy>\\<CreationDate:MM>\\MyImage_<#>.jpg", 1, "2021\\12\\MyImage_1.jpg")]
-        [InlineData("MyImage.jpg", "<ModificationDate:yyyy>\\<CreationDate:MM>\\<CreationDate:dd>\\MyImage_<#>.jpg", 1, "2021\\12\\10\\MyImage_1.jpg")]
-        public void ComputeTargetFileName_ReturnTargetFileName(string existingFileName,
+        [InlineData("MyImage.jpg", "<ModificationDate:yyyy>\\<CreationDate:MM>\\<CreationDate:dd>\\MyImage_<#>.jpg", 1, "2021\\12\\06\\MyImage_1.jpg")]
+        [InlineData("MyImage.jpg", "<CreationTime:HH>\\MyImage_<#>.jpg", 1, "16\\MyImage_1.jpg")]
+        [InlineData("MyImage.jpg", "<CreationTime:mm>\\MyImage_<#>.jpg", 1, "25\\MyImage_1.jpg")]
+        [InlineData("MyImage.jpg", "<CreationTime:ss>\\MyImage_<#>.jpg", 1, "15\\MyImage_1.jpg")]
+        [InlineData("MyImage.jpg", "<CreationTime>\\MyImage_<#>.jpg", 1, "162515\\MyImage_1.jpg")]
+        [InlineData("MyImage.jpg", "<ModificationTime:HH>\\MyImage_<#>.jpg", 1, "21\\MyImage_1.jpg")]
+        [InlineData("MyImage.jpg", "<ModificationTime:mm>\\MyImage_<#>.jpg", 1, "35\\MyImage_1.jpg")]
+        [InlineData("MyImage.jpg", "<ModificationTime:ss>\\MyImage_<#>.jpg", 1, "22\\MyImage_1.jpg")]
+        [InlineData("MyImage.jpg", "<ModificationTime>\\MyImage_<#>.jpg", 1, "213522\\MyImage_1.jpg")]
+        public void ComputeTargetFileName_ReturnTargetFileName(
+            string existingFileName,
             string batchFormat,
             int ordinal,
             string expectedNewName)
@@ -286,7 +294,7 @@ namespace JPPhotoManager.Tests.Unit
                 FileModificationDateTime = DateTime.Parse("2021-12-10T21:35:22")
             };
 
-            string targetFileName = asset.ComputeTargetFileName(batchFormat, ordinal);
+            string targetFileName = asset.ComputeTargetFileName(batchFormat, ordinal, new CultureInfo("en-US"));
             targetFileName.Should().Be(expectedNewName);
         }
 
@@ -302,7 +310,7 @@ namespace JPPhotoManager.Tests.Unit
                 }
             };
 
-            string newName = asset.ComputeTargetFileName($"{asset.FileName}_#.jpg", int.MaxValue);
+            string newName = asset.ComputeTargetFileName($"{asset.FileName}_#.jpg", int.MaxValue, new CultureInfo("en-US"));
             newName.Should().BeNullOrEmpty(newName);
         }
 
@@ -413,7 +421,7 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData("MyImage_><CreationDate><Whatever><.jpg", false)]
         [InlineData("MyImage_><><CreationDate><Whatever><><.jpg", false)]
         [InlineData("MyImage_>><CreationDate><Whatever>>.jpg", false)]
-        [InlineData("MyImage\\<CreationDate>.jpg", false)]
+        [InlineData("MyImage\\<CreationDate>.jpg", true)]
         [InlineData("MyImage/<CreationDate>.jpg", false)]
         [InlineData("MyImage:<CreationDate>.jpg", false)]
         [InlineData("MyImage*<CreationDate>.jpg", false)]
@@ -452,7 +460,7 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData("<CreationDate:MM>\\MyImage_<#>.jpg", true)]
         [InlineData("<CreationDate:MMM>\\MyImage_<#>.jpg", false)]
         [InlineData("<CreationDate:MMMM>\\MyImage_<#>.jpg", true)]
-        [InlineData("<CreationDate:d>\\MyImage_<#>.jpg", true)]
+        [InlineData("<CreationDate:d>\\MyImage_<#>.jpg", false)]
         [InlineData("<CreationDate:dd>\\MyImage_<#>.jpg", true)]
         [InlineData("<CreationDate:yyyy>\\<CreationDate:MM>\\MyImage_<#>.jpg", true)]
         [InlineData("<CreationDate:yyyy>\\<CreationDate:MM>\\<CreationDate:dd>\\MyImage_<#>.jpg", true)]
@@ -465,7 +473,7 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData("<ModificationDate:MM>\\MyImage_<#>.jpg", true)]
         [InlineData("<ModificationDate:MMM>\\MyImage_<#>.jpg", false)]
         [InlineData("<ModificationDate:MMMM>\\MyImage_<#>.jpg", true)]
-        [InlineData("<ModificationDate:d>\\MyImage_<#>.jpg", true)]
+        [InlineData("<ModificationDate:d>\\MyImage_<#>.jpg", false)]
         [InlineData("<ModificationDate:dd>\\MyImage_<#>.jpg", true)]
         [InlineData("<ModificationDate:yyyy>\\<CreationDate:MM>\\MyImage_<#>.jpg", true)]
         [InlineData("<ModificationDate:yyyy>\\<CreationDate:MM>\\<CreationDate:dd>\\MyImage_<#>.jpg", true)]

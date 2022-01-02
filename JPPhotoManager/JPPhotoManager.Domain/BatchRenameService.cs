@@ -20,7 +20,7 @@ namespace JPPhotoManager.Domain
             {
                 for (int i = 0; i < sourceAssets.Length; i++)
                 {
-                    string newName = sourceAssets[i].ComputeTargetFileName(batchFormat, i + 1);
+                    string newName = sourceAssets[i].ComputeTargetFileName(batchFormat, i + 1, Thread.CurrentThread.CurrentCulture);
 
                     if (!string.IsNullOrEmpty(newName))
                     {

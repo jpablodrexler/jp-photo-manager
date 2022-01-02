@@ -42,11 +42,9 @@
             return result;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            Folder folder = obj as Folder;
-
-            return folder != null && folder.Path == Path;
+            return obj is Folder folder && folder.Path == Path;
         }
 
         public override int GetHashCode()
