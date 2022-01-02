@@ -279,6 +279,9 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData("MyImage.jpg", "<ModificationTime:mm>\\MyImage_<#>.jpg", 1, "35\\MyImage_1.jpg")]
         [InlineData("MyImage.jpg", "<ModificationTime:ss>\\MyImage_<#>.jpg", 1, "22\\MyImage_1.jpg")]
         [InlineData("MyImage.jpg", "<ModificationTime>\\MyImage_<#>.jpg", 1, "213522\\MyImage_1.jpg")]
+        [InlineData("MyImage.jpg", "..\\Image_<##>.jpg", 1, "C:\\My Images\\MyImage_01.jpg")]
+        [InlineData("MyImage.jpg", "..\\..\\Image_<##>.jpg", 1, "C:\\Image_01.jpg")]
+        [InlineData("MyImage.jpg", "..\\<CreationDate>\\Image_<##>.jpg", 1, "C:\\My Images\\20211206\\Image_01.jpg")]
         public void ComputeTargetFileName_ReturnTargetFileName(
             string existingFileName,
             string batchFormat,
@@ -288,6 +291,7 @@ namespace JPPhotoManager.Tests.Unit
             Asset asset = new()
             {
                 FileName = existingFileName,
+                Folder = new Folder { Path = @"C:\My Images\My Folder" },
                 PixelWidth = 1920,
                 PixelHeight = 1080,
                 FileCreationDateTime = DateTime.Parse("2021-12-06T16:25:15"),
@@ -477,6 +481,9 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData("<ModificationDate:dd>\\MyImage_<#>.jpg", true)]
         [InlineData("<ModificationDate:yyyy>\\<CreationDate:MM>\\MyImage_<#>.jpg", true)]
         [InlineData("<ModificationDate:yyyy>\\<CreationDate:MM>\\<CreationDate:dd>\\MyImage_<#>.jpg", true)]
+        [InlineData("..\\Image_<##>.jpg", true)]
+        [InlineData("..\\..\\Image_<##>.jpg", true)]
+        [InlineData("..\\<CreationDate>\\Image_<##>.jpg", true)]
         public void IsValidBatchFormat_ReturnIsValid(string batchFormat, bool expectedIsValid)
         {
             bool isValid = Asset.IsValidBatchFormat(batchFormat);

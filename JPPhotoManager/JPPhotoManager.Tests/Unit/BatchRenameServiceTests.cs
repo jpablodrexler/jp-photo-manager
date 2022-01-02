@@ -60,7 +60,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void BatchRename_CallMoveImage_ToSameFolder()
+        public void BatchRename_ToSameFolder_CallMoveImage()
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
@@ -78,7 +78,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void BatchRename_CallMoveImage_ToSameRelativeSubFolder()
+        public void BatchRename_ToSameRelativeSubFolder_CallMoveImage()
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
@@ -96,7 +96,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void BatchRename_CallMoveImage_ToDifferentRelativeSubFolders()
+        public void BatchRename_ToDifferentRelativeSubFolders_CallMoveImage()
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
@@ -114,7 +114,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void BatchRename_CallMoveImage_ToParentRelativeFolder()
+        public void BatchRename_ToParentRelativeFolder_CallMoveImage()
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
@@ -132,7 +132,43 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void BatchRename_CallMoveImage_ToSiblingRelativeFolder()
+        public void BatchRename_ToGrandParentRelativeFolder_CallMoveImage()
+        {
+            using var mock = AutoMock.GetLoose();
+            var service = mock.Container.Resolve<BatchRenameService>();
+            var renameResult = service.BatchRename(sourceAssets, @"..\..\Image_<##>.jpg");
+
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
+                @"C:\Image_01.jpg"), Times.Once);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MySecondImage.jpg",
+                @"C:\Image_02.jpg"), Times.Once);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyThirdImage.jpg",
+                @"C:\Image_03.jpg"), Times.Once);
+        }
+
+        [Fact]
+        public void BatchRename_ToGrandGrandParentNotExistingRelativeFolder_DontCallMoveImage()
+        {
+            using var mock = AutoMock.GetLoose();
+            var service = mock.Container.Resolve<BatchRenameService>();
+            var renameResult = service.BatchRename(sourceAssets, @"..\..\..\Image_<##>.jpg");
+
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
+                It.IsAny<string>()), Times.Never);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MySecondImage.jpg",
+                It.IsAny<string>()), Times.Never);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyThirdImage.jpg",
+                It.IsAny<string>()), Times.Never);
+        }
+
+        [Fact]
+        public void BatchRename_ToSiblingRelativeFolder_CallMoveImage()
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
@@ -150,7 +186,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void BatchRename_CallMoveImage_ToSameAbsoluteDriveFolder()
+        public void BatchRename_ToSameAbsoluteDriveFolder_CallMoveImage()
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
@@ -168,7 +204,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void BatchRename_CallMoveImage_ToSameAbsoluteNetworkFolder()
+        public void BatchRename_ToSameAbsoluteNetworkFolder_CallMoveImage()
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
@@ -183,6 +219,18 @@ namespace JPPhotoManager.Tests.Unit
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyThirdImage.jpg",
                 @"\\OtherFolder\Image_03.jpg"), Times.Once);
+        }
+
+        [Fact]
+        public void BatchRename_ToExistingDestinationFilenameOverwriteExisting_CallMoveImage()
+        {
+            throw new NotImplementedException("Write test");
+        }
+
+        [Fact]
+        public void BatchRename_ToExistingDestinationFilenameDontOverwriteExisting_CallMoveImage()
+        {
+            throw new NotImplementedException("Write test");
         }
     }
 }
