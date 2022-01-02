@@ -10,8 +10,8 @@ namespace JPPhotoManager.Tests.Unit
 {
     public class BatchRenameServiceTests
     {
-        private string directory = @"C:\My Images\My Folder";
-        private Asset[] sourceAssets;
+        private readonly string directory = @"C:\My Images\My Folder";
+        private readonly Asset[] sourceAssets;
 
         public BatchRenameServiceTests()
         {
@@ -20,17 +20,20 @@ namespace JPPhotoManager.Tests.Unit
                 new Asset
                 {
                     FileName = "MyFirstImage.jpg",
-                    Folder = new Folder { Path = directory }
+                    Folder = new Folder { Path = directory },
+                    FileCreationDateTime = DateTime.Parse("2021-12-06T16:25:15")
                 },
                 new Asset
                 {
                     FileName = "MySecondImage.jpg",
-                    Folder = new Folder { Path = directory }
+                    Folder = new Folder { Path = directory },
+                    FileCreationDateTime = DateTime.Parse("2021-12-06T16:30:15")
                 },
                 new Asset
                 {
                     FileName = "MyThirdImage.jpg",
-                    Folder = new Folder { Path = directory }
+                    Folder = new Folder { Path = directory },
+                    FileCreationDateTime = DateTime.Parse("2021-12-06T16:35:15")
                 }
             };
         }
@@ -57,7 +60,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void BatchRename_CallMoveImage()
+        public void BatchRename_CallMoveImage_ToSameFolder()
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
@@ -65,13 +68,121 @@ namespace JPPhotoManager.Tests.Unit
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
-                @"C:\My Images\My Folder\Image_01.jpg"), Moq.Times.Once);
+                @"C:\My Images\My Folder\Image_01.jpg"), Times.Once);
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MySecondImage.jpg",
-                @"C:\My Images\My Folder\Image_02.jpg"), Moq.Times.Once);
+                @"C:\My Images\My Folder\Image_02.jpg"), Times.Once);
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyThirdImage.jpg",
-                @"C:\My Images\My Folder\Image_03.jpg"), Moq.Times.Once);
+                @"C:\My Images\My Folder\Image_03.jpg"), Times.Once);
+        }
+
+        [Fact]
+        public void BatchRename_CallMoveImage_ToSameRelativeSubFolder()
+        {
+            using var mock = AutoMock.GetLoose();
+            var service = mock.Container.Resolve<BatchRenameService>();
+            var renameResult = service.BatchRename(sourceAssets, @"<CreationDate>\Image_<##>.jpg");
+
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
+                @"C:\My Images\My Folder\20211206\Image_01.jpg"), Times.Once);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MySecondImage.jpg",
+                @"C:\My Images\My Folder\20211206\Image_02.jpg"), Times.Once);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyThirdImage.jpg",
+                @"C:\My Images\My Folder\20211206\Image_03.jpg"), Times.Once);
+        }
+
+        [Fact]
+        public void BatchRename_CallMoveImage_ToDifferentRelativeSubFolders()
+        {
+            using var mock = AutoMock.GetLoose();
+            var service = mock.Container.Resolve<BatchRenameService>();
+            var renameResult = service.BatchRename(sourceAssets, @"<CreationDate>-<CreationTime>\Image_<##>.jpg");
+
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
+                @"C:\My Images\My Folder\20211206-162515\Image_01.jpg"), Times.Once);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MySecondImage.jpg",
+                @"C:\My Images\My Folder\20211206-163015\Image_02.jpg"), Times.Once);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyThirdImage.jpg",
+                @"C:\My Images\My Folder\20211206-163515\Image_03.jpg"), Times.Once);
+        }
+
+        [Fact]
+        public void BatchRename_CallMoveImage_ToParentRelativeFolder()
+        {
+            using var mock = AutoMock.GetLoose();
+            var service = mock.Container.Resolve<BatchRenameService>();
+            var renameResult = service.BatchRename(sourceAssets, @"..\Image_<##>.jpg");
+
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
+                @"C:\My Images\Image_01.jpg"), Times.Once);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MySecondImage.jpg",
+                @"C:\My Images\Image_02.jpg"), Times.Once);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyThirdImage.jpg",
+                @"C:\My Images\Image_03.jpg"), Times.Once);
+        }
+
+        [Fact]
+        public void BatchRename_CallMoveImage_ToSiblingRelativeFolder()
+        {
+            using var mock = AutoMock.GetLoose();
+            var service = mock.Container.Resolve<BatchRenameService>();
+            var renameResult = service.BatchRename(sourceAssets, @"..\<CreationDate>\Image_<##>.jpg");
+
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
+                @"C:\My Images\20211206\Image_01.jpg"), Times.Once);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MySecondImage.jpg",
+                @"C:\My Images\20211206\Image_02.jpg"), Times.Once);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyThirdImage.jpg",
+                @"C:\My Images\20211206\Image_03.jpg"), Times.Once);
+        }
+
+        [Fact]
+        public void BatchRename_CallMoveImage_ToSameAbsoluteDriveFolder()
+        {
+            using var mock = AutoMock.GetLoose();
+            var service = mock.Container.Resolve<BatchRenameService>();
+            var renameResult = service.BatchRename(sourceAssets, @"D:\OtherFolder\Image_<##>.jpg");
+
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
+                @"D:\OtherFolder\Image_01.jpg"), Times.Once);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MySecondImage.jpg",
+                @"D:\OtherFolder\Image_02.jpg"), Times.Once);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyThirdImage.jpg",
+                @"D:\OtherFolder\Image_03.jpg"), Times.Once);
+        }
+
+        [Fact]
+        public void BatchRename_CallMoveImage_ToSameAbsoluteNetworkFolder()
+        {
+            using var mock = AutoMock.GetLoose();
+            var service = mock.Container.Resolve<BatchRenameService>();
+            var renameResult = service.BatchRename(sourceAssets, @"\\OtherFolder\Image_<##>.jpg");
+
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
+                @"\\OtherFolder\Image_01.jpg"), Times.Once);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MySecondImage.jpg",
+                @"\\OtherFolder\Image_02.jpg"), Times.Once);
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyThirdImage.jpg",
+                @"\\OtherFolder\Image_03.jpg"), Times.Once);
         }
     }
 }
