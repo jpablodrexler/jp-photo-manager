@@ -17,7 +17,7 @@ namespace JPPhotoManager.Infrastructure
 
         public string GetParentDirectory(string directoryPath)
         {
-            return new DirectoryInfo(directoryPath).Parent.FullName;
+            return new DirectoryInfo(directoryPath).Parent?.FullName;
         }
 
         public List<DirectoryInfo> GetSubDirectories(string directoryPath)

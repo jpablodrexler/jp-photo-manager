@@ -1,5 +1,7 @@
-﻿using FluentAssertions;
+﻿using Autofac.Extras.Moq;
+using FluentAssertions;
 using JPPhotoManager.Domain;
+using JPPhotoManager.Domain.Interfaces;
 using System.Globalization;
 using Xunit;
 
@@ -298,7 +300,15 @@ namespace JPPhotoManager.Tests.Unit
                 FileModificationDateTime = DateTime.Parse("2021-12-10T21:35:22")
             };
 
-            string targetFileName = asset.ComputeTargetFileName(batchFormat, ordinal, new CultureInfo("en-US"));
+            using var mock = AutoMock.GetLoose();
+            mock.Mock<IStorageService>()
+                .Setup(s => s.GetParentDirectory(@"C:\My Images\My Folder"))
+                .Returns(@"C:\My Images");
+            mock.Mock<IStorageService>()
+                .Setup(s => s.GetParentDirectory(@"C:\My Images"))
+                .Returns(@"C:\");
+            var storageService = mock.Mock<IStorageService>().Object;
+            string targetFileName = asset.ComputeTargetFileName(batchFormat, ordinal, new CultureInfo("en-US"), storageService);
             targetFileName.Should().Be(expectedNewName);
         }
 
@@ -314,7 +324,9 @@ namespace JPPhotoManager.Tests.Unit
                 }
             };
 
-            string newName = asset.ComputeTargetFileName($"{asset.FileName}_#.jpg", int.MaxValue, new CultureInfo("en-US"));
+            using var mock = AutoMock.GetLoose();
+            var storageService = mock.Mock<IStorageService>().Object;
+            string newName = asset.ComputeTargetFileName($"{asset.FileName}_#.jpg", int.MaxValue, new CultureInfo("en-US"), storageService);
             newName.Should().BeNullOrEmpty(newName);
         }
 

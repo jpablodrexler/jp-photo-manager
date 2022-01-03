@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using JPPhotoManager.Domain.Interfaces;
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows.Media.Imaging;
 
@@ -31,7 +32,13 @@ namespace JPPhotoManager.Domain
             if (isValid)
             {
                 batchFormat = batchFormat.Trim();
-                isValid = !batchFormat.StartsWith(".")
+
+                if (batchFormat.StartsWith("."))
+                {
+                    isValid = batchFormat.StartsWith("..");
+                }
+
+                isValid = isValid
                     && !batchFormat.EndsWith(".")
                     && !batchFormat.EndsWith("<")
                     && !batchFormat.EndsWith(">");
@@ -83,14 +90,24 @@ namespace JPPhotoManager.Domain
 
                 // Identifies if the batch format has any unexpected values after removing the complete tags.
                 isValid = isValid && remainingBatchFormat
-                    .IndexOfAny(new[] { '/', ':', '*', '?', '"', '<', '>', '|', '#' }) < 0;
+                    .IndexOfAny(new[] { '/', '*', '?', '"', '<', '>', '|', '#' }) < 0;
+
+                isValid = isValid
+                    && (IsAbsolutePath(batchFormat) ? remainingBatchFormat.IndexOf(':', 3) < 0 :
+                        remainingBatchFormat.IndexOf(':') < 0);
             }
 
             return isValid;
         }
 
-        public string ComputeTargetFileName(string batchFormat, int ordinal, IFormatProvider provider)
+        private static bool IsAbsolutePath(string batchFormat)
         {
+            return batchFormat.Length > 3 && batchFormat.Substring(1, 2) == @":\";
+        }
+
+        public string ComputeTargetFileName(string batchFormat, int ordinal, IFormatProvider provider, IStorageService storageService)
+        {
+            string newFullPath;
             bool isValid = IsValidBatchFormat(batchFormat);
 
             if (isValid)
@@ -99,7 +116,7 @@ namespace JPPhotoManager.Domain
 
                 // If the batch format is just an extension,
                 // return the current filename.
-                if (batchFormat.IndexOf(".") == 0)
+                if (batchFormat == ".")
                 {
                     batchFormat = FileName;
                 }
@@ -139,13 +156,33 @@ namespace JPPhotoManager.Domain
                     batchFormat = batchFormat.Replace("<ModificationTime:ss>", FileModificationDateTime.ToString("ss", provider), StringComparison.OrdinalIgnoreCase);
                     batchFormat = batchFormat.Replace("<ModificationTime>", FileModificationDateTime.ToString("HHmmss", provider), StringComparison.OrdinalIgnoreCase);
                 }
+
+                Folder? folder = Folder;
+                
+                if (batchFormat.StartsWith(@"..\"))
+                {
+                    // If the batch format starts with "..",
+                    // navigate to parent folder.
+                    while (batchFormat.StartsWith(@"..\") && folder != null)
+                    {
+                        string parent = storageService.GetParentDirectory(folder.Path);
+                        folder = !string.IsNullOrEmpty(parent) ? new Folder() { Path = parent } : null;
+                        batchFormat = batchFormat[3..];
+                    }
+
+                    newFullPath = folder != null ? Path.Combine(folder.Path, batchFormat) : batchFormat;
+                    batchFormat = newFullPath;
+                }
+                else
+                {
+                    newFullPath = folder != null ? Path.Combine(folder.Path, batchFormat) : batchFormat;
+                }
             }
             else
             {
                 batchFormat = FileName;
+                newFullPath = FullPath;
             }
-
-            string newFullPath = Folder != null ? Path.Combine(Folder.Path, batchFormat) : batchFormat;
 
             return isValid && newFullPath.Length <= MAX_PATH_LENGTH ? batchFormat : string.Empty;
         }
