@@ -279,7 +279,7 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData("MyImage.jpg", "<ModificationTime:mm>\\MyImage_<#>.jpg", 1, "35\\MyImage_1.jpg")]
         [InlineData("MyImage.jpg", "<ModificationTime:ss>\\MyImage_<#>.jpg", 1, "22\\MyImage_1.jpg")]
         [InlineData("MyImage.jpg", "<ModificationTime>\\MyImage_<#>.jpg", 1, "213522\\MyImage_1.jpg")]
-        [InlineData("MyImage.jpg", "..\\Image_<##>.jpg", 1, "C:\\My Images\\MyImage_01.jpg")]
+        [InlineData("MyImage.jpg", "..\\Image_<##>.jpg", 1, "C:\\My Images\\Image_01.jpg")]
         [InlineData("MyImage.jpg", "..\\..\\Image_<##>.jpg", 1, "C:\\Image_01.jpg")]
         [InlineData("MyImage.jpg", "..\\<CreationDate>\\Image_<##>.jpg", 1, "C:\\My Images\\20211206\\Image_01.jpg")]
         public void ComputeTargetFileName_ReturnTargetFileName(
@@ -484,6 +484,9 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData("..\\Image_<##>.jpg", true)]
         [InlineData("..\\..\\Image_<##>.jpg", true)]
         [InlineData("..\\<CreationDate>\\Image_<##>.jpg", true)]
+        [InlineData("D:Image_<##>.jpg", false)]
+        [InlineData("D:\\Image_<##>.jpg", true)]
+        [InlineData("D:\\OtherFolder\\Image_<##>.jpg", true)]
         public void IsValidBatchFormat_ReturnIsValid(string batchFormat, bool expectedIsValid)
         {
             bool isValid = Asset.IsValidBatchFormat(batchFormat);
