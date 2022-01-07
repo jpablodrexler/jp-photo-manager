@@ -136,6 +136,6 @@ namespace JPPhotoManager.Application
 
         public async Task<Release> CheckNewReleaseAsyc() => await newReleaseNotificationService.CheckNewReleaseAsync();
 
-        public BatchRenameResult BatchRename(Asset[] sourceAssets, string batchFormat) => batchRenameService.BatchRename(sourceAssets, batchFormat);
+        public BatchRenameResult BatchRename(Asset[] sourceAssets, string batchFormat, bool overwriteExistingTargetFiles) => batchRenameService.BatchRename(sourceAssets, batchFormat, overwriteExistingTargetFiles);
     }
 }

@@ -12,7 +12,7 @@ namespace JPPhotoManager.Domain
             this.storageService = storageService;
         }
 
-        public BatchRenameResult BatchRename(Asset[] sourceAssets, string batchFormat)
+        public BatchRenameResult BatchRename(Asset[] sourceAssets, string batchFormat, bool overwriteExistingTargetFiles)
         {
             BatchRenameResult batchRenameResult = new();
 

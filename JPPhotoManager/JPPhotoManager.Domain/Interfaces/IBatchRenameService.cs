@@ -2,6 +2,6 @@
 {
     public interface IBatchRenameService
     {
-        BatchRenameResult BatchRename(Asset[] sourceAssets, string batchFormat);
+        BatchRenameResult BatchRename(Asset[] sourceAssets, string batchFormat, bool overwriteExistingTargetFiles);
     }
 }
