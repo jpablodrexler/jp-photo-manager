@@ -105,9 +105,8 @@ namespace JPPhotoManager.Domain
             return batchFormat.Length > 3 && batchFormat.Substring(1, 2) == @":\";
         }
 
-        public string ComputeTargetFileName(string batchFormat, int ordinal, IFormatProvider provider, IStorageService storageService)
+        public string ComputeTargetPath(string batchFormat, int ordinal, IFormatProvider provider)
         {
-            string newFullPath;
             bool isValid = IsValidBatchFormat(batchFormat);
 
             if (isValid)
@@ -165,26 +164,19 @@ namespace JPPhotoManager.Domain
                     // navigate to parent folder.
                     while (batchFormat.StartsWith(@"..\") && folder != null)
                     {
-                        string parent = storageService.GetParentDirectory(folder.Path);
-                        folder = !string.IsNullOrEmpty(parent) ? new Folder() { Path = parent } : null;
+                        folder = folder.Parent;
                         batchFormat = batchFormat[3..];
                     }
+                }
 
-                    newFullPath = folder != null ? Path.Combine(folder.Path, batchFormat) : batchFormat;
-                    batchFormat = newFullPath;
-                }
-                else
-                {
-                    newFullPath = folder != null ? Path.Combine(folder.Path, batchFormat) : batchFormat;
-                }
+                batchFormat = folder != null ? Path.Combine(folder.Path, batchFormat) : string.Empty;
             }
             else
             {
                 batchFormat = FileName;
-                newFullPath = FullPath;
             }
 
-            return isValid && newFullPath.Length <= MAX_PATH_LENGTH ? batchFormat : string.Empty;
+            return isValid && batchFormat.Length <= MAX_PATH_LENGTH ? batchFormat : string.Empty;
         }
 
         public override bool Equals(object? obj)

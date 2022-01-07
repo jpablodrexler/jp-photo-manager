@@ -53,10 +53,10 @@ namespace JPPhotoManager.Tests.Unit
             renameResult.SourceAssets[1].Should().Be(sourceAssets[1]);
             renameResult.SourceAssets[2].Should().Be(sourceAssets[2]);
 
-            renameResult.TargetFileNames.Should().HaveCount(sourceAssets.Length);
-            renameResult.TargetFileNames[0].Should().Be("Image_01.jpg");
-            renameResult.TargetFileNames[1].Should().Be("Image_02.jpg");
-            renameResult.TargetFileNames[2].Should().Be("Image_03.jpg");
+            renameResult.TargetPaths.Should().HaveCount(sourceAssets.Length);
+            renameResult.TargetPaths[0].Should().Be(@"C:\My Images\My Folder\Image_01.jpg");
+            renameResult.TargetPaths[1].Should().Be(@"C:\My Images\My Folder\Image_02.jpg");
+            renameResult.TargetPaths[2].Should().Be(@"C:\My Images\My Folder\Image_03.jpg");
         }
 
         [Fact]
@@ -157,14 +157,7 @@ namespace JPPhotoManager.Tests.Unit
             var renameResult = service.BatchRename(sourceAssets, @"..\..\..\Image_<##>.jpg");
 
             mock.Mock<IStorageService>()
-                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
-                It.IsAny<string>()), Times.Never);
-            mock.Mock<IStorageService>()
-                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MySecondImage.jpg",
-                It.IsAny<string>()), Times.Never);
-            mock.Mock<IStorageService>()
-                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyThirdImage.jpg",
-                It.IsAny<string>()), Times.Never);
+                .Verify(s => s.MoveImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
         }
 
         [Fact]

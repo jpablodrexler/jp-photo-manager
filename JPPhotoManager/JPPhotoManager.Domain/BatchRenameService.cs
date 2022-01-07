@@ -20,17 +20,14 @@ namespace JPPhotoManager.Domain
             {
                 for (int i = 0; i < sourceAssets.Length; i++)
                 {
-                    string newName = sourceAssets[i].ComputeTargetFileName(batchFormat, i + 1, Thread.CurrentThread.CurrentCulture, storageService);
+                    string targetPath = sourceAssets[i].ComputeTargetPath(batchFormat, i + 1, Thread.CurrentThread.CurrentCulture);
 
-                    if (!string.IsNullOrEmpty(newName))
+                    if (!string.IsNullOrEmpty(targetPath))
                     {
-                        string sourcePath = sourceAssets[i].FullPath;
-                        string destinationPath = Path.Combine(sourceAssets[i].Folder.Path, newName);
-
-                        if (storageService.MoveImage(sourcePath, destinationPath))
+                        if (storageService.MoveImage(sourceAssets[i].FullPath, targetPath))
                         {
                             batchRenameResult.SourceAssets.Add(sourceAssets[i]);
-                            batchRenameResult.TargetFileNames.Add(newName);
+                            batchRenameResult.TargetPaths.Add(targetPath);
                         }
                     }
                 }
