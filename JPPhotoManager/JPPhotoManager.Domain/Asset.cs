@@ -139,15 +139,19 @@ namespace JPPhotoManager.Domain
 
                 // If the batch format is just an extension,
                 // return the current filename.
-                batchFormat = batchFormat != "." ?
-                    ReplaceSupportedTagsWithValues(batchFormat, ordinal, provider)
-                    : FileName;
-
-                (Folder? folder, batchFormat) = ResolveTargetFolder(batchFormat);
-                batchFormat = folder != null ? Path.Combine(folder.Path, batchFormat) : string.Empty;
-                batchFormat = !overwriteExistingTargetFiles ?
-                    ComputeUniqueTargetPath(folder, batchFormat, storageService) :
-                    batchFormat;
+                if (batchFormat == ".")
+                {
+                    batchFormat = FileName;
+                }
+                else
+                {
+                    (batchFormat, bool includesOrdinal) = ReplaceSupportedTagsWithValues(batchFormat, ordinal, provider);
+                    (Folder? folder, batchFormat) = ResolveTargetFolder(batchFormat);
+                    batchFormat = folder != null ? Path.Combine(folder.Path, batchFormat) : string.Empty;
+                    batchFormat = !overwriteExistingTargetFiles ?
+                        ComputeUniqueTargetPath(folder, batchFormat, includesOrdinal, storageService) :
+                        batchFormat;
+                }
             }
             else
             {
@@ -175,9 +179,9 @@ namespace JPPhotoManager.Domain
             return (folder, batchFormat);
         }
 
-        private string ReplaceSupportedTagsWithValues(string batchFormat, int ordinal, IFormatProvider provider)
+        private (string batchFormat, bool includesOrdinal) ReplaceSupportedTagsWithValues(string batchFormat, int ordinal, IFormatProvider provider)
         {
-            batchFormat = ReplaceOrdinalTagWithValue(batchFormat, ordinal);
+            (batchFormat, bool includesOrdinal) = ReplaceOrdinalTagWithValue(batchFormat, ordinal);
             batchFormat = batchFormat.Replace("<PixelWidth>", PixelWidth.ToString(), StringComparison.OrdinalIgnoreCase);
             batchFormat = batchFormat.Replace("<PixelHeight>", PixelHeight.ToString(), StringComparison.OrdinalIgnoreCase);
             batchFormat = batchFormat.Replace("<CreationDate>", FileCreationDateTime.ToString("yyyyMMdd", provider), StringComparison.OrdinalIgnoreCase);
@@ -201,11 +205,12 @@ namespace JPPhotoManager.Domain
             batchFormat = batchFormat.Replace("<ModificationTime:ss>", FileModificationDateTime.ToString("ss", provider), StringComparison.OrdinalIgnoreCase);
             batchFormat = batchFormat.Replace("<ModificationTime>", FileModificationDateTime.ToString("HHmmss", provider), StringComparison.OrdinalIgnoreCase);
 
-            return batchFormat;
+            return (batchFormat, includesOrdinal);
         }
 
-        private static string ReplaceOrdinalTagWithValue(string batchFormat, int ordinal)
+        private static (string batchFormat, bool includesOrdinal) ReplaceOrdinalTagWithValue(string batchFormat, int ordinal)
         {
+            bool includesOrdinal = false;
             int ordinalStart = batchFormat.IndexOf("<#");
             int ordinalEnd = batchFormat.LastIndexOf("#>");
 
@@ -215,12 +220,16 @@ namespace JPPhotoManager.Domain
                 string ordinalFormat = new('0', ordinalPlaceholder.Length);
                 string ordinalString = ordinal.ToString(ordinalFormat);
                 batchFormat = batchFormat.Replace("<" + ordinalPlaceholder + ">", ordinalString);
+                includesOrdinal = true;
             }
 
-            return batchFormat;
+            return (batchFormat, includesOrdinal);
         }
 
-        private static string ComputeUniqueTargetPath(Folder? folder, string targetFileName, IStorageService storageService)
+        private static string ComputeUniqueTargetPath(Folder? folder,
+            string targetFileName,
+            bool targetFileNameIncludesOrdinal,
+            IStorageService storageService)
         {
             if (folder != null && storageService.FileExists(targetFileName))
             {
@@ -229,15 +238,22 @@ namespace JPPhotoManager.Domain
                 while (fileNames.Any(f => string.Compare(targetFileName, f, StringComparison.OrdinalIgnoreCase) == 0))
                 {
                     string[] fileNameParts = targetFileName.Split('.');
-                    Regex regex = new("(_[0-9]*)$", RegexOptions.IgnoreCase);
-                    var matches = regex.Matches(fileNameParts[0]);
 
-                    if (matches.Count > 0)
+                    if (targetFileNameIncludesOrdinal)
                     {
-                        int count = int.Parse(matches[0].Value[1..]);
-                        count++;
-                        string format = new('0', matches[0].Value.Length - 1);
-                        targetFileName = $"{fileNameParts[0][..^matches[0].Value.Length]}_{count.ToString(format)}.{fileNameParts[1]}";
+                        Regex regex = new("(_[0-9]*)$", RegexOptions.IgnoreCase);
+                        var matches = regex.Matches(fileNameParts[0]);
+
+                        if (matches.Count > 0)
+                        {
+                            int count = int.Parse(matches[0].Value[1..]) + 1;
+                            string format = new('0', matches[0].Value.Length - 1);
+                            targetFileName = $"{fileNameParts[0][..^matches[0].Value.Length]}_{count.ToString(format)}.{fileNameParts[1]}";
+                        }
+                    }
+                    else
+                    {
+                        targetFileName = $"{fileNameParts[0]}_1.{fileNameParts[1]}";
                     }
                 }
             }

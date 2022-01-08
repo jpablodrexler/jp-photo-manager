@@ -245,7 +245,35 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void BatchRename_ToExistingTargetPathDontOverwriteExisting_CallMoveImageWithUniqueTargetPath()
+        public void BatchRename_ToExistingTargetPathDontOverwriteExisting_WithNoLeadingZero_CallMoveImageWithUniqueTargetPath()
+        {
+            using var mock = AutoMock.GetLoose();
+
+            mock.Mock<IStorageService>()
+                .Setup(s => s.FileExists(@"C:\My Images\20211206\Image_1.jpg"))
+                .Returns(true);
+
+            mock.Mock<IStorageService>()
+                .Setup(s => s.GetFileNames(It.IsAny<string>()))
+                .Returns(new string[]
+                {
+                    @"C:\My Images\20211206\Image_1.jpg",
+                    @"C:\My Images\20211206\Image_2.jpg",
+                    @"C:\My Images\20211206\Image_3.jpg",
+                    @"C:\My Images\20211206\Image_4.jpg",
+                    @"C:\My Images\20211206\Image_5.jpg"
+                });
+
+            var service = mock.Container.Resolve<BatchRenameService>();
+            var renameResult = service.BatchRename(sourceAssets, @"..\<CreationDate>\Image_<#>.jpg", false);
+
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
+                @"C:\My Images\20211206\Image_6.jpg"), Times.Once);
+        }
+
+        [Fact]
+        public void BatchRename_ToExistingTargetPathDontOverwriteExisting_WithOneLeadingZeroFullSequence_CallMoveImageWithUniqueTargetPath()
         {
             using var mock = AutoMock.GetLoose();
 
@@ -261,9 +289,7 @@ namespace JPPhotoManager.Tests.Unit
                     @"C:\My Images\20211206\Image_02.jpg",
                     @"C:\My Images\20211206\Image_03.jpg",
                     @"C:\My Images\20211206\Image_04.jpg",
-                    @"C:\My Images\20211206\Image_05.jpg",
-                    @"C:\My Images\20211206\Image_06.jpg",
-                    @"C:\My Images\20211206\Image_07.jpg"
+                    @"C:\My Images\20211206\Image_05.jpg"
                 });
 
             var service = mock.Container.Resolve<BatchRenameService>();
@@ -271,7 +297,109 @@ namespace JPPhotoManager.Tests.Unit
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
-                @"C:\My Images\20211206\Image_08.jpg"), Times.Once);
+                @"C:\My Images\20211206\Image_06.jpg"), Times.Once);
+        }
+
+        [Fact]
+        public void BatchRename_ToExistingTargetPathDontOverwriteExisting_WithTwoLeadingZeroFullSequence_CallMoveImageWithUniqueTargetPath()
+        {
+            using var mock = AutoMock.GetLoose();
+
+            mock.Mock<IStorageService>()
+                .Setup(s => s.FileExists(@"C:\My Images\20211206\Image_001.jpg"))
+                .Returns(true);
+
+            mock.Mock<IStorageService>()
+                .Setup(s => s.GetFileNames(It.IsAny<string>()))
+                .Returns(new string[]
+                {
+                    @"C:\My Images\20211206\Image_001.jpg",
+                    @"C:\My Images\20211206\Image_002.jpg",
+                    @"C:\My Images\20211206\Image_003.jpg",
+                    @"C:\My Images\20211206\Image_004.jpg",
+                    @"C:\My Images\20211206\Image_005.jpg"
+                });
+
+            var service = mock.Container.Resolve<BatchRenameService>();
+            var renameResult = service.BatchRename(sourceAssets, @"..\<CreationDate>\Image_<###>.jpg", false);
+
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
+                @"C:\My Images\20211206\Image_006.jpg"), Times.Once);
+        }
+
+        [Fact]
+        public void BatchRename_ToExistingTargetPathDontOverwriteExisting_WithTwoLeadingZeroBrokenSequenceFromOne_CallMoveImageWithUniqueTargetPath()
+        {
+            using var mock = AutoMock.GetLoose();
+
+            mock.Mock<IStorageService>()
+                .Setup(s => s.FileExists(@"C:\My Images\20211206\Image_001.jpg"))
+                .Returns(true);
+
+            mock.Mock<IStorageService>()
+                .Setup(s => s.GetFileNames(It.IsAny<string>()))
+                .Returns(new string[]
+                {
+                    @"C:\My Images\20211206\Image_001.jpg",
+                    @"C:\My Images\20211206\Image_002.jpg",
+                    @"C:\My Images\20211206\Image_004.jpg",
+                    @"C:\My Images\20211206\Image_005.jpg"
+                });
+
+            var service = mock.Container.Resolve<BatchRenameService>();
+            var renameResult = service.BatchRename(sourceAssets, @"..\<CreationDate>\Image_<###>.jpg", false);
+
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
+                @"C:\My Images\20211206\Image_003.jpg"), Times.Once);
+        }
+
+        [Fact]
+        public void BatchRename_ToExistingTargetPathDontOverwriteExisting_WithTwoLeadingZeroBrokenSequenceFromFive_CallMoveImageWithUniqueTargetPath()
+        {
+            using var mock = AutoMock.GetLoose();
+
+            mock.Mock<IStorageService>()
+                .Setup(s => s.GetFileNames(It.IsAny<string>()))
+                .Returns(new string[]
+                {
+                    @"C:\My Images\20211206\Image_005.jpg",
+                    @"C:\My Images\20211206\Image_006.jpg",
+                    @"C:\My Images\20211206\Image_007.jpg",
+                    @"C:\My Images\20211206\Image_008.jpg"
+                });
+
+            var service = mock.Container.Resolve<BatchRenameService>();
+            var renameResult = service.BatchRename(sourceAssets, @"..\<CreationDate>\Image_<###>.jpg", false);
+
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
+                @"C:\My Images\20211206\Image_001.jpg"), Times.Once);
+        }
+
+        [Fact]
+        public void BatchRename_ToExistingTargetPathDontOverwriteExisting_WithNoOrdinal_CallMoveImageWithUniqueTargetPath()
+        {
+            using var mock = AutoMock.GetLoose();
+
+            mock.Mock<IStorageService>()
+                .Setup(s => s.FileExists(@"C:\My Images\Image_20211206.jpg"))
+                .Returns(true);
+
+            mock.Mock<IStorageService>()
+                .Setup(s => s.GetFileNames(It.IsAny<string>()))
+                .Returns(new string[]
+                {
+                    @"C:\My Images\Image_20211206.jpg"
+                });
+
+            var service = mock.Container.Resolve<BatchRenameService>();
+            var renameResult = service.BatchRename(sourceAssets, @"..\Image_<CreationDate>.jpg", false);
+
+            mock.Mock<IStorageService>()
+                .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
+                @"C:\My Images\Image_20211206_1.jpg"), Times.Once);
         }
     }
 }
