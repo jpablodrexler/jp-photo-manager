@@ -27,13 +27,11 @@ namespace JPPhotoManager.Domain
                         storageService,
                         overwriteExistingTargetFiles);
 
-                    if (!string.IsNullOrEmpty(targetPath))
+                    if (!string.IsNullOrEmpty(targetPath)
+                        && storageService.MoveImage(sourceAssets[i].FullPath, targetPath))
                     {
-                        if (storageService.MoveImage(sourceAssets[i].FullPath, targetPath))
-                        {
-                            batchRenameResult.SourceAssets.Add(sourceAssets[i]);
-                            batchRenameResult.TargetPaths.Add(targetPath);
-                        }
+                        batchRenameResult.SourceAssets.Add(sourceAssets[i]);
+                        batchRenameResult.TargetPaths.Add(targetPath);
                     }
                 }
             }
