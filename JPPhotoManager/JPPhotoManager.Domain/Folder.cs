@@ -17,36 +17,32 @@
             }
         }
 
-        public bool IsParentOf(Folder otherFolder)
+        public Folder? Parent
         {
-            bool result;
-            string[] thisPathDirectories = Path.Split(System.IO.Path.DirectorySeparatorChar);
-            string[] otherPathDirectories = otherFolder.Path.Split(System.IO.Path.DirectorySeparatorChar);
-
-            result = (thisPathDirectories != null
-                && otherPathDirectories != null
-                && thisPathDirectories.Length == (otherPathDirectories.Length - 1));
-
-            if (result)
+            get
             {
-                for (int i = 0; i < thisPathDirectories.Length; i++)
-                {
-                    if (string.Compare(thisPathDirectories[i], otherPathDirectories[i], StringComparison.OrdinalIgnoreCase) != 0)
-                    {
-                        result = false;
-                        break;
-                    }
-                }
+                string? parentPath = GetParentPath();
+                return parentPath != null ? new Folder { Path = parentPath } : null;
             }
-
-            return result;
         }
 
-        public override bool Equals(object obj)
+        private string? GetParentPath()
         {
-            Folder folder = obj as Folder;
+            string[] thisPathDirectories = Path.Split(System.IO.Path.DirectorySeparatorChar);
+            thisPathDirectories = thisPathDirectories.SkipLast(1).ToArray();
+            return thisPathDirectories.Length > 0 ? System.IO.Path.Combine(thisPathDirectories) : null;
+        }
 
-            return folder != null && folder.Path == Path;
+        public bool IsParentOf(Folder otherFolder)
+        {
+            return !string.IsNullOrWhiteSpace(this.Path)
+                && !string.IsNullOrWhiteSpace(otherFolder?.Parent?.Path)
+                && string.Compare(this.Path, otherFolder?.Parent?.Path, StringComparison.OrdinalIgnoreCase) == 0;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is Folder folder && folder.Path == Path;
         }
 
         public override int GetHashCode()

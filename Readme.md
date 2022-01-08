@@ -18,6 +18,7 @@ JPPhotoManager is a desktop application that allows:
 Soon will allow to:
 * Add your own metadata to the images
 * Search images
+* Rename images in batches
 
 For the whole roadmap for the application, please take a look at the issues in this repository.
 

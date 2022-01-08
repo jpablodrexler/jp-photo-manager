@@ -17,7 +17,7 @@ namespace JPPhotoManager.Infrastructure
 
         public string GetParentDirectory(string directoryPath)
         {
-            return new DirectoryInfo(directoryPath).Parent.FullName;
+            return new DirectoryInfo(directoryPath).Parent?.FullName;
         }
 
         public List<DirectoryInfo> GetSubDirectories(string directoryPath)
@@ -179,6 +179,15 @@ namespace JPPhotoManager.Infrastructure
             File.Copy(sourcePath, destinationPath);
 
             return FileExists(sourcePath) && FileExists(destinationPath);
+        }
+
+        public bool MoveImage(string sourcePath, string destinationPath)
+        {
+            string destinationFolderPath = new FileInfo(destinationPath).Directory.FullName;
+            CreateDirectory(destinationFolderPath);
+            File.Move(sourcePath, destinationPath);
+
+            return !FileExists(sourcePath) && FileExists(destinationPath);
         }
 
         public void GetFileInformation(Asset asset)

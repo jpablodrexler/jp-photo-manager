@@ -14,6 +14,7 @@ namespace JPPhotoManager.Application
         private readonly IFindDuplicatedAssetsService findDuplicatedAssetsService;
         private readonly IUserConfigurationService userConfigurationService;
         private readonly IStorageService storageService;
+        private readonly IBatchRenameService batchRenameService;
         private readonly IProcessService processService;
         private readonly INewReleaseNotificationService newReleaseNotificationService;
 
@@ -25,6 +26,7 @@ namespace JPPhotoManager.Application
             IAssetRepository assetRepository,
             IUserConfigurationService userConfigurationService,
             IStorageService storageService,
+            IBatchRenameService batchRenameService,
             IProcessService processService,
             INewReleaseNotificationService newReleaseNotificationService)
         {
@@ -35,6 +37,7 @@ namespace JPPhotoManager.Application
             this.assetRepository = assetRepository;
             this.userConfigurationService = userConfigurationService;
             this.storageService = storageService;
+            this.batchRenameService = batchRenameService;
             this.processService = processService;
             this.newReleaseNotificationService = newReleaseNotificationService;
         }
@@ -132,5 +135,7 @@ namespace JPPhotoManager.Application
         public bool IsAlreadyRunning() => processService.IsAlreadyRunning();
 
         public async Task<Release> CheckNewReleaseAsyc() => await newReleaseNotificationService.CheckNewReleaseAsync();
+
+        public BatchRenameResult BatchRename(Asset[] sourceAssets, string batchFormat, bool overwriteExistingTargetFiles) => batchRenameService.BatchRename(sourceAssets, batchFormat, overwriteExistingTargetFiles);
     }
 }
