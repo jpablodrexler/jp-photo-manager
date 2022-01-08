@@ -105,7 +105,11 @@ namespace JPPhotoManager.Domain
             return batchFormat.Length > 3 && batchFormat.Substring(1, 2) == @":\";
         }
 
-        public string ComputeTargetPath(string batchFormat, int ordinal, IFormatProvider provider)
+        public string ComputeTargetPath(string batchFormat,
+            int ordinal,
+            IFormatProvider provider,
+            IStorageService storageService,
+            bool overwriteExistingTargetFiles)
         {
             bool isValid = IsValidBatchFormat(batchFormat);
 
@@ -170,6 +174,11 @@ namespace JPPhotoManager.Domain
                 }
 
                 batchFormat = folder != null ? Path.Combine(folder.Path, batchFormat) : string.Empty;
+
+                if (!overwriteExistingTargetFiles)
+                {
+                    batchFormat = ComputeUniqueTargetPath(folder, batchFormat, storageService);
+                }
             }
             else
             {
@@ -177,6 +186,31 @@ namespace JPPhotoManager.Domain
             }
 
             return isValid && batchFormat.Length <= MAX_PATH_LENGTH ? batchFormat : string.Empty;
+        }
+
+        private static string ComputeUniqueTargetPath(Folder? folder, string targetFileName, IStorageService storageService)
+        {
+            if (folder != null && storageService.FileExists(targetFileName))
+            {
+                string[] fileNames = storageService.GetFileNames(folder.Path);
+                
+                while (fileNames.Any(f => string.Compare(targetFileName, f, StringComparison.OrdinalIgnoreCase) == 0))
+                {
+                    string[] fileNameParts = targetFileName.Split('.');
+                    Regex regex = new("(_[0-9]*)$", RegexOptions.IgnoreCase);
+                    var matches = regex.Matches(fileNameParts[0]);
+
+                    if (matches.Count > 0)
+                    {
+                        int count = int.Parse(matches[0].Value[1..]);
+                        count++;
+                        string format = new('0', matches[0].Value.Length - 1);
+                        targetFileName = $"{fileNameParts[0][..^matches[0].Value.Length]}_{count.ToString(format)}.{fileNameParts[1]}";
+                    }
+                }
+            }
+
+            return targetFileName;
         }
 
         public override bool Equals(object? obj)

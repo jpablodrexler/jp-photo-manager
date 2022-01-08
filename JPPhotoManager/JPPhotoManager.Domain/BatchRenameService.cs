@@ -20,7 +20,12 @@ namespace JPPhotoManager.Domain
             {
                 for (int i = 0; i < sourceAssets.Length; i++)
                 {
-                    string targetPath = sourceAssets[i].ComputeTargetPath(batchFormat, i + 1, Thread.CurrentThread.CurrentCulture);
+                    string targetPath = sourceAssets[i].ComputeTargetPath(
+                        batchFormat,
+                        i + 1,
+                        Thread.CurrentThread.CurrentCulture,
+                        storageService,
+                        overwriteExistingTargetFiles);
 
                     if (!string.IsNullOrEmpty(targetPath))
                     {

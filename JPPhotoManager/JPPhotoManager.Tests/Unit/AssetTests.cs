@@ -308,7 +308,7 @@ namespace JPPhotoManager.Tests.Unit
                 .Setup(s => s.GetParentDirectory(@"C:\My Images"))
                 .Returns(@"C:\");
             var storageService = mock.Mock<IStorageService>().Object;
-            string targetPath = asset.ComputeTargetPath(batchFormat, ordinal, new CultureInfo("en-US"));
+            string targetPath = asset.ComputeTargetPath(batchFormat, ordinal, new CultureInfo("en-US"), storageService, false);
             targetPath.Should().Be(expectedTargetPath);
         }
 
@@ -326,7 +326,7 @@ namespace JPPhotoManager.Tests.Unit
 
             using var mock = AutoMock.GetLoose();
             var storageService = mock.Mock<IStorageService>().Object;
-            string targetPath = asset.ComputeTargetPath($"{asset.FileName}_#.jpg", int.MaxValue, new CultureInfo("en-US"));
+            string targetPath = asset.ComputeTargetPath($"{asset.FileName}_#.jpg", int.MaxValue, new CultureInfo("en-US"), storageService, false);
             targetPath.Should().BeNullOrEmpty(targetPath);
         }
 
