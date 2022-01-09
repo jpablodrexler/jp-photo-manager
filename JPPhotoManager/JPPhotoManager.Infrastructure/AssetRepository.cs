@@ -20,13 +20,15 @@ namespace JPPhotoManager.Infrastructure
         private string dataDirectory;
         private readonly IDatabase database;
         private readonly IStorageService storageService;
+        private readonly IUserConfigurationService userConfigurationService;
         protected AssetCatalog AssetCatalog { get; private set; }
         protected Dictionary<string, Dictionary<string, byte[]>> Thumbnails { get; private set; }
 
-        public AssetRepository(IDatabase database, IStorageService storageService)
+        public AssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService)
         {
             this.database = database;
             this.storageService = storageService;
+            this.userConfigurationService = userConfigurationService;
             Thumbnails = new Dictionary<string, Dictionary<string, byte[]>>();
             Initialize();
         }
@@ -136,7 +138,10 @@ namespace JPPhotoManager.Infrastructure
                     SaveThumbnails(Thumbnails[folder.Path], folder.ThumbnailsFilename);
                 }
 
-                database.WriteBackup(DateTime.Now.Date);
+                if (database.WriteBackup(DateTime.Now.Date))
+                {
+                    database.DeleteOldBackups(userConfigurationService.GetBackupsToKeep());
+                }
             }
         }
 
