@@ -26,7 +26,8 @@ namespace JPPhotoManager.Tests.Integration
             configurationMock
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))
-                .MockGetValue("appsettings:CatalogBatchSize", "100");
+                .MockGetValue("appsettings:CatalogBatchSize", "100")
+                .MockGetValue("appsettings:BackupsToKeep", "2");
 
             configuration = configurationMock.Object;
         }
@@ -39,7 +40,7 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
@@ -60,7 +61,7 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
@@ -79,7 +80,7 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
@@ -106,7 +107,7 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
@@ -135,7 +136,7 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
@@ -160,7 +161,7 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
@@ -188,7 +189,7 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
@@ -218,7 +219,7 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
@@ -249,7 +250,7 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
+                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
