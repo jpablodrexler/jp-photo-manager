@@ -135,6 +135,8 @@ namespace JPPhotoManager.Infrastructure
                 {
                     SaveThumbnails(Thumbnails[folder.Path], folder.ThumbnailsFilename);
                 }
+
+                database.WriteBackup(DateTime.Now.Date);
             }
         }
 
