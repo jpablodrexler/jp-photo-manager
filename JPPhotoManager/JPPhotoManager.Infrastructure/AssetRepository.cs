@@ -13,20 +13,22 @@ namespace JPPhotoManager.Infrastructure
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private const int STORAGE_VERSION = 3;
+        private const double STORAGE_VERSION = 1.0;
         private const string SEPARATOR = "|";
 
         public bool IsInitialized { get; private set; }
         private string dataDirectory;
         private readonly IDatabase database;
         private readonly IStorageService storageService;
+        private readonly IUserConfigurationService userConfigurationService;
         protected AssetCatalog AssetCatalog { get; private set; }
         protected Dictionary<string, Dictionary<string, byte[]>> Thumbnails { get; private set; }
 
-        public AssetRepository(IDatabase database, IStorageService storageService)
+        public AssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService)
         {
             this.database = database;
             this.storageService = storageService;
+            this.userConfigurationService = userConfigurationService;
             Thumbnails = new Dictionary<string, Dictionary<string, byte[]>>();
             Initialize();
         }
@@ -135,6 +137,19 @@ namespace JPPhotoManager.Infrastructure
                 {
                     SaveThumbnails(Thumbnails[folder.Path], folder.ThumbnailsFilename);
                 }
+            }
+        }
+
+        public bool BackupExists()
+        {
+            return database.BackupExists(DateTime.Now.Date);
+        }
+
+        public void WriteBackup()
+        {
+            if (database.WriteBackup(DateTime.Now.Date))
+            {
+                database.DeleteOldBackups(userConfigurationService.GetBackupsToKeep());
             }
         }
 

@@ -65,7 +65,7 @@ namespace JPPhotoManager.UI
             IConfigurationRoot configuration = builder.Build();
 
             services.AddSingleton(configuration);
-            services.AddSingleton<IDatabase, Database>();
+            services.AddSimplePortableDatabaseServices();
             services.AddSingleton<IDirectoryComparer, DirectoryComparer>();
             services.AddSingleton<IProcessService, ProcessService>();
             services.AddSingleton<IUserConfigurationService, UserConfigurationService>();

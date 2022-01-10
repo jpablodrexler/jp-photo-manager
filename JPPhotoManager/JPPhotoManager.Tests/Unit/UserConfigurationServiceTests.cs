@@ -24,7 +24,8 @@ namespace JPPhotoManager.Tests.Unit
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
                 .MockGetValue("appsettings:CatalogBatchSize", "100")
-                .MockGetValue("appsettings:CatalogCooldownMinutes", "5");
+                .MockGetValue("appsettings:CatalogCooldownMinutes", "5")
+                .MockGetValue("appsettings:BackupsToKeep", "2");
 
             configuration = configurationMock.Object;
         }
@@ -61,6 +62,14 @@ namespace JPPhotoManager.Tests.Unit
             UserConfigurationService userConfigurationService = new(configuration);
             int result = userConfigurationService.GetCatalogCooldownMinutes();
             result.Should().Be(5);
+        }
+
+        [Fact]
+        public void GetBackupsToKeepTest()
+        {
+            UserConfigurationService userConfigurationService = new(configuration);
+            int result = userConfigurationService.GetBackupsToKeep();
+            result.Should().Be(2);
         }
 
         [Fact]
