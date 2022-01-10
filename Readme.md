@@ -41,3 +41,4 @@ Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoM
 * [Octokit.net](https://octokitnet.readthedocs.io/en/latest/)
 * [coverlet](https://github.com/coverlet-coverage/coverlet)
 * [ReportGenerator](https://github.com/danielpalme/ReportGenerator)
+* [Simple Portable Database](https://github.com/jpablodrexler/simple-portable-database)
