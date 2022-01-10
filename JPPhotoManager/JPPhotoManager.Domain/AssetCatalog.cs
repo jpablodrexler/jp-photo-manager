@@ -3,7 +3,7 @@
     public class AssetCatalog
     {
         public bool HasChanges { get; set; }
-        public int StorageVersion { get; set; }
+        public double StorageVersion { get; set; }
         public List<Folder> Folders { get; }
         public List<Asset> Assets { get; }
         public ImportNewAssetsConfiguration ImportNewAssetsConfiguration { get; set; }

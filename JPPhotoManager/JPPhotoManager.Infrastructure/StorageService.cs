@@ -1,6 +1,7 @@
 ﻿using JPPhotoManager.Common;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Domain.Interfaces;
+using System.Globalization;
 using System.IO;
 using System.Windows.Media.Imaging;
 
@@ -44,9 +45,9 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        public string ResolveDataDirectory(int storageVersion)
+        public string ResolveDataDirectory(double storageVersion)
         {
-            return Path.Combine(userConfigurationService.GetApplicationDataFolder(), "v" + storageVersion);
+            return Path.Combine(userConfigurationService.GetApplicationDataFolder(), "v" + storageVersion.ToString("0.0", new CultureInfo("en-US")));
         }
 
         public void CreateDirectory(string directory)

@@ -41,6 +41,13 @@ namespace JPPhotoManager.Domain
 
                 try
                 {
+                    if (!assetRepository.BackupExists())
+                    {
+                        callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Creating catalog backup..." });
+                        assetRepository.WriteBackup();
+                        callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
+                    }
+
                     Folder[] foldersToCatalog = GetFoldersToCatalog();
 
                     // TODO: Since the root folders to catalog are combined in the same list

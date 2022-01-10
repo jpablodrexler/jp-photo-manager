@@ -13,7 +13,7 @@ namespace JPPhotoManager.Infrastructure
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private const int STORAGE_VERSION = 3;
+        private const double STORAGE_VERSION = 1.0;
         private const string SEPARATOR = "|";
 
         public bool IsInitialized { get; private set; }
@@ -137,11 +137,19 @@ namespace JPPhotoManager.Infrastructure
                 {
                     SaveThumbnails(Thumbnails[folder.Path], folder.ThumbnailsFilename);
                 }
+            }
+        }
 
-                if (database.WriteBackup(DateTime.Now.Date))
-                {
-                    database.DeleteOldBackups(userConfigurationService.GetBackupsToKeep());
-                }
+        public bool BackupExists()
+        {
+            return database.BackupExists(DateTime.Now.Date);
+        }
+
+        public void WriteBackup()
+        {
+            if (database.WriteBackup(DateTime.Now.Date))
+            {
+                database.DeleteOldBackups(userConfigurationService.GetBackupsToKeep());
             }
         }
 

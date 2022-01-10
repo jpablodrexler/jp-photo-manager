@@ -978,7 +978,7 @@ namespace JPPhotoManager.Tests.Integration
 
             mock.Mock<IStorageService>().Setup(s => s.FolderExists(It.IsAny<string>())).Returns(true);
             mock.Mock<IStorageService>().Setup(s => s.GetFileNames(It.IsAny<string>())).Throws(new IOException());
-            mock.Mock<IStorageService>().Setup(s => s.ResolveDataDirectory(It.IsAny<int>())).Returns(appDataFolder);
+            mock.Mock<IStorageService>().Setup(s => s.ResolveDataDirectory(It.IsAny<double>())).Returns(appDataFolder);
 
             var repository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();

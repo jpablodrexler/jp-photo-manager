@@ -32,8 +32,11 @@ namespace JPPhotoManager.Tests.Integration
             configuration = configurationMock.Object;
         }
 
-        [Fact]
-        public void ResolveCatalogPathTest1()
+        [Theory]
+        [InlineData(1.0, "v1.0")]
+        [InlineData(1.1, "v1.1")]
+        [InlineData(2.0, "v2.0")]
+        public void ResolveCatalogPathTest(double storageVersion, string storageVersionPath)
         {
             Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
@@ -41,27 +44,10 @@ namespace JPPhotoManager.Tests.Integration
                 .MockGetValue("appsettings:ApplicationDataDirectory", "{ApplicationData}\\JPPhotoManager")
                 .MockGetValue("appsettings:CatalogBatchSize", "100");
 
-            string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPPhotoManager", "v3");
+            string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPPhotoManager", storageVersionPath);
 
             IStorageService storageService = new StorageService(new UserConfigurationService(configurationMock.Object));
-            string result = storageService.ResolveDataDirectory(3);
-
-            result.Should().Be(expected);
-        }
-
-        [Fact]
-        public void ResolveCatalogPathTest2()
-        {
-            Mock<IConfigurationRoot> configurationMock = new();
-            configurationMock
-                .MockGetValue("appsettings:InitialDirectory", "{ApplicationData}\\JPPhotoManager")
-                .MockGetValue("appsettings:ApplicationDataDirectory", "{ApplicationData}\\JPPhotoManager")
-                .MockGetValue("appsettings:CatalogBatchSize", "100");
-
-            string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPPhotoManager", "v3");
-
-            IStorageService storageService = new StorageService(new UserConfigurationService(configurationMock.Object));
-            string result = storageService.ResolveDataDirectory(3);
+            string result = storageService.ResolveDataDirectory(storageVersion);
 
             result.Should().Be(expected);
         }
