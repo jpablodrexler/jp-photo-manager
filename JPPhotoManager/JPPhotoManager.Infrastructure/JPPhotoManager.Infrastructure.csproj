@@ -23,10 +23,10 @@
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
     <PackageReference Include="Octokit" Version="0.50.0" />
+    <PackageReference Include="SimplePortableDatabase" Version="0.11.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\simple-portable-database\SimplePortableDatabase\SimplePortableDatabase\SimplePortableDatabase.csproj" />
     <ProjectReference Include="..\JPPhotoManager.Common\JPPhotoManager.Common.csproj" />
     <ProjectReference Include="..\JPPhotoManager.Domain\JPPhotoManager.Domain.csproj" />
   </ItemGroup>
