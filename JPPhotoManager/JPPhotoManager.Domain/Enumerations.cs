@@ -27,6 +27,7 @@
 
     public enum ProcessStepEnum
     {
+        ViewDescription,
         Configure,
         Run,
         ViewResults

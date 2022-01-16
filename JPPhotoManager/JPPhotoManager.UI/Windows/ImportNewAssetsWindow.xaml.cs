@@ -52,6 +52,23 @@ namespace JPPhotoManager.UI.Windows
             ViewModel.Imports = new ObservableCollection<ImportNewAssetsDirectoriesDefinition>(configuration.Imports);
         }
 
+        private void ContinueButton_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            try
+            {
+                Cursor = Cursors.Wait;
+                ViewModel.AdvanceStep();
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+            finally
+            {
+                Cursor = Cursors.Arrow;
+            }
+        }
+
         private void DeleteLabel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             try
@@ -105,7 +122,7 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        private async void ImportButton_MouseLeftButtonDown(object sender, RoutedEventArgs e)
+        private async void RunButton_MouseLeftButtonDown(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -123,20 +140,15 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        private void ViewResultsButton_MouseLeftButtonDown(object sender, RoutedEventArgs e)
+        private void CloseButton_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             try
             {
-                Cursor = Cursors.Wait;
-                ViewModel.AdvanceStep();
+                this.Close();
             }
             catch (Exception ex)
             {
                 log.Error(ex);
-            }
-            finally
-            {
-                Cursor = Cursors.Arrow;
             }
         }
 
