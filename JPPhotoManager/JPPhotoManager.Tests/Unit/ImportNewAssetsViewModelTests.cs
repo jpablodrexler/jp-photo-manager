@@ -107,10 +107,16 @@ namespace JPPhotoManager.Tests.Unit
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
             ImportNewAssetsViewModel viewModel = new(mock.Object);
 
+            viewModel.Step.Should().Be(ProcessStepEnum.ViewDescription);
+            viewModel.CanConfigure.Should().BeFalse();
+            viewModel.CanViewResults.Should().BeFalse();
+            viewModel.ResultsVisible.Should().Be(Visibility.Hidden);
+
+            viewModel.AdvanceStep();
+
             viewModel.Step.Should().Be(ProcessStepEnum.Configure);
             viewModel.CanConfigure.Should().BeTrue();
             viewModel.CanViewResults.Should().BeFalse();
-            viewModel.InputVisible.Should().Be(Visibility.Visible);
             viewModel.ResultsVisible.Should().Be(Visibility.Hidden);
 
             viewModel.AdvanceStep();
@@ -119,7 +125,6 @@ namespace JPPhotoManager.Tests.Unit
             viewModel.Step.Should().Be(ProcessStepEnum.Run);
             viewModel.CanConfigure.Should().BeFalse();
             viewModel.CanViewResults.Should().BeTrue();
-            viewModel.InputVisible.Should().Be(Visibility.Visible);
             viewModel.ResultsVisible.Should().Be(Visibility.Hidden);
 
             viewModel.AdvanceStep();
@@ -127,7 +132,6 @@ namespace JPPhotoManager.Tests.Unit
             viewModel.Step.Should().Be(ProcessStepEnum.ViewResults);
             viewModel.CanConfigure.Should().BeFalse();
             viewModel.CanViewResults.Should().BeFalse();
-            viewModel.InputVisible.Should().Be(Visibility.Hidden);
             viewModel.ResultsVisible.Should().Be(Visibility.Visible);
 
             viewModel.AdvanceStep();
@@ -135,7 +139,6 @@ namespace JPPhotoManager.Tests.Unit
             viewModel.Step.Should().Be(ProcessStepEnum.ViewResults);
             viewModel.CanConfigure.Should().BeFalse();
             viewModel.CanViewResults.Should().BeFalse();
-            viewModel.InputVisible.Should().Be(Visibility.Hidden);
             viewModel.ResultsVisible.Should().Be(Visibility.Visible);
         }
 

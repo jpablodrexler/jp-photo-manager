@@ -13,6 +13,10 @@ namespace JPPhotoManager.UI.ViewModels
         {
         }
 
+        public override string Description => "This process allows to import new assets to the catalog. " +
+            "You can configure one or multiple import operations by entering a source path and a destination path. " +
+            "You can specify if the import operation should also include sub-folders.";
+
         public ObservableCollection<ImportNewAssetsDirectoriesDefinition>? Imports
         {
             get { return imports; }
