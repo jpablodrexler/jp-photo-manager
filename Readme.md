@@ -4,6 +4,7 @@
 
 [![Test](https://github.com/jpablodrexler/jp-photo-manager/actions/workflows/test.yml/badge.svg)](https://github.com/jpablodrexler/jp-photo-manager/actions/workflows/test.yml)
 [![Release](https://github.com/jpablodrexler/jp-photo-manager/actions/workflows/release.yaml/badge.svg)](https://github.com/jpablodrexler/jp-photo-manager/actions/workflows/release.yaml)
+[![CodeQL](https://github.com/jpablodrexler/jp-photo-manager/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/jpablodrexler/jp-photo-manager/actions/workflows/codeql-analysis.yml)
 
 ## Features
 JPPhotoManager is a desktop application that allows:
