@@ -1,11 +1,11 @@
-﻿<Window x:Class="JPPhotoManager.UI.Windows.ImportNewAssetsWindow"
+﻿<Window x:Class="JPPhotoManager.UI.Windows.SyncAssetsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:c="clr-namespace:JPPhotoManager.UI.Converters"
         mc:Ignorable="d"
-        Title="Import New Assets" Height="450" Width="800"
+        Title="Sync Assets" Height="450" Width="800"
         Background="#FF3C3C3C"
         WindowState="Maximized">
     <Window.Resources>
@@ -48,8 +48,8 @@
                 <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
             <DockPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3">
-                <Label Content="Import definitions" Margin="10 0 0 0" Foreground="#FFFFFFFF" Background="#FF3C3C3C" DockPanel.Dock="Top"/>
-                <DataGrid ItemsSource="{Binding Imports}" IsEnabled="{Binding CanConfigure}" AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="True" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                <Label Content="Sync definitions" Margin="10 0 0 0" Foreground="#FFFFFFFF" Background="#FF3C3C3C" DockPanel.Dock="Top"/>
+                <DataGrid ItemsSource="{Binding Definitions}" IsEnabled="{Binding CanConfigure}" AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="True" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
                             <Setter Property="Background" Value="#FF3C3C3C"/>
@@ -60,6 +60,7 @@
                         <DataGridTextColumn Header="Source Directory" Binding="{Binding SourceDirectory}" Width="300"/>
                         <DataGridTextColumn Header="Destination Directory" Binding="{Binding DestinationDirectory}" Width="300"/>
                         <DataGridCheckBoxColumn Header="Include Sub Folders" Binding="{Binding IncludeSubFolders}" Width="150"/>
+                        <DataGridCheckBoxColumn Header="Delete Assets Not In Source" Binding="{Binding DeleteAssetsNotInSource}" Width="200"/>
                         <DataGridTemplateColumn Header="Actions">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -120,7 +121,7 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Source Directory" Binding="{Binding SourceDirectory}" Width="250"/>
                         <DataGridTextColumn Header="Destination Directory" Binding="{Binding DestinationDirectory}" Width="250"/>
-                        <DataGridTextColumn Header="Imported Images" Binding="{Binding Message}"/>
+                        <DataGridTextColumn Header="Synced Images" Binding="{Binding Message}"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </DockPanel>

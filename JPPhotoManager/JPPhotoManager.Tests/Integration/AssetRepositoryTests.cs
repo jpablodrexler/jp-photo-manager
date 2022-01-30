@@ -243,7 +243,7 @@ namespace JPPhotoManager.Tests.Integration
         }
 
         [Fact]
-        public void GetImportNewAssetsConfiguration_ReturnArray()
+        public void GetSyncAssetsConfiguration_ReturnArray()
         {
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
 
@@ -260,32 +260,32 @@ namespace JPPhotoManager.Tests.Integration
                 });
             var repository = mock.Container.Resolve<IAssetRepository>();
 
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyFirstGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MyFirstGame"
                 });
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MySecondGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MySecondGame"
                 });
 
-            repository.SetImportNewAssetsConfiguration(importConfiguration);
+            repository.SetSyncAssetsConfiguration(syncConfiguration);
             repository.SaveCatalog(null);
 
-            importConfiguration = repository.GetImportNewAssetsConfiguration();
+            syncConfiguration = repository.GetSyncAssetsConfiguration();
 
-            importConfiguration.Imports.Should().HaveCount(2);
-            importConfiguration.Imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
-            importConfiguration.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
-            importConfiguration.Imports[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
-            importConfiguration.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            syncConfiguration.Definitions.Should().HaveCount(2);
+            syncConfiguration.Definitions[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            syncConfiguration.Definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            syncConfiguration.Definitions[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            syncConfiguration.Definitions[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
         }
     }
 }

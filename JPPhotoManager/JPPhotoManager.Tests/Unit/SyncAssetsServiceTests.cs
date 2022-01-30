@@ -9,10 +9,10 @@ using Xunit;
 
 namespace JPPhotoManager.Tests.Unit
 {
-    public class ImportNewAssetsServiceTests
+    public class SyncAssetsServiceTests
     {
         [Fact]
-        public async void ImportNewImagesSourceEmptyDestinationEmptyTest()
+        public async void SyncAssetsSourceEmptyDestinationEmptyTest()
         {
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -22,17 +22,17 @@ namespace JPPhotoManager.Tests.Unit
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
 
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory
                 });
 
-            mock.Mock<IAssetRepository>().Setup(r => r.GetImportNewAssetsConfiguration())
-                .Returns(importConfiguration);
+            mock.Mock<IAssetRepository>().Setup(r => r.GetSyncAssetsConfiguration())
+                .Returns(syncConfiguration);
 
             mock.Mock<IStorageService>().Setup(s => s.FolderExists(sourceDirectory))
             .Returns(true);
@@ -40,25 +40,25 @@ namespace JPPhotoManager.Tests.Unit
             mock.Mock<IStorageService>().Setup(s => s.FolderExists(destinationDirectory))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = mock.Container.Resolve<ImportNewAssetsService>();
+            SyncAssetsService syncAssetsService = mock.Container.Resolve<SyncAssetsService>();
 
             var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
+            var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            mock.Mock<IAssetRepository>().Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            mock.Mock<IAssetRepository>().Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
             result.Should().ContainSingle();
             result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
             result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
-            result[0].ImportedImages.Should().Be(0);
-            result[0].Message.Should().Be(@"No images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            result[0].SyncedImages.Should().Be(0);
+            result[0].Message.Should().Be(@"No images synced from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             statusChanges.Should().BeEmpty();
         }
 
         [Fact]
-        public async void ImportNewImagesSourceNotEmptyDestinationEmptyTest()
+        public async void SyncAssetsSourceNotEmptyDestinationEmptyTest()
         {
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -75,17 +75,17 @@ namespace JPPhotoManager.Tests.Unit
                     "NewImage3.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory
                 });
 
-            mock.Mock<IAssetRepository>().Setup(r => r.GetImportNewAssetsConfiguration())
-                .Returns(importConfiguration);
+            mock.Mock<IAssetRepository>().Setup(r => r.GetSyncAssetsConfiguration())
+                .Returns(syncConfiguration);
 
             mock.Mock<IStorageService>().Setup(s => s.FolderExists(sourceDirectory))
                 .Returns(true);
@@ -99,13 +99,13 @@ namespace JPPhotoManager.Tests.Unit
             mock.Mock<IStorageService>().Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = mock.Container.Resolve<ImportNewAssetsService>();
+            SyncAssetsService syncAssetsService = mock.Container.Resolve<SyncAssetsService>();
 
             var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
+            var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            mock.Mock<IAssetRepository>().Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            mock.Mock<IAssetRepository>().Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
@@ -113,8 +113,8 @@ namespace JPPhotoManager.Tests.Unit
             result.Should().ContainSingle();
             result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
             result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
-            result[0].ImportedImages.Should().Be(3);
-            result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            result[0].SyncedImages.Should().Be(3);
+            result[0].Message.Should().Be(@"3 images synced from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             statusChanges.Should().HaveCount(3);
             statusChanges[0].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyGame\NewImage1.jpg'");
             statusChanges[1].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage2.jpg' => 'C:\Images\MyGame\NewImage2.jpg'");
@@ -122,7 +122,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public async void ImportNewImagesSourceNotEmptyDestinationNotEmptyMultipleNewImagesTest()
+        public async void SyncedAssetsSourceNotEmptyDestinationNotEmptyMultipleNewImagesTest()
         {
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -149,17 +149,17 @@ namespace JPPhotoManager.Tests.Unit
                     "ExistingImage3.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory
                 });
 
-            mock.Mock<IAssetRepository>().Setup(r => r.GetImportNewAssetsConfiguration())
-                .Returns(importConfiguration);
+            mock.Mock<IAssetRepository>().Setup(r => r.GetSyncAssetsConfiguration())
+                .Returns(syncConfiguration);
 
             mock.Mock<IStorageService>().Setup(s => s.FolderExists(sourceDirectory))
                 .Returns(true);
@@ -176,13 +176,13 @@ namespace JPPhotoManager.Tests.Unit
             mock.Mock<IStorageService>().Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = mock.Container.Resolve<ImportNewAssetsService>();
+            SyncAssetsService syncAssetsService = mock.Container.Resolve<SyncAssetsService>();
 
             var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
+            var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            mock.Mock<IAssetRepository>().Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            mock.Mock<IAssetRepository>().Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
@@ -190,8 +190,8 @@ namespace JPPhotoManager.Tests.Unit
             result.Should().ContainSingle();
             result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
             result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
-            result[0].ImportedImages.Should().Be(3);
-            result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            result[0].SyncedImages.Should().Be(3);
+            result[0].Message.Should().Be(@"3 images synced from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             statusChanges.Should().HaveCount(3);
             statusChanges[0].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyGame\NewImage1.jpg'");
             statusChanges[1].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage2.jpg' => 'C:\Images\MyGame\NewImage2.jpg'");
@@ -199,7 +199,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public async void ImportNewImagesSourceNotEmptyDestinationNotEmptyOneNewImageTest()
+        public async void SyncAssetsSourceNotEmptyDestinationNotEmptyOneNewImageTest()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
@@ -219,10 +219,10 @@ namespace JPPhotoManager.Tests.Unit
                 "ExistingImage3.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory
@@ -233,8 +233,8 @@ namespace JPPhotoManager.Tests.Unit
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
-                .Returns(importConfiguration);
+            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+                .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
                 .Returns(true);
@@ -251,29 +251,29 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = new(
+            SyncAssetsService syncAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
+            var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
             result.Should().ContainSingle();
             result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
             result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
-            result[0].ImportedImages.Should().Be(1);
-            result[0].Message.Should().Be(@"1 image imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            result[0].SyncedImages.Should().Be(1);
+            result[0].Message.Should().Be(@"1 image synced from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             statusChanges.Should().ContainSingle();
             statusChanges[0].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyGame\NewImage1.jpg'");
         }
 
         [Fact]
-        public async void ImportNewImagesSourceNotEmptyDestinationNotEmptyTwoDefinitionsTest()
+        public async void SyncAssetsSourceNotEmptyDestinationNotEmptyTwoDefinitionsTest()
         {
             string firstSourceDirectory = @"C:\MyFirstGame\Screenshots";
             string firstDestinationDirectory = @"C:\Images\MyFirstGame";
@@ -311,17 +311,17 @@ namespace JPPhotoManager.Tests.Unit
                 "ExistingImage2.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = firstSourceDirectory,
                     DestinationDirectory = firstDestinationDirectory
                 });
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = secondSourceDirectory,
                     DestinationDirectory = secondDestinationDirectory
@@ -332,8 +332,8 @@ namespace JPPhotoManager.Tests.Unit
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
-                .Returns(importConfiguration);
+            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+                .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(firstSourceDirectory))
                 .Returns(true);
@@ -362,16 +362,16 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = new(
+            SyncAssetsService syncAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
+            var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(firstSourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(secondSourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyFirstGame\Screenshots\NewImage1.jpg", @"C:\Images\MyFirstGame\NewImage1.jpg"), Times.Once);
@@ -382,12 +382,12 @@ namespace JPPhotoManager.Tests.Unit
             result.Should().HaveCount(2);
             result[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
             result[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
-            result[0].ImportedImages.Should().Be(3);
-            result[0].Message.Should().Be(@"3 images imported from 'C:\MyFirstGame\Screenshots' to 'C:\Images\MyFirstGame'.");
+            result[0].SyncedImages.Should().Be(3);
+            result[0].Message.Should().Be(@"3 images synced from 'C:\MyFirstGame\Screenshots' to 'C:\Images\MyFirstGame'.");
             result[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
             result[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
-            result[1].ImportedImages.Should().Be(2);
-            result[1].Message.Should().Be(@"2 images imported from 'C:\MySecondGame\Screenshots' to 'C:\Images\MySecondGame'.");
+            result[1].SyncedImages.Should().Be(2);
+            result[1].Message.Should().Be(@"2 images synced from 'C:\MySecondGame\Screenshots' to 'C:\Images\MySecondGame'.");
             statusChanges.Should().HaveCount(5);
             statusChanges[0].NewStatus.Should().Be(@$"'C:\MyFirstGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyFirstGame\NewImage1.jpg'");
             statusChanges[1].NewStatus.Should().Be(@$"'C:\MyFirstGame\Screenshots\NewImage2.jpg' => 'C:\Images\MyFirstGame\NewImage2.jpg'");
@@ -397,7 +397,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public async void ImportNewImagesSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesSingleLevelWithoutSourceSubDirectories()
+        public async void SyncAssetsSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesSingleLevelWithoutSourceSubDirectories()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
@@ -433,10 +433,10 @@ namespace JPPhotoManager.Tests.Unit
                 "ExistingImage5.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory
@@ -447,8 +447,8 @@ namespace JPPhotoManager.Tests.Unit
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
-                .Returns(importConfiguration);
+            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+                .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
                 .Returns(true);
@@ -485,16 +485,16 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = new(
+            SyncAssetsService syncAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
+            var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(destinationDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(destinationSubDirectory1), Times.Once);
@@ -505,8 +505,8 @@ namespace JPPhotoManager.Tests.Unit
             result.Should().ContainSingle();
             result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
             result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
-            result[0].ImportedImages.Should().Be(3);
-            result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            result[0].SyncedImages.Should().Be(3);
+            result[0].Message.Should().Be(@"3 images synced from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             statusChanges.Should().HaveCount(3);
             statusChanges[0].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyGame\NewImage1.jpg'");
             statusChanges[1].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage2.jpg' => 'C:\Images\MyGame\NewImage2.jpg'");
@@ -514,7 +514,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public async void ImportNewImagesSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesMultipleLevelsWithoutSourceSubDirectories()
+        public async void SyncAssetsSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesMultipleLevelsWithoutSourceSubDirectories()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
@@ -559,10 +559,10 @@ namespace JPPhotoManager.Tests.Unit
                 "ExistingImage7.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory
@@ -573,8 +573,8 @@ namespace JPPhotoManager.Tests.Unit
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
-                .Returns(importConfiguration);
+            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+                .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
                 .Returns(true);
@@ -621,16 +621,16 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = new(
+            SyncAssetsService syncAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
+            var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(destinationDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(destinationSubDirectory1), Times.Once);
@@ -641,8 +641,8 @@ namespace JPPhotoManager.Tests.Unit
             result.Should().ContainSingle();
             result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
             result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
-            result[0].ImportedImages.Should().Be(3);
-            result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            result[0].SyncedImages.Should().Be(3);
+            result[0].Message.Should().Be(@"3 images synced from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             statusChanges.Should().HaveCount(3);
             statusChanges[0].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyGame\NewImage1.jpg'");
             statusChanges[1].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage2.jpg' => 'C:\Images\MyGame\NewImage2.jpg'");
@@ -650,7 +650,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public async void ImportNewImagesSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesWithSourceSubDirectories()
+        public async void SyncAssetsSourceNotEmptyDestinationNotEmptySomeSourceImagesInTargetSubDirectoriesWithSourceSubDirectories()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string sourceSubDirectory = @"C:\MyGame\Screenshots\SubDirectory";
@@ -693,10 +693,10 @@ namespace JPPhotoManager.Tests.Unit
                 "ExistingImage5.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory,
@@ -708,8 +708,8 @@ namespace JPPhotoManager.Tests.Unit
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
-                .Returns(importConfiguration);
+            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+                .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
                 .Returns(true);
@@ -760,16 +760,16 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = new(
+            SyncAssetsService syncAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
+            var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceSubDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(destinationDirectory), Times.Once);
@@ -783,12 +783,12 @@ namespace JPPhotoManager.Tests.Unit
             result.Should().HaveCount(2);
             result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
             result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
-            result[0].ImportedImages.Should().Be(3);
-            result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            result[0].SyncedImages.Should().Be(3);
+            result[0].Message.Should().Be(@"3 images synced from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             result[1].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots\SubDirectory");
             result[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame\SubDirectory");
-            result[1].ImportedImages.Should().Be(2);
-            result[1].Message.Should().Be(@"2 images imported from 'C:\MyGame\Screenshots\SubDirectory' to 'C:\Images\MyGame\SubDirectory'.");
+            result[1].SyncedImages.Should().Be(2);
+            result[1].Message.Should().Be(@"2 images synced from 'C:\MyGame\Screenshots\SubDirectory' to 'C:\Images\MyGame\SubDirectory'.");
             statusChanges.Should().HaveCount(5);
             statusChanges[0].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyGame\NewImage1.jpg'");
             statusChanges[1].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage2.jpg' => 'C:\Images\MyGame\NewImage2.jpg'");
@@ -798,7 +798,7 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public async void ImportNewImagesSourceNotEmptyDestinationNotEmptyAllSourceImagesInTargetSubDirectories()
+        public async void SyncAssetsSourceNotEmptyDestinationNotEmptyAllSourceImagesInTargetSubDirectories()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
@@ -831,10 +831,10 @@ namespace JPPhotoManager.Tests.Unit
                 "ExistingImage5.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory
@@ -845,8 +845,8 @@ namespace JPPhotoManager.Tests.Unit
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
-                .Returns(importConfiguration);
+            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+                .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
                 .Returns(true);
@@ -883,16 +883,16 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = new(
+            SyncAssetsService syncAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
+            var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(destinationDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(destinationSubDirectory1), Times.Once);
@@ -901,153 +901,153 @@ namespace JPPhotoManager.Tests.Unit
             result.Should().ContainSingle();
             result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
             result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
-            result[0].ImportedImages.Should().Be(0);
-            result[0].Message.Should().Be(@"No images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            result[0].SyncedImages.Should().Be(0);
+            result[0].Message.Should().Be(@"No images synced from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             statusChanges.Should().BeEmpty();
         }
 
         [Fact]
         public void ValidateAllValidDefinitionsTest()
         {
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyFirstGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MyFirstGame"
                 });
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MySecondGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MySecondGame"
                 });
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"\\MyServer\Images",
                     DestinationDirectory = @"C:\Images"
                 });
 
-            importConfiguration.Validate();
+            syncConfiguration.Validate();
 
-            importConfiguration.Imports.Should().HaveCount(3);
-            importConfiguration.Imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
-            importConfiguration.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
-            importConfiguration.Imports[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
-            importConfiguration.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
-            importConfiguration.Imports[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
-            importConfiguration.Imports[2].DestinationDirectory.Should().Be(@"C:\Images");
+            syncConfiguration.Definitions.Should().HaveCount(3);
+            syncConfiguration.Definitions[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            syncConfiguration.Definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            syncConfiguration.Definitions[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            syncConfiguration.Definitions[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            syncConfiguration.Definitions[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
+            syncConfiguration.Definitions[2].DestinationDirectory.Should().Be(@"C:\Images");
         }
 
         [Fact]
         public void ValidateOneInvalidDefinitionTest()
         {
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyFirstGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MyFirstGame"
                 });
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MySecondGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MySecondGame"
                 });
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"http://www.some-site.com",
                     DestinationDirectory = @"ftp://some-location.com"
                 });
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"InvalidValue",
                     DestinationDirectory = @"InvalidValue"
                 });
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"Invalid@Value.com",
                     DestinationDirectory = @"Invalid@Value.com"
                 });
 
-            importConfiguration.Validate();
+            syncConfiguration.Validate();
 
-            importConfiguration.Imports.Should().HaveCount(2);
-            importConfiguration.Imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
-            importConfiguration.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
-            importConfiguration.Imports[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
-            importConfiguration.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            syncConfiguration.Definitions.Should().HaveCount(2);
+            syncConfiguration.Definitions[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            syncConfiguration.Definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            syncConfiguration.Definitions[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            syncConfiguration.Definitions[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
         }
 
         [Fact]
         public void NormalizeTest()
         {
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyFirstGame\Screenshots",
                     DestinationDirectory = @"C:\Images\\\MyFirstGame\"
                 });
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\\\MySecondGame\Screenshots\\",
                     DestinationDirectory = @"C:\Images\MySecondGame\\\\\"
                 });
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"\\MyServer\Screenshots\\\",
                     DestinationDirectory = @"C:\Images\\\\\"
                 });
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"\\\\\MyServer\Screenshots\\\",
                     DestinationDirectory = @"C:\Images\\\\\"
                 });
 
-            importConfiguration.Normalize();
+            syncConfiguration.Normalize();
 
-            importConfiguration.Imports.Should().HaveCount(4);
-            importConfiguration.Imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
-            importConfiguration.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
-            importConfiguration.Imports[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
-            importConfiguration.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
-            importConfiguration.Imports[2].SourceDirectory.Should().Be(@"\\MyServer\Screenshots");
-            importConfiguration.Imports[2].DestinationDirectory.Should().Be(@"C:\Images");
-            importConfiguration.Imports[3].SourceDirectory.Should().Be(@"\\MyServer\Screenshots");
-            importConfiguration.Imports[3].DestinationDirectory.Should().Be(@"C:\Images");
+            syncConfiguration.Definitions.Should().HaveCount(4);
+            syncConfiguration.Definitions[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            syncConfiguration.Definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            syncConfiguration.Definitions[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            syncConfiguration.Definitions[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            syncConfiguration.Definitions[2].SourceDirectory.Should().Be(@"\\MyServer\Screenshots");
+            syncConfiguration.Definitions[2].DestinationDirectory.Should().Be(@"C:\Images");
+            syncConfiguration.Definitions[3].SourceDirectory.Should().Be(@"\\MyServer\Screenshots");
+            syncConfiguration.Definitions[3].DestinationDirectory.Should().Be(@"C:\Images");
         }
 
         [Fact]
-        public async void ImportNewImagesInexistentSourceDirectory()
+        public async void SyncAssetsInexistentSourceDirectory()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
 
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory
@@ -1058,8 +1058,8 @@ namespace JPPhotoManager.Tests.Unit
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
-                .Returns(importConfiguration);
+            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+                .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
                 .Returns(false);
@@ -1067,36 +1067,36 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.FolderExists(destinationDirectory))
                 .Returns(true);
 
-            ImportNewAssetsService importNewAssetsService = new(
+            SyncAssetsService syncAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
+            var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Never);
             storageServiceMock.Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
             result.Should().ContainSingle();
             result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
             result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
-            result[0].ImportedImages.Should().Be(0);
+            result[0].SyncedImages.Should().Be(0);
             result[0].Message.Should().Be(@"Source directory 'C:\MyGame\Screenshots' not found.");
             statusChanges.Should().BeEmpty();
         }
 
         [Fact]
-        public async void ImportNewImagesInexistentDestinationDirectory()
+        public async void SyncAssetsInexistentDestinationDirectory()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"C:\Images\MyGame";
 
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory
@@ -1107,8 +1107,8 @@ namespace JPPhotoManager.Tests.Unit
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
-                .Returns(importConfiguration);
+            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+                .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
                 .Returns(true);
@@ -1116,37 +1116,37 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.FolderExists(destinationDirectory))
                 .Returns(false);
 
-            ImportNewAssetsService importNewAssetsService = new(
+            SyncAssetsService syncAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
+            var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.CreateDirectory(destinationDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
             result.Should().ContainSingle();
             result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
             result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
-            result[0].ImportedImages.Should().Be(0);
-            result[0].Message.Should().Be(@"No images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            result[0].SyncedImages.Should().Be(0);
+            result[0].Message.Should().Be(@"No images synced from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             statusChanges.Should().BeEmpty();
         }
 
         [Fact]
-        public async void ImportNewImagesInaccessibleDestinationDirectory()
+        public async void SyncAssetsInaccessibleDestinationDirectory()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string destinationDirectory = @"\\MyServer\MyGame";
 
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory
@@ -1157,8 +1157,8 @@ namespace JPPhotoManager.Tests.Unit
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
-                .Returns(importConfiguration);
+            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+                .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
                 .Returns(true);
@@ -1169,28 +1169,28 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.CreateDirectory(destinationDirectory))
                 .Throws(new DirectoryNotFoundException());
 
-            ImportNewAssetsService importNewAssetsService = new(
+            SyncAssetsService syncAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
+            var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Never);
             storageServiceMock.Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
             result.Should().ContainSingle();
             result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
             result[0].DestinationDirectory.Should().Be(@"\\MyServer\MyGame");
-            result[0].ImportedImages.Should().Be(0);
+            result[0].SyncedImages.Should().Be(0);
             result[0].Message.Should().Be(@"Destination directory '\\MyServer\MyGame' not found.");
             statusChanges.Should().BeEmpty();
         }
 
         [Fact]
-        public async void ImportNewImagesSourceNotEmptyDestinationEmptyIncludingSubFoldersTest()
+        public async void SyncAssetsSourceNotEmptyDestinationEmptyIncludingSubFoldersTest()
         {
             string sourceDirectory = @"C:\MyGame\Screenshots";
             string sourceSubDirectory = @"C:\MyGame\Screenshots\SubDirectory";
@@ -1203,10 +1203,10 @@ namespace JPPhotoManager.Tests.Unit
                 "NewImage3.jpg"
             };
 
-            ImportNewAssetsConfiguration importConfiguration = new();
+            SyncAssetsConfiguration syncConfiguration = new();
 
-            importConfiguration.Imports.Add(
-                new ImportNewAssetsDirectoriesDefinition
+            syncConfiguration.Definitions.Add(
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = sourceDirectory,
                     DestinationDirectory = destinationDirectory,
@@ -1218,8 +1218,8 @@ namespace JPPhotoManager.Tests.Unit
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetImportNewAssetsConfiguration())
-                .Returns(importConfiguration);
+            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+                .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
                 .Returns(true);
@@ -1244,16 +1244,16 @@ namespace JPPhotoManager.Tests.Unit
 
             storageServiceMock.Setup(s => s.GetSubDirectories(sourceSubDirectory)).Returns(new List<DirectoryInfo>());
 
-            ImportNewAssetsService importNewAssetsService = new(
+            SyncAssetsService syncAssetsService = new(
                 repositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
             var statusChanges = new List<ProcessStatusChangedCallbackEventArgs>();
 
-            var result = await importNewAssetsService.ImportAsync(e => statusChanges.Add(e));
+            var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetImportNewAssetsConfiguration(), Times.Once);
+            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
@@ -1261,12 +1261,12 @@ namespace JPPhotoManager.Tests.Unit
             result.Should().HaveCount(2);
             result[0].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots");
             result[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame");
-            result[0].ImportedImages.Should().Be(3);
-            result[0].Message.Should().Be(@"3 images imported from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
+            result[0].SyncedImages.Should().Be(3);
+            result[0].Message.Should().Be(@"3 images synced from 'C:\MyGame\Screenshots' to 'C:\Images\MyGame'.");
             result[1].SourceDirectory.Should().Be(@"C:\MyGame\Screenshots\SubDirectory");
             result[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame\SubDirectory");
-            result[1].ImportedImages.Should().Be(0);
-            result[1].Message.Should().Be(@"No images imported from 'C:\MyGame\Screenshots\SubDirectory' to 'C:\Images\MyGame\SubDirectory'.");
+            result[1].SyncedImages.Should().Be(0);
+            result[1].Message.Should().Be(@"No images synced from 'C:\MyGame\Screenshots\SubDirectory' to 'C:\Images\MyGame\SubDirectory'.");
             statusChanges.Should().HaveCount(3);
             statusChanges[0].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage1.jpg' => 'C:\Images\MyGame\NewImage1.jpg'");
             statusChanges[1].NewStatus.Should().Be(@$"'C:\MyGame\Screenshots\NewImage2.jpg' => 'C:\Images\MyGame\NewImage2.jpg'");

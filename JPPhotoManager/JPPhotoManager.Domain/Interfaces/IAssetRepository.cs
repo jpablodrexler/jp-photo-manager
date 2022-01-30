@@ -23,8 +23,8 @@ namespace JPPhotoManager.Domain.Interfaces
         bool ContainsThumbnail(string directoryName, string fileName);
         BitmapImage LoadThumbnail(string directoryName, string fileName, int width, int height);
         bool FolderHasThumbnails(Folder folder);
-        ImportNewAssetsConfiguration GetImportNewAssetsConfiguration();
-        void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration);
+        SyncAssetsConfiguration GetSyncAssetsConfiguration();
+        void SetSyncAssetsConfiguration(SyncAssetsConfiguration syncConfiguration);
         List<string> GetRecentTargetPaths();
         void SetRecentTargetPaths(List<string> recentTargetPaths);
     }

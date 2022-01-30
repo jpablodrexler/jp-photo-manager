@@ -20,7 +20,7 @@
                     <MenuItem Header="_Tile" Click="SetAsWallpaperTile_Click" Style="{StaticResource MenuItemStyle}" />
                 </MenuItem>
                 <MenuItem Header="Find _Duplicates..." Click="FindDuplicates_Click" Style="{StaticResource MenuItemStyle}" />
-                <MenuItem Header="Import New Assets..." Click="ImportNewAssets_Click" Style="{StaticResource MenuItemStyle}" />
+                <MenuItem Header="Sync Assets..." Click="SyncAssets_Click" Style="{StaticResource MenuItemStyle}" />
                 <MenuItem Header="Copy Assets (Ctrl+C)..." Click="CopyAssets_Click" Style="{StaticResource MenuItemStyle}" />
                 <MenuItem Header="Move Assets (Ctrl+M)..." Click="MoveAssets_Click" Style="{StaticResource MenuItemStyle}" />
                 <MenuItem Header="Delete Assets (Del)" Click="DeleteAssets_Click" Style="{StaticResource MenuItemStyle}" />

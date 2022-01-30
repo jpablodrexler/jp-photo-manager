@@ -11,199 +11,199 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void MoveUpSecondDefinitionTest()
         {
-            var imports = new ObservableCollection<ImportNewAssetsDirectoriesDefinition>
+            var definitions = new ObservableCollection<SyncAssetsDirectoriesDefinition>
             {
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyFirstGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MyFirstGame"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MySecondGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MySecondGame"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"\\MyServer\Images",
                     DestinationDirectory = @"C:\Images"
                 }
             };
 
-            imports.MoveUp(imports[1]);
+            definitions.MoveUp(definitions[1]);
 
-            imports.Should().HaveCount(3);
-            imports[0].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
-            imports[0].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
-            imports[1].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
-            imports[1].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
-            imports[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
-            imports[2].DestinationDirectory.Should().Be(@"C:\Images");
+            definitions.Should().HaveCount(3);
+            definitions[0].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            definitions[1].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            definitions[1].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            definitions[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
+            definitions[2].DestinationDirectory.Should().Be(@"C:\Images");
         }
 
         [Fact]
         public void MoveUpThirdDefinitionTest()
         {
-            var imports = new ObservableCollection<ImportNewAssetsDirectoriesDefinition>
+            var definitions = new ObservableCollection<SyncAssetsDirectoriesDefinition>
             {
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyFirstGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MyFirstGame"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MySecondGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MySecondGame"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"\\MyServer\Images",
                     DestinationDirectory = @"C:\Images"
                 }
             };
 
-            imports.MoveUp(imports[2]);
+            definitions.MoveUp(definitions[2]);
 
-            imports.Should().HaveCount(3);
-            imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
-            imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
-            imports[1].SourceDirectory.Should().Be(@"\\MyServer\Images");
-            imports[1].DestinationDirectory.Should().Be(@"C:\Images");
-            imports[2].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
-            imports[2].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            definitions.Should().HaveCount(3);
+            definitions[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            definitions[1].SourceDirectory.Should().Be(@"\\MyServer\Images");
+            definitions[1].DestinationDirectory.Should().Be(@"C:\Images");
+            definitions[2].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            definitions[2].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
         }
 
         [Fact]
         public void MoveUpFirstDefinitionTest()
         {
-            var imports = new ObservableCollection<ImportNewAssetsDirectoriesDefinition>
+            var definitions = new ObservableCollection<SyncAssetsDirectoriesDefinition>
             {
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyFirstGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MyFirstGame"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MySecondGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MySecondGame"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"\\MyServer\Images",
                     DestinationDirectory = @"C:\Images"
                 }
             };
 
-            imports.MoveUp(imports[0]);
+            definitions.MoveUp(definitions[0]);
 
-            imports.Should().HaveCount(3);
-            imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
-            imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
-            imports[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
-            imports[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
-            imports[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
-            imports[2].DestinationDirectory.Should().Be(@"C:\Images");
+            definitions.Should().HaveCount(3);
+            definitions[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            definitions[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            definitions[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            definitions[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
+            definitions[2].DestinationDirectory.Should().Be(@"C:\Images");
         }
 
         [Fact]
         public void MoveDownSecondDefinitionTest()
         {
-            var imports = new ObservableCollection<ImportNewAssetsDirectoriesDefinition>
+            var definitions = new ObservableCollection<SyncAssetsDirectoriesDefinition>
             {
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyFirstGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MyFirstGame"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MySecondGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MySecondGame"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"\\MyServer\Images",
                     DestinationDirectory = @"C:\Images"
                 }
             };
 
-            imports.MoveDown(imports[1]);
+            definitions.MoveDown(definitions[1]);
 
-            imports.Should().HaveCount(3);
-            imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
-            imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
-            imports[1].SourceDirectory.Should().Be(@"\\MyServer\Images");
-            imports[1].DestinationDirectory.Should().Be(@"C:\Images");
-            imports[2].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
-            imports[2].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            definitions.Should().HaveCount(3);
+            definitions[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            definitions[1].SourceDirectory.Should().Be(@"\\MyServer\Images");
+            definitions[1].DestinationDirectory.Should().Be(@"C:\Images");
+            definitions[2].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            definitions[2].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
         }
 
         [Fact]
         public void MoveDownFirstDefinitionTest()
         {
-            var imports = new ObservableCollection<ImportNewAssetsDirectoriesDefinition>
+            var definitions = new ObservableCollection<SyncAssetsDirectoriesDefinition>
             {
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyFirstGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MyFirstGame"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MySecondGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MySecondGame"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"\\MyServer\Images",
                     DestinationDirectory = @"C:\Images"
                 }
             };
 
-            imports.MoveDown(imports[0]);
+            definitions.MoveDown(definitions[0]);
 
-            imports.Should().HaveCount(3);
-            imports[0].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
-            imports[0].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
-            imports[1].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
-            imports[1].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
-            imports[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
-            imports[2].DestinationDirectory.Should().Be(@"C:\Images");
+            definitions.Should().HaveCount(3);
+            definitions[0].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            definitions[1].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            definitions[1].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            definitions[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
+            definitions[2].DestinationDirectory.Should().Be(@"C:\Images");
         }
 
         [Fact]
         public void MoveDownLastDefinitionTest()
         {
-            var imports = new ObservableCollection<ImportNewAssetsDirectoriesDefinition>
+            var definitions = new ObservableCollection<SyncAssetsDirectoriesDefinition>
             {
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyFirstGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MyFirstGame"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MySecondGame\Screenshots",
                     DestinationDirectory = @"C:\Images\MySecondGame"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"\\MyServer\Images",
                     DestinationDirectory = @"C:\Images"
                 }
             };
 
-            imports.MoveDown(imports[2]);
+            definitions.MoveDown(definitions[2]);
 
-            imports.Should().HaveCount(3);
-            imports[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
-            imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
-            imports[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
-            imports[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
-            imports[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
-            imports[2].DestinationDirectory.Should().Be(@"C:\Images");
+            definitions.Should().HaveCount(3);
+            definitions[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
+            definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
+            definitions[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
+            definitions[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            definitions[2].SourceDirectory.Should().Be(@"\\MyServer\Images");
+            definitions[2].DestinationDirectory.Should().Be(@"C:\Images");
         }
     }
 }

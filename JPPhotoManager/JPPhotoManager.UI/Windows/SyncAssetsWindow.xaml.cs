@@ -13,14 +13,14 @@ using System.Windows.Input;
 namespace JPPhotoManager.UI.Windows
 {
     /// <summary>
-    /// Interaction logic for ImportNewAssetsWindow.xaml
+    /// Interaction logic for SyncAssetsWindow.xaml
     /// </summary>
     [ExcludeFromCodeCoverage]
-    public partial class ImportNewAssetsWindow : Window
+    public partial class SyncAssetsWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        public ImportNewAssetsWindow(ImportNewAssetsViewModel viewModel)
+        public SyncAssetsWindow(SyncAssetsViewModel viewModel)
         {
             try
             {
@@ -35,9 +35,9 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        public ImportNewAssetsViewModel ViewModel
+        public SyncAssetsViewModel ViewModel
         {
-            get { return (ImportNewAssetsViewModel)DataContext; }
+            get { return (SyncAssetsViewModel)DataContext; }
         }
 
         private void Initialize()
@@ -46,10 +46,10 @@ namespace JPPhotoManager.UI.Windows
 
             if (configuration == null)
             {
-                configuration = new ImportNewAssetsConfiguration();
+                configuration = new SyncAssetsConfiguration();
             }
 
-            ViewModel.Imports = new ObservableCollection<ImportNewAssetsDirectoriesDefinition>(configuration.Imports);
+            ViewModel.Definitions = new ObservableCollection<SyncAssetsDirectoriesDefinition>(configuration.Definitions);
         }
 
         private void ContinueButton_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -110,7 +110,7 @@ namespace JPPhotoManager.UI.Windows
             try
             {
                 Cursor = Cursors.Wait;
-                Save(ViewModel.Imports);
+                Save(ViewModel.Definitions);
             }
             catch (Exception ex)
             {
@@ -155,7 +155,7 @@ namespace JPPhotoManager.UI.Windows
         private void DeleteDefinition(object selected)
         {
             // Evaluates if it is an existing item or the NewItemPlaceholder.
-            if (selected is ImportNewAssetsDirectoriesDefinition definition)
+            if (selected is SyncAssetsDirectoriesDefinition definition)
             {
                 ViewModel.DeleteDefinition(definition);
             }
@@ -164,7 +164,7 @@ namespace JPPhotoManager.UI.Windows
         private void MoveUpDefinition(object selected)
         {
             // Evaluates if it is an existing item or the NewItemPlaceholder.
-            if (selected is ImportNewAssetsDirectoriesDefinition definition)
+            if (selected is SyncAssetsDirectoriesDefinition definition)
             {
                 ViewModel.MoveUpDefinition(definition);
             }
@@ -173,22 +173,22 @@ namespace JPPhotoManager.UI.Windows
         private void MoveDownDefinition(object selected)
         {
             // Evaluates if it is an existing item or the NewItemPlaceholder.
-            if (selected is ImportNewAssetsDirectoriesDefinition definition)
+            if (selected is SyncAssetsDirectoriesDefinition definition)
             {
                 ViewModel.MoveDownDefinition(definition);
             }
         }
 
-        private void Save(ObservableCollection<ImportNewAssetsDirectoriesDefinition> imports)
+        private void Save(ObservableCollection<SyncAssetsDirectoriesDefinition> definitions)
         {
-            ImportNewAssetsConfiguration configuration = new();
-            configuration.Imports.AddRange(imports);
+            SyncAssetsConfiguration configuration = new();
+            configuration.Definitions.AddRange(definitions);
             ViewModel.SetProcessConfiguration(configuration);
         }
 
         private async Task RunProcess()
         {
-            Save(ViewModel.Imports);
+            Save(ViewModel.Definitions);
             await ViewModel.RunProcessAsync(e => Dispatcher.Invoke(() => ViewModel.NotifyProcessStatusChanged(e)));
         }
     }

@@ -8,7 +8,7 @@ namespace JPPhotoManager.Application
     public class Application : IApplication
     {
         private readonly IAssetRepository assetRepository;
-        private readonly IImportNewAssetsService importNewAssetsService;
+        private readonly ISyncAssetsService syncAssetsService;
         private readonly ICatalogAssetsService catalogAssetsService;
         private readonly IMoveAssetsService moveAssetsService;
         private readonly IFindDuplicatedAssetsService findDuplicatedAssetsService;
@@ -19,7 +19,7 @@ namespace JPPhotoManager.Application
         private readonly INewReleaseNotificationService newReleaseNotificationService;
 
         public Application(
-            IImportNewAssetsService importNewAssetsService,
+            ISyncAssetsService syncAssetsService,
             ICatalogAssetsService catalogAssetsService,
             IMoveAssetsService moveAssetsService,
             IFindDuplicatedAssetsService findDuplicatedAssetsService,
@@ -30,7 +30,7 @@ namespace JPPhotoManager.Application
             IProcessService processService,
             INewReleaseNotificationService newReleaseNotificationService)
         {
-            this.importNewAssetsService = importNewAssetsService;
+            this.syncAssetsService = syncAssetsService;
             this.catalogAssetsService = catalogAssetsService;
             this.moveAssetsService = moveAssetsService;
             this.findDuplicatedAssetsService = findDuplicatedAssetsService;
@@ -62,20 +62,20 @@ namespace JPPhotoManager.Application
             asset.ImageData = assetRepository.LoadThumbnail(asset.Folder.Path, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
         }
 
-        public ImportNewAssetsConfiguration GetImportNewAssetsConfiguration()
+        public SyncAssetsConfiguration GetSyncAssetsConfiguration()
         {
-            return assetRepository.GetImportNewAssetsConfiguration();
+            return assetRepository.GetSyncAssetsConfiguration();
         }
 
-        public void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration)
+        public void SetSyncAssetsConfiguration(SyncAssetsConfiguration syncConfiguration)
         {
-            importConfiguration.Validate();
-            importConfiguration.Normalize();
-            assetRepository.SetImportNewAssetsConfiguration(importConfiguration);
+            syncConfiguration.Validate();
+            syncConfiguration.Normalize();
+            assetRepository.SetSyncAssetsConfiguration(syncConfiguration);
             assetRepository.SaveCatalog(null);
         }
 
-        public async Task<List<ImportNewAssetsResult>> ImportNewAssetsAsync(ProcessStatusChangedCallback callback) => await importNewAssetsService.ImportAsync(callback);
+        public async Task<List<SyncAssetsResult>> SyncAssetsAsync(ProcessStatusChangedCallback callback) => await syncAssetsService.ExecuteAsync(callback);
 
         public async Task CatalogAssetsAsync(CatalogChangeCallback callback) => await catalogAssetsService.CatalogAssetsAsync(callback);
 

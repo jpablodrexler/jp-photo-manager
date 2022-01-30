@@ -8,9 +8,9 @@ namespace JPPhotoManager.Application
     {
         Asset[] GetAssets(string directory);
         void LoadThumbnail(Asset asset);
-        ImportNewAssetsConfiguration GetImportNewAssetsConfiguration();
-        void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration);
-        Task<List<ImportNewAssetsResult>> ImportNewAssetsAsync(ProcessStatusChangedCallback callback);
+        SyncAssetsConfiguration GetSyncAssetsConfiguration();
+        void SetSyncAssetsConfiguration(SyncAssetsConfiguration syncConfiguration);
+        Task<List<SyncAssetsResult>> SyncAssetsAsync(ProcessStatusChangedCallback callback);
         Task CatalogAssetsAsync(CatalogChangeCallback callback);
         void SetAsWallpaper(Asset asset, WallpaperStyle style);
         List<List<Asset>> GetDuplicatedAssets();

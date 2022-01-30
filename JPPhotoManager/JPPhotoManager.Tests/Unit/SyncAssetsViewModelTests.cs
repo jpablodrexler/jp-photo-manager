@@ -9,24 +9,24 @@ using Xunit;
 
 namespace JPPhotoManager.Tests.Unit
 {
-    public class ImportNewAssetsViewModelTests
+    public class SyncAssetsViewModelTests
     {
         [Fact]
         public void ViewModelTest()
         {
-            var imports = new ObservableCollection<ImportNewAssetsDirectoriesDefinition>
+            var definitions = new ObservableCollection<SyncAssetsDirectoriesDefinition>
             {
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyGame1\Screenshots",
                     DestinationDirectory = @"C:\Images\MyGame1"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyGame2\Screenshots",
                     DestinationDirectory = @"C:\Images\MyGame2"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyGame3\Screenshots",
                     DestinationDirectory = @"C:\Images\MyGame3"
@@ -36,36 +36,36 @@ namespace JPPhotoManager.Tests.Unit
             Mock<IApplication> mock = new();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
-            ImportNewAssetsViewModel viewModel = new(mock.Object)
+            SyncAssetsViewModel viewModel = new(mock.Object)
             {
-                Imports = imports
+                Definitions = definitions
             };
 
-            viewModel.Imports.Should().HaveCount(3);
-            viewModel.Imports[0].SourceDirectory.Should().Be(@"C:\MyGame1\Screenshots");
-            viewModel.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame1");
-            viewModel.Imports[1].SourceDirectory.Should().Be(@"C:\MyGame2\Screenshots");
-            viewModel.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame2");
-            viewModel.Imports[2].SourceDirectory.Should().Be(@"C:\MyGame3\Screenshots");
-            viewModel.Imports[2].DestinationDirectory.Should().Be(@"C:\Images\MyGame3");
+            viewModel.Definitions.Should().HaveCount(3);
+            viewModel.Definitions[0].SourceDirectory.Should().Be(@"C:\MyGame1\Screenshots");
+            viewModel.Definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame1");
+            viewModel.Definitions[1].SourceDirectory.Should().Be(@"C:\MyGame2\Screenshots");
+            viewModel.Definitions[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame2");
+            viewModel.Definitions[2].SourceDirectory.Should().Be(@"C:\MyGame3\Screenshots");
+            viewModel.Definitions[2].DestinationDirectory.Should().Be(@"C:\Images\MyGame3");
         }
 
         [Fact]
         public void DeleteDefinitionTest()
         {
-            var imports = new ObservableCollection<ImportNewAssetsDirectoriesDefinition>
+            var definitions = new ObservableCollection<SyncAssetsDirectoriesDefinition>
             {
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyGame1\Screenshots",
                     DestinationDirectory = @"C:\Images\MyGame1"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyGame2\Screenshots",
                     DestinationDirectory = @"C:\Images\MyGame2"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyGame3\Screenshots",
                     DestinationDirectory = @"C:\Images\MyGame3"
@@ -75,37 +75,37 @@ namespace JPPhotoManager.Tests.Unit
             Mock<IApplication> mock = new();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
-            ImportNewAssetsViewModel viewModel = new(mock.Object)
+            SyncAssetsViewModel viewModel = new(mock.Object)
             {
-                Imports = imports
+                Definitions = definitions
             };
 
-            viewModel.DeleteDefinition(viewModel.Imports[1]);
+            viewModel.DeleteDefinition(viewModel.Definitions[1]);
 
-            viewModel.Imports.Should().HaveCount(2);
-            viewModel.Imports[0].SourceDirectory.Should().Be(@"C:\MyGame1\Screenshots");
-            viewModel.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame1");
-            viewModel.Imports[1].SourceDirectory.Should().Be(@"C:\MyGame3\Screenshots");
-            viewModel.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame3");
+            viewModel.Definitions.Should().HaveCount(2);
+            viewModel.Definitions[0].SourceDirectory.Should().Be(@"C:\MyGame1\Screenshots");
+            viewModel.Definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame1");
+            viewModel.Definitions[1].SourceDirectory.Should().Be(@"C:\MyGame3\Screenshots");
+            viewModel.Definitions[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame3");
         }
 
         [Fact]
         public void AdvanceStepTest()
         {
-            var results = new ObservableCollection<ImportNewAssetsResult>
+            var results = new ObservableCollection<SyncAssetsResult>
             {
-                new ImportNewAssetsResult
+                new SyncAssetsResult
                 {
                     SourceDirectory = @"C:\MyGame1\Screenshots",
                     DestinationDirectory = @"C:\Images\MyGame1",
-                    ImportedImages = 2,
-                    Message = "2 images imported"
+                    SyncedImages = 2,
+                    Message = "2 images synced"
                 }
             };
 
             Mock<IApplication> mock = new();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
-            ImportNewAssetsViewModel viewModel = new(mock.Object);
+            SyncAssetsViewModel viewModel = new(mock.Object);
 
             viewModel.Step.Should().Be(ProcessStepEnum.ViewDescription);
             viewModel.CanConfigure.Should().BeFalse();
@@ -145,19 +145,19 @@ namespace JPPhotoManager.Tests.Unit
         [Fact]
         public void MoveUpDefinitionTest()
         {
-            var imports = new ObservableCollection<ImportNewAssetsDirectoriesDefinition>
+            var definitions = new ObservableCollection<SyncAssetsDirectoriesDefinition>
             {
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyGame1\Screenshots",
                     DestinationDirectory = @"C:\Images\MyGame1"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyGame2\Screenshots",
                     DestinationDirectory = @"C:\Images\MyGame2"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyGame3\Screenshots",
                     DestinationDirectory = @"C:\Images\MyGame3"
@@ -167,38 +167,38 @@ namespace JPPhotoManager.Tests.Unit
             Mock<IApplication> mock = new();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
-            ImportNewAssetsViewModel viewModel = new(mock.Object)
+            SyncAssetsViewModel viewModel = new(mock.Object)
             {
-                Imports = imports
+                Definitions = definitions
             };
 
-            viewModel.MoveUpDefinition(viewModel.Imports[1]);
+            viewModel.MoveUpDefinition(viewModel.Definitions[1]);
 
-            viewModel.Imports.Should().HaveCount(3);
-            viewModel.Imports[0].SourceDirectory.Should().Be(@"C:\MyGame2\Screenshots");
-            viewModel.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame2");
-            viewModel.Imports[1].SourceDirectory.Should().Be(@"C:\MyGame1\Screenshots");
-            viewModel.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame1");
-            viewModel.Imports[2].SourceDirectory.Should().Be(@"C:\MyGame3\Screenshots");
-            viewModel.Imports[2].DestinationDirectory.Should().Be(@"C:\Images\MyGame3");
+            viewModel.Definitions.Should().HaveCount(3);
+            viewModel.Definitions[0].SourceDirectory.Should().Be(@"C:\MyGame2\Screenshots");
+            viewModel.Definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame2");
+            viewModel.Definitions[1].SourceDirectory.Should().Be(@"C:\MyGame1\Screenshots");
+            viewModel.Definitions[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame1");
+            viewModel.Definitions[2].SourceDirectory.Should().Be(@"C:\MyGame3\Screenshots");
+            viewModel.Definitions[2].DestinationDirectory.Should().Be(@"C:\Images\MyGame3");
         }
 
         [Fact]
         public void MoveDownDefinitionTest()
         {
-            var imports = new ObservableCollection<ImportNewAssetsDirectoriesDefinition>
+            var definitions = new ObservableCollection<SyncAssetsDirectoriesDefinition>
             {
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyGame1\Screenshots",
                     DestinationDirectory = @"C:\Images\MyGame1"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyGame2\Screenshots",
                     DestinationDirectory = @"C:\Images\MyGame2"
                 },
-                new ImportNewAssetsDirectoriesDefinition
+                new SyncAssetsDirectoriesDefinition
                 {
                     SourceDirectory = @"C:\MyGame3\Screenshots",
                     DestinationDirectory = @"C:\Images\MyGame3"
@@ -208,53 +208,53 @@ namespace JPPhotoManager.Tests.Unit
             Mock<IApplication> mock = new();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
-            ImportNewAssetsViewModel viewModel = new(mock.Object)
+            SyncAssetsViewModel viewModel = new(mock.Object)
             {
-                Imports = imports
+                Definitions = definitions
             };
 
-            viewModel.MoveDownDefinition(viewModel.Imports[1]);
+            viewModel.MoveDownDefinition(viewModel.Definitions[1]);
 
-            viewModel.Imports.Should().HaveCount(3);
-            viewModel.Imports[0].SourceDirectory.Should().Be(@"C:\MyGame1\Screenshots");
-            viewModel.Imports[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame1");
-            viewModel.Imports[1].SourceDirectory.Should().Be(@"C:\MyGame3\Screenshots");
-            viewModel.Imports[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame3");
-            viewModel.Imports[2].SourceDirectory.Should().Be(@"C:\MyGame2\Screenshots");
-            viewModel.Imports[2].DestinationDirectory.Should().Be(@"C:\Images\MyGame2");
+            viewModel.Definitions.Should().HaveCount(3);
+            viewModel.Definitions[0].SourceDirectory.Should().Be(@"C:\MyGame1\Screenshots");
+            viewModel.Definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MyGame1");
+            viewModel.Definitions[1].SourceDirectory.Should().Be(@"C:\MyGame3\Screenshots");
+            viewModel.Definitions[1].DestinationDirectory.Should().Be(@"C:\Images\MyGame3");
+            viewModel.Definitions[2].SourceDirectory.Should().Be(@"C:\MyGame2\Screenshots");
+            viewModel.Definitions[2].DestinationDirectory.Should().Be(@"C:\Images\MyGame2");
         }
 
         [Fact]
-        public void NotifyImportImageTest()
+        public void NotifySyncImageTest()
         {
             Mock<IApplication> mock = new();
             mock.Setup(app => app.GetInitialFolder()).Returns(@"C:\");
 
-            ImportNewAssetsViewModel viewModel = new(mock.Object);
+            SyncAssetsViewModel viewModel = new(mock.Object);
 
             viewModel.NotifyProcessStatusChanged(new ProcessStatusChangedCallbackEventArgs
             {
-                NewStatus = @"2 images imported from C:\MyGame1\Screenshots to C:\Images\MyGame1"
+                NewStatus = @"2 images synced from C:\MyGame1\Screenshots to C:\Images\MyGame1"
             });
 
             viewModel.ProcessStatusMessages.Should().ContainSingle();
-            viewModel.ProcessStatusMessages[0].Should().Be(@"2 images imported from C:\MyGame1\Screenshots to C:\Images\MyGame1");
+            viewModel.ProcessStatusMessages[0].Should().Be(@"2 images synced from C:\MyGame1\Screenshots to C:\Images\MyGame1");
 
             viewModel.NotifyProcessStatusChanged(new ProcessStatusChangedCallbackEventArgs
             {
-                NewStatus = @"2 images imported from C:\MyGame2\Screenshots to C:\Images\MyGame2"
+                NewStatus = @"2 images synced from C:\MyGame2\Screenshots to C:\Images\MyGame2"
             });
 
             viewModel.ProcessStatusMessages.Should().HaveCount(2);
-            viewModel.ProcessStatusMessages[1].Should().Be(@"2 images imported from C:\MyGame2\Screenshots to C:\Images\MyGame2");
+            viewModel.ProcessStatusMessages[1].Should().Be(@"2 images synced from C:\MyGame2\Screenshots to C:\Images\MyGame2");
 
             viewModel.NotifyProcessStatusChanged(new ProcessStatusChangedCallbackEventArgs
             {
-                NewStatus = @"2 images imported from C:\MyGame3\Screenshots to C:\Images\MyGame3"
+                NewStatus = @"2 images synced from C:\MyGame3\Screenshots to C:\Images\MyGame3"
             });
 
             viewModel.ProcessStatusMessages.Should().HaveCount(3);
-            viewModel.ProcessStatusMessages[2].Should().Be(@"2 images imported from C:\MyGame3\Screenshots to C:\Images\MyGame3");
+            viewModel.ProcessStatusMessages[2].Should().Be(@"2 images synced from C:\MyGame3\Screenshots to C:\Images\MyGame3");
         }
     }
 }

@@ -270,13 +270,13 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
-        private void ImportNewAssets_Click(object sender, RoutedEventArgs e)
+        private void SyncAssets_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                ImportNewAssetsViewModel viewModel = new(application);
-                ImportNewAssetsWindow importNewAssetsWindow = new(viewModel);
-                importNewAssetsWindow.ShowDialog();
+                SyncAssetsViewModel viewModel = new(application);
+                SyncAssetsWindow syncAssetsWindow = new(viewModel);
+                syncAssetsWindow.ShowDialog();
             }
             catch (Exception ex)
             {

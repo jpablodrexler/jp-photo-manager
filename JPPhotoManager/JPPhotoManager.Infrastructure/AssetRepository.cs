@@ -92,7 +92,8 @@ namespace JPPhotoManager.Infrastructure
                 {
                     new ColumnProperties { ColumnName = "SourceDirectory" },
                     new ColumnProperties { ColumnName = "DestinationDirectory" },
-                    new ColumnProperties { ColumnName = "IncludeSubFolders" }
+                    new ColumnProperties { ColumnName = "IncludeSubFolders" },
+                    new ColumnProperties { ColumnName = "DeleteAssetsNotInSource" }
                 }
             });
 
@@ -113,8 +114,8 @@ namespace JPPhotoManager.Infrastructure
             AssetCatalog.Assets.AddRange(ReadAssets());
             AssetCatalog.Folders.Clear();
             AssetCatalog.Folders.AddRange(ReadFolders());
-            AssetCatalog.ImportNewAssetsConfiguration.Imports.Clear();
-            AssetCatalog.ImportNewAssetsConfiguration.Imports.AddRange(ReadImportDefinitions());
+            AssetCatalog.SyncAssetsConfiguration.Definitions.Clear();
+            AssetCatalog.SyncAssetsConfiguration.Definitions.AddRange(ReadSyncDefinitions());
             AssetCatalog.Assets.ForEach(a => a.Folder = GetFolderById(a.FolderId));
             AssetCatalog.RecentTargetPaths.AddRange(ReadRecentTargetPaths());
         }
@@ -127,7 +128,7 @@ namespace JPPhotoManager.Infrastructure
                 {
                     WriteAssets(AssetCatalog.Assets);
                     WriteFolders(AssetCatalog.Folders);
-                    WriteImports(AssetCatalog.ImportNewAssetsConfiguration.Imports);
+                    WriteSyncDefinitions(AssetCatalog.SyncAssetsConfiguration.Definitions);
                     WriteRecentTargetPaths(AssetCatalog.RecentTargetPaths);
                 }
 
@@ -213,18 +214,19 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
-        public List<ImportNewAssetsDirectoriesDefinition> ReadImportDefinitions()
+        public List<SyncAssetsDirectoriesDefinition> ReadSyncDefinitions()
         {
-            List<ImportNewAssetsDirectoriesDefinition> result;
+            List<SyncAssetsDirectoriesDefinition> result;
 
             try
             {
                 result = database.ReadObjectList("Import", f =>
-                    new ImportNewAssetsDirectoriesDefinition
+                    new SyncAssetsDirectoriesDefinition
                     {
                         SourceDirectory = f[0],
                         DestinationDirectory = f[1],
-                        IncludeSubFolders = bool.Parse(f[2])
+                        IncludeSubFolders = bool.Parse(f[2]),
+                        DeleteAssetsNotInSource = f.Length > 3 && bool.Parse(f[3])
                     });
             }
             catch (ArgumentException ex)
@@ -295,15 +297,16 @@ namespace JPPhotoManager.Infrastructure
             });
         }
 
-        public void WriteImports(List<ImportNewAssetsDirectoriesDefinition> imports)
+        public void WriteSyncDefinitions(List<SyncAssetsDirectoriesDefinition> definitions)
         {
-            database.WriteObjectList(imports, "Import", (d, i) =>
+            database.WriteObjectList(definitions, "Import", (d, i) =>
             {
                 return i switch
                 {
                     0 => d.SourceDirectory,
                     1 => d.DestinationDirectory,
                     2 => d.IncludeSubFolders,
+                    3 => d.DeleteAssetsNotInSource,
                     _ => throw new ArgumentOutOfRangeException(nameof(i))
                 };
             });
@@ -683,23 +686,23 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
-        public ImportNewAssetsConfiguration GetImportNewAssetsConfiguration()
+        public SyncAssetsConfiguration GetSyncAssetsConfiguration()
         {
-            ImportNewAssetsConfiguration result;
+            SyncAssetsConfiguration result;
 
             lock (AssetCatalog)
             {
-                result = AssetCatalog.ImportNewAssetsConfiguration;
+                result = AssetCatalog.SyncAssetsConfiguration;
             }
 
             return result;
         }
 
-        public void SetImportNewAssetsConfiguration(ImportNewAssetsConfiguration importConfiguration)
+        public void SetSyncAssetsConfiguration(SyncAssetsConfiguration syncConfiguration)
         {
             lock (AssetCatalog)
             {
-                AssetCatalog.ImportNewAssetsConfiguration = importConfiguration;
+                AssetCatalog.SyncAssetsConfiguration = syncConfiguration;
                 AssetCatalog.HasChanges = true;
             }
         }

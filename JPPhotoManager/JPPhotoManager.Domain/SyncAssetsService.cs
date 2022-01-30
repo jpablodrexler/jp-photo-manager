@@ -3,13 +3,13 @@ using System.IO;
 
 namespace JPPhotoManager.Domain
 {
-    public class ImportNewAssetsService : IImportNewAssetsService
+    public class SyncAssetsService : ISyncAssetsService
     {
         private readonly IAssetRepository assetRepository;
         private readonly IStorageService storageService;
         private readonly IDirectoryComparer directoryComparer;
 
-        public ImportNewAssetsService(
+        public SyncAssetsService(
             IAssetRepository assetRepository,
             IStorageService storageService,
             IDirectoryComparer directoryComparer)
@@ -19,25 +19,25 @@ namespace JPPhotoManager.Domain
             this.directoryComparer = directoryComparer;
         }
 
-        public async Task<List<ImportNewAssetsResult>> ImportAsync(ProcessStatusChangedCallback callback)
+        public async Task<List<SyncAssetsResult>> ExecuteAsync(ProcessStatusChangedCallback callback)
         {
             return await Task.Run(() =>
             {
-                List<ImportNewAssetsResult> result = new();
-                var configuration = assetRepository.GetImportNewAssetsConfiguration();
+                List<SyncAssetsResult> result = new();
+                var configuration = assetRepository.GetSyncAssetsConfiguration();
 
-                foreach (var import in configuration.Imports)
+                foreach (var definition in configuration.Definitions)
                 {
-                    Import(import.SourceDirectory, import.DestinationDirectory, import.IncludeSubFolders, callback, result);
+                    Execute(definition.SourceDirectory, definition.DestinationDirectory, definition.IncludeSubFolders, callback, result);
                 }
 
                 return result;
             });
         }
 
-        private void Import(string sourceDirectory, string destinationDirectory, bool includeSubFolders, ProcessStatusChangedCallback callback, List<ImportNewAssetsResult> resultList)
+        private void Execute(string sourceDirectory, string destinationDirectory, bool includeSubFolders, ProcessStatusChangedCallback callback, List<SyncAssetsResult> resultList)
         {
-            ImportNewAssetsResult result = new()
+            SyncAssetsResult result = new()
             {
                 SourceDirectory = sourceDirectory,
                 DestinationDirectory = destinationDirectory
@@ -69,23 +69,23 @@ namespace JPPhotoManager.Domain
 
                         if (storageService.CopyImage(sourcePath, destinationPath))
                         {
-                            result.ImportedImages++;
+                            result.SyncedImages++;
                             callback(new ProcessStatusChangedCallbackEventArgs { NewStatus = $"'{sourcePath}' => '{destinationPath}'" });
                         }
                     }
 
-                    switch (result.ImportedImages)
+                    switch (result.SyncedImages)
                     {
                         case 0:
-                            result.Message = $"No images imported from '{sourceDirectory}' to '{destinationDirectory}'.";
+                            result.Message = $"No images synced from '{sourceDirectory}' to '{destinationDirectory}'.";
                             break;
 
                         case 1:
-                            result.Message = $"{result.ImportedImages} image imported from '{sourceDirectory}' to '{destinationDirectory}'.";
+                            result.Message = $"{result.SyncedImages} image synced from '{sourceDirectory}' to '{destinationDirectory}'.";
                             break;
 
                         default:
-                            result.Message = $"{result.ImportedImages} images imported from '{sourceDirectory}' to '{destinationDirectory}'.";
+                            result.Message = $"{result.SyncedImages} images synced from '{sourceDirectory}' to '{destinationDirectory}'.";
                             break;
                     }
 
@@ -99,7 +99,7 @@ namespace JPPhotoManager.Domain
                         {
                             foreach (var subdir in subdirectories)
                             {
-                                Import(subdir.FullName, Path.Combine(destinationDirectory, subdir.Name), includeSubFolders, callback, resultList);
+                                Execute(subdir.FullName, Path.Combine(destinationDirectory, subdir.Name), includeSubFolders, callback, resultList);
                             }
                         }
                     }

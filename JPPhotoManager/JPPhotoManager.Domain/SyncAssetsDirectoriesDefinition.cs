@@ -2,7 +2,7 @@
 
 namespace JPPhotoManager.Domain
 {
-    public class ImportNewAssetsDirectoriesDefinition
+    public class SyncAssetsDirectoriesDefinition
     {
         private const string LOCAL_PATH_PATTERN = "^([A-Za-z])(:)(\\[A-Za-z0-9]*)*";
         private const string REMOTE_PATH_PATTERN = "^(\\\\)(\\[A-Za-z0-9]*)*";
@@ -10,6 +10,7 @@ namespace JPPhotoManager.Domain
         public string SourceDirectory { get; set; }
         public string DestinationDirectory { get; set; }
         public bool IncludeSubFolders { get; set; }
+        public bool DeleteAssetsNotInSource { get; set; }
 
         internal bool IsValid()
         {
