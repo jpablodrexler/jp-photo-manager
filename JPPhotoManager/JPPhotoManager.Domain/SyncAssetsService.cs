@@ -28,14 +28,24 @@ namespace JPPhotoManager.Domain
 
                 foreach (var definition in configuration.Definitions)
                 {
-                    Execute(definition.SourceDirectory, definition.DestinationDirectory, definition.IncludeSubFolders, callback, result);
+                    Execute(definition.SourceDirectory,
+                        definition.DestinationDirectory,
+                        definition.IncludeSubFolders,
+                        definition.DeleteAssetsNotInSource,
+                        callback,
+                        result);
                 }
 
                 return result;
             });
         }
 
-        private void Execute(string sourceDirectory, string destinationDirectory, bool includeSubFolders, ProcessStatusChangedCallback callback, List<SyncAssetsResult> resultList)
+        private void Execute(string sourceDirectory,
+            string destinationDirectory,
+            bool includeSubFolders,
+            bool deleteAssetsNotInSource,
+            ProcessStatusChangedCallback callback,
+            List<SyncAssetsResult> resultList)
         {
             SyncAssetsResult result = new()
             {
@@ -74,6 +84,21 @@ namespace JPPhotoManager.Domain
                         }
                     }
 
+                    // TODO: Detect and sync updated assets.
+
+                    if (deleteAssetsNotInSource)
+                    {
+                        string[] deletedFileNames = directoryComparer.GetDeletedFileNames(sourceFileNames, destinationFileNames);
+
+                        foreach (string deletedImage in deletedFileNames)
+                        {
+                            string destinationPath = Path.Combine(destinationDirectory, deletedImage);
+                            storageService.DeleteFile(destinationDirectory, deletedImage);
+                            result.SyncedImages++;
+                            callback(new ProcessStatusChangedCallbackEventArgs { NewStatus = $"Deleted '{destinationPath}'" });
+                        }
+                    }
+                    
                     switch (result.SyncedImages)
                     {
                         case 0:
@@ -99,7 +124,12 @@ namespace JPPhotoManager.Domain
                         {
                             foreach (var subdir in subdirectories)
                             {
-                                Execute(subdir.FullName, Path.Combine(destinationDirectory, subdir.Name), includeSubFolders, callback, resultList);
+                                Execute(subdir.FullName,
+                                    Path.Combine(destinationDirectory, subdir.Name),
+                                    includeSubFolders,
+                                    deleteAssetsNotInSource,
+                                    callback,
+                                    resultList);
                             }
                         }
                     }

@@ -15,7 +15,8 @@ namespace JPPhotoManager.UI.ViewModels
 
         public override string Description => "This process allows to sync new assets to the catalog. " +
             "You can configure one or multiple sync operations by entering a source path and a destination path. " +
-            "You can specify if the sync operation should also include sub-folders.";
+            "You can specify if the sync operation should also include sub-folders. " +
+            "There is also the option to delete from the destination path the assets not present in the source path.";
 
         public ObservableCollection<SyncAssetsDirectoriesDefinition>? Definitions
         {

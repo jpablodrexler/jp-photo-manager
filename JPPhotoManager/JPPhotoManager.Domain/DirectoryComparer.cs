@@ -51,5 +51,10 @@ namespace JPPhotoManager.Domain
         {
             return cataloguedAssets.Select(ca => ca.FileName).Except(fileNames).ToArray();
         }
+
+        public string[] GetDeletedFileNames(string[] fileNames, string[] destinationFileNames)
+        {
+            return destinationFileNames.Except(fileNames).ToArray();
+        }
     }
 }
