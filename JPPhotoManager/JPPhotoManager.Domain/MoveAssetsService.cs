@@ -112,7 +112,7 @@ namespace JPPhotoManager.Domain
             recentTargetPaths.Insert(0, destinationFolder.Path);
 
             recentTargetPaths = recentTargetPaths.Take(RECENT_TARGET_PATHS_MAX_COUNT).ToList();
-            assetRepository.SetRecentTargetPaths(recentTargetPaths);
+            assetRepository.SaveRecentTargetPaths(recentTargetPaths);
         }
 
         public void DeleteAssets(Asset[] assets, bool deleteFiles, bool saveCatalog = true)

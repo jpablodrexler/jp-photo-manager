@@ -276,7 +276,7 @@ namespace JPPhotoManager.Tests.Integration
                     DestinationDirectory = @"C:\Images\MySecondGame"
                 });
 
-            repository.SetSyncAssetsConfiguration(syncConfiguration);
+            repository.SaveSyncAssetsConfiguration(syncConfiguration);
             repository.SaveCatalog(null);
 
             syncConfiguration = repository.GetSyncAssetsConfiguration();

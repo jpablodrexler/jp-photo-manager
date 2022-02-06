@@ -71,7 +71,7 @@ namespace JPPhotoManager.Application
         {
             syncConfiguration.Validate();
             syncConfiguration.Normalize();
-            assetRepository.SetSyncAssetsConfiguration(syncConfiguration);
+            assetRepository.SaveSyncAssetsConfiguration(syncConfiguration);
             assetRepository.SaveCatalog(null);
         }
 

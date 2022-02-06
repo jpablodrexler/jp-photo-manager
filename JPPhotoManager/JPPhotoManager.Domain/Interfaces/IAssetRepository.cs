@@ -24,8 +24,8 @@ namespace JPPhotoManager.Domain.Interfaces
         BitmapImage LoadThumbnail(string directoryName, string fileName, int width, int height);
         bool FolderHasThumbnails(Folder folder);
         SyncAssetsConfiguration GetSyncAssetsConfiguration();
-        void SetSyncAssetsConfiguration(SyncAssetsConfiguration syncConfiguration);
+        void SaveSyncAssetsConfiguration(SyncAssetsConfiguration syncAssetsConfiguration);
         List<string> GetRecentTargetPaths();
-        void SetRecentTargetPaths(List<string> recentTargetPaths);
+        void SaveRecentTargetPaths(List<string> recentTargetPaths);
     }
 }
