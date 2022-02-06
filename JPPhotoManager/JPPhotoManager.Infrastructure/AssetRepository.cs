@@ -27,6 +27,7 @@ namespace JPPhotoManager.Infrastructure
         private SyncAssetsConfiguration syncAssetsConfiguration;
         private List<string> recentTargetPaths;
         protected Dictionary<string, Dictionary<string, byte[]>> Thumbnails { get; private set; }
+        private Queue<string> recentThumbnailsQueue;
         private bool hasChanges;
         private object syncLock;
 
@@ -36,6 +37,7 @@ namespace JPPhotoManager.Infrastructure
             this.storageService = storageService;
             this.userConfigurationService = userConfigurationService;
             Thumbnails = new Dictionary<string, Dictionary<string, byte[]>>();
+            recentThumbnailsQueue = new Queue<string>();
             syncLock = new object();
             Initialize();
         }
@@ -340,10 +342,10 @@ namespace JPPhotoManager.Infrastructure
             File.Delete(thumbnailsFilePath);
         }
 
-        protected virtual Dictionary<string, byte[]> GetThumbnails(string thumbnailsFileName, out bool isNewFile)
+        protected virtual Dictionary<string, byte[]> GetThumbnails(Folder folder, out bool isNewFile)
         {
             isNewFile = false;
-            Dictionary<string, byte[]> thumbnails = (Dictionary<string, byte[]>)database.ReadBlob(thumbnailsFileName);
+            Dictionary<string, byte[]> thumbnails = (Dictionary<string, byte[]>)database.ReadBlob(folder.ThumbnailsFilename);
 
             if (thumbnails == null)
             {
@@ -351,6 +353,17 @@ namespace JPPhotoManager.Infrastructure
                 isNewFile = true;
             }
 
+            if (!recentThumbnailsQueue.Contains(folder.Path))
+            {
+                recentThumbnailsQueue.Enqueue(folder.Path);
+            }
+
+            if (recentThumbnailsQueue.Count > 5) // TODO: This number should be configurable or calculated in some way.
+            {
+                string pathToRemove = recentThumbnailsQueue.Dequeue();
+                thumbnails.Remove(pathToRemove);
+            }
+            
             return thumbnails;
         }
 
@@ -384,7 +397,7 @@ namespace JPPhotoManager.Infrastructure
                     if (folder != null)
                     {
                         assetsList = GetAssetsByFolderId(folder.FolderId);
-                        var thumbnails = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
+                        var thumbnails = GetThumbnails(folder, out bool isNewFile);
 
                         if (!isNewFile)
                         {
@@ -474,7 +487,7 @@ namespace JPPhotoManager.Infrastructure
 
                 if (!Thumbnails.ContainsKey(asset.Folder.Path))
                 {
-                    Thumbnails[asset.Folder.Path] = GetThumbnails(asset.Folder.ThumbnailsFilename, out bool isNewFile);
+                    Thumbnails[asset.Folder.Path] = GetThumbnails(asset.Folder, out bool isNewFile);
                 }
 
                 Thumbnails[asset.Folder.Path][asset.FileName] = thumbnailData;
@@ -562,7 +575,7 @@ namespace JPPhotoManager.Infrastructure
 
                     if (!Thumbnails.ContainsKey(folder.Path))
                     {
-                        Thumbnails[folder.Path] = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
+                        Thumbnails[folder.Path] = GetThumbnails(folder, out bool isNewFile);
                     }
 
                     if (Thumbnails.ContainsKey(folder.Path))
@@ -652,7 +665,7 @@ namespace JPPhotoManager.Infrastructure
                 if (!Thumbnails.ContainsKey(directoryName))
                 {
                     Folder folder = GetFolderByPath(directoryName);
-                    Thumbnails[directoryName] = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
+                    Thumbnails[directoryName] = GetThumbnails(folder, out bool isNewFile);
                 }
 
                 result = Thumbnails[directoryName].ContainsKey(fileName);
@@ -670,7 +683,7 @@ namespace JPPhotoManager.Infrastructure
                 if (!Thumbnails.ContainsKey(directoryName))
                 {
                     Folder folder = GetFolderByPath(directoryName);
-                    Thumbnails[directoryName] = GetThumbnails(folder.ThumbnailsFilename, out bool isNewFile);
+                    Thumbnails[directoryName] = GetThumbnails(folder, out bool isNewFile);
                 }
 
                 if (Thumbnails[directoryName].ContainsKey(fileName))
