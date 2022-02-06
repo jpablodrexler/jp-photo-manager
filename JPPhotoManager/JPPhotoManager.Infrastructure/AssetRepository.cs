@@ -358,12 +358,14 @@ namespace JPPhotoManager.Infrastructure
 
         private void RemoveOldThumbnailsDictionaryEntries(Folder folder)
         {
+            int entriesToKeep = userConfigurationService.GetThumbnailsDictionaryEntriesToKeep();
+
             if (!recentThumbnailsQueue.Contains(folder.Path))
             {
                 recentThumbnailsQueue.Enqueue(folder.Path);
             }
 
-            if (recentThumbnailsQueue.Count > 5) // TODO: This number should be configurable or calculated in some way.
+            if (recentThumbnailsQueue.Count > entriesToKeep)
             {
                 string pathToRemove = recentThumbnailsQueue.Dequeue();
                 this.Thumbnails.Remove(pathToRemove);

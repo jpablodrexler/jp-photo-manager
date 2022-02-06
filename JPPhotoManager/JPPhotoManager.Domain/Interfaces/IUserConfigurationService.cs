@@ -13,6 +13,7 @@ namespace JPPhotoManager.Domain.Interfaces
         int GetCatalogBatchSize();
         int GetCatalogCooldownMinutes();
         int GetBackupsToKeep();
+        int GetThumbnailsDictionaryEntriesToKeep();
         string[] GetRootCatalogFolderPaths();
         string GetRepositoryOwner();
         string GetRepositoryName();
