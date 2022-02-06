@@ -27,7 +27,8 @@ namespace JPPhotoManager.Tests.Integration
                 .MockGetValue("appsettings:InitialDirectory", dataDirectory)
                 .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))
                 .MockGetValue("appsettings:CatalogBatchSize", "100")
-                .MockGetValue("appsettings:BackupsToKeep", "2");
+                .MockGetValue("appsettings:BackupsToKeep", "2")
+                .MockGetValue("appsettings:ThumbnailsDictionaryEntriesToKeep", "5");
 
             configuration = configurationMock.Object;
         }
