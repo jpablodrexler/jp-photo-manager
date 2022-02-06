@@ -353,6 +353,7 @@ namespace JPPhotoManager.Infrastructure
                 isNewFile = true;
             }
 
+            // TODO: Move this logic to avoid the method having side effects.
             if (!recentThumbnailsQueue.Contains(folder.Path))
             {
                 recentThumbnailsQueue.Enqueue(folder.Path);
