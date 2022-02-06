@@ -353,7 +353,11 @@ namespace JPPhotoManager.Infrastructure
                 isNewFile = true;
             }
 
-            // TODO: Move this logic to avoid the method having side effects.
+            return thumbnails;
+        }
+
+        private void RemoveOldThumbnailsDictionaryEntries(Folder folder)
+        {
             if (!recentThumbnailsQueue.Contains(folder.Path))
             {
                 recentThumbnailsQueue.Enqueue(folder.Path);
@@ -364,8 +368,6 @@ namespace JPPhotoManager.Infrastructure
                 string pathToRemove = recentThumbnailsQueue.Dequeue();
                 this.Thumbnails.Remove(pathToRemove);
             }
-            
-            return thumbnails;
         }
 
         public bool HasChanges()
@@ -403,6 +405,7 @@ namespace JPPhotoManager.Infrastructure
                         if (!Thumbnails.ContainsKey(folder.Path))
                         {
                             Thumbnails[folder.Path] = GetThumbnails(folder, out isNewFile);
+                            RemoveOldThumbnailsDictionaryEntries(folder);
                         }
 
                         if (!isNewFile)
@@ -494,6 +497,7 @@ namespace JPPhotoManager.Infrastructure
                 if (!Thumbnails.ContainsKey(asset.Folder.Path))
                 {
                     Thumbnails[asset.Folder.Path] = GetThumbnails(asset.Folder, out bool isNewFile);
+                    RemoveOldThumbnailsDictionaryEntries(asset.Folder);
                 }
 
                 Thumbnails[asset.Folder.Path][asset.FileName] = thumbnailData;
@@ -582,6 +586,7 @@ namespace JPPhotoManager.Infrastructure
                     if (!Thumbnails.ContainsKey(folder.Path))
                     {
                         Thumbnails[folder.Path] = GetThumbnails(folder, out bool isNewFile);
+                        RemoveOldThumbnailsDictionaryEntries(folder);
                     }
 
                     if (Thumbnails.ContainsKey(folder.Path))
@@ -672,6 +677,7 @@ namespace JPPhotoManager.Infrastructure
                 {
                     Folder folder = GetFolderByPath(directoryName);
                     Thumbnails[directoryName] = GetThumbnails(folder, out bool isNewFile);
+                    RemoveOldThumbnailsDictionaryEntries(folder);
                 }
 
                 result = Thumbnails[directoryName].ContainsKey(fileName);
@@ -690,6 +696,7 @@ namespace JPPhotoManager.Infrastructure
                 {
                     Folder folder = GetFolderByPath(directoryName);
                     Thumbnails[directoryName] = GetThumbnails(folder, out bool isNewFile);
+                    RemoveOldThumbnailsDictionaryEntries(folder);
                 }
 
                 if (Thumbnails[directoryName].ContainsKey(fileName))
