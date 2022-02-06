@@ -362,7 +362,7 @@ namespace JPPhotoManager.Infrastructure
             if (recentThumbnailsQueue.Count > 5) // TODO: This number should be configurable or calculated in some way.
             {
                 string pathToRemove = recentThumbnailsQueue.Dequeue();
-                thumbnails.Remove(pathToRemove);
+                this.Thumbnails.Remove(pathToRemove);
             }
             
             return thumbnails;
@@ -388,6 +388,7 @@ namespace JPPhotoManager.Infrastructure
         public Asset[] GetAssets(string directory)
         {
             List<Asset> assetsList = null;
+            bool isNewFile = false;
 
             try
             {
@@ -398,15 +399,19 @@ namespace JPPhotoManager.Infrastructure
                     if (folder != null)
                     {
                         assetsList = GetAssetsByFolderId(folder.FolderId);
-                        var thumbnails = GetThumbnails(folder, out bool isNewFile);
+
+                        if (!Thumbnails.ContainsKey(folder.Path))
+                        {
+                            Thumbnails[folder.Path] = GetThumbnails(folder, out isNewFile);
+                        }
 
                         if (!isNewFile)
                         {
                             foreach (Asset asset in assetsList)
                             {
-                                if (thumbnails.ContainsKey(asset.FileName))
+                                if (Thumbnails[folder.Path].ContainsKey(asset.FileName))
                                 {
-                                    asset.ImageData = storageService.LoadBitmapImage(thumbnails[asset.FileName], asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
+                                    asset.ImageData = storageService.LoadBitmapImage(Thumbnails[folder.Path][asset.FileName], asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
                                 }
                             }
 
