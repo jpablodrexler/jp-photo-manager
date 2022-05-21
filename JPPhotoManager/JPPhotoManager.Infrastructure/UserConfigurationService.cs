@@ -15,6 +15,7 @@ namespace JPPhotoManager.Infrastructure
         private const int SPIF_UPDATEINIFILE = 0x01;
         private const int SPIF_SENDWININICHANGE = 0x02;
         private const string INITIAL_DIRECTORY_KEY = "appsettings:InitialDirectory";
+        private const string ADDITIONAL_PHOTOS_DIRECTORIES_KEY = "appsettings:AdditionalPhotosDirectories";
         private const string MY_PICTURES_VALUE = "{MyPictures}";
         private const string APPLICATION_DATA_DIRECTORY_KEY = "appsettings:ApplicationDataDirectory";
         private const string APPLICATION_DATA_VALUE = "{ApplicationData}";
@@ -136,6 +137,20 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
+        public string[] AdditionalPhotosDirectories()
+        {
+            string[] result;
+            string additionalPicturesDirectoriesValue = configuration.GetValue<string>(ADDITIONAL_PHOTOS_DIRECTORIES_KEY);
+
+            if (string.IsNullOrWhiteSpace(additionalPicturesDirectoriesValue))
+                return Array.Empty<string>();
+
+            additionalPicturesDirectoriesValue = additionalPicturesDirectoriesValue.Replace(MY_PICTURES_VALUE, Environment.GetFolderPath(Environment.SpecialFolder.MyPictures));
+            result = additionalPicturesDirectoriesValue.Split(';');
+
+            return result;
+        }
+
         public string GetApplicationDataFolder()
         {
             string result = configuration.GetValue<string>(APPLICATION_DATA_DIRECTORY_KEY);
@@ -182,15 +197,16 @@ namespace JPPhotoManager.Infrastructure
 
         public string[] GetRootCatalogFolderPaths()
         {
-            // TODO: Allow the user to configure additional root folders.
             // TODO: Validate if some of the root folders are not valid or don't exist any longer.
-            string[] rootPaths = new string[]
+            List<string> rootPaths = new()
             {
                 GetOneDriveDirectory(),
                 GetPicturesDirectory()
             };
 
-            return rootPaths;
+            rootPaths.AddRange(AdditionalPhotosDirectories());
+
+            return rootPaths.ToArray();
         }
     }
 }
