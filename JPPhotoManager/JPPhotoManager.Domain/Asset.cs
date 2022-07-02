@@ -22,8 +22,14 @@ namespace JPPhotoManager.Domain
         public string Hash { get; set; }
         public BitmapImage ImageData { get; set; }
         public string FullPath => Folder != null ? Path.Combine(Folder.Path, FileName) : FileName;
+        public string ThumbnailBlobName => GetThumbnailBlobName(FullPath);
         public DateTime FileCreationDateTime { get; set; }
         public DateTime FileModificationDateTime { get; set; }
+
+        public static string GetThumbnailBlobName(string fullPath)
+        {
+            return fullPath.Replace(Path.PathSeparator, '_').Replace("\\", "_").Replace(":", "_") + ".bin";
+        }
 
         public static bool IsValidBatchFormat(string batchFormat)
         {
