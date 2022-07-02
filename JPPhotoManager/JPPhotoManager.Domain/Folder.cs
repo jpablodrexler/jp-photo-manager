@@ -4,7 +4,6 @@
     {
         public string FolderId { get; set; }
         public string Path { get; set; }
-        public string ThumbnailsFilename => FolderId + ".bin";
 
         public string Name
         {

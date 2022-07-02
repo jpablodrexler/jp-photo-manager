@@ -13,7 +13,7 @@ namespace JPPhotoManager.Infrastructure
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private const double STORAGE_VERSION = 1.0;
+        private const double STORAGE_VERSION = 1.1;
         private const string SEPARATOR = "|";
 
         public bool IsInitialized { get; private set; }
@@ -26,7 +26,7 @@ namespace JPPhotoManager.Infrastructure
         private List<Folder> folders;
         private SyncAssetsConfiguration syncAssetsConfiguration;
         private List<string> recentTargetPaths;
-        protected Dictionary<string, Dictionary<string, byte[]>> Thumbnails { get; private set; }
+        protected Dictionary<string, byte[]> Thumbnails { get; private set; }
         private Queue<string> recentThumbnailsQueue;
         private bool hasChanges;
         private object syncLock;
@@ -36,7 +36,7 @@ namespace JPPhotoManager.Infrastructure
             this.database = database;
             this.storageService = storageService;
             this.userConfigurationService = userConfigurationService;
-            Thumbnails = new Dictionary<string, Dictionary<string, byte[]>>();
+            Thumbnails = new Dictionary<string, byte[]>();
             recentThumbnailsQueue = new Queue<string>();
             syncLock = new object();
             Initialize();
@@ -137,11 +137,6 @@ namespace JPPhotoManager.Infrastructure
                 }
 
                 hasChanges = false;
-
-                if (Thumbnails != null && folder != null && Thumbnails.ContainsKey(folder.Path))
-                {
-                    SaveThumbnails(Thumbnails[folder.Path], folder.ThumbnailsFilename);
-                }
             }
         }
 
@@ -328,32 +323,26 @@ namespace JPPhotoManager.Infrastructure
             });
         }
 
-        public bool FolderHasThumbnails(Folder folder)
-        {
-            string thumbnailsFilePath = database.ResolveBlobFilePath(dataDirectory, folder.ThumbnailsFilename);
-            // TODO: Implement through the NuGet package.
-            return File.Exists(thumbnailsFilePath);
-        }
-
         private void DeleteThumbnails(Folder folder)
         {
-            // TODO: Implement through the NuGet package.
-            string thumbnailsFilePath = database.ResolveBlobFilePath(dataDirectory, folder.ThumbnailsFilename);
-            File.Delete(thumbnailsFilePath);
+            var assets = GetAssetsByFolderId(folder.FolderId);
+
+            foreach (var asset in assets)
+            {
+                DeleteThumbnail(asset);
+            }
         }
 
-        protected virtual Dictionary<string, byte[]> GetThumbnails(Folder folder, out bool isNewFile)
+        private void DeleteThumbnail(Asset asset)
         {
-            isNewFile = false;
-            Dictionary<string, byte[]> thumbnails = (Dictionary<string, byte[]>)database.ReadBlob(folder.ThumbnailsFilename);
-
-            if (thumbnails == null)
+            if (Thumbnails.ContainsKey(asset.ThumbnailBlobName))
             {
-                thumbnails = new Dictionary<string, byte[]>();
-                isNewFile = true;
+                Thumbnails.Remove(asset.ThumbnailBlobName);
             }
 
-            return thumbnails;
+            // TODO: Implement through the NuGet package.
+            string thumbnailsFilePath = database.ResolveBlobFilePath(dataDirectory, asset.ThumbnailBlobName);
+            File.Delete(thumbnailsFilePath);
         }
 
         private void RemoveOldThumbnailsDictionaryEntries(Folder folder)
@@ -367,8 +356,17 @@ namespace JPPhotoManager.Infrastructure
 
             if (recentThumbnailsQueue.Count > entriesToKeep)
             {
-                string pathToRemove = recentThumbnailsQueue.Dequeue();
-                this.Thumbnails.Remove(pathToRemove);
+                var pathToRemove = recentThumbnailsQueue.Dequeue();
+                var folderToRemove = GetFolderByPath(pathToRemove);
+                var assets = GetAssetsByFolderId(folderToRemove.FolderId);
+
+                foreach (var asset in assets)
+                {
+                    if (Thumbnails.ContainsKey(asset.ThumbnailBlobName))
+                    {
+                        Thumbnails.Remove(asset.ThumbnailBlobName);
+                    }
+                }
             }
         }
 
@@ -406,7 +404,6 @@ namespace JPPhotoManager.Infrastructure
 
                         if (!Thumbnails.ContainsKey(folder.Path))
                         {
-                            Thumbnails[folder.Path] = GetThumbnails(folder, out isNewFile);
                             RemoveOldThumbnailsDictionaryEntries(folder);
                         }
 
@@ -414,10 +411,13 @@ namespace JPPhotoManager.Infrastructure
                         {
                             foreach (Asset asset in assetsList)
                             {
-                                if (Thumbnails[folder.Path].ContainsKey(asset.FileName))
+                                if (!Thumbnails.ContainsKey(asset.FullPath))
                                 {
-                                    asset.ImageData = storageService.LoadBitmapImage(Thumbnails[folder.Path][asset.FileName], asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
+                                    var bytes = (byte[])database.ReadBlob(asset.ThumbnailBlobName);
+                                    Thumbnails[asset.FullPath] = bytes;
                                 }
+                                
+                                asset.ImageData = storageService.LoadBitmapImage(Thumbnails[asset.FullPath], asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
                             }
 
                             // Removes assets with no thumbnails.
@@ -496,13 +496,8 @@ namespace JPPhotoManager.Infrastructure
                     AddFolder(asset.Folder.Path);
                 }
 
-                if (!Thumbnails.ContainsKey(asset.Folder.Path))
-                {
-                    Thumbnails[asset.Folder.Path] = GetThumbnails(asset.Folder, out bool isNewFile);
-                    RemoveOldThumbnailsDictionaryEntries(asset.Folder);
-                }
-
-                Thumbnails[asset.Folder.Path][asset.FileName] = thumbnailData;
+                Thumbnails[asset.ThumbnailBlobName] = thumbnailData;
+                database.WriteBlob(thumbnailData, asset.ThumbnailBlobName);
                 assets.Add(asset);
                 hasChanges = true;
             }
@@ -585,15 +580,9 @@ namespace JPPhotoManager.Infrastructure
                 {
                     Asset deletedAsset = GetAssetByFolderIdFileName(folder.FolderId, fileName);
 
-                    if (!Thumbnails.ContainsKey(folder.Path))
+                    if (Thumbnails.ContainsKey(deletedAsset.ThumbnailBlobName))
                     {
-                        Thumbnails[folder.Path] = GetThumbnails(folder, out bool isNewFile);
-                        RemoveOldThumbnailsDictionaryEntries(folder);
-                    }
-
-                    if (Thumbnails.ContainsKey(folder.Path))
-                    {
-                        Thumbnails[folder.Path].Remove(fileName);
+                        DeleteThumbnail(deletedAsset);
                     }
 
                     if (deletedAsset != null)
@@ -611,15 +600,7 @@ namespace JPPhotoManager.Infrastructure
             {
                 if (folder != null)
                 {
-                    if (Thumbnails.ContainsKey(folder.Path))
-                    {
-                        Thumbnails.Remove(folder.Path);
-                    }
-
-                    if (FolderHasThumbnails(folder))
-                    {
-                        DeleteThumbnails(folder);
-                    }
+                    DeleteThumbnails(folder);
 
                     folders.Remove(folder);
                     hasChanges = true;
@@ -675,14 +656,16 @@ namespace JPPhotoManager.Infrastructure
 
             lock (syncLock)
             {
-                if (!Thumbnails.ContainsKey(directoryName))
+                var fullPath = Path.Combine(directoryName, fileName);
+                var thumbnailBlobName = Asset.GetThumbnailBlobName(fullPath);
+
+                if (!Thumbnails.ContainsKey(thumbnailBlobName))
                 {
-                    Folder folder = GetFolderByPath(directoryName);
-                    Thumbnails[directoryName] = GetThumbnails(folder, out bool isNewFile);
-                    RemoveOldThumbnailsDictionaryEntries(folder);
+                    var thumbnail = (byte[])database.ReadBlob(thumbnailBlobName);
+                    Thumbnails[thumbnailBlobName] = thumbnail;
                 }
 
-                result = Thumbnails[directoryName].ContainsKey(fileName);
+                result = Thumbnails.ContainsKey(thumbnailBlobName);
             }
 
             return result;
@@ -694,16 +677,18 @@ namespace JPPhotoManager.Infrastructure
 
             lock (syncLock)
             {
-                if (!Thumbnails.ContainsKey(directoryName))
+                var fullPath = Path.Combine(directoryName, fileName);
+                var thumbnailBlobName = Asset.GetThumbnailBlobName(fullPath);
+
+                if (!Thumbnails.ContainsKey(thumbnailBlobName))
                 {
-                    Folder folder = GetFolderByPath(directoryName);
-                    Thumbnails[directoryName] = GetThumbnails(folder, out bool isNewFile);
-                    RemoveOldThumbnailsDictionaryEntries(folder);
+                    var thumbnail = (byte[])database.ReadBlob(thumbnailBlobName);
+                    Thumbnails[thumbnailBlobName] = thumbnail;
                 }
 
-                if (Thumbnails[directoryName].ContainsKey(fileName))
+                if (Thumbnails.ContainsKey(thumbnailBlobName))
                 {
-                    result = storageService.LoadBitmapImage(Thumbnails[directoryName][fileName], width, height);
+                    result = storageService.LoadBitmapImage(Thumbnails[thumbnailBlobName], width, height);
                 }
                 else
                 {

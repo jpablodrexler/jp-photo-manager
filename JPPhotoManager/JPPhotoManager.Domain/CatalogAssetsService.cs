@@ -146,21 +146,17 @@ namespace JPPhotoManager.Domain
             string[] fileNames = storageService.GetFileNames(directory);
             folder = assetRepository.GetFolderByPath(directory);
             List<Asset> cataloguedAssets = assetRepository.GetCataloguedAssets(directory);
-            bool folderHasThumbnails = assetRepository.FolderHasThumbnails(folder);
 
-            if (!folderHasThumbnails)
+            foreach (var asset in cataloguedAssets)
             {
-                foreach (var asset in cataloguedAssets)
-                {
-                    asset.ImageData = LoadThumbnail(directory, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
-                }
+                asset.ImageData = LoadThumbnail(directory, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
             }
 
-            cataloguedAssetsBatchCount = CatalogNewAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, cataloguedAssets, folderHasThumbnails);
-            cataloguedAssetsBatchCount = CatalogUpdatedAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, cataloguedAssets, folderHasThumbnails);
+            cataloguedAssetsBatchCount = CatalogNewAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, cataloguedAssets);
+            cataloguedAssetsBatchCount = CatalogUpdatedAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, cataloguedAssets);
             cataloguedAssetsBatchCount = CatalogDeletedAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, folder, cataloguedAssets);
 
-            if (assetRepository.HasChanges() || !folderHasThumbnails)
+            if (assetRepository.HasChanges())
             {
                 assetRepository.SaveCatalog(folder);
             }
@@ -234,7 +230,7 @@ namespace JPPhotoManager.Domain
             return cataloguedAssetsBatchCount;
         }
 
-        private int CatalogNewAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize, string[] fileNames, List<Asset> cataloguedAssets, bool folderHasThumbnails)
+        private int CatalogNewAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize, string[] fileNames, List<Asset> cataloguedAssets)
         {
             string[] newFileNames = directoryComparer.GetNewFileNames(fileNames, cataloguedAssets);
 
@@ -247,11 +243,7 @@ namespace JPPhotoManager.Domain
 
                 Asset newAsset = CreateAsset(directory, fileName);
                 newAsset.ImageData = LoadThumbnail(directory, fileName, newAsset.ThumbnailPixelWidth, newAsset.ThumbnailPixelHeight);
-
-                if (!folderHasThumbnails)
-                {
-                    cataloguedAssets.Add(newAsset);
-                }
+                cataloguedAssets.Add(newAsset);
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs
                 {
@@ -267,7 +259,7 @@ namespace JPPhotoManager.Domain
             return cataloguedAssetsBatchCount;
         }
 
-        private int CatalogUpdatedAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize, string[] fileNames, List<Asset> cataloguedAssets, bool folderHasThumbnails)
+        private int CatalogUpdatedAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize, string[] fileNames, List<Asset> cataloguedAssets)
         {
             string[] updatedFileNames = directoryComparer.GetUpdatedFileNames(fileNames, cataloguedAssets);
             Folder folder = assetRepository.GetFolderByPath(directory);
@@ -286,11 +278,7 @@ namespace JPPhotoManager.Domain
                 {
                     Asset updatedAsset = CreateAsset(directory, fileName);
                     updatedAsset.ImageData = LoadThumbnail(directory, fileName, updatedAsset.ThumbnailPixelWidth, updatedAsset.ThumbnailPixelHeight);
-
-                    if (!folderHasThumbnails)
-                    {
-                        cataloguedAssets.Add(updatedAsset);
-                    }
+                    cataloguedAssets.Add(updatedAsset);
 
                     callback?.Invoke(new CatalogChangeCallbackEventArgs
                     {
