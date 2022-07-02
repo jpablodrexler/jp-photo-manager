@@ -656,8 +656,7 @@ namespace JPPhotoManager.Infrastructure
 
             lock (syncLock)
             {
-                var fullPath = Path.Combine(directoryName, fileName);
-                var thumbnailBlobName = Asset.GetThumbnailBlobName(fullPath);
+                var thumbnailBlobName = Asset.GetThumbnailBlobName(directoryName, fileName);
 
                 if (!Thumbnails.ContainsKey(thumbnailBlobName))
                 {
@@ -677,8 +676,7 @@ namespace JPPhotoManager.Infrastructure
 
             lock (syncLock)
             {
-                var fullPath = Path.Combine(directoryName, fileName);
-                var thumbnailBlobName = Asset.GetThumbnailBlobName(fullPath);
+                var thumbnailBlobName = Asset.GetThumbnailBlobName(directoryName, fileName);
 
                 if (!Thumbnails.ContainsKey(thumbnailBlobName))
                 {

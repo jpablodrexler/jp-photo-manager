@@ -26,6 +26,11 @@ namespace JPPhotoManager.Domain
         public DateTime FileCreationDateTime { get; set; }
         public DateTime FileModificationDateTime { get; set; }
 
+        public static string GetThumbnailBlobName(string directoryName, string fileName)
+        {
+            return GetThumbnailBlobName(Path.Combine(directoryName, fileName));
+        }
+
         public static string GetThumbnailBlobName(string fullPath)
         {
             return fullPath.Replace(Path.PathSeparator, '_').Replace("\\", "_").Replace(":", "_") + ".bin";
