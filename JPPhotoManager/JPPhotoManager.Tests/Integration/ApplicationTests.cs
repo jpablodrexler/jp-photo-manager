@@ -313,18 +313,20 @@ namespace JPPhotoManager.Tests.Integration
 
     class UnencapsulatedAssetRepository : AssetRepository
     {
+        private readonly IDatabase _database;
+
         public UnencapsulatedAssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService)
             : base(database, storageService, userConfigurationService)
         {
-
+            _database = database;
         }
 
         internal void RemoveThumbnail(string directoryName, string fileName)
         {
-            if (Thumbnails.ContainsKey(directoryName) && Thumbnails[directoryName].ContainsKey(fileName))
-            {
-                Thumbnails[directoryName].Remove(fileName);
-            }
+            var assets = GetAssets(directoryName);
+            var asset = assets.First(a => a.FileName == fileName);
+
+            DeleteThumbnail(asset);
         }
     }
 }
