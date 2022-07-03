@@ -333,7 +333,7 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        private void DeleteThumbnail(Asset asset)
+        protected void DeleteThumbnail(Asset asset)
         {
             if (Thumbnails.ContainsKey(asset.ThumbnailBlobName))
             {
@@ -402,22 +402,23 @@ namespace JPPhotoManager.Infrastructure
                     {
                         assetsList = GetAssetsByFolderId(folder.FolderId);
 
-                        if (!Thumbnails.ContainsKey(folder.Path))
-                        {
-                            RemoveOldThumbnailsDictionaryEntries(folder);
-                        }
+                        RemoveOldThumbnailsDictionaryEntries(folder);
 
                         if (!isNewFile)
                         {
                             foreach (Asset asset in assetsList)
                             {
-                                if (!Thumbnails.ContainsKey(asset.FullPath))
+                                if (!Thumbnails.ContainsKey(asset.ThumbnailBlobName))
                                 {
                                     var bytes = (byte[])database.ReadBlob(asset.ThumbnailBlobName);
-                                    Thumbnails[asset.FullPath] = bytes;
+
+                                    if (bytes != null)
+                                    {
+                                        Thumbnails[asset.ThumbnailBlobName] = bytes;
+                                    }
                                 }
                                 
-                                asset.ImageData = storageService.LoadBitmapImage(Thumbnails[asset.FullPath], asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
+                                asset.ImageData = Thumbnails.ContainsKey(asset.ThumbnailBlobName) ? storageService.LoadBitmapImage(Thumbnails[asset.ThumbnailBlobName], asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight) : null;
                             }
 
                             // Removes assets with no thumbnails.
@@ -497,7 +498,12 @@ namespace JPPhotoManager.Infrastructure
                 }
 
                 Thumbnails[asset.ThumbnailBlobName] = thumbnailData;
-                database.WriteBlob(thumbnailData, asset.ThumbnailBlobName);
+
+                if (thumbnailData != null)
+                {
+                    database.WriteBlob(thumbnailData, asset.ThumbnailBlobName);
+                }
+
                 assets.Add(asset);
                 hasChanges = true;
             }
@@ -580,13 +586,13 @@ namespace JPPhotoManager.Infrastructure
                 {
                     Asset deletedAsset = GetAssetByFolderIdFileName(folder.FolderId, fileName);
 
-                    if (Thumbnails.ContainsKey(deletedAsset.ThumbnailBlobName))
-                    {
-                        DeleteThumbnail(deletedAsset);
-                    }
-
                     if (deletedAsset != null)
                     {
+                        if (Thumbnails.ContainsKey(deletedAsset.ThumbnailBlobName))
+                        {
+                            DeleteThumbnail(deletedAsset);
+                        }
+
                         assets.Remove(deletedAsset);
                         hasChanges = true;
                     }
@@ -661,7 +667,11 @@ namespace JPPhotoManager.Infrastructure
                 if (!Thumbnails.ContainsKey(thumbnailBlobName))
                 {
                     var thumbnail = (byte[])database.ReadBlob(thumbnailBlobName);
-                    Thumbnails[thumbnailBlobName] = thumbnail;
+
+                    if (thumbnail != null)
+                    {
+                        Thumbnails[thumbnailBlobName] = thumbnail;
+                    }
                 }
 
                 result = Thumbnails.ContainsKey(thumbnailBlobName);
@@ -681,7 +691,11 @@ namespace JPPhotoManager.Infrastructure
                 if (!Thumbnails.ContainsKey(thumbnailBlobName))
                 {
                     var thumbnail = (byte[])database.ReadBlob(thumbnailBlobName);
-                    Thumbnails[thumbnailBlobName] = thumbnail;
+
+                    if (thumbnail != null)
+                    {
+                        Thumbnails[thumbnailBlobName] = thumbnail;
+                    }
                 }
 
                 if (Thumbnails.ContainsKey(thumbnailBlobName))
