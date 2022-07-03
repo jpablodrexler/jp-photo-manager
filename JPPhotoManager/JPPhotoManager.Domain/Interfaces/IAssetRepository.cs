@@ -12,7 +12,7 @@ namespace JPPhotoManager.Domain.Interfaces
         Folder[] GetSubFolders(Folder parentFolder, bool includeHidden);
         Folder GetFolderByPath(string path);
         void SaveCatalog(Folder folder);
-        bool BackupExists();
+        bool ShouldWriteBackup(DateTime today);
         void WriteBackup();
         List<Asset> GetCataloguedAssets();
         List<Asset> GetCataloguedAssets(string directory);

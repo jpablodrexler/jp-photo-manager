@@ -41,7 +41,7 @@ namespace JPPhotoManager.Domain
 
                 try
                 {
-                    if (!assetRepository.BackupExists())
+                    if (assetRepository.ShouldWriteBackup(DateTime.Now))
                     {
                         callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Creating catalog backup..." });
                         assetRepository.WriteBackup();

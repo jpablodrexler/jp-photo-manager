@@ -17,5 +17,6 @@ namespace JPPhotoManager.Domain.Interfaces
         string[] GetRootCatalogFolderPaths();
         string GetRepositoryOwner();
         string GetRepositoryName();
+        int GetBackupEveryNDays();
     }
 }

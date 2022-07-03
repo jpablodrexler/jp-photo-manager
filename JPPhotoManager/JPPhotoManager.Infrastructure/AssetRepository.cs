@@ -120,8 +120,15 @@ namespace JPPhotoManager.Infrastructure
             assets = ReadAssets();
             folders = ReadFolders();
             syncAssetsConfiguration = new SyncAssetsConfiguration();
-            syncAssetsConfiguration.Definitions.AddRange(ReadSyncDefinitions());
-            assets.ForEach(a => a.Folder = GetFolderById(a.FolderId));
+
+            var syncDefinitions = ReadSyncDefinitions();
+            
+            if (syncDefinitions != null)
+            {
+                syncAssetsConfiguration.Definitions.AddRange(syncDefinitions);
+            }
+            
+            assets?.ForEach(a => a.Folder = GetFolderById(a.FolderId));
             recentTargetPaths = ReadRecentTargetPaths();
         }
 
@@ -141,9 +148,26 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        public bool BackupExists()
+        public bool ShouldWriteBackup(DateTime today)
         {
-            return database.BackupExists(DateTime.Now.Date);
+            bool shouldWrite;
+            var days = userConfigurationService.GetBackupEveryNDays();
+            var backupDates = database.GetBackupDates();
+
+            if (backupDates?.Length > 0)
+            {
+                var lastBackupDate = backupDates.Max();
+                var newBackupDate = lastBackupDate.AddDays(days);
+
+                shouldWrite = today.Date >= newBackupDate.Date
+                    && !database.BackupExists(today.Date);
+            }
+            else
+            {
+                shouldWrite = !database.BackupExists(today.Date);
+            }
+
+            return shouldWrite;
         }
 
         public void WriteBackup()

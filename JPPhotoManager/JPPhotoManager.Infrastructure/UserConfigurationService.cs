@@ -22,6 +22,7 @@ namespace JPPhotoManager.Infrastructure
         private const string CATALOG_BATCH_SIZE_KEY = "appsettings:CatalogBatchSize";
         private const string CATALOG_COOLDOWN_MINUTES = "appsettings:CatalogCooldownMinutes";
         private const string BACKUPS_TO_KEEP = "appsettings:BackupsToKeep";
+        private const string BACKUP_EVERY_N_DAYS = "appsettings:BackupEveryNDays";
         private const string THUMBNAILS_DICTIONARY_ENTRIES_TO_KEEP = "appsettings:ThumbnailsDictionaryEntriesToKeep";
         private const string APPLICATION_NAME = "JPPhotoManager";
         private const string REPOSITORY_OWNER = "appsettings:Repository:Owner";
@@ -178,6 +179,11 @@ namespace JPPhotoManager.Infrastructure
         public int GetBackupsToKeep()
         {
             return configuration.GetValue<int>(BACKUPS_TO_KEEP);
+        }
+
+        public int GetBackupEveryNDays()
+        {
+            return configuration.GetValue<int>(BACKUP_EVERY_N_DAYS);
         }
 
         public int GetThumbnailsDictionaryEntriesToKeep()
