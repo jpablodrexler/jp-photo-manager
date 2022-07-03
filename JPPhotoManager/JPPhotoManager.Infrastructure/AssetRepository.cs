@@ -662,19 +662,29 @@ namespace JPPhotoManager.Infrastructure
 
             lock (syncLock)
             {
-                var thumbnailBlobName = Asset.GetThumbnailBlobName(directoryName, fileName);
+                var folder = GetFolderByPath(directoryName);
 
-                if (!Thumbnails.ContainsKey(thumbnailBlobName))
+                if (folder != null)
                 {
-                    var thumbnail = (byte[])database.ReadBlob(thumbnailBlobName);
+                    var asset = GetAssetByFolderIdFileName(folder.FolderId, fileName);
 
-                    if (thumbnail != null)
+                    if (asset != null)
                     {
-                        Thumbnails[thumbnailBlobName] = thumbnail;
+                        var thumbnailBlobName = asset.ThumbnailBlobName;
+
+                        if (!Thumbnails.ContainsKey(thumbnailBlobName))
+                        {
+                            var thumbnail = (byte[])database.ReadBlob(thumbnailBlobName);
+
+                            if (thumbnail != null)
+                            {
+                                Thumbnails[thumbnailBlobName] = thumbnail;
+                            }
+                        }
+
+                        result = Thumbnails.ContainsKey(thumbnailBlobName);
                     }
                 }
-
-                result = Thumbnails.ContainsKey(thumbnailBlobName);
             }
 
             return result;
@@ -686,7 +696,9 @@ namespace JPPhotoManager.Infrastructure
 
             lock (syncLock)
             {
-                var thumbnailBlobName = Asset.GetThumbnailBlobName(directoryName, fileName);
+                var folder = GetFolderByPath(directoryName);
+                var asset = GetAssetByFolderIdFileName(folder.FolderId, fileName);
+                var thumbnailBlobName = asset.ThumbnailBlobName;
 
                 if (!Thumbnails.ContainsKey(thumbnailBlobName))
                 {
@@ -705,7 +717,6 @@ namespace JPPhotoManager.Infrastructure
                 else
                 {
                     DeleteAsset(directoryName, fileName);
-                    Folder folder = GetFolderByPath(directoryName);
                     SaveCatalog(folder);
                 }
             }

@@ -9,6 +9,7 @@ namespace JPPhotoManager.Domain
     {
         private const int MAX_PATH_LENGTH = 256;
 
+        public string AssetId { get; set; }
         public string FolderId { get; set; }
         public Folder Folder { get; set; }
         public string FileName { get; set; }
@@ -22,19 +23,9 @@ namespace JPPhotoManager.Domain
         public string Hash { get; set; }
         public BitmapImage ImageData { get; set; }
         public string FullPath => Folder != null ? Path.Combine(Folder.Path, FileName) : FileName;
-        public string ThumbnailBlobName => GetThumbnailBlobName(FullPath);
+        public string ThumbnailBlobName => AssetId + ".bin";
         public DateTime FileCreationDateTime { get; set; }
         public DateTime FileModificationDateTime { get; set; }
-
-        public static string GetThumbnailBlobName(string directoryName, string fileName)
-        {
-            return GetThumbnailBlobName(Path.Combine(directoryName, fileName));
-        }
-
-        public static string GetThumbnailBlobName(string fullPath)
-        {
-            return fullPath.Replace(Path.PathSeparator, '_').Replace("\\", "_").Replace(":", "_") + ".bin";
-        }
 
         public static bool IsValidBatchFormat(string batchFormat)
         {

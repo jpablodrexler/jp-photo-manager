@@ -385,6 +385,7 @@ namespace JPPhotoManager.Domain
 
                 asset = new Asset
                 {
+                    AssetId = Guid.NewGuid().ToString(),
                     FileName = Path.GetFileName(imagePath),
                     FolderId = folder.FolderId,
                     Folder = folder,
