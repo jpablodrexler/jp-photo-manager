@@ -79,6 +79,7 @@ namespace JPPhotoManager.Infrastructure
                 TableName = "Asset",
                 ColumnProperties = new ColumnProperties[]
                 {
+                    new ColumnProperties { ColumnName = "AssetId" },
                     new ColumnProperties { ColumnName = "FolderId" },
                     new ColumnProperties { ColumnName = "FileName" },
                     new ColumnProperties { ColumnName = "FileSize" },
@@ -188,16 +189,17 @@ namespace JPPhotoManager.Infrastructure
                 result = database.ReadObjectList("Asset", f =>
                     new Asset
                     {
-                        FolderId = f[0],
-                        FileName = f[1],
-                        FileSize = long.Parse(f[2]),
-                        ImageRotation = (Rotation)Enum.Parse(typeof(Rotation), f[3]),
-                        PixelWidth = int.Parse(f[4]),
-                        PixelHeight = int.Parse(f[5]),
-                        ThumbnailPixelWidth = int.Parse(f[6]),
-                        ThumbnailPixelHeight = int.Parse(f[7]),
-                        ThumbnailCreationDateTime = DateTime.Parse(f[8]),
-                        Hash = f[9]
+                        AssetId = f[0],
+                        FolderId = f[1],
+                        FileName = f[2],
+                        FileSize = long.Parse(f[3]),
+                        ImageRotation = (Rotation)Enum.Parse(typeof(Rotation), f[4]),
+                        PixelWidth = int.Parse(f[5]),
+                        PixelHeight = int.Parse(f[6]),
+                        ThumbnailPixelWidth = int.Parse(f[7]),
+                        ThumbnailPixelHeight = int.Parse(f[8]),
+                        ThumbnailCreationDateTime = DateTime.Parse(f[9]),
+                        Hash = f[10]
                     });
             }
             catch (ArgumentException ex)
@@ -281,16 +283,17 @@ namespace JPPhotoManager.Infrastructure
             {
                 return i switch
                 {
-                    0 => a.FolderId,
-                    1 => a.FileName,
-                    2 => a.FileSize,
-                    3 => a.ImageRotation,
-                    4 => a.PixelWidth,
-                    5 => a.PixelHeight,
-                    6 => a.ThumbnailPixelWidth,
-                    7 => a.ThumbnailPixelHeight,
-                    8 => a.ThumbnailCreationDateTime,
-                    9 => a.Hash,
+                    0 => a.AssetId,
+                    1 => a.FolderId,
+                    2 => a.FileName,
+                    3 => a.FileSize,
+                    4 => a.ImageRotation,
+                    5 => a.PixelWidth,
+                    6 => a.PixelHeight,
+                    7 => a.ThumbnailPixelWidth,
+                    8 => a.ThumbnailPixelHeight,
+                    9 => a.ThumbnailCreationDateTime,
+                    10 => a.Hash,
                     _ => throw new ArgumentOutOfRangeException(nameof(i))
                 };
             });
