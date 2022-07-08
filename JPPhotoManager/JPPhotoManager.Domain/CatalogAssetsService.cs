@@ -147,11 +147,6 @@ namespace JPPhotoManager.Domain
             folder = assetRepository.GetFolderByPath(directory);
             List<Asset> cataloguedAssets = assetRepository.GetCataloguedAssets(directory);
 
-            foreach (var asset in cataloguedAssets)
-            {
-                asset.ImageData = LoadThumbnail(directory, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
-            }
-
             cataloguedAssetsBatchCount = CatalogNewAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, cataloguedAssets);
             cataloguedAssetsBatchCount = CatalogUpdatedAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, cataloguedAssets);
             cataloguedAssetsBatchCount = CatalogDeletedAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, folder, cataloguedAssets);
