@@ -150,21 +150,25 @@ namespace JPPhotoManager.Infrastructure
 
         public bool ShouldWriteBackup(DateTime today)
         {
-            bool shouldWrite;
+            bool shouldWrite = false;
             var days = userConfigurationService.GetBackupEveryNDays();
-            var backupDates = database.GetBackupDates();
 
-            if (backupDates?.Length > 0)
+            if (days > 0)
             {
-                var lastBackupDate = backupDates.Max();
-                var newBackupDate = lastBackupDate.AddDays(days);
+                var backupDates = database.GetBackupDates();
 
-                shouldWrite = today.Date >= newBackupDate.Date
-                    && !database.BackupExists(today.Date);
-            }
-            else
-            {
-                shouldWrite = !database.BackupExists(today.Date);
+                if (backupDates?.Length > 0)
+                {
+                    var lastBackupDate = backupDates.Max();
+                    var newBackupDate = lastBackupDate.AddDays(days);
+
+                    shouldWrite = today.Date >= newBackupDate.Date
+                        && !database.BackupExists(today.Date);
+                }
+                else
+                {
+                    shouldWrite = !database.BackupExists(today.Date);
+                }
             }
 
             return shouldWrite;
