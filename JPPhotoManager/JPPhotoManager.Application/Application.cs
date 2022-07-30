@@ -42,7 +42,7 @@ namespace JPPhotoManager.Application
             this.newReleaseNotificationService = newReleaseNotificationService;
         }
 
-        public Asset[] GetAssets(string directory)
+        public PaginatedData<Asset> GetAssets(string directory, int pageIndex)
         {
             if (string.IsNullOrWhiteSpace(directory))
             {
@@ -54,7 +54,7 @@ namespace JPPhotoManager.Application
                 assetRepository.AddFolder(directory);
             }
 
-            return assetRepository.GetAssets(directory);
+            return assetRepository.GetAssets(directory, pageIndex);
         }
 
         public void LoadThumbnail(Asset asset)

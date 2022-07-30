@@ -299,11 +299,11 @@ namespace JPPhotoManager.Tests.Integration
             repository.RemoveThumbnail(folder.Path, "Image 2 duplicated.jpg");
             repository.SaveCatalog(folder);
 
-            Asset[] assets = app.GetAssets(dataDirectory);
-            assets.Should().NotBeEmpty();
+            var assets = app.GetAssets(dataDirectory, 0);
+            assets.Items.Should().NotBeEmpty();
 
-            repository.GetAssets(dataDirectory).Should().Contain(a => a.FileName == "Image 2.jpg");
-            repository.GetAssets(dataDirectory).Should().NotContain(a => a.FileName == "Image 2 duplicated.jpg");
+            repository.GetAssets(dataDirectory, 0).Items.Should().Contain(a => a.FileName == "Image 2.jpg");
+            repository.GetAssets(dataDirectory, 0).Items.Should().NotContain(a => a.FileName == "Image 2 duplicated.jpg");
             repository.ContainsThumbnail(dataDirectory, "Image 2.jpg").Should().BeTrue();
             repository.ContainsThumbnail(dataDirectory, "Image 2 duplicated.jpg").Should().BeFalse();
             repository.LoadThumbnail(dataDirectory, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight).Should().NotBeNull();
@@ -313,18 +313,15 @@ namespace JPPhotoManager.Tests.Integration
 
     class UnencapsulatedAssetRepository : AssetRepository
     {
-        private readonly IDatabase _database;
-
         public UnencapsulatedAssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService)
             : base(database, storageService, userConfigurationService)
         {
-            _database = database;
         }
 
         internal void RemoveThumbnail(string directoryName, string fileName)
         {
-            var assets = GetAssets(directoryName);
-            var asset = assets.First(a => a.FileName == fileName);
+            var assets = GetAssets(directoryName, 0);
+            var asset = assets.Items.First(a => a.FileName == fileName);
 
             DeleteThumbnail(asset);
         }

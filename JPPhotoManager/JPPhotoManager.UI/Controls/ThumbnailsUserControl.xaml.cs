@@ -7,6 +7,7 @@ using log4net;
 using System;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -46,15 +47,12 @@ namespace JPPhotoManager.UI.Controls
             {
                 if (!ViewModel.IsRefreshingFolders)
                 {
-                    ViewModel.CurrentFolder = selectedImagePath;
-                    Asset[] assets = await GetAssets(assetApp, ViewModel.CurrentFolder).ConfigureAwait(true);
-                    ViewModel.SetAssets(assets);
-
-                    if (thumbnailsListView.Items.Count > 0)
+                    if (ViewModel.CurrentFolder != selectedImagePath)
                     {
-                        ViewModel.ViewerPosition = 0;
-                        thumbnailsListView.ScrollIntoView(thumbnailsListView.Items[0]);
+                        ViewModel.CurrentFolder = selectedImagePath;
                     }
+
+                    await LoadAssetsWithPagination(assetApp);
                 }
             }
             catch (Exception ex)
@@ -63,9 +61,41 @@ namespace JPPhotoManager.UI.Controls
             }
         }
 
-        private Task<Asset[]> GetAssets(IApplication assetApp, string folder)
+        private async Task LoadAssetsWithPagination(IApplication assetApp)
         {
-            return Task.Run(() => assetApp.GetAssets(folder));
+            PaginatedData<Asset> assets;
+            int pageNumber = 0;
+
+            try
+            {
+                ViewModel.IsLoading = true;
+
+                do
+                {
+                    assets = await GetAssets(assetApp, ViewModel.CurrentFolder, pageNumber).ConfigureAwait(true);
+                    ViewModel.SetPaginatedAssets(assets);
+
+                    
+
+                    if (pageNumber == 0 && thumbnailsListView.Items.Count > 0)
+                    {
+                        ViewModel.ViewerPosition = 0;
+                        thumbnailsListView.ScrollIntoView(thumbnailsListView.Items[0]);
+                    }
+
+                    pageNumber++;
+                }
+                while (assets != null && assets.Items?.Length > 0);
+            }
+            finally
+            {
+                ViewModel.IsLoading = false;
+            }
+        }
+
+        private Task<PaginatedData<Asset>> GetAssets(IApplication assetApp, string folder, int pageIndex)
+        {
+            return Task.Run(() => assetApp.GetAssets(folder, pageIndex));
         }
 
         private void ContentControl_MouseDown(object sender, MouseButtonEventArgs e)

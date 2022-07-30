@@ -6,7 +6,7 @@ namespace JPPhotoManager.Application
 {
     public interface IApplication
     {
-        Asset[] GetAssets(string directory);
+        PaginatedData<Asset> GetAssets(string directory, int pageIndex);
         void LoadThumbnail(Asset asset);
         SyncAssetsConfiguration GetSyncAssetsConfiguration();
         void SetSyncAssetsConfiguration(SyncAssetsConfiguration syncConfiguration);

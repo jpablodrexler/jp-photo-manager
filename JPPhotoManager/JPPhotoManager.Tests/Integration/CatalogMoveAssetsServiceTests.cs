@@ -87,14 +87,14 @@ namespace JPPhotoManager.Tests.Integration
             var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
 
-            var repositoryAssets = repository.GetAssets(dataDirectory);
+            var repositoryAssets = repository.GetAssets(dataDirectory, 0);
             processedAssets.Should().HaveSameCount(fileList);
-            repositoryAssets.Should().HaveSameCount(fileList);
+            repositoryAssets.Items.Should().HaveSameCount(fileList);
             exceptions.Should().BeEmpty();
 
             processedAssets.Should().OnlyContain(a => fileList.Contains(a.FileName));
-            processedAssets.Should().OnlyContain(a => repositoryAssets.Contains(a));
-            repositoryAssets.Should().OnlyContain(a => processedAssets.Contains(a));
+            processedAssets.Should().OnlyContain(a => repositoryAssets.Items.Contains(a));
+            repositoryAssets.Items.Should().OnlyContain(a => processedAssets.Contains(a));
         }
 
         [Fact]
@@ -139,15 +139,15 @@ namespace JPPhotoManager.Tests.Integration
             var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
 
-            var repositoryAssets = repository.GetAssets(dataDirectory);
+            var repositoryAssets = repository.GetAssets(dataDirectory, 0);
             fileList.Should().HaveCountGreaterThan(batchSize);
             processedAssets.Should().HaveCount(batchSize);
-            repositoryAssets.Should().HaveCount(batchSize);
+            repositoryAssets.Items.Should().HaveCount(batchSize);
             exceptions.Should().BeEmpty();
 
             processedAssets.Should().OnlyContain(a => fileList.Contains(a.FileName));
-            processedAssets.Should().OnlyContain(a => repositoryAssets.Contains(a));
-            repositoryAssets.Should().OnlyContain(a => processedAssets.Contains(a));
+            processedAssets.Should().OnlyContain(a => repositoryAssets.Items.Contains(a));
+            repositoryAssets.Items.Should().OnlyContain(a => processedAssets.Contains(a));
         }
 
         [Fact]
@@ -193,7 +193,7 @@ namespace JPPhotoManager.Tests.Integration
                 await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
 
                 var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
-                repositoryAssets = repository.GetAssets(dataDirectory);
+                repositoryAssets = repository.GetAssets(dataDirectory, 0).Items;
                 deletedFile = fileList[0];
             }
 
@@ -221,10 +221,10 @@ namespace JPPhotoManager.Tests.Integration
 
                 statusChanges.Clear();
                 await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
-                var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
+                var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory, 0);
 
                 repositoryAssets.Should().Contain(a => a.FileName == deletedFile);
-                repositoryAssetsAfterDelete.Should().NotContain(a => a.FileName == deletedFile);
+                repositoryAssetsAfterDelete.Items.Should().NotContain(a => a.FileName == deletedFile);
                 statusChanges.Should().Contain(s => s.Asset != null && s.Asset.FileName == deletedFile);
             }
         }
@@ -270,7 +270,7 @@ namespace JPPhotoManager.Tests.Integration
                 await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
 
                 var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
-                var repositoryAssets = repository.GetAssets(dataDirectory);
+                var repositoryAssets = repository.GetAssets(dataDirectory, 0);
             }
 
             using (var mock = AutoMock.GetLoose(
@@ -299,9 +299,9 @@ namespace JPPhotoManager.Tests.Integration
 
                 statusChanges.Clear();
                 await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
-                var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory);
+                var repositoryAssetsAfterDelete = repository.GetAssets(dataDirectory, 0);
 
-                repositoryAssetsAfterDelete.Should().HaveCount(fileList.Count - batchSize);
+                repositoryAssetsAfterDelete.Items.Should().HaveCount(fileList.Count - batchSize);
             }
         }
 
@@ -1000,9 +1000,9 @@ namespace JPPhotoManager.Tests.Integration
             var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
 
-            var repositoryAssets = repository.GetAssets(dataDirectory);
+            var repositoryAssets = repository.GetAssets(dataDirectory, 0);
             processedAssets.Should().BeEmpty();
-            repositoryAssets.Should().BeEmpty();
+            repositoryAssets.Items.Should().BeEmpty();
             exceptions.Should().ContainSingle();
         }
 

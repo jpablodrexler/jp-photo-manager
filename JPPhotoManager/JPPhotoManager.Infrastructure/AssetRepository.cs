@@ -15,6 +15,7 @@ namespace JPPhotoManager.Infrastructure
 
         private const double STORAGE_VERSION = 1.1;
         private const string SEPARATOR = "|";
+        private const int PAGE_SIZE = 100;
 
         public bool IsInitialized { get; private set; }
         private string dataDirectory;
@@ -418,10 +419,12 @@ namespace JPPhotoManager.Infrastructure
             database.WriteBlob(thumbnails, thumbnailsFileName);
         }
 
-        public Asset[] GetAssets(string directory)
+        public PaginatedData<Asset> GetAssets(string directory, int pageIndex)
         {
+            PaginatedData<Asset> result;
             List<Asset> assetsList = null;
             bool isNewFile = false;
+            int totalCount = 0;
 
             try
             {
@@ -432,7 +435,9 @@ namespace JPPhotoManager.Infrastructure
                     if (folder != null)
                     {
                         assetsList = GetAssetsByFolderId(folder.FolderId);
-
+                        totalCount = assetsList.Count;
+                        assetsList = assetsList.Skip(pageIndex * PAGE_SIZE).Take(PAGE_SIZE).ToList();
+                        
                         RemoveOldThumbnailsDictionaryEntries(folder);
 
                         if (!isNewFile)
@@ -481,7 +486,7 @@ namespace JPPhotoManager.Infrastructure
                 log.Error(ex);
             }
 
-            return assetsList.ToArray();
+            return new PaginatedData<Asset> { Items = assetsList.ToArray(), PageIndex = pageIndex, TotalCount = totalCount };
         }
 
         public bool FolderExists(string path)

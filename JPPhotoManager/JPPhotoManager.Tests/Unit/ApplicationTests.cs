@@ -37,11 +37,11 @@ namespace JPPhotoManager.Tests.Unit
             };
 
             using var mock = AutoMock.GetLoose();
-            mock.Mock<IAssetRepository>().Setup(m => m.GetAssets(directory)).Returns(expectedResult);
+            mock.Mock<IAssetRepository>().Setup(m => m.GetAssets(directory, 0)).Returns(new PaginatedData<Asset> { Items = expectedResult });
 
             var app = mock.Container.Resolve<Application.Application>();
 
-            Asset[] assets = app.GetAssets(directory);
+            Asset[] assets = app.GetAssets(directory, 0).Items;
             assets.Should().BeEquivalentTo(expectedResult);
 
             mock.Mock<IAssetRepository>().VerifyAll();
@@ -56,7 +56,7 @@ namespace JPPhotoManager.Tests.Unit
             using var mock = AutoMock.GetLoose();
             var app = mock.Container.Resolve<Application.Application>();
 
-            Func<Asset[]> function = () => app.GetAssets(directory);
+            Func<PaginatedData<Asset>> function = () => app.GetAssets(directory, 0);
             function.Should().Throw<ArgumentException>();
         }
     }

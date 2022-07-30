@@ -30,11 +30,14 @@ namespace JPPhotoManager.UI.ViewModels
         private string currentFolder;
         private Asset[] cataloguedAssets;
         private ObservableCollection<Asset> observableAssets;
+        private PaginatedData<Asset> paginatedAssets;
         private Asset[] selectedAssets;
         private string appTitle;
         private string statusMessage;
         private SortCriteriaEnum sortCriteria;
         private SortCriteriaEnum previousSortCriteria;
+        private bool isLoading;
+
         public bool SortAscending { get; private set; } = true;
 
         public string Product { get; set; }
@@ -194,6 +197,16 @@ namespace JPPhotoManager.UI.ViewModels
             ObservableAssets = cataloguedAssets != null ? new ObservableCollection<Asset>(cataloguedAssets) : null;
         }
 
+        public bool IsLoading
+        {
+            get { return isLoading; }
+            set
+            {
+                isLoading = value;
+                UpdateAppTitle();
+            }
+        }
+
         public string AppTitle
         {
             get { return appTitle; }
@@ -221,13 +234,41 @@ namespace JPPhotoManager.UI.ViewModels
 
         public Folder LastSelectedFolder { get; set; }
 
-        private void AddAsset(Asset asset)
+        public void AddAsset(Asset asset)
         {
-            if (ObservableAssets != null)
+            if (ObservableAssets != null && !ObservableAssets.Contains(asset))
             {
                 ObservableAssets.Add(asset);
                 NotifyPropertyChanged(nameof(ObservableAssets));
+                UpdateAppTitle();
             }
+        }
+
+        public void AddAssetsPage(Asset[] assets)
+        {
+            if (ObservableAssets != null)
+            {
+                foreach (var asset in assets)
+                {
+                    if (!ObservableAssets.Contains(asset))
+                    {
+                        ObservableAssets.Add(asset);
+                    }
+                }
+                
+                NotifyPropertyChanged(nameof(ObservableAssets));
+                UpdateAppTitle();
+            }
+        }
+
+        public void SetPaginatedAssets(PaginatedData<Asset> assets)
+        {
+            paginatedAssets = assets;
+
+            if (assets.PageIndex == 0)
+                SetAssets(assets.Items);
+            else
+                AddAssetsPage(assets.Items);
         }
 
         private void UpdateAsset(Asset asset)
@@ -242,6 +283,7 @@ namespace JPPhotoManager.UI.ViewModels
                     RemoveAssets(new Asset[] { updatedAsset });
                     AddAsset(asset);
                     NotifyPropertyChanged(nameof(ObservableAssets));
+                    UpdateAppTitle();
                 }
             }
         }
@@ -302,7 +344,16 @@ namespace JPPhotoManager.UI.ViewModels
                     sortCriteria);
             }
 
-            AppTitle = title;
+            AppTitle = IsLoading ? $"{title} (loading {GetLoadingPercent()}%)" : title;
+        }
+
+        private string GetLoadingPercent()
+        {
+            double? count = ObservableAssets?.Count;
+            double? totalCount = paginatedAssets?.TotalCount;
+            double? percent = count * 100 / totalCount;
+
+            return percent.HasValue ? percent.Value.ToString("0") : string.Empty;
         }
 
         public void GoToAsset(Asset asset)

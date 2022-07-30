@@ -4,7 +4,7 @@ namespace JPPhotoManager.Domain.Interfaces
 {
     public interface IAssetRepository
     {
-        Asset[] GetAssets(string directory);
+        PaginatedData<Asset> GetAssets(string directory, int pageIndex);
         void AddAsset(Asset asset, byte[] thumbnailData);
         Folder AddFolder(string path);
         bool FolderExists(string path);
