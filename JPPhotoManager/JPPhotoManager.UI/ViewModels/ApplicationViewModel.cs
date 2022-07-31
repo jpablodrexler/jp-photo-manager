@@ -255,7 +255,8 @@ namespace JPPhotoManager.UI.ViewModels
                         ObservableAssets.Add(asset);
                     }
                 }
-                
+
+                cataloguedAssets = ObservableAssets.ToArray();
                 NotifyPropertyChanged(nameof(ObservableAssets));
                 UpdateAppTitle();
             }
