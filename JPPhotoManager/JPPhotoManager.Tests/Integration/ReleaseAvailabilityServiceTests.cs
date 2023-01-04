@@ -31,7 +31,7 @@ namespace JPPhotoManager.Tests.Integration
             configuration = configurationMock.Object;
         }
 
-        [Fact]
+        [Fact(Skip = "GitHub API integration test")]
         public async void GetLatestRelease_ReturnReleaseData()
         {
             IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
