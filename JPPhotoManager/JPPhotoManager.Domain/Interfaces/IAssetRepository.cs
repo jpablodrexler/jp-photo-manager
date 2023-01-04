@@ -26,5 +26,7 @@ namespace JPPhotoManager.Domain.Interfaces
         void SaveSyncAssetsConfiguration(SyncAssetsConfiguration syncAssetsConfiguration);
         List<string> GetRecentTargetPaths();
         void SaveRecentTargetPaths(List<string> recentTargetPaths);
+        void DeleteThumbnail(string thumbnailBlobName);
+        string[] GetThumbnailsList();
     }
 }

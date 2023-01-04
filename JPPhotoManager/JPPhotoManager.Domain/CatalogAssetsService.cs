@@ -60,6 +60,8 @@ namespace JPPhotoManager.Domain
                         cataloguedAssetsBatchCount = CatalogAssets(folder.Path, callback, cataloguedAssetsBatchCount, visitedFolders);
                     }
 
+                    DeleteUnusedThumbnails(callback);
+
                     callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
                 }
                 catch (OperationCanceledException)
@@ -167,6 +169,24 @@ namespace JPPhotoManager.Domain
             }
 
             return cataloguedAssetsBatchCount;
+        }
+
+        private List<Asset> DeleteUnusedThumbnails(CatalogChangeCallback callback)
+        {
+            callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Deleting unused thumbnails" });
+
+            var thumbnailsList = assetRepository.GetThumbnailsList();
+            var thumbnailsFileNamesList = thumbnailsList.Select(t => new FileInfo(t).Name);
+            var cataloguedAssets = assetRepository.GetCataloguedAssets();
+            var cataloguedAssetsThumbnails = cataloguedAssets.Select(a => a.ThumbnailBlobName);
+            var thumbnailsListToDelete = thumbnailsFileNamesList.Except(cataloguedAssetsThumbnails);
+
+            foreach (var file in thumbnailsListToDelete)
+            {
+                assetRepository.DeleteThumbnail(file);
+            }
+
+            return cataloguedAssets;
         }
 
         private int CatalogNonExistingFolder(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize)

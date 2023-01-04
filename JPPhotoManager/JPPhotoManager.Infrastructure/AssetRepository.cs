@@ -377,6 +377,24 @@ namespace JPPhotoManager.Infrastructure
             File.Delete(thumbnailsFilePath);
         }
 
+        public void DeleteThumbnail(string thumbnailBlobName)
+        {
+            if (Thumbnails.ContainsKey(thumbnailBlobName))
+            {
+                Thumbnails.Remove(thumbnailBlobName);
+            }
+
+            // TODO: Implement through the NuGet package.
+            string thumbnailsFilePath = database.ResolveBlobFilePath(dataDirectory, thumbnailBlobName);
+            File.Delete(thumbnailsFilePath);
+        }
+
+        public string[] GetThumbnailsList()
+        {
+            string blobsDirectory = database.GetBlobsDirectory(dataDirectory);
+            return Directory.GetFiles(blobsDirectory);
+        }
+
         private void RemoveOldThumbnailsDictionaryEntries(Folder folder)
         {
             int entriesToKeep = userConfigurationService.GetThumbnailsDictionaryEntriesToKeep();
