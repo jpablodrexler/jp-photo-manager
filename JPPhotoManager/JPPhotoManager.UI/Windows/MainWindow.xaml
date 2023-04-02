@@ -8,6 +8,12 @@
         mc:Ignorable="d"
         Title="{Binding AppTitle}" Height="600" Width="800" Foreground="White" Background="Black" WindowState="Maximized"
         Loaded="Window_Loaded" KeyDown="Window_KeyDown" Closing="Window_Closing">
+    <Window.Resources>
+        <Style TargetType="ScrollBar">
+            <Setter Property="ScrollViewer.Background" Value="#303030" />
+            <Setter Property="BorderThickness" Value="0,0"/>
+        </Style>
+    </Window.Resources>
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">

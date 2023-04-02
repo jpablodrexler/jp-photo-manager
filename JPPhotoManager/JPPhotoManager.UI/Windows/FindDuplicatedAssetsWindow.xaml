@@ -14,6 +14,10 @@
     <Window.Resources>
         <c:FileSizeConverter x:Key="FileSizeConverter" />
         <c:PixelSizeConverter x:Key="PixelSizeConverter" />
+        <Style TargetType="ScrollBar">
+            <Setter Property="ScrollViewer.Background" Value="#303030" />
+            <Setter Property="BorderThickness" Value="0,0"/>
+        </Style>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>

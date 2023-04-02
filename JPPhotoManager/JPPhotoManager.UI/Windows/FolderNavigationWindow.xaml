@@ -7,6 +7,12 @@
         mc:Ignorable="d"
         KeyDown="Window_KeyDown"
         Title="Select destination folder" Height="400" Width="500">
+    <Window.Resources>
+        <Style TargetType="ScrollBar">
+            <Setter Property="ScrollViewer.Background" Value="#303030" />
+            <Setter Property="BorderThickness" Value="0,0"/>
+        </Style>
+    </Window.Resources>
     <Grid Background="#FF3C3C3C">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>

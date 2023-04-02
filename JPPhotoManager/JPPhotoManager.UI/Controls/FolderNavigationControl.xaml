@@ -13,7 +13,13 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <TreeView Name="foldersTreeView" Grid.Row="0" Grid.Column="0" SelectedItemChanged="FoldersTreeView_SelectedItemChanged" Background="#FF3C3C3C" BorderBrush="#FFFFFFFF" Foreground="#FFFFFFFF">
+        <TreeView Name="foldersTreeView"
+                  Grid.Row="0"
+                  Grid.Column="0"
+                  SelectedItemChanged="FoldersTreeView_SelectedItemChanged"
+                  Background="#FF3C3C3C"
+                  BorderBrush="#FF6C6C6C"
+                  Foreground="#FFFFFFFF">
             <TreeView.Resources>
                 <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
                                  Color="{ DynamicResource {x:Static SystemColors.HighlightColorKey}}"/>

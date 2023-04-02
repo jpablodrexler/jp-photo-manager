@@ -38,6 +38,8 @@
                  ItemsSource="{Binding ObservableAssets}"
                  ItemTemplate="{DynamicResource ThumbnailDataTemplate}"
                  Background="#FF3C3C3C"
+                 BorderThickness="1"
+                 BorderBrush="#FF6C6C6C"
                  SelectedIndex="{Binding ViewerPosition}"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  HorizontalContentAlignment="Stretch"
