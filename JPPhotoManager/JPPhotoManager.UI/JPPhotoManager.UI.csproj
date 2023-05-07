@@ -49,7 +49,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Windows\AppIcon.png" />
+    <Resource Include="Images\AppIcon.png" />
     <Resource Include="Images\FolderClosedIcon.png" />
     <Resource Include="Images\FolderOpenIcon.png" />
   </ItemGroup>
