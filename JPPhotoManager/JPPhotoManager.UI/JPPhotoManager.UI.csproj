@@ -20,6 +20,9 @@
 
   <ItemGroup>
     <None Remove="AppIcon.png" />
+    <None Remove="Images\FolderClosedIcon.png" />
+    <None Remove="Images\FolderIcon.png" />
+    <None Remove="Images\FolderOpenIcon.png" />
     <None Remove="Readme.md" />
     <None Remove="Windows\AppIcon.png" />
   </ItemGroup>
@@ -47,6 +50,8 @@
 
   <ItemGroup>
     <Resource Include="Windows\AppIcon.png" />
+    <Resource Include="Images\FolderClosedIcon.png" />
+    <Resource Include="Images\FolderOpenIcon.png" />
   </ItemGroup>
 
   <ItemGroup>
