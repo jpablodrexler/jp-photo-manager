@@ -52,6 +52,7 @@ namespace JPPhotoManager.Domain
             }
 
             result = result.Where(r => r.Count > 1).ToList();
+            result = result.OrderByDescending(da => da.Count).ToList();
 
             // Loads the file information for each asset.
             foreach (List<Asset> duplicatedSet in result)
