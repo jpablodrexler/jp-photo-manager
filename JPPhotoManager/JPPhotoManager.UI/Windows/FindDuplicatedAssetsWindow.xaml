@@ -54,8 +54,8 @@
                 </Style>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="File Name" Binding="{Binding FileName}" Width="300"/>
-                <DataGridTextColumn Header="Duplicates" Binding="{Binding DuplicatesCount}" Width="100"/>
+                <DataGridTextColumn Header="File Name" Binding="{Binding FileName}" CanUserSort="False" Width="300"/>
+                <DataGridTextColumn Header="Duplicates" Binding="{Binding DuplicatesCount}" CanUserSort="False" Width="100"/>
             </DataGrid.Columns>
         </DataGrid>
         <DataGrid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" ItemsSource="{Binding CurrentDuplicatedAssetSet}" SelectedIndex="{Binding DuplicatedAssetPosition}" AutoGenerateColumns="False" CanUserReorderColumns="True" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="Black">

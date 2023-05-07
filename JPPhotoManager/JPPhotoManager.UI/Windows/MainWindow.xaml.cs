@@ -251,6 +251,7 @@ namespace JPPhotoManager.UI.Windows
             try
             {
                 var duplicates = application.GetDuplicatedAssets();
+                duplicates = duplicates.OrderByDescending(da => da.Count).ToList();
 
                 if (duplicates.Count > 0)
                 {
