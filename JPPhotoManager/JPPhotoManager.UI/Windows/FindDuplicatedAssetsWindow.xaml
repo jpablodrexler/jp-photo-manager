@@ -34,6 +34,18 @@
         <Label Grid.Row="0" Grid.Column="0" Foreground="White" Content="{Binding DuplicatedAssetSetsCollection.Count}" ContentStringFormat="Duplicated sets: {0}"/>
         <Label Grid.Row="0" Grid.Column="1" x:Name="refreshLabel" Padding="5" MouseLeftButtonDown="RefreshLabel_MouseLeftButtonDown" Content="Refresh" Style="{StaticResource ButtonStyle}" />
         <DataGrid Grid.Row="1" Grid.RowSpan="3" Grid.Column="0" ItemsSource="{Binding DuplicatedAssetSetsCollection}" SelectedIndex="{Binding DuplicatedAssetSetsPosition}" AutoGenerateColumns="False" CanUserReorderColumns="True" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="Black">
+            <DataGrid.Resources>
+                <Style BasedOn="{StaticResource {x:Type DataGridColumnHeader}}" TargetType="{x:Type DataGridColumnHeader}">
+                    <Setter Property="Background" Value="Black"/>
+                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="BorderBrush" Value="#303030"/>
+                    <Setter Property="BorderThickness" Value="1 1 1 1"/>
+                    <Setter Property="Padding" Value="5"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                    <Setter Property="Height" Value="30"/>
+                    <Setter Property="Width" Value="auto"/>
+                </Style>
+            </DataGrid.Resources>
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Setter Property="Background" Value="Black"/>
@@ -47,6 +59,18 @@
             </DataGrid.Columns>
         </DataGrid>
         <DataGrid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" ItemsSource="{Binding CurrentDuplicatedAssetSet}" SelectedIndex="{Binding DuplicatedAssetPosition}" AutoGenerateColumns="False" CanUserReorderColumns="True" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="Black">
+            <DataGrid.Resources>
+                <Style BasedOn="{StaticResource {x:Type DataGridColumnHeader}}" TargetType="{x:Type DataGridColumnHeader}">
+                    <Setter Property="Background" Value="Black"/>
+                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="BorderBrush" Value="#303030"/>
+                    <Setter Property="BorderThickness" Value="1 1 1 1"/>
+                    <Setter Property="Padding" Value="5"/>
+                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                    <Setter Property="Height" Value="30"/>
+                    <Setter Property="Width" Value="auto"/>
+                </Style>
+            </DataGrid.Resources>
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow">
                     <Setter Property="Background" Value="Black"/>
