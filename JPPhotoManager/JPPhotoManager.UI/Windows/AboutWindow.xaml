@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:JPPhotoManager.UI"
         mc:Ignorable="d"
         Title="About JPPhotoManager" Height="300" Width="600" WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
-    <Grid Background="#FF3C3C3C">
+    <Grid Background="Black">
         <StackPanel Margin="205,10,10,0" Orientation="Vertical" VerticalAlignment="Top">
             <Label x:Name="productLabel" Content="{Binding Product}" Height="40" FontSize="21.333" Foreground="White" d:LayoutOverrides="LeftPosition, RightPosition"/>
             <Label x:Name="authorLabel" Content="{Binding Author}" Height="40" FontSize="18.667" Foreground="White" d:LayoutOverrides="LeftPosition, RightPosition"/>
