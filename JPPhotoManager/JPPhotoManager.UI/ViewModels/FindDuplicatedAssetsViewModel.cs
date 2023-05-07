@@ -52,8 +52,9 @@ namespace JPPhotoManager.UI.ViewModels
             foreach (var duplicatedSet in duplicatedAssets)
             {
                 DuplicatedSetViewModel duplicatedSetViewModel = new();
+                var sortedDuplicatedSet = duplicatedSet.OrderByDescending(ds => ds.FileCreationDateTime).ToList();
 
-                foreach (var asset in duplicatedSet)
+                foreach (var asset in sortedDuplicatedSet)
                 {
                     duplicatedSetViewModel.Add(
                         new DuplicatedAssetViewModel(Application)
@@ -67,6 +68,7 @@ namespace JPPhotoManager.UI.ViewModels
                 collection.Add(duplicatedSetViewModel);
             }
 
+            collection = collection.OrderByDescending(da => da.DuplicatesCount).ThenBy(da => da.FileName).ToList();
             DuplicatedAssetSetsCollection = collection;
         }
 
