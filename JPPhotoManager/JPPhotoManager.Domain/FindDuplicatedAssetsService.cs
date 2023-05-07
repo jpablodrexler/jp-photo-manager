@@ -29,7 +29,7 @@ namespace JPPhotoManager.Domain
 
             foreach (var group in assetGroups)
             {
-                result.Add(group.ToList());
+                result.Add(group.OrderByDescending(g => g.FileCreationDateTime).ToList());
             }
 
             // Removes stale assets, whose files no longer exists.
