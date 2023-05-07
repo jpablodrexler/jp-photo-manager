@@ -54,6 +54,18 @@
             <DockPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3">
                 <Label Content="Sync definitions" Margin="10 0 0 0" Foreground="White" Background="Black" DockPanel.Dock="Top"/>
                 <DataGrid ItemsSource="{Binding Definitions}" IsEnabled="{Binding CanConfigure}" AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="True" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="Black" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                    <DataGrid.Resources>
+                        <Style BasedOn="{StaticResource {x:Type DataGridColumnHeader}}" TargetType="{x:Type DataGridColumnHeader}">
+                            <Setter Property="Background" Value="Black"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="BorderBrush" Value="#303030"/>
+                            <Setter Property="BorderThickness" Value="1 1 1 1"/>
+                            <Setter Property="Padding" Value="5"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                            <Setter Property="Height" Value="30"/>
+                            <Setter Property="Width" Value="auto"/>
+                        </Style>
+                    </DataGrid.Resources>
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
                             <Setter Property="Background" Value="Black"/>
@@ -116,6 +128,18 @@
             <DockPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
                 <Label Content="Results" Margin="10 0 0 0" Foreground="White" Background="Black" DockPanel.Dock="Top"/>
                 <DataGrid ItemsSource="{Binding Results}" AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="Black" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                    <DataGrid.Resources>
+                        <Style BasedOn="{StaticResource {x:Type DataGridColumnHeader}}" TargetType="{x:Type DataGridColumnHeader}">
+                            <Setter Property="Background" Value="Black"/>
+                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="BorderBrush" Value="#303030"/>
+                            <Setter Property="BorderThickness" Value="1 1 1 1"/>
+                            <Setter Property="Padding" Value="5"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                            <Setter Property="Height" Value="30"/>
+                            <Setter Property="Width" Value="auto"/>
+                        </Style>
+                    </DataGrid.Resources>
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
                             <Setter Property="Background" Value="Black"/>
