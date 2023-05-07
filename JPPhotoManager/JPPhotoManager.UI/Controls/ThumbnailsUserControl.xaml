@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:c="clr-namespace:JPPhotoManager.UI.Converters"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800" Background="#FF3C3C3C">
+             d:DesignHeight="450" d:DesignWidth="800" Background="Black">
     <UserControl.Resources>
         <c:FileSizeConverter x:Key="FileSizeConverter" />
         <c:PixelSizeConverter x:Key="PixelSizeConverter" />
@@ -26,9 +26,9 @@
                             <DropShadowEffect/>
                         </Image.Effect>
                     </Image>
-                    <Label Grid.Row="0" Grid.Column="1" Foreground="#FFFFFFFF" Content="{ Binding FileName }" VerticalContentAlignment="Center"/>
-                    <Label Grid.Row="1" Grid.Column="1" Foreground="#FFFFFFFF" Content="{ Binding Converter={StaticResource PixelSizeConverter}}" VerticalContentAlignment="Center"/>
-                    <Label Grid.Row="2" Grid.Column="1" Foreground="#FFFFFFFF" Content="{ Binding FileSize, Converter={StaticResource FileSizeConverter}}" VerticalContentAlignment="Center"/>
+                    <Label Grid.Row="0" Grid.Column="1" Foreground="White" Content="{ Binding FileName }" VerticalContentAlignment="Center"/>
+                    <Label Grid.Row="1" Grid.Column="1" Foreground="White" Content="{ Binding Converter={StaticResource PixelSizeConverter}}" VerticalContentAlignment="Center"/>
+                    <Label Grid.Row="2" Grid.Column="1" Foreground="White" Content="{ Binding FileSize, Converter={StaticResource FileSizeConverter}}" VerticalContentAlignment="Center"/>
                 </Grid>
             </ContentControl>
         </DataTemplate>
@@ -37,7 +37,7 @@
         <ListBox Name="thumbnailsListView"
                  ItemsSource="{Binding ObservableAssets}"
                  ItemTemplate="{DynamicResource ThumbnailDataTemplate}"
-                 Background="#FF3C3C3C"
+                 Background="Black"
                  BorderThickness="1"
                  BorderBrush="#FF6C6C6C"
                  SelectedIndex="{Binding ViewerPosition}"

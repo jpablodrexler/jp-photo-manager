@@ -6,7 +6,7 @@
         xmlns:c="clr-namespace:JPPhotoManager.UI.Converters"
         mc:Ignorable="d"
         Title="Sync Assets" Height="450" Width="800"
-        Background="#FF3C3C3C"
+        Background="Black"
         WindowState="Maximized">
     <Window.Resources>
         <c:VisibilityConverter x:Key="VisibilityConverter" />
@@ -34,7 +34,7 @@
                 <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
             
-            <Label Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="10" Foreground="#FFFFFFFF" Background="#FF3C3C3C">
+            <Label Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Margin="10" Foreground="White" Background="Black">
                 <TextBlock TextWrapping="Wrap" Text="{Binding Description}" />
             </Label>
             <Label Grid.Row="1" Grid.Column="1" Content="Continue" Style="{StaticResource ButtonStyle}" MouseLeftButtonDown="ContinueButton_MouseLeftButtonDown" Margin="10"/>
@@ -52,12 +52,12 @@
                 <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
             <DockPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3">
-                <Label Content="Sync definitions" Margin="10 0 0 0" Foreground="#FFFFFFFF" Background="#FF3C3C3C" DockPanel.Dock="Top"/>
-                <DataGrid ItemsSource="{Binding Definitions}" IsEnabled="{Binding CanConfigure}" AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="True" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                <Label Content="Sync definitions" Margin="10 0 0 0" Foreground="White" Background="Black" DockPanel.Dock="Top"/>
+                <DataGrid ItemsSource="{Binding Definitions}" IsEnabled="{Binding CanConfigure}" AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="True" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="Black" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
-                            <Setter Property="Background" Value="#FF3C3C3C"/>
-                            <Setter Property="Foreground" Value="#FFFFFFFF"/>
+                            <Setter Property="Background" Value="Black"/>
+                            <Setter Property="Foreground" Value="White"/>
                         </Style>
                     </DataGrid.RowStyle>
                     <DataGrid.Columns>
@@ -99,7 +99,7 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
-            <ListBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" ItemsSource="{Binding ProcessStatusMessages}" Margin="10" Foreground="#FFFFFFFF" Background="#FF3C3C3C"/>
+            <ListBox Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" ItemsSource="{Binding ProcessStatusMessages}" Margin="10" Foreground="White" Background="Black"/>
             <Label Grid.Row="1" Grid.Column="1" IsEnabled="{Binding CanViewResults}" Content="View Results" Style="{StaticResource ButtonStyle}" MouseLeftButtonDown="ContinueButton_MouseLeftButtonDown" Margin="10"/>
         </Grid>
         
@@ -114,12 +114,12 @@
                 <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
             <DockPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
-                <Label Content="Results" Margin="10 0 0 0" Foreground="#FFFFFFFF" Background="#FF3C3C3C" DockPanel.Dock="Top"/>
-                <DataGrid ItemsSource="{Binding Results}" AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="#FF3C3C3C" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                <Label Content="Results" Margin="10 0 0 0" Foreground="White" Background="Black" DockPanel.Dock="Top"/>
+                <DataGrid ItemsSource="{Binding Results}" AutoGenerateColumns="False" CanUserReorderColumns="False" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="Black" ScrollViewer.CanContentScroll="True" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Auto">
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
-                            <Setter Property="Background" Value="#FF3C3C3C"/>
-                            <Setter Property="Foreground" Value="#FFFFFFFF"/>
+                            <Setter Property="Background" Value="Black"/>
+                            <Setter Property="Foreground" Value="White"/>
                         </Style>
                     </DataGrid.RowStyle>
                     <DataGrid.Columns>

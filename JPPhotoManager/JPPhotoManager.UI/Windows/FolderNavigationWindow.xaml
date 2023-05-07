@@ -13,7 +13,7 @@
             <Setter Property="BorderThickness" Value="0,0"/>
         </Style>
     </Window.Resources>
-    <Grid Background="#FF3C3C3C">
+    <Grid Background="Black">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
@@ -31,7 +31,7 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <Label Grid.Row="0" Grid.Column="0" Content="Selected path:" Foreground="#FFFFFFFF" Width="100" Margin="5"/>
+            <Label Grid.Row="0" Grid.Column="0" Content="Selected path:" Foreground="White" Width="100" Margin="5"/>
             <ComboBox Grid.Row="0" Grid.Column="1" x:Name="selectedPathComboBox" HorizontalAlignment="Stretch" Margin="5" IsEditable="True" Text="{Binding TargetPath}" ItemsSource="{Binding RecentTargetPaths}" />
         </Grid>
         <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Right">
