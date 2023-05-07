@@ -80,16 +80,10 @@
                         <DataGridTemplateColumn Header="Actions">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <Label x:Name="moveUpLabel" Padding="5" MouseLeftButtonDown="MoveUpLabel_MouseLeftButtonDown" Foreground="#FFFFFFFF" Visibility="{Binding Converter={StaticResource VisibilityConverter}}">
-                                            <TextBlock TextDecorations="Underline" Cursor="Hand">Move Up</TextBlock>
-                                        </Label>
-                                        <Label x:Name="moveDownLabel" Padding="5" MouseLeftButtonDown="MoveDownLabel_MouseLeftButtonDown" Foreground="#FFFFFFFF" Visibility="{Binding Converter={StaticResource VisibilityConverter}}">
-                                            <TextBlock TextDecorations="Underline" Cursor="Hand">Move Down</TextBlock>
-                                        </Label>
-                                        <Label x:Name="deleteLabel" Padding="5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown" Foreground="#FFFFFFFF" Visibility="{Binding Converter={StaticResource VisibilityConverter}}">
-                                            <TextBlock TextDecorations="Underline" Cursor="Hand">Delete</TextBlock>
-                                        </Label>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                                        <Label x:Name="moveUpLabel" Margin="5 0 0 5" MouseLeftButtonDown="MoveUpLabel_MouseLeftButtonDown" Content="Move Up" Foreground="White" Style="{StaticResource ButtonStyle}" Visibility="{Binding Converter={StaticResource VisibilityConverter}}"/>
+                                        <Label x:Name="moveDownLabel" Margin="5 0 0 5" MouseLeftButtonDown="MoveDownLabel_MouseLeftButtonDown" Content="Move Down" Foreground="White" Style="{StaticResource ButtonStyle}" Visibility="{Binding Converter={StaticResource VisibilityConverter}}"/>
+                                        <Label x:Name="deleteLabel" Margin="5 0 0 5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown" Content="Delete" Foreground="White" Style="{StaticResource ButtonStyle}" Visibility="{Binding Converter={StaticResource VisibilityConverter}}"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
