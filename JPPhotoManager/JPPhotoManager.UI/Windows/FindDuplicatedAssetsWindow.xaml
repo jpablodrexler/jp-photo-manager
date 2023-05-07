@@ -54,8 +54,8 @@
                 </Style>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="File Name" Binding="{Binding FileName}" CanUserSort="False" Width="300"/>
-                <DataGridTextColumn Header="Duplicates" Binding="{Binding DuplicatesCount}" CanUserSort="False" Width="100"/>
+                <DataGridTextColumn Header="File Name" Binding="{Binding FileName}" CanUserSort="False" IsReadOnly="True" Width="300"/>
+                <DataGridTextColumn Header="Duplicates" Binding="{Binding DuplicatesCount}" CanUserSort="False" IsReadOnly="True" Width="100"/>
             </DataGrid.Columns>
         </DataGrid>
         <DataGrid Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" ItemsSource="{Binding CurrentDuplicatedAssetSet}" SelectedIndex="{Binding DuplicatedAssetPosition}" AutoGenerateColumns="False" CanUserReorderColumns="True" CanUserAddRows="False" SelectionMode="Single" SelectionUnit="FullRow" Margin="10 0 10 0" Background="Black">
@@ -79,16 +79,16 @@
                 </Style>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Path" Binding="{Binding Asset.FullPath}" Width="400"/>
-                <DataGridTextColumn Header="Image size" Binding="{ Binding Asset, Converter={StaticResource PixelSizeConverter}}" Width="100"/>
-                <DataGridTextColumn Header="File size" Binding="{ Binding Asset.FileSize, Converter={StaticResource FileSizeConverter}}" Width="60"/>
-                <DataGridTextColumn Header="File created" Binding="{ Binding Asset.FileCreationDateTime}" Width="150"/>
-                <DataGridTextColumn Header="File last modified" Binding="{ Binding Asset.FileModificationDateTime}" Width="150"/>
+                <DataGridTextColumn Header="Path" Binding="{Binding Asset.FullPath}" Width="400" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Image size" Binding="{ Binding Asset, Converter={StaticResource PixelSizeConverter}}" IsReadOnly="True" Width="100"/>
+                <DataGridTextColumn Header="File size" Binding="{ Binding Asset.FileSize, Converter={StaticResource FileSizeConverter}}" IsReadOnly="True" Width="60"/>
+                <DataGridTextColumn Header="File created" Binding="{ Binding Asset.FileCreationDateTime, StringFormat=\{0:MM/dd/yyyy HH:mm\}}" IsReadOnly="True" Width="150"/>
+                <DataGridTextColumn Header="File last modified" Binding="{ Binding Asset.FileModificationDateTime, StringFormat=\{0:MM/dd/yyyy HH:mm\}}" IsReadOnly="True" Width="150"/>
                 <DataGridTemplateColumn Header="Actions" Width="50">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
-                                <Label x:Name="deleteLabel" DockPanel.Dock="Right" Padding="5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown" Content="Delete" Style="{StaticResource ButtonStyle}" />
+                                <Label x:Name="deleteLabel" DockPanel.Dock="Right" Margin="5 0 0 5" MouseLeftButtonDown="DeleteLabel_MouseLeftButtonDown" Content="Delete" Style="{StaticResource ButtonStyle}" />
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
