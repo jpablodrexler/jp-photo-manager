@@ -17,7 +17,7 @@
                   Grid.Row="0"
                   Grid.Column="0"
                   SelectedItemChanged="FoldersTreeView_SelectedItemChanged"
-                  Background="#FF3C3C3C"
+                  Background="#626262"
                   BorderBrush="#FF6C6C6C"
                   Foreground="#FFFFFFFF">
             <TreeView.Resources>
@@ -29,7 +29,14 @@
                     <Setter Property="HeaderTemplate">
                         <Setter.Value>
                             <DataTemplate>
-                                <TextBlock Text="{Binding}" Margin="5,0" Foreground="White"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Image Grid.Column="0" x:Name="FolderIcon" HorizontalAlignment="Left" Source="{Binding ImageSource}" VerticalAlignment="Center" Width="32" Height="20" Margin="5"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Folder.Name}" Margin="5,0" Foreground="#FFFFFFFF" VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+                                </Grid>
                             </DataTemplate>
                         </Setter.Value>
                     </Setter>

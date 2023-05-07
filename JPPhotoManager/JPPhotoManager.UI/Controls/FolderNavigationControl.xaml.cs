@@ -59,13 +59,13 @@ namespace JPPhotoManager.UI.Controls
             try
             {
                 foldersTreeView.Items.Clear();
-                Folder[] rootFolders = ViewModel.GetRootCatalogFolders();
+                FolderViewModel[] rootFolders = ViewModel.GetRootCatalogFolders();
 
-                foreach (Folder folder in rootFolders)
+                foreach (FolderViewModel folder in rootFolders)
                 {
                     TreeViewItem item = new()
                     {
-                        Header = folder.Name,
+                        Header = folder,
                         Tag = folder
                     };
 
@@ -89,17 +89,18 @@ namespace JPPhotoManager.UI.Controls
             {
                 item.Items.Clear();
 
-                Folder[] folders = ViewModel.GetSubFolders((Folder)item.Tag, includeHidden);
-                folders = folders.OrderBy(f => f.Name).ToArray();
+                FolderViewModel[] folders = ViewModel.GetSubFolders(((FolderViewModel)item.Tag).Folder, includeHidden);
+                folders = folders.OrderBy(f => f.Folder.Name).ToArray();
 
-                foreach (Folder folder in folders)
+                foreach (FolderViewModel folder in folders)
                 {
                     TreeViewItem subitem = new()
                     {
-                        Header = folder.Name,
+                        Header = folder,
                         Tag = folder
                     };
 
+                    subitem.Collapsed += new RoutedEventHandler(Item_Collapsed);
                     subitem.Expanded += new RoutedEventHandler(Item_Expanded);
                     item.Items.Add(subitem);
                     AddSubItems(subitem, includeHidden);
@@ -111,12 +112,24 @@ namespace JPPhotoManager.UI.Controls
             }
         }
 
+        private void Item_Collapsed(object sender, RoutedEventArgs e)
+        {
+            if (isInitializing)
+                return;
+
+            TreeViewItem item = (TreeViewItem)sender;
+            FolderViewModel folder = (FolderViewModel)item.Tag;
+            folder.IsExpanded = false; // TODO: THE SETTER DOESNT SEEM TO WORK.
+        }
+
         private void Item_Expanded(object sender, RoutedEventArgs e)
         {
             if (isInitializing)
                 return;
 
             TreeViewItem item = (TreeViewItem)sender;
+            FolderViewModel folder = (FolderViewModel)item.Tag;
+            folder.IsExpanded = true; // TODO: THE SETTER DOESNT SEEM TO WORK.
 
             if (LacksSubItems(item))
             {
@@ -140,9 +153,9 @@ namespace JPPhotoManager.UI.Controls
                 if (selectedTreeViewItem == null)
                     return;
 
-                if (selectedTreeViewItem.Tag is Folder folder)
+                if (selectedTreeViewItem.Tag is FolderViewModel folder)
                 {
-                    SelectedPath = folder.Path;
+                    SelectedPath = folder.Folder.Path;
                     FolderSelected?.Invoke(this, new EventArgs());
                 }
             }

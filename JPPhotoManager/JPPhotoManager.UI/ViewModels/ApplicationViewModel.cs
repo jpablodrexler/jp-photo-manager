@@ -504,9 +504,17 @@ namespace JPPhotoManager.UI.ViewModels
 
         public int GetCatalogCooldownMinutes() => Application.GetCatalogCooldownMinutes();
 
-        public Folder[] GetRootCatalogFolders() => Application.GetRootCatalogFolders();
+        public FolderViewModel[] GetRootCatalogFolders()
+        {
+            Folder[] rootFolders = Application.GetRootCatalogFolders();
+            return rootFolders.Select(f => new FolderViewModel(Application) { Folder = f, IsExpanded = false }).ToArray();
+        }
 
-        public Folder[] GetSubFolders(Folder parentFolder, bool includeHidden) => Application.GetSubFolders(parentFolder, includeHidden);
+        public FolderViewModel[] GetSubFolders(Folder parentFolder, bool includeHidden)
+        {
+            Folder[] subFolders = Application.GetSubFolders(parentFolder, includeHidden);
+            return subFolders.Select(f => new FolderViewModel(Application) { Folder = f, IsExpanded = false }).ToArray();
+        }
 
         public BitmapImage LoadBitmapImage() => Application.LoadBitmapImage(CurrentAsset.FullPath, CurrentAsset.ImageRotation);
     }
