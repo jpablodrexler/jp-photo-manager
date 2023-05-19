@@ -84,7 +84,7 @@
                 <DataGridTextColumn Header="File size" Binding="{ Binding Asset.FileSize, Converter={StaticResource FileSizeConverter}}" IsReadOnly="True" Width="60"/>
                 <DataGridTextColumn Header="File created" Binding="{ Binding Asset.FileCreationDateTime, StringFormat=\{0:MM/dd/yyyy HH:mm\}}" IsReadOnly="True" Width="150"/>
                 <DataGridTextColumn Header="File last modified" Binding="{ Binding Asset.FileModificationDateTime, StringFormat=\{0:MM/dd/yyyy HH:mm\}}" IsReadOnly="True" Width="150"/>
-                <DataGridTemplateColumn Header="Actions" Width="50">
+                <DataGridTemplateColumn Header="Actions" Width="60">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
