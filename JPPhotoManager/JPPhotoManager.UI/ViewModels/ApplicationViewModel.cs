@@ -526,13 +526,13 @@ namespace JPPhotoManager.UI.ViewModels
         public FolderViewModel[] GetRootCatalogFolders()
         {
             Folder[] rootFolders = Application.GetRootCatalogFolders();
-            return rootFolders.Select(f => new FolderViewModel(Application) { Folder = f, IsExpanded = false }).ToArray();
+            return rootFolders.Select(f => new FolderViewModel(this, Application) { Folder = f, IsExpanded = false }).ToArray();
         }
 
         public FolderViewModel[] GetSubFolders(Folder parentFolder, bool includeHidden)
         {
             Folder[] subFolders = Application.GetSubFolders(parentFolder, includeHidden);
-            return subFolders.Select(f => new FolderViewModel(Application) { Folder = f, IsExpanded = false }).ToArray();
+            return subFolders.Select(f => new FolderViewModel(this, Application) { Folder = f, IsExpanded = false }).ToArray();
         }
 
         public BitmapImage LoadBitmapImage() => Application.LoadBitmapImage(CurrentAsset.FullPath, CurrentAsset.ImageRotation);
