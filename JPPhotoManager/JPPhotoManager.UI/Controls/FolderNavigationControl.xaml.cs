@@ -155,9 +155,6 @@ namespace JPPhotoManager.UI.Controls
 
                 if (selectedTreeViewItem.Tag is FolderViewModel folder)
                 {
-                    if (selectedTreeViewItem.Items.Count > 0)
-                        selectedTreeViewItem.IsExpanded = true;
-                    
                     SelectedPath = folder.Folder.Path;
                     FolderSelected?.Invoke(this, new EventArgs());
                 }
