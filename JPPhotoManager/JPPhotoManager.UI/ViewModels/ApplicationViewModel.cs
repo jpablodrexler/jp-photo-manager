@@ -33,6 +33,7 @@ namespace JPPhotoManager.UI.ViewModels
         private PaginatedData<Asset> paginatedAssets;
         private Asset[] selectedAssets;
         private string appTitle;
+        private double loadingPercent;
         private string statusMessage;
         private SortCriteriaEnum sortCriteria;
         private SortCriteriaEnum previousSortCriteria;
@@ -60,7 +61,7 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 appMode = value;
                 NotifyPropertyChanged(nameof(AppMode), nameof(ThumbnailsVisible), nameof(ViewerVisible));
-                UpdateAppTitle();
+                UpdateAppStatus();
             }
         }
 
@@ -101,6 +102,11 @@ namespace JPPhotoManager.UI.ViewModels
             get { return AppMode == AppModeEnum.Viewer ? Visibility.Visible : Visibility.Hidden; }
         }
 
+        public Visibility LoadingVisible
+        {
+            get { return LoadingPercent > 0 && LoadingPercent < 100 ? Visibility.Visible : Visibility.Hidden; }
+        }
+
         public int ViewerPosition
         {
             get { return viewerPosition; }
@@ -112,7 +118,7 @@ namespace JPPhotoManager.UI.ViewModels
                     nameof(CanGoToPreviousAsset),
                     nameof(CanGoToNextAsset),
                     nameof(CurrentAsset));
-                UpdateAppTitle();
+                UpdateAppStatus();
             }
         }
 
@@ -133,7 +139,7 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 currentFolder = value;
                 NotifyPropertyChanged(nameof(CurrentFolder));
-                UpdateAppTitle();
+                UpdateAppStatus();
             }
         }
 
@@ -144,7 +150,7 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 observableAssets = value;
                 NotifyPropertyChanged(nameof(ObservableAssets));
-                UpdateAppTitle();
+                UpdateAppStatus();
             }
         }
 
@@ -203,7 +209,7 @@ namespace JPPhotoManager.UI.ViewModels
             set
             {
                 isLoading = value;
-                UpdateAppTitle();
+                UpdateAppStatus();
             }
         }
 
@@ -214,6 +220,17 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 appTitle = value;
                 NotifyPropertyChanged(nameof(AppTitle));
+            }
+        }
+
+        public double LoadingPercent
+        {
+            get { return loadingPercent; }
+            set
+            {
+                loadingPercent = value;
+                NotifyPropertyChanged(nameof(LoadingPercent));
+                NotifyPropertyChanged(nameof(LoadingVisible));
             }
         }
 
@@ -240,7 +257,7 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 ObservableAssets.Add(asset);
                 NotifyPropertyChanged(nameof(ObservableAssets));
-                UpdateAppTitle();
+                UpdateAppStatus();
             }
         }
 
@@ -258,7 +275,7 @@ namespace JPPhotoManager.UI.ViewModels
 
                 cataloguedAssets = ObservableAssets.ToArray();
                 NotifyPropertyChanged(nameof(ObservableAssets));
-                UpdateAppTitle();
+                UpdateAppStatus();
             }
         }
 
@@ -284,7 +301,7 @@ namespace JPPhotoManager.UI.ViewModels
                     RemoveAssets(new Asset[] { updatedAsset });
                     AddAsset(asset);
                     NotifyPropertyChanged(nameof(ObservableAssets));
-                    UpdateAppTitle();
+                    UpdateAppStatus();
                 }
             }
         }
@@ -314,7 +331,7 @@ namespace JPPhotoManager.UI.ViewModels
 
         private void RemoveFolder(Folder folder) => FolderRemoved?.Invoke(this, new FolderRemovedEventArgs { Folder = folder });
 
-        private void UpdateAppTitle()
+        private void UpdateAppStatus()
         {
             string title = null;
             string sortCriteria = GetSortCriteriaDescription();
@@ -345,16 +362,18 @@ namespace JPPhotoManager.UI.ViewModels
                     sortCriteria);
             }
 
-            AppTitle = IsLoading ? $"{title} (loading {GetLoadingPercent()}%)" : title;
+            var percent = GetLoadingPercent();
+            LoadingPercent = percent ?? 0;
+            AppTitle = IsLoading ? $"{title} (loading)" : title;
         }
 
-        private string GetLoadingPercent()
+        private double? GetLoadingPercent()
         {
             double? count = ObservableAssets?.Count;
             double? totalCount = paginatedAssets?.TotalCount;
             double? percent = count * 100 / totalCount;
 
-            return percent.HasValue ? percent.Value.ToString("0") : string.Empty;
+            return percent;
         }
 
         public void GoToAsset(Asset asset)

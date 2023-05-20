@@ -57,7 +57,8 @@
             <local:FolderNavigationControl x:Name="folderTreeView" Grid.Column="0" Grid.Row="0" FolderSelected="FolderTreeView_FolderSelected" Visibility="{Binding ThumbnailsVisible}"/>
             <local:ViewerUserControl x:Name="viewerUserControl" Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="2" Grid.RowSpan="2" ThumbnailSelected="ViewerUserControl_ThumbnailSelected" Visibility="{Binding ViewerVisible}"/>
             <local:ThumbnailsUserControl x:Name="thumbnailsUserControl" Grid.Column="1" Grid.Row="0" ThumbnailSelected="ThumbnailsUserControl_ThumbnailSelected" Visibility="{Binding ThumbnailsVisible}"/>
-            <Label x:Name="statusLabel" Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" Foreground="White" Background="Black" Content="{Binding StatusMessage}" Visibility="{Binding ThumbnailsVisible}"/>
+            <ProgressBar x:Name="progressBar" Grid.Column="0" Grid.Row="1" Minimum="0" Maximum="100" Value="{Binding LoadingPercent}" Visibility="{Binding LoadingVisible}"  Margin="12" />
+            <Label x:Name="statusLabel" Grid.Column="1" Grid.ColumnSpan="1" Grid.Row="1" Foreground="White" Background="Black" Content="{Binding StatusMessage}" Visibility="{Binding ThumbnailsVisible}"/>
         </Grid>
     </DockPanel>
 </Window>
