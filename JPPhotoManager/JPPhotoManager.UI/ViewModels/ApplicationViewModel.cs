@@ -364,7 +364,7 @@ namespace JPPhotoManager.UI.ViewModels
 
             var percent = GetLoadingPercent();
             LoadingPercent = percent ?? 0;
-            AppTitle = IsLoading ? $"{title} (loading)" : title;
+            AppTitle = title;
         }
 
         private double? GetLoadingPercent()
