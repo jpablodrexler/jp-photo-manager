@@ -73,7 +73,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                DeleteDefinition(((TextBlock)e.Source).DataContext);
+                DeleteDefinition(((FrameworkElement)e.Source).DataContext);
             }
             catch (Exception ex)
             {
@@ -85,7 +85,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                MoveUpDefinition(((TextBlock)e.Source).DataContext);
+                MoveUpDefinition(((FrameworkElement)e.Source).DataContext);
             }
             catch (Exception ex)
             {
@@ -97,7 +97,7 @@ namespace JPPhotoManager.UI.Windows
         {
             try
             {
-                MoveDownDefinition(((TextBlock)e.Source).DataContext);
+                MoveDownDefinition(((FrameworkElement)e.Source).DataContext);
             }
             catch (Exception ex)
             {
