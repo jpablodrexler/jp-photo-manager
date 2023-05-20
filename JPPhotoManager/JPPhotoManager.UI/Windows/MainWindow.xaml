@@ -4,6 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:JPPhotoManager.UI.Controls"
+        xmlns:viewmodels="clr-namespace:JPPhotoManager.UI.ViewModels"
+        d:DataContext="{d:DesignInstance Type=viewmodels:ApplicationViewModel}"
         x:Name="window" x:Class="JPPhotoManager.UI.Windows.MainWindow"
         mc:Ignorable="d"
         Title="{Binding AppTitle}" Height="600" Width="800" Foreground="White" Background="Black" WindowState="Maximized"

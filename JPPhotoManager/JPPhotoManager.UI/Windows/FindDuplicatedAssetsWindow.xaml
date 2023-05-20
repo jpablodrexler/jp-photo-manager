@@ -4,6 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:c="clr-namespace:JPPhotoManager.UI.Converters"
+        xmlns:viewmodels="clr-namespace:JPPhotoManager.UI.ViewModels"
+        d:DataContext="{d:DesignInstance Type=viewmodels:FindDuplicatedAssetsViewModel}"
         mc:Ignorable="d"
         Title="Find Duplicates"
         WindowState="Maximized"
