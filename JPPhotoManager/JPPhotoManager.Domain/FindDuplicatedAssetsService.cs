@@ -4,15 +4,15 @@ namespace JPPhotoManager.Domain
 {
     public class FindDuplicatedAssetsService : IFindDuplicatedAssetsService
     {
-        private readonly IAssetRepository assetRepository;
-        private readonly IStorageService storageService;
+        private readonly IAssetRepository _assetRepository;
+        private readonly IStorageService _storageService;
 
         public FindDuplicatedAssetsService(
             IAssetRepository assetRepository,
             IStorageService storageService)
         {
-            this.assetRepository = assetRepository;
-            this.storageService = storageService;
+            _assetRepository = assetRepository;
+            _storageService = storageService;
         }
 
         /// <summary>
@@ -23,7 +23,7 @@ namespace JPPhotoManager.Domain
         public List<List<Asset>> GetDuplicatedAssets()
         {
             List<List<Asset>> result = new();
-            List<Asset> assets = new(assetRepository.GetCataloguedAssets());
+            List<Asset> assets = new(_assetRepository.GetCataloguedAssets());
             var assetGroups = assets.GroupBy(a => a.Hash);
             assetGroups = assetGroups.Where(g => g.Count() > 1);
 
@@ -39,7 +39,7 @@ namespace JPPhotoManager.Domain
 
                 for (int i = 0; i < duplicatedSet.Count; i++)
                 {
-                    if (!storageService.FileExists(duplicatedSet[i].FullPath))
+                    if (!_storageService.FileExists(duplicatedSet[i].FullPath))
                     {
                         assetsToRemove.Add(duplicatedSet[i]);
                     }
@@ -58,7 +58,7 @@ namespace JPPhotoManager.Domain
             {
                 foreach (Asset asset in duplicatedSet)
                 {
-                    storageService.GetFileInformation(asset);
+                    _storageService.GetFileInformation(asset);
                 }
             }
 

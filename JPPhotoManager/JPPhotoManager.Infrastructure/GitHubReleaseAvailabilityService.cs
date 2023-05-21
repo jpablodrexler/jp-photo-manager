@@ -5,17 +5,17 @@ namespace JPPhotoManager.Infrastructure
 {
     public class GitHubReleaseAvailabilityService : IReleaseAvailabilityService
     {
-        private readonly IUserConfigurationService userConfigurationService;
+        private readonly IUserConfigurationService _userConfigurationService;
 
         public GitHubReleaseAvailabilityService(IUserConfigurationService userConfigurationService)
         {
-            this.userConfigurationService = userConfigurationService;
+            _userConfigurationService = userConfigurationService;
         }
 
         public async Task<Domain.Release> GetLatestReleaseAsync()
         {
-            var repositoryName = userConfigurationService.GetRepositoryName();
-            var repositoryOwner = userConfigurationService.GetRepositoryOwner();
+            var repositoryName = _userConfigurationService.GetRepositoryName();
+            var repositoryOwner = _userConfigurationService.GetRepositoryOwner();
             var github = new GitHubClient(new ProductHeaderValue(repositoryName));
             var release = await github.Repository.Release.GetLatest(repositoryOwner, repositoryName);
 

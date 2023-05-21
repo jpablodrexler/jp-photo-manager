@@ -11,35 +11,35 @@ namespace JPPhotoManager.Infrastructure
 {
     public class AssetRepository : IAssetRepository
     {
-        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         private const double STORAGE_VERSION = 1.1;
         private const string SEPARATOR = "|";
         private const int PAGE_SIZE = 100;
 
         public bool IsInitialized { get; private set; }
-        private string dataDirectory;
-        private readonly IDatabase database;
-        private readonly IStorageService storageService;
-        private readonly IUserConfigurationService userConfigurationService;
+        private string _dataDirectory;
+        private readonly IDatabase _database;
+        private readonly IStorageService _storageService;
+        private readonly IUserConfigurationService _userConfigurationService;
 
-        private List<Asset> assets;
-        private List<Folder> folders;
-        private SyncAssetsConfiguration syncAssetsConfiguration;
-        private List<string> recentTargetPaths;
+        private List<Asset> _assets;
+        private List<Folder> _folders;
+        private SyncAssetsConfiguration _syncAssetsConfiguration;
+        private List<string> _recentTargetPaths;
         protected Dictionary<string, byte[]> Thumbnails { get; private set; }
-        private Queue<string> recentThumbnailsQueue;
-        private bool hasChanges;
-        private object syncLock;
+        private Queue<string> _recentThumbnailsQueue;
+        private bool _hasChanges;
+        private object _syncLock;
 
         public AssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService)
         {
-            this.database = database;
-            this.storageService = storageService;
-            this.userConfigurationService = userConfigurationService;
+            _database = database;
+            _storageService = storageService;
+            _userConfigurationService = userConfigurationService;
             Thumbnails = new Dictionary<string, byte[]>();
-            recentThumbnailsQueue = new Queue<string>();
-            syncLock = new object();
+            _recentThumbnailsQueue = new Queue<string>();
+            _syncLock = new object();
             Initialize();
         }
 
@@ -50,7 +50,7 @@ namespace JPPhotoManager.Infrastructure
                 InitializeDatabase();
                 ReadCatalog();
 
-                if (assets == null)
+                if (_assets == null)
                 {
                     SaveCatalog(null);
                 }
@@ -61,11 +61,11 @@ namespace JPPhotoManager.Infrastructure
 
         private void InitializeDatabase()
         {
-            dataDirectory = storageService.ResolveDataDirectory(STORAGE_VERSION);
+            _dataDirectory = _storageService.ResolveDataDirectory(STORAGE_VERSION);
             var separatorChar = SEPARATOR.ToCharArray().First();
-            database.Initialize(dataDirectory, separatorChar);
+            _database.Initialize(_dataDirectory, separatorChar);
 
-            database.SetDataTableProperties(new DataTableProperties
+            _database.SetDataTableProperties(new DataTableProperties
             {
                 TableName = "Folder",
                 ColumnProperties = new ColumnProperties[]
@@ -75,7 +75,7 @@ namespace JPPhotoManager.Infrastructure
                 }
             });
 
-            database.SetDataTableProperties(new DataTableProperties
+            _database.SetDataTableProperties(new DataTableProperties
             {
                 TableName = "Asset",
                 ColumnProperties = new ColumnProperties[]
@@ -94,7 +94,7 @@ namespace JPPhotoManager.Infrastructure
                 }
             });
 
-            database.SetDataTableProperties(new DataTableProperties
+            _database.SetDataTableProperties(new DataTableProperties
             {
                 TableName = "Import",
                 ColumnProperties = new ColumnProperties[]
@@ -106,7 +106,7 @@ namespace JPPhotoManager.Infrastructure
                 }
             });
 
-            database.SetDataTableProperties(new DataTableProperties
+            _database.SetDataTableProperties(new DataTableProperties
             {
                 TableName = "RecentTargetPaths",
                 ColumnProperties = new ColumnProperties[]
@@ -118,45 +118,45 @@ namespace JPPhotoManager.Infrastructure
 
         private void ReadCatalog()
         {
-            assets = ReadAssets();
-            folders = ReadFolders();
-            syncAssetsConfiguration = new SyncAssetsConfiguration();
+            _assets = ReadAssets();
+            _folders = ReadFolders();
+            _syncAssetsConfiguration = new SyncAssetsConfiguration();
 
             var syncDefinitions = ReadSyncDefinitions();
             
             if (syncDefinitions != null)
             {
-                syncAssetsConfiguration.Definitions.AddRange(syncDefinitions);
+                _syncAssetsConfiguration.Definitions.AddRange(syncDefinitions);
             }
             
-            assets?.ForEach(a => a.Folder = GetFolderById(a.FolderId));
-            recentTargetPaths = ReadRecentTargetPaths();
+            _assets?.ForEach(a => a.Folder = GetFolderById(a.FolderId));
+            _recentTargetPaths = ReadRecentTargetPaths();
         }
 
         public void SaveCatalog(Folder folder)
         {
-            lock (syncLock)
+            lock (_syncLock)
             {
-                if (hasChanges)
+                if (_hasChanges)
                 {
-                    WriteAssets(assets);
-                    WriteFolders(folders);
-                    WriteSyncDefinitions(syncAssetsConfiguration.Definitions);
-                    WriteRecentTargetPaths(recentTargetPaths);
+                    WriteAssets(_assets);
+                    WriteFolders(_folders);
+                    WriteSyncDefinitions(_syncAssetsConfiguration.Definitions);
+                    WriteRecentTargetPaths(_recentTargetPaths);
                 }
 
-                hasChanges = false;
+                _hasChanges = false;
             }
         }
 
         public bool ShouldWriteBackup(DateTime today)
         {
             bool shouldWrite = false;
-            var days = userConfigurationService.GetBackupEveryNDays();
+            var days = _userConfigurationService.GetBackupEveryNDays();
 
             if (days > 0)
             {
-                var backupDates = database.GetBackupDates();
+                var backupDates = _database.GetBackupDates();
 
                 if (backupDates?.Length > 0)
                 {
@@ -164,11 +164,11 @@ namespace JPPhotoManager.Infrastructure
                     var newBackupDate = lastBackupDate.AddDays(days);
 
                     shouldWrite = today.Date >= newBackupDate.Date
-                        && !database.BackupExists(today.Date);
+                        && !_database.BackupExists(today.Date);
                 }
                 else
                 {
-                    shouldWrite = !database.BackupExists(today.Date);
+                    shouldWrite = !_database.BackupExists(today.Date);
                 }
             }
 
@@ -177,9 +177,9 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteBackup()
         {
-            if (database.WriteBackup(DateTime.Now.Date))
+            if (_database.WriteBackup(DateTime.Now.Date))
             {
-                database.DeleteOldBackups(userConfigurationService.GetBackupsToKeep());
+                _database.DeleteOldBackups(_userConfigurationService.GetBackupsToKeep());
             }
         }
 
@@ -189,7 +189,7 @@ namespace JPPhotoManager.Infrastructure
 
             try
             {
-                result = database.ReadObjectList("Folder", f =>
+                result = _database.ReadObjectList("Folder", f =>
                     new Folder
                     {
                         FolderId = f[0],
@@ -199,10 +199,10 @@ namespace JPPhotoManager.Infrastructure
             catch (ArgumentException ex)
             {
                 throw new ApplicationException($"Error while trying to read data table 'Folder'. " +
-                    $"DataDirectory: {database.DataDirectory} - " +
-                    $"Separator: {database.Separator} - " +
-                    $"LastReadFilePath: {database.Diagnostics.LastReadFilePath} - " +
-                    $"LastReadFileRaw: {database.Diagnostics.LastReadFileRaw}",
+                    $"DataDirectory: {_database.DataDirectory} - " +
+                    $"Separator: {_database.Separator} - " +
+                    $"LastReadFilePath: {_database.Diagnostics.LastReadFilePath} - " +
+                    $"LastReadFileRaw: {_database.Diagnostics.LastReadFileRaw}",
                     ex);
             }
 
@@ -215,7 +215,7 @@ namespace JPPhotoManager.Infrastructure
 
             try
             {
-                result = database.ReadObjectList("Asset", f =>
+                result = _database.ReadObjectList("Asset", f =>
                     new Asset
                     {
                         AssetId = f[0],
@@ -234,10 +234,10 @@ namespace JPPhotoManager.Infrastructure
             catch (ArgumentException ex)
             {
                 throw new ApplicationException($"Error while trying to read data table 'Asset'. " +
-                    $"DataDirectory: {database.DataDirectory} - " +
-                    $"Separator: {database.Separator} - " +
-                    $"LastReadFilePath: {database.Diagnostics.LastReadFilePath} - " +
-                    $"LastReadFileRaw: {database.Diagnostics.LastReadFileRaw}",
+                    $"DataDirectory: {_database.DataDirectory} - " +
+                    $"Separator: {_database.Separator} - " +
+                    $"LastReadFilePath: {_database.Diagnostics.LastReadFilePath} - " +
+                    $"LastReadFileRaw: {_database.Diagnostics.LastReadFileRaw}",
                     ex);
             }
 
@@ -250,7 +250,7 @@ namespace JPPhotoManager.Infrastructure
 
             try
             {
-                result = database.ReadObjectList("Import", f =>
+                result = _database.ReadObjectList("Import", f =>
                     new SyncAssetsDirectoriesDefinition
                     {
                         SourceDirectory = f[0],
@@ -262,10 +262,10 @@ namespace JPPhotoManager.Infrastructure
             catch (ArgumentException ex)
             {
                 throw new ApplicationException($"Error while trying to read data table 'Import'. " +
-                    $"DataDirectory: {database.DataDirectory} - " +
-                    $"Separator: {database.Separator} - " +
-                    $"LastReadFilePath: {database.Diagnostics.LastReadFilePath} - " +
-                    $"LastReadFileRaw: {database.Diagnostics.LastReadFileRaw}",
+                    $"DataDirectory: {_database.DataDirectory} - " +
+                    $"Separator: {_database.Separator} - " +
+                    $"LastReadFilePath: {_database.Diagnostics.LastReadFilePath} - " +
+                    $"LastReadFileRaw: {_database.Diagnostics.LastReadFileRaw}",
                     ex);
             }
 
@@ -278,15 +278,15 @@ namespace JPPhotoManager.Infrastructure
 
             try
             {
-                result = database.ReadObjectList("RecentTargetPaths", f => f[0]);
+                result = _database.ReadObjectList("RecentTargetPaths", f => f[0]);
             }
             catch (ArgumentException ex)
             {
                 throw new ApplicationException($"Error while trying to read data table 'RecentTargetPaths'. " +
-                    $"DataDirectory: {database.DataDirectory} - " +
-                    $"Separator: {database.Separator} - " +
-                    $"LastReadFilePath: {database.Diagnostics.LastReadFilePath} - " +
-                    $"LastReadFileRaw: {database.Diagnostics.LastReadFileRaw}",
+                    $"DataDirectory: {_database.DataDirectory} - " +
+                    $"Separator: {_database.Separator} - " +
+                    $"LastReadFilePath: {_database.Diagnostics.LastReadFilePath} - " +
+                    $"LastReadFileRaw: {_database.Diagnostics.LastReadFileRaw}",
                     ex);
             }
 
@@ -295,7 +295,7 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteFolders(List<Folder> folders)
         {
-            database.WriteObjectList(folders, "Folder", (f, i) =>
+            _database.WriteObjectList(folders, "Folder", (f, i) =>
             {
                 return i switch
                 {
@@ -308,7 +308,7 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteAssets(List<Asset> assets)
         {
-            database.WriteObjectList(assets, "Asset", (a, i) =>
+            _database.WriteObjectList(assets, "Asset", (a, i) =>
             {
                 return i switch
                 {
@@ -330,7 +330,7 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteSyncDefinitions(List<SyncAssetsDirectoriesDefinition> definitions)
         {
-            database.WriteObjectList(definitions, "Import", (d, i) =>
+            _database.WriteObjectList(definitions, "Import", (d, i) =>
             {
                 return i switch
                 {
@@ -345,7 +345,7 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteRecentTargetPaths(List<string> recentTargetPaths)
         {
-            database.WriteObjectList(recentTargetPaths, "RecentTargetPaths", (p, i) =>
+            _database.WriteObjectList(recentTargetPaths, "RecentTargetPaths", (p, i) =>
             {
                 return i switch
                 {
@@ -373,7 +373,7 @@ namespace JPPhotoManager.Infrastructure
             }
 
             // TODO: Implement through the NuGet package.
-            string thumbnailsFilePath = database.ResolveBlobFilePath(dataDirectory, asset.ThumbnailBlobName);
+            string thumbnailsFilePath = _database.ResolveBlobFilePath(_dataDirectory, asset.ThumbnailBlobName);
             File.Delete(thumbnailsFilePath);
         }
 
@@ -385,28 +385,28 @@ namespace JPPhotoManager.Infrastructure
             }
 
             // TODO: Implement through the NuGet package.
-            string thumbnailsFilePath = database.ResolveBlobFilePath(dataDirectory, thumbnailBlobName);
+            string thumbnailsFilePath = _database.ResolveBlobFilePath(_dataDirectory, thumbnailBlobName);
             File.Delete(thumbnailsFilePath);
         }
 
         public string[] GetThumbnailsList()
         {
-            string blobsDirectory = database.GetBlobsDirectory(dataDirectory);
+            string blobsDirectory = _database.GetBlobsDirectory(_dataDirectory);
             return Directory.GetFiles(blobsDirectory);
         }
 
         private void RemoveOldThumbnailsDictionaryEntries(Folder folder)
         {
-            int entriesToKeep = userConfigurationService.GetThumbnailsDictionaryEntriesToKeep();
+            int entriesToKeep = _userConfigurationService.GetThumbnailsDictionaryEntriesToKeep();
 
-            if (!recentThumbnailsQueue.Contains(folder.Path))
+            if (!_recentThumbnailsQueue.Contains(folder.Path))
             {
-                recentThumbnailsQueue.Enqueue(folder.Path);
+                _recentThumbnailsQueue.Enqueue(folder.Path);
             }
 
-            if (recentThumbnailsQueue.Count > entriesToKeep)
+            if (_recentThumbnailsQueue.Count > entriesToKeep)
             {
-                var pathToRemove = recentThumbnailsQueue.Dequeue();
+                var pathToRemove = _recentThumbnailsQueue.Dequeue();
                 var folderToRemove = GetFolderByPath(pathToRemove);
                 var assets = GetAssetsByFolderId(folderToRemove.FolderId);
 
@@ -424,9 +424,9 @@ namespace JPPhotoManager.Infrastructure
         {
             bool result = false;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
-                result = hasChanges;
+                result = _hasChanges;
             }
 
             return result;
@@ -434,7 +434,7 @@ namespace JPPhotoManager.Infrastructure
 
         private void SaveThumbnails(Dictionary<string, byte[]> thumbnails, string thumbnailsFileName)
         {
-            database.WriteBlob(thumbnails, thumbnailsFileName);
+            _database.WriteBlob(thumbnails, thumbnailsFileName);
         }
 
         public PaginatedData<Asset> GetAssets(string directory, int pageIndex)
@@ -446,7 +446,7 @@ namespace JPPhotoManager.Infrastructure
 
             try
             {
-                lock (syncLock)
+                lock (_syncLock)
                 {
                     Folder folder = GetFolderByPath(directory);
 
@@ -464,7 +464,7 @@ namespace JPPhotoManager.Infrastructure
                             {
                                 if (!Thumbnails.ContainsKey(asset.ThumbnailBlobName))
                                 {
-                                    var bytes = (byte[])database.ReadBlob(asset.ThumbnailBlobName);
+                                    var bytes = (byte[])_database.ReadBlob(asset.ThumbnailBlobName);
 
                                     if (bytes != null)
                                     {
@@ -472,7 +472,7 @@ namespace JPPhotoManager.Infrastructure
                                     }
                                 }
                                 
-                                asset.ImageData = Thumbnails.ContainsKey(asset.ThumbnailBlobName) ? storageService.LoadBitmapImage(Thumbnails[asset.ThumbnailBlobName], asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight) : null;
+                                asset.ImageData = Thumbnails.ContainsKey(asset.ThumbnailBlobName) ? _storageService.LoadBitmapImage(Thumbnails[asset.ThumbnailBlobName], asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight) : null;
                             }
 
                             // Removes assets with no thumbnails.
@@ -494,14 +494,14 @@ namespace JPPhotoManager.Infrastructure
 
                         foreach (Asset asset in assetsList)
                         {
-                            storageService.GetFileInformation(asset);
+                            _storageService.GetFileInformation(asset);
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
 
             return new PaginatedData<Asset> { Items = assetsList.ToArray(), PageIndex = pageIndex, TotalCount = totalCount };
@@ -511,9 +511,9 @@ namespace JPPhotoManager.Infrastructure
         {
             bool result = false;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
-                result = folders.Any(f => f.Path == path);
+                result = _folders.Any(f => f.Path == path);
             }
 
             return result;
@@ -523,7 +523,7 @@ namespace JPPhotoManager.Infrastructure
         {
             Folder folder;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
                 string folderId = Guid.NewGuid().ToString();
 
@@ -533,8 +533,8 @@ namespace JPPhotoManager.Infrastructure
                     Path = path
                 };
 
-                folders.Add(folder);
-                hasChanges = true;
+                _folders.Add(folder);
+                _hasChanges = true;
             }
 
             return folder;
@@ -542,7 +542,7 @@ namespace JPPhotoManager.Infrastructure
 
         public void AddAsset(Asset asset, byte[] thumbnailData)
         {
-            lock (syncLock)
+            lock (_syncLock)
             {
                 Folder folder = GetFolderById(asset.FolderId);
 
@@ -555,11 +555,11 @@ namespace JPPhotoManager.Infrastructure
 
                 if (thumbnailData != null)
                 {
-                    database.WriteBlob(thumbnailData, asset.ThumbnailBlobName);
+                    _database.WriteBlob(thumbnailData, asset.ThumbnailBlobName);
                 }
 
-                assets.Add(asset);
-                hasChanges = true;
+                _assets.Add(asset);
+                _hasChanges = true;
             }
         }
 
@@ -567,9 +567,9 @@ namespace JPPhotoManager.Infrastructure
         {
             Folder[] result;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
-                result = folders.ToArray();
+                result = _folders.ToArray();
             }
 
             return result;
@@ -586,9 +586,9 @@ namespace JPPhotoManager.Infrastructure
         {
             Folder result = null;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
-                result = folders.FirstOrDefault(f => f.Path == path);
+                result = _folders.FirstOrDefault(f => f.Path == path);
             }
 
             return result;
@@ -598,9 +598,9 @@ namespace JPPhotoManager.Infrastructure
         {
             Folder result = null;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
-                result = folders.FirstOrDefault(f => f.FolderId == folderId);
+                result = _folders.FirstOrDefault(f => f.FolderId == folderId);
             }
 
             return result;
@@ -610,9 +610,9 @@ namespace JPPhotoManager.Infrastructure
         {
             List<Asset> result = null;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
-                result = assets.Where(a => a.FolderId == folderId).ToList();
+                result = _assets.Where(a => a.FolderId == folderId).ToList();
             }
 
             return result;
@@ -622,9 +622,9 @@ namespace JPPhotoManager.Infrastructure
         {
             Asset result = null;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
-                result = assets.FirstOrDefault(a => a.FolderId == folderId && a.FileName == fileName);
+                result = _assets.FirstOrDefault(a => a.FolderId == folderId && a.FileName == fileName);
             }
 
             return result;
@@ -632,7 +632,7 @@ namespace JPPhotoManager.Infrastructure
 
         public void DeleteAsset(string directory, string fileName)
         {
-            lock (syncLock)
+            lock (_syncLock)
             {
                 Folder folder = GetFolderByPath(directory);
 
@@ -647,8 +647,8 @@ namespace JPPhotoManager.Infrastructure
                             DeleteThumbnail(deletedAsset);
                         }
 
-                        assets.Remove(deletedAsset);
-                        hasChanges = true;
+                        _assets.Remove(deletedAsset);
+                        _hasChanges = true;
                     }
                 }
             }
@@ -656,14 +656,14 @@ namespace JPPhotoManager.Infrastructure
 
         public void DeleteFolder(Folder folder)
         {
-            lock (syncLock)
+            lock (_syncLock)
             {
                 if (folder != null)
                 {
                     DeleteThumbnails(folder);
 
-                    folders.Remove(folder);
-                    hasChanges = true;
+                    _folders.Remove(folder);
+                    _hasChanges = true;
                 }
             }
         }
@@ -672,9 +672,9 @@ namespace JPPhotoManager.Infrastructure
         {
             List<Asset> cataloguedAssets = null;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
-                cataloguedAssets = assets;
+                cataloguedAssets = _assets;
             }
 
             return cataloguedAssets;
@@ -684,13 +684,13 @@ namespace JPPhotoManager.Infrastructure
         {
             List<Asset> cataloguedAssets = null;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
                 Folder folder = GetFolderByPath(directory);
 
                 if (folder != null)
                 {
-                    cataloguedAssets = assets.Where(a => a.FolderId == folder.FolderId).ToList();
+                    cataloguedAssets = _assets.Where(a => a.FolderId == folder.FolderId).ToList();
                 }
             }
 
@@ -701,7 +701,7 @@ namespace JPPhotoManager.Infrastructure
         {
             bool result = false;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
                 Folder folder = GetFolderByPath(directoryName);
                 result = folder != null && GetAssetByFolderIdFileName(folder.FolderId, fileName) != null;
@@ -714,7 +714,7 @@ namespace JPPhotoManager.Infrastructure
         {
             bool result = false;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
                 var folder = GetFolderByPath(directoryName);
 
@@ -728,7 +728,7 @@ namespace JPPhotoManager.Infrastructure
 
                         if (!Thumbnails.ContainsKey(thumbnailBlobName))
                         {
-                            var thumbnail = (byte[])database.ReadBlob(thumbnailBlobName);
+                            var thumbnail = (byte[])_database.ReadBlob(thumbnailBlobName);
 
                             if (thumbnail != null)
                             {
@@ -748,7 +748,7 @@ namespace JPPhotoManager.Infrastructure
         {
             BitmapImage result = null;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
                 var folder = GetFolderByPath(directoryName);
                 var asset = GetAssetByFolderIdFileName(folder.FolderId, fileName);
@@ -756,7 +756,7 @@ namespace JPPhotoManager.Infrastructure
 
                 if (!Thumbnails.ContainsKey(thumbnailBlobName))
                 {
-                    var thumbnail = (byte[])database.ReadBlob(thumbnailBlobName);
+                    var thumbnail = (byte[])_database.ReadBlob(thumbnailBlobName);
 
                     if (thumbnail != null)
                     {
@@ -766,7 +766,7 @@ namespace JPPhotoManager.Infrastructure
 
                 if (Thumbnails.ContainsKey(thumbnailBlobName))
                 {
-                    result = storageService.LoadBitmapImage(Thumbnails[thumbnailBlobName], width, height);
+                    result = _storageService.LoadBitmapImage(Thumbnails[thumbnailBlobName], width, height);
                 }
                 else
                 {
@@ -782,9 +782,9 @@ namespace JPPhotoManager.Infrastructure
         {
             SyncAssetsConfiguration result;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
-                result = syncAssetsConfiguration;
+                result = _syncAssetsConfiguration;
             }
 
             return result;
@@ -792,10 +792,10 @@ namespace JPPhotoManager.Infrastructure
 
         public void SaveSyncAssetsConfiguration(SyncAssetsConfiguration syncAssetsConfiguration)
         {
-            lock (syncLock)
+            lock (_syncLock)
             {
-                this.syncAssetsConfiguration = syncAssetsConfiguration;
-                hasChanges = true;
+                this._syncAssetsConfiguration = syncAssetsConfiguration;
+                _hasChanges = true;
             }
         }
 
@@ -803,9 +803,9 @@ namespace JPPhotoManager.Infrastructure
         {
             List<string> result = null;
 
-            lock (syncLock)
+            lock (_syncLock)
             {
-                result = recentTargetPaths;
+                result = _recentTargetPaths;
             }
 
             return result;
@@ -813,10 +813,10 @@ namespace JPPhotoManager.Infrastructure
 
         public void SaveRecentTargetPaths(List<string> recentTargetPaths)
         {
-            lock (syncLock)
+            lock (_syncLock)
             {
-                this.recentTargetPaths = recentTargetPaths;
-                hasChanges = true;
+                this._recentTargetPaths = recentTargetPaths;
+                _hasChanges = true;
             }
         }
     }

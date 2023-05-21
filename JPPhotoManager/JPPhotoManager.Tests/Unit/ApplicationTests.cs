@@ -10,12 +10,12 @@ namespace JPPhotoManager.Tests.Unit
 {
     public class ApplicationTests
     {
-        private readonly string dataDirectory;
+        private readonly string _dataDirectory;
 
         public ApplicationTests()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(ApplicationTests).Assembly.Location);
-            dataDirectory = Path.Combine(dataDirectory, "TestFiles");
+            _dataDirectory = Path.GetDirectoryName(typeof(ApplicationTests).Assembly.Location);
+            _dataDirectory = Path.Combine(_dataDirectory, "TestFiles");
         }
 
         [Fact]

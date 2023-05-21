@@ -10,29 +10,29 @@ namespace JPPhotoManager.Tests.Unit
 {
     public class BatchRenameServiceTests
     {
-        private readonly string directory = @"C:\My Images\My Folder";
-        private readonly Asset[] sourceAssets;
+        private readonly string _directory = @"C:\My Images\My Folder";
+        private readonly Asset[] _sourceAssets;
 
         public BatchRenameServiceTests()
         {
-            sourceAssets = new Asset[]
+            _sourceAssets = new Asset[]
             {
                 new Asset
                 {
                     FileName = "MyFirstImage.jpg",
-                    Folder = new Folder { Path = directory },
+                    Folder = new Folder { Path = _directory },
                     FileCreationDateTime = DateTime.Parse("2021-12-06T16:25:15")
                 },
                 new Asset
                 {
                     FileName = "MySecondImage.jpg",
-                    Folder = new Folder { Path = directory },
+                    Folder = new Folder { Path = _directory },
                     FileCreationDateTime = DateTime.Parse("2021-12-06T16:30:15")
                 },
                 new Asset
                 {
                     FileName = "MyThirdImage.jpg",
-                    Folder = new Folder { Path = directory },
+                    Folder = new Folder { Path = _directory },
                     FileCreationDateTime = DateTime.Parse("2021-12-06T16:35:15")
                 }
             };
@@ -46,14 +46,14 @@ namespace JPPhotoManager.Tests.Unit
                 .Setup(s => s.MoveImage(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns(true);
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, "Image_<##>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, "Image_<##>.jpg", false);
 
-            renameResult.SourceAssets.Should().HaveCount(sourceAssets.Length);
-            renameResult.SourceAssets[0].Should().Be(sourceAssets[0]);
-            renameResult.SourceAssets[1].Should().Be(sourceAssets[1]);
-            renameResult.SourceAssets[2].Should().Be(sourceAssets[2]);
+            renameResult.SourceAssets.Should().HaveCount(_sourceAssets.Length);
+            renameResult.SourceAssets[0].Should().Be(_sourceAssets[0]);
+            renameResult.SourceAssets[1].Should().Be(_sourceAssets[1]);
+            renameResult.SourceAssets[2].Should().Be(_sourceAssets[2]);
 
-            renameResult.TargetPaths.Should().HaveCount(sourceAssets.Length);
+            renameResult.TargetPaths.Should().HaveCount(_sourceAssets.Length);
             renameResult.TargetPaths[0].Should().Be(@"C:\My Images\My Folder\Image_01.jpg");
             renameResult.TargetPaths[1].Should().Be(@"C:\My Images\My Folder\Image_02.jpg");
             renameResult.TargetPaths[2].Should().Be(@"C:\My Images\My Folder\Image_03.jpg");
@@ -64,7 +64,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, "Image_<##>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, "Image_<##>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
@@ -82,7 +82,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"<CreationDate>\Image_<##>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, @"<CreationDate>\Image_<##>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
@@ -100,7 +100,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"<CreationDate>-<CreationTime>\Image_<##>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, @"<CreationDate>-<CreationTime>\Image_<##>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
@@ -118,7 +118,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"..\Image_<##>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, @"..\Image_<##>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
@@ -136,7 +136,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"..\..\Image_<##>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, @"..\..\Image_<##>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
@@ -154,7 +154,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"..\..\..\Image_<##>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, @"..\..\..\Image_<##>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -165,7 +165,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"..\<CreationDate>\Image_<##>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, @"..\<CreationDate>\Image_<##>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
@@ -183,7 +183,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"D:\OtherFolder\Image_<##>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, @"D:\OtherFolder\Image_<##>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
@@ -201,7 +201,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             using var mock = AutoMock.GetLoose();
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"\\OtherFolder\Image_<##>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, @"\\OtherFolder\Image_<##>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
@@ -237,7 +237,7 @@ namespace JPPhotoManager.Tests.Unit
                 });
 
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"..\<CreationDate>\Image_<##>.jpg", true);
+            var renameResult = service.BatchRename(_sourceAssets, @"..\<CreationDate>\Image_<##>.jpg", true);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
@@ -265,7 +265,7 @@ namespace JPPhotoManager.Tests.Unit
                 });
 
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"..\<CreationDate>\Image_<#>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, @"..\<CreationDate>\Image_<#>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
@@ -293,7 +293,7 @@ namespace JPPhotoManager.Tests.Unit
                 });
 
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"..\<CreationDate>\Image_<##>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, @"..\<CreationDate>\Image_<##>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
@@ -321,7 +321,7 @@ namespace JPPhotoManager.Tests.Unit
                 });
 
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"..\<CreationDate>\Image_<###>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, @"..\<CreationDate>\Image_<###>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
@@ -348,7 +348,7 @@ namespace JPPhotoManager.Tests.Unit
                 });
 
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"..\<CreationDate>\Image_<###>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, @"..\<CreationDate>\Image_<###>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
@@ -371,7 +371,7 @@ namespace JPPhotoManager.Tests.Unit
                 });
 
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"..\<CreationDate>\Image_<###>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, @"..\<CreationDate>\Image_<###>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",
@@ -395,7 +395,7 @@ namespace JPPhotoManager.Tests.Unit
                 });
 
             var service = mock.Container.Resolve<BatchRenameService>();
-            var renameResult = service.BatchRename(sourceAssets, @"..\Image_<CreationDate>.jpg", false);
+            var renameResult = service.BatchRename(_sourceAssets, @"..\Image_<CreationDate>.jpg", false);
 
             mock.Mock<IStorageService>()
                 .Verify(s => s.MoveImage(@"C:\My Images\My Folder\MyFirstImage.jpg",

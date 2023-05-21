@@ -16,11 +16,11 @@ namespace JPPhotoManager.UI.Controls
     [ExcludeFromCodeCoverage]
     public partial class FolderNavigationControl : UserControl
     {
-        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private object placeholderNode = null;
+        private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private object _placeholderNode = null;
         public event EventHandler FolderSelected;
         public string SelectedPath { get; set; }
-        private bool isInitializing = true;
+        private bool _isInitializing = true;
 
         public FolderNavigationControl()
         {
@@ -69,17 +69,17 @@ namespace JPPhotoManager.UI.Controls
                         Tag = folder
                     };
 
-                    item.Items.Add(placeholderNode);
+                    item.Items.Add(_placeholderNode);
                     item.Expanded += new RoutedEventHandler(Item_Expanded);
                     foldersTreeView.Items.Add(item);
                 }
 
                 GoToFolder(SelectedPath);
-                isInitializing = false;
+                _isInitializing = false;
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
         }
 
@@ -108,13 +108,13 @@ namespace JPPhotoManager.UI.Controls
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
         }
 
         private void Item_Collapsed(object sender, RoutedEventArgs e)
         {
-            if (isInitializing)
+            if (_isInitializing)
                 return;
 
             TreeViewItem item = (TreeViewItem)sender;
@@ -124,7 +124,7 @@ namespace JPPhotoManager.UI.Controls
 
         private void Item_Expanded(object sender, RoutedEventArgs e)
         {
-            if (isInitializing)
+            if (_isInitializing)
                 return;
 
             TreeViewItem item = (TreeViewItem)sender;
@@ -140,7 +140,7 @@ namespace JPPhotoManager.UI.Controls
 
         private bool LacksSubItems(TreeViewItem item)
         {
-            return item.Items.Count == 1 && item.Items[0] == placeholderNode;
+            return item.Items.Count == 1 && item.Items[0] == _placeholderNode;
         }
 
         private void FoldersTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -161,7 +161,7 @@ namespace JPPhotoManager.UI.Controls
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
         }
 

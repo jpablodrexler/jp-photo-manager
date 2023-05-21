@@ -1,15 +1,14 @@
 ﻿using JPPhotoManager.Domain.Interfaces;
-using System.IO;
 
 namespace JPPhotoManager.Domain
 {
     public class BatchRenameService : IBatchRenameService
     {
-        private readonly IStorageService storageService;
+        private readonly IStorageService _storageService;
 
         public BatchRenameService(IStorageService storageService)
         {
-            this.storageService = storageService;
+            _storageService = storageService;
         }
 
         public BatchRenameResult BatchRename(Asset[] sourceAssets, string batchFormat, bool overwriteExistingTargetFiles)
@@ -24,11 +23,11 @@ namespace JPPhotoManager.Domain
                         batchFormat,
                         i + 1,
                         Thread.CurrentThread.CurrentCulture,
-                        storageService,
+                        _storageService,
                         overwriteExistingTargetFiles);
 
                     if (!string.IsNullOrEmpty(targetPath)
-                        && storageService.MoveImage(sourceAssets[i].FullPath, targetPath))
+                        && _storageService.MoveImage(sourceAssets[i].FullPath, targetPath))
                     {
                         batchRenameResult.SourceAssets.Add(sourceAssets[i]);
                         batchRenameResult.TargetPaths.Add(targetPath);

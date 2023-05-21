@@ -4,11 +4,11 @@ namespace JPPhotoManager.Domain
 {
     public class DirectoryComparer : IDirectoryComparer
     {
-        private IStorageService storageService;
+        private IStorageService _storageService;
 
         public DirectoryComparer(IStorageService storageService)
         {
-            this.storageService = storageService;
+            _storageService = storageService;
         }
 
         public string[] GetNewFileNames(string[] fileNames, List<Asset> cataloguedAssets)
@@ -37,7 +37,7 @@ namespace JPPhotoManager.Domain
         {
             foreach (Asset asset in cataloguedAssets)
             {
-                storageService.GetFileInformation(asset);
+                _storageService.GetFileInformation(asset);
             }
 
             return cataloguedAssets

@@ -6,16 +6,16 @@ namespace JPPhotoManager.Domain
 {
     public class NewReleaseNotificationService : INewReleaseNotificationService
     {
-        private readonly IUserConfigurationService userConfigurationService;
-        private readonly IReleaseAvailabilityService releaseAvailabilityService;
+        private readonly IUserConfigurationService _userConfigurationService;
+        private readonly IReleaseAvailabilityService _releaseAvailabilityService;
 
-        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public NewReleaseNotificationService(IUserConfigurationService userConfigurationService,
             IReleaseAvailabilityService releaseAvailabilityService)
         {
-            this.userConfigurationService = userConfigurationService;
-            this.releaseAvailabilityService = releaseAvailabilityService;
+            _userConfigurationService = userConfigurationService;
+            _releaseAvailabilityService = releaseAvailabilityService;
         }
 
         public async Task<Release> CheckNewReleaseAsync()
@@ -24,8 +24,8 @@ namespace JPPhotoManager.Domain
 
             try
             {
-                var aboutInformation = userConfigurationService.GetAboutInformation(GetType().Assembly);
-                latestRelease = await releaseAvailabilityService.GetLatestReleaseAsync();
+                var aboutInformation = _userConfigurationService.GetAboutInformation(GetType().Assembly);
+                latestRelease = await _releaseAvailabilityService.GetLatestReleaseAsync();
 
                 if (aboutInformation != null && latestRelease != null)
                 {
@@ -35,7 +35,7 @@ namespace JPPhotoManager.Domain
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
 
             return latestRelease ?? new Release();

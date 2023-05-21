@@ -7,7 +7,7 @@ namespace JPPhotoManager.UI.ViewModels
 {
     public class SyncAssetsViewModel : BaseProcessViewModel<SyncAssetsConfiguration, SyncAssetsResult>
     {
-        private ObservableCollection<SyncAssetsDirectoriesDefinition>? definitions;
+        private ObservableCollection<SyncAssetsDirectoriesDefinition>? _definitions;
         
         public SyncAssetsViewModel(IApplication assetApp) : base(assetApp)
         {
@@ -20,10 +20,10 @@ namespace JPPhotoManager.UI.ViewModels
 
         public ObservableCollection<SyncAssetsDirectoriesDefinition>? Definitions
         {
-            get { return definitions; }
+            get { return _definitions; }
             set
             {
-                definitions = value;
+                _definitions = value;
                 NotifyPropertyChanged(nameof(Definitions));
             }
         }

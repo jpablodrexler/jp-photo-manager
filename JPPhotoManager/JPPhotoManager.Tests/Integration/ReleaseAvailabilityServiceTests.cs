@@ -12,29 +12,29 @@ namespace JPPhotoManager.Tests.Integration
 {
     public class ReleaseAvailabilityServiceTests
     {
-        private string dataDirectory;
-        private IConfigurationRoot configuration;
+        private string _dataDirectory;
+        private IConfigurationRoot _configuration;
 
         public ReleaseAvailabilityServiceTests()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(ApplicationTests).Assembly.Location);
-            dataDirectory = Path.Combine(dataDirectory, "TestFiles");
+            _dataDirectory = Path.GetDirectoryName(typeof(ApplicationTests).Assembly.Location);
+            _dataDirectory = Path.Combine(_dataDirectory, "TestFiles");
 
             Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
-                .MockGetValue("appsettings:InitialDirectory", dataDirectory)
-                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))
+                .MockGetValue("appsettings:InitialDirectory", _dataDirectory)
+                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(_dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))
                 .MockGetValue("appsettings:CatalogBatchSize", "100")
                 .MockGetValue("appsettings:Repository:Owner", "jpablodrexler")
                 .MockGetValue("appsettings:Repository:Name", "jp-photo-manager");
 
-            configuration = configurationMock.Object;
+            _configuration = configurationMock.Object;
         }
 
         [Fact(Skip = "GitHub API integration test")]
         public async void GetLatestRelease_ReturnReleaseData()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                cfg =>

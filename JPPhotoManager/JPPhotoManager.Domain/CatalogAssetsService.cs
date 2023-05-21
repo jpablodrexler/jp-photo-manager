@@ -8,15 +8,15 @@ namespace JPPhotoManager.Domain
 {
     public class CatalogAssetsService : ICatalogAssetsService
     {
-        private readonly IAssetRepository assetRepository;
-        private readonly IAssetHashCalculatorService assetHashCalculatorService;
-        private readonly IStorageService storageService;
-        private readonly IUserConfigurationService userConfigurationService;
-        private readonly IDirectoryComparer directoryComparer;
+        private readonly IAssetRepository _assetRepository;
+        private readonly IAssetHashCalculatorService _assetHashCalculatorService;
+        private readonly IStorageService _storageService;
+        private readonly IUserConfigurationService _userConfigurationService;
+        private readonly IDirectoryComparer _directoryComparer;
 
-        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private string currentFolderPath;
+        private string _currentFolderPath;
 
         public CatalogAssetsService(
             IAssetRepository assetRepository,
@@ -25,11 +25,11 @@ namespace JPPhotoManager.Domain
             IUserConfigurationService userConfigurationService,
             IDirectoryComparer directoryComparer)
         {
-            this.assetRepository = assetRepository;
-            this.assetHashCalculatorService = assetHashCalculatorService;
-            this.storageService = storageService;
-            this.userConfigurationService = userConfigurationService;
-            this.directoryComparer = directoryComparer;
+            _assetRepository = assetRepository;
+            _assetHashCalculatorService = assetHashCalculatorService;
+            _storageService = storageService;
+            _userConfigurationService = userConfigurationService;
+            _directoryComparer = directoryComparer;
         }
 
         public async Task CatalogAssetsAsync(CatalogChangeCallback callback)
@@ -41,10 +41,10 @@ namespace JPPhotoManager.Domain
 
                 try
                 {
-                    if (assetRepository.ShouldWriteBackup(DateTime.Now))
+                    if (_assetRepository.ShouldWriteBackup(DateTime.Now))
                     {
                         callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Creating catalog backup..." });
-                        assetRepository.WriteBackup();
+                        _assetRepository.WriteBackup();
                         callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
                     }
 
@@ -70,13 +70,13 @@ namespace JPPhotoManager.Domain
                     // there is a risk that it happens while saving the catalog files.
                     // This could result in the files being damaged.
                     // Therefore the application saves the files before the task is completly shut down.
-                    Folder currentFolder = assetRepository.GetFolderByPath(currentFolderPath);
-                    assetRepository.SaveCatalog(currentFolder);
+                    Folder currentFolder = _assetRepository.GetFolderByPath(_currentFolderPath);
+                    _assetRepository.SaveCatalog(currentFolder);
                     throw;
                 }
                 catch (Exception ex)
                 {
-                    log.Error(ex);
+                    _log.Error(ex);
                     callback?.Invoke(new CatalogChangeCallbackEventArgs { Exception = ex });
                 }
                 finally
@@ -88,31 +88,31 @@ namespace JPPhotoManager.Domain
 
         private Folder[] GetFoldersToCatalog()
         {
-            string[] rootPaths = userConfigurationService.GetRootCatalogFolderPaths();
+            string[] rootPaths = _userConfigurationService.GetRootCatalogFolderPaths();
 
             foreach (string root in rootPaths)
             {
-                if (!assetRepository.FolderExists(root))
+                if (!_assetRepository.FolderExists(root))
                 {
-                    assetRepository.AddFolder(root);
+                    _assetRepository.AddFolder(root);
                 }
             }
 
-            return assetRepository.GetFolders();
+            return _assetRepository.GetFolders();
         }
 
         private int CatalogAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, List<string> visitedFolders)
         {
             if (!visitedFolders.Contains(directory))
             {
-                currentFolderPath = directory;
-                int batchSize = userConfigurationService.GetCatalogBatchSize();
+                _currentFolderPath = directory;
+                int batchSize = _userConfigurationService.GetCatalogBatchSize();
 
-                if (storageService.FolderExists(directory))
+                if (_storageService.FolderExists(directory))
                 {
                     cataloguedAssetsBatchCount = CatalogExistingFolder(directory, callback, cataloguedAssetsBatchCount, batchSize, visitedFolders);
                 }
-                else if (!string.IsNullOrEmpty(directory) && !storageService.FolderExists(directory))
+                else if (!string.IsNullOrEmpty(directory) && !_storageService.FolderExists(directory))
                 {
                     cataloguedAssetsBatchCount = CatalogNonExistingFolder(directory, callback, cataloguedAssetsBatchCount, batchSize);
                 }
@@ -132,9 +132,9 @@ namespace JPPhotoManager.Domain
                 return cataloguedAssetsBatchCount;
             }
 
-            if (!assetRepository.FolderExists(directory))
+            if (!_assetRepository.FolderExists(directory))
             {
-                folder = assetRepository.AddFolder(directory);
+                folder = _assetRepository.AddFolder(directory);
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs
                 {
@@ -145,17 +145,17 @@ namespace JPPhotoManager.Domain
             }
 
             callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Inspecting folder " + directory });
-            string[] fileNames = storageService.GetFileNames(directory);
-            folder = assetRepository.GetFolderByPath(directory);
-            List<Asset> cataloguedAssets = assetRepository.GetCataloguedAssets(directory);
+            string[] fileNames = _storageService.GetFileNames(directory);
+            folder = _assetRepository.GetFolderByPath(directory);
+            List<Asset> cataloguedAssets = _assetRepository.GetCataloguedAssets(directory);
 
             cataloguedAssetsBatchCount = CatalogNewAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, cataloguedAssets);
             cataloguedAssetsBatchCount = CatalogUpdatedAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, cataloguedAssets);
             cataloguedAssetsBatchCount = CatalogDeletedAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, folder, cataloguedAssets);
 
-            if (assetRepository.HasChanges())
+            if (_assetRepository.HasChanges())
             {
-                assetRepository.SaveCatalog(folder);
+                _assetRepository.SaveCatalog(folder);
             }
 
             if (cataloguedAssetsBatchCount < batchSize)
@@ -175,15 +175,15 @@ namespace JPPhotoManager.Domain
         {
             callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Deleting unused thumbnails" });
 
-            var thumbnailsList = assetRepository.GetThumbnailsList();
+            var thumbnailsList = _assetRepository.GetThumbnailsList();
             var thumbnailsFileNamesList = thumbnailsList.Select(t => new FileInfo(t).Name);
-            var cataloguedAssets = assetRepository.GetCataloguedAssets();
+            var cataloguedAssets = _assetRepository.GetCataloguedAssets();
             var cataloguedAssetsThumbnails = cataloguedAssets.Select(a => a.ThumbnailBlobName);
             var thumbnailsListToDelete = thumbnailsFileNamesList.Except(cataloguedAssetsThumbnails);
 
             foreach (var file in thumbnailsListToDelete)
             {
-                assetRepository.DeleteThumbnail(file);
+                _assetRepository.DeleteThumbnail(file);
             }
 
             return cataloguedAssets;
@@ -198,11 +198,11 @@ namespace JPPhotoManager.Domain
 
             // If the folder doesn't exist anymore, the corresponding entry in the catalog and the thumbnails file are both deleted.
             // TODO: This should be tested in a new test method, in which the non existent folder is explicitly added to the catalog.
-            Folder folder = assetRepository.GetFolderByPath(directory);
+            Folder folder = _assetRepository.GetFolderByPath(directory);
 
             if (folder != null)
             {
-                List<Asset> cataloguedAssets = assetRepository.GetCataloguedAssets(directory);
+                List<Asset> cataloguedAssets = _assetRepository.GetCataloguedAssets(directory);
 
                 foreach (var asset in cataloguedAssets)
                 {
@@ -211,7 +211,7 @@ namespace JPPhotoManager.Domain
                         break;
                     }
 
-                    assetRepository.DeleteAsset(directory, asset.FileName);
+                    _assetRepository.DeleteAsset(directory, asset.FileName);
                     cataloguedAssetsBatchCount++;
 
                     callback?.Invoke(new CatalogChangeCallbackEventArgs
@@ -222,11 +222,11 @@ namespace JPPhotoManager.Domain
                     });
                 }
 
-                cataloguedAssets = assetRepository.GetCataloguedAssets(directory);
+                cataloguedAssets = _assetRepository.GetCataloguedAssets(directory);
 
                 if (cataloguedAssets.Count == 0)
                 {
-                    assetRepository.DeleteFolder(folder);
+                    _assetRepository.DeleteFolder(folder);
 
                     callback?.Invoke(new CatalogChangeCallbackEventArgs
                     {
@@ -236,9 +236,9 @@ namespace JPPhotoManager.Domain
                     });
                 }
 
-                if (assetRepository.HasChanges())
+                if (_assetRepository.HasChanges())
                 {
-                    assetRepository.SaveCatalog(folder);
+                    _assetRepository.SaveCatalog(folder);
                 }
             }
 
@@ -247,7 +247,7 @@ namespace JPPhotoManager.Domain
 
         private int CatalogNewAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize, string[] fileNames, List<Asset> cataloguedAssets)
         {
-            string[] newFileNames = directoryComparer.GetNewFileNames(fileNames, cataloguedAssets);
+            string[] newFileNames = _directoryComparer.GetNewFileNames(fileNames, cataloguedAssets);
 
             foreach (var fileName in newFileNames)
             {
@@ -276,8 +276,8 @@ namespace JPPhotoManager.Domain
 
         private int CatalogUpdatedAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize, string[] fileNames, List<Asset> cataloguedAssets)
         {
-            string[] updatedFileNames = directoryComparer.GetUpdatedFileNames(fileNames, cataloguedAssets);
-            Folder folder = assetRepository.GetFolderByPath(directory);
+            string[] updatedFileNames = _directoryComparer.GetUpdatedFileNames(fileNames, cataloguedAssets);
+            Folder folder = _assetRepository.GetFolderByPath(directory);
 
             foreach (var fileName in updatedFileNames)
             {
@@ -286,10 +286,10 @@ namespace JPPhotoManager.Domain
                     break;
                 }
 
-                assetRepository.DeleteAsset(directory, fileName);
+                _assetRepository.DeleteAsset(directory, fileName);
                 string fullPath = Path.Combine(directory, fileName);
 
-                if (storageService.FileExists(fullPath))
+                if (_storageService.FileExists(fullPath))
                 {
                     Asset updatedAsset = CreateAsset(directory, fileName);
                     updatedAsset.ImageData = LoadThumbnail(directory, fileName, updatedAsset.ThumbnailPixelWidth, updatedAsset.ThumbnailPixelHeight);
@@ -312,7 +312,7 @@ namespace JPPhotoManager.Domain
 
         private int CatalogDeletedAssets(string directory, CatalogChangeCallback callback, int cataloguedAssetsBatchCount, int batchSize, string[] fileNames, Folder folder, List<Asset> cataloguedAssets)
         {
-            string[] deletedFileNames = directoryComparer.GetDeletedFileNames(fileNames, cataloguedAssets);
+            string[] deletedFileNames = _directoryComparer.GetDeletedFileNames(fileNames, cataloguedAssets);
 
             foreach (var fileName in deletedFileNames)
             {
@@ -328,7 +328,7 @@ namespace JPPhotoManager.Domain
                     Folder = folder
                 };
 
-                assetRepository.DeleteAsset(directory, fileName);
+                _assetRepository.DeleteAsset(directory, fileName);
 
                 callback?.Invoke(new CatalogChangeCallbackEventArgs
                 {
@@ -347,9 +347,9 @@ namespace JPPhotoManager.Domain
         {
             BitmapImage thumbnailImage = null;
 
-            if (assetRepository.ContainsThumbnail(directoryName, fileName))
+            if (_assetRepository.ContainsThumbnail(directoryName, fileName))
             {
-                thumbnailImage = assetRepository.LoadThumbnail(directoryName, fileName, width, height);
+                thumbnailImage = _assetRepository.LoadThumbnail(directoryName, fileName, width, height);
             }
 
             return thumbnailImage;
@@ -362,13 +362,13 @@ namespace JPPhotoManager.Domain
             const double MAX_WIDTH = 200;
             const double MAX_HEIGHT = 150;
 
-            if (!assetRepository.IsAssetCatalogued(directoryName, fileName))
+            if (!_assetRepository.IsAssetCatalogued(directoryName, fileName))
             {
                 string imagePath = Path.Combine(directoryName, fileName);
-                byte[] imageBytes = storageService.GetFileBytes(imagePath);
-                ushort? exifOrientation = storageService.GetExifOrientation(imageBytes);
-                Rotation rotation = exifOrientation.HasValue ? storageService.GetImageRotation(exifOrientation.Value) : Rotation.Rotate0;
-                BitmapImage originalImage = storageService.LoadBitmapImage(imageBytes, rotation);
+                byte[] imageBytes = _storageService.GetFileBytes(imagePath);
+                ushort? exifOrientation = _storageService.GetExifOrientation(imageBytes);
+                Rotation rotation = exifOrientation.HasValue ? _storageService.GetImageRotation(exifOrientation.Value) : Rotation.Rotate0;
+                BitmapImage originalImage = _storageService.LoadBitmapImage(imageBytes, rotation);
 
                 double originalDecodeWidth = originalImage.PixelWidth;
                 double originalDecodeHeight = originalImage.PixelHeight;
@@ -390,13 +390,13 @@ namespace JPPhotoManager.Domain
                     thumbnailDecodeWidth = (percentage * originalDecodeWidth) / 100d;
                 }
 
-                BitmapImage thumbnailImage = storageService.LoadBitmapImage(imageBytes,
+                BitmapImage thumbnailImage = _storageService.LoadBitmapImage(imageBytes,
                     rotation,
                     Convert.ToInt32(thumbnailDecodeWidth),
                     Convert.ToInt32(thumbnailDecodeHeight));
                 bool isPng = imagePath.EndsWith(".png", StringComparison.OrdinalIgnoreCase);
-                byte[] thumbnailBuffer = isPng ? storageService.GetPngBitmapImage(thumbnailImage) : storageService.GetJpegBitmapImage(thumbnailImage);
-                Folder folder = assetRepository.GetFolderByPath(directoryName);
+                byte[] thumbnailBuffer = isPng ? _storageService.GetPngBitmapImage(thumbnailImage) : _storageService.GetJpegBitmapImage(thumbnailImage);
+                Folder folder = _assetRepository.GetFolderByPath(directoryName);
 
                 asset = new Asset
                 {
@@ -411,10 +411,10 @@ namespace JPPhotoManager.Domain
                     ThumbnailPixelHeight = Convert.ToInt32(thumbnailDecodeHeight),
                     ImageRotation = rotation,
                     ThumbnailCreationDateTime = DateTime.Now,
-                    Hash = assetHashCalculatorService.CalculateHash(imageBytes)
+                    Hash = _assetHashCalculatorService.CalculateHash(imageBytes)
                 };
 
-                assetRepository.AddAsset(asset, thumbnailBuffer);
+                _assetRepository.AddAsset(asset, thumbnailBuffer);
             }
 
             return asset;

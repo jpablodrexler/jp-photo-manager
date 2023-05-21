@@ -7,7 +7,6 @@ using System.Collections.ObjectModel;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace JPPhotoManager.UI.Windows
@@ -18,7 +17,7 @@ namespace JPPhotoManager.UI.Windows
     [ExcludeFromCodeCoverage]
     public partial class SyncAssetsWindow : Window
     {
-        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public SyncAssetsWindow(SyncAssetsViewModel viewModel)
         {
@@ -31,7 +30,7 @@ namespace JPPhotoManager.UI.Windows
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
         }
 
@@ -61,7 +60,7 @@ namespace JPPhotoManager.UI.Windows
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
             finally
             {
@@ -77,7 +76,7 @@ namespace JPPhotoManager.UI.Windows
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
         }
 
@@ -89,7 +88,7 @@ namespace JPPhotoManager.UI.Windows
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
         }
 
@@ -101,7 +100,7 @@ namespace JPPhotoManager.UI.Windows
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
         }
 
@@ -114,7 +113,7 @@ namespace JPPhotoManager.UI.Windows
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
             finally
             {
@@ -132,7 +131,7 @@ namespace JPPhotoManager.UI.Windows
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
             finally
             {
@@ -148,7 +147,7 @@ namespace JPPhotoManager.UI.Windows
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
         }
 

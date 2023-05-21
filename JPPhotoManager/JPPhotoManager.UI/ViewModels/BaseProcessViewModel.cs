@@ -8,26 +8,26 @@ namespace JPPhotoManager.UI.ViewModels
 {
     public abstract class BaseProcessViewModel<C, R> : BaseViewModel
     {
-        private ProcessStepEnum step = ProcessStepEnum.ViewDescription;
-        private ObservableCollection<string> processStatusMessages;
-        private ObservableCollection<R> results;
+        private ProcessStepEnum _step = ProcessStepEnum.ViewDescription;
+        private ObservableCollection<string> _processStatusMessages;
+        private ObservableCollection<R> _results;
 
         protected BaseProcessViewModel(IApplication application) : base(application)
         {
-            processStatusMessages = new ObservableCollection<string>();
+            _processStatusMessages = new ObservableCollection<string>();
         }
 
         public ObservableCollection<string> ProcessStatusMessages
         {
-            get { return processStatusMessages; }
+            get { return _processStatusMessages; }
         }
 
         public ObservableCollection<R> Results
         {
-            get { return results; }
+            get { return _results; }
             set
             {
-                results = value;
+                _results = value;
                 NotifyPropertyChanged(nameof(Results));
                 NotifyPropertyChanged(nameof(CanViewResults));
             }
@@ -41,11 +41,11 @@ namespace JPPhotoManager.UI.ViewModels
 
         public ProcessStepEnum Step
         {
-            get { return step; }
+            get { return _step; }
 
             private set
             {
-                step = value;
+                _step = value;
                 NotifyPropertyChanged(
                     nameof(Step),
                     nameof(DescriptionVisible),

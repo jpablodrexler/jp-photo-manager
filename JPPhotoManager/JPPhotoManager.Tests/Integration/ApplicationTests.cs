@@ -14,29 +14,29 @@ namespace JPPhotoManager.Tests.Integration
 {
     public class ApplicationTests
     {
-        private string dataDirectory;
-        private IConfigurationRoot configuration;
+        private string _dataDirectory;
+        private IConfigurationRoot _configuration;
 
         public ApplicationTests()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(ApplicationTests).Assembly.Location);
-            dataDirectory = Path.Combine(dataDirectory, "TestFiles");
+            _dataDirectory = Path.GetDirectoryName(typeof(ApplicationTests).Assembly.Location);
+            _dataDirectory = Path.Combine(_dataDirectory, "TestFiles");
 
             Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
-                .MockGetValue("appsettings:InitialDirectory", dataDirectory)
-                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))
+                .MockGetValue("appsettings:InitialDirectory", _dataDirectory)
+                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(_dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))
                 .MockGetValue("appsettings:CatalogBatchSize", "100")
                 .MockGetValue("appsettings:BackupsToKeep", "2")
                 .MockGetValue("appsettings:ThumbnailsDictionaryEntriesToKeep", "5");
 
-            configuration = configurationMock.Object;
+            _configuration = configurationMock.Object;
         }
 
         [Fact]
         public void GetDuplicatedAssets_WithDuplicates_ReturnArray()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -56,19 +56,19 @@ namespace JPPhotoManager.Tests.Integration
             var storageService = mock.Container.Resolve<IStorageService>();
             var app = mock.Container.Resolve<Application.Application>();
 
-            Folder folder = repository.AddFolder(dataDirectory);
+            Folder folder = repository.AddFolder(_dataDirectory);
 
-            string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
+            string imagePath = Path.Combine(_dataDirectory, "Image 2.jpg");
             Assert.True(File.Exists(imagePath));
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
+            Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 2.jpg");
 
-            imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
+            imagePath = Path.Combine(_dataDirectory, "Image 1.jpg");
             Assert.True(File.Exists(imagePath));
-            Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
+            Asset anotherAsset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 1.jpg");
 
-            imagePath = Path.Combine(dataDirectory, "Image 2 duplicated.jpg");
+            imagePath = Path.Combine(_dataDirectory, "Image 2 duplicated.jpg");
             Assert.True(File.Exists(imagePath));
-            Asset duplicatedAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2 duplicated.jpg");
+            Asset duplicatedAsset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 2 duplicated.jpg");
 
             Console.WriteLine("database.DataDirectory: " + database.DataDirectory);
             Console.WriteLine("database.Separator: " + database.Separator);
@@ -92,7 +92,7 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void GetDuplicatedAssets_WithoutDuplicates_ReturnEmptyArray()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -110,15 +110,15 @@ namespace JPPhotoManager.Tests.Integration
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var app = mock.Container.Resolve<Application.Application>();
 
-            repository.AddFolder(dataDirectory);
+            repository.AddFolder(_dataDirectory);
 
-            string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
+            string imagePath = Path.Combine(_dataDirectory, "Image 2.jpg");
             File.Exists(imagePath).Should().BeTrue();
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
+            Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 2.jpg");
 
-            imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
+            imagePath = Path.Combine(_dataDirectory, "Image 1.jpg");
             File.Exists(imagePath).Should().BeTrue();
-            Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
+            Asset anotherAsset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 1.jpg");
 
             var duplicatedAssetSets = app.GetDuplicatedAssets();
             duplicatedAssetSets.Should().BeEmpty();
@@ -131,7 +131,7 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void GetDuplicatedAssets_WithInexistingDuplicatedAsset_ReturnEmptyArray()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -149,17 +149,17 @@ namespace JPPhotoManager.Tests.Integration
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var app = mock.Container.Resolve<Application.Application>();
 
-            repository.AddFolder(dataDirectory);
+            repository.AddFolder(_dataDirectory);
 
-            string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
+            string imagePath = Path.Combine(_dataDirectory, "Image 2.jpg");
             File.Exists(imagePath).Should().BeTrue();
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
+            Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 2.jpg");
 
-            imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
+            imagePath = Path.Combine(_dataDirectory, "Image 1.jpg");
             File.Exists(imagePath).Should().BeTrue();
-            Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
+            Asset anotherAsset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 1.jpg");
 
-            imagePath = Path.Combine(dataDirectory, "Inexistent Image.jpg");
+            imagePath = Path.Combine(_dataDirectory, "Inexistent Image.jpg");
             File.Exists(imagePath).Should().BeFalse();
 
             Asset inexistentAsset = new()
@@ -182,7 +182,7 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void GetDuplicatedAssets_WithInexistingNotDuplicatedAsset_ReturnEmptyArray()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -200,9 +200,9 @@ namespace JPPhotoManager.Tests.Integration
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var app = mock.Container.Resolve<Application.Application>();
 
-            Folder folder = repository.AddFolder(dataDirectory);
+            Folder folder = repository.AddFolder(_dataDirectory);
 
-            string imagePath = Path.Combine(dataDirectory, "Inexistent Image.jpg");
+            string imagePath = Path.Combine(_dataDirectory, "Inexistent Image.jpg");
             File.Exists(imagePath).Should().BeFalse();
 
             repository.AddAsset(new Asset
@@ -213,13 +213,13 @@ namespace JPPhotoManager.Tests.Integration
                 Hash = "0b6d010f85544871c307bb3a96028402f55fa29094908cdd0f74a8ec8d3fc3d4fbec995d98b89aafef3dcf5581c018fbb50481e33c7e45aef552d66c922f4078"
             }, null);
 
-            imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
+            imagePath = Path.Combine(_dataDirectory, "Image 2.jpg");
             File.Exists(imagePath).Should().BeTrue();
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
+            Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 2.jpg");
 
-            imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
+            imagePath = Path.Combine(_dataDirectory, "Image 1.jpg");
             File.Exists(imagePath).Should().BeTrue();
-            Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
+            Asset anotherAsset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 1.jpg");
 
             var duplicatedAssetSets = app.GetDuplicatedAssets();
             duplicatedAssetSets.Should().BeEmpty();
@@ -228,7 +228,7 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void AddAssets_ToNonExistingFolder_AddFolderToCatalog()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -243,7 +243,7 @@ namespace JPPhotoManager.Tests.Integration
 
             Folder folder = new() { FolderId = "1", Path = "C:\\Inexistent Folder" };
 
-            string imagePath = Path.Combine(dataDirectory, "Inexistent Image.jpg");
+            string imagePath = Path.Combine(_dataDirectory, "Inexistent Image.jpg");
             File.Exists(imagePath).Should().BeFalse();
 
             repository.AddAsset(new Asset
@@ -263,7 +263,7 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void GetAssets_WithThumbnailNotFound_ReturnArrayIncludingAssetWithNoThumbnail()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -280,34 +280,34 @@ namespace JPPhotoManager.Tests.Integration
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var app = mock.Container.Resolve<Application.Application>();
 
-            Folder folder = repository.AddFolder(dataDirectory);
+            Folder folder = repository.AddFolder(_dataDirectory);
             Mock<IAssetHashCalculatorService> hashCalculator = new();
 
-            string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
+            string imagePath = Path.Combine(_dataDirectory, "Image 2.jpg");
             File.Exists(imagePath).Should().BeTrue();
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
+            Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 2.jpg");
 
-            imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
+            imagePath = Path.Combine(_dataDirectory, "Image 1.jpg");
             File.Exists(imagePath).Should().BeTrue();
-            Asset anotherAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
+            Asset anotherAsset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 1.jpg");
 
-            imagePath = Path.Combine(dataDirectory, "Image 2 duplicated.jpg");
+            imagePath = Path.Combine(_dataDirectory, "Image 2 duplicated.jpg");
             File.Exists(imagePath).Should().BeTrue();
-            Asset duplicatedAsset = catalogAssetsService.CreateAsset(dataDirectory, "Image 2 duplicated.jpg");
+            Asset duplicatedAsset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 2 duplicated.jpg");
 
             repository.SaveCatalog(folder);
             repository.RemoveThumbnail(folder.Path, "Image 2 duplicated.jpg");
             repository.SaveCatalog(folder);
 
-            var assets = app.GetAssets(dataDirectory, 0);
+            var assets = app.GetAssets(_dataDirectory, 0);
             assets.Items.Should().NotBeEmpty();
 
-            repository.GetAssets(dataDirectory, 0).Items.Should().Contain(a => a.FileName == "Image 2.jpg");
-            repository.GetAssets(dataDirectory, 0).Items.Should().NotContain(a => a.FileName == "Image 2 duplicated.jpg");
-            repository.ContainsThumbnail(dataDirectory, "Image 2.jpg").Should().BeTrue();
-            repository.ContainsThumbnail(dataDirectory, "Image 2 duplicated.jpg").Should().BeFalse();
-            repository.LoadThumbnail(dataDirectory, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight).Should().NotBeNull();
-            repository.LoadThumbnail(dataDirectory, duplicatedAsset.FileName, duplicatedAsset.ThumbnailPixelWidth, duplicatedAsset.ThumbnailPixelHeight).Should().BeNull();
+            repository.GetAssets(_dataDirectory, 0).Items.Should().Contain(a => a.FileName == "Image 2.jpg");
+            repository.GetAssets(_dataDirectory, 0).Items.Should().NotContain(a => a.FileName == "Image 2 duplicated.jpg");
+            repository.ContainsThumbnail(_dataDirectory, "Image 2.jpg").Should().BeTrue();
+            repository.ContainsThumbnail(_dataDirectory, "Image 2 duplicated.jpg").Should().BeFalse();
+            repository.LoadThumbnail(_dataDirectory, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight).Should().NotBeNull();
+            repository.LoadThumbnail(_dataDirectory, duplicatedAsset.FileName, duplicatedAsset.ThumbnailPixelWidth, duplicatedAsset.ThumbnailPixelHeight).Should().BeNull();
         }
     }
 

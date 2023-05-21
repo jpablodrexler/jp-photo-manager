@@ -14,30 +14,30 @@ namespace JPPhotoManager.Tests.Integration
 {
     public class AssetRepositoryTests
     {
-        private readonly string dataDirectory;
-        private readonly IConfigurationRoot configuration;
+        private readonly string _dataDirectory;
+        private readonly IConfigurationRoot _configuration;
 
         public AssetRepositoryTests()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTests).Assembly.Location);
-            dataDirectory = Path.Combine(dataDirectory, "TestFiles");
+            _dataDirectory = Path.GetDirectoryName(typeof(AssetRepositoryTests).Assembly.Location);
+            _dataDirectory = Path.Combine(_dataDirectory, "TestFiles");
 
             Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
-                .MockGetValue("appsettings:InitialDirectory", dataDirectory)
-                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))
+                .MockGetValue("appsettings:InitialDirectory", _dataDirectory)
+                .MockGetValue("appsettings:ApplicationDataDirectory", Path.Combine(_dataDirectory, "ApplicationData", Guid.NewGuid().ToString()))
                 .MockGetValue("appsettings:CatalogBatchSize", "100")
                 .MockGetValue("appsettings:BackupsToKeep", "2")
                 .MockGetValue("appsettings:BackupEveryNDays", "7")
                 .MockGetValue("appsettings:ThumbnailsDictionaryEntriesToKeep", "5");
 
-            configuration = configurationMock.Object;
+            _configuration = configurationMock.Object;
         }
 
         [Fact]
         public void FolderExists_DataDirectory_ReturnTrue()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -48,17 +48,17 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                 });
             var repository = mock.Create<IAssetRepository>();
-            bool folderExists = repository.FolderExists(dataDirectory);
+            bool folderExists = repository.FolderExists(_dataDirectory);
             folderExists.Should().BeFalse();
-            repository.AddFolder(dataDirectory);
-            folderExists = repository.FolderExists(dataDirectory);
+            repository.AddFolder(_dataDirectory);
+            folderExists = repository.FolderExists(_dataDirectory);
             folderExists.Should().BeTrue();
         }
 
         [Fact]
         public void HasChanges_Initial_ReturnFalse()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -69,7 +69,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                 });
             var repository = mock.Create<IAssetRepository>();
-            string imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
+            string imagePath = Path.Combine(_dataDirectory, "Image 1.jpg");
             File.Exists(imagePath).Should().BeTrue();
             repository.HasChanges().Should().BeFalse();
         }
@@ -77,7 +77,7 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void HasChanges_AfterChange_ReturnTrue()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -93,18 +93,18 @@ namespace JPPhotoManager.Tests.Integration
             var repository = mock.Create<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
-            string imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
+            string imagePath = Path.Combine(_dataDirectory, "Image 1.jpg");
             File.Exists(imagePath).Should().BeTrue();
-            repository.AddFolder(dataDirectory);
+            repository.AddFolder(_dataDirectory);
 
-            catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
+            catalogAssetsService.CreateAsset(_dataDirectory, "Image 1.jpg");
             repository.HasChanges().Should().BeTrue();
         }
 
         [Fact]
         public void HasChanges_AfterSave_ReturnFalse()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -120,12 +120,12 @@ namespace JPPhotoManager.Tests.Integration
             var repository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
-            string imagePath = Path.Combine(dataDirectory, "Image 1.jpg");
+            string imagePath = Path.Combine(_dataDirectory, "Image 1.jpg");
             File.Exists(imagePath).Should().BeTrue();
 
-            repository.AddFolder(dataDirectory);
+            repository.AddFolder(_dataDirectory);
 
-            catalogAssetsService.CreateAsset(dataDirectory, "Image 1.jpg");
+            catalogAssetsService.CreateAsset(_dataDirectory, "Image 1.jpg");
             repository.SaveCatalog(null);
             repository.HasChanges().Should().BeFalse();
         }
@@ -133,7 +133,7 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void IsAssetCatalogued_AssetNotInCatalog_ReturnFalse()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -149,16 +149,16 @@ namespace JPPhotoManager.Tests.Integration
             var repository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
-            string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
+            string imagePath = Path.Combine(_dataDirectory, "Image 2.jpg");
             File.Exists(imagePath).Should().BeTrue();
 
-            repository.IsAssetCatalogued(dataDirectory, "Image 2.jpg").Should().BeFalse();
+            repository.IsAssetCatalogued(_dataDirectory, "Image 2.jpg").Should().BeFalse();
         }
 
         [Fact]
         public void IsAssetCatalogued_AssetInCatalog_ReturnTrue()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -174,19 +174,19 @@ namespace JPPhotoManager.Tests.Integration
             var repository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
-            string imagePath = Path.Combine(dataDirectory, "Image 2.jpg");
+            string imagePath = Path.Combine(_dataDirectory, "Image 2.jpg");
             File.Exists(imagePath).Should().BeTrue();
 
-            repository.IsAssetCatalogued(dataDirectory, "Image 2.jpg").Should().BeFalse();
-            repository.AddFolder(dataDirectory);
-            catalogAssetsService.CreateAsset(dataDirectory, "Image 2.jpg");
-            repository.IsAssetCatalogued(dataDirectory, "Image 2.jpg").Should().BeTrue();
+            repository.IsAssetCatalogued(_dataDirectory, "Image 2.jpg").Should().BeFalse();
+            repository.AddFolder(_dataDirectory);
+            catalogAssetsService.CreateAsset(_dataDirectory, "Image 2.jpg");
+            repository.IsAssetCatalogued(_dataDirectory, "Image 2.jpg").Should().BeTrue();
         }
 
         [Fact]
         public void IsAssetCatalogued_DeleteNonExistingAsset_ReturnFalse()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -201,22 +201,22 @@ namespace JPPhotoManager.Tests.Integration
                 });
             var repository = mock.Container.Resolve<IAssetRepository>();
 
-            repository.AddFolder(dataDirectory);
+            repository.AddFolder(_dataDirectory);
 
-            string imagePath = Path.Combine(dataDirectory, "Non Existing Image.jpg");
+            string imagePath = Path.Combine(_dataDirectory, "Non Existing Image.jpg");
             File.Exists(imagePath).Should().BeFalse();
 
-            repository.DeleteAsset(dataDirectory, "Non Existing Image.jpg");
-            repository.IsAssetCatalogued(dataDirectory, "Non Existing Image.jpg").Should().BeFalse();
+            repository.DeleteAsset(_dataDirectory, "Non Existing Image.jpg");
+            repository.IsAssetCatalogued(_dataDirectory, "Non Existing Image.jpg").Should().BeFalse();
 
-            repository.DeleteAsset(dataDirectory, "Non Existing Image.jpg");
-            repository.IsAssetCatalogued(dataDirectory, "Non Existing Image.jpg").Should().BeFalse();
+            repository.DeleteAsset(_dataDirectory, "Non Existing Image.jpg");
+            repository.IsAssetCatalogued(_dataDirectory, "Non Existing Image.jpg").Should().BeFalse();
         }
 
         [Fact]
         public void IsAssetCatalogued_DeleteExistingAsset_ReturnFalse()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -232,22 +232,22 @@ namespace JPPhotoManager.Tests.Integration
             var repository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
-            repository.AddFolder(dataDirectory);
+            repository.AddFolder(_dataDirectory);
 
-            string imagePath = Path.Combine(dataDirectory, "Image 3.jpg");
+            string imagePath = Path.Combine(_dataDirectory, "Image 3.jpg");
             File.Exists(imagePath).Should().BeTrue();
-            Asset asset = catalogAssetsService.CreateAsset(dataDirectory, "Image 3.jpg");
+            Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 3.jpg");
 
             // The asset should no longer be catalogued, but the image should still be in the filesystem.
-            repository.DeleteAsset(dataDirectory, "Image 3.jpg");
-            repository.IsAssetCatalogued(dataDirectory, "Image 3.jpg").Should().BeFalse();
+            repository.DeleteAsset(_dataDirectory, "Image 3.jpg");
+            repository.IsAssetCatalogued(_dataDirectory, "Image 3.jpg").Should().BeFalse();
             File.Exists(imagePath).Should().BeTrue();
         }
 
         [Fact]
         public void GetSyncAssetsConfiguration_ReturnArray()
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -295,7 +295,7 @@ namespace JPPhotoManager.Tests.Integration
         [InlineData(false, true)]
         public void ShouldWriteBackup_WhenNullArray_ReturnBackupExists(bool backupExists, bool expectedResult)
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -326,7 +326,7 @@ namespace JPPhotoManager.Tests.Integration
         [InlineData(false, true)]
         public void ShouldWriteBackup_WhenEmptyArray_ReturnEmptyArray(bool backupExists, bool expectedResult)
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -357,7 +357,7 @@ namespace JPPhotoManager.Tests.Integration
         [InlineData(false)]
         public void ShouldWriteBackup_WhenOneItemArrayBeforeBackupDate_ReturnFalse(bool backupExists)
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -388,7 +388,7 @@ namespace JPPhotoManager.Tests.Integration
         [InlineData(false, true)]
         public void ShouldWriteBackup_WhenOneItemArrayOnBackupDate_ReturnBackupDoesntExists(bool backupExists, bool expectedResult)
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -419,7 +419,7 @@ namespace JPPhotoManager.Tests.Integration
         [InlineData(false, true)]
         public void ShouldWriteBackup_WhenOneItemArrayAfterBackupDate_ReturnBackupDoesntExists(bool backupExists, bool expectedResult)
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -450,7 +450,7 @@ namespace JPPhotoManager.Tests.Integration
         [InlineData(false)]
         public void ShouldWriteBackup_WhenMultipleItemsArrayBeforeBackupDate_ReturnFalse(bool backupExists)
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -488,7 +488,7 @@ namespace JPPhotoManager.Tests.Integration
         [InlineData(false, true)]
         public void ShouldWriteBackup_WhenMultipleItemsArrayOnBackupDate_ReturnBackupExists(bool backupExists, bool expectedResult)
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
@@ -526,7 +526,7 @@ namespace JPPhotoManager.Tests.Integration
         [InlineData(false, true)]
         public void ShouldWriteBackup_WhenMultipleItemsArrayAfterBackupDate_ReturnBackupExists(bool backupExists, bool expectedResult)
         {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(configuration);
+            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
 
             using var mock = AutoMock.GetLoose(
                 cfg =>

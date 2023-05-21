@@ -31,11 +31,11 @@ namespace JPPhotoManager.Infrastructure
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
 
-        private readonly IConfigurationRoot configuration;
+        private readonly IConfigurationRoot _configuration;
 
         public UserConfigurationService(IConfigurationRoot configuration)
         {
-            this.configuration = configuration;
+            _configuration = configuration;
         }
 
         public string GetPicturesDirectory()
@@ -126,7 +126,7 @@ namespace JPPhotoManager.Infrastructure
 
         public string GetInitialFolder()
         {
-            string result = configuration.GetValue<string>(INITIAL_DIRECTORY_KEY);
+            string result = _configuration.GetValue<string>(INITIAL_DIRECTORY_KEY);
 
             if (string.IsNullOrEmpty(result))
             {
@@ -141,7 +141,7 @@ namespace JPPhotoManager.Infrastructure
         public string[] AdditionalPhotosDirectories()
         {
             string[] result;
-            string additionalPicturesDirectoriesValue = configuration.GetValue<string>(ADDITIONAL_PHOTOS_DIRECTORIES_KEY);
+            string additionalPicturesDirectoriesValue = _configuration.GetValue<string>(ADDITIONAL_PHOTOS_DIRECTORIES_KEY);
 
             if (string.IsNullOrWhiteSpace(additionalPicturesDirectoriesValue))
                 return Array.Empty<string>();
@@ -154,7 +154,7 @@ namespace JPPhotoManager.Infrastructure
 
         public string GetApplicationDataFolder()
         {
-            string result = configuration.GetValue<string>(APPLICATION_DATA_DIRECTORY_KEY);
+            string result = _configuration.GetValue<string>(APPLICATION_DATA_DIRECTORY_KEY);
 
             if (string.IsNullOrEmpty(result))
             {
@@ -168,37 +168,37 @@ namespace JPPhotoManager.Infrastructure
 
         public int GetCatalogBatchSize()
         {
-            return configuration.GetValue<int>(CATALOG_BATCH_SIZE_KEY);
+            return _configuration.GetValue<int>(CATALOG_BATCH_SIZE_KEY);
         }
 
         public int GetCatalogCooldownMinutes()
         {
-            return configuration.GetValue<int>(CATALOG_COOLDOWN_MINUTES);
+            return _configuration.GetValue<int>(CATALOG_COOLDOWN_MINUTES);
         }
 
         public int GetBackupsToKeep()
         {
-            return configuration.GetValue<int>(BACKUPS_TO_KEEP);
+            return _configuration.GetValue<int>(BACKUPS_TO_KEEP);
         }
 
         public int GetBackupEveryNDays()
         {
-            return configuration.GetValue<int>(BACKUP_EVERY_N_DAYS);
+            return _configuration.GetValue<int>(BACKUP_EVERY_N_DAYS);
         }
 
         public int GetThumbnailsDictionaryEntriesToKeep()
         {
-            return configuration.GetValue<int>(THUMBNAILS_DICTIONARY_ENTRIES_TO_KEEP);
+            return _configuration.GetValue<int>(THUMBNAILS_DICTIONARY_ENTRIES_TO_KEEP);
         }
 
         public string GetRepositoryOwner()
         {
-            return configuration.GetValue<string>(REPOSITORY_OWNER);
+            return _configuration.GetValue<string>(REPOSITORY_OWNER);
         }
 
         public string GetRepositoryName()
         {
-            return configuration.GetValue<string>(REPOSITORY_NAME);
+            return _configuration.GetValue<string>(REPOSITORY_NAME);
         }
 
         public string[] GetRootCatalogFolderPaths()

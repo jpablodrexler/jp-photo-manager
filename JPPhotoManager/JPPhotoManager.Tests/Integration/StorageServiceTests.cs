@@ -12,24 +12,24 @@ namespace JPPhotoManager.Tests.Integration
 {
     public class StorageServiceTests
     {
-        private string dataDirectory;
-        private IConfigurationRoot configuration;
+        private string _dataDirectory;
+        private IConfigurationRoot _configuration;
 
         public StorageServiceTests()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(StorageServiceTests).Assembly.Location);
-            dataDirectory = Path.Combine(dataDirectory, "TestFiles");
+            _dataDirectory = Path.GetDirectoryName(typeof(StorageServiceTests).Assembly.Location);
+            _dataDirectory = Path.Combine(_dataDirectory, "TestFiles");
 
-            string hiddenFolderPath = Path.Combine(dataDirectory, "TestFolder", "TestHiddenSubFolder");
+            string hiddenFolderPath = Path.Combine(_dataDirectory, "TestFolder", "TestHiddenSubFolder");
             File.SetAttributes(hiddenFolderPath, File.GetAttributes(hiddenFolderPath) | FileAttributes.Hidden);
 
             Mock<IConfigurationRoot> configurationMock = new();
             configurationMock
-                .MockGetValue("appsettings:InitialDirectory", dataDirectory)
-                .MockGetValue("appsettings:ApplicationDataDirectory", dataDirectory)
+                .MockGetValue("appsettings:InitialDirectory", _dataDirectory)
+                .MockGetValue("appsettings:ApplicationDataDirectory", _dataDirectory)
                 .MockGetValue("appsettings:CatalogBatchSize", "100");
 
-            configuration = configurationMock.Object;
+            _configuration = configurationMock.Object;
         }
 
         [Theory]
@@ -55,8 +55,8 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void GetFileNamesTest()
         {
-            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
-            string[] fileNames = storageService.GetFileNames(dataDirectory);
+            IStorageService storageService = new StorageService(new UserConfigurationService(_configuration));
+            string[] fileNames = storageService.GetFileNames(_dataDirectory);
 
             fileNames.Should().HaveCountGreaterOrEqualTo(2);
             fileNames.Should().Contain("Image 2.jpg");
@@ -66,7 +66,7 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void GetDrivesTest()
         {
-            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
+            IStorageService storageService = new StorageService(new UserConfigurationService(_configuration));
             Folder[] drives = storageService.GetDrives();
             drives.Should().NotBeEmpty();
         }
@@ -74,8 +74,8 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void GetSubDirectoriesTest()
         {
-            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
-            string parentPath = Path.Combine(dataDirectory, "TestFolder");
+            IStorageService storageService = new StorageService(new UserConfigurationService(_configuration));
+            string parentPath = Path.Combine(_dataDirectory, "TestFolder");
             List<DirectoryInfo> directories = storageService.GetSubDirectories(parentPath);
 
             directories.Should().HaveCount(3);
@@ -87,8 +87,8 @@ namespace JPPhotoManager.Tests.Integration
         [Fact]
         public void GetRecursiveSubDirectoriesTest()
         {
-            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
-            string parentPath = Path.Combine(dataDirectory, "TestFolder");
+            IStorageService storageService = new StorageService(new UserConfigurationService(_configuration));
+            string parentPath = Path.Combine(_dataDirectory, "TestFolder");
             List<DirectoryInfo> directories = storageService.GetRecursiveSubDirectories(parentPath);
 
             directories.Should().HaveCount(4);
@@ -102,9 +102,9 @@ namespace JPPhotoManager.Tests.Integration
         public void WriteReadJsonTest()
         {
             List<string> writtenList = new() { "Value 1", "Value 2" };
-            string jsonPath = Path.Combine(dataDirectory, "test.json");
+            string jsonPath = Path.Combine(_dataDirectory, "test.json");
 
-            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
+            IStorageService storageService = new StorageService(new UserConfigurationService(_configuration));
             storageService.WriteObjectToJsonFile(writtenList, jsonPath);
             List<string> readList = storageService.ReadObjectFromJsonFile<List<string>>(jsonPath);
 
@@ -129,7 +129,7 @@ namespace JPPhotoManager.Tests.Integration
         [InlineData(ushort.MaxValue, Rotation.Rotate0)]
         public void GetImageRotationTest(ushort exifOrientation, Rotation expected)
         {
-            IStorageService storageService = new StorageService(new UserConfigurationService(configuration));
+            IStorageService storageService = new StorageService(new UserConfigurationService(_configuration));
             Rotation result = storageService.GetImageRotation(exifOrientation);
 
             result.Should().Be(expected);

@@ -25,19 +25,19 @@ namespace JPPhotoManager.UI.ViewModels
 
     public class ApplicationViewModel : BaseViewModel
     {
-        private AppModeEnum appMode;
-        private int viewerPosition;
-        private string currentFolder;
-        private Asset[] cataloguedAssets;
-        private ObservableCollection<Asset> observableAssets;
-        private PaginatedData<Asset> paginatedAssets;
-        private Asset[] selectedAssets;
-        private string appTitle;
-        private double loadingPercent;
-        private string statusMessage;
-        private SortCriteriaEnum sortCriteria;
-        private SortCriteriaEnum previousSortCriteria;
-        private bool isLoading;
+        private AppModeEnum _appMode;
+        private int _viewerPosition;
+        private string _currentFolder;
+        private Asset[] _cataloguedAssets;
+        private ObservableCollection<Asset> _observableAssets;
+        private PaginatedData<Asset> _paginatedAssets;
+        private Asset[] _selectedAssets;
+        private string _appTitle;
+        private double _loadingPercent;
+        private string _statusMessage;
+        private SortCriteriaEnum _sortCriteria;
+        private SortCriteriaEnum _previousSortCriteria;
+        private bool _isLoading;
 
         public bool SortAscending { get; private set; } = true;
 
@@ -56,10 +56,10 @@ namespace JPPhotoManager.UI.ViewModels
 
         public AppModeEnum AppMode
         {
-            get { return appMode; }
+            get { return _appMode; }
             private set
             {
-                appMode = value;
+                _appMode = value;
                 NotifyPropertyChanged(nameof(AppMode), nameof(ThumbnailsVisible), nameof(ViewerVisible));
                 UpdateAppStatus();
             }
@@ -67,10 +67,10 @@ namespace JPPhotoManager.UI.ViewModels
 
         public SortCriteriaEnum SortCriteria
         {
-            get { return sortCriteria; }
+            get { return _sortCriteria; }
             private set
             {
-                sortCriteria = value;
+                _sortCriteria = value;
                 NotifyPropertyChanged(nameof(SortCriteria));
             }
         }
@@ -109,10 +109,10 @@ namespace JPPhotoManager.UI.ViewModels
 
         public int ViewerPosition
         {
-            get { return viewerPosition; }
+            get { return _viewerPosition; }
             set
             {
-                viewerPosition = value;
+                _viewerPosition = value;
                 NotifyPropertyChanged(
                     nameof(ViewerPosition),
                     nameof(CanGoToPreviousAsset),
@@ -124,20 +124,20 @@ namespace JPPhotoManager.UI.ViewModels
 
         public Asset[] SelectedAssets
         {
-            get { return selectedAssets; }
+            get { return _selectedAssets; }
             set
             {
-                selectedAssets = value;
+                _selectedAssets = value;
                 NotifyPropertyChanged(nameof(SelectedAssets));
             }
         }
 
         public string CurrentFolder
         {
-            get { return currentFolder; }
+            get { return _currentFolder; }
             set
             {
-                currentFolder = value;
+                _currentFolder = value;
                 NotifyPropertyChanged(nameof(CurrentFolder));
                 UpdateAppStatus();
             }
@@ -145,10 +145,10 @@ namespace JPPhotoManager.UI.ViewModels
 
         public ObservableCollection<Asset> ObservableAssets
         {
-            get { return observableAssets; }
+            get { return _observableAssets; }
             private set
             {
-                observableAssets = value;
+                _observableAssets = value;
                 NotifyPropertyChanged(nameof(ObservableAssets));
                 UpdateAppStatus();
             }
@@ -161,7 +161,7 @@ namespace JPPhotoManager.UI.ViewModels
             // the GetImages method is called, since the thumbnails file is not
             // created yet, the assets catalogued so far are returned without
             // its thumbnails.
-            cataloguedAssets = assets?.Where(a => a.ImageData != null).ToArray();
+            _cataloguedAssets = assets?.Where(a => a.ImageData != null).ToArray();
             SortAssets();
         }
 
@@ -170,65 +170,65 @@ namespace JPPhotoManager.UI.ViewModels
             switch (SortCriteria)
             {
                 case SortCriteriaEnum.FileName:
-                    cataloguedAssets = SortAscending ?
-                        cataloguedAssets?.OrderBy(a => a.FileName).ToArray() :
-                        cataloguedAssets?.OrderByDescending(a => a.FileName).ToArray();
+                    _cataloguedAssets = SortAscending ?
+                        _cataloguedAssets?.OrderBy(a => a.FileName).ToArray() :
+                        _cataloguedAssets?.OrderByDescending(a => a.FileName).ToArray();
                     break;
 
                 case SortCriteriaEnum.ThumbnailCreationDateTime:
-                    cataloguedAssets = SortAscending ?
-                        cataloguedAssets?.OrderBy(a => a.ThumbnailCreationDateTime).ThenBy(a => a.FileName).ToArray() :
-                        cataloguedAssets?.OrderByDescending(a => a.ThumbnailCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
+                    _cataloguedAssets = SortAscending ?
+                        _cataloguedAssets?.OrderBy(a => a.ThumbnailCreationDateTime).ThenBy(a => a.FileName).ToArray() :
+                        _cataloguedAssets?.OrderByDescending(a => a.ThumbnailCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
                     break;
 
                 case SortCriteriaEnum.FileCreationDateTime:
-                    cataloguedAssets = SortAscending ?
-                        cataloguedAssets?.OrderBy(a => a.FileCreationDateTime).ThenBy(a => a.FileName).ToArray() :
-                        cataloguedAssets?.OrderByDescending(a => a.FileCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
+                    _cataloguedAssets = SortAscending ?
+                        _cataloguedAssets?.OrderBy(a => a.FileCreationDateTime).ThenBy(a => a.FileName).ToArray() :
+                        _cataloguedAssets?.OrderByDescending(a => a.FileCreationDateTime).ThenByDescending(a => a.FileName).ToArray();
                     break;
 
                 case SortCriteriaEnum.FileModificationDateTime:
-                    cataloguedAssets = SortAscending ?
-                        cataloguedAssets?.OrderBy(a => a.FileModificationDateTime).ThenBy(a => a.FileName).ToArray() :
-                        cataloguedAssets?.OrderByDescending(a => a.FileModificationDateTime).ThenByDescending(a => a.FileName).ToArray();
+                    _cataloguedAssets = SortAscending ?
+                        _cataloguedAssets?.OrderBy(a => a.FileModificationDateTime).ThenBy(a => a.FileName).ToArray() :
+                        _cataloguedAssets?.OrderByDescending(a => a.FileModificationDateTime).ThenByDescending(a => a.FileName).ToArray();
                     break;
 
                 case SortCriteriaEnum.FileSize:
-                    cataloguedAssets = SortAscending ?
-                        cataloguedAssets?.OrderBy(a => a.FileSize).ThenBy(a => a.FileName).ToArray() :
-                        cataloguedAssets?.OrderByDescending(a => a.FileSize).ThenByDescending(a => a.FileName).ToArray();
+                    _cataloguedAssets = SortAscending ?
+                        _cataloguedAssets?.OrderBy(a => a.FileSize).ThenBy(a => a.FileName).ToArray() :
+                        _cataloguedAssets?.OrderByDescending(a => a.FileSize).ThenByDescending(a => a.FileName).ToArray();
                     break;
             }
 
-            ObservableAssets = cataloguedAssets != null ? new ObservableCollection<Asset>(cataloguedAssets) : null;
+            ObservableAssets = _cataloguedAssets != null ? new ObservableCollection<Asset>(_cataloguedAssets) : null;
         }
 
         public bool IsLoading
         {
-            get { return isLoading; }
+            get { return _isLoading; }
             set
             {
-                isLoading = value;
+                _isLoading = value;
                 UpdateAppStatus();
             }
         }
 
         public string AppTitle
         {
-            get { return appTitle; }
+            get { return _appTitle; }
             set
             {
-                appTitle = value;
+                _appTitle = value;
                 NotifyPropertyChanged(nameof(AppTitle));
             }
         }
 
         public double LoadingPercent
         {
-            get { return loadingPercent; }
+            get { return _loadingPercent; }
             set
             {
-                loadingPercent = value;
+                _loadingPercent = value;
                 NotifyPropertyChanged(nameof(LoadingPercent));
                 NotifyPropertyChanged(nameof(LoadingVisible));
             }
@@ -236,10 +236,10 @@ namespace JPPhotoManager.UI.ViewModels
 
         public string StatusMessage
         {
-            get { return statusMessage; }
+            get { return _statusMessage; }
             set
             {
-                statusMessage = value;
+                _statusMessage = value;
                 NotifyPropertyChanged(nameof(StatusMessage));
             }
         }
@@ -273,7 +273,7 @@ namespace JPPhotoManager.UI.ViewModels
                     }
                 }
 
-                cataloguedAssets = ObservableAssets.ToArray();
+                _cataloguedAssets = ObservableAssets.ToArray();
                 NotifyPropertyChanged(nameof(ObservableAssets));
                 UpdateAppStatus();
             }
@@ -281,7 +281,7 @@ namespace JPPhotoManager.UI.ViewModels
 
         public void SetPaginatedAssets(PaginatedData<Asset> assets)
         {
-            paginatedAssets = assets;
+            _paginatedAssets = assets;
 
             if (assets.PageIndex == 0)
                 SetAssets(assets.Items);
@@ -370,7 +370,7 @@ namespace JPPhotoManager.UI.ViewModels
         private double? GetLoadingPercent()
         {
             double? count = ObservableAssets?.Count;
-            double? totalCount = paginatedAssets?.TotalCount;
+            double? totalCount = _paginatedAssets?.TotalCount;
             double? percent = count * 100 / totalCount;
 
             return percent;
@@ -437,7 +437,7 @@ namespace JPPhotoManager.UI.ViewModels
                         // If the files list is empty or belongs to other directory
                         if ((ObservableAssets.Count == 0 || ObservableAssets[0].Folder.Path != CurrentFolder) && e.CataloguedAssets != null)
                         {
-                            cataloguedAssets = e.CataloguedAssets.Where(a => a.ImageData != null).ToArray();
+                            _cataloguedAssets = e.CataloguedAssets.Where(a => a.ImageData != null).ToArray();
                             SortAssets();
                         }
                         else
@@ -454,7 +454,7 @@ namespace JPPhotoManager.UI.ViewModels
                         // If the files list is empty or belongs to other directory
                         if ((ObservableAssets.Count == 0 || ObservableAssets[0].Folder.Path != CurrentFolder) && e.CataloguedAssets != null)
                         {
-                            cataloguedAssets = e.CataloguedAssets.Where(a => a.ImageData != null).ToArray();
+                            _cataloguedAssets = e.CataloguedAssets.Where(a => a.ImageData != null).ToArray();
                             SortAssets();
                         }
                         else
@@ -481,9 +481,9 @@ namespace JPPhotoManager.UI.ViewModels
 
         public void SortAssetsByCriteria(SortCriteriaEnum sortCriteria)
         {
-            previousSortCriteria = SortCriteria;
+            _previousSortCriteria = SortCriteria;
             SortCriteria = sortCriteria;
-            SortAscending = SortCriteria != previousSortCriteria || !SortAscending;
+            SortAscending = SortCriteria != _previousSortCriteria || !SortAscending;
             SortAssets();
         }
 

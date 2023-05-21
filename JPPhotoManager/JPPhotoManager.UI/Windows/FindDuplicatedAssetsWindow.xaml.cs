@@ -15,7 +15,7 @@ namespace JPPhotoManager.UI.Windows
     [ExcludeFromCodeCoverage]
     public partial class DuplicatedAssetsWindow : Window
     {
-        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
         public DuplicatedAssetsWindow(FindDuplicatedAssetsViewModel viewModel)
         {
@@ -27,7 +27,7 @@ namespace JPPhotoManager.UI.Windows
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
         }
 
@@ -50,7 +50,7 @@ namespace JPPhotoManager.UI.Windows
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
         }
 
@@ -62,7 +62,7 @@ namespace JPPhotoManager.UI.Windows
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                _log.Error(ex);
             }
         }
     }

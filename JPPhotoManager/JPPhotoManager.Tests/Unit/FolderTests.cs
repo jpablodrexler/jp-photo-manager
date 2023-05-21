@@ -7,12 +7,12 @@ namespace JPPhotoManager.Tests.Unit
 {
     public class FolderTests
     {
-        private string dataDirectory;
+        private string _dataDirectory;
 
         public FolderTests()
         {
-            dataDirectory = Path.GetDirectoryName(typeof(FolderTests).Assembly.Location);
-            dataDirectory = Path.Combine(dataDirectory, "TestFiles");
+            _dataDirectory = Path.GetDirectoryName(typeof(FolderTests).Assembly.Location);
+            _dataDirectory = Path.Combine(_dataDirectory, "TestFiles");
         }
 
         [Fact]
@@ -130,11 +130,11 @@ namespace JPPhotoManager.Tests.Unit
         [InlineData("TestFolder", "", false)]
         public void IsParentFolderTest(string testFolderPath1, string testFolderPath2, bool expected)
         {
-            dataDirectory = Path.GetDirectoryName(typeof(FolderTests).Assembly.Location);
-            dataDirectory = Path.Combine(dataDirectory, "TestFiles");
+            _dataDirectory = Path.GetDirectoryName(typeof(FolderTests).Assembly.Location);
+            _dataDirectory = Path.Combine(_dataDirectory, "TestFiles");
 
-            string absoluteTestFolderPath1 = Path.Combine(dataDirectory, testFolderPath1);
-            string absoluteTestFolderPath2 = Path.Combine(dataDirectory, testFolderPath2);
+            string absoluteTestFolderPath1 = Path.Combine(_dataDirectory, testFolderPath1);
+            string absoluteTestFolderPath2 = Path.Combine(_dataDirectory, testFolderPath2);
 
             Folder folder1 = new()
             {

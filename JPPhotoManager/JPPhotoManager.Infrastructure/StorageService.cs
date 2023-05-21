@@ -9,11 +9,11 @@ namespace JPPhotoManager.Infrastructure
 {
     public class StorageService : IStorageService
     {
-        private readonly IUserConfigurationService userConfigurationService;
+        private readonly IUserConfigurationService _userConfigurationService;
 
         public StorageService(IUserConfigurationService userConfigurationService)
         {
-            this.userConfigurationService = userConfigurationService;
+            this._userConfigurationService = userConfigurationService;
         }
 
         public string GetParentDirectory(string directoryPath)
@@ -47,7 +47,7 @@ namespace JPPhotoManager.Infrastructure
 
         public string ResolveDataDirectory(double storageVersion)
         {
-            return Path.Combine(userConfigurationService.GetApplicationDataFolder(), "v" + storageVersion.ToString("0.0", new CultureInfo("en-US")));
+            return Path.Combine(_userConfigurationService.GetApplicationDataFolder(), "v" + storageVersion.ToString("0.0", new CultureInfo("en-US")));
         }
 
         public void CreateDirectory(string directory)

@@ -7,7 +7,7 @@ namespace JPPhotoManager.UI.ViewModels
 {
     public class FolderNavigationViewModel : ApplicationViewModel
     {
-        private string targetPath;
+        private string _targetPath;
 
         public FolderNavigationViewModel(IApplication assetApp, Folder sourceFolder, Folder lastSelectedFolder, List<string> recentTargetPaths) : base(assetApp)
         {
@@ -41,10 +41,10 @@ namespace JPPhotoManager.UI.ViewModels
 
         public string TargetPath
         {
-            get { return targetPath; }
+            get { return _targetPath; }
             set
             {
-                targetPath = !string.IsNullOrEmpty(value) && value.EndsWith("\\") ? value[0..^1] : value;
+                _targetPath = !string.IsNullOrEmpty(value) && value.EndsWith("\\") ? value[0..^1] : value;
                 NotifyPropertyChanged(nameof(TargetPath), nameof(SelectedFolder), nameof(CanConfirm));
             }
         }
