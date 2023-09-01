@@ -57,7 +57,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(_dataDirectory, "ApplicationData", Guid.NewGuid().ToString()));
@@ -107,7 +107,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             int batchSize = 5;
@@ -166,7 +166,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
             {
@@ -203,7 +203,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
             {
@@ -244,7 +244,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
             {
@@ -279,7 +279,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
             {
@@ -315,7 +315,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(_dataDirectory, "ApplicationData", Guid.NewGuid().ToString()));
@@ -347,7 +347,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             var repository = mock.Container.Resolve<IAssetRepository>();
@@ -382,7 +382,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             var repository = mock.Container.Resolve<IAssetRepository>();
@@ -415,7 +415,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             var repository = mock.Container.Resolve<IAssetRepository>();
@@ -448,7 +448,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -501,7 +501,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -545,7 +545,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -583,7 +583,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -629,7 +629,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -657,7 +657,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -686,7 +686,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -715,7 +715,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -768,7 +768,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -811,7 +811,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -848,7 +848,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -885,7 +885,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -922,7 +922,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -949,7 +949,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -971,7 +971,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });

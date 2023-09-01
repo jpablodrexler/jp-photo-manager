@@ -9,7 +9,7 @@ using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Infrastructure
 {
-    public class AssetRepository : IAssetRepository
+    public class SpdbAssetRepository : IAssetRepository
     {
         private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -32,7 +32,7 @@ namespace JPPhotoManager.Infrastructure
         private bool _hasChanges;
         private object _syncLock;
 
-        public AssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService)
+        public SpdbAssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService)
         {
             _database = database;
             _storageService = storageService;

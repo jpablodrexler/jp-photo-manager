@@ -46,7 +46,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
@@ -102,7 +102,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
@@ -141,7 +141,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
@@ -192,7 +192,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
@@ -237,7 +237,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
                 });
             var repository = mock.Container.Resolve<IAssetRepository>();
 
@@ -311,7 +311,7 @@ namespace JPPhotoManager.Tests.Integration
         }
     }
 
-    class UnencapsulatedAssetRepository : AssetRepository
+    class UnencapsulatedAssetRepository : SpdbAssetRepository
     {
         public UnencapsulatedAssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService)
             : base(database, storageService, userConfigurationService)
