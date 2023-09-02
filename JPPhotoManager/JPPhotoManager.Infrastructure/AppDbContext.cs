@@ -11,11 +11,6 @@ namespace JPPhotoManager.Infrastructure
 
         }
 
-        public AppDbContext(DbContextOptions options) : base(options)
-        {
-
-        }
-
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
             
@@ -23,6 +18,7 @@ namespace JPPhotoManager.Infrastructure
 
         public DbSet<Asset> Assets { get; set; }
         public DbSet<Folder> Folders { get; set; }
+        public DbSet<SyncAssetsDirectoriesDefinition> SyncAssetsDirectoriesDefinitions { get; set; }
 
         // Overriding this method is needed to execute the EF commands.
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

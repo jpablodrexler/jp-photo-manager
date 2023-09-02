@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 
 namespace JPPhotoManager.Domain
 {
@@ -6,6 +7,9 @@ namespace JPPhotoManager.Domain
     {
         private const string LOCAL_PATH_PATTERN = "^([A-Za-z])(:)(\\[A-Za-z0-9]*)*";
         private const string REMOTE_PATH_PATTERN = "^(\\\\)(\\[A-Za-z0-9]*)*";
+
+        [Key]
+        public Guid Id { get; set; }
 
         public string SourceDirectory { get; set; }
         public string DestinationDirectory { get; set; }
