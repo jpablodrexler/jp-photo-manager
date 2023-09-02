@@ -1,5 +1,6 @@
 ﻿using JPPhotoManager.Domain.Interfaces;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows.Media.Imaging;
@@ -23,8 +24,13 @@ namespace JPPhotoManager.Domain
         public Rotation ImageRotation { get; set; }
         public DateTime ThumbnailCreationDateTime { get; set; }
         public string Hash { get; set; }
+        
+        [NotMapped]
         public BitmapImage ImageData { get; set; }
+
+        [NotMapped]
         public string FullPath => Folder != null ? Path.Combine(Folder.Path, FileName) : FileName;
+
         public string ThumbnailBlobName => AssetId + ".bin";
         public DateTime FileCreationDateTime { get; set; }
         public DateTime FileModificationDateTime { get; set; }
