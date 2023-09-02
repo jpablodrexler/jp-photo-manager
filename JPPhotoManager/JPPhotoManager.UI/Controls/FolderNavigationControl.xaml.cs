@@ -3,6 +3,7 @@ using JPPhotoManager.Infrastructure;
 using JPPhotoManager.UI.ViewModels;
 using log4net;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
@@ -21,9 +22,11 @@ namespace JPPhotoManager.UI.Controls
         public event EventHandler FolderSelected;
         public string SelectedPath { get; set; }
         private bool _isInitializing = true;
+        private Dictionary<Folder, TreeViewItem> _folders;
 
         public FolderNavigationControl()
         {
+            _folders = new Dictionary<Folder, TreeViewItem>();
             InitializeComponent();
         }
 
@@ -41,15 +44,69 @@ namespace JPPhotoManager.UI.Controls
 
         private void ViewModel_FolderAdded(object sender, FolderAddedEventArgs e)
         {
+            TreeViewItem parentItem = null;
+
             ViewModel.IsRefreshingFolders = true;
-            Initialize();
+            
+            var parentFolder = e.Folder.Parent;
+
+            if (parentFolder == null || !_folders.ContainsKey(parentFolder))
+                return;
+
+            parentItem = _folders[parentFolder];
+
+            if (parentItem == null)
+                return;
+
+            var folderViewModel = new FolderViewModel(ViewModel, ViewModel.Application) { Folder = e.Folder, IsExpanded = false };
+
+            TreeViewItem subitem = new()
+            {
+                Header = folderViewModel,
+                Tag = folderViewModel
+            };
+
+            subitem.Collapsed += new RoutedEventHandler(Item_Collapsed);
+            subitem.Expanded += new RoutedEventHandler(Item_Expanded);
+            parentItem.Items.Add(subitem);
+
+            if (!_folders.ContainsKey(e.Folder))
+                _folders[e.Folder] = subitem;
+
             ViewModel.IsRefreshingFolders = false;
         }
 
         private void ViewModel_FolderRemoved(object sender, FolderRemovedEventArgs e)
         {
+            TreeViewItem parentItem = null;
+
             ViewModel.IsRefreshingFolders = true;
-            Initialize();
+
+            var parentFolder = e.Folder.Parent;
+
+            if (parentFolder == null || !_folders.ContainsKey(parentFolder))
+                return;
+
+            parentItem = _folders[parentFolder];
+
+            if (parentItem == null)
+                return;
+
+            var folderViewModel = new FolderViewModel(ViewModel, ViewModel.Application) { Folder = e.Folder, IsExpanded = false };
+
+            TreeViewItem subitem = new()
+            {
+                Header = folderViewModel,
+                Tag = folderViewModel
+            };
+
+            subitem.Collapsed += new RoutedEventHandler(Item_Collapsed);
+            subitem.Expanded += new RoutedEventHandler(Item_Expanded);
+            parentItem.Items.Remove(subitem);
+
+            if (!_folders.ContainsKey(e.Folder))
+                _folders[e.Folder] = subitem;
+
             ViewModel.IsRefreshingFolders = false;
         }
 
@@ -72,6 +129,9 @@ namespace JPPhotoManager.UI.Controls
                     item.Items.Add(_placeholderNode);
                     item.Expanded += new RoutedEventHandler(Item_Expanded);
                     foldersTreeView.Items.Add(item);
+
+                    if (!_folders.ContainsKey(folder.Folder))
+                        _folders[folder.Folder] = item;
                 }
 
                 GoToFolder(SelectedPath);
@@ -103,6 +163,10 @@ namespace JPPhotoManager.UI.Controls
                     subitem.Collapsed += new RoutedEventHandler(Item_Collapsed);
                     subitem.Expanded += new RoutedEventHandler(Item_Expanded);
                     item.Items.Add(subitem);
+
+                    if (!_folders.ContainsKey(folder.Folder))
+                        _folders[folder.Folder] = subitem;
+
                     AddSubItems(subitem, includeHidden);
                 }
             }

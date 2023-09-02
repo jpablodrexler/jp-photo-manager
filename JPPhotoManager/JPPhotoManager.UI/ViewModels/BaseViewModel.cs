@@ -12,7 +12,7 @@ namespace JPPhotoManager.UI.ViewModels
         /// This property is declared as protected so the views
         /// always use the view model as a facade to the application object.
         /// </summary>
-        protected IApplication Application { get; private set; }
+        public IApplication Application { get; private set; }
 
         protected BaseViewModel(IApplication application)
         {
