@@ -1,10 +1,15 @@
-﻿namespace JPPhotoManager.Domain
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace JPPhotoManager.Domain
 {
     public class Folder
     {
+        [Key]
         public string FolderId { get; set; }
         public string Path { get; set; }
 
+        [NotMapped]
         public string Name
         {
             get
@@ -16,6 +21,7 @@
             }
         }
 
+        [NotMapped]
         public Folder? Parent
         {
             get

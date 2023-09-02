@@ -1,4 +1,5 @@
 ﻿using JPPhotoManager.Domain.Interfaces;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows.Media.Imaging;
@@ -9,6 +10,7 @@ namespace JPPhotoManager.Domain
     {
         private const int MAX_PATH_LENGTH = 256;
 
+        [Key]
         public string AssetId { get; set; }
         public string FolderId { get; set; }
         public Folder Folder { get; set; }

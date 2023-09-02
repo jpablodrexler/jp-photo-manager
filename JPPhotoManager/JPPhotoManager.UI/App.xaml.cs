@@ -5,6 +5,7 @@ using JPPhotoManager.UI.ViewModels;
 using JPPhotoManager.UI.Windows;
 using log4net;
 using log4net.Config;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SimplePortableDatabase;
@@ -66,12 +67,13 @@ namespace JPPhotoManager.UI
 
             services.AddSingleton(configuration);
             services.AddSimplePortableDatabaseServices();
+            services.AddDbContext<AppDbContext>(options => options.UseSqlite(configuration.GetConnectionString("SqliteConnection")));
             services.AddSingleton<IDirectoryComparer, DirectoryComparer>();
             services.AddSingleton<IProcessService, ProcessService>();
             services.AddSingleton<IUserConfigurationService, UserConfigurationService>();
             services.AddSingleton<IStorageService, StorageService>();
             services.AddSingleton<IBatchRenameService, BatchRenameService>();
-            services.AddSingleton<IAssetRepository, SpdbAssetRepository>();
+            services.AddSingleton<IAssetRepository, SqliteAssetRepository>();
             services.AddSingleton<IAssetHashCalculatorService, AssetHashCalculatorService>();
             services.AddSingleton<ICatalogAssetsService, CatalogAssetsService>();
             services.AddSingleton<IMoveAssetsService, MoveAssetsService>();
