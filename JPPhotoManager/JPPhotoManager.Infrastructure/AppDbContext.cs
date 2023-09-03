@@ -27,7 +27,11 @@ namespace JPPhotoManager.Infrastructure
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
             IConfigurationRoot configuration = builder.Build();
-            optionsBuilder.UseSqlite(configuration.GetConnectionString("SqliteConnection"));
+
+            var connectionString = configuration.GetConnectionString("SqliteConnection");
+            connectionString = string.Format(connectionString, Environment.UserName);
+
+            optionsBuilder.UseSqlite(connectionString);
             base.OnConfiguring(optionsBuilder);
         }
     }

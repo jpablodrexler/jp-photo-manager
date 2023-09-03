@@ -65,9 +65,12 @@ namespace JPPhotoManager.UI
 
             IConfigurationRoot configuration = builder.Build();
 
+            var connectionString = configuration.GetConnectionString("SqliteConnection");
+            connectionString = string.Format(connectionString, Environment.UserName);
+
             services.AddSingleton(configuration);
             services.AddSimplePortableDatabaseServices();
-            services.AddDbContext<AppDbContext>(options => options.UseSqlite(configuration.GetConnectionString("SqliteConnection")));
+            services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
             services.AddSingleton<IDirectoryComparer, DirectoryComparer>();
             services.AddSingleton<IProcessService, ProcessService>();
             services.AddSingleton<IUserConfigurationService, UserConfigurationService>();
