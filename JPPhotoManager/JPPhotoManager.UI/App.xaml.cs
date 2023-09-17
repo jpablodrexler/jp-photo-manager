@@ -8,7 +8,6 @@ using log4net.Config;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using SimplePortableDatabase;
 using System;
 using System.IO;
 using System.Reflection;
@@ -42,6 +41,9 @@ namespace JPPhotoManager.UI
             {
                 if (!serviceProvider.GetService<Application.IApplication>().IsAlreadyRunning())
                 {
+                    var context = serviceProvider.GetService<AppDbContext>();
+                    context.Database.EnsureCreated();
+
                     var mainWindow = serviceProvider.GetService<MainWindow>();
                     mainWindow.Show();
                 }
@@ -69,14 +71,13 @@ namespace JPPhotoManager.UI
             connectionString = string.Format(connectionString, Environment.UserName);
 
             services.AddSingleton(configuration);
-            services.AddSimplePortableDatabaseServices();
             services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
             services.AddSingleton<IDirectoryComparer, DirectoryComparer>();
             services.AddSingleton<IProcessService, ProcessService>();
             services.AddSingleton<IUserConfigurationService, UserConfigurationService>();
             services.AddSingleton<IStorageService, StorageService>();
             services.AddSingleton<IBatchRenameService, BatchRenameService>();
-            services.AddSingleton<IAssetRepository, SqliteAssetRepository>();
+            services.AddSingleton<IAssetRepository, AssetRepository>();
             services.AddSingleton<IAssetHashCalculatorService, AssetHashCalculatorService>();
             services.AddSingleton<ICatalogAssetsService, CatalogAssetsService>();
             services.AddSingleton<IMoveAssetsService, MoveAssetsService>();

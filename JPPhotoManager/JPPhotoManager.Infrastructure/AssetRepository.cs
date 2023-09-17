@@ -2,15 +2,15 @@ using JPPhotoManager.Domain;
 using JPPhotoManager.Domain.Interfaces;
 using log4net;
 using Microsoft.EntityFrameworkCore;
-using SimplePortableDatabase;
 using System.Data;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Infrastructure
 {
-    public class SqliteAssetRepository : IAssetRepository
+    public class AssetRepository : IAssetRepository
     {
         private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
@@ -21,7 +21,6 @@ namespace JPPhotoManager.Infrastructure
         public bool IsInitialized { get; private set; }
         private string _dataDirectory;
         private readonly AppDbContext _appDbContext;
-        private readonly IDatabase _database;
         private readonly IStorageService _storageService;
         private readonly IUserConfigurationService _userConfigurationService;
 
@@ -32,10 +31,9 @@ namespace JPPhotoManager.Infrastructure
         private bool _hasChanges;
         private object _syncLock;
 
-        public SqliteAssetRepository(AppDbContext appDbContext, IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService)
+        public AssetRepository(AppDbContext appDbContext, IStorageService storageService, IUserConfigurationService userConfigurationService)
         {
             _appDbContext = appDbContext;
-            _database = database;
             _storageService = storageService;
             _userConfigurationService = userConfigurationService;
             Thumbnails = new Dictionary<string, byte[]>();
@@ -55,112 +53,26 @@ namespace JPPhotoManager.Infrastructure
 
         private void InitializeDatabase()
         {
-            _appDbContext.Database.EnsureCreated();
             _dataDirectory = _storageService.ResolveDataDirectory(STORAGE_VERSION);
             var separatorChar = SEPARATOR.ToCharArray().First();
-            _database.Initialize(_dataDirectory, separatorChar);
-        }
-
-        public bool ShouldWriteBackup(DateTime today)
-        {
-            // TODO: Implement for Sqlite file.
-            //bool shouldWrite = false;
-            //var days = _userConfigurationService.GetBackupEveryNDays();
-
-            //if (days > 0)
-            //{
-            //    var backupDates = _database.GetBackupDates();
-
-            //    if (backupDates?.Length > 0)
-            //    {
-            //        var lastBackupDate = backupDates.Max();
-            //        var newBackupDate = lastBackupDate.AddDays(days);
-
-            //        shouldWrite = today.Date >= newBackupDate.Date
-            //            && !_database.BackupExists(today.Date);
-            //    }
-            //    else
-            //    {
-            //        shouldWrite = !_database.BackupExists(today.Date);
-            //    }
-            //}
-
-            //return shouldWrite;
-            return true;
-        }
-
-        public void WriteBackup()
-        {
-            //if (_database.WriteBackup(DateTime.Now.Date))
-            //{
-            //    _database.DeleteOldBackups(_userConfigurationService.GetBackupsToKeep());
-            //}
         }
 
         public List<Folder> ReadFolders()
         {
-            List<Folder> result;
-
-            try
-            {
-                result = _appDbContext.Folders.ToList();
-            }
-            catch (ArgumentException ex)
-            {
-                throw new ApplicationException($"Error while trying to read data table 'Folder'. " +
-                    $"DataDirectory: {_database.DataDirectory} - " +
-                    $"Separator: {_database.Separator} - " +
-                    $"LastReadFilePath: {_database.Diagnostics.LastReadFilePath} - " +
-                    $"LastReadFileRaw: {_database.Diagnostics.LastReadFileRaw}",
-                    ex);
-            }
-
-            return result;
+            return _appDbContext.Folders.ToList();
         }
 
         public List<Asset> ReadAssets()
         {
-            List<Asset> result;
-
-            try
-            {
-                result = _appDbContext
+            return _appDbContext
                     .Assets
                     .Include(a => a.Folder)
                     .ToList();
-            }
-            catch (ArgumentException ex)
-            {
-                throw new ApplicationException($"Error while trying to read data table 'Asset'. " +
-                    $"DataDirectory: {_database.DataDirectory} - " +
-                    $"Separator: {_database.Separator} - " +
-                    $"LastReadFilePath: {_database.Diagnostics.LastReadFilePath} - " +
-                    $"LastReadFileRaw: {_database.Diagnostics.LastReadFileRaw}",
-                    ex);
-            }
-
-            return result;
         }
 
         public List<SyncAssetsDirectoriesDefinition> ReadSyncDefinitions()
         {
-            List<SyncAssetsDirectoriesDefinition> result;
-
-            try
-            {
-                result = _appDbContext.SyncAssetsDirectoriesDefinitions.ToList();
-            }
-            catch (ArgumentException ex)
-            {
-                throw new ApplicationException($"Error while trying to read data table 'Import'. " +
-                    $"DataDirectory: {_database.DataDirectory} - " +
-                    $"Separator: {_database.Separator} - " +
-                    $"LastReadFilePath: {_database.Diagnostics.LastReadFilePath} - " +
-                    $"LastReadFileRaw: {_database.Diagnostics.LastReadFileRaw}",
-                    ex);
-            }
-
-            return result;
+            return _appDbContext.SyncAssetsDirectoriesDefinitions.ToList();
         }
 
         public List<string> ReadRecentTargetPaths()
@@ -216,8 +128,7 @@ namespace JPPhotoManager.Infrastructure
                 Thumbnails.Remove(asset.ThumbnailBlobName);
             }
 
-            // TODO: Implement through the NuGet package.
-            string thumbnailsFilePath = _database.ResolveBlobFilePath(_dataDirectory, asset.ThumbnailBlobName);
+            string thumbnailsFilePath = GetBinaryFilePath(asset.ThumbnailBlobName);
             File.Delete(thumbnailsFilePath);
         }
 
@@ -228,14 +139,13 @@ namespace JPPhotoManager.Infrastructure
                 Thumbnails.Remove(thumbnailBlobName);
             }
 
-            // TODO: Implement through the NuGet package.
-            string thumbnailsFilePath = _database.ResolveBlobFilePath(_dataDirectory, thumbnailBlobName);
+            string thumbnailsFilePath = GetBinaryFilePath(thumbnailBlobName);
             File.Delete(thumbnailsFilePath);
         }
 
         public string[] GetThumbnailsList()
         {
-            string blobsDirectory = _database.GetBlobsDirectory(_dataDirectory);
+            string blobsDirectory = GetBinaryFilesDirectory();
             return Directory.GetFiles(blobsDirectory);
         }
 
@@ -262,23 +172,6 @@ namespace JPPhotoManager.Infrastructure
                     }
                 }
             }
-        }
-
-        public bool HasChanges()
-        {
-            bool result = false;
-
-            lock (_syncLock)
-            {
-                result = _hasChanges;
-            }
-
-            return result;
-        }
-
-        private void SaveThumbnails(Dictionary<string, byte[]> thumbnails, string thumbnailsFileName)
-        {
-            _database.WriteBlob(thumbnails, thumbnailsFileName);
         }
 
         public PaginatedData<Asset> GetAssets(string directory, int pageIndex)
@@ -308,7 +201,7 @@ namespace JPPhotoManager.Infrastructure
                             {
                                 if (!Thumbnails.ContainsKey(asset.ThumbnailBlobName))
                                 {
-                                    var bytes = (byte[])_database.ReadBlob(asset.ThumbnailBlobName);
+                                    var bytes = (byte[])ReadFromBinaryFile(asset.ThumbnailBlobName);
 
                                     if (bytes != null)
                                     {
@@ -401,7 +294,7 @@ namespace JPPhotoManager.Infrastructure
 
                 if (thumbnailData != null)
                 {
-                    _database.WriteBlob(thumbnailData, asset.ThumbnailBlobName);
+                    WriteToBinaryFile(thumbnailData, asset.ThumbnailBlobName);
                 }
 
                 _hasChanges = true;
@@ -578,7 +471,7 @@ namespace JPPhotoManager.Infrastructure
 
                         if (!Thumbnails.ContainsKey(thumbnailBlobName))
                         {
-                            var thumbnail = (byte[])_database.ReadBlob(thumbnailBlobName);
+                            var thumbnail = (byte[])ReadFromBinaryFile(thumbnailBlobName);
 
                             if (thumbnail != null)
                             {
@@ -606,7 +499,7 @@ namespace JPPhotoManager.Infrastructure
 
                 if (!Thumbnails.ContainsKey(thumbnailBlobName))
                 {
-                    var thumbnail = (byte[])_database.ReadBlob(thumbnailBlobName);
+                    var thumbnail = (byte[])ReadFromBinaryFile(thumbnailBlobName);
 
                     if (thumbnail != null)
                     {
@@ -621,7 +514,6 @@ namespace JPPhotoManager.Infrastructure
                 else
                 {
                     DeleteAsset(directoryName, fileName);
-                    SaveCatalog(folder);
                 }
             }
 
@@ -670,9 +562,41 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        public void SaveCatalog(Folder folder)
+        private string GetAppFilesDirectory() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPPhotoManager");
+
+        private string GetBinaryFilesDirectory() => Path.Combine(GetAppFilesDirectory(), "Thumbnails");
+
+        private string GetBinaryFilePath(string binaryFileName) => Path.Combine(GetBinaryFilesDirectory(), binaryFileName);
+
+        public object ReadFromBinaryFile(string binaryFileName)
         {
-            // Not needed for SQLite.
+            object result = null;
+            var binaryFilePath = GetBinaryFilePath(binaryFileName);
+            
+            if (File.Exists(binaryFilePath))
+            {
+                using (FileStream fileStream = new(binaryFilePath, FileMode.Open))
+                {
+                    BinaryFormatter binaryFormatter = new();
+                    result = binaryFormatter.Deserialize(fileStream);
+                }
+            }
+
+            return result;
+        }
+
+        public void WriteToBinaryFile(object anObject, string binaryFileName)
+        {
+            Directory.CreateDirectory(GetAppFilesDirectory());
+            Directory.CreateDirectory(GetBinaryFilesDirectory());
+
+            var binaryFilePath = GetBinaryFilePath(binaryFileName);
+
+            using (FileStream fileStream = new(binaryFilePath, FileMode.Create))
+            {
+                BinaryFormatter binaryFormatter = new();
+                binaryFormatter.Serialize(fileStream, anObject);
+            }
         }
     }
 }
