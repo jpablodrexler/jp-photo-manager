@@ -61,7 +61,7 @@ namespace JPPhotoManager.Tests.Integration
                 {
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterInstance(new AppDbContext(_contextOptions));
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                 });
             var repository = mock.Create<IAssetRepository>();
@@ -84,7 +84,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterInstance(new AppDbContext(_contextOptions));
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
@@ -109,7 +109,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterInstance(new AppDbContext(_contextOptions));
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
@@ -137,7 +137,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterInstance(new AppDbContext(_contextOptions));
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
@@ -167,7 +167,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterInstance(new AppDbContext(_contextOptions));
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
@@ -198,7 +198,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterInstance(new AppDbContext(_contextOptions));
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
