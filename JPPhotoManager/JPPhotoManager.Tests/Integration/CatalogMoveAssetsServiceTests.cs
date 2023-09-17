@@ -232,6 +232,7 @@ namespace JPPhotoManager.Tests.Integration
                 {
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
+                    cfg.RegisterInstance(new AppDbContext(_contextOptions));
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
