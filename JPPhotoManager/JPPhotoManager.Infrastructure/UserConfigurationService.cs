@@ -38,6 +38,10 @@ namespace JPPhotoManager.Infrastructure
             _configuration = configuration;
         }
 
+        public string GetAppFilesDirectory() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), GetApplicationDataFolder());
+
+        public string GetBinaryFilesDirectory() => Path.Combine(GetAppFilesDirectory(), "Thumbnails");
+
         public string GetPicturesDirectory()
         {
             return Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);

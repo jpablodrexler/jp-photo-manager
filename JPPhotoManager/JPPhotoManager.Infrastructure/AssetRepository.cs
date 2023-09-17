@@ -145,7 +145,7 @@ namespace JPPhotoManager.Infrastructure
 
         public string[] GetThumbnailsList()
         {
-            string blobsDirectory = GetBinaryFilesDirectory();
+            string blobsDirectory = _userConfigurationService.GetBinaryFilesDirectory();
             return Directory.GetFiles(blobsDirectory);
         }
 
@@ -562,11 +562,7 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        private string GetAppFilesDirectory() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), _userConfigurationService.GetApplicationDataFolder());
-
-        private string GetBinaryFilesDirectory() => Path.Combine(GetAppFilesDirectory(), "Thumbnails");
-
-        private string GetBinaryFilePath(string binaryFileName) => Path.Combine(GetBinaryFilesDirectory(), binaryFileName);
+        private string GetBinaryFilePath(string binaryFileName) => Path.Combine(_userConfigurationService.GetBinaryFilesDirectory(), binaryFileName);
 
         public object ReadFromBinaryFile(string binaryFileName)
         {
@@ -587,8 +583,8 @@ namespace JPPhotoManager.Infrastructure
 
         public void WriteToBinaryFile(object anObject, string binaryFileName)
         {
-            Directory.CreateDirectory(GetAppFilesDirectory());
-            Directory.CreateDirectory(GetBinaryFilesDirectory());
+            Directory.CreateDirectory(_userConfigurationService.GetAppFilesDirectory());
+            Directory.CreateDirectory(_userConfigurationService.GetBinaryFilesDirectory());
 
             var binaryFilePath = GetBinaryFilePath(binaryFileName);
 
