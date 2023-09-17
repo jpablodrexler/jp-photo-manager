@@ -176,6 +176,7 @@ namespace JPPhotoManager.Tests.Integration
 
             Asset inexistentAsset = new()
             {
+                AssetId = "670D210E-A85B-4BFB-8C37-721A6AC2495F",
                 FileName = "Inexistent Image.jpg",
                 Folder = asset.Folder,
                 FolderId = asset.FolderId,
@@ -195,8 +196,7 @@ namespace JPPhotoManager.Tests.Integration
         public void GetDuplicatedAssets_WithInexistingNotDuplicatedAsset_ReturnEmptyArray()
         {
             IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
-            //var repository = mock.Container.Resolve<IAssetRepository>();
-
+            
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
@@ -220,6 +220,7 @@ namespace JPPhotoManager.Tests.Integration
 
             repository.AddAsset(new Asset
             {
+                AssetId = "F641BC57-D1D0-4EB9-892E-CABBE679DD37",
                 FileName = "Inexistent Image.jpg",
                 Folder = folder,
                 FolderId = folder.FolderId,
@@ -253,10 +254,6 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                 });
 
-            //using var context = new AppDbContext(_contextOptions);
-            //var test = context.Folders.ToList();
-
-
             var repository = mock.Container.Resolve<IAssetRepository>();
 
             Folder folder = new() { FolderId = "1", Path = "C:\\Inexistent Folder" };
@@ -266,6 +263,7 @@ namespace JPPhotoManager.Tests.Integration
 
             repository.AddAsset(new Asset
             {
+                AssetId = "63E44EF8-71B1-4B2E-A478-4B0F0785ACC8",
                 FileName = "Inexistent Image.jpg",
                 Folder = folder,
                 FolderId = folder.FolderId,
@@ -299,7 +297,10 @@ namespace JPPhotoManager.Tests.Integration
             var app = mock.Container.Resolve<Application.Application>();
 
             Folder folder = repository.AddFolder(_dataDirectory);
-            Mock<IAssetHashCalculatorService> hashCalculator = new();
+            Mock<IAssetHashCalculatorService> hashCalculator = mock.Mock<IAssetHashCalculatorService>();
+            hashCalculator
+                .Setup(hc => hc.CalculateHash(It.IsAny<byte[]>()))
+                .Returns("0b6d010f85544871c307bb3a96028402f55fa29094908cdd0f74a8ec8d3fc3d4fbec995d98b89aafef3dcf5581c018fbb50481e33c7e45aef552d66c922f4078");
 
             string imagePath = Path.Combine(_dataDirectory, "Image 2.jpg");
             File.Exists(imagePath).Should().BeTrue();
@@ -312,8 +313,8 @@ namespace JPPhotoManager.Tests.Integration
             imagePath = Path.Combine(_dataDirectory, "Image 2 duplicated.jpg");
             File.Exists(imagePath).Should().BeTrue();
             Asset duplicatedAsset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 2 duplicated.jpg");
-
-            //repository.RemoveThumbnail(folder.Path, "Image 2 duplicated.jpg"); // TODO: Review
+            
+            repository.DeleteThumbnail(duplicatedAsset.ThumbnailBlobName);
             
             var assets = app.GetAssets(_dataDirectory, 0);
             assets.Items.Should().NotBeEmpty();

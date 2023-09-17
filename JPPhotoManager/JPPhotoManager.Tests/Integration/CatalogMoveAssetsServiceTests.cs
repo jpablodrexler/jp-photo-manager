@@ -19,7 +19,9 @@ namespace JPPhotoManager.Tests.Integration
         private string _imageDestinationDirectory;
         private string _nonCataloguedImageDestinationDirectory;
         private IConfigurationRoot _configuration;
+        private readonly DbContextOptions<AppDbContext> _contextOptions;
         private readonly AppDbContext _dbContext;
+        private readonly SqliteConnection _connection;
 
         public CatalogMoveAssetsServiceTests()
         {
@@ -48,14 +50,18 @@ namespace JPPhotoManager.Tests.Integration
                 Directory.Delete(_nonCataloguedImageDestinationDirectory, true);
             }
 
-            var connection = new SqliteConnection("Filename=:memory:");
-            connection.Open();
+            // Create and open a connection. This creates the SQLite in-memory database, which will persist until the connection is closed
+            // at the end of the test (see Dispose below).
+            _connection = new SqliteConnection("Filename=:memory:");
+            _connection.Open();
 
-            var contextOptions = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite(connection)
+            // These options will be used by the context instances in this test suite, including the connection opened above.
+            _contextOptions = new DbContextOptionsBuilder<AppDbContext>()
+                .UseSqlite(_connection)
                 .Options;
 
-            _dbContext = new AppDbContext(contextOptions);
+            _dbContext = new AppDbContext(_contextOptions);
+            _dbContext.Database.EnsureCreated();
         }
 
         [Fact]
