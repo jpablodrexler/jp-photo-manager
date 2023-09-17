@@ -4,18 +4,23 @@ using FluentAssertions;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Domain.Interfaces;
 using JPPhotoManager.Infrastructure;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using SimplePortableDatabase;
+using System.Data.Common;
 using System.IO;
 using Xunit;
 
 namespace JPPhotoManager.Tests.Integration
 {
-    public class ApplicationTests
+    public class ApplicationTests : IDisposable
     {
         private string _dataDirectory;
         private IConfigurationRoot _configuration;
+        private readonly AppDbContext _dbContext;
+        private readonly DbConnection _connection;
+        private readonly DbContextOptions<AppDbContext> _contextOptions;
 
         public ApplicationTests()
         {
@@ -31,6 +36,19 @@ namespace JPPhotoManager.Tests.Integration
                 .MockGetValue("appsettings:ThumbnailsDictionaryEntriesToKeep", "5");
 
             _configuration = configurationMock.Object;
+
+            // Create and open a connection. This creates the SQLite in-memory database, which will persist until the connection is closed
+            // at the end of the test (see Dispose below).
+            _connection = new SqliteConnection("Filename=:memory:");
+            _connection.Open();
+
+            // These options will be used by the context instances in this test suite, including the connection opened above.
+            _contextOptions = new DbContextOptionsBuilder<AppDbContext>()
+                .UseSqlite(_connection)
+                .Options;
+
+            _dbContext = new AppDbContext(_contextOptions);
+            _dbContext.Database.EnsureCreated();
         }
 
         [Fact]
@@ -41,16 +59,15 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
-            var database = mock.Container.Resolve<IDatabase>();
             var repository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var storageService = mock.Container.Resolve<IStorageService>();
@@ -69,11 +86,6 @@ namespace JPPhotoManager.Tests.Integration
             imagePath = Path.Combine(_dataDirectory, "Image 2 duplicated.jpg");
             Assert.True(File.Exists(imagePath));
             Asset duplicatedAsset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 2 duplicated.jpg");
-
-            Console.WriteLine("database.DataDirectory: " + database.DataDirectory);
-            Console.WriteLine("database.Separator: " + database.Separator);
-
-            repository.SaveCatalog(folder);
 
             var duplicatedAssetSets = app.GetDuplicatedAssets();
             duplicatedAssetSets.Should().ContainSingle();
@@ -97,12 +109,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
@@ -136,12 +148,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
@@ -183,16 +195,17 @@ namespace JPPhotoManager.Tests.Integration
         public void GetDuplicatedAssets_WithInexistingNotDuplicatedAsset_ReturnEmptyArray()
         {
             IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
+            //var repository = mock.Container.Resolve<IAssetRepository>();
 
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
@@ -233,12 +246,17 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                 });
+
+            //using var context = new AppDbContext(_contextOptions);
+            //var test = context.Folders.ToList();
+
+
             var repository = mock.Container.Resolve<IAssetRepository>();
 
             Folder folder = new() { FolderId = "1", Path = "C:\\Inexistent Folder" };
@@ -268,15 +286,15 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<UnencapsulatedAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
-            UnencapsulatedAssetRepository repository = (UnencapsulatedAssetRepository)mock.Container.Resolve<IAssetRepository>();
+            AssetRepository repository = (AssetRepository)mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var app = mock.Container.Resolve<Application.Application>();
 
@@ -295,10 +313,8 @@ namespace JPPhotoManager.Tests.Integration
             File.Exists(imagePath).Should().BeTrue();
             Asset duplicatedAsset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 2 duplicated.jpg");
 
-            repository.SaveCatalog(folder);
-            repository.RemoveThumbnail(folder.Path, "Image 2 duplicated.jpg");
-            repository.SaveCatalog(folder);
-
+            //repository.RemoveThumbnail(folder.Path, "Image 2 duplicated.jpg"); // TODO: Review
+            
             var assets = app.GetAssets(_dataDirectory, 0);
             assets.Items.Should().NotBeEmpty();
 
@@ -309,21 +325,10 @@ namespace JPPhotoManager.Tests.Integration
             repository.LoadThumbnail(_dataDirectory, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight).Should().NotBeNull();
             repository.LoadThumbnail(_dataDirectory, duplicatedAsset.FileName, duplicatedAsset.ThumbnailPixelWidth, duplicatedAsset.ThumbnailPixelHeight).Should().BeNull();
         }
-    }
 
-    class UnencapsulatedAssetRepository : SpdbAssetRepository
-    {
-        public UnencapsulatedAssetRepository(IDatabase database, IStorageService storageService, IUserConfigurationService userConfigurationService)
-            : base(database, storageService, userConfigurationService)
+        public void Dispose()
         {
-        }
-
-        internal void RemoveThumbnail(string directoryName, string fileName)
-        {
-            var assets = GetAssets(directoryName, 0);
-            var asset = assets.Items.First(a => a.FileName == fileName);
-
-            DeleteThumbnail(asset);
+            _connection.Dispose();
         }
     }
 }

@@ -4,9 +4,10 @@ using FluentAssertions;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Domain.Interfaces;
 using JPPhotoManager.Infrastructure;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using SimplePortableDatabase;
 using System.IO;
 using Xunit;
 
@@ -16,6 +17,7 @@ namespace JPPhotoManager.Tests.Integration
     {
         private readonly string _dataDirectory;
         private readonly IConfigurationRoot _configuration;
+        private readonly AppDbContext _dbContext;
 
         public AssetRepositoryTests()
         {
@@ -32,6 +34,15 @@ namespace JPPhotoManager.Tests.Integration
                 .MockGetValue("appsettings:ThumbnailsDictionaryEntriesToKeep", "5");
 
             _configuration = configurationMock.Object;
+
+            var connection = new SqliteConnection("Filename=:memory:");
+            connection.Open();
+
+            var contextOptions = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+                .Options;
+
+            _dbContext = new AppDbContext(contextOptions);
         }
 
         [Fact]
@@ -42,10 +53,10 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                 });
             var repository = mock.Create<IAssetRepository>();
             bool folderExists = repository.FolderExists(_dataDirectory);
@@ -56,81 +67,6 @@ namespace JPPhotoManager.Tests.Integration
         }
 
         [Fact]
-        public void HasChanges_Initial_ReturnFalse()
-        {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
-
-            using var mock = AutoMock.GetLoose(
-                cfg =>
-                {
-                    cfg.RegisterSimplePortableDatabaseTypes();
-                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
-                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
-                });
-            var repository = mock.Create<IAssetRepository>();
-            string imagePath = Path.Combine(_dataDirectory, "Image 1.jpg");
-            File.Exists(imagePath).Should().BeTrue();
-            repository.HasChanges().Should().BeFalse();
-        }
-
-        [Fact]
-        public void HasChanges_AfterChange_ReturnTrue()
-        {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
-
-            using var mock = AutoMock.GetLoose(
-                cfg =>
-                {
-                    cfg.RegisterSimplePortableDatabaseTypes();
-                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
-                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
-                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
-                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
-                });
-            var repository = mock.Create<IAssetRepository>();
-            var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
-
-            string imagePath = Path.Combine(_dataDirectory, "Image 1.jpg");
-            File.Exists(imagePath).Should().BeTrue();
-            repository.AddFolder(_dataDirectory);
-
-            catalogAssetsService.CreateAsset(_dataDirectory, "Image 1.jpg");
-            repository.HasChanges().Should().BeTrue();
-        }
-
-        [Fact]
-        public void HasChanges_AfterSave_ReturnFalse()
-        {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
-
-            using var mock = AutoMock.GetLoose(
-                cfg =>
-                {
-                    cfg.RegisterSimplePortableDatabaseTypes();
-                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
-                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
-                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
-                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
-                });
-            var repository = mock.Container.Resolve<IAssetRepository>();
-            var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
-
-            string imagePath = Path.Combine(_dataDirectory, "Image 1.jpg");
-            File.Exists(imagePath).Should().BeTrue();
-
-            repository.AddFolder(_dataDirectory);
-
-            catalogAssetsService.CreateAsset(_dataDirectory, "Image 1.jpg");
-            repository.SaveCatalog(null);
-            repository.HasChanges().Should().BeFalse();
-        }
-
-        [Fact]
         public void IsAssetCatalogued_AssetNotInCatalog_ReturnFalse()
         {
             IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
@@ -138,12 +74,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             var repository = mock.Container.Resolve<IAssetRepository>();
@@ -163,12 +99,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             var repository = mock.Container.Resolve<IAssetRepository>();
@@ -191,12 +127,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             var repository = mock.Container.Resolve<IAssetRepository>();
@@ -221,12 +157,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             var repository = mock.Container.Resolve<IAssetRepository>();
@@ -252,12 +188,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             var repository = mock.Container.Resolve<IAssetRepository>();
@@ -279,8 +215,7 @@ namespace JPPhotoManager.Tests.Integration
                 });
 
             repository.SaveSyncAssetsConfiguration(syncConfiguration);
-            repository.SaveCatalog(null);
-
+            
             syncConfiguration = repository.GetSyncAssetsConfiguration();
 
             syncConfiguration.Definitions.Should().HaveCount(2);
@@ -288,275 +223,6 @@ namespace JPPhotoManager.Tests.Integration
             syncConfiguration.Definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
             syncConfiguration.Definitions[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
             syncConfiguration.Definitions[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
-        }
-
-        [Theory]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        public void ShouldWriteBackup_WhenNullArray_ReturnBackupExists(bool backupExists, bool expectedResult)
-        {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
-
-            using var mock = AutoMock.GetLoose(
-                cfg =>
-                {
-                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
-                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
-                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
-                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
-                });
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.GetBackupDates())
-                .Returns((DateTime[])null);
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.BackupExists(It.IsAny<DateTime>()))
-                .Returns(backupExists);
-
-            var repository = mock.Container.Resolve<IAssetRepository>();
-            var shouldWrite = repository.ShouldWriteBackup(new DateTime(2022, 7, 3));
-            shouldWrite.Should().Be(expectedResult);
-        }
-
-        [Theory]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        public void ShouldWriteBackup_WhenEmptyArray_ReturnEmptyArray(bool backupExists, bool expectedResult)
-        {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
-
-            using var mock = AutoMock.GetLoose(
-                cfg =>
-                {
-                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
-                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
-                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
-                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
-                });
-            
-            mock.Mock<IDatabase>()
-                .Setup(m => m.GetBackupDates())
-                .Returns(Array.Empty<DateTime>());
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.BackupExists(It.IsAny<DateTime>()))
-                .Returns(backupExists);
-
-            var repository = mock.Container.Resolve<IAssetRepository>();
-            var shouldWrite = repository.ShouldWriteBackup(new DateTime(2022, 7, 3));
-            shouldWrite.Should().Be(expectedResult);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void ShouldWriteBackup_WhenOneItemArrayBeforeBackupDate_ReturnFalse(bool backupExists)
-        {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
-
-            using var mock = AutoMock.GetLoose(
-                cfg =>
-                {
-                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
-                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
-                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
-                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
-                });
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.GetBackupDates())
-                .Returns(new DateTime[] { new DateTime(2022, 7, 1) });
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.BackupExists(It.IsAny<DateTime>()))
-                .Returns(backupExists);
-
-            var repository = mock.Container.Resolve<IAssetRepository>();
-            var shouldWrite = repository.ShouldWriteBackup(new DateTime(2022, 7, 3));
-            shouldWrite.Should().BeFalse();
-        }
-
-        [Theory]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        public void ShouldWriteBackup_WhenOneItemArrayOnBackupDate_ReturnBackupDoesntExists(bool backupExists, bool expectedResult)
-        {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
-
-            using var mock = AutoMock.GetLoose(
-                cfg =>
-                {
-                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
-                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
-                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
-                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
-                });
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.GetBackupDates())
-                .Returns(new DateTime[] { new DateTime(2022, 7, 1) });
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.BackupExists(It.IsAny<DateTime>()))
-                .Returns(backupExists);
-
-            var repository = mock.Container.Resolve<IAssetRepository>();
-            var shouldWrite = repository.ShouldWriteBackup(new DateTime(2022, 7, 8));
-            shouldWrite.Should().Be(expectedResult);
-        }
-
-        [Theory]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        public void ShouldWriteBackup_WhenOneItemArrayAfterBackupDate_ReturnBackupDoesntExists(bool backupExists, bool expectedResult)
-        {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
-
-            using var mock = AutoMock.GetLoose(
-                cfg =>
-                {
-                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
-                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
-                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
-                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
-                });
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.GetBackupDates())
-                .Returns(new DateTime[] { new DateTime(2022, 7, 1) });
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.BackupExists(It.IsAny<DateTime>()))
-                .Returns(backupExists);
-
-            var repository = mock.Container.Resolve<IAssetRepository>();
-            var shouldWrite = repository.ShouldWriteBackup(new DateTime(2022, 7, 12));
-            shouldWrite.Should().Be(expectedResult);
-        }
-
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void ShouldWriteBackup_WhenMultipleItemsArrayBeforeBackupDate_ReturnFalse(bool backupExists)
-        {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
-
-            using var mock = AutoMock.GetLoose(
-                cfg =>
-                {
-                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
-                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
-                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
-                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
-                });
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.GetBackupDates())
-                .Returns(new DateTime[]
-                {
-                    new DateTime(2022, 6, 3),
-                    new DateTime(2022, 6, 10),
-                    new DateTime(2022, 6, 17),
-                    new DateTime(2022, 6, 24),
-                    new DateTime(2022, 7, 1)
-                });
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.BackupExists(It.IsAny<DateTime>()))
-                .Returns(backupExists);
-
-            var repository = mock.Container.Resolve<IAssetRepository>();
-            var shouldWrite = repository.ShouldWriteBackup(new DateTime(2022, 7, 3));
-            shouldWrite.Should().BeFalse();
-        }
-
-        [Theory]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        public void ShouldWriteBackup_WhenMultipleItemsArrayOnBackupDate_ReturnBackupExists(bool backupExists, bool expectedResult)
-        {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
-
-            using var mock = AutoMock.GetLoose(
-                cfg =>
-                {
-                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
-                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
-                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
-                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
-                });
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.GetBackupDates())
-                .Returns(new DateTime[]
-                {
-                    new DateTime(2022, 6, 3),
-                    new DateTime(2022, 6, 10),
-                    new DateTime(2022, 6, 17),
-                    new DateTime(2022, 6, 24),
-                    new DateTime(2022, 7, 1)
-                });
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.BackupExists(It.IsAny<DateTime>()))
-                .Returns(backupExists);
-
-            var repository = mock.Container.Resolve<IAssetRepository>();
-            var shouldWrite = repository.ShouldWriteBackup(new DateTime(2022, 7, 8));
-            shouldWrite.Should().Be(expectedResult);
-        }
-
-        [Theory]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        public void ShouldWriteBackup_WhenMultipleItemsArrayAfterBackupDate_ReturnBackupExists(bool backupExists, bool expectedResult)
-        {
-            IUserConfigurationService userConfigurationService = new UserConfigurationService(_configuration);
-
-            using var mock = AutoMock.GetLoose(
-                cfg =>
-                {
-                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
-                    cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
-                    cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
-                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
-                });
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.GetBackupDates())
-                .Returns(new DateTime[]
-                {
-                    new DateTime(2022, 6, 3),
-                    new DateTime(2022, 6, 10),
-                    new DateTime(2022, 6, 17),
-                    new DateTime(2022, 6, 24),
-                    new DateTime(2022, 7, 1)
-                });
-
-            mock.Mock<IDatabase>()
-                .Setup(m => m.BackupExists(It.IsAny<DateTime>()))
-                .Returns(backupExists);
-
-            var repository = mock.Container.Resolve<IAssetRepository>();
-            var shouldWrite = repository.ShouldWriteBackup(new DateTime(2022, 7, 12));
-            shouldWrite.Should().Be(expectedResult);
         }
     }
 }

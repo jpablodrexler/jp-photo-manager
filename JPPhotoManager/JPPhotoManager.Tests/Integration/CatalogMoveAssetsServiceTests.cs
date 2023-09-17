@@ -4,9 +4,10 @@ using FluentAssertions;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Domain.Interfaces;
 using JPPhotoManager.Infrastructure;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Moq;
-using SimplePortableDatabase;
 using System.IO;
 using Xunit;
 
@@ -18,6 +19,7 @@ namespace JPPhotoManager.Tests.Integration
         private string _imageDestinationDirectory;
         private string _nonCataloguedImageDestinationDirectory;
         private IConfigurationRoot _configuration;
+        private readonly AppDbContext _dbContext;
 
         public CatalogMoveAssetsServiceTests()
         {
@@ -45,6 +47,15 @@ namespace JPPhotoManager.Tests.Integration
             {
                 Directory.Delete(_nonCataloguedImageDestinationDirectory, true);
             }
+
+            var connection = new SqliteConnection("Filename=:memory:");
+            connection.Open();
+
+            var contextOptions = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(connection)
+                .Options;
+
+            _dbContext = new AppDbContext(contextOptions);
         }
 
         [Fact]
@@ -53,11 +64,11 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(_dataDirectory, "ApplicationData", Guid.NewGuid().ToString()));
@@ -103,11 +114,11 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             int batchSize = 5;
@@ -162,11 +173,11 @@ namespace JPPhotoManager.Tests.Integration
             using (var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
             {
@@ -200,10 +211,9 @@ namespace JPPhotoManager.Tests.Integration
             using (var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
             {
@@ -240,11 +250,11 @@ namespace JPPhotoManager.Tests.Integration
             using (var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
             {
@@ -276,10 +286,9 @@ namespace JPPhotoManager.Tests.Integration
             using (var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
             {
@@ -311,11 +320,11 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(_dataDirectory, "ApplicationData", Guid.NewGuid().ToString()));
@@ -342,12 +351,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             var repository = mock.Container.Resolve<IAssetRepository>();
@@ -377,12 +386,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             var repository = mock.Container.Resolve<IAssetRepository>();
@@ -410,12 +419,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
             var repository = mock.Container.Resolve<IAssetRepository>();
@@ -443,12 +452,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -465,9 +474,7 @@ namespace JPPhotoManager.Tests.Integration
             File.Exists(destinationImagePath).Should().BeFalse();
 
             Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 4.jpg");
-            repository.SaveCatalog(sourceFolder);
-            repository.SaveCatalog(destinationFolder);
-
+            
             repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
             repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
 
@@ -496,12 +503,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -540,12 +547,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -559,8 +566,7 @@ namespace JPPhotoManager.Tests.Integration
             File.Exists(sourceImagePath).Should().BeTrue();
 
             Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 5.jpg");
-            repository.SaveCatalog(sourceFolder);
-
+            
             repository.ContainsThumbnail(asset.Folder.Path, asset.FileName).Should().BeTrue();
 
             moveAssetsService.MoveAssets(new Asset[] { asset }, sourceFolder, preserveOriginalFile: false).Should().BeFalse();
@@ -578,12 +584,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -605,8 +611,7 @@ namespace JPPhotoManager.Tests.Integration
             File.Exists(destinationImagePath).Should().BeFalse();
 
             Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 7.jpg");
-            repository.SaveCatalog(sourceFolder);
-
+            
             Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
 
             moveAssetsService.MoveAssets(new Asset[] { asset }, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
@@ -624,12 +629,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -652,12 +657,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -681,12 +686,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -710,12 +715,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -732,9 +737,7 @@ namespace JPPhotoManager.Tests.Integration
             File.Exists(destinationImagePath).Should().BeFalse();
 
             Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 5.jpg");
-            repository.SaveCatalog(sourceFolder);
-            repository.SaveCatalog(destinationFolder);
-
+            
             repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
             repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
 
@@ -763,12 +766,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -806,12 +809,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -825,8 +828,7 @@ namespace JPPhotoManager.Tests.Integration
             File.Exists(sourceImagePath).Should().BeTrue();
 
             Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 5.jpg");
-            repository.SaveCatalog(sourceFolder);
-
+            
             Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
 
             moveAssetsService.MoveAssets(new Asset[] { asset }, sourceFolder, preserveOriginalFile: true).Should().BeFalse();
@@ -843,12 +845,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -862,8 +864,7 @@ namespace JPPhotoManager.Tests.Integration
             File.Exists(sourceImagePath).Should().BeTrue();
 
             Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 6.jpg");
-            repository.SaveCatalog(sourceFolder);
-
+            
             Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
 
             moveAssetsService.DeleteAssets(new Asset[] { asset }, deleteFile: true);
@@ -880,12 +881,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -917,12 +918,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -944,12 +945,12 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -968,10 +969,10 @@ namespace JPPhotoManager.Tests.Integration
             using var mock = AutoMock.GetLoose(
                 cfg =>
                 {
-                    cfg.RegisterSimplePortableDatabaseTypes();
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<SpdbAssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterInstance(_dbContext);
+                    cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -1004,39 +1005,6 @@ namespace JPPhotoManager.Tests.Integration
             processedAssets.Should().BeEmpty();
             repositoryAssets.Items.Should().BeEmpty();
             exceptions.Should().ContainSingle();
-        }
-
-        [Fact]
-        public async void SaveCatalogOnOperationCanceledExceptionTest()
-        {
-            using var mock = AutoMock.GetLoose(
-                cfg =>
-                {
-                    cfg.RegisterType<Database>().As<IDatabase>().SingleInstance();
-                    cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
-                    cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
-                    cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
-                    cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
-                });
-            mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(Path.Combine(_dataDirectory, "ApplicationData", Guid.NewGuid().ToString()));
-            mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetPicturesDirectory()).Returns(_dataDirectory);
-            mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetOneDriveDirectory()).Returns(_dataDirectory);
-            mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetCatalogBatchSize()).Returns(1000);
-            mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetRootCatalogFolderPaths()).Returns(new string[] { _dataDirectory });
-
-            mock.Mock<IStorageService>().Setup(s => s.FolderExists(It.IsAny<string>())).Returns(true);
-            mock.Mock<IStorageService>().Setup(s => s.GetFileNames(It.IsAny<string>())).Throws(new OperationCanceledException());
-            mock.Mock<IAssetRepository>().Setup(a => a.GetFolders()).Returns(new Folder[] { new Folder { Path = _dataDirectory } });
-
-            var repository = mock.Container.Resolve<IAssetRepository>();
-            var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
-            var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
-
-            var statusChanges = new List<CatalogChangeCallbackEventArgs>();
-
-            Func<Task> func = async () => await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
-            await func.Should().ThrowAsync<OperationCanceledException>();
-            mock.Mock<IAssetRepository>().Verify(r => r.SaveCatalog(It.IsAny<Folder>()), Times.Once);
         }
     }
 }
