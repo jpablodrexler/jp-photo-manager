@@ -68,6 +68,10 @@ namespace JPPhotoManager.UI.Controls
 
             subitem.Collapsed += new RoutedEventHandler(Item_Collapsed);
             subitem.Expanded += new RoutedEventHandler(Item_Expanded);
+
+            if (parentItem.Items.Count == 1 && parentItem.Items[0] == _placeholderNode)
+                parentItem.Items.RemoveAt(0);
+
             parentItem.Items.Add(subitem);
 
             if (!_folders.ContainsKey(e.Folder))
