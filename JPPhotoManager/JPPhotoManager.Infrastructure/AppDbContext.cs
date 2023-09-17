@@ -20,18 +20,24 @@ namespace JPPhotoManager.Infrastructure
         public DbSet<Folder> Folders { get; set; }
         public DbSet<SyncAssetsDirectoriesDefinition> SyncAssetsDirectoriesDefinitions { get; set; }
 
-        // Overriding this method is needed to execute the EF commands.
+        /// <inheritdoc/>
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            IConfigurationBuilder builder = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+            // Overriding this method is needed to execute the EF commands.
 
-            IConfigurationRoot configuration = builder.Build();
+            if (!optionsBuilder.IsConfigured)
+            {
+                IConfigurationBuilder builder = new ConfigurationBuilder()
+                    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
-            var connectionString = configuration.GetConnectionString("SqliteConnection");
-            connectionString = string.Format(connectionString, Environment.UserName);
+                IConfigurationRoot configuration = builder.Build();
 
-            optionsBuilder.UseSqlite(connectionString);
+                var connectionString = configuration.GetConnectionString("SqliteConnection");
+
+                connectionString = string.Format(connectionString, Environment.UserName);
+                optionsBuilder.UseSqlite(connectionString);
+            }
+
             base.OnConfiguring(optionsBuilder);
         }
     }
