@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Configuration;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -68,7 +69,8 @@ namespace JPPhotoManager.UI
             IConfigurationRoot configuration = builder.Build();
 
             var connectionString = configuration.GetConnectionString("SqliteConnection");
-            connectionString = string.Format(connectionString, Environment.UserName);
+            connectionString = connectionString.Replace("{ApplicationData}", Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+            connectionString = connectionString.Replace("\\", "/");
 
             services.AddSingleton(configuration);
             services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));

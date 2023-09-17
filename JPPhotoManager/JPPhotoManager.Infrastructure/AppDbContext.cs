@@ -33,8 +33,8 @@ namespace JPPhotoManager.Infrastructure
                 IConfigurationRoot configuration = builder.Build();
 
                 var connectionString = configuration.GetConnectionString("SqliteConnection");
-
-                connectionString = string.Format(connectionString, Environment.UserName);
+                connectionString = connectionString.Replace("{ApplicationData}", Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+                connectionString = connectionString.Replace("\\", "/");
                 optionsBuilder.UseSqlite(connectionString);
             }
 

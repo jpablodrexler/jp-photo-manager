@@ -562,7 +562,7 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        private string GetAppFilesDirectory() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "JPPhotoManager");
+        private string GetAppFilesDirectory() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), _userConfigurationService.GetApplicationDataFolder());
 
         private string GetBinaryFilesDirectory() => Path.Combine(GetAppFilesDirectory(), "Thumbnails");
 
