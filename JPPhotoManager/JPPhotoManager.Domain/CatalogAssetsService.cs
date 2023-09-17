@@ -41,13 +41,6 @@ namespace JPPhotoManager.Domain
 
                 try
                 {
-                    if (_assetRepository.ShouldWriteBackup(DateTime.Now))
-                    {
-                        callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = "Creating catalog backup..." });
-                        _assetRepository.WriteBackup();
-                        callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
-                    }
-
                     Folder[] foldersToCatalog = GetFoldersToCatalog();
 
                     // TODO: Since the root folders to catalog are combined in the same list
@@ -63,16 +56,6 @@ namespace JPPhotoManager.Domain
                     DeleteUnusedThumbnails(callback);
 
                     callback?.Invoke(new CatalogChangeCallbackEventArgs() { Message = string.Empty });
-                }
-                catch (OperationCanceledException)
-                {
-                    // If the catalog background process is cancelled,
-                    // there is a risk that it happens while saving the catalog files.
-                    // This could result in the files being damaged.
-                    // Therefore the application saves the files before the task is completly shut down.
-                    Folder currentFolder = _assetRepository.GetFolderByPath(_currentFolderPath);
-                    _assetRepository.SaveCatalog(currentFolder);
-                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -153,11 +136,6 @@ namespace JPPhotoManager.Domain
             cataloguedAssetsBatchCount = CatalogUpdatedAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, cataloguedAssets);
             cataloguedAssetsBatchCount = CatalogDeletedAssets(directory, callback, cataloguedAssetsBatchCount, batchSize, fileNames, folder, cataloguedAssets);
 
-            if (_assetRepository.HasChanges())
-            {
-                _assetRepository.SaveCatalog(folder);
-            }
-
             if (cataloguedAssetsBatchCount < batchSize)
             {
                 var subdirectories = new DirectoryInfo(directory).EnumerateDirectories();
@@ -234,11 +212,6 @@ namespace JPPhotoManager.Domain
                         Message = "Folder " + directory + " deleted from catalog",
                         Reason = ReasonEnum.FolderDeleted
                     });
-                }
-
-                if (_assetRepository.HasChanges())
-                {
-                    _assetRepository.SaveCatalog(folder);
                 }
             }
 

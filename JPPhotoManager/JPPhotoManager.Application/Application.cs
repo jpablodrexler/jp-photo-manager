@@ -72,7 +72,6 @@ namespace JPPhotoManager.Application
             syncConfiguration.Validate();
             syncConfiguration.Normalize();
             _assetRepository.SaveSyncAssetsConfiguration(syncConfiguration);
-            _assetRepository.SaveCatalog(null);
         }
 
         public async Task<List<SyncAssetsResult>> SyncAssetsAsync(ProcessStatusChangedCallback callback) => await _syncAssetsService.ExecuteAsync(callback);

@@ -95,7 +95,6 @@ namespace JPPhotoManager.Domain
                 }
 
                 AddTargetPathToRecent(destinationFolder);
-                _assetRepository.SaveCatalog(destinationFolder);
             }
 
             return result;
@@ -152,11 +151,6 @@ namespace JPPhotoManager.Domain
                 {
                     _storageService.DeleteFile(asset.Folder.Path, asset.FileName);
                 }
-            }
-
-            if (saveCatalog)
-            {
-                _assetRepository.SaveCatalog(assets.FirstOrDefault()?.Folder);
             }
         }
     }

@@ -11,15 +11,11 @@ namespace JPPhotoManager.Domain.Interfaces
         Folder[] GetFolders();
         Folder[] GetSubFolders(Folder parentFolder, bool includeHidden);
         Folder GetFolderByPath(string path);
-        void SaveCatalog(Folder folder);
-        bool ShouldWriteBackup(DateTime today);
-        void WriteBackup();
         List<Asset> GetCataloguedAssets();
         List<Asset> GetCataloguedAssets(string directory);
         bool IsAssetCatalogued(string directoryName, string fileName);
         void DeleteAsset(string directory, string deletedFileName);
         void DeleteFolder(Folder folder);
-        bool HasChanges();
         bool ContainsThumbnail(string directoryName, string fileName);
         BitmapImage LoadThumbnail(string directoryName, string fileName, int width, int height);
         SyncAssetsConfiguration GetSyncAssetsConfiguration();
