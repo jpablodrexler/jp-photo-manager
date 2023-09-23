@@ -28,7 +28,6 @@ namespace JPPhotoManager.Infrastructure
         private List<string> _recentTargetPaths;
         protected Dictionary<string, byte[]> Thumbnails { get; private set; }
         private Queue<string> _recentThumbnailsQueue;
-        private bool _hasChanges;
         private object _syncLock;
 
         public AssetRepository(AppDbContext appDbContext, IStorageService storageService, IUserConfigurationService userConfigurationService)
@@ -77,38 +76,10 @@ namespace JPPhotoManager.Infrastructure
 
         public List<string> ReadRecentTargetPaths()
         {
-            // TODO: Implement as an entity.
-            //List<string> result;
-
-            //try
-            //{
-            //    result = _database.ReadObjectList("RecentTargetPaths", f => f[0]);
-            //}
-            //catch (ArgumentException ex)
-            //{
-            //    throw new ApplicationException($"Error while trying to read data table 'RecentTargetPaths'. " +
-            //        $"DataDirectory: {_database.DataDirectory} - " +
-            //        $"Separator: {_database.Separator} - " +
-            //        $"LastReadFilePath: {_database.Diagnostics.LastReadFilePath} - " +
-            //        $"LastReadFileRaw: {_database.Diagnostics.LastReadFileRaw}",
-            //        ex);
-            //}
-
-            //return result;
-            return null;
-        }
-
-        public void WriteRecentTargetPaths(List<string> recentTargetPaths)
-        {
-            // TODO: Implement as an entity.
-            //_database.WriteObjectList(recentTargetPaths, "RecentTargetPaths", (p, i) =>
-            //{
-            //    return i switch
-            //    {
-            //        0 => p,
-            //        _ => throw new ArgumentOutOfRangeException(nameof(i))
-            //    };
-            //});
+            return _appDbContext
+                    .RecentTargetPaths
+                    .Select(p => p.Path)
+                    .ToList();
         }
 
         private void DeleteThumbnails(Folder folder)
@@ -270,8 +241,6 @@ namespace JPPhotoManager.Infrastructure
                     Path = path
                 };
 
-                _hasChanges = true;
-
                 _appDbContext.Folders.Add(folder);
                 _appDbContext.SaveChanges();
             }
@@ -296,8 +265,6 @@ namespace JPPhotoManager.Infrastructure
                 {
                     WriteToBinaryFile(thumbnailData, asset.ThumbnailBlobName);
                 }
-
-                _hasChanges = true;
 
                 _appDbContext.Assets.Add(asset);
                 _appDbContext.SaveChanges();
@@ -390,7 +357,6 @@ namespace JPPhotoManager.Infrastructure
 
                         _appDbContext.Assets.Remove(deletedAsset);
                         _appDbContext.SaveChanges();
-                        _hasChanges = true;
                     }
                 }
             }
@@ -406,7 +372,6 @@ namespace JPPhotoManager.Infrastructure
 
                     _appDbContext.Folders.Remove(folder);
                     _appDbContext.SaveChanges();
-                    _hasChanges = true;
                 }
             }
         }
@@ -522,12 +487,8 @@ namespace JPPhotoManager.Infrastructure
 
         public SyncAssetsConfiguration GetSyncAssetsConfiguration()
         {
-            SyncAssetsConfiguration result;
-
-            lock (_syncLock)
-            {
-                result = _syncAssetsConfiguration;
-            }
+            SyncAssetsConfiguration result = new ();
+            result.Definitions = _appDbContext.SyncAssetsDirectoriesDefinitions.ToList();
 
             return result;
         }
@@ -537,7 +498,16 @@ namespace JPPhotoManager.Infrastructure
             lock (_syncLock)
             {
                 this._syncAssetsConfiguration = syncAssetsConfiguration;
-                _hasChanges = true;
+
+                _appDbContext
+                    .SyncAssetsDirectoriesDefinitions
+                    .RemoveRange(_appDbContext.SyncAssetsDirectoriesDefinitions);
+
+                _appDbContext
+                    .SyncAssetsDirectoriesDefinitions
+                    .AddRange(syncAssetsConfiguration.Definitions);
+
+                _appDbContext.SaveChanges();
             }
         }
 
@@ -555,11 +525,17 @@ namespace JPPhotoManager.Infrastructure
 
         public void SaveRecentTargetPaths(List<string> recentTargetPaths)
         {
-            lock (_syncLock)
-            {
-                this._recentTargetPaths = recentTargetPaths;
-                _hasChanges = true;
-            }
+            var paths = recentTargetPaths.Select(x => new RecentTargetPath { Path = x });
+
+            _appDbContext
+                .RecentTargetPaths
+                .RemoveRange(_appDbContext.RecentTargetPaths);
+
+            _appDbContext
+                .RecentTargetPaths
+                .AddRange(paths);
+
+            _appDbContext.SaveChanges();
         }
 
         private string GetBinaryFilePath(string binaryFileName) => Path.Combine(_userConfigurationService.GetBinaryFilesDirectory(), binaryFileName);
