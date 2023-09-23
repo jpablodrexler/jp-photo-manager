@@ -19,6 +19,7 @@ namespace JPPhotoManager.Infrastructure
         public DbSet<Asset> Assets { get; set; }
         public DbSet<Folder> Folders { get; set; }
         public DbSet<SyncAssetsDirectoriesDefinition> SyncAssetsDirectoriesDefinitions { get; set; }
+        public DbSet<RecentTargetPath> RecentTargetPaths { get; set; }
 
         /// <inheritdoc/>
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

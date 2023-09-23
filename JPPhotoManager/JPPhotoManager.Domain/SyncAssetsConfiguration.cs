@@ -7,7 +7,7 @@
             Definitions = new List<SyncAssetsDirectoriesDefinition>();
         }
 
-        public List<SyncAssetsDirectoriesDefinition> Definitions { get; }
+        public List<SyncAssetsDirectoriesDefinition> Definitions { get; set; }
 
         public void Validate()
         {
