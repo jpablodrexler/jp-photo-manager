@@ -69,6 +69,8 @@ namespace JPPhotoManager.UI.Controls
             subitem.Collapsed += new RoutedEventHandler(Item_Collapsed);
             subitem.Expanded += new RoutedEventHandler(Item_Expanded);
 
+            // This may result in sub folders already catalogued not being shown.
+            // TODO: Should check for their existence in the Folders table before executing the RemoveAt method.
             if (parentItem.Items.Count == 1 && parentItem.Items[0] == _placeholderNode)
                 parentItem.Items.RemoveAt(0);
 
