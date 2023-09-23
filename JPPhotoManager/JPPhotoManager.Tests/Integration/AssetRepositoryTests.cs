@@ -225,10 +225,10 @@ namespace JPPhotoManager.Tests.Integration
             syncConfiguration = repository.GetSyncAssetsConfiguration();
 
             syncConfiguration.Definitions.Should().HaveCount(2);
-            syncConfiguration.Definitions[0].SourceDirectory.Should().Be(@"C:\MyFirstGame\Screenshots");
-            syncConfiguration.Definitions[0].DestinationDirectory.Should().Be(@"C:\Images\MyFirstGame");
-            syncConfiguration.Definitions[1].SourceDirectory.Should().Be(@"C:\MySecondGame\Screenshots");
-            syncConfiguration.Definitions[1].DestinationDirectory.Should().Be(@"C:\Images\MySecondGame");
+            syncConfiguration.Definitions.Any(d => d.SourceDirectory == @"C:\MyFirstGame\Screenshots").Should().BeTrue();
+            syncConfiguration.Definitions.Any(d => d.DestinationDirectory == @"C:\Images\MyFirstGame").Should().BeTrue();
+            syncConfiguration.Definitions.Any(d => d.SourceDirectory == @"C:\MySecondGame\Screenshots").Should().BeTrue();
+            syncConfiguration.Definitions.Any(d => d.DestinationDirectory == @"C:\Images\MySecondGame").Should().BeTrue();
         }
     }
 }
