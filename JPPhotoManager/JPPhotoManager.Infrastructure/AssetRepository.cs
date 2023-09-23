@@ -513,14 +513,7 @@ namespace JPPhotoManager.Infrastructure
 
         public List<string> GetRecentTargetPaths()
         {
-            List<string> result = null;
-
-            lock (_syncLock)
-            {
-                result = _recentTargetPaths;
-            }
-
-            return result;
+            return _appDbContext.RecentTargetPaths.Select(x => x.Path).ToList();
         }
 
         public void SaveRecentTargetPaths(List<string> recentTargetPaths)
