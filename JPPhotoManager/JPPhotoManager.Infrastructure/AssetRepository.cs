@@ -2,7 +2,6 @@ using JPPhotoManager.Domain;
 using JPPhotoManager.Domain.Interfaces;
 using log4net;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Reflection;
@@ -31,7 +30,7 @@ namespace JPPhotoManager.Infrastructure
             _storageService = storageService;
             _userConfigurationService = userConfigurationService;
             Thumbnails = new Dictionary<string, byte[]>();
-            _syncLock = new object();
+            _syncLock = new object(); // TODO: Use the same lock object for all the repositories.
         }
 
         public List<Folder> ReadFolders()
