@@ -382,26 +382,6 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        public List<string> GetRecentTargetPaths()
-        {
-            return _appDbContext.RecentTargetPaths.Select(x => x.Path).ToList();
-        }
-
-        public void SaveRecentTargetPaths(List<string> recentTargetPaths)
-        {
-            var paths = recentTargetPaths.Select(x => new RecentTargetPath { Path = x });
-
-            _appDbContext
-                .RecentTargetPaths
-                .RemoveRange(_appDbContext.RecentTargetPaths);
-
-            _appDbContext
-                .RecentTargetPaths
-                .AddRange(paths);
-
-            _appDbContext.SaveChanges();
-        }
-
         private string GetBinaryFilePath(string binaryFileName) => Path.Combine(_userConfigurationService.GetBinaryFilesDirectory(), binaryFileName);
 
         public object ReadFromBinaryFile(string binaryFileName)

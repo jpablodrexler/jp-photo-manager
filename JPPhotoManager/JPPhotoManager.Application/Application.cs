@@ -9,6 +9,7 @@ namespace JPPhotoManager.Application
     {
         private readonly IAssetRepository _assetRepository;
         private readonly IFolderRepository _folderRepository;
+        private readonly IRecentTargetPathRepository _recentTargetPathRepository;
         private readonly ISyncAssetsService _syncAssetsService;
         private readonly ICatalogAssetsService _catalogAssetsService;
         private readonly IMoveAssetsService _moveAssetsService;
@@ -26,6 +27,7 @@ namespace JPPhotoManager.Application
             IFindDuplicatedAssetsService findDuplicatedAssetsService,
             IAssetRepository assetRepository,
             IFolderRepository folderRepository,
+            IRecentTargetPathRepository recentTargetPathRepository,
             IUserConfigurationService userConfigurationService,
             IStorageService storageService,
             IBatchRenameService batchRenameService,
@@ -38,6 +40,7 @@ namespace JPPhotoManager.Application
             _findDuplicatedAssetsService = findDuplicatedAssetsService;
             _assetRepository = assetRepository;
             _folderRepository = folderRepository;
+            _recentTargetPathRepository = recentTargetPathRepository;
             _userConfigurationService = userConfigurationService;
             _storageService = storageService;
             _batchRenameService = batchRenameService;
@@ -117,7 +120,7 @@ namespace JPPhotoManager.Application
 
         public bool FileExists(string fullPath) => _storageService.FileExists(fullPath);
 
-        public List<string> GetRecentTargetPaths() => _assetRepository.GetRecentTargetPaths();
+        public List<string> GetRecentTargetPaths() => _recentTargetPathRepository.GetRecentTargetPaths();
 
         public Folder[] GetRootCatalogFolders()
         {
