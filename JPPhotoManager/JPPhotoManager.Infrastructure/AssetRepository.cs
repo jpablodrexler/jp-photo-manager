@@ -2,6 +2,7 @@ using JPPhotoManager.Domain;
 using JPPhotoManager.Domain.Interfaces;
 using log4net;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Reflection;
@@ -35,28 +36,57 @@ namespace JPPhotoManager.Infrastructure
 
         public List<Folder> ReadFolders()
         {
-            return _appDbContext.Folders.ToList();
+            List<Folder> result = null;
+
+            lock (_syncLock)
+            {
+                result = _appDbContext.Folders.ToList();
+            }
+
+            return result;
         }
 
         public List<Asset> ReadAssets()
         {
-            return _appDbContext
+            List<Asset> result = null;
+
+            lock (_syncLock)
+            {
+                result = _appDbContext
                     .Assets
                     .Include(a => a.Folder)
                     .ToList();
+            }
+
+            return result;
         }
 
         public List<SyncAssetsDirectoriesDefinition> ReadSyncDefinitions()
         {
-            return _appDbContext.SyncAssetsDirectoriesDefinitions.ToList();
+            List<SyncAssetsDirectoriesDefinition> result = null;
+
+
+            lock (_syncLock)
+            {
+                result = _appDbContext.SyncAssetsDirectoriesDefinitions.ToList();
+            }
+
+            return result;
         }
 
         public List<string> ReadRecentTargetPaths()
         {
-            return _appDbContext
+            List<string> result = null;
+
+            lock ( _syncLock)
+            {
+                result = _appDbContext
                     .RecentTargetPaths
                     .Select(p => p.Path)
                     .ToList();
+            }
+
+            return result;
         }
 
         public void DeleteThumbnails(Folder folder)
@@ -331,8 +361,12 @@ namespace JPPhotoManager.Infrastructure
         public SyncAssetsConfiguration GetSyncAssetsConfiguration()
         {
             SyncAssetsConfiguration result = new ();
-            result.Definitions = _appDbContext.SyncAssetsDirectoriesDefinitions.ToList();
 
+            lock (_syncLock)
+            {
+                result.Definitions = _appDbContext.SyncAssetsDirectoriesDefinitions.ToList();
+            }
+            
             return result;
         }
 

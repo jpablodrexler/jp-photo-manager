@@ -79,7 +79,9 @@ namespace JPPhotoManager.UI
             services.AddSingleton<IUserConfigurationService, UserConfigurationService>();
             services.AddSingleton<IStorageService, StorageService>();
             services.AddSingleton<IBatchRenameService, BatchRenameService>();
+            services.AddSingleton<IFolderRepository, FolderRepository>();
             services.AddSingleton<IAssetRepository, AssetRepository>();
+            services.AddSingleton<IRecentTargetPathRepository, RecentTargetPathRepository>();
             services.AddSingleton<IAssetHashCalculatorService, AssetHashCalculatorService>();
             services.AddSingleton<ICatalogAssetsService, CatalogAssetsService>();
             services.AddSingleton<IMoveAssetsService, MoveAssetsService>();
