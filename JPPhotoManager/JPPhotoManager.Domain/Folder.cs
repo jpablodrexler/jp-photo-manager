@@ -6,7 +6,7 @@ namespace JPPhotoManager.Domain
     public class Folder
     {
         [Key]
-        public string FolderId { get; set; }
+        public int FolderId { get; set; }
         public string Path { get; set; }
 
         [NotMapped]

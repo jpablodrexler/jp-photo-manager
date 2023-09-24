@@ -373,7 +373,6 @@ namespace JPPhotoManager.Domain
 
                 asset = new Asset
                 {
-                    AssetId = Guid.NewGuid().ToString(), // TODO: Data type should be Guid for both Asset and Folder.
                     FileName = Path.GetFileName(imagePath),
                     FolderId = folder.FolderId,
                     Folder = folder,

@@ -9,7 +9,7 @@ namespace JPPhotoManager.Domain
         private const string REMOTE_PATH_PATTERN = "^(\\\\)(\\[A-Za-z0-9]*)*";
 
         [Key]
-        public Guid Id { get; set; }
+        public int Id { get; set; }
 
         public string SourceDirectory { get; set; }
         public string DestinationDirectory { get; set; }

@@ -233,11 +233,8 @@ namespace JPPhotoManager.Infrastructure
 
             lock (_syncLock)
             {
-                string folderId = Guid.NewGuid().ToString();
-
                 folder = new Folder
                 {
-                    FolderId = folderId,
                     Path = path
                 };
 
@@ -302,40 +299,19 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
-        private Folder GetFolderById(string folderId)
+        private Folder GetFolderById(int folderId)
         {
-            Folder result = null;
-
-            lock (_syncLock)
-            {
-                result = _appDbContext.Folders.FirstOrDefault(f => f.FolderId == folderId);
-            }
-
-            return result;
+            return _appDbContext.Folders.FirstOrDefault(f => f.FolderId == folderId);
         }
 
-        private List<Asset> GetAssetsByFolderId(string folderId)
+        private List<Asset> GetAssetsByFolderId(int folderId)
         {
-            List<Asset> result = null;
-
-            lock (_syncLock)
-            {
-                result = _appDbContext.Assets.Where(a => a.FolderId == folderId).ToList();
-            }
-
-            return result;
+            return _appDbContext.Assets.Where(a => a.FolderId == folderId).ToList();
         }
 
-        private Asset GetAssetByFolderIdFileName(string folderId, string fileName)
+        private Asset GetAssetByFolderIdFileName(int folderId, string fileName)
         {
-            Asset result = null;
-
-            lock (_syncLock)
-            {
-                result = _appDbContext.Assets.FirstOrDefault(a => a.FolderId == folderId && a.FileName == fileName);
-            }
-
-            return result;
+            return _appDbContext.Assets.FirstOrDefault(a => a.FolderId == folderId && a.FileName == fileName);
         }
 
         public void DeleteAsset(string directory, string fileName)

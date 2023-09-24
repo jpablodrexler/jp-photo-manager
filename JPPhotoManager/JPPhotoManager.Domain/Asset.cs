@@ -12,8 +12,8 @@ namespace JPPhotoManager.Domain
         private const int MAX_PATH_LENGTH = 256;
 
         [Key]
-        public string AssetId { get; set; }
-        public string FolderId { get; set; }
+        public int AssetId { get; set; }
+        public int FolderId { get; set; }
         public Folder Folder { get; set; }
         public string FileName { get; set; }
         public long FileSize { get; set; }
@@ -278,7 +278,7 @@ namespace JPPhotoManager.Domain
 
         public override int GetHashCode()
         {
-            return (!string.IsNullOrEmpty(FolderId) ? FolderId.GetHashCode() : base.GetHashCode()) + (!string.IsNullOrEmpty(FileName) ? FileName.GetHashCode() : base.GetHashCode());
+            return FolderId.GetHashCode() + (!string.IsNullOrEmpty(FileName) ? FileName.GetHashCode() : base.GetHashCode());
         }
 
         public override string ToString()
