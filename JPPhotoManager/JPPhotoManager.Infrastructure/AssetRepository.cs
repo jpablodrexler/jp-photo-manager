@@ -256,15 +256,15 @@ namespace JPPhotoManager.Infrastructure
                     AddFolder(asset.Folder.Path);
                 }
 
+                _appDbContext.Assets.Add(asset);
+                _appDbContext.SaveChanges();
+
                 Thumbnails[asset.ThumbnailBlobName] = thumbnailData;
 
                 if (thumbnailData != null)
                 {
                     WriteToBinaryFile(thumbnailData, asset.ThumbnailBlobName);
                 }
-
-                _appDbContext.Assets.Add(asset);
-                _appDbContext.SaveChanges();
             }
         }
 
