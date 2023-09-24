@@ -8,6 +8,7 @@ namespace JPPhotoManager.Application
     public class Application : IApplication
     {
         private readonly IAssetRepository _assetRepository;
+        private readonly IFolderRepository _folderRepository;
         private readonly ISyncAssetsService _syncAssetsService;
         private readonly ICatalogAssetsService _catalogAssetsService;
         private readonly IMoveAssetsService _moveAssetsService;
@@ -24,6 +25,7 @@ namespace JPPhotoManager.Application
             IMoveAssetsService moveAssetsService,
             IFindDuplicatedAssetsService findDuplicatedAssetsService,
             IAssetRepository assetRepository,
+            IFolderRepository folderRepository,
             IUserConfigurationService userConfigurationService,
             IStorageService storageService,
             IBatchRenameService batchRenameService,
@@ -35,6 +37,7 @@ namespace JPPhotoManager.Application
             _moveAssetsService = moveAssetsService;
             _findDuplicatedAssetsService = findDuplicatedAssetsService;
             _assetRepository = assetRepository;
+            _folderRepository = folderRepository;
             _userConfigurationService = userConfigurationService;
             _storageService = storageService;
             _batchRenameService = batchRenameService;
@@ -49,17 +52,20 @@ namespace JPPhotoManager.Application
                 throw new ArgumentException("Directory cannot be null or empty.", directory);
             }
 
-            if (!_assetRepository.FolderExists(directory))
+            if (!_folderRepository.FolderExists(directory))
             {
-                _assetRepository.AddFolder(directory);
+                _folderRepository.AddFolder(directory);
             }
 
-            return _assetRepository.GetAssets(directory, pageIndex);
+            Folder folder = _folderRepository.GetFolderByPath(directory);
+
+            return _assetRepository.GetAssets(folder, pageIndex);
         }
 
         public void LoadThumbnail(Asset asset)
         {
-            asset.ImageData = _assetRepository.LoadThumbnail(asset.Folder.Path, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
+            var folder = GetFolderByPath(asset.Folder.Path);
+            asset.ImageData = _assetRepository.LoadThumbnail(folder, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
         }
 
         public SyncAssetsConfiguration GetSyncAssetsConfiguration()
@@ -99,7 +105,7 @@ namespace JPPhotoManager.Application
 
         public Folder[] GetDrives() => _storageService.GetDrives();
 
-        public Folder[] GetSubFolders(Folder parentFolder, bool includeHidden) => _assetRepository.GetSubFolders(parentFolder, includeHidden);
+        public Folder[] GetSubFolders(Folder parentFolder, bool includeHidden) => _folderRepository.GetSubFolders(parentFolder, includeHidden);
 
         public string GetInitialFolder() => _userConfigurationService.GetInitialFolder();
 
@@ -120,11 +126,11 @@ namespace JPPhotoManager.Application
 
             for (int i = 0; i < paths.Length; i++)
             {
-                folders[i] = _assetRepository.GetFolderByPath(paths[i]);
+                folders[i] = _folderRepository.GetFolderByPath(paths[i]);
 
                 if (folders[i] == null)
                 {
-                    folders[i] = _assetRepository.AddFolder(paths[i]);
+                    folders[i] = _folderRepository.AddFolder(paths[i]);
                 }
             }
 

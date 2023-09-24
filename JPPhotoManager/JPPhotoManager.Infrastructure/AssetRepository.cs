@@ -123,7 +123,7 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        public PaginatedData<Asset> GetAssets(string directory, int pageIndex)
+        public PaginatedData<Asset> GetAssets(Folder folder, int pageIndex)
         {
             PaginatedData<Asset> result;
             List<Asset> assetsList = null;
@@ -134,8 +134,6 @@ namespace JPPhotoManager.Infrastructure
             {
                 lock (_syncLock)
                 {
-                    Folder folder = GetFolderByPath(directory);
-
                     if (folder != null)
                     {
                         assetsList = GetAssetsByFolderId(folder.FolderId);
@@ -193,47 +191,10 @@ namespace JPPhotoManager.Infrastructure
             return new PaginatedData<Asset> { Items = assetsList.ToArray(), PageIndex = pageIndex, TotalCount = totalCount };
         }
 
-        public bool FolderExists(string path)
-        {
-            bool result = false;
-
-            lock (_syncLock)
-            {
-                result = _appDbContext.Folders.Any(f => f.Path == path);
-            }
-
-            return result;
-        }
-
-        public Folder AddFolder(string path)
-        {
-            Folder folder;
-
-            lock (_syncLock)
-            {
-                folder = new Folder
-                {
-                    Path = path
-                };
-
-                _appDbContext.Folders.Add(folder);
-                _appDbContext.SaveChanges();
-            }
-
-            return folder;
-        }
-
-        public void AddAsset(Asset asset, byte[] thumbnailData)
+        public void AddAsset(Asset asset, Folder folder, byte[] thumbnailData)
         {
             lock (_syncLock)
             {
-                Folder folder = GetFolderById(asset.FolderId);
-
-                if (folder == null)
-                {
-                    AddFolder(asset.Folder.Path);
-                }
-
                 _appDbContext.Assets.Add(asset);
                 _appDbContext.SaveChanges();
 
@@ -244,49 +205,6 @@ namespace JPPhotoManager.Infrastructure
                     WriteToBinaryFile(thumbnailData, asset.ThumbnailBlobName);
                 }
             }
-        }
-
-        public Folder[] GetFolders()
-        {
-            Folder[] result;
-
-            lock (_syncLock)
-            {
-                result = _appDbContext.Folders.ToArray();
-            }
-
-            return result;
-        }
-
-        public Folder[] GetSubFolders(Folder parentFolder, bool includeHidden)
-        {
-            Folder[] folders = GetFolders();
-            folders = folders.Where(f => parentFolder.IsParentOf(f)).ToArray();
-            return folders;
-        }
-
-        public Folder GetFolderByPath(string path)
-        {
-            Folder result = null;
-
-            lock (_syncLock)
-            {
-                result = _appDbContext.Folders.FirstOrDefault(f => f.Path == path);
-            }
-
-            return result;
-        }
-
-        private Folder GetFolderById(int folderId)
-        {
-            Folder result = null;
-
-            lock (_syncLock)
-            {
-                result = _appDbContext.Folders.FirstOrDefault(f => f.FolderId == folderId);
-            }
-
-            return result;
         }
 
         private List<Asset> GetAssetsByFolderId(int folderId)
@@ -313,12 +231,10 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
-        public void DeleteAsset(string directory, string fileName)
+        public void DeleteAsset(Folder folder, string fileName)
         {
             lock (_syncLock)
             {
-                Folder folder = GetFolderByPath(directory);
-
                 if (folder != null)
                 {
                     Asset deletedAsset = GetAssetByFolderIdFileName(folder.FolderId, fileName);
@@ -337,20 +253,6 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        public void DeleteFolder(Folder folder)
-        {
-            lock (_syncLock)
-            {
-                if (folder != null)
-                {
-                    DeleteThumbnails(folder);
-
-                    _appDbContext.Folders.Remove(folder);
-                    _appDbContext.SaveChanges();
-                }
-            }
-        }
-
         public List<Asset> GetCataloguedAssets()
         {
             List<Asset> cataloguedAssets = null;
@@ -363,30 +265,27 @@ namespace JPPhotoManager.Infrastructure
             return cataloguedAssets;
         }
 
-        public List<Asset> GetCataloguedAssets(string directory)
+        public List<Asset> GetCataloguedAssets(Folder folder)
         {
             List<Asset> cataloguedAssets = null;
 
             lock (_syncLock)
             {
-                Folder folder = GetFolderByPath(directory);
-
                 if (folder != null)
                 {
-                    cataloguedAssets = _appDbContext.Assets.Where(a => a.Folder.Path == directory).ToList();
+                    cataloguedAssets = _appDbContext.Assets.Where(a => a.FolderId == folder.FolderId).ToList();
                 }
             }
 
             return cataloguedAssets;
         }
 
-        public bool IsAssetCatalogued(string directoryName, string fileName)
+        public bool IsAssetCatalogued(Folder folder, string fileName)
         {
             bool result = false;
 
             lock (_syncLock)
             {
-                Folder folder = GetFolderByPath(directoryName);
                 result = folder != null && GetAssetByFolderIdFileName(folder.FolderId, fileName) != null;
             }
 
@@ -427,13 +326,12 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
-        public BitmapImage LoadThumbnail(string directoryName, string fileName, int width, int height)
+        public BitmapImage LoadThumbnail(Folder folder, string fileName, int width, int height)
         {
             BitmapImage result = null;
 
             lock (_syncLock)
             {
-                var folder = GetFolderByPath(directoryName);
                 var asset = GetAssetByFolderIdFileName(folder.FolderId, fileName);
                 var thumbnailBlobName = asset.ThumbnailBlobName;
 
@@ -453,7 +351,7 @@ namespace JPPhotoManager.Infrastructure
                 }
                 else
                 {
-                    DeleteAsset(directoryName, fileName);
+                    DeleteAsset(folder, fileName);
                 }
             }
 

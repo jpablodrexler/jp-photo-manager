@@ -7,13 +7,16 @@ namespace JPPhotoManager.Domain
     {
         private const int RECENT_TARGET_PATHS_MAX_COUNT = 20;
         private readonly IAssetRepository _assetRepository;
+        private readonly IFolderRepository _folderRepository;
         private readonly IStorageService _storageService;
 
         public MoveAssetsService(
             IAssetRepository assetRepository,
+            IFolderRepository folderRepository,
             IStorageService storageService)
         {
             _assetRepository = assetRepository;
+            _folderRepository = folderRepository;
             _storageService = storageService;
         }
 
@@ -47,7 +50,7 @@ namespace JPPhotoManager.Domain
             #endregion
 
             bool result = false;
-            var folder = _assetRepository.GetFolderByPath(destinationFolder.Path);
+            var folder = _folderRepository.GetFolderByPath(destinationFolder.Path);
 
             // If the folder is null, it means is not present in the catalog.
             // TODO: IF THE DESTINATION FOLDER IS NEW, THE FOLDER NAVIGATION CONTROL SHOULD DISPLAY IT WHEN THE USER GOES BACK TO THE MAIN WINDOW.
@@ -81,7 +84,7 @@ namespace JPPhotoManager.Domain
 
                     if (result && !isDestinationFolderInCatalog)
                     {
-                        destinationFolder = _assetRepository.AddFolder(destinationFolder.Path);
+                        destinationFolder = _folderRepository.AddFolder(destinationFolder.Path);
                         isDestinationFolderInCatalog = true;
                     }
                 }
@@ -145,7 +148,7 @@ namespace JPPhotoManager.Domain
 
             foreach (Asset asset in assets)
             {
-                _assetRepository.DeleteAsset(asset.Folder.Path, asset.FileName);
+                _assetRepository.DeleteAsset(asset.Folder, asset.FileName);
 
                 if (deleteFiles)
                 {

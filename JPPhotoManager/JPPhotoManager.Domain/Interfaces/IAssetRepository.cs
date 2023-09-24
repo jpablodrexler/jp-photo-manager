@@ -4,20 +4,14 @@ namespace JPPhotoManager.Domain.Interfaces
 {
     public interface IAssetRepository
     {
-        PaginatedData<Asset> GetAssets(string directory, int pageIndex);
-        void AddAsset(Asset asset, byte[] thumbnailData);
-        Folder AddFolder(string path);
-        bool FolderExists(string path);
-        Folder[] GetFolders();
-        Folder[] GetSubFolders(Folder parentFolder, bool includeHidden);
-        Folder GetFolderByPath(string path);
+        PaginatedData<Asset> GetAssets(Folder folder, int pageIndex);
+        void AddAsset(Asset asset, Folder folder, byte[] thumbnailData);
         List<Asset> GetCataloguedAssets();
-        List<Asset> GetCataloguedAssets(string directory);
-        bool IsAssetCatalogued(string directoryName, string fileName);
-        void DeleteAsset(string directory, string deletedFileName);
-        void DeleteFolder(Folder folder);
+        List<Asset> GetCataloguedAssets(Folder folder);
+        bool IsAssetCatalogued(Folder folder, string fileName);
+        void DeleteAsset(Folder folder, string deletedFileName);
         bool ContainsThumbnail(string directoryName, string fileName);
-        BitmapImage LoadThumbnail(string directoryName, string fileName, int width, int height);
+        BitmapImage LoadThumbnail(Folder folder, string fileName, int width, int height);
         SyncAssetsConfiguration GetSyncAssetsConfiguration();
         void SaveSyncAssetsConfiguration(SyncAssetsConfiguration syncAssetsConfiguration);
         List<string> GetRecentTargetPaths();
