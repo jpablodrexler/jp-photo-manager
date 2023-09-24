@@ -14,18 +14,12 @@ namespace JPPhotoManager.Infrastructure
     {
         private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        private const double STORAGE_VERSION = 1.1;
-        private const string SEPARATOR = "|";
         private const int PAGE_SIZE = 100;
-
-        public bool IsInitialized { get; private set; }
-        private string _dataDirectory;
+        
         private readonly AppDbContext _appDbContext;
         private readonly IStorageService _storageService;
         private readonly IUserConfigurationService _userConfigurationService;
 
-        private SyncAssetsConfiguration _syncAssetsConfiguration;
-        private List<string> _recentTargetPaths;
         protected Dictionary<string, byte[]> Thumbnails { get; private set; }
         private Queue<string> _recentThumbnailsQueue;
         private object _syncLock;
@@ -38,22 +32,6 @@ namespace JPPhotoManager.Infrastructure
             Thumbnails = new Dictionary<string, byte[]>();
             _recentThumbnailsQueue = new Queue<string>();
             _syncLock = new object();
-            Initialize();
-        }
-
-        private void Initialize()
-        {
-            if (!IsInitialized)
-            {
-                InitializeDatabase();
-                IsInitialized = true;
-            }
-        }
-
-        private void InitializeDatabase()
-        {
-            _dataDirectory = _storageService.ResolveDataDirectory(STORAGE_VERSION);
-            var separatorChar = SEPARATOR.ToCharArray().First();
         }
 
         public List<Folder> ReadFolders()
@@ -494,8 +472,6 @@ namespace JPPhotoManager.Infrastructure
         {
             lock (_syncLock)
             {
-                this._syncAssetsConfiguration = syncAssetsConfiguration;
-
                 _appDbContext
                     .SyncAssetsDirectoriesDefinitions
                     .RemoveRange(_appDbContext.SyncAssetsDirectoriesDefinitions);
