@@ -176,7 +176,6 @@ namespace JPPhotoManager.Tests.Integration
 
             Asset inexistentAsset = new()
             {
-                AssetId = "670D210E-A85B-4BFB-8C37-721A6AC2495F",
                 FileName = "Inexistent Image.jpg",
                 Folder = asset.Folder,
                 FolderId = asset.FolderId,
@@ -220,7 +219,7 @@ namespace JPPhotoManager.Tests.Integration
 
             repository.AddAsset(new Asset
             {
-                AssetId = "F641BC57-D1D0-4EB9-892E-CABBE679DD37",
+                AssetId = 1,
                 FileName = "Inexistent Image.jpg",
                 Folder = folder,
                 FolderId = folder.FolderId,
@@ -256,14 +255,13 @@ namespace JPPhotoManager.Tests.Integration
 
             var repository = mock.Container.Resolve<IAssetRepository>();
 
-            Folder folder = new() { FolderId = "1", Path = "C:\\Inexistent Folder" };
+            Folder folder = new() { Path = "C:\\Inexistent Folder" };
 
             string imagePath = Path.Combine(_dataDirectory, "Inexistent Image.jpg");
             File.Exists(imagePath).Should().BeFalse();
 
             repository.AddAsset(new Asset
             {
-                AssetId = "63E44EF8-71B1-4B2E-A478-4B0F0785ACC8",
                 FileName = "Inexistent Image.jpg",
                 Folder = folder,
                 FolderId = folder.FolderId,

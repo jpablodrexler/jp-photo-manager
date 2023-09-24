@@ -14,13 +14,13 @@ namespace JPPhotoManager.Tests.Unit
         {
             Asset asset1 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 1,
                 FileName = "Image1.jpg"
             };
 
             Asset asset2 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 1,
                 FileName = "Image1.jpg"
             };
 
@@ -33,13 +33,13 @@ namespace JPPhotoManager.Tests.Unit
         {
             Asset asset1 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 1,
                 FileName = "Image1.jpg"
             };
 
             Asset asset2 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417285",
+                FolderId = 2,
                 FileName = "Image1.jpg"
             };
 
@@ -83,13 +83,13 @@ namespace JPPhotoManager.Tests.Unit
         {
             Asset asset1 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 1,
                 FileName = "Image1.jpg"
             };
 
             Asset asset2 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417285",
+                FolderId = 2,
                 FileName = "Image2.jpg"
             };
 
@@ -102,7 +102,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             Asset asset1 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 1,
                 FileName = "Image1.jpg"
             };
 
@@ -120,7 +120,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             Asset asset = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 1,
                 FileName = "Image1.jpg"
             };
 
@@ -132,7 +132,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             Asset asset = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 1,
                 FileName = "Image1.jpg"
             };
 
@@ -147,7 +147,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             Asset asset = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 1,
                 FileName = fileName
             };
 

@@ -415,13 +415,11 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Theory]
-        [InlineData("", "", "")]
-        [InlineData("NewImage.jpg", "", "")]
-        [InlineData("", "C3BB07CC-343F-4DCC-A39D-767B8F3E5DA4", "")]
-        [InlineData("", "", "NewFolder")]
-        [InlineData("NewImage.jpg", "C3BB07CC-343F-4DCC-A39D-767B8F3E5DA4", "")]
-        [InlineData("NewImage.jpg", "", "C:\\NewFolder")]
-        public void NotifyCatalogChange_InvalidParameters_IgnoreAsset(string fileName, string folderId, string folderPath)
+        [InlineData("", "")]
+        [InlineData("NewImage.jpg", "")]
+        [InlineData("", "NewFolder")]
+        [InlineData("NewImage.jpg", "C:\\NewFolder")]
+        public void NotifyCatalogChange_InvalidParameters_IgnoreAsset(string fileName, string folderPath)
         {
             Folder folder = new() { Path = @"D:\Data" };
 
@@ -438,7 +436,7 @@ namespace JPPhotoManager.Tests.Unit
             {
                 FileName = fileName,
                 ImageData = new BitmapImage(),
-                Folder = new Folder { FolderId = folderId, Path = folderPath }
+                Folder = new Folder { FolderId = 1, Path = folderPath }
             };
 
             using var mock = AutoMock.GetLoose();

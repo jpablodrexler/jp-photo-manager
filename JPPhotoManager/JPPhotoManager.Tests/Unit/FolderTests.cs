@@ -20,13 +20,13 @@ namespace JPPhotoManager.Tests.Unit
         {
             Folder folder1 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 1,
                 Path = @"C:\Users\TestUser\Pictures"
             };
 
             Folder folder2 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 2,
                 Path = @"C:\Users\TestUser\Pictures"
             };
 
@@ -39,13 +39,13 @@ namespace JPPhotoManager.Tests.Unit
         {
             Folder folder1 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 1,
                 Path = @"C:\Users\TestUser\Pictures"
             };
 
             Folder folder2 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 2,
                 Path = @"C:\Users\TestUser\Pictures\MyAlbum"
             };
 
@@ -58,13 +58,13 @@ namespace JPPhotoManager.Tests.Unit
         {
             Folder folder1 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 1,
                 Path = @"C:\Users\TestUser\Pictures"
             };
 
             Folder folder2 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 2,
                 Path = null
             };
 
@@ -77,7 +77,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             Folder folder = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 1,
                 Path = @"C:\Users\TestUser\Pictures"
             };
 
@@ -89,7 +89,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             Folder folder = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 1,
                 Path = @"C:\Users\TestUser\Pictures"
             };
 
@@ -101,7 +101,7 @@ namespace JPPhotoManager.Tests.Unit
         {
             Folder folder1 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 1,
                 Path = null
             };
 
@@ -109,7 +109,7 @@ namespace JPPhotoManager.Tests.Unit
 
             Folder folder2 = new()
             {
-                FolderId = "599e3dec-1da6-4e1d-b18d-e2e6cb417292",
+                FolderId = 2,
                 Path = ""
             };
 
