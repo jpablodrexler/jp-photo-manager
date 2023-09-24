@@ -207,7 +207,7 @@ namespace JPPhotoManager.Domain
 
                 if (cataloguedAssets.Count == 0)
                 {
-                    DeleteThumbnails(folder);
+                    _assetRepository.DeleteThumbnails(folder);
                     _folderRepository.DeleteFolder(folder);
 
                     callback?.Invoke(new CatalogChangeCallbackEventArgs

@@ -60,7 +60,7 @@ namespace JPPhotoManager.Infrastructure
                     .ToList();
         }
 
-        private void DeleteThumbnails(Folder folder)
+        public void DeleteThumbnails(Folder folder)
         {
             var assets = GetAssetsByFolderId(folder.FolderId);
 

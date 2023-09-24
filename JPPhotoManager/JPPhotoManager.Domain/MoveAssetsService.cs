@@ -8,15 +8,18 @@ namespace JPPhotoManager.Domain
         private const int RECENT_TARGET_PATHS_MAX_COUNT = 20;
         private readonly IAssetRepository _assetRepository;
         private readonly IFolderRepository _folderRepository;
+        private readonly IRecentTargetPathRepository _recentTargetPathRepository;
         private readonly IStorageService _storageService;
 
         public MoveAssetsService(
             IAssetRepository assetRepository,
             IFolderRepository folderRepository,
+            IRecentTargetPathRepository recentTargetPathRepository,
             IStorageService storageService)
         {
             _assetRepository = assetRepository;
             _folderRepository = folderRepository;
+            _recentTargetPathRepository = recentTargetPathRepository;
             _storageService = storageService;
         }
 
@@ -106,7 +109,7 @@ namespace JPPhotoManager.Domain
         // TODO: Extend automated tests to evaluate recent target paths.
         private void AddTargetPathToRecent(Folder destinationFolder)
         {
-            List<string> recentTargetPaths = _assetRepository.GetRecentTargetPaths();
+            List<string> recentTargetPaths = _recentTargetPathRepository.GetRecentTargetPaths();
 
             if (recentTargetPaths.Contains(destinationFolder.Path))
                 recentTargetPaths.Remove(destinationFolder.Path);
@@ -114,7 +117,7 @@ namespace JPPhotoManager.Domain
             recentTargetPaths.Insert(0, destinationFolder.Path);
 
             recentTargetPaths = recentTargetPaths.Take(RECENT_TARGET_PATHS_MAX_COUNT).ToList();
-            _assetRepository.SaveRecentTargetPaths(recentTargetPaths);
+            _recentTargetPathRepository.SaveRecentTargetPaths(recentTargetPaths);
         }
 
         public void DeleteAssets(Asset[] assets, bool deleteFiles, bool saveCatalog = true)
