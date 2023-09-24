@@ -323,10 +323,10 @@ namespace JPPhotoManager.Domain
         private BitmapImage LoadThumbnail(string directoryName, string fileName, int width, int height)
         {
             BitmapImage thumbnailImage = null;
+            var folder = _folderRepository.GetFolderByPath(directoryName);
 
-            if (_assetRepository.ContainsThumbnail(directoryName, fileName))
+            if (_assetRepository.ContainsThumbnail(folder, fileName))
             {
-                var folder = _folderRepository.GetFolderByPath(directoryName);
                 thumbnailImage = _assetRepository.LoadThumbnail(folder, fileName, width, height);
             }
 

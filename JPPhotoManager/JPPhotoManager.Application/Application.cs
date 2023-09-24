@@ -19,6 +19,7 @@ namespace JPPhotoManager.Application
         private readonly IBatchRenameService _batchRenameService;
         private readonly IProcessService _processService;
         private readonly INewReleaseNotificationService _newReleaseNotificationService;
+        private Queue<string> _recentThumbnailsQueue;
 
         public Application(
             ISyncAssetsService syncAssetsService,
@@ -46,6 +47,7 @@ namespace JPPhotoManager.Application
             _batchRenameService = batchRenameService;
             _processService = processService;
             _newReleaseNotificationService = newReleaseNotificationService;
+            _recentThumbnailsQueue = new Queue<string>();
         }
 
         public PaginatedData<Asset> GetAssets(string directory, int pageIndex)
@@ -61,13 +63,36 @@ namespace JPPhotoManager.Application
             }
 
             Folder folder = _folderRepository.GetFolderByPath(directory);
-
+            RemoveOldThumbnailsDictionaryEntries(folder);
+            
             return _assetRepository.GetAssets(folder, pageIndex);
+        }
+
+        private void RemoveOldThumbnailsDictionaryEntries(Folder folder)
+        {
+            int entriesToKeep = _userConfigurationService.GetThumbnailsDictionaryEntriesToKeep();
+
+            if (!_recentThumbnailsQueue.Contains(folder.Path))
+            {
+                _recentThumbnailsQueue.Enqueue(folder.Path);
+            }
+
+            if (_recentThumbnailsQueue.Count > entriesToKeep)
+            {
+                var pathToRemove = _recentThumbnailsQueue.Dequeue();
+                var folderToRemove = _folderRepository.GetFolderByPath(pathToRemove);
+                var assets = _assetRepository.GetAssetsByFolderId(folderToRemove.FolderId);
+
+                foreach (var asset in assets)
+                {
+                    _assetRepository.RemoveThumbnailCache(asset.ThumbnailBlobName);
+                }
+            }
         }
 
         public void LoadThumbnail(Asset asset)
         {
-            var folder = GetFolderByPath(asset.Folder.Path);
+            var folder = _folderRepository.GetFolderByPath(asset.Folder.Path);
             asset.ImageData = _assetRepository.LoadThumbnail(folder, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight);
         }
 

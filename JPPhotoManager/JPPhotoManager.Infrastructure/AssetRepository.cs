@@ -21,7 +21,7 @@ namespace JPPhotoManager.Infrastructure
         private readonly IUserConfigurationService _userConfigurationService;
 
         protected Dictionary<string, byte[]> Thumbnails { get; private set; }
-        private Queue<string> _recentThumbnailsQueue;
+        
         private object _syncLock;
 
         public AssetRepository(AppDbContext appDbContext, IStorageService storageService, IUserConfigurationService userConfigurationService)
@@ -30,7 +30,6 @@ namespace JPPhotoManager.Infrastructure
             _storageService = storageService;
             _userConfigurationService = userConfigurationService;
             Thumbnails = new Dictionary<string, byte[]>();
-            _recentThumbnailsQueue = new Queue<string>();
             _syncLock = new object();
         }
 
@@ -70,24 +69,24 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
+        public void RemoveThumbnailCache(string thumbnailBlobName)
+        {
+            if (Thumbnails.ContainsKey(thumbnailBlobName))
+            {
+                Thumbnails.Remove(thumbnailBlobName);
+            }
+        }
+
         protected void DeleteThumbnail(Asset asset)
         {
-            if (Thumbnails.ContainsKey(asset.ThumbnailBlobName))
-            {
-                Thumbnails.Remove(asset.ThumbnailBlobName);
-            }
-
+            RemoveThumbnailCache(asset.ThumbnailBlobName);
             string thumbnailsFilePath = GetBinaryFilePath(asset.ThumbnailBlobName);
             File.Delete(thumbnailsFilePath);
         }
 
         public void DeleteThumbnail(string thumbnailBlobName)
         {
-            if (Thumbnails.ContainsKey(thumbnailBlobName))
-            {
-                Thumbnails.Remove(thumbnailBlobName);
-            }
-
+            RemoveThumbnailCache(thumbnailBlobName);
             string thumbnailsFilePath = GetBinaryFilePath(thumbnailBlobName);
             File.Delete(thumbnailsFilePath);
         }
@@ -96,31 +95,6 @@ namespace JPPhotoManager.Infrastructure
         {
             string blobsDirectory = _userConfigurationService.GetBinaryFilesDirectory();
             return Directory.GetFiles(blobsDirectory);
-        }
-
-        private void RemoveOldThumbnailsDictionaryEntries(Folder folder)
-        {
-            int entriesToKeep = _userConfigurationService.GetThumbnailsDictionaryEntriesToKeep();
-
-            if (!_recentThumbnailsQueue.Contains(folder.Path))
-            {
-                _recentThumbnailsQueue.Enqueue(folder.Path);
-            }
-
-            if (_recentThumbnailsQueue.Count > entriesToKeep)
-            {
-                var pathToRemove = _recentThumbnailsQueue.Dequeue();
-                var folderToRemove = GetFolderByPath(pathToRemove);
-                var assets = GetAssetsByFolderId(folderToRemove.FolderId);
-
-                foreach (var asset in assets)
-                {
-                    if (Thumbnails.ContainsKey(asset.ThumbnailBlobName))
-                    {
-                        Thumbnails.Remove(asset.ThumbnailBlobName);
-                    }
-                }
-            }
         }
 
         public PaginatedData<Asset> GetAssets(Folder folder, int pageIndex)
@@ -140,8 +114,6 @@ namespace JPPhotoManager.Infrastructure
                         totalCount = assetsList.Count;
                         assetsList = assetsList.Skip(pageIndex * PAGE_SIZE).Take(PAGE_SIZE).ToList();
                         
-                        RemoveOldThumbnailsDictionaryEntries(folder);
-
                         if (!isNewFile)
                         {
                             foreach (Asset asset in assetsList)
@@ -207,7 +179,7 @@ namespace JPPhotoManager.Infrastructure
             }
         }
 
-        private List<Asset> GetAssetsByFolderId(int folderId)
+        public List<Asset> GetAssetsByFolderId(int folderId)
         {
             List<Asset> result = null;
 
@@ -292,14 +264,12 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
-        public bool ContainsThumbnail(string directoryName, string fileName)
+        public bool ContainsThumbnail(Folder folder, string fileName)
         {
             bool result = false;
 
             lock (_syncLock)
             {
-                var folder = GetFolderByPath(directoryName);
-
                 if (folder != null)
                 {
                     var asset = GetAssetByFolderIdFileName(folder.FolderId, fileName);
