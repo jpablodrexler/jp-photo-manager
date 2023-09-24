@@ -68,12 +68,13 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var storageService = mock.Container.Resolve<IStorageService>();
             var app = mock.Container.Resolve<Application.Application>();
 
-            Folder folder = repository.AddFolder(_dataDirectory);
+            Folder folder = folderRepository.AddFolder(_dataDirectory);
 
             string imagePath = Path.Combine(_dataDirectory, "Image 2.jpg");
             Assert.True(File.Exists(imagePath));
@@ -95,10 +96,10 @@ namespace JPPhotoManager.Tests.Integration
             duplicatedAssets[0].FileName.Should().Be("Image 2.jpg");
             duplicatedAssets[1].FileName.Should().Be("Image 2 duplicated.jpg");
 
-            repository.ContainsThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName).Should().BeTrue();
-            repository.ContainsThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName).Should().BeTrue();
-            repository.LoadThumbnail(duplicatedAssets[0].Folder.Path, duplicatedAssets[0].FileName, duplicatedAssets[0].ThumbnailPixelWidth, duplicatedAssets[0].ThumbnailPixelHeight).Should().NotBeNull();
-            repository.LoadThumbnail(duplicatedAssets[1].Folder.Path, duplicatedAssets[1].FileName, duplicatedAssets[1].ThumbnailPixelWidth, duplicatedAssets[1].ThumbnailPixelHeight).Should().NotBeNull();
+            assetRepository.ContainsThumbnail(duplicatedAssets[0].Folder, duplicatedAssets[0].FileName).Should().BeTrue();
+            assetRepository.ContainsThumbnail(duplicatedAssets[1].Folder, duplicatedAssets[1].FileName).Should().BeTrue();
+            assetRepository.LoadThumbnail(duplicatedAssets[0].Folder, duplicatedAssets[0].FileName, duplicatedAssets[0].ThumbnailPixelWidth, duplicatedAssets[0].ThumbnailPixelHeight).Should().NotBeNull();
+            assetRepository.LoadThumbnail(duplicatedAssets[1].Folder, duplicatedAssets[1].FileName, duplicatedAssets[1].ThumbnailPixelWidth, duplicatedAssets[1].ThumbnailPixelHeight).Should().NotBeNull();
         }
 
         [Fact]
@@ -118,7 +119,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var repository = mock.Container.Resolve<IFolderRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var app = mock.Container.Resolve<Application.Application>();
 
@@ -157,11 +158,12 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var app = mock.Container.Resolve<Application.Application>();
 
-            repository.AddFolder(_dataDirectory);
+            folderRepository.AddFolder(_dataDirectory);
 
             string imagePath = Path.Combine(_dataDirectory, "Image 2.jpg");
             File.Exists(imagePath).Should().BeTrue();
@@ -182,7 +184,7 @@ namespace JPPhotoManager.Tests.Integration
                 Hash = asset.Hash
             };
 
-            repository.AddAsset(inexistentAsset, null);
+            assetRepository.AddAsset(inexistentAsset, asset.Folder, null);
             var duplicatedAssetSets = app.GetDuplicatedAssets();
             duplicatedAssetSets.Should().BeEmpty();
         }
@@ -290,11 +292,12 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
-            AssetRepository repository = (AssetRepository)mock.Container.Resolve<IAssetRepository>();
+            FolderRepository folderRepository = (FolderRepository)mock.Container.Resolve<IFolderRepository>();
+            AssetRepository assetRepository = (AssetRepository)mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var app = mock.Container.Resolve<Application.Application>();
 
-            Folder folder = repository.AddFolder(_dataDirectory);
+            Folder folder = folderRepository.AddFolder(_dataDirectory);
             Mock<IAssetHashCalculatorService> hashCalculator = mock.Mock<IAssetHashCalculatorService>();
             hashCalculator
                 .Setup(hc => hc.CalculateHash(It.IsAny<byte[]>()))
@@ -312,17 +315,17 @@ namespace JPPhotoManager.Tests.Integration
             File.Exists(imagePath).Should().BeTrue();
             Asset duplicatedAsset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 2 duplicated.jpg");
             
-            repository.DeleteThumbnail(duplicatedAsset.ThumbnailBlobName);
+            assetRepository.DeleteThumbnail(duplicatedAsset.ThumbnailBlobName);
             
             var assets = app.GetAssets(_dataDirectory, 0);
             assets.Items.Should().NotBeEmpty();
 
-            repository.GetAssets(_dataDirectory, 0).Items.Should().Contain(a => a.FileName == "Image 2.jpg");
-            repository.GetAssets(_dataDirectory, 0).Items.Should().NotContain(a => a.FileName == "Image 2 duplicated.jpg");
-            repository.ContainsThumbnail(_dataDirectory, "Image 2.jpg").Should().BeTrue();
-            repository.ContainsThumbnail(_dataDirectory, "Image 2 duplicated.jpg").Should().BeFalse();
-            repository.LoadThumbnail(_dataDirectory, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight).Should().NotBeNull();
-            repository.LoadThumbnail(_dataDirectory, duplicatedAsset.FileName, duplicatedAsset.ThumbnailPixelWidth, duplicatedAsset.ThumbnailPixelHeight).Should().BeNull();
+            assetRepository.GetAssets(folder, 0).Items.Should().Contain(a => a.FileName == "Image 2.jpg");
+            assetRepository.GetAssets(folder, 0).Items.Should().NotContain(a => a.FileName == "Image 2 duplicated.jpg");
+            assetRepository.ContainsThumbnail(folder, "Image 2.jpg").Should().BeTrue();
+            assetRepository.ContainsThumbnail(folder, "Image 2 duplicated.jpg").Should().BeFalse();
+            assetRepository.LoadThumbnail(folder, asset.FileName, asset.ThumbnailPixelWidth, asset.ThumbnailPixelHeight).Should().NotBeNull();
+            assetRepository.LoadThumbnail(folder, duplicatedAsset.FileName, duplicatedAsset.ThumbnailPixelWidth, duplicatedAsset.ThumbnailPixelHeight).Should().BeNull();
         }
 
         public void Dispose()

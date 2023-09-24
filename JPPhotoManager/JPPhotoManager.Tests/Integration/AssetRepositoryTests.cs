@@ -88,13 +88,15 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
+            var folder = folderRepository.AddFolder(_dataDirectory);
             string imagePath = Path.Combine(_dataDirectory, "Image 2.jpg");
             File.Exists(imagePath).Should().BeTrue();
 
-            repository.IsAssetCatalogued(_dataDirectory, "Image 2.jpg").Should().BeFalse();
+            assetRepository.IsAssetCatalogued(folder, "Image 2.jpg").Should().BeFalse();
         }
 
         [Fact]
@@ -113,16 +115,18 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
             string imagePath = Path.Combine(_dataDirectory, "Image 2.jpg");
             File.Exists(imagePath).Should().BeTrue();
+           
+            var folder = folderRepository.AddFolder(_dataDirectory);
 
-            repository.IsAssetCatalogued(_dataDirectory, "Image 2.jpg").Should().BeFalse();
-            repository.AddFolder(_dataDirectory);
+            assetRepository.IsAssetCatalogued(folder, "Image 2.jpg").Should().BeFalse();
             catalogAssetsService.CreateAsset(_dataDirectory, "Image 2.jpg");
-            repository.IsAssetCatalogued(_dataDirectory, "Image 2.jpg").Should().BeTrue();
+            assetRepository.IsAssetCatalogued(folder, "Image 2.jpg").Should().BeTrue();
         }
 
         [Fact]
@@ -141,18 +145,19 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
 
-            repository.AddFolder(_dataDirectory);
+            var folder = folderRepository.AddFolder(_dataDirectory);
 
             string imagePath = Path.Combine(_dataDirectory, "Non Existing Image.jpg");
             File.Exists(imagePath).Should().BeFalse();
 
-            repository.DeleteAsset(_dataDirectory, "Non Existing Image.jpg");
-            repository.IsAssetCatalogued(_dataDirectory, "Non Existing Image.jpg").Should().BeFalse();
+            assetRepository.DeleteAsset(folder, "Non Existing Image.jpg");
+            assetRepository.IsAssetCatalogued(folder, "Non Existing Image.jpg").Should().BeFalse();
 
-            repository.DeleteAsset(_dataDirectory, "Non Existing Image.jpg");
-            repository.IsAssetCatalogued(_dataDirectory, "Non Existing Image.jpg").Should().BeFalse();
+            assetRepository.DeleteAsset(folder, "Non Existing Image.jpg");
+            assetRepository.IsAssetCatalogued(folder, "Non Existing Image.jpg").Should().BeFalse();
         }
 
         [Fact]
@@ -171,18 +176,19 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
-            repository.AddFolder(_dataDirectory);
+            var folder = folderRepository.AddFolder(_dataDirectory);
 
             string imagePath = Path.Combine(_dataDirectory, "Image 3.jpg");
             File.Exists(imagePath).Should().BeTrue();
             Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 3.jpg");
 
             // The asset should no longer be catalogued, but the image should still be in the filesystem.
-            repository.DeleteAsset(_dataDirectory, "Image 3.jpg");
-            repository.IsAssetCatalogued(_dataDirectory, "Image 3.jpg").Should().BeFalse();
+            assetRepository.DeleteAsset(folder, "Image 3.jpg");
+            assetRepository.IsAssetCatalogued(folder, "Image 3.jpg").Should().BeFalse();
             File.Exists(imagePath).Should().BeTrue();
         }
 

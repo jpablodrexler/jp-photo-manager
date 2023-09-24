@@ -485,12 +485,13 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            Folder sourceFolder = repository.AddFolder(_dataDirectory);
-            Folder destinationFolder = repository.AddFolder(_imageDestinationDirectory);
+            Folder sourceFolder = folderRepository.AddFolder(_dataDirectory);
+            Folder destinationFolder = folderRepository.AddFolder(_imageDestinationDirectory);
 
             string sourceImagePath = Path.Combine(_dataDirectory, "Image 4.jpg");
             string destinationImagePath = Path.Combine(_imageDestinationDirectory, "Image 4.jpg");
@@ -499,23 +500,23 @@ namespace JPPhotoManager.Tests.Integration
 
             Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 4.jpg");
             
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
-            repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
+            assetRepository.ContainsThumbnail(sourceFolder, asset.FileName).Should().BeTrue();
+            assetRepository.ContainsThumbnail(destinationFolder, asset.FileName).Should().BeFalse();
 
             moveAssetsService.MoveAssets(new Asset[] { asset }, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
 
             File.Exists(sourceImagePath).Should().BeFalse();
             File.Exists(destinationImagePath).Should().BeTrue();
 
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeFalse();
-            repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
+            assetRepository.ContainsThumbnail(sourceFolder, asset.FileName).Should().BeFalse();
+            assetRepository.ContainsThumbnail(destinationFolder, asset.FileName).Should().BeFalse();
 
             // Validates if the catalogued assets for the source folder are updated properly.
-            var assets = repository.GetCataloguedAssets(sourceFolder.Path);
+            var assets = assetRepository.GetCataloguedAssets(sourceFolder);
             assets.Should().NotContain(a => a.FileName == "Image 4.jpg");
 
             // Validates if the catalogued assets for the destination folder are not updated yet.
-            assets = repository.GetCataloguedAssets(destinationFolder.Path);
+            assets = assetRepository.GetCataloguedAssets(destinationFolder);
             assets.Should().NotContain(a => a.FileName == "Image 4.jpg");
         }
 
@@ -536,7 +537,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var repository = mock.Container.Resolve<IFolderRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
@@ -580,24 +581,25 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            Folder sourceFolder = repository.AddFolder(_dataDirectory);
+            Folder sourceFolder = folderRepository.AddFolder(_dataDirectory);
 
             string sourceImagePath = Path.Combine(_dataDirectory, "Image 5.jpg");
             File.Exists(sourceImagePath).Should().BeTrue();
 
             Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 5.jpg");
-            
-            repository.ContainsThumbnail(asset.Folder.Path, asset.FileName).Should().BeTrue();
+
+            assetRepository.ContainsThumbnail(asset.Folder, asset.FileName).Should().BeTrue();
 
             moveAssetsService.MoveAssets(new Asset[] { asset }, sourceFolder, preserveOriginalFile: false).Should().BeFalse();
 
             File.Exists(sourceImagePath).Should().BeTrue();
 
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
+            assetRepository.ContainsThumbnail(sourceFolder, asset.FileName).Should().BeTrue();
         }
 
         [Fact]
@@ -617,12 +619,13 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            Folder sourceFolder = repository.AddFolder(_dataDirectory);
-            Folder destinationFolder = repository.GetFolderByPath(_nonCataloguedImageDestinationDirectory);
+            Folder sourceFolder = folderRepository.AddFolder(_dataDirectory);
+            Folder destinationFolder = folderRepository.GetFolderByPath(_nonCataloguedImageDestinationDirectory);
 
             destinationFolder.Should().BeNull();
 
@@ -636,13 +639,13 @@ namespace JPPhotoManager.Tests.Integration
 
             Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 7.jpg");
             
-            Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
+            Assert.True(assetRepository.ContainsThumbnail(sourceFolder, asset.FileName));
 
             moveAssetsService.MoveAssets(new Asset[] { asset }, destinationFolder, preserveOriginalFile: false).Should().BeTrue();
 
             File.Exists(sourceImagePath).Should().BeFalse();
             File.Exists(destinationImagePath).Should().BeTrue();
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeFalse();
+            assetRepository.ContainsThumbnail(sourceFolder, asset.FileName).Should().BeFalse();
         }
 
         [Fact]
