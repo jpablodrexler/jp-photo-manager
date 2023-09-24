@@ -18,7 +18,6 @@ namespace JPPhotoManager.UI.Controls
     public partial class FolderNavigationControl : UserControl
     {
         private static readonly ILog _log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-        private object _placeholderNode = null;
         public event EventHandler FolderSelected;
         public string SelectedPath { get; set; }
         private bool _isInitializing = true;
@@ -69,11 +68,6 @@ namespace JPPhotoManager.UI.Controls
             subitem.Collapsed += new RoutedEventHandler(Item_Collapsed);
             subitem.Expanded += new RoutedEventHandler(Item_Expanded);
 
-            // This may result in sub folders already catalogued not being shown.
-            // TODO: Should check for their existence in the Folders table before executing the RemoveAt method.
-            if (parentItem.Items.Count == 1 && parentItem.Items[0] == _placeholderNode)
-                parentItem.Items.RemoveAt(0);
-
             parentItem.Items.Add(subitem);
 
             if (!_folders.ContainsKey(e.Folder))
@@ -116,7 +110,6 @@ namespace JPPhotoManager.UI.Controls
             ViewModel.IsRefreshingFolders = false;
         }
 
-        // TODO: When a new folder is catalogued, this control should be notified so it can display it.
         public void Initialize()
         {
             try
@@ -132,12 +125,13 @@ namespace JPPhotoManager.UI.Controls
                         Tag = folder
                     };
 
-                    item.Items.Add(_placeholderNode);
                     item.Expanded += new RoutedEventHandler(Item_Expanded);
                     foldersTreeView.Items.Add(item);
 
                     if (!_folders.ContainsKey(folder.Folder))
                         _folders[folder.Folder] = item;
+
+                    AddSubItems(item, includeHidden: true);
                 }
 
                 GoToFolder(SelectedPath);
@@ -210,7 +204,7 @@ namespace JPPhotoManager.UI.Controls
 
         private bool LacksSubItems(TreeViewItem item)
         {
-            return item.Items.Count == 1 && item.Items[0] == _placeholderNode;
+            return item.Items.Count == 0;
         }
 
         private void FoldersTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -247,8 +241,10 @@ namespace JPPhotoManager.UI.Controls
 
         private void GoToFolder(TreeViewItem item, string folderFullPath, bool includeHidden)
         {
-            if (item.Tag is Folder folder)
+            if (item.Tag is FolderViewModel folderViewModel)
             {
+                Folder folder = folderViewModel.Folder;
+
                 if (folderFullPath.StartsWith(folder.Path, StringComparison.InvariantCultureIgnoreCase))
                 {
                     if (LacksSubItems(item))
