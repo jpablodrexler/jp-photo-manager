@@ -62,9 +62,10 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(userConfigurationService).As<IUserConfigurationService>();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
+                    cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                 });
-            var repository = mock.Create<IAssetRepository>();
+            var repository = mock.Create<IFolderRepository>();
             bool folderExists = repository.FolderExists(_dataDirectory);
             folderExists.Should().BeFalse();
             repository.AddFolder(_dataDirectory);

@@ -877,27 +877,29 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
+                    cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            Folder sourceFolder = repository.AddFolder(_dataDirectory);
+            Folder sourceFolder = folderRepository.AddFolder(_dataDirectory);
 
             string sourceImagePath = Path.Combine(_dataDirectory, "Image 6.jpg");
             File.Exists(sourceImagePath).Should().BeTrue();
 
             Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 6.jpg");
             
-            Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
+            Assert.True(assetRepository.ContainsThumbnail(sourceFolder, asset.FileName));
 
             moveAssetsService.DeleteAssets(new Asset[] { asset }, deleteFile: true);
 
             File.Exists(sourceImagePath).Should().BeFalse();
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeFalse();
+            assetRepository.ContainsThumbnail(sourceFolder, asset.FileName).Should().BeFalse();
         }
 
         [Fact]
