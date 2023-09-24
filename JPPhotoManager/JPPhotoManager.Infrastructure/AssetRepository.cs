@@ -301,17 +301,38 @@ namespace JPPhotoManager.Infrastructure
 
         private Folder GetFolderById(int folderId)
         {
-            return _appDbContext.Folders.FirstOrDefault(f => f.FolderId == folderId);
+            Folder result = null;
+
+            lock (_syncLock)
+            {
+                result = _appDbContext.Folders.FirstOrDefault(f => f.FolderId == folderId);
+            }
+
+            return result;
         }
 
         private List<Asset> GetAssetsByFolderId(int folderId)
         {
-            return _appDbContext.Assets.Where(a => a.FolderId == folderId).ToList();
+            List<Asset> result = null;
+
+            lock (_syncLock)
+            {
+                result = _appDbContext.Assets.Where(a => a.FolderId == folderId).ToList();
+            }
+
+            return result;
         }
 
         private Asset GetAssetByFolderIdFileName(int folderId, string fileName)
         {
-            return _appDbContext.Assets.FirstOrDefault(a => a.FolderId == folderId && a.FileName == fileName);
+            Asset result = null;
+
+            lock (_syncLock)
+            {
+                result = _appDbContext.Assets.FirstOrDefault(a => a.FolderId == folderId && a.FileName == fileName);
+            }
+
+            return result;
         }
 
         public void DeleteAsset(string directory, string fileName)
@@ -374,7 +395,7 @@ namespace JPPhotoManager.Infrastructure
 
                 if (folder != null)
                 {
-                    cataloguedAssets = _appDbContext.Assets.Where(a => a.FolderId == folder.FolderId).ToList();
+                    cataloguedAssets = _appDbContext.Assets.Where(a => a.Folder.Path == directory).ToList();
                 }
             }
 
