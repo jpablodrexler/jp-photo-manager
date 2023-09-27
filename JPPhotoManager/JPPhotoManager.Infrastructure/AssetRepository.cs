@@ -22,15 +22,15 @@ namespace JPPhotoManager.Infrastructure
 
         protected Dictionary<string, byte[]> Thumbnails { get; private set; }
         
-        private object _syncLock;
+        private readonly SyncLock _syncLock;
 
-        public AssetRepository(AppDbContext appDbContext, IStorageService storageService, IUserConfigurationService userConfigurationService)
+        public AssetRepository(AppDbContext appDbContext, IStorageService storageService, IUserConfigurationService userConfigurationService, SyncLock syncLock)
         {
             _appDbContext = appDbContext;
             _storageService = storageService;
             _userConfigurationService = userConfigurationService;
             Thumbnails = new Dictionary<string, byte[]>();
-            _syncLock = new object(); // TODO: Use the same lock object for all the repositories.
+            _syncLock = syncLock;
         }
 
         public List<Folder> ReadFolders()

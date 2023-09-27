@@ -6,12 +6,12 @@ namespace JPPhotoManager.Infrastructure
     public class FolderRepository : IFolderRepository
     {
         private readonly AppDbContext _appDbContext;
-        private object _syncLock;
+        private readonly SyncLock _syncLock;
 
-        public FolderRepository(AppDbContext appDbContext)
+        public FolderRepository(AppDbContext appDbContext, SyncLock syncLock)
         {
             _appDbContext = appDbContext;
-            _syncLock = new object();
+            _syncLock = syncLock;
         }
 
         public Folder AddFolder(string path)

@@ -6,12 +6,12 @@ namespace JPPhotoManager.Infrastructure
     public class RecentTargetPathRepository : IRecentTargetPathRepository
     {
         private readonly AppDbContext _appDbContext;
-        private object _syncLock;
+        private readonly SyncLock _syncLock;
 
-        public RecentTargetPathRepository(AppDbContext appDbContext)
+        public RecentTargetPathRepository(AppDbContext appDbContext, SyncLock syncLock)
         {
             _appDbContext = appDbContext;
-            _syncLock = new object();
+            _syncLock = syncLock;
         }
 
         public List<string> GetRecentTargetPaths()

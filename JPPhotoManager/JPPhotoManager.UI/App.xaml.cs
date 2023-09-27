@@ -74,6 +74,7 @@ namespace JPPhotoManager.UI
 
             services.AddSingleton(configuration);
             services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
+            services.AddSingleton<SyncLock>();
             services.AddSingleton<IDirectoryComparer, DirectoryComparer>();
             services.AddSingleton<IProcessService, ProcessService>();
             services.AddSingleton<IUserConfigurationService, UserConfigurationService>();
