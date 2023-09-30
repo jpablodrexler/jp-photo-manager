@@ -15,6 +15,7 @@ namespace JPPhotoManager.Domain
         public string DestinationDirectory { get; set; }
         public bool IncludeSubFolders { get; set; }
         public bool DeleteAssetsNotInSource { get; set; }
+        public int? Order { get; set; }
 
         internal bool IsValid()
         {

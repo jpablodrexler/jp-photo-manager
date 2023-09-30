@@ -41,7 +41,7 @@ namespace JPPhotoManager.UI.ViewModels
         {
             if (Definitions != null)
             {
-                Definitions.MoveUp(definition);
+                definition.Order = Definitions.MoveUp(definition);
             }
         }
 
@@ -49,7 +49,7 @@ namespace JPPhotoManager.UI.ViewModels
         {
             if (Definitions != null)
             {
-                Definitions.MoveDown(definition);
+                definition.Order = Definitions.MoveDown(definition);
             }
         }
 

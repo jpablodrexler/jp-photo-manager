@@ -357,18 +357,23 @@ namespace JPPhotoManager.Infrastructure
             return result;
         }
 
+        // TODO: Extract to SyncAssetsConfigurationRepository.
         public SyncAssetsConfiguration GetSyncAssetsConfiguration()
         {
             SyncAssetsConfiguration result = new ();
 
             lock (_syncLock)
             {
-                result.Definitions = _appDbContext.SyncAssetsDirectoriesDefinitions.ToList();
+                result.Definitions = _appDbContext
+                    .SyncAssetsDirectoriesDefinitions
+                    .OrderBy(d => d.Order)
+                    .ToList();
             }
             
             return result;
         }
 
+        // TODO: Extract to SyncAssetsConfigurationRepository.
         public void SaveSyncAssetsConfiguration(SyncAssetsConfiguration syncAssetsConfiguration)
         {
             lock (_syncLock)

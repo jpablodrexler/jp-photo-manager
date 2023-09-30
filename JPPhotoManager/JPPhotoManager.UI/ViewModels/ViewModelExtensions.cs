@@ -4,7 +4,7 @@ namespace JPPhotoManager.UI.ViewModels
 {
     public static class ViewModelExtensions
     {
-        public static void MoveUp<T>(this ObservableCollection<T> collection, T item)
+        public static int MoveUp<T>(this ObservableCollection<T> collection, T item)
         {
             int currentIndex = collection.IndexOf(item);
 
@@ -13,10 +13,13 @@ namespace JPPhotoManager.UI.ViewModels
                 int newIndex = currentIndex - 1;
                 collection.Remove(item);
                 collection.Insert(newIndex, item);
+                currentIndex = newIndex;
             }
+
+            return currentIndex;
         }
 
-        public static void MoveDown<T>(this ObservableCollection<T> collection, T item)
+        public static int MoveDown<T>(this ObservableCollection<T> collection, T item)
         {
             int currentIndex = collection.IndexOf(item);
 
@@ -25,7 +28,10 @@ namespace JPPhotoManager.UI.ViewModels
                 int newIndex = currentIndex + 1;
                 collection.Remove(item);
                 collection.Insert(newIndex, item);
+                currentIndex = newIndex;
             }
+
+            return currentIndex;
         }
     }
 }
