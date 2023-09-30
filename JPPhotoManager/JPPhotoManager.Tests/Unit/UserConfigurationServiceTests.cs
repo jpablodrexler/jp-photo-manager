@@ -65,14 +65,6 @@ namespace JPPhotoManager.Tests.Unit
         }
 
         [Fact]
-        public void GetBackupsToKeepTest()
-        {
-            UserConfigurationService userConfigurationService = new(_configuration);
-            int result = userConfigurationService.GetBackupsToKeep();
-            result.Should().Be(2);
-        }
-
-        [Fact]
         public void GetInitialFolderConfiguredTest()
         {
             UserConfigurationService userConfigurationService = new(_configuration);

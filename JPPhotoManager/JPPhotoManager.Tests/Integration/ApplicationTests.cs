@@ -64,10 +64,12 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
+                    cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
+
             var folderRepository = mock.Container.Resolve<IFolderRepository>();
             var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
@@ -115,10 +117,12 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
+                    cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
+
             var repository = mock.Container.Resolve<IFolderRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var app = mock.Container.Resolve<Application.Application>();
@@ -154,10 +158,12 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
+                    cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
+
             var folderRepository = mock.Container.Resolve<IFolderRepository>();
             var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
@@ -206,27 +212,30 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
+                    cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var app = mock.Container.Resolve<Application.Application>();
 
-            Folder folder = repository.AddFolder(_dataDirectory);
+            Folder folder = folderRepository.AddFolder(_dataDirectory);
 
             string imagePath = Path.Combine(_dataDirectory, "Inexistent Image.jpg");
             File.Exists(imagePath).Should().BeFalse();
 
-            repository.AddAsset(new Asset
+            assetRepository.AddAsset(new Asset
             {
                 AssetId = 1,
                 FileName = "Inexistent Image.jpg",
                 Folder = folder,
                 FolderId = folder.FolderId,
                 Hash = "0b6d010f85544871c307bb3a96028402f55fa29094908cdd0f74a8ec8d3fc3d4fbec995d98b89aafef3dcf5581c018fbb50481e33c7e45aef552d66c922f4078"
-            }, null);
+            }, folder, null);
 
             imagePath = Path.Combine(_dataDirectory, "Image 2.jpg");
             File.Exists(imagePath).Should().BeTrue();
@@ -252,25 +261,27 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
+                    cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                 });
 
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
 
             Folder folder = new() { Path = "C:\\Inexistent Folder" };
 
             string imagePath = Path.Combine(_dataDirectory, "Inexistent Image.jpg");
             File.Exists(imagePath).Should().BeFalse();
 
-            repository.AddAsset(new Asset
+            assetRepository.AddAsset(new Asset
             {
                 FileName = "Inexistent Image.jpg",
                 Folder = folder,
                 FolderId = folder.FolderId,
                 Hash = "0b6d010f85544871c307bb3a96028402f55fa29094908cdd0f74a8ec8d3fc3d4fbec995d98b89aafef3dcf5581c018fbb50481e33c7e45aef552d66c922f4078"
-            }, null);
+            }, folder, null);
 
-            folder = repository.GetFolderByPath("C:\\Inexistent Folder");
+            folder = folderRepository.GetFolderByPath("C:\\Inexistent Folder");
             folder.Should().NotBeNull();
             folder.Path.Should().Be("C:\\Inexistent Folder");
             folder.Name.Should().Be("Inexistent Folder");
@@ -288,10 +299,12 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
+                    cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<FindDuplicatedAssetsService>().As<IFindDuplicatedAssetsService>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
+
             FolderRepository folderRepository = (FolderRepository)mock.Container.Resolve<IFolderRepository>();
             AssetRepository assetRepository = (AssetRepository)mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();

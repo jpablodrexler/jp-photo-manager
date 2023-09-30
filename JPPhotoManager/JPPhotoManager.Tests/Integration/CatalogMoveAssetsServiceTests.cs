@@ -77,9 +77,11 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
+                    cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
+
             mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetAppFilesDirectory()).Returns(Path.Combine(appDataFolder));
             mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetApplicationDataFolder()).Returns(appDataFolder);
             mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetBinaryFilesDirectory()).Returns(binaryFilesFolder);
@@ -89,7 +91,8 @@ namespace JPPhotoManager.Tests.Integration
             mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetThumbnailsDictionaryEntriesToKeep()).Returns(5);
             mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetRootCatalogFolderPaths()).Returns(new string[] { _dataDirectory });
 
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
             var jpegFiles = Directory.GetFiles(_dataDirectory, "*.jp*g") // jpg and jpeg files
@@ -109,7 +112,8 @@ namespace JPPhotoManager.Tests.Integration
             var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
 
-            var repositoryAssets = repository.GetAssets(_dataDirectory, 0);
+            var folder = folderRepository.GetFolderByPath(_dataDirectory);
+            var repositoryAssets = assetRepository.GetAssets(folder, 0);
             processedAssets.Should().HaveSameCount(fileList);
             repositoryAssets.Items.Should().HaveSameCount(fileList);
             exceptions.Should().BeEmpty();
@@ -146,7 +150,8 @@ namespace JPPhotoManager.Tests.Integration
             mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetThumbnailsDictionaryEntriesToKeep()).Returns(5);
             mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetRootCatalogFolderPaths()).Returns(new string[] { _dataDirectory });
 
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
             var jpegFiles = Directory.GetFiles(_dataDirectory, "*.jp*g") // jpg and jpeg files
@@ -166,7 +171,8 @@ namespace JPPhotoManager.Tests.Integration
             var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
 
-            var repositoryAssets = repository.GetAssets(_dataDirectory, 0);
+            var folder = folderRepository.GetFolderByPath(_dataDirectory);
+            var repositoryAssets = assetRepository.GetAssets(folder, 0);
             fileList.Should().HaveCountGreaterThan(batchSize);
             processedAssets.Should().HaveCount(batchSize);
             repositoryAssets.Items.Should().HaveCount(batchSize);
@@ -194,6 +200,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
+                    cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
@@ -207,7 +214,8 @@ namespace JPPhotoManager.Tests.Integration
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetThumbnailsDictionaryEntriesToKeep()).Returns(5);
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetRootCatalogFolderPaths()).Returns(new string[] { _dataDirectory });
 
-                var repository = mock.Container.Resolve<IAssetRepository>();
+                var folderRepository = mock.Container.Resolve<IFolderRepository>();
+                var assetRepository = mock.Container.Resolve<IAssetRepository>();
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
                 var jpegFiles = Directory.GetFiles(_dataDirectory, "*.jp*g") // jpg and jpeg files
@@ -223,7 +231,8 @@ namespace JPPhotoManager.Tests.Integration
                 await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
 
                 var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
-                repositoryAssets = repository.GetAssets(_dataDirectory, 0).Items;
+                var folder = folderRepository.GetFolderByPath(_dataDirectory);
+                repositoryAssets = assetRepository.GetAssets(folder, 0).Items;
                 deletedFile = fileList[0];
             }
 
@@ -246,12 +255,14 @@ namespace JPPhotoManager.Tests.Integration
                     c => c.GetDeletedFileNames(It.IsAny<string[]>(), It.IsAny<List<Asset>>()))
                     .Returns(new string[] { deletedFile });
 
-                var repository = mock.Container.Resolve<IAssetRepository>();
+                var folderRepository = mock.Container.Resolve<IFolderRepository>();
+                var assetRepository = mock.Container.Resolve<IAssetRepository>();
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
                 statusChanges.Clear();
                 await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
-                var repositoryAssetsAfterDelete = repository.GetAssets(_dataDirectory, 0);
+                var folder = folderRepository.GetFolderByPath(_dataDirectory);
+                var repositoryAssetsAfterDelete = assetRepository.GetAssets(folder, 0);
 
                 repositoryAssets.Should().Contain(a => a.FileName == deletedFile);
                 repositoryAssetsAfterDelete.Items.Should().NotContain(a => a.FileName == deletedFile);
@@ -288,7 +299,8 @@ namespace JPPhotoManager.Tests.Integration
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetThumbnailsDictionaryEntriesToKeep()).Returns(5);
                 mock.Mock<IUserConfigurationService>().Setup(conf => conf.GetRootCatalogFolderPaths()).Returns(new string[] { _dataDirectory });
 
-                var repository = mock.Container.Resolve<IAssetRepository>();
+                var folderRepository = mock.Container.Resolve<IFolderRepository>();
+                var assetRepository = mock.Container.Resolve<IAssetRepository>();
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
                 var jpegFiles = Directory.GetFiles(_dataDirectory, "*.jp*g") // jpg and jpeg files
@@ -303,7 +315,8 @@ namespace JPPhotoManager.Tests.Integration
                 await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
 
                 var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
-                var repositoryAssets = repository.GetAssets(_dataDirectory, 0);
+                var folder = folderRepository.GetFolderByPath(_dataDirectory);
+                var repositoryAssets = assetRepository.GetAssets(folder, 0);
             }
 
             using (var mock = AutoMock.GetLoose(
@@ -327,12 +340,14 @@ namespace JPPhotoManager.Tests.Integration
                     c => c.GetDeletedFileNames(It.IsAny<string[]>(), It.IsAny<List<Asset>>()))
                     .Returns(fileList.ToArray());
 
-                var repository = mock.Container.Resolve<IAssetRepository>();
+                var folderRepository = mock.Container.Resolve<IFolderRepository>();
+                var assetRepository = mock.Container.Resolve<IAssetRepository>();
                 var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
                 statusChanges.Clear();
                 await catalogAssetsService.CatalogAssetsAsync(e => statusChanges.Add(e));
-                var repositoryAssetsAfterDelete = repository.GetAssets(_dataDirectory, 0);
+                var folder = folderRepository.GetFolderByPath(_dataDirectory);
+                var repositoryAssetsAfterDelete = assetRepository.GetAssets(folder, 0);
 
                 repositoryAssetsAfterDelete.Items.Should().HaveCount(fileList.Count - batchSize);
             }
@@ -383,7 +398,8 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+
+            var repository = mock.Container.Resolve<IFolderRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
             repository.AddFolder(_dataDirectory);
@@ -418,7 +434,8 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+
+            var repository = mock.Container.Resolve<IFolderRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
             repository.AddFolder(_dataDirectory);
@@ -451,7 +468,8 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+
+            var repository = mock.Container.Resolve<IFolderRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
 
             repository.AddFolder(_dataDirectory);
@@ -665,7 +683,8 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+
+            var repository = mock.Container.Resolve<IFolderRepository>();
             var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
             Folder sourceFolder = repository.AddFolder(_dataDirectory);
@@ -693,7 +712,8 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+
+            var repository = mock.Container.Resolve<IFolderRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
@@ -722,7 +742,8 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+
+            var repository = mock.Container.Resolve<IFolderRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
@@ -751,12 +772,14 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            Folder sourceFolder = repository.AddFolder(_dataDirectory);
-            Folder destinationFolder = repository.AddFolder(_imageDestinationDirectory);
+            Folder sourceFolder = folderRepository.AddFolder(_dataDirectory);
+            Folder destinationFolder = folderRepository.AddFolder(_imageDestinationDirectory);
 
             string sourceImagePath = Path.Combine(_dataDirectory, "Image 5.jpg");
             string destinationImagePath = Path.Combine(_imageDestinationDirectory, "Image 5.jpg");
@@ -765,23 +788,23 @@ namespace JPPhotoManager.Tests.Integration
 
             Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 5.jpg");
             
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
-            repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
+            assetRepository.ContainsThumbnail(sourceFolder, asset.FileName).Should().BeTrue();
+            assetRepository.ContainsThumbnail(destinationFolder, asset.FileName).Should().BeFalse();
 
             moveAssetsService.MoveAssets(new Asset[] { asset }, destinationFolder, preserveOriginalFile: true).Should().BeTrue();
 
             File.Exists(sourceImagePath).Should().BeTrue();
             File.Exists(destinationImagePath).Should().BeTrue();
 
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
-            repository.ContainsThumbnail(destinationFolder.Path, asset.FileName).Should().BeFalse();
+            assetRepository.ContainsThumbnail(sourceFolder, asset.FileName).Should().BeTrue();
+            assetRepository.ContainsThumbnail(destinationFolder, asset.FileName).Should().BeFalse();
 
             // Validates if the catalogued assets for the source folder are updated properly.
-            var assets = repository.GetCataloguedAssets(sourceFolder.Path);
+            var assets = assetRepository.GetCataloguedAssets(sourceFolder);
             assets.Should().ContainSingle(a => a.FileName == "Image 5.jpg");
 
             // Validates if the catalogued assets for the destination folder are not updated yet.
-            assets = repository.GetCataloguedAssets(destinationFolder.Path);
+            assets = assetRepository.GetCataloguedAssets(destinationFolder);
             assets.Should().NotContain(a => a.FileName == "Image 5.jpg");
         }
 
@@ -802,11 +825,13 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            Folder sourceFolder = repository.AddFolder(_dataDirectory);
-            Folder destinationFolder = repository.AddFolder(_imageDestinationDirectory);
+            Folder sourceFolder = folderRepository.AddFolder(_dataDirectory);
+            Folder destinationFolder = folderRepository.AddFolder(_imageDestinationDirectory);
 
             string sourceImagePath = Path.Combine(_dataDirectory, "Nonexistent Image.jpg");
             string destinationImagePath = Path.Combine(_imageDestinationDirectory, "Nonexistent Image.jpg");
@@ -845,23 +870,25 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
-            Folder sourceFolder = repository.AddFolder(_dataDirectory);
+            Folder sourceFolder = folderRepository.AddFolder(_dataDirectory);
 
             string sourceImagePath = Path.Combine(_dataDirectory, "Image 5.jpg");
             File.Exists(sourceImagePath).Should().BeTrue();
 
             Asset asset = catalogAssetsService.CreateAsset(_dataDirectory, "Image 5.jpg");
             
-            Assert.True(repository.ContainsThumbnail(sourceFolder.Path, asset.FileName));
+            Assert.True(assetRepository.ContainsThumbnail(sourceFolder, asset.FileName));
 
             moveAssetsService.MoveAssets(new Asset[] { asset }, sourceFolder, preserveOriginalFile: true).Should().BeFalse();
 
             File.Exists(sourceImagePath).Should().BeTrue();
-            repository.ContainsThumbnail(sourceFolder.Path, asset.FileName).Should().BeTrue();
+            assetRepository.ContainsThumbnail(sourceFolder, asset.FileName).Should().BeTrue();
         }
 
         [Fact]
@@ -919,7 +946,8 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+
+            var repository = mock.Container.Resolve<IFolderRepository>();
             var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
             Folder sourceFolder = repository.AddFolder(_dataDirectory);
@@ -956,7 +984,8 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
-            var repository = mock.Container.Resolve<IAssetRepository>();
+
+            var repository = mock.Container.Resolve<IFolderRepository>();
             var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
             Folder sourceFolder = repository.AddFolder(_dataDirectory);
@@ -1015,7 +1044,8 @@ namespace JPPhotoManager.Tests.Integration
             mock.Mock<IStorageService>().Setup(s => s.GetFileNames(It.IsAny<string>())).Throws(new IOException());
             mock.Mock<IStorageService>().Setup(s => s.ResolveDataDirectory(It.IsAny<double>())).Returns(appDataFolder);
 
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var folderRepository = mock.Container.Resolve<IFolderRepository>();
+            var assetRepository = mock.Container.Resolve<IAssetRepository>();
             var catalogAssetsService = mock.Container.Resolve<ICatalogAssetsService>();
             var moveAssetsService = mock.Container.Resolve<IMoveAssetsService>();
 
@@ -1030,7 +1060,8 @@ namespace JPPhotoManager.Tests.Integration
             var processedAssets = statusChanges.Where(s => s.Asset != null).Select(s => s.Asset).ToList();
             var exceptions = statusChanges.Where(s => s.Exception != null).Select(s => s.Exception).ToList();
 
-            var repositoryAssets = repository.GetAssets(_dataDirectory, 0);
+            var folder = folderRepository.GetFolderByPath(_dataDirectory);
+            var repositoryAssets = assetRepository.GetAssets(folder, 0);
             processedAssets.Should().BeEmpty();
             repositoryAssets.Items.Should().BeEmpty();
             exceptions.Should().ContainSingle();

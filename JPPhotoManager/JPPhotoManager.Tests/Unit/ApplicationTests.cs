@@ -3,6 +3,7 @@ using Autofac.Extras.Moq;
 using FluentAssertions;
 using JPPhotoManager.Domain;
 using JPPhotoManager.Domain.Interfaces;
+using Moq;
 using System.IO;
 using Xunit;
 
@@ -37,7 +38,7 @@ namespace JPPhotoManager.Tests.Unit
             };
 
             using var mock = AutoMock.GetLoose();
-            mock.Mock<IAssetRepository>().Setup(m => m.GetAssets(directory, 0)).Returns(new PaginatedData<Asset> { Items = expectedResult });
+            mock.Mock<IAssetRepository>().Setup(m => m.GetAssets(It.Is<Folder>(f => f.Path == directory), 0)).Returns(new PaginatedData<Asset> { Items = expectedResult });
 
             var app = mock.Container.Resolve<Application.Application>();
 
