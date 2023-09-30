@@ -373,13 +373,17 @@ namespace JPPhotoManager.Infrastructure
         {
             lock (_syncLock)
             {
-                _appDbContext
-                    .SyncAssetsDirectoriesDefinitions
-                    .RemoveRange(_appDbContext.SyncAssetsDirectoriesDefinitions);
-
-                _appDbContext
-                    .SyncAssetsDirectoriesDefinitions
-                    .AddRange(syncAssetsConfiguration.Definitions);
+                foreach (var definition in syncAssetsConfiguration.Definitions)
+                {
+                    if (definition.Id > 0)
+                    {
+                        _appDbContext.SyncAssetsDirectoriesDefinitions.Update(definition);
+                    }
+                    else
+                    {
+                        _appDbContext.SyncAssetsDirectoriesDefinitions.Add(definition);
+                    }
+                }
 
                 _appDbContext.SaveChanges();
             }
