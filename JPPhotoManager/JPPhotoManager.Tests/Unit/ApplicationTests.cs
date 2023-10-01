@@ -38,7 +38,9 @@ namespace JPPhotoManager.Tests.Unit
             };
 
             using var mock = AutoMock.GetLoose();
+            mock.Mock<IFolderRepository>().Setup(m => m.GetFolderByPath(directory)).Returns(new Folder { Path = directory });
             mock.Mock<IAssetRepository>().Setup(m => m.GetAssets(It.Is<Folder>(f => f.Path == directory), 0)).Returns(new PaginatedData<Asset> { Items = expectedResult });
+            mock.Mock<IAssetRepository>().Setup(m => m.GetAssetsByFolderId(It.IsAny<int>())).Returns(expectedResult.ToList());
 
             var app = mock.Container.Resolve<Application.Application>();
 
