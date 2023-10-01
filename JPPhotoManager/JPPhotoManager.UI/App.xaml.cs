@@ -43,7 +43,7 @@ namespace JPPhotoManager.UI
                 if (!serviceProvider.GetService<Application.IApplication>().IsAlreadyRunning())
                 {
                     var context = serviceProvider.GetService<AppDbContext>();
-                    context.Database.EnsureCreated();
+                    context.Database.Migrate();
 
                     var mainWindow = serviceProvider.GetService<MainWindow>();
                     mainWindow.Show();
