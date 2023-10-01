@@ -381,8 +381,11 @@ namespace JPPhotoManager.Infrastructure
                 var definitionsToDelete = _appDbContext.SyncAssetsDirectoriesDefinitions.Except(syncAssetsConfiguration.Definitions).ToList();
                 _appDbContext.SyncAssetsDirectoriesDefinitions.RemoveRange(definitionsToDelete);
 
-                foreach (var definition in syncAssetsConfiguration.Definitions)
+                for (int i = 0; i < syncAssetsConfiguration.Definitions.Count; i++)
                 {
+                    var definition = syncAssetsConfiguration.Definitions[i];
+                    definition.Order = i;
+
                     if (definition.Id > 0)
                     {
                         _appDbContext.SyncAssetsDirectoriesDefinitions.Update(definition);
