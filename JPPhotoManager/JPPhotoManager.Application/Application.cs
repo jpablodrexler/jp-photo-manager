@@ -19,7 +19,7 @@ namespace JPPhotoManager.Application
         private readonly IBatchRenameService _batchRenameService;
         private readonly IProcessService _processService;
         private readonly INewReleaseNotificationService _newReleaseNotificationService;
-        private Queue<string> _recentThumbnailsQueue;
+        private readonly Queue<string> _recentThumbnailsQueue;
 
         public Application(
             ISyncAssetsService syncAssetsService,

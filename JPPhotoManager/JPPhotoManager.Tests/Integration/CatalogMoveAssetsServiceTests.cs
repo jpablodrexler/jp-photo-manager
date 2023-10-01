@@ -202,7 +202,6 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<DirectoryComparer>().As<IDirectoryComparer>().SingleInstance();
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
                     cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
-                    cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
@@ -244,6 +243,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
+                    cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
@@ -330,6 +330,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterType<AssetHashCalculatorService>().As<IAssetHashCalculatorService>().SingleInstance();
                     cfg.RegisterType<StorageService>().As<IStorageService>().SingleInstance();
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
+                    cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 }))
