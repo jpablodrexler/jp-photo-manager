@@ -512,6 +512,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
                     cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<RecentTargetPathRepository>().As<IRecentTargetPathRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -649,6 +650,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
                     cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<RecentTargetPathRepository>().As<IRecentTargetPathRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
@@ -785,6 +787,7 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
                     cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<RecentTargetPathRepository>().As<IRecentTargetPathRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                     cfg.RegisterType<MoveAssetsService>().As<IMoveAssetsService>().SingleInstance();
                 });
