@@ -6,15 +6,18 @@ namespace JPPhotoManager.Domain
     public class SyncAssetsService : ISyncAssetsService
     {
         private readonly IAssetRepository _assetRepository;
+        private readonly ISyncAssetsConfigurationRepository _syncAssetsConfigurationRepository;
         private readonly IStorageService _storageService;
         private readonly IDirectoryComparer _directoryComparer;
 
         public SyncAssetsService(
             IAssetRepository assetRepository,
+            ISyncAssetsConfigurationRepository syncAssetsConfigurationRepository,
             IStorageService storageService,
             IDirectoryComparer directoryComparer)
         {
             _assetRepository = assetRepository;
+            _syncAssetsConfigurationRepository = syncAssetsConfigurationRepository;
             _storageService = storageService;
             _directoryComparer = directoryComparer;
         }
@@ -24,7 +27,7 @@ namespace JPPhotoManager.Domain
             return await Task.Run(() =>
             {
                 List<SyncAssetsResult> result = new();
-                var configuration = _assetRepository.GetSyncAssetsConfiguration();
+                var configuration = _syncAssetsConfigurationRepository.GetSyncAssetsConfiguration();
 
                 foreach (var definition in configuration.Definitions)
                 {

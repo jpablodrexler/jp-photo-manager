@@ -212,10 +212,11 @@ namespace JPPhotoManager.Tests.Integration
                     cfg.RegisterInstance(new AppDbContext(_contextOptions));
                     cfg.RegisterType<FolderRepository>().As<IFolderRepository>().SingleInstance();
                     cfg.RegisterType<AssetRepository>().As<IAssetRepository>().SingleInstance();
+                    cfg.RegisterType<SyncAssetsConfigurationRepository>().As<ISyncAssetsConfigurationRepository>().SingleInstance();
                     cfg.RegisterType<CatalogAssetsService>().As<ICatalogAssetsService>().SingleInstance();
                 });
 
-            var repository = mock.Container.Resolve<IAssetRepository>();
+            var repository = mock.Container.Resolve<ISyncAssetsConfigurationRepository>();
 
             SyncAssetsConfiguration syncConfiguration = new();
 

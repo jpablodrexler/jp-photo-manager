@@ -13,8 +13,6 @@ namespace JPPhotoManager.Domain.Interfaces
         void DeleteAsset(Folder folder, string deletedFileName);
         bool ContainsThumbnail(Folder folder, string fileName);
         BitmapImage LoadThumbnail(Folder folder, string fileName, int width, int height);
-        SyncAssetsConfiguration GetSyncAssetsConfiguration();
-        void SaveSyncAssetsConfiguration(SyncAssetsConfiguration syncAssetsConfiguration);
         void DeleteThumbnails(Folder folder);
         void DeleteThumbnail(string thumbnailBlobName);
         string[] GetThumbnailsList();

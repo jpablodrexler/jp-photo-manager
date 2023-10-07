@@ -31,7 +31,7 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
 
-            mock.Mock<IAssetRepository>().Setup(r => r.GetSyncAssetsConfiguration())
+            mock.Mock<ISyncAssetsConfigurationRepository>().Setup(r => r.GetSyncAssetsConfiguration())
                 .Returns(syncConfiguration);
 
             mock.Mock<IStorageService>().Setup(s => s.FolderExists(sourceDirectory))
@@ -46,7 +46,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            mock.Mock<IAssetRepository>().Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
+            mock.Mock<ISyncAssetsConfigurationRepository>().Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
             result.Should().ContainSingle();
@@ -84,7 +84,7 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
 
-            mock.Mock<IAssetRepository>().Setup(r => r.GetSyncAssetsConfiguration())
+            mock.Mock<ISyncAssetsConfigurationRepository>().Setup(r => r.GetSyncAssetsConfiguration())
                 .Returns(syncConfiguration);
 
             mock.Mock<IStorageService>().Setup(s => s.FolderExists(sourceDirectory))
@@ -105,7 +105,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            mock.Mock<IAssetRepository>().Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
+            mock.Mock<ISyncAssetsConfigurationRepository>().Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
@@ -158,7 +158,7 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
 
-            mock.Mock<IAssetRepository>().Setup(r => r.GetSyncAssetsConfiguration())
+            mock.Mock<ISyncAssetsConfigurationRepository>().Setup(r => r.GetSyncAssetsConfiguration())
                 .Returns(syncConfiguration);
 
             mock.Mock<IStorageService>().Setup(s => s.FolderExists(sourceDirectory))
@@ -182,7 +182,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            mock.Mock<IAssetRepository>().Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
+            mock.Mock<ISyncAssetsConfigurationRepository>().Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
             mock.Mock<IStorageService>().Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);
@@ -228,12 +228,13 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
 
-            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetRepository> assetRepositoryMock = new();
+            Mock<ISyncAssetsConfigurationRepository> syncAssetsConfigurationRepositoryMock = new();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+            syncAssetsConfigurationRepositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
                 .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
@@ -252,7 +253,8 @@ namespace JPPhotoManager.Tests.Unit
                 .Returns(true);
 
             SyncAssetsService syncAssetsService = new(
-                repositoryMock.Object,
+                assetRepositoryMock.Object,
+                syncAssetsConfigurationRepositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
@@ -260,7 +262,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
+            syncAssetsConfigurationRepositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
             result.Should().ContainSingle();
@@ -327,12 +329,13 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = secondDestinationDirectory
                 });
 
-            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetRepository> assetRepositoryMock = new();
+            Mock<ISyncAssetsConfigurationRepository> syncAssetsConfigurationRepositoryMock = new();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+            syncAssetsConfigurationRepositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
                 .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(firstSourceDirectory))
@@ -363,7 +366,8 @@ namespace JPPhotoManager.Tests.Unit
                 .Returns(true);
 
             SyncAssetsService syncAssetsService = new(
-                repositoryMock.Object,
+                assetRepositoryMock.Object,
+                syncAssetsConfigurationRepositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
@@ -371,7 +375,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
+            syncAssetsConfigurationRepositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(firstSourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(secondSourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyFirstGame\Screenshots\NewImage1.jpg", @"C:\Images\MyFirstGame\NewImage1.jpg"), Times.Once);
@@ -442,12 +446,13 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
 
-            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetRepository> assetRepositoryMock = new();
+            Mock<ISyncAssetsConfigurationRepository> syncAssetsConfigurationRepositoryMock = new();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+            syncAssetsConfigurationRepositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
                 .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
@@ -486,7 +491,8 @@ namespace JPPhotoManager.Tests.Unit
                 .Returns(true);
 
             SyncAssetsService syncAssetsService = new(
-                repositoryMock.Object,
+                assetRepositoryMock.Object,
+                syncAssetsConfigurationRepositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
@@ -494,7 +500,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
+            syncAssetsConfigurationRepositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(destinationDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(destinationSubDirectory1), Times.Once);
@@ -568,12 +574,13 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
 
-            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetRepository> assetRepositoryMock = new();
+            Mock<ISyncAssetsConfigurationRepository> syncAssetsConfigurationRepositoryMock = new();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+            syncAssetsConfigurationRepositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
                 .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
@@ -622,7 +629,8 @@ namespace JPPhotoManager.Tests.Unit
                 .Returns(true);
 
             SyncAssetsService syncAssetsService = new(
-                repositoryMock.Object,
+                assetRepositoryMock.Object,
+                syncAssetsConfigurationRepositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
@@ -630,7 +638,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
+            syncAssetsConfigurationRepositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(destinationDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(destinationSubDirectory1), Times.Once);
@@ -703,12 +711,13 @@ namespace JPPhotoManager.Tests.Unit
                     IncludeSubFolders = true
                 });
 
-            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetRepository> assetRepositoryMock = new();
+            Mock<ISyncAssetsConfigurationRepository> syncAssetsConfigurationRepositoryMock = new();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+            syncAssetsConfigurationRepositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
                 .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
@@ -761,7 +770,8 @@ namespace JPPhotoManager.Tests.Unit
                 .Returns(true);
 
             SyncAssetsService syncAssetsService = new(
-                repositoryMock.Object,
+                assetRepositoryMock.Object,
+                syncAssetsConfigurationRepositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
@@ -769,7 +779,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
+            syncAssetsConfigurationRepositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceSubDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(destinationDirectory), Times.Once);
@@ -840,12 +850,13 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
 
-            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetRepository> assetRepositoryMock = new();
+            Mock<ISyncAssetsConfigurationRepository> syncAssetsConfigurationRepositoryMock = new();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+            syncAssetsConfigurationRepositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
                 .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
@@ -884,7 +895,8 @@ namespace JPPhotoManager.Tests.Unit
                 .Returns(true);
 
             SyncAssetsService syncAssetsService = new(
-                repositoryMock.Object,
+                assetRepositoryMock.Object,
+                syncAssetsConfigurationRepositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
@@ -892,7 +904,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
+            syncAssetsConfigurationRepositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(destinationDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(destinationSubDirectory1), Times.Once);
@@ -1053,12 +1065,13 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
 
-            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetRepository> assetRepositoryMock = new();
+            Mock<ISyncAssetsConfigurationRepository> syncAssetsConfigurationRepositoryMock = new();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+            syncAssetsConfigurationRepositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
                 .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
@@ -1068,7 +1081,8 @@ namespace JPPhotoManager.Tests.Unit
                 .Returns(true);
 
             SyncAssetsService syncAssetsService = new(
-                repositoryMock.Object,
+                assetRepositoryMock.Object,
+                syncAssetsConfigurationRepositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
@@ -1076,7 +1090,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
+            syncAssetsConfigurationRepositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Never);
             storageServiceMock.Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
             result.Should().ContainSingle();
@@ -1102,12 +1116,13 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
 
-            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetRepository> assetRepositoryMock = new();
+            Mock<ISyncAssetsConfigurationRepository> syncAssetsConfigurationRepositoryMock = new();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+            syncAssetsConfigurationRepositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
                 .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
@@ -1117,7 +1132,8 @@ namespace JPPhotoManager.Tests.Unit
                 .Returns(false);
 
             SyncAssetsService syncAssetsService = new(
-                repositoryMock.Object,
+                assetRepositoryMock.Object,
+                syncAssetsConfigurationRepositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
@@ -1125,7 +1141,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
+            syncAssetsConfigurationRepositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.CreateDirectory(destinationDirectory), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -1152,12 +1168,13 @@ namespace JPPhotoManager.Tests.Unit
                     DestinationDirectory = destinationDirectory
                 });
 
-            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetRepository> assetRepositoryMock = new();
+            Mock<ISyncAssetsConfigurationRepository> syncAssetsConfigurationRepositoryMock = new();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+            syncAssetsConfigurationRepositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
                 .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
@@ -1170,7 +1187,8 @@ namespace JPPhotoManager.Tests.Unit
                 .Throws(new DirectoryNotFoundException());
 
             SyncAssetsService syncAssetsService = new(
-                repositoryMock.Object,
+                assetRepositoryMock.Object,
+                syncAssetsConfigurationRepositoryMock.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
@@ -1178,7 +1196,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
+            syncAssetsConfigurationRepositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Never);
             storageServiceMock.Verify(s => s.CopyImage(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
             result.Should().ContainSingle();
@@ -1213,12 +1231,13 @@ namespace JPPhotoManager.Tests.Unit
                     IncludeSubFolders = true
                 });
 
-            Mock<IAssetRepository> repositoryMock = new();
+            Mock<IAssetRepository> assetRepositoryMock = new();
+            Mock<ISyncAssetsConfigurationRepository> syncAssetsConfigurationRepository = new();
             Mock<IAssetHashCalculatorService> hashCalculatorMock = new();
             Mock<IStorageService> storageServiceMock = new();
             Mock<IUserConfigurationService> userConfigurationServiceMock = new();
 
-            repositoryMock.Setup(r => r.GetSyncAssetsConfiguration())
+            syncAssetsConfigurationRepository.Setup(r => r.GetSyncAssetsConfiguration())
                 .Returns(syncConfiguration);
 
             storageServiceMock.Setup(s => s.FolderExists(sourceDirectory))
@@ -1245,7 +1264,8 @@ namespace JPPhotoManager.Tests.Unit
             storageServiceMock.Setup(s => s.GetSubDirectories(sourceSubDirectory)).Returns(new List<DirectoryInfo>());
 
             SyncAssetsService syncAssetsService = new(
-                repositoryMock.Object,
+                assetRepositoryMock.Object,
+                syncAssetsConfigurationRepository.Object,
                 storageServiceMock.Object,
                 new DirectoryComparer(storageServiceMock.Object));
 
@@ -1253,7 +1273,7 @@ namespace JPPhotoManager.Tests.Unit
 
             var result = await syncAssetsService.ExecuteAsync(e => statusChanges.Add(e));
 
-            repositoryMock.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
+            syncAssetsConfigurationRepository.Verify(r => r.GetSyncAssetsConfiguration(), Times.Once);
             storageServiceMock.Verify(s => s.GetFileNames(sourceDirectory), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage1.jpg", @"C:\Images\MyGame\NewImage1.jpg"), Times.Once);
             storageServiceMock.Verify(s => s.CopyImage(@"C:\MyGame\Screenshots\NewImage2.jpg", @"C:\Images\MyGame\NewImage2.jpg"), Times.Once);

@@ -10,6 +10,7 @@ namespace JPPhotoManager.Application
         private readonly IAssetRepository _assetRepository;
         private readonly IFolderRepository _folderRepository;
         private readonly IRecentTargetPathRepository _recentTargetPathRepository;
+        private readonly ISyncAssetsConfigurationRepository _syncAssetsConfigurationRepository;
         private readonly ISyncAssetsService _syncAssetsService;
         private readonly ICatalogAssetsService _catalogAssetsService;
         private readonly IMoveAssetsService _moveAssetsService;
@@ -29,6 +30,7 @@ namespace JPPhotoManager.Application
             IAssetRepository assetRepository,
             IFolderRepository folderRepository,
             IRecentTargetPathRepository recentTargetPathRepository,
+            ISyncAssetsConfigurationRepository syncAssetsConfigurationRepository,
             IUserConfigurationService userConfigurationService,
             IStorageService storageService,
             IBatchRenameService batchRenameService,
@@ -42,6 +44,7 @@ namespace JPPhotoManager.Application
             _assetRepository = assetRepository;
             _folderRepository = folderRepository;
             _recentTargetPathRepository = recentTargetPathRepository;
+            _syncAssetsConfigurationRepository = syncAssetsConfigurationRepository;
             _userConfigurationService = userConfigurationService;
             _storageService = storageService;
             _batchRenameService = batchRenameService;
@@ -98,14 +101,14 @@ namespace JPPhotoManager.Application
 
         public SyncAssetsConfiguration GetSyncAssetsConfiguration()
         {
-            return _assetRepository.GetSyncAssetsConfiguration();
+            return _syncAssetsConfigurationRepository.GetSyncAssetsConfiguration();
         }
 
         public void SetSyncAssetsConfiguration(SyncAssetsConfiguration syncConfiguration)
         {
             syncConfiguration.Validate();
             syncConfiguration.Normalize();
-            _assetRepository.SaveSyncAssetsConfiguration(syncConfiguration);
+            _syncAssetsConfigurationRepository.SaveSyncAssetsConfiguration(syncConfiguration);
         }
 
         public async Task<List<SyncAssetsResult>> SyncAssetsAsync(ProcessStatusChangedCallback callback) => await _syncAssetsService.ExecuteAsync(callback);
