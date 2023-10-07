@@ -1,7 +1,7 @@
 ﻿using FluentAssertions;
-using JPPhotoManager.Domain;
-using JPPhotoManager.Domain.Interfaces;
-using JPPhotoManager.Infrastructure;
+using JPPhotoManager.Domain.Entities;
+using JPPhotoManager.Domain.Interfaces.Services;
+using JPPhotoManager.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using System.IO;

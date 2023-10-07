@@ -1,6 +1,9 @@
-﻿using JPPhotoManager.Domain;
-using JPPhotoManager.Domain.Interfaces;
+﻿using JPPhotoManager.Domain.Interfaces.Repositories;
+using JPPhotoManager.Domain.Interfaces.Services;
+using JPPhotoManager.Domain.Services;
 using JPPhotoManager.Infrastructure;
+using JPPhotoManager.Infrastructure.Repositories;
+using JPPhotoManager.Infrastructure.Services;
 using JPPhotoManager.UI.ViewModels;
 using JPPhotoManager.UI.Windows;
 using log4net;
@@ -9,7 +12,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.Configuration;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -83,6 +85,7 @@ namespace JPPhotoManager.UI
             services.AddSingleton<IFolderRepository, FolderRepository>();
             services.AddSingleton<IAssetRepository, AssetRepository>();
             services.AddSingleton<IRecentTargetPathRepository, RecentTargetPathRepository>();
+            services.AddSingleton<ISyncAssetsConfigurationRepository, SyncAssetsConfigurationRepository>();
             services.AddSingleton<IAssetHashCalculatorService, AssetHashCalculatorService>();
             services.AddSingleton<ICatalogAssetsService, CatalogAssetsService>();
             services.AddSingleton<IMoveAssetsService, MoveAssetsService>();

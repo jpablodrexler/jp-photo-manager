@@ -1,4 +1,6 @@
-﻿namespace JPPhotoManager.Domain
+﻿using JPPhotoManager.Domain.Entities;
+
+namespace JPPhotoManager.Domain
 {
     public delegate void ProcessStatusChangedCallback(ProcessStatusChangedCallbackEventArgs e);
     public delegate void CatalogChangeCallback(CatalogChangeCallbackEventArgs e);

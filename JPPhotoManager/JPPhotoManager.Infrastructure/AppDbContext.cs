@@ -1,4 +1,4 @@
-﻿using JPPhotoManager.Domain;
+﻿using JPPhotoManager.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 

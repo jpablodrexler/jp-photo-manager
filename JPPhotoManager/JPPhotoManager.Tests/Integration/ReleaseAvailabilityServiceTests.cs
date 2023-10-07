@@ -1,8 +1,9 @@
 ﻿using Autofac;
 using Autofac.Extras.Moq;
 using FluentAssertions;
-using JPPhotoManager.Domain.Interfaces;
+using JPPhotoManager.Domain.Interfaces.Services;
 using JPPhotoManager.Infrastructure;
+using JPPhotoManager.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Moq;
 using System.IO;

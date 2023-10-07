@@ -2,8 +2,13 @@
 using Autofac.Extras.Moq;
 using FluentAssertions;
 using JPPhotoManager.Domain;
-using JPPhotoManager.Domain.Interfaces;
+using JPPhotoManager.Domain.Entities;
+using JPPhotoManager.Domain.Interfaces.Repositories;
+using JPPhotoManager.Domain.Interfaces.Services;
+using JPPhotoManager.Domain.Services;
 using JPPhotoManager.Infrastructure;
+using JPPhotoManager.Infrastructure.Repositories;
+using JPPhotoManager.Infrastructure.Services;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

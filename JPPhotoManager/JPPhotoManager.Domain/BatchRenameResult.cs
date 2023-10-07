@@ -1,4 +1,6 @@
-﻿namespace JPPhotoManager.Domain
+﻿using JPPhotoManager.Domain.Entities;
+
+namespace JPPhotoManager.Domain
 {
     public class BatchRenameResult
     {

@@ -1,5 +1,7 @@
 ﻿using JPPhotoManager.Domain;
-using JPPhotoManager.Domain.Interfaces;
+using JPPhotoManager.Domain.Entities;
+using JPPhotoManager.Domain.Interfaces.Repositories;
+using JPPhotoManager.Domain.Interfaces.Services;
 using System.Reflection;
 using System.Windows.Media.Imaging;
 

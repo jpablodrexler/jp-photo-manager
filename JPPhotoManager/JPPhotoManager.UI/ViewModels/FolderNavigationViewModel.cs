@@ -1,5 +1,5 @@
 ﻿using JPPhotoManager.Application;
-using JPPhotoManager.Domain;
+using JPPhotoManager.Domain.Entities;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
