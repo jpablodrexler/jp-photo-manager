@@ -36,6 +36,8 @@ Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoM
 ## Technologies used
 * [.NET 6.0](https://dotnet.microsoft.com/)
 * [Windows Presentation Foundation](https://docs.microsoft.com/en-us/dotnet/framework/wpf/)
+* [Entity Framework Core](https://github.com/dotnet/efcore)
+* [SQLite](https://www.sqlite.org/index.html)
 * [xUnit](https://xunit.net/)
 * [Moq framework for .NET](https://github.com/moq/moq4)
 * [Fluent Assertions](https://fluentassertions.com/)
