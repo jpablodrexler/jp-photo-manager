@@ -62,34 +62,6 @@ namespace JPPhotoManager.Infrastructure.Repositories
             return result;
         }
 
-        public List<SyncAssetsDirectoriesDefinition> ReadSyncDefinitions()
-        {
-            List<SyncAssetsDirectoriesDefinition> result = null;
-
-
-            lock (_syncLock)
-            {
-                result = _appDbContext.SyncAssetsDirectoriesDefinitions.ToList();
-            }
-
-            return result;
-        }
-
-        public List<string> ReadRecentTargetPaths()
-        {
-            List<string> result = null;
-
-            lock (_syncLock)
-            {
-                result = _appDbContext
-                    .RecentTargetPaths
-                    .Select(p => p.Path)
-                    .ToList();
-            }
-
-            return result;
-        }
-
         public void DeleteThumbnails(Folder folder)
         {
             var assets = GetAssetsByFolderId(folder.FolderId);
