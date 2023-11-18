@@ -20,16 +20,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.21">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.21" />
-	<PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
-	<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
-	<PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="6.0.0" />
-	<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
-    <PackageReference Include="Octokit" Version="0.50.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
+	<PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+	<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.0" />
+	<PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="8.0.0" />
+	<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Octokit" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>
