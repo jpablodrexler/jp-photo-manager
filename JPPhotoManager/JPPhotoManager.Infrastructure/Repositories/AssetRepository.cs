@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.IO;
 using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.Infrastructure.Repositories
@@ -333,24 +332,24 @@ namespace JPPhotoManager.Infrastructure.Repositories
 
         private string GetBinaryFilePath(string binaryFileName) => Path.Combine(_userConfigurationService.GetBinaryFilesDirectory(), binaryFileName);
 
-        public object ReadFromBinaryFile(string binaryFileName)
+        public byte[] ReadFromBinaryFile(string binaryFileName)
         {
-            object result = null;
+            byte[] result = null;
             var binaryFilePath = GetBinaryFilePath(binaryFileName);
 
             if (File.Exists(binaryFilePath))
             {
                 using (FileStream fileStream = new(binaryFilePath, FileMode.Open))
                 {
-                    BinaryFormatter binaryFormatter = new();
-                    result = binaryFormatter.Deserialize(fileStream);
+                    result = new byte[fileStream.Length];
+                    fileStream.Read(result, 0, result.Length);
                 }
             }
 
             return result;
         }
 
-        public void WriteToBinaryFile(object anObject, string binaryFileName)
+        public void WriteToBinaryFile(byte[] thumbnailData, string binaryFileName)
         {
             Directory.CreateDirectory(_userConfigurationService.GetAppFilesDirectory());
             Directory.CreateDirectory(_userConfigurationService.GetBinaryFilesDirectory());
@@ -359,8 +358,7 @@ namespace JPPhotoManager.Infrastructure.Repositories
 
             using (FileStream fileStream = new(binaryFilePath, FileMode.Create))
             {
-                BinaryFormatter binaryFormatter = new();
-                binaryFormatter.Serialize(fileStream, anObject);
+                fileStream.Write(thumbnailData, 0, thumbnailData.Length);
             }
         }
     }
