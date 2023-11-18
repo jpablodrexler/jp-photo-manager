@@ -45,6 +45,8 @@ namespace JPPhotoManager.UI
                 if (!serviceProvider.GetService<Application.IApplication>().IsAlreadyRunning())
                 {
                     var context = serviceProvider.GetService<AppDbContext>();
+                    var storageService = serviceProvider.GetService<IStorageService>();
+                    storageService.InitializeDatabaseDirectory();
                     context.Database.Migrate();
 
                     var mainWindow = serviceProvider.GetService<MainWindow>();

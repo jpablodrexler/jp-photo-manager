@@ -351,8 +351,7 @@ namespace JPPhotoManager.Infrastructure.Repositories
 
         public void WriteToBinaryFile(byte[] thumbnailData, string binaryFileName)
         {
-            Directory.CreateDirectory(_userConfigurationService.GetAppFilesDirectory());
-            Directory.CreateDirectory(_userConfigurationService.GetBinaryFilesDirectory());
+            _storageService.InitializeBinaryFilesDirectory();
 
             var binaryFilePath = GetBinaryFilePath(binaryFileName);
 

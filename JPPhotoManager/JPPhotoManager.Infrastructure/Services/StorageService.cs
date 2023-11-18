@@ -200,5 +200,17 @@ namespace JPPhotoManager.Infrastructure.Services
                 asset.FileModificationDateTime = info.LastWriteTime;
             }
         }
+
+        public void InitializeDatabaseDirectory()
+        {
+            Directory.CreateDirectory(_userConfigurationService.GetAppFilesDirectory());
+            Directory.CreateDirectory(_userConfigurationService.GetDatabaseDirectory());
+        }
+
+        public void InitializeBinaryFilesDirectory()
+        {
+            Directory.CreateDirectory(_userConfigurationService.GetAppFilesDirectory());
+            Directory.CreateDirectory(_userConfigurationService.GetBinaryFilesDirectory());
+        }
     }
 }
