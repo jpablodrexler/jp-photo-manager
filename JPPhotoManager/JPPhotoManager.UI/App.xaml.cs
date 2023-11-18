@@ -74,6 +74,7 @@ namespace JPPhotoManager.UI
 
             var connectionString = configuration.GetConnectionString("SqliteConnection");
             connectionString = connectionString.Replace("{ApplicationData}", Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+            connectionString = connectionString.Replace("{FileFormat}", UserConfigurationService.FILE_FORMAT);
             connectionString = connectionString.Replace("\\", "/");
 
             services.AddSingleton(configuration);

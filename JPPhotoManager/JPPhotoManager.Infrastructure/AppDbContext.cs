@@ -1,4 +1,5 @@
 ﻿using JPPhotoManager.Domain.Entities;
+using JPPhotoManager.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
@@ -35,6 +36,7 @@ namespace JPPhotoManager.Infrastructure
 
                 var connectionString = configuration.GetConnectionString("SqliteConnection");
                 connectionString = connectionString.Replace("{ApplicationData}", Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+                connectionString = connectionString.Replace("{FileFormat}", UserConfigurationService.FILE_FORMAT);
                 connectionString = connectionString.Replace("\\", "/");
                 optionsBuilder.UseSqlite(connectionString);
             }

@@ -19,14 +19,15 @@ namespace JPPhotoManager.Infrastructure.Services
         private const string ADDITIONAL_PHOTOS_DIRECTORIES_KEY = "appsettings:AdditionalPhotosDirectories";
         private const string MY_PICTURES_VALUE = "{MyPictures}";
         private const string APPLICATION_DATA_DIRECTORY_KEY = "appsettings:ApplicationDataDirectory";
-        private const string APPLICATION_DATA_VALUE = "{ApplicationData}";
+        private const string APPLICATION_DATA_PLACEHOLDER = "{ApplicationData}";
         private const string CATALOG_BATCH_SIZE_KEY = "appsettings:CatalogBatchSize";
         private const string CATALOG_COOLDOWN_MINUTES = "appsettings:CatalogCooldownMinutes";
         private const string THUMBNAILS_DICTIONARY_ENTRIES_TO_KEEP = "appsettings:ThumbnailsDictionaryEntriesToKeep";
         private const string APPLICATION_NAME = "JPPhotoManager";
         private const string REPOSITORY_OWNER = "appsettings:Repository:Owner";
         private const string REPOSITORY_NAME = "appsettings:Repository:Name";
-        private const string BINARY_FORMAT = "dotnet8";
+        private const string FILE_FORMAT_PLACEHOLDER = "{FileFormat}";
+        public const string FILE_FORMAT = "v2";
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
@@ -40,9 +41,9 @@ namespace JPPhotoManager.Infrastructure.Services
 
         public string GetAppFilesDirectory() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), GetApplicationDataFolder());
 
-        public string GetBinaryFilesDirectory() => Path.Combine(GetAppFilesDirectory(), BINARY_FORMAT, "Thumbnails");
+        public string GetBinaryFilesDirectory() => Path.Combine(GetAppFilesDirectory(), "Thumbnails");
 
-        public string GetDatabaseDirectory() => Path.Combine(GetAppFilesDirectory(), BINARY_FORMAT);
+        public string GetDatabaseDirectory() => GetAppFilesDirectory();
 
         public string GetPicturesDirectory()
         {
@@ -167,7 +168,8 @@ namespace JPPhotoManager.Infrastructure.Services
                 result = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), APPLICATION_NAME);
             }
 
-            result = result.Replace(APPLICATION_DATA_VALUE, Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+            result = result.Replace(APPLICATION_DATA_PLACEHOLDER, Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+            result = result.Replace(FILE_FORMAT_PLACEHOLDER, FILE_FORMAT);
 
             return result;
         }
