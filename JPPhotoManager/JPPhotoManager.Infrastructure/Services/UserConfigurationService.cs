@@ -26,6 +26,7 @@ namespace JPPhotoManager.Infrastructure.Services
         private const string APPLICATION_NAME = "JPPhotoManager";
         private const string REPOSITORY_OWNER = "appsettings:Repository:Owner";
         private const string REPOSITORY_NAME = "appsettings:Repository:Name";
+        private const string BINARY_FORMAT = "dotnet8";
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
@@ -39,7 +40,9 @@ namespace JPPhotoManager.Infrastructure.Services
 
         public string GetAppFilesDirectory() => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), GetApplicationDataFolder());
 
-        public string GetBinaryFilesDirectory() => Path.Combine(GetAppFilesDirectory(), "Thumbnails");
+        public string GetBinaryFilesDirectory() => Path.Combine(GetAppFilesDirectory(), BINARY_FORMAT, "Thumbnails");
+
+        public string GetDatabaseDirectory() => Path.Combine(GetAppFilesDirectory(), BINARY_FORMAT);
 
         public string GetPicturesDirectory()
         {
