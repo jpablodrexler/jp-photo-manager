@@ -32,5 +32,7 @@ namespace JPPhotoManager.Domain.Interfaces.Services
         bool CopyImage(string sourcePath, string destinationPath);
         bool MoveImage(string sourcePath, string destinationPath);
         void GetFileInformation(Asset asset);
+        void InitializeDatabaseDirectory();
+        void InitializeBinaryFilesDirectory();
     }
 }
