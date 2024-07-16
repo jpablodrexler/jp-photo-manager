@@ -96,6 +96,7 @@ namespace JPPhotoManager.UI.Controls
 
                     scaleTransform.ScaleX = currentScale;
                     scaleTransform.ScaleY = currentScale;
+                    ViewModel.ViewerZoom = currentScale;
                     image.Source = source;
                     backgroundImage.Source = source;
                 }
@@ -113,6 +114,7 @@ namespace JPPhotoManager.UI.Controls
             currentScale += SCALE_STEP;
             scaleTransform.ScaleX = currentScale;
             scaleTransform.ScaleY = currentScale;
+            ViewModel.ViewerZoom = currentScale;
         }
 
         public void ZoomOut()
@@ -130,6 +132,7 @@ namespace JPPhotoManager.UI.Controls
 
                 scaleTransform.ScaleX = currentScale;
                 scaleTransform.ScaleY = currentScale;
+                ViewModel.ViewerZoom = currentScale;
             }
         }
 

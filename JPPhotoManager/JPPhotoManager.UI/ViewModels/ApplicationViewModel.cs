@@ -39,6 +39,7 @@ namespace JPPhotoManager.UI.ViewModels
         private SortCriteriaEnum _sortCriteria;
         private SortCriteriaEnum _previousSortCriteria;
         private bool _isLoading;
+        private double _viewerZoom;
 
         public bool SortAscending { get; private set; } = true;
 
@@ -106,6 +107,16 @@ namespace JPPhotoManager.UI.ViewModels
         public Visibility LoadingVisible
         {
             get { return LoadingPercent > 0 && LoadingPercent < 100 ? Visibility.Visible : Visibility.Hidden; }
+        }
+
+        public double ViewerZoom
+        {
+            get { return _viewerZoom; }
+            set
+            {
+                _viewerZoom = value;
+                UpdateAppStatus();
+            }
         }
 
         public int ViewerPosition
@@ -353,14 +364,15 @@ namespace JPPhotoManager.UI.ViewModels
             {
                 title = string.Format(
                     Thread.CurrentThread.CurrentCulture,
-                    "{0} {1} - {2} - {3} - image {4} de {5} - sorted by {6}",
+                    "{0} {1} - {2} - {3} - image {4} de {5} - sorted by {6} - zoom {7}%",
                     Product,
                     Version,
                     CurrentFolder,
                     CurrentAsset?.FileName,
                     ViewerPosition + 1,
                     ObservableAssets?.Count,
-                    sortCriteria);
+                    sortCriteria,
+                    (ViewerZoom * 100).ToString("0"));
             }
 
             var percent = GetLoadingPercent();
