@@ -116,6 +116,20 @@ namespace JPPhotoManager.UI.Windows
                             ViewModel?.ChangeAppMode();
                             ShowImage();
                             break;
+
+                        case Key.Add:
+                            if (ViewModel.AppMode == AppModeEnum.Viewer)
+                            {
+                                viewerUserControl.ZoomIn();
+                            }
+                            break;
+
+                        case Key.Subtract:
+                            if (ViewModel.AppMode == AppModeEnum.Viewer)
+                            {
+                                viewerUserControl.ZoomOut();
+                            }
+                            break;
                     }
                 }
             }

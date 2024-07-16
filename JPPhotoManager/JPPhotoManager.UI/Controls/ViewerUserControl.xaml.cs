@@ -18,6 +18,8 @@ namespace JPPhotoManager.UI.Controls
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public event ThumbnailSelectedEventHandler ThumbnailSelected;
+        private const double INITIAL_SCALE = 1.0;
+        private const double SCALE_STEP = 0.05;
 
         public ViewerUserControl()
         {
@@ -82,15 +84,51 @@ namespace JPPhotoManager.UI.Controls
 
                 if (source != null)
                 {
-                    image.Source = source;
+                    fitContent.Visibility = Visibility.Visible;
+                    scrollViewer.Visibility = Visibility.Collapsed;
+
+                    scaleTransform.ScaleX = INITIAL_SCALE;
+                    scaleTransform.ScaleY = INITIAL_SCALE;
+                    fitImage.Source = source;
+                    zoomableImage.Source = source;
                     backgroundImage.Source = source;
                 }
             }
             else
             {
-                image.Source = null;
+                fitImage.Source = null;
+                zoomableImage.Source = null;
                 backgroundImage.Source = null;
             }
+        }
+
+        public void ZoomIn()
+        {
+            fitContent.Visibility = Visibility.Collapsed;
+            scrollViewer.Visibility = Visibility.Visible;
+
+            var currentScale = scaleTransform.ScaleX;
+            currentScale += SCALE_STEP;
+            scaleTransform.ScaleX = currentScale;
+            scaleTransform.ScaleY = currentScale;
+        }
+
+        public void ZoomOut()
+        {
+            fitContent.Visibility = Visibility.Collapsed;
+            scrollViewer.Visibility = Visibility.Visible;
+
+            var currentScale = scaleTransform.ScaleX;
+            currentScale -= SCALE_STEP;
+            
+            // TODO: Display the hotkeys in the GUI.
+            if (currentScale < SCALE_STEP)
+            {
+                currentScale = SCALE_STEP;
+            }
+
+            scaleTransform.ScaleX = currentScale;
+            scaleTransform.ScaleY = currentScale;
         }
     }
 }
