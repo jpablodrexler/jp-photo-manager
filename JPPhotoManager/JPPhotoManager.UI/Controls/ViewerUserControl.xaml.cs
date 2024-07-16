@@ -117,17 +117,26 @@ namespace JPPhotoManager.UI.Controls
 
         public void ZoomOut()
         {
-            var currentScale = scaleTransform.ScaleX;
-            currentScale -= SCALE_STEP;
-            
-            // TODO: Display the hotkeys in the GUI.
-            if (currentScale < SCALE_STEP)
+            if (CanZoom())
             {
-                currentScale = SCALE_STEP;
-            }
+                var currentScale = scaleTransform.ScaleX;
+                currentScale -= SCALE_STEP;
 
-            scaleTransform.ScaleX = currentScale;
-            scaleTransform.ScaleY = currentScale;
+                // TODO: Display the hotkeys in the GUI.
+                if (currentScale < SCALE_STEP)
+                {
+                    currentScale = SCALE_STEP;
+                }
+
+                scaleTransform.ScaleX = currentScale;
+                scaleTransform.ScaleY = currentScale;
+            }
+        }
+
+        private bool CanZoom()
+        {
+            return scrollViewer.ComputedHorizontalScrollBarVisibility == Visibility.Visible ||
+                scrollViewer.ComputedVerticalScrollBarVisibility == Visibility.Visible;
         }
     }
 }
