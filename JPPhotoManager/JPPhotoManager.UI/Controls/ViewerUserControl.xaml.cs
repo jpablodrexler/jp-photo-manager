@@ -18,7 +18,6 @@ namespace JPPhotoManager.UI.Controls
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public event ThumbnailSelectedEventHandler ThumbnailSelected;
-        private const double INITIAL_SCALE = 1.0;
         private const double SCALE_STEP = 0.05;
 
         public ViewerUserControl()
@@ -84,29 +83,32 @@ namespace JPPhotoManager.UI.Controls
 
                 if (source != null)
                 {
-                    fitContent.Visibility = Visibility.Visible;
-                    scrollViewer.Visibility = Visibility.Collapsed;
+                    double imageHeight = source.Height;
+                    double imageWidth = source.Width;
 
-                    scaleTransform.ScaleX = INITIAL_SCALE;
-                    scaleTransform.ScaleY = INITIAL_SCALE;
-                    fitImage.Source = source;
-                    zoomableImage.Source = source;
+                    double availableHeight = scrollViewer.ActualHeight;
+                    double availableWidth = scrollViewer.ActualWidth;
+
+                    double scaleX = availableWidth / imageWidth;
+                    double scaleY = availableHeight / imageHeight;
+
+                    var currentScale = Math.Min(scaleX, scaleY);
+
+                    scaleTransform.ScaleX = currentScale;
+                    scaleTransform.ScaleY = currentScale;
+                    image.Source = source;
                     backgroundImage.Source = source;
                 }
             }
             else
             {
-                fitImage.Source = null;
-                zoomableImage.Source = null;
+                image.Source = null;
                 backgroundImage.Source = null;
             }
         }
 
         public void ZoomIn()
         {
-            fitContent.Visibility = Visibility.Collapsed;
-            scrollViewer.Visibility = Visibility.Visible;
-
             var currentScale = scaleTransform.ScaleX;
             currentScale += SCALE_STEP;
             scaleTransform.ScaleX = currentScale;
@@ -115,9 +117,6 @@ namespace JPPhotoManager.UI.Controls
 
         public void ZoomOut()
         {
-            fitContent.Visibility = Visibility.Collapsed;
-            scrollViewer.Visibility = Visibility.Visible;
-
             var currentScale = scaleTransform.ScaleX;
             currentScale -= SCALE_STEP;
             

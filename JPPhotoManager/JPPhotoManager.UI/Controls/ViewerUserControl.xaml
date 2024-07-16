@@ -21,16 +21,9 @@
                 <BlurEffect Radius="100"/>
             </Image.Effect>
         </Image>
-        <ContentControl x:Name="fitContent" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" MouseDoubleClick="ContentControl_MouseDoubleClick">
-            <Image x:Name="fitImage" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.EdgeMode="Aliased">
-                <Image.Effect>
-                    <DropShadowEffect/>
-                </Image.Effect>
-            </Image>
-        </ContentControl>
         <ScrollViewer x:Name="scrollViewer" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Grid.Row="0" Grid.Column="1" Grid.RowSpan="3" MouseDoubleClick="ContentControl_MouseDoubleClick">
             <ContentControl>
-                <Image x:Name="zoomableImage" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.EdgeMode="Aliased">
+                <Image x:Name="image" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.EdgeMode="Aliased">
                     <Image.LayoutTransform>
                         <TransformGroup>
                             <ScaleTransform x:Name="scaleTransform"/>
