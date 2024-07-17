@@ -627,7 +627,7 @@ namespace JPPhotoManager.Tests.Unit.UI.ViewModels
 
         [Theory]
         [InlineData(AppModeEnum.Thumbnails, @"JPPhotoManager v1.0.0.0 - D:\Data - image 4 de 5 - sorted by file name ascending")]
-        [InlineData(AppModeEnum.Viewer, @"JPPhotoManager v1.0.0.0 - D:\Data - Image4.jpg - image 4 de 5 - sorted by file name ascending")]
+        [InlineData(AppModeEnum.Viewer, @"JPPhotoManager v1.0.0.0 - D:\Data - Image4.jpg - image 4 de 5 - sorted by file name ascending - zoom 100%")]
         public void AppTitle_AppMode_ApplyAppTitleFormat(AppModeEnum appMode, string expected)
         {
             Asset[] assets = new Asset[]
@@ -649,6 +649,7 @@ namespace JPPhotoManager.Tests.Unit.UI.ViewModels
             viewModel.ChangeAppMode(appMode);
             viewModel.SetAssets(assets);
             viewModel.ViewerPosition = 3;
+            viewModel.ViewerZoom = 1;
 
             viewModel.AppTitle.Should().Be(expected);
         }
