@@ -42,6 +42,8 @@
                     <MenuItem Header="By File _Modification Date" Click="SortAssetsByFileModificationDateTime_Click" Style="{StaticResource MenuItemStyle}" />
                     <MenuItem Header="By _Thumbnail Creation Date" Click="SortAssetsByThumbnailCreationDateTime_Click" Style="{StaticResource MenuItemStyle}" />
                 </MenuItem>
+                <MenuItem Header="Zoom In (+)" Click="ZoomIn_Click" Style="{StaticResource MenuItemStyle}" IsEnabled="{Binding IsViewerVisible}" />
+                <MenuItem Header="Zoom Out (-)" Click="ZoomOut_Click" Style="{StaticResource MenuItemStyle}" IsEnabled="{Binding IsViewerVisible}" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="About JPPhotoManager..." Click="About_Click" Style="{StaticResource MenuItemStyle}" />
