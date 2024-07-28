@@ -431,6 +431,22 @@ namespace JPPhotoManager.UI.Windows
             ViewModel.SortAssetsByCriteria(SortCriteriaEnum.ThumbnailCreationDateTime);
         }
 
+        private void ZoomIn_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel.AppMode == AppModeEnum.Viewer)
+            {
+                viewerUserControl.ZoomIn();
+            }
+        }
+
+        private void ZoomOut_Click(object sender, RoutedEventArgs e)
+        {
+            if (ViewModel.AppMode == AppModeEnum.Viewer)
+            {
+                viewerUserControl.ZoomOut();
+            }
+        }
+
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             e.Cancel = _catalogTask != null && !_catalogTask.IsCompleted;

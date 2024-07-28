@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 
 namespace JPPhotoManager.UI.Controls
 {
@@ -83,16 +84,7 @@ namespace JPPhotoManager.UI.Controls
 
                 if (source != null)
                 {
-                    double imageHeight = source.Height;
-                    double imageWidth = source.Width;
-
-                    double availableHeight = scrollViewer.ActualHeight;
-                    double availableWidth = scrollViewer.ActualWidth;
-
-                    double scaleX = availableWidth / imageWidth;
-                    double scaleY = availableHeight / imageHeight;
-
-                    var currentScale = Math.Min(scaleX, scaleY);
+                    double currentScale = GetDefaultScale(source);
 
                     scaleTransform.ScaleX = currentScale;
                     scaleTransform.ScaleY = currentScale;
@@ -106,6 +98,22 @@ namespace JPPhotoManager.UI.Controls
                 image.Source = null;
                 backgroundImage.Source = null;
             }
+        }
+
+        private double GetDefaultScale(BitmapImage source)
+        {
+            double imageHeight = source.Height;
+            double imageWidth = source.Width;
+
+            double availableHeight = scrollViewer.ActualHeight;
+            double availableWidth = scrollViewer.ActualWidth;
+
+            double scaleX = availableWidth / imageWidth;
+            double scaleY = availableHeight / imageHeight;
+
+            var currentScale = Math.Min(scaleX, scaleY);
+
+            return currentScale;
         }
 
         public void ZoomIn()
@@ -124,7 +132,6 @@ namespace JPPhotoManager.UI.Controls
                 var currentScale = scaleTransform.ScaleX;
                 currentScale -= SCALE_STEP;
 
-                // TODO: Display the hotkeys in the GUI.
                 if (currentScale < SCALE_STEP)
                 {
                     currentScale = SCALE_STEP;

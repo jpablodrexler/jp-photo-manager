@@ -62,7 +62,7 @@ namespace JPPhotoManager.UI.ViewModels
             private set
             {
                 _appMode = value;
-                NotifyPropertyChanged(nameof(AppMode), nameof(ThumbnailsVisible), nameof(ViewerVisible));
+                NotifyPropertyChanged(nameof(AppMode), nameof(ThumbnailsVisible), nameof(ViewerVisible), nameof(IsViewerVisible));
                 UpdateAppStatus();
             }
         }
@@ -102,6 +102,11 @@ namespace JPPhotoManager.UI.ViewModels
         public Visibility ViewerVisible
         {
             get { return AppMode == AppModeEnum.Viewer ? Visibility.Visible : Visibility.Hidden; }
+        }
+
+        public bool IsViewerVisible
+        {
+            get { return AppMode == AppModeEnum.Viewer; }
         }
 
         public Visibility LoadingVisible
