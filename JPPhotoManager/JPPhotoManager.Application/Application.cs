@@ -14,6 +14,8 @@ namespace JPPhotoManager.Application
         private readonly IRecentTargetPathRepository _recentTargetPathRepository;
         private readonly ISyncAssetsConfigurationRepository _syncAssetsConfigurationRepository;
         private readonly ISyncAssetsService _syncAssetsService;
+        private readonly IConvertAssetsConfigurationRepository _convertAssetsConfigurationRepository;
+        private readonly IConvertAssetsService _convertAssetsService;
         private readonly ICatalogAssetsService _catalogAssetsService;
         private readonly IMoveAssetsService _moveAssetsService;
         private readonly IFindDuplicatedAssetsService _findDuplicatedAssetsService;
@@ -26,6 +28,7 @@ namespace JPPhotoManager.Application
 
         public Application(
             ISyncAssetsService syncAssetsService,
+            IConvertAssetsService convertAssetsService,
             ICatalogAssetsService catalogAssetsService,
             IMoveAssetsService moveAssetsService,
             IFindDuplicatedAssetsService findDuplicatedAssetsService,
@@ -33,6 +36,7 @@ namespace JPPhotoManager.Application
             IFolderRepository folderRepository,
             IRecentTargetPathRepository recentTargetPathRepository,
             ISyncAssetsConfigurationRepository syncAssetsConfigurationRepository,
+            IConvertAssetsConfigurationRepository convertAssetsConfigurationRepository,
             IUserConfigurationService userConfigurationService,
             IStorageService storageService,
             IBatchRenameService batchRenameService,
@@ -40,6 +44,7 @@ namespace JPPhotoManager.Application
             INewReleaseNotificationService newReleaseNotificationService)
         {
             _syncAssetsService = syncAssetsService;
+            _convertAssetsService = convertAssetsService;
             _catalogAssetsService = catalogAssetsService;
             _moveAssetsService = moveAssetsService;
             _findDuplicatedAssetsService = findDuplicatedAssetsService;
@@ -47,6 +52,7 @@ namespace JPPhotoManager.Application
             _folderRepository = folderRepository;
             _recentTargetPathRepository = recentTargetPathRepository;
             _syncAssetsConfigurationRepository = syncAssetsConfigurationRepository;
+            _convertAssetsConfigurationRepository = convertAssetsConfigurationRepository;
             _userConfigurationService = userConfigurationService;
             _storageService = storageService;
             _batchRenameService = batchRenameService;
@@ -114,6 +120,20 @@ namespace JPPhotoManager.Application
         }
 
         public async Task<List<SyncAssetsResult>> SyncAssetsAsync(ProcessStatusChangedCallback callback) => await _syncAssetsService.ExecuteAsync(callback);
+
+        public ConvertAssetsConfiguration GetConvertAssetsConfiguration()
+        {
+            return _convertAssetsConfigurationRepository.GetConvertAssetsConfiguration();
+        }
+
+        public void SetConvertAssetsConfiguration(ConvertAssetsConfiguration convertConfiguration)
+        {
+            convertConfiguration.Validate();
+            convertConfiguration.Normalize();
+            _convertAssetsConfigurationRepository.SaveConvertAssetsConfiguration(convertConfiguration);
+        }
+
+        public async Task<List<ConvertAssetsResult>> ConvertAssetsAsync(ProcessStatusChangedCallback callback) => await _convertAssetsService.ExecuteAsync(callback);
 
         public async Task CatalogAssetsAsync(CatalogChangeCallback callback) => await _catalogAssetsService.CatalogAssetsAsync(callback);
 

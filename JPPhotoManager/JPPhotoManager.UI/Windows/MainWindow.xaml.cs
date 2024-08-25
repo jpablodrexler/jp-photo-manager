@@ -299,6 +299,20 @@ namespace JPPhotoManager.UI.Windows
             }
         }
 
+        private void ConvertAssets_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                ConvertAssetsViewModel viewModel = new(_application);
+                ConvertAssetsWindow convertAssetsWindow = new(viewModel);
+                convertAssetsWindow.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex);
+            }
+        }
+
         private void About_Click(object sender, RoutedEventArgs e)
         {
             try

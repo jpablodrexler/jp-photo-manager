@@ -37,8 +37,12 @@ namespace JPPhotoManager.UI.Controls
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
             Initialize();
-            ViewModel.FolderAdded += ViewModel_FolderAdded;
-            ViewModel.FolderRemoved += ViewModel_FolderRemoved;
+
+            if (ViewModel != null)
+            {
+                ViewModel.FolderAdded += ViewModel_FolderAdded;
+                ViewModel.FolderRemoved += ViewModel_FolderRemoved;
+            }
         }
 
         private void ViewModel_FolderAdded(object sender, FolderAddedEventArgs e)

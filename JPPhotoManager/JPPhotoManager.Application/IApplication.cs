@@ -12,6 +12,9 @@ namespace JPPhotoManager.Application
         SyncAssetsConfiguration GetSyncAssetsConfiguration();
         void SetSyncAssetsConfiguration(SyncAssetsConfiguration syncConfiguration);
         Task<List<SyncAssetsResult>> SyncAssetsAsync(ProcessStatusChangedCallback callback);
+        ConvertAssetsConfiguration GetConvertAssetsConfiguration();
+        void SetConvertAssetsConfiguration(ConvertAssetsConfiguration convertConfiguration);
+        Task<List<ConvertAssetsResult>> ConvertAssetsAsync(ProcessStatusChangedCallback callback);
         Task CatalogAssetsAsync(CatalogChangeCallback callback);
         void SetAsWallpaper(Asset asset, WallpaperStyle style);
         List<List<Asset>> GetDuplicatedAssets();

@@ -89,11 +89,13 @@ namespace JPPhotoManager.UI
             services.AddSingleton<IAssetRepository, AssetRepository>();
             services.AddSingleton<IRecentTargetPathRepository, RecentTargetPathRepository>();
             services.AddSingleton<ISyncAssetsConfigurationRepository, SyncAssetsConfigurationRepository>();
+            services.AddSingleton<IConvertAssetsConfigurationRepository, ConvertAssetsConfigurationRepository>();
             services.AddSingleton<IAssetHashCalculatorService, AssetHashCalculatorService>();
             services.AddSingleton<ICatalogAssetsService, CatalogAssetsService>();
             services.AddSingleton<IMoveAssetsService, MoveAssetsService>();
             services.AddSingleton<IFindDuplicatedAssetsService, FindDuplicatedAssetsService>();
             services.AddSingleton<ISyncAssetsService, SyncAssetsService>();
+            services.AddSingleton<IConvertAssetsService, ConvertAssetsService>();
             services.AddSingleton<IReleaseAvailabilityService, GitHubReleaseAvailabilityService>();
             services.AddSingleton<INewReleaseNotificationService, NewReleaseNotificationService>();
             services.AddSingleton<Application.IApplication, Application.Application>();
