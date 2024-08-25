@@ -20,6 +20,7 @@ namespace JPPhotoManager.Infrastructure
         public DbSet<Asset> Assets { get; set; }
         public DbSet<Folder> Folders { get; set; }
         public DbSet<SyncAssetsDirectoriesDefinition> SyncAssetsDirectoriesDefinitions { get; set; }
+        public DbSet<ConvertAssetsDirectoriesDefinition> ConvertAssetsDirectoriesDefinitions { get; set; }
         public DbSet<RecentTargetPath> RecentTargetPaths { get; set; }
 
         /// <inheritdoc/>

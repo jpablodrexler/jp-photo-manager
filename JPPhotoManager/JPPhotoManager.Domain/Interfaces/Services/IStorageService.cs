@@ -15,6 +15,7 @@ namespace JPPhotoManager.Domain.Interfaces.Services
         void WriteObjectToJsonFile(object anObject, string jsonFilePath);
         void DeleteFile(string directory, string fileName);
         string[] GetFileNames(string directory);
+        string[] GetFileNames(string directory, string searchPattern);
         byte[] GetFileBytes(string filePath);
         BitmapImage LoadBitmapImage(byte[] buffer, Rotation rotation, int width, int height);
         BitmapImage LoadBitmapImage(byte[] buffer, int width, int height);

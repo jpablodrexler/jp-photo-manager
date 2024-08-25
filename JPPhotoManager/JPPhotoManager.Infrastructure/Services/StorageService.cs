@@ -81,6 +81,12 @@ namespace JPPhotoManager.Infrastructure.Services
             return files.Select(f => Path.GetFileName(f)).ToArray();
         }
 
+        public string[] GetFileNames(string directory, string searchPattern)
+        {
+            string[] files = Directory.GetFiles(directory, searchPattern);
+            return files.Select(f => Path.GetFileName(f)).ToArray();
+        }
+
         public byte[] GetFileBytes(string filePath)
         {
             return File.ReadAllBytes(filePath);
