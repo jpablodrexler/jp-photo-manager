@@ -98,6 +98,7 @@ namespace JPPhotoManager.UI
             services.AddSingleton<IConvertAssetsService, ConvertAssetsService>();
             services.AddSingleton<IReleaseAvailabilityService, GitHubReleaseAvailabilityService>();
             services.AddSingleton<INewReleaseNotificationService, NewReleaseNotificationService>();
+            services.AddSingleton<IUniqueFileNameProviderService, UniqueFileNameProviderService>();
             services.AddSingleton<Application.IApplication, Application.Application>();
             services.AddSingleton<MainWindow>();
             services.AddSingleton<ApplicationViewModel>();

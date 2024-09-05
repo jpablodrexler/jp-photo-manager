@@ -10,17 +10,20 @@ namespace JPPhotoManager.Domain.Services
         private readonly IAssetRepository _assetRepository;
         private readonly IConvertAssetsConfigurationRepository _convertAssetsConfigurationRepository;
         private readonly IStorageService _storageService;
+        private readonly IUniqueFileNameProviderService _uniqueFileNameProviderService;
         private readonly IDirectoryComparer _directoryComparer;
 
         public ConvertAssetsService(
             IAssetRepository assetRepository,
             IConvertAssetsConfigurationRepository convertAssetsConfigurationRepository,
             IStorageService storageService,
+            IUniqueFileNameProviderService uniqueFileNameProviderService,
             IDirectoryComparer directoryComparer)
         {
             _assetRepository = assetRepository;
             _convertAssetsConfigurationRepository = convertAssetsConfigurationRepository;
             _storageService = storageService;
+            _uniqueFileNameProviderService = uniqueFileNameProviderService;
             _directoryComparer = directoryComparer;
         }
 
@@ -86,27 +89,21 @@ namespace JPPhotoManager.Domain.Services
                         encoder.QualityLevel = 100; // TODO: Could be parametrized.
                         encoder.Frames.Add(BitmapFrame.Create(originalImage));
 
-                        string destinationPath = Path.Combine(destinationDirectory, Path.ChangeExtension(Path.GetFileName(sourceFileName), "jpg"));
+                        string destinationFileName = Path.ChangeExtension(Path.GetFileName(sourceFileName), "jpg");
+                        string destinationPath = _uniqueFileNameProviderService.GetUniqueDestinationPath(destinationDirectory, destinationFileName);
 
-                        if (File.Exists(destinationPath))
+                        using (FileStream fileStream = new FileStream(destinationPath, FileMode.Create))
                         {
-                            callback(new ProcessStatusChangedCallbackEventArgs { NewStatus = $"'{destinationPath}' already exists." });
+                            encoder.Save(fileStream);
                         }
-                        else
-                        {
-                            using (FileStream fileStream = new FileStream(destinationPath, FileMode.Create))
-                            {
-                                encoder.Save(fileStream);
-                            }
 
-                            if (deleteSourceAssets)
-                            {
-                                File.Delete(sourcePath);
-                            }
-                            
-                            result.ConvertedImages++;
-                            callback(new ProcessStatusChangedCallbackEventArgs { NewStatus = $"'{sourcePath}' => '{destinationPath}'" });
+                        if (deleteSourceAssets)
+                        {
+                            File.Delete(sourcePath);
                         }
+
+                        result.ConvertedImages++;
+                        callback(new ProcessStatusChangedCallbackEventArgs { NewStatus = $"'{sourcePath}' => '{destinationPath}'" });
                     }
                     
                     switch (result.ConvertedImages)
