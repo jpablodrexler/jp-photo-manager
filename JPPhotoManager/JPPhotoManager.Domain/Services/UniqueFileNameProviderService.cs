@@ -25,7 +25,7 @@ namespace JPPhotoManager.Domain.Services
                 exists = _storageService.FileExists(Path.Combine(destinationDirectory, uniqueFileName));
             }
 
-            return uniqueFileName;
+            return Path.Combine(destinationDirectory, uniqueFileName);
         }
     }
 }

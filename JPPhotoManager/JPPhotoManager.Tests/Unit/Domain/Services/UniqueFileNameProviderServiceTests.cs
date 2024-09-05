@@ -25,7 +25,7 @@ namespace JPPhotoManager.Tests.Unit.Domain.Services
 
             string result = uniqueFileNameProviderService.GetUniqueDestinationPath(destinationDirectory, destinationFileName);
 
-            result.Should().Be("MyFile.jpg");
+            result.Should().Be(@"C:\Images\MyGame\MyFile.jpg");
         }
 
         [Fact]
@@ -46,7 +46,7 @@ namespace JPPhotoManager.Tests.Unit.Domain.Services
 
             string result = uniqueFileNameProviderService.GetUniqueDestinationPath(destinationDirectory, destinationFileName);
 
-            result.Should().Be("MyFile_1.jpg");
+            result.Should().Be(@"C:\Images\MyGame\MyFile_1.jpg");
         }
 
         [Fact]
@@ -70,7 +70,7 @@ namespace JPPhotoManager.Tests.Unit.Domain.Services
 
             string result = uniqueFileNameProviderService.GetUniqueDestinationPath(destinationDirectory, destinationFileName);
 
-            result.Should().Be("MyFile_4.jpg");
+            result.Should().Be(@"C:\Images\MyGame\MyFile_4.jpg");
         }
 
         [Fact]
@@ -94,7 +94,7 @@ namespace JPPhotoManager.Tests.Unit.Domain.Services
 
             string result = uniqueFileNameProviderService.GetUniqueDestinationPath(destinationDirectory, destinationFileName);
 
-            result.Should().Be("MyFile_2.jpg");
+            result.Should().Be(@"C:\Images\MyGame\MyFile_2.jpg");
         }
     }
 }
