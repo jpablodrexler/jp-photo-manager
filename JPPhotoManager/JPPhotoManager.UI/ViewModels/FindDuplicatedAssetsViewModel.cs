@@ -81,12 +81,12 @@ namespace JPPhotoManager.UI.ViewModels
 
                 DuplicatedAssetViewModel assetViewModel = CurrentDuplicatedAsset;
 
-                if (assetViewModel != null && assetViewModel.Asset != null && assetViewModel.Asset.ImageData == null)
+                if (assetViewModel != null && assetViewModel.Visible != Visibility.Collapsed && assetViewModel.Asset != null && assetViewModel.Asset.ImageData == null)
                 {
                     Application.LoadThumbnail(assetViewModel.Asset);
                 }
 
-                if (assetViewModel != null && assetViewModel.Asset != null && assetViewModel.Asset.ImageData == null)
+                if (assetViewModel != null && assetViewModel.Visible != Visibility.Collapsed && assetViewModel.Asset != null && assetViewModel.Asset.ImageData == null)
                 {
                     Refresh();
                 }
@@ -145,10 +145,10 @@ namespace JPPhotoManager.UI.ViewModels
         {
             var nextVisibleSet = DuplicatedAssetSetsCollection
                 .Where(s => s.Visible == Visibility.Visible
-                    && DuplicatedAssetSetsCollection.IndexOf(s) > currentIndex)
+                    && DuplicatedAssetSetsCollection.IndexOf(s) >= currentIndex)
                 .FirstOrDefault();
 
-            if (nextVisibleSet != null)
+            if (nextVisibleSet != null && DuplicatedAssetSetsCollection.IndexOf(nextVisibleSet) != currentIndex)
             {
                 int nextIndex = DuplicatedAssetSetsCollection.IndexOf(nextVisibleSet);
                 DuplicatedAssetSetsPosition = nextIndex;
@@ -163,10 +163,10 @@ namespace JPPhotoManager.UI.ViewModels
         {
             var previousVisibleSet = DuplicatedAssetSetsCollection
                 .Where(s => s.Visible == Visibility.Visible
-                    && DuplicatedAssetSetsCollection.IndexOf(s) < currentIndex)
+                    && DuplicatedAssetSetsCollection.IndexOf(s) <= currentIndex)
                 .LastOrDefault();
 
-            if (previousVisibleSet != null)
+            if (previousVisibleSet != null && DuplicatedAssetSetsCollection.IndexOf(previousVisibleSet) != currentIndex)
             {
                 int nextIndex = DuplicatedAssetSetsCollection.IndexOf(previousVisibleSet);
                 DuplicatedAssetSetsPosition = nextIndex;
