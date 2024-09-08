@@ -235,17 +235,24 @@ namespace JPPhotoManager.Domain.Services
                     break;
                 }
 
-                Asset newAsset = CreateAsset(directory, fileName);
-                newAsset.ImageData = LoadThumbnail(directory, fileName, newAsset.ThumbnailPixelWidth, newAsset.ThumbnailPixelHeight);
-                cataloguedAssets.Add(newAsset);
-
-                callback?.Invoke(new CatalogChangeCallbackEventArgs
+                try
                 {
-                    Asset = newAsset,
-                    CataloguedAssets = cataloguedAssets,
-                    Message = $"Image {Path.Combine(directory, fileName)} added to catalog",
-                    Reason = ReasonEnum.AssetCreated
-                });
+                    Asset newAsset = CreateAsset(directory, fileName);
+                    newAsset.ImageData = LoadThumbnail(directory, fileName, newAsset.ThumbnailPixelWidth, newAsset.ThumbnailPixelHeight);
+                    cataloguedAssets.Add(newAsset);
+
+                    callback?.Invoke(new CatalogChangeCallbackEventArgs
+                    {
+                        Asset = newAsset,
+                        CataloguedAssets = cataloguedAssets,
+                        Message = $"Image {Path.Combine(directory, fileName)} added to catalog",
+                        Reason = ReasonEnum.AssetCreated
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _log.Error($"Error while adding the file '{fileName}' from the directory '{directory}' to the catalog: {ex}");
+                }
 
                 cataloguedAssetsBatchCount++;
             }
