@@ -464,6 +464,11 @@ namespace JPPhotoManager.UI.Windows
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             e.Cancel = _catalogTask != null && !_catalogTask.IsCompleted;
+
+            if (!e.Cancel)
+            {
+                ViewModel.Application.ShrinkDatabase();
+            }
         }
 
         private async Task DoBackgroundWork()

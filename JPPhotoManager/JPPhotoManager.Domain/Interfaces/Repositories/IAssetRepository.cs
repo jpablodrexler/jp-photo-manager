@@ -18,5 +18,6 @@ namespace JPPhotoManager.Domain.Interfaces.Repositories
         void DeleteThumbnail(string thumbnailBlobName);
         string[] GetThumbnailsList();
         void RemoveThumbnailCache(string thumbnailBlobName);
+        void ShrinkDatabase();
     }
 }

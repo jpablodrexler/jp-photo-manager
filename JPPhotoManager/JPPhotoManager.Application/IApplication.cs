@@ -31,5 +31,6 @@ namespace JPPhotoManager.Application
         Folder[] GetRootCatalogFolders();
         bool IsAlreadyRunning();
         Task<Release> CheckNewReleaseAsyc();
+        void ShrinkDatabase();
     }
 }

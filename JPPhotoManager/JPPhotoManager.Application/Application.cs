@@ -195,5 +195,7 @@ namespace JPPhotoManager.Application
         public async Task<Release> CheckNewReleaseAsyc() => await _newReleaseNotificationService.CheckNewReleaseAsync();
 
         public BatchRenameResult BatchRename(Asset[] sourceAssets, string batchFormat, bool overwriteExistingTargetFiles) => _batchRenameService.BatchRename(sourceAssets, batchFormat, overwriteExistingTargetFiles);
+
+        public void ShrinkDatabase() => _assetRepository.ShrinkDatabase();
     }
 }

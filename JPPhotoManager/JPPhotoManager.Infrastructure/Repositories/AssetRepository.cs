@@ -360,5 +360,10 @@ namespace JPPhotoManager.Infrastructure.Repositories
                 fileStream.Write(thumbnailData, 0, thumbnailData.Length);
             }
         }
+
+        public void ShrinkDatabase()
+        {
+            _appDbContext.Database.ExecuteSqlRaw("VACUUM");
+        }
     }
 }
