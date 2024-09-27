@@ -17,13 +17,6 @@ JPPhotoManager is a desktop application that allows:
 * Export images to shared folders in the local network
 * Delete images in local or shared folders that are not present in source folder
 
-Soon will allow to:
-* Add your own metadata to the images
-* Search images
-* Rename images in batches
-
-For the whole roadmap for the application, please take a look at the issues in this repository.
-
 ## Run the application
 Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoManager/JPPhotoManager.UI/JPPhotoManager.UI.csproj` project.
 
