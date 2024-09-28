@@ -55,25 +55,21 @@ namespace JPPhotoManager.Domain.Services
                 {
                     result = latestReleaseNumbers.major > currentVersionNumbers.major ||
                         latestReleaseNumbers.major == currentVersionNumbers.major
-                            && latestReleaseNumbers.minor > currentVersionNumbers.minor ||
-                        latestReleaseNumbers.major == currentVersionNumbers.major
-                            && latestReleaseNumbers.minor == currentVersionNumbers.minor
-                            && latestReleaseNumbers.build > currentVersionNumbers.build;
+                            && latestReleaseNumbers.minor > currentVersionNumbers.minor;
                 }
             }
 
             return result;
         }
 
-        private (bool isValid, int major, int minor, int build) GetVersionNumbers(string version)
+        private (bool isValid, int major, int minor) GetVersionNumbers(string version)
         {
-            int major, minor = 0, build = 0;
+            int major, minor = 0;
             var parts = version[1..].Split(new[] { '.' });
             bool isValid = int.TryParse(parts[0], out major)
-                && int.TryParse(parts[1], out minor)
-                && int.TryParse(parts[2], out build);
+                && int.TryParse(parts[1], out minor);
 
-            return (isValid, major, minor, build);
+            return (isValid, major, minor);
         }
     }
 }
