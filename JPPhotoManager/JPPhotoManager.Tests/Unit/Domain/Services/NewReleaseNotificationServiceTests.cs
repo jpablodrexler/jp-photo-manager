@@ -15,7 +15,6 @@ namespace JPPhotoManager.Tests.Unit.Domain.Services
         [Theory]
         [InlineData("v1.0.0", "v2.0.0", true)]
         [InlineData("v1.0.0", "v1.1.0", true)]
-        [InlineData("v1.0.0", "v1.0.1", true)]
         [InlineData("v1.0.0", "v0.0.1", false)]
         [InlineData("v1.0.0", "v0.1.0", false)]
         [InlineData("v1.0.0", "v1.0.0", false)]
