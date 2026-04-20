@@ -6,6 +6,8 @@ import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 import com.jpablodrexler.photomanager.domain.repository.*;
 import com.jpablodrexler.photomanager.domain.service.*;
 import lombok.RequiredArgsConstructor;
+import java.io.IOException;
+import java.util.NoSuchElementException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -42,6 +44,9 @@ public class PhotoManagerFacade {
     private final MoveAssetsService moveAssetsService;
     private final SyncAssetsService syncAssetsService;
     private final ConvertAssetsService convertAssetsService;
+    private final StorageService storageService;
+
+    public record AssetImage(byte[] bytes, String fileName) {}
 
     @Value("${photomanager.initial-directory:${user.home}/Pictures}")
     private String initialDirectory;
@@ -152,6 +157,15 @@ public class PhotoManagerFacade {
 
     public String getInitialFolder() {
         return initialDirectory;
+    }
+
+    @Transactional(readOnly = true)
+    public AssetImage getAssetImage(Long assetId) throws IOException {
+        Asset asset = assetRepository.findById(assetId)
+                .orElseThrow(() -> new NoSuchElementException("Asset not found: " + assetId));
+        String filePath = asset.getFolder().getPath() + "/" + asset.getFileName();
+        byte[] bytes = storageService.readFileBytes(filePath);
+        return new AssetImage(bytes, asset.getFileName());
     }
 
     private void saveRecentTargetPath(String path) {
