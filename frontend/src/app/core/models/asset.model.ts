@@ -16,6 +16,7 @@ export interface Asset {
   fileCreationDateTime?: string;
   fileModificationDateTime?: string;
   thumbnailUrl: string;
+  imageUrl: string;
 }
 
 export type SortCriteria =

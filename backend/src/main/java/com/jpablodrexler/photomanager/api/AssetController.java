@@ -55,6 +55,25 @@ public class AssetController {
                 .body(data);
     }
 
+    @GetMapping("/{assetId}/image")
+    public ResponseEntity<byte[]> getFullImage(@PathVariable Long assetId) {
+        try {
+            PhotoManagerFacade.AssetImage image = facade.getAssetImage(assetId);
+            return ResponseEntity.ok()
+                    .contentType(detectMediaType(image.fileName()))
+                    .body(image.bytes());
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    private MediaType detectMediaType(String fileName) {
+        String lower = fileName.toLowerCase();
+        if (lower.endsWith(".png")) return MediaType.IMAGE_PNG;
+        if (lower.endsWith(".gif")) return MediaType.IMAGE_GIF;
+        return MediaType.IMAGE_JPEG;
+    }
+
     @GetMapping("/catalog")
     public SseEmitter catalogAssets() {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
@@ -120,6 +139,7 @@ public class AssetController {
         dto.setFileCreationDateTime(asset.getFileCreationDateTime());
         dto.setFileModificationDateTime(asset.getFileModificationDateTime());
         dto.setThumbnailUrl("/api/assets/" + asset.getAssetId() + "/thumbnail");
+        dto.setImageUrl("/api/assets/" + asset.getAssetId() + "/image");
         return dto;
     }
 }
