@@ -1,0 +1,49 @@
+.gallery-layout {
+  height: 100%;
+  overflow: hidden;
+}
+
+.gallery-toolbar {
+  font-size: 14px;
+
+  .current-folder {
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 400px;
+  }
+}
+
+.thumbnail-grid-container {
+  overflow-y: auto;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px;
+  color: rgba(0, 0, 0, 0.38);
+  font-size: 18px;
+}
+
+.image-viewer {
+  position: relative;
+
+  .viewer-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.4);
+    color: white;
+
+    &--prev { left: 16px; }
+    &--next { right: 16px; }
+
+    &:disabled {
+      opacity: 0.3;
+    }
+  }
+}

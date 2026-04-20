@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: jp-photo-manager
+
+  datasource:
+    url: jdbc:sqlite:${user.home}/.photomanager/photomanager.db
+    driver-class-name: org.sqlite.JDBC
+
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: 8080
+
+photomanager:
+  initial-directory: ${user.home}/Pictures
+  root-catalog-folders: ${user.home}/Pictures
+  catalog-batch-size: 1000
+  catalog-cooldown-minutes: 2
+  thumbnails-directory: ${user.home}/.photomanager/thumbnails
+  github:
+    owner: jpablodrexler
+    repo: jp-photo-manager
+
+logging:
+  level:
+    com.jpablodrexler: INFO
+    org.springframework: WARN
+  file:
+    name: ${user.home}/.photomanager/logs/photomanager.log

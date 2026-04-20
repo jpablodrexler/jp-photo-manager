@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:sqlite::memory:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+
+photomanager:
+  initial-directory: /tmp/photos
+  root-catalog-folders: /tmp/photos
+  thumbnails-directory: /tmp/thumbnails
