@@ -1,0 +1,62 @@
+<div class="duplicates-container p-16">
+  <div class="flex-row" style="align-items: center; gap: 16px; margin-bottom: 16px;">
+    <h2 style="margin: 0;">Duplicate Images</h2>
+    @if (!loading) {
+      <mat-chip>{{ groups.length }} groups, {{ totalDuplicates }} duplicates</mat-chip>
+    }
+    <span style="flex: 1"></span>
+    <button mat-button (click)="loadDuplicates()">
+      <mat-icon>refresh</mat-icon> Refresh
+    </button>
+  </div>
+
+  @if (loading) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (!loading && groups.length === 0) {
+    <div class="empty-state">
+      <mat-icon style="font-size: 64px; width: 64px; height: 64px; color: #4caf50;">check_circle</mat-icon>
+      <p>No duplicate images found.</p>
+    </div>
+  }
+
+  @for (group of groups; track $index) {
+    <mat-card class="group-card">
+      <mat-card-header>
+        <mat-card-title>Group {{ $index + 1 }} — {{ group.assets.length }} files</mat-card-title>
+        <mat-card-subtitle>Hash: {{ group.assets[0].hash | slice:0:16 }}…</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="assets-row">
+          @for (asset of group.assets; track asset.assetId; let i = $index) {
+            <div class="asset-item" [class.keep]="i === group.keepIndex">
+              <img [src]="asset.thumbnailUrl" [alt]="asset.fileName" />
+              <div class="asset-info">
+                <strong>{{ asset.fileName }}</strong>
+                <span>{{ asset.fileSize | fileSize }}</span>
+                <span>{{ asset.folderPath }}</span>
+              </div>
+              <div class="asset-actions">
+                @if (i !== group.keepIndex) {
+                  <button mat-stroked-button (click)="markAsKeep(group, i)">
+                    <mat-icon>star</mat-icon> Keep this
+                  </button>
+                } @else {
+                  <mat-chip color="accent" selected>
+                    <mat-icon>star</mat-icon> Keeping
+                  </mat-chip>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-raised-button color="warn" (click)="deleteGroup(group)">
+          <mat-icon>delete</mat-icon> Delete duplicates (keep {{ group.assets[group.keepIndex].fileName }})
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  }
+</div>
