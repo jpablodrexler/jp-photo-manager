@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:file::memory:?cache=shared
+    driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 1
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+  flyway:
+    enabled: false
+
+photomanager:
+  initial-directory: /tmp/photos
+  root-catalog-folders: /tmp/photos
+  thumbnails-directory: /tmp/thumbnails

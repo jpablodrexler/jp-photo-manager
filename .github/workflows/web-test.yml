@@ -1,0 +1,50 @@
+name: Web Test
+
+on: [push, pull_request]
+
+jobs:
+  backend:
+    name: Backend (Java 21 + Spring Boot)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build
+        run: mvn clean package -DskipTests
+        working-directory: JPPhotoManagerWeb/backend
+
+      - name: Test
+        run: mvn test
+        working-directory: JPPhotoManagerWeb/backend
+
+  frontend:
+    name: Frontend (Angular 19)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: JPPhotoManagerWeb/frontend
+
+      - name: Build
+        run: npm run build:prod
+        working-directory: JPPhotoManagerWeb/frontend
+
+      - name: Test
+        run: npm test -- --watch=false --browsers=ChromeHeadless
+        working-directory: JPPhotoManagerWeb/frontend

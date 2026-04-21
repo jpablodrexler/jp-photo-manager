@@ -1,0 +1,32 @@
+.folder-tree-list {
+  background: transparent;
+
+  .mat-tree-node {
+    cursor: pointer;
+    min-height: 36px;
+    font-size: 13px;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    &.selected {
+      background: rgba(63, 81, 181, 0.12);
+      font-weight: 500;
+    }
+  }
+}
+
+.folder-icon {
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+  margin-right: 4px;
+  color: #ffa726;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  padding: 32px;
+}

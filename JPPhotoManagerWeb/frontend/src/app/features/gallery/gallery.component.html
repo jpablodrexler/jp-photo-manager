@@ -1,0 +1,111 @@
+<div class="gallery-layout full-height flex-row">
+
+  <!-- Folder Navigation -->
+  <div class="folder-tree">
+    <app-folder-nav (folderSelected)="onFolderSelected($event)" />
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex-col">
+
+    <!-- Toolbar -->
+    <mat-toolbar class="gallery-toolbar">
+      <span class="current-folder">{{ currentFolder || 'Select a folder' }}</span>
+      <span style="flex: 1"></span>
+
+      @if (viewMode === 'thumbnails') {
+        <mat-select [(ngModel)]="sortCriteria" (ngModelChange)="onSortChange()" style="width: 160px;">
+          @for (opt of sortOptions; track opt.value) {
+            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+          }
+        </mat-select>
+
+        @if (selectedCount > 0) {
+          <button mat-icon-button [matMenuTriggerFor]="actionsMenu" title="Actions">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #actionsMenu="matMenu">
+            <button mat-menu-item (click)="deleteSelected(false)">
+              <mat-icon>delete_outline</mat-icon> Remove from catalog
+            </button>
+            <button mat-menu-item (click)="deleteSelected(true)">
+              <mat-icon>delete_forever</mat-icon> Delete files
+            </button>
+          </mat-menu>
+        }
+      }
+
+      @if (viewMode === 'viewer') {
+        <button mat-icon-button (click)="zoomOut()"><mat-icon>zoom_out</mat-icon></button>
+        <button mat-icon-button (click)="zoomIn()"><mat-icon>zoom_in</mat-icon></button>
+        <button mat-icon-button (click)="closeViewer()"><mat-icon>grid_view</mat-icon></button>
+      }
+    </mat-toolbar>
+
+    <!-- Catalog progress -->
+    @if (cataloging) {
+      <mat-progress-bar mode="determinate" [value]="catalogProgress" />
+    }
+
+    <!-- Thumbnails View -->
+    @if (viewMode === 'thumbnails') {
+      <div class="thumbnail-grid-container flex-1">
+        <div class="thumbnail-grid">
+          @for (asset of assets; track asset.assetId; let i = $index) {
+            <app-thumbnail
+              [asset]="asset"
+              [selected]="isSelected(asset)"
+              (click)="toggleSelection(asset)"
+              (dblclick)="openViewer(i)"
+            />
+          }
+          @if (assets.length === 0 && currentFolder) {
+            <div class="empty-state">No images found in this folder.</div>
+          }
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      @if (totalPages > 1) {
+        <div class="pagination-bar">
+          <button mat-icon-button (click)="prevPage()" [disabled]="pageIndex === 0">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <span>{{ pageIndex + 1 }} / {{ totalPages }} ({{ totalItems }} items)</span>
+          <button mat-icon-button (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+      }
+    }
+
+    <!-- Viewer -->
+    @if (viewMode === 'viewer' && currentViewerAsset) {
+      <div class="image-viewer flex-1">
+        <button mat-icon-button class="viewer-nav viewer-nav--prev" (click)="viewerPrev()" [disabled]="currentViewerIndex === 0">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <img
+          [src]="currentViewerAsset.imageUrl"
+          [alt]="currentViewerAsset.fileName"
+          [style.transform]="'scale(' + viewerZoom + ')'"
+        />
+        <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="viewerNext()" [disabled]="currentViewerIndex >= assets.length - 1">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    }
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span>{{ currentFolder }}</span>
+      @if (selectedCount > 0) {
+        <span>{{ selectedCount }} selected</span>
+      }
+      @if (statusMessage) {
+        <span>{{ statusMessage }}</span>
+      }
+    </div>
+
+  </div>
+</div>
