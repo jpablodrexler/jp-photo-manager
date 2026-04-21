@@ -1,0 +1,112 @@
+name: Web Release
+
+on:
+  push:
+    tags:
+      - "web-v*"
+
+jobs:
+  backend:
+    name: Backend (Java 21 + Spring Boot)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get the version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/web-v}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build
+        run: mvn clean package -DskipTests -Drevision="${{ steps.get_version.outputs.VERSION }}"
+        working-directory: JPPhotoManagerWeb/backend
+
+      - name: Test
+        run: mvn test
+        working-directory: JPPhotoManagerWeb/backend
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: JPPhotoManagerWeb/backend/target/*.jar
+
+  frontend:
+    name: Frontend (Angular 19)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: JPPhotoManagerWeb/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: JPPhotoManagerWeb/frontend
+
+      - name: Build
+        run: npm run build:prod
+        working-directory: JPPhotoManagerWeb/frontend
+
+      - name: Test
+        run: npm test -- --watch=false --browsers=ChromeHeadless
+        working-directory: JPPhotoManagerWeb/frontend
+
+      - name: Archive dist
+        uses: thedoctor0/zip-release@master
+        with:
+          type: zip
+          filename: jp-photo-manager-web-frontend-v${{ steps.get_version.outputs.VERSION }}.zip
+          path: dist/jp-photo-manager-ui
+          directory: JPPhotoManagerWeb/frontend
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: JPPhotoManagerWeb/frontend/jp-photo-manager-web-frontend-v*.zip
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+
+    steps:
+      - name: Get the version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/web-v}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+
+      - name: Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: artifacts/
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: artifacts/
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.RELEASE_TOKEN }}"
+          prerelease: false
+          files: |
+            LICENSE
+            artifacts/*.jar
+            artifacts/*.zip
