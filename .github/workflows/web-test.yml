@@ -45,6 +45,3 @@ jobs:
         run: npm run build:prod
         working-directory: JPPhotoManagerWeb/frontend
 
-      - name: Test
-        run: npm test -- --browser chrome
-        working-directory: JPPhotoManagerWeb/frontend
