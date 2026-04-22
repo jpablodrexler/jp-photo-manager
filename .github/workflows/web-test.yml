@@ -1,6 +1,12 @@
 name: Web Test
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'JPPhotoManagerWeb/**'
+  pull_request:
+    paths:
+      - 'JPPhotoManagerWeb/**'
 
 jobs:
   backend:
