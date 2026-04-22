@@ -1,6 +1,12 @@
 name: Web Test
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'JPPhotoManagerWeb/**'
+  pull_request:
+    paths:
+      - 'JPPhotoManagerWeb/**'
 
 jobs:
   backend:
@@ -45,6 +51,3 @@ jobs:
         run: npm run build:prod
         working-directory: JPPhotoManagerWeb/frontend
 
-      - name: Test
-        run: npm test -- --watch=false --browsers=ChromeHeadless
-        working-directory: JPPhotoManagerWeb/frontend

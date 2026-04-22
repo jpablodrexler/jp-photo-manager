@@ -2,10 +2,10 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/spec",
-    "types": ["jasmine"]
+    "types": ["cypress"]
   },
   "include": [
-    "src/**/*.spec.ts",
+    "src/**/*.cy.ts",
     "src/**/*.d.ts"
   ]
 }
