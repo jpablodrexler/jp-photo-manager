@@ -12,7 +12,6 @@ public class RecentTargetPath {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(columnDefinition = "INTEGER")
     private Long id;
 
     @Column(name = "path", nullable = false)

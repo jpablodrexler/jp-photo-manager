@@ -6,11 +6,13 @@ spring:
     import: optional:classpath:application-local.yml
 
   datasource:
-    url: jdbc:sqlite:${user.home}/.photomanager/photomanager.db
-    driver-class-name: org.sqlite.JDBC
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:photomanager}
+    username: ${POSTGRES_USERNAME:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
 
   jpa:
-    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: none
     show-sql: false

@@ -204,7 +204,12 @@ config/               → AppConfig (CORS, async executor)
 - `MoveAssetsService` — copies or moves files on disk and updates the DB record
 - `StorageService` — file I/O, thumbnail generation, EXIF rotation (Apache Commons Imaging), SHA-256
 
-**Persistence:** SQLite via Spring Data JPA + Hibernate community dialect. Database file: `~/.photomanager/photomanager.db`. Schema managed by Flyway; migrations in `src/main/resources/db/migration/`.
+**Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by Flyway; migrations in `src/main/resources/db/migration/`. Connect using environment variables `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USERNAME`, `POSTGRES_PASSWORD` (defaults: `localhost`, `5432`, `photomanager`, `postgres`, `postgres`).
+
+**Local development prerequisite:** PostgreSQL 15+ must be running locally. Quickstart:
+```bash
+docker run -d --name photomanager-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=photomanager -p 5432:5432 postgres:15
+```
 
 **Real-time progress:** long-running operations (catalog, sync, convert) use Spring's `SseEmitter` to stream status events to the frontend.
 
@@ -216,6 +221,11 @@ config/               → AppConfig (CORS, async executor)
 | `photomanager.root-catalog-folders` | `~/Pictures` | Semicolon-separated roots to catalog |
 | `photomanager.catalog-batch-size` | `1000` | Files processed per catalog pass |
 | `photomanager.thumbnails-directory` | `~/.photomanager/thumbnails` | Thumbnail storage path |
+| `POSTGRES_HOST` | `localhost` | PostgreSQL host |
+| `POSTGRES_PORT` | `5432` | PostgreSQL port |
+| `POSTGRES_DB` | `photomanager` | Database name |
+| `POSTGRES_USERNAME` | `postgres` | Database user |
+| `POSTGRES_PASSWORD` | `postgres` | Database password |
 
 ### Frontend
 
@@ -272,7 +282,7 @@ class CatalogAssetsServiceImplTest {
 }
 ```
 
-Integration tests annotate with `@SpringBootTest` and use the `test` Spring profile (`application-test.yml`), which points at an in-memory SQLite database with Flyway disabled.
+Integration tests annotate with `@SpringBootTest` and extend `PostgresIntegrationTest` (which starts a Testcontainers PostgreSQL container via `@ServiceConnection`) using the `test` Spring profile (`application-test.yml`).
 
 ### Frontend
 

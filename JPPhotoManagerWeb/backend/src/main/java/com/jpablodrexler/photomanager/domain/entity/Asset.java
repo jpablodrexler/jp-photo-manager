@@ -15,7 +15,7 @@ public class Asset {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "asset_id", columnDefinition = "INTEGER")
+    @Column(name = "asset_id")
     private Long assetId;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -25,7 +25,7 @@ public class Asset {
     @Column(name = "file_name", nullable = false)
     private String fileName;
 
-    @Column(name = "file_size", nullable = false, columnDefinition = "INTEGER")
+    @Column(name = "file_size", nullable = false)
     private long fileSize;
 
     @Column(name = "pixel_width")

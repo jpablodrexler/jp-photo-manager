@@ -18,7 +18,7 @@ metadata:
 
 Write Java code that follows the conventions and best practices of the
 JPPhotoManager backend project: a Spring Boot 3.4 / Java 21 application with
-clean architecture, Lombok, MapStruct, Spring Data JPA, Flyway, and SQLite.
+clean architecture, Lombok, MapStruct, Spring Data JPA, Flyway, and PostgreSQL.
 
 ## Workflow
 
@@ -52,8 +52,8 @@ Use **Maven** with the Spring Boot parent POM:
 | `spring-boot-starter-actuator`                 | Health/metrics        |
 | `lombok`                                       | Boilerplate reduction |
 | `mapstruct`                                    | DTO mapping           |
-| `sqlite-jdbc` + `hibernate-community-dialects` | SQLite support        |
-| `flyway-core`                                  | DB migrations         |
+| `postgresql`                                   | PostgreSQL JDBC driver |
+| `flyway-core` + `flyway-database-postgresql`   | DB migrations         |
 | `spring-boot-starter-test`                     | JUnit 5 + Mockito     |
 
 ### Package Root
@@ -88,7 +88,7 @@ src/test/java/
   # Integration tests: @SpringBootTest + @ActiveProfiles("test")
 
 src/test/resources/
-  application-test.yml      # In-memory SQLite, Flyway disabled
+  application-test.yml      # PostgreSQL dialect, Flyway enabled (datasource from Testcontainers)
 ```
 
 **Dependency flow:** `api` → `application` → `domain` ← `infrastructure`
@@ -299,7 +299,7 @@ public class Asset {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "asset_id")
+    @Column(name = "asset_id")   // maps to BIGSERIAL in PostgreSQL
     private Long assetId;
 
     @Column(name = "file_name", nullable = false)
@@ -518,16 +518,19 @@ public class PaginatedData<T> {
 ```yaml
 spring:
   datasource:
-    url: jdbc:sqlite:${user.home}/.photomanager/photomanager.db
-    driver-class-name: org.sqlite.JDBC
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:photomanager}
+    username: ${POSTGRES_USERNAME:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
   jpa:
-    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     open-in-view: false
   flyway:
     enabled: true
     locations: classpath:db/migration
+    baseline-on-migrate: true
 
 server:
   port: 8080
@@ -539,6 +542,14 @@ photomanager:
 logging:
   level:
     com.<company>: INFO
+```
+
+**Local development prerequisite:** PostgreSQL 15+ must be running:
+```bash
+docker run -d --name photomanager-db \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=photomanager \
+  -p 5432:5432 postgres:15
 ```
 
 ### application-local.yml (local developer override)
@@ -569,14 +580,28 @@ JPPhotoManagerWeb/backend/src/main/resources/application-local.yml
 
 ```yaml
 spring:
-  datasource:
-    url: jdbc:sqlite:file::memory:?cache=shared
-    driver-class-name: org.sqlite.JDBC
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: none
+    open-in-view: false
   flyway:
-    enabled: false
+    enabled: true
+    locations: classpath:db/migration
+```
+
+No JDBC URL in the test config — Testcontainers injects the datasource URL at runtime via `@ServiceConnection`. Integration tests extend `PostgresIntegrationTest`:
+
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@ActiveProfiles("test")
+@Testcontainers
+public abstract class PostgresIntegrationTest {
+
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15");
+}
 ```
 
 ### Inject properties
@@ -595,21 +620,27 @@ private int catalogBatchSize;
 - Never modify an applied migration; create a new one instead.
 
 ```sql
--- V1__Create_folders_table.sql
-CREATE TABLE IF NOT EXISTS folders (
-    folder_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    path      TEXT NOT NULL UNIQUE
+-- V1__initial_schema.sql  (PostgreSQL DDL)
+CREATE TABLE folders (
+    folder_id BIGSERIAL PRIMARY KEY,
+    path      TEXT      NOT NULL
 );
 
--- V2__Create_assets_table.sql
-CREATE TABLE IF NOT EXISTS assets (
-    asset_id       INTEGER PRIMARY KEY AUTOINCREMENT,
-    folder_id      INTEGER NOT NULL REFERENCES folders(folder_id),
-    file_name      TEXT NOT NULL,
-    image_rotation TEXT,
-    hash           TEXT
+-- V2__add_example_table.sql
+CREATE TABLE example (
+    id          BIGSERIAL PRIMARY KEY,
+    folder_id   BIGINT    NOT NULL REFERENCES folders(folder_id),
+    name        TEXT      NOT NULL,
+    active      BOOLEAN   NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMP NOT NULL
 );
 ```
+
+**Key PostgreSQL DDL conventions:**
+- Auto-increment primary keys: `BIGSERIAL PRIMARY KEY`
+- Boolean columns: `BOOLEAN NOT NULL DEFAULT FALSE` (never `INTEGER DEFAULT 0`)
+- Date/time columns: `TIMESTAMP` (Hibernate maps `LocalDateTime` natively; no custom converter needed)
+- Do **not** use `IF NOT EXISTS` on `CREATE TABLE` — Flyway manages idempotency
 
 ---
 
@@ -639,10 +670,10 @@ class CatalogAssetsServiceImplTest {
 
 ### Integration Tests
 
+Extend `PostgresIntegrationTest` — it starts a PostgreSQL container automatically via Testcontainers:
+
 ```java
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@ActiveProfiles("test")
-class ApplicationIntegrationTest {
+class ApplicationIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired PhotoManagerFacade facade;
 

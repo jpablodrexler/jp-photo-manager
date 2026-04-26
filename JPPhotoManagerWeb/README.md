@@ -20,10 +20,10 @@ A web rewrite of the JP Photo Manager desktop application. It replaces the origi
 │  domain/      → Entities, interfaces, enums              │
 │  infrastructure/ → Service implementations, storage      │
 └──────────────────────┬──────────────────────────────────┘
-                       │ JDBC (Hibernate + SQLite dialect)
+                       │ JDBC (Hibernate + PostgreSQL dialect)
 ┌──────────────────────▼──────────────────────────────────┐
-│              SQLite database                             │
-│  ~/.photomanager/photomanager.db                         │
+│              PostgreSQL 15+ database                     │
+│  host: $POSTGRES_HOST  db: $POSTGRES_DB                  │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -49,14 +49,15 @@ JPPhotoManagerWeb/
 | Spring Data JPA | managed by Spring Boot |
 | Spring Validation | managed by Spring Boot |
 | Spring Actuator | managed by Spring Boot |
-| Hibernate (SQLite dialect) | managed by Spring Boot |
-| SQLite JDBC | 3.47.1.0 |
-| Flyway | managed by Spring Boot |
-| Lombok | 1.18.36 |
+| Hibernate (PostgreSQL dialect) | managed by Spring Boot |
+| PostgreSQL JDBC | managed by Spring Boot |
+| Flyway + Flyway PostgreSQL extension | managed by Spring Boot |
+| Lombok | 1.18.46 |
 | MapStruct | 1.6.3 |
 | Apache Commons Imaging | 1.0-alpha3 |
 | GitHub API client | 1.321 |
 | JUnit 5 + Mockito + AssertJ | managed by Spring Boot |
+| Testcontainers (PostgreSQL) | managed by Spring Boot |
 
 ### Internal architecture
 
@@ -93,9 +94,10 @@ Controllers are thin: they delegate immediately to `PhotoManagerFacade`, which o
 
 ### Persistence
 
-- **Database:** SQLite, stored at `~/.photomanager/photomanager.db`
+- **Database:** PostgreSQL 15+
 - **Schema migrations:** Flyway, scripts in `src/main/resources/db/migration/`
-- **ORM:** Spring Data JPA with the Hibernate Community SQLite dialect
+- **ORM:** Spring Data JPA with the Hibernate PostgreSQL dialect
+- **Connection:** configured via environment variables `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USERNAME`, `POSTGRES_PASSWORD` (defaults: `localhost`, `5432`, `photomanager`, `postgres`, `postgres`)
 
 ### REST API
 
@@ -131,12 +133,24 @@ All settings live in `src/main/resources/application.yml`:
 | `photomanager.catalog-batch-size` | `1000` | Files processed per catalog pass |
 | `photomanager.catalog-cooldown-minutes` | `2` | Minimum minutes between catalog runs |
 | `photomanager.thumbnails-directory` | `~/.photomanager/thumbnails` | Thumbnail storage path |
-| `spring.datasource.url` | `jdbc:sqlite:~/.photomanager/photomanager.db` | SQLite database path |
+| `POSTGRES_HOST` | `localhost` | PostgreSQL host |
+| `POSTGRES_PORT` | `5432` | PostgreSQL port |
+| `POSTGRES_DB` | `photomanager` | Database name |
+| `POSTGRES_USERNAME` | `postgres` | Database user |
+| `POSTGRES_PASSWORD` | `postgres` | Database password |
 | `logging.file.name` | `~/.photomanager/logs/photomanager.log` | Log file path |
 
 ### Running the backend
 
-**Prerequisites:** Java 21, Maven 3.9+
+**Prerequisites:** Java 21, Maven 3.9+, PostgreSQL 15+ (or Docker)
+
+Start a local PostgreSQL instance if you don't have one:
+```bash
+docker run -d --name photomanager-db \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=photomanager \
+  -p 5432:5432 postgres:15
+```
 
 ```bash
 cd JPPhotoManagerWeb/backend
@@ -165,7 +179,7 @@ mvn test -Dtest=CatalogAssetsServiceImplTest
 mvn test -Dtest=CatalogAssetsServiceImplTest#methodName
 ```
 
-Tests use the `test` Spring profile (`src/test/resources/application-test.yml`), which points at an in-memory SQLite database with Flyway disabled.
+Tests use the `test` Spring profile (`src/test/resources/application-test.yml`). Unit tests (`@ExtendWith(MockitoExtension.class)`, `@WebMvcTest`) need no database. Integration tests (`@SpringBootTest`) use Testcontainers to spin up a real PostgreSQL container automatically — Docker must be running.
 
 ---
 

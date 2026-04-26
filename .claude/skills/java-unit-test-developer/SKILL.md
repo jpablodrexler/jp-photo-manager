@@ -43,13 +43,14 @@ No additional `pom.xml` entries are needed for unit tests; `spring-boot-starter-
 
 ```
 src/test/java/com/jpablodrexler/photomanager/
-  infrastructure/service/   # unit tests for service implementations
-  application/              # unit tests for PhotoManagerFacade
-  api/                      # unit tests for controllers (optional — prefer integration)
-  domain/                   # unit tests for domain logic / entity helpers
+  PostgresIntegrationTest.java  # abstract base class for @SpringBootTest integration tests
+  infrastructure/service/       # unit tests for service implementations
+  application/                  # unit tests for PhotoManagerFacade
+  api/                          # unit tests for controllers (optional — prefer integration)
+  domain/                       # unit tests for domain logic / entity helpers
 
 src/test/resources/
-  application-test.yml      # in-memory SQLite, Flyway disabled
+  application-test.yml      # PostgreSQL dialect, Flyway enabled; datasource URL injected by Testcontainers
 ```
 
 Mirror the main package structure exactly. A test for
@@ -306,29 +307,45 @@ class PhotoManagerFacadeTest {
 
 ## 10. Integration Tests
 
-Integration tests load the full Spring context against an in-memory SQLite database.
-Flyway migrations are disabled; the schema is created by `ddl-auto: create-drop`.
+Integration tests load the full Spring context against a real PostgreSQL database managed by Testcontainers. Flyway migrations are enabled; the schema is applied from `V1__initial_schema.sql` before tests run. **Docker must be running.**
 
 ### application-test.yml
 
 ```yaml
 spring:
-  datasource:
-    url: jdbc:sqlite:file::memory:?cache=shared
-    driver-class-name: org.sqlite.JDBC
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: none
+    open-in-view: false
   flyway:
-    enabled: false
+    enabled: true
+    locations: classpath:db/migration
+```
+
+No JDBC URL is declared here — Testcontainers injects the datasource URL at runtime via `@ServiceConnection`.
+
+### Shared base class
+
+All `@SpringBootTest` integration tests must extend `PostgresIntegrationTest`:
+
+```java
+// src/test/java/com/jpablodrexler/photomanager/PostgresIntegrationTest.java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@ActiveProfiles("test")
+@Testcontainers
+public abstract class PostgresIntegrationTest {
+
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15");
+}
 ```
 
 ### Structure
 
 ```java
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@ActiveProfiles("test")
-class CatalogFolderServiceIntegrationTest {
+class CatalogFolderServiceIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired CatalogFolderService sut;
     @Autowired FolderRepository folderRepository;
@@ -352,11 +369,11 @@ class CatalogFolderServiceIntegrationTest {
 
 **Rules:**
 
-- Always annotate integration tests with `@ActiveProfiles("test")` — without it the test
-  will target the production SQLite database.
+- Always extend `PostgresIntegrationTest` — it provides the container, the `@ActiveProfiles("test")`, and `@Testcontainers`.
 - Use `@MockitoBean` to replace Spring beans that touch the real filesystem (e.g. `StorageService`).
 - Clean up persistent state in `@AfterEach` to keep tests independent.
 - Use `WebEnvironment.NONE` unless the test exercises HTTP endpoints.
+- Do **not** use `@WebMvcTest` or `@ExtendWith(MockitoExtension.class)` for integration tests.
 
 ---
 

@@ -13,7 +13,6 @@ public class SyncAssetsDirectoriesDefinition {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(columnDefinition = "INTEGER")
     private Long id;
 
     @NotBlank
