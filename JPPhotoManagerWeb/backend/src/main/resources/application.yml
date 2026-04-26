@@ -2,6 +2,9 @@ spring:
   application:
     name: jp-photo-manager
 
+  config:
+    import: optional:classpath:application-local.yml
+
   datasource:
     url: jdbc:sqlite:${user.home}/.photomanager/photomanager.db
     driver-class-name: org.sqlite.JDBC
@@ -9,7 +12,7 @@ spring:
   jpa:
     database-platform: org.hibernate.community.dialect.SQLiteDialect
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     show-sql: false
     open-in-view: false
 

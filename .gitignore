@@ -264,3 +264,6 @@ __pycache__/
 *.pyc
 
 JPPhotoManager/tools
+JPPhotoManagerWeb/backend/target/
+JPPhotoManagerWeb/backend/src/main/resources/application-local.yml
+JPPhotoManagerWeb/frontend/.angular/
