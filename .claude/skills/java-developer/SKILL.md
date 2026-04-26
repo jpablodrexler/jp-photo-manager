@@ -1,11 +1,17 @@
 ---
 name: java-developer
 description: >
-  Java developer skill for writing Spring Boot applications following the
-  JPPhotoManager backend code style. Use when creating or modifying Java
-  classes (controllers, services, repositories, entities, DTOs, tests) in a
-  Spring Boot project with a clean-architecture layering of api → application
-  → domain ← infrastructure.
+  Java developer skill for the JPPhotoManager Spring Boot 3.4 / Java 21
+  backend. Use whenever work touches the backend: adding a new service,
+  controller, entity, repository, DTO, or enum; fixing a bug in any Java
+  class; refactoring or extracting logic into a new class; wiring up
+  transactions, async operations, or Spring beans; writing or updating unit /
+  integration tests. The skill enforces the project's clean-architecture
+  layering (api → application → domain ← infrastructure), the
+  interface-in-domain / implementation-in-infrastructure split for every
+  service, and all other coding standards documented below.
+metadata:
+  scope: [JPPhotoManagerWeb/backend]
 ---
 
 # Java Developer Skill
@@ -38,17 +44,17 @@ Use **Maven** with the Spring Boot parent POM:
 
 **Required dependencies:**
 
-| Dependency | Purpose |
-|---|---|
-| `spring-boot-starter-web` | REST API |
-| `spring-boot-starter-data-jpa` | Persistence |
-| `spring-boot-starter-validation` | Bean validation |
-| `spring-boot-starter-actuator` | Health/metrics |
-| `lombok` | Boilerplate reduction |
-| `mapstruct` | DTO mapping |
-| `sqlite-jdbc` + `hibernate-community-dialects` | SQLite support |
-| `flyway-core` | DB migrations |
-| `spring-boot-starter-test` | JUnit 5 + Mockito |
+| Dependency                                     | Purpose               |
+| ---------------------------------------------- | --------------------- |
+| `spring-boot-starter-web`                      | REST API              |
+| `spring-boot-starter-data-jpa`                 | Persistence           |
+| `spring-boot-starter-validation`               | Bean validation       |
+| `spring-boot-starter-actuator`                 | Health/metrics        |
+| `lombok`                                       | Boilerplate reduction |
+| `mapstruct`                                    | DTO mapping           |
+| `sqlite-jdbc` + `hibernate-community-dialects` | SQLite support        |
+| `flyway-core`                                  | DB migrations         |
+| `spring-boot-starter-test`                     | JUnit 5 + Mockito     |
 
 ### Package Root
 
@@ -87,20 +93,48 @@ src/test/resources/
 
 **Dependency flow:** `api` → `application` → `domain` ← `infrastructure`
 
+### Service interface / implementation rule
+
+Every service **must** be split across two files:
+
+| File                  | Package                   | Contents                                      |
+| --------------------- | ------------------------- | --------------------------------------------- |
+| `FooService.java`     | `domain/service/`         | Java interface — the domain contract          |
+| `FooServiceImpl.java` | `infrastructure/service/` | `@Service` class that `implements FooService` |
+
+Callers always depend on the **interface** (`FooService`), never the impl. This applies to every service without exception — even small internal helpers extracted to fix a Spring proxy issue.
+
+```java
+// domain/service/CatalogFolderService.java
+public interface CatalogFolderService {
+    void catalogFolder(String folderPath, Consumer<CatalogChangeNotification> callback,
+                       AtomicInteger processed, int total);
+    Asset createAsset(String directoryPath, String fileName);
+}
+
+// infrastructure/service/CatalogFolderServiceImpl.java
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class CatalogFolderServiceImpl implements CatalogFolderService {
+    // ...
+}
+```
+
 ---
 
 ## 3. Naming Conventions
 
-| Element | Convention | Example |
-|---|---|---|
-| Classes | PascalCase | `AssetController`, `CatalogAssetsServiceImpl` |
-| Methods | camelCase | `getAssets()`, `catalogAssetsAsync()` |
-| Fields | camelCase | `facade`, `assetRepository` |
-| Constants | UPPER_SNAKE_CASE | `THUMBNAIL_MAX_WIDTH`, `PAGE_SIZE` |
-| Enum values | UPPER_SNAKE_CASE | `ASSET_CREATED`, `FILE_NAME` |
-| Test classes | `{ClassName}Test` or `{ClassName}Tests` | `CatalogAssetsServiceImplTest` |
-| Test methods | `methodName_condition_expectedResult` | `getAssets_folderExists_returnsPage` |
-| DB migration files | `V{n}__{Description}.sql` | `V1__Create_assets_table.sql` |
+| Element            | Convention                              | Example                                       |
+| ------------------ | --------------------------------------- | --------------------------------------------- |
+| Classes            | PascalCase                              | `AssetController`, `CatalogAssetsServiceImpl` |
+| Methods            | camelCase                               | `getAssets()`, `catalogAssetsAsync()`         |
+| Fields             | camelCase                               | `facade`, `assetRepository`                   |
+| Constants          | UPPER_SNAKE_CASE                        | `THUMBNAIL_MAX_WIDTH`, `PAGE_SIZE`            |
+| Enum values        | UPPER_SNAKE_CASE                        | `ASSET_CREATED`, `FILE_NAME`                  |
+| Test classes       | `{ClassName}Test` or `{ClassName}Tests` | `CatalogAssetsServiceImplTest`                |
+| Test methods       | `methodName_condition_expectedResult`   | `getAssets_folderExists_returnsPage`          |
+| DB migration files | `V{n}__{Description}.sql`               | `V1__Create_assets_table.sql`                 |
 
 ---
 
@@ -315,34 +349,85 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
 @Slf4j
 public class CatalogAssetsServiceImpl implements CatalogAssetsService {
 
-    private final AssetRepository assetRepository;
+    private final CatalogFolderService catalogFolderService; // injected by interface
     private final StorageService storageService;
 
     @Async
     @Override
     public CompletableFuture<Void> catalogAssetsAsync(Consumer<CatalogChangeNotification> callback) {
-        try {
-            List<String> files = storageService.listFiles(rootPath);
-            for (String file : files) {
-                processFile(file, callback);
+        List<String> folders = discoverFolders();
+        AtomicInteger processed = new AtomicInteger(0);
+        for (String folderPath : folders) {
+            try {
+                // Calls through the Spring proxy → @Transactional on catalogFolder fires correctly
+                catalogFolderService.catalogFolder(folderPath, callback, processed, folders.size());
+            } catch (Exception e) {
+                log.error("Error cataloging folder: {}", folderPath, e);
             }
-        } catch (Exception e) {
-            log.error("Failed to catalog assets", e);
         }
         return CompletableFuture.completedFuture(null);
     }
-
-    @Transactional
-    private void processFile(String filePath, Consumer<CatalogChangeNotification> callback) {
-        try {
-            // business logic
-            callback.accept(new CatalogChangeNotification(filePath, ReasonEnum.ASSET_CREATED));
-        } catch (Exception e) {
-            log.error("Failed to catalog asset: {}", filePath, e);
-        }
-    }
 }
 ```
+
+### 5.5 Spring Proxy & `@Transactional` — self-invocation pitfall
+
+Spring applies `@Transactional` (and `@Async`) via a proxy that wraps the bean. When a method calls **another method on the same bean** (`this.foo()`), it bypasses the proxy entirely — so `@Transactional` on the called method **has no effect**.
+
+**Wrong — `@Transactional` is silently ignored:**
+
+```java
+@Service
+public class CatalogAssetsServiceImpl implements CatalogAssetsService {
+
+    @Async
+    public CompletableFuture<Void> catalogAssetsAsync(...) {
+        catalogFolder(...);          // self-invocation: proxy bypassed
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Transactional                   // never fires — called from same bean
+    protected void catalogFolder(...) {
+        createAsset(...);            // also self-invocation
+    }
+
+    @Transactional                   // never fires either
+    public Asset createAsset(...) { ... }
+}
+```
+
+**Right — extract the transactional work to a separate bean:**
+
+```java
+// The @Async bean calls the @Transactional bean through the proxy
+@Service
+public class CatalogAssetsServiceImpl implements CatalogAssetsService {
+
+    private final CatalogFolderService catalogFolderService; // different bean → proxy active
+
+    @Async
+    public CompletableFuture<Void> catalogAssetsAsync(...) {
+        catalogFolderService.catalogFolder(...); // goes through proxy → @Transactional fires
+        return CompletableFuture.completedFuture(null);
+    }
+}
+
+// All work that must share one transaction lives in its own service
+@Service
+public class CatalogFolderServiceImpl implements CatalogFolderService {
+
+    @Transactional                   // fires correctly — called from a different bean
+    public void catalogFolder(...) {
+        Folder folder = folderRepository.findByPath(...).orElseGet(...); // MANAGED entity
+        // private helpers called here run in the same transaction — no detached-entity issues
+        createAssetInternal(folder, ...);
+    }
+
+    private Asset createAssetInternal(Folder folder, ...) { ... }
+}
+```
+
+The consequence of getting this wrong: repository calls each run in their own micro-transaction, entities become detached between calls, and Hibernate may reject operations that reference those detached entities — causing silent failures where zero records are saved.
 
 ---
 
@@ -454,6 +539,30 @@ photomanager:
 logging:
   level:
     com.<company>: INFO
+```
+
+### application-local.yml (local developer override)
+
+To override properties for a specific developer's machine without committing them, add this to `application.yml`:
+
+```yaml
+spring:
+  config:
+    import: optional:classpath:application-local.yml
+```
+
+Then create `src/main/resources/application-local.yml` (gitignored) with only the properties that differ locally:
+
+```yaml
+photomanager:
+  initial-directory: ${user.home}/Imágenes
+  root-catalog-folders: ${user.home}/Imágenes
+```
+
+Add the file to `.gitignore` so it is never committed:
+
+```
+JPPhotoManagerWeb/backend/src/main/resources/application-local.yml
 ```
 
 ### application-test.yml
@@ -581,6 +690,8 @@ if (result instanceof ErrorResult error) {
 
 ## 13. Code Style Rules
 
+- Every service **must** have an interface in `domain/service/` and an `*Impl` class in `infrastructure/service/`. Never create a `@Service` class without a corresponding interface.
+- Never call a `@Transactional` or `@Async` method from within the same bean (`this.foo()`) — use a separate injected bean so the Spring proxy can intercept the call.
 - No `System.out.println` — use `@Slf4j`.
 - No field injection (`@Autowired` on fields) — use constructor injection via `@RequiredArgsConstructor`.
 - No `open-in-view` (keep it `false`) — load associations within transactions.

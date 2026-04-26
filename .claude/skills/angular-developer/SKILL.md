@@ -5,6 +5,8 @@ description: >
   JPPhotoManager frontend code style. Use when creating or modifying TypeScript
   files (components, services, models, pipes, tests) in an Angular project with
   a feature-based architecture of core → features ← shared.
+metadata:
+  scope: [JPPhotoManagerWeb/frontend]
 ---
 
 # Angular Developer Skill
@@ -26,22 +28,22 @@ Make a todo list and work through it one task at a time.
 
 Use the **Angular CLI** (`@angular/cli`) with this core stack:
 
-| Package | Version | Purpose |
-|---|---|---|
-| `@angular/core` | `^19.0.0` | Framework core |
-| `@angular/material` | `^19.0.0` | Material Design UI components |
-| `@angular/cdk` | `^19.0.0` | Component Dev Kit (tree, overlay, etc.) |
-| `@angular/forms` | `^19.0.0` | Reactive & template-driven forms |
-| `@angular/router` | `^19.0.0` | Client-side routing |
-| `rxjs` | `~7.8.0` | Reactive programming |
-| `typescript` | `~5.6.0` | Language |
+| Package             | Version   | Purpose                                 |
+| ------------------- | --------- | --------------------------------------- |
+| `@angular/core`     | `^19.0.0` | Framework core                          |
+| `@angular/material` | `^19.0.0` | Material Design UI components           |
+| `@angular/cdk`      | `^19.0.0` | Component Dev Kit (tree, overlay, etc.) |
+| `@angular/forms`    | `^19.0.0` | Reactive & template-driven forms        |
+| `@angular/router`   | `^19.0.0` | Client-side routing                     |
+| `rxjs`              | `~7.8.0`  | Reactive programming                    |
+| `typescript`        | `~5.6.0`  | Language                                |
 
 **Dev dependencies:**
 
-| Package | Purpose |
-|---|---|
-| `jasmine-core` | Unit test framework |
-| `karma` | Test runner |
+| Package          | Purpose                  |
+| ---------------- | ------------------------ |
+| `jasmine-core`   | Unit test framework      |
+| `karma`          | Test runner              |
 | `@types/jasmine` | Jasmine type definitions |
 
 **Key npm scripts:**
@@ -86,13 +88,13 @@ Configure the dev proxy in `proxy.conf.json` to forward API calls to the backend
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "bundler",
-    "baseUrl": "./"
+    "baseUrl": "./",
   },
   "angularCompilerOptions": {
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
-    "strictTemplates": true
-  }
+    "strictTemplates": true,
+  },
 }
 ```
 
@@ -129,6 +131,7 @@ src/
 ```
 
 **Layer rules:**
+
 - `core/` — services and models only; no UI.
 - `features/` — page-level smart components; use core services and shared components.
 - `shared/` — pure presentational components and pipes; no service calls.
@@ -137,19 +140,19 @@ src/
 
 ## 4. Naming Conventions
 
-| Element | Convention | Example |
-|---|---|---|
-| Files | `kebab-case.<type>.ts` | `asset.service.ts`, `gallery.component.ts` |
-| Classes | PascalCase | `GalleryComponent`, `AssetService`, `FileSizePipe` |
-| Interfaces | PascalCase | `Asset`, `Folder`, `PaginatedData` |
-| Type aliases | PascalCase | `ViewMode`, `SortCriteria` |
-| String union values | UPPER_SNAKE_CASE | `'FILE_NAME' \| 'FILE_SIZE' \| 'FILE_DATE'` |
-| Properties & methods | camelCase | `currentFolder`, `loadAssets()` |
-| Private fields | camelCase (no underscore prefix) | `private baseUrl = '/api/assets'` |
-| Readonly constants | camelCase or `readonly` property | `private readonly baseUrl` |
-| Component selectors | `app-kebab-case` | `selector: 'app-gallery'` |
-| Test classes | `describe('<ClassName>')` | `describe('GalleryComponent')` |
-| Test methods | `it('should <expected behavior>')` | `it('should display thumbnails')` |
+| Element              | Convention                         | Example                                            |
+| -------------------- | ---------------------------------- | -------------------------------------------------- |
+| Files                | `kebab-case.<type>.ts`             | `asset.service.ts`, `gallery.component.ts`         |
+| Classes              | PascalCase                         | `GalleryComponent`, `AssetService`, `FileSizePipe` |
+| Interfaces           | PascalCase                         | `Asset`, `Folder`, `PaginatedData`                 |
+| Type aliases         | PascalCase                         | `ViewMode`, `SortCriteria`                         |
+| String union values  | UPPER_SNAKE_CASE                   | `'FILE_NAME' \| 'FILE_SIZE' \| 'FILE_DATE'`        |
+| Properties & methods | camelCase                          | `currentFolder`, `loadAssets()`                    |
+| Private fields       | camelCase (no underscore prefix)   | `private baseUrl = '/api/assets'`                  |
+| Readonly constants   | camelCase or `readonly` property   | `private readonly baseUrl`                         |
+| Component selectors  | `app-kebab-case`                   | `selector: 'app-gallery'`                          |
+| Test classes         | `describe('<ClassName>')`          | `describe('GalleryComponent')`                     |
+| Test methods         | `it('should <expected behavior>')` | `it('should display thumbnails')`                  |
 
 ---
 
@@ -159,7 +162,7 @@ src/
 
 ```typescript
 @Component({
-  selector: 'app-gallery',
+  selector: "app-gallery",
   standalone: true,
   imports: [
     CommonModule,
@@ -170,8 +173,8 @@ src/
     MatIconModule,
     // ... other Material modules and shared components
   ],
-  templateUrl: './gallery.component.html',
-  styleUrl: './gallery.component.scss',
+  templateUrl: "./gallery.component.html",
+  styleUrl: "./gallery.component.scss",
 })
 export class GalleryComponent implements OnInit, OnDestroy {
   // component logic
@@ -190,16 +193,18 @@ Define routes in `app.routes.ts` using **lazy-loaded standalone components**:
 
 ```typescript
 export const routes: Routes = [
-  { path: '', redirectTo: 'gallery', pathMatch: 'full' },
+  { path: "", redirectTo: "gallery", pathMatch: "full" },
   {
-    path: 'gallery',
+    path: "gallery",
     loadComponent: () =>
-      import('./features/gallery/gallery.component').then(m => m.GalleryComponent),
+      import("./features/gallery/gallery.component").then(
+        (m) => m.GalleryComponent,
+      ),
   },
   {
-    path: 'sync',
+    path: "sync",
     loadComponent: () =>
-      import('./features/sync/sync.component').then(m => m.SyncComponent),
+      import("./features/sync/sync.component").then((m) => m.SyncComponent),
   },
 ];
 ```
@@ -208,11 +213,7 @@ Bootstrap routing in `app.config.ts`:
 
 ```typescript
 export const appConfig: ApplicationConfig = {
-  providers: [
-    provideRouter(routes),
-    provideHttpClient(),
-    provideAnimations(),
-  ],
+  providers: [provideRouter(routes), provideHttpClient(), provideAnimations()],
 };
 ```
 
@@ -221,13 +222,17 @@ export const appConfig: ApplicationConfig = {
 ## 7. Services
 
 ```typescript
-@Injectable({ providedIn: 'root' })
+@Injectable({ providedIn: "root" })
 export class AssetService {
-  private readonly baseUrl = '/api/assets';
+  private readonly baseUrl = "/api/assets";
 
   constructor(private http: HttpClient) {}
 
-  getAssets(folderPath: string, pageIndex: number, sortCriteria: SortCriteria): Observable<PaginatedData<Asset>> {
+  getAssets(
+    folderPath: string,
+    pageIndex: number,
+    sortCriteria: SortCriteria,
+  ): Observable<PaginatedData<Asset>> {
     const params = { folderPath, pageIndex: String(pageIndex), sortCriteria };
     return this.http.get<PaginatedData<Asset>>(this.baseUrl, { params });
   }
@@ -243,6 +248,7 @@ export class AssetService {
 ```
 
 **Service rules:**
+
 - Always use `providedIn: 'root'` for tree-shaking.
 - Return `Observable<T>` from all HTTP methods; never subscribe inside a service.
 - Use `private readonly` for `baseUrl` and other constants.
@@ -276,8 +282,12 @@ export interface PaginatedData<T> {
 Use **string union types** for enumerations:
 
 ```typescript
-export type SortCriteria = 'FILE_NAME' | 'FILE_SIZE' | 'FILE_DATE' | 'FILE_EXTENSION';
-export type ViewMode = 'thumbnails' | 'viewer';
+export type SortCriteria =
+  | "FILE_NAME"
+  | "FILE_SIZE"
+  | "FILE_DATE"
+  | "FILE_EXTENSION";
+export type ViewMode = "thumbnails" | "viewer";
 ```
 
 ---
@@ -289,15 +299,15 @@ Use **Angular 17+ built-in control flow** — never `*ngIf` or `*ngFor`:
 ```html
 <!-- Conditional rendering -->
 @if (isLoading) {
-  <mat-spinner></mat-spinner>
+<mat-spinner></mat-spinner>
 } @else if (assets.length === 0) {
-  <p>No assets found.</p>
+<p>No assets found.</p>
 } @else {
-  <div class="thumbnail-grid">
-    @for (asset of assets; track asset.assetId) {
-      <app-thumbnail [asset]="asset" (selected)="onSelect(asset)" />
-    }
-  </div>
+<div class="thumbnail-grid">
+  @for (asset of assets; track asset.assetId) {
+  <app-thumbnail [asset]="asset" (selected)="onSelect(asset)" />
+  }
+</div>
 }
 
 <!-- Event binding -->
@@ -306,7 +316,7 @@ Use **Angular 17+ built-in control flow** — never `*ngIf` or `*ngFor`:
 <!-- Two-way binding -->
 <mat-select [(ngModel)]="sortCriteria" (ngModelChange)="onSortChange()">
   @for (option of sortOptions; track option.value) {
-    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+  <mat-option [value]="option.value">{{ option.label }}</mat-option>
   }
 </mat-select>
 
@@ -324,7 +334,7 @@ Components own their local UI state as plain class properties. There is no globa
 export class GalleryComponent implements OnInit, OnDestroy {
   assets: Asset[] = [];
   selectedAssets = new Set<number>();
-  viewMode: ViewMode = 'thumbnails';
+  viewMode: ViewMode = "thumbnails";
   pageIndex = 0;
   totalPages = 0;
   totalItems = 0;
@@ -348,16 +358,19 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   loadAssets(): void {
     this.isLoading = true;
-    this.assetService.getAssets(this.currentFolder, this.pageIndex, this.sortCriteria)
+    this.assetService
+      .getAssets(this.currentFolder, this.pageIndex, this.sortCriteria)
       .subscribe({
-        next: data => {
+        next: (data) => {
           this.assets = data.items;
           this.totalPages = data.totalPages;
           this.totalItems = data.totalItems;
           this.isLoading = false;
         },
         error: () => {
-          this.snackBar.open('Failed to load assets', 'Dismiss', { duration: 3000 });
+          this.snackBar.open("Failed to load assets", "Dismiss", {
+            duration: 3000,
+          });
           this.isLoading = false;
         },
       });
@@ -366,6 +379,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
 ```
 
 **State rules:**
+
 - Store UI state as component properties; never introduce NgRx unless explicitly required.
 - Subscribe in lifecycle hooks (`ngOnInit`); unsubscribe or complete in `ngOnDestroy`.
 - Use `Set<T>` for selection tracking to get O(1) add/delete/has.
@@ -408,21 +422,21 @@ Import only the specific Material module(s) you need in each component's `import
 
 ```typescript
 imports: [
-  MatToolbarModule,    // <mat-toolbar>
-  MatButtonModule,     // mat-button, mat-icon-button, mat-fab
-  MatIconModule,       // <mat-icon>
-  MatCardModule,       // <mat-card>
-  MatTableModule,      // <mat-table>
-  MatPaginatorModule,  // <mat-paginator>
-  MatSelectModule,     // <mat-select>
-  MatInputModule,      // matInput
-  MatFormFieldModule,  // <mat-form-field>
-  MatSnackBarModule,   // MatSnackBar (inject in constructor)
+  MatToolbarModule, // <mat-toolbar>
+  MatButtonModule, // mat-button, mat-icon-button, mat-fab
+  MatIconModule, // <mat-icon>
+  MatCardModule, // <mat-card>
+  MatTableModule, // <mat-table>
+  MatPaginatorModule, // <mat-paginator>
+  MatSelectModule, // <mat-select>
+  MatInputModule, // matInput
+  MatFormFieldModule, // <mat-form-field>
+  MatSnackBarModule, // MatSnackBar (inject in constructor)
   MatProgressSpinnerModule, // <mat-spinner>
-  MatTreeModule,       // <mat-tree>
-  MatCheckboxModule,   // <mat-checkbox>
-  MatSliderModule,     // <mat-slider>
-]
+  MatTreeModule, // <mat-tree>
+  MatCheckboxModule, // <mat-checkbox>
+  MatSliderModule, // <mat-slider>
+];
 ```
 
 Inject `MatSnackBar` for notifications; never use `alert()` or `console.log` for UI feedback.
@@ -459,13 +473,29 @@ Define utility classes in `styles.scss` and use them across templates:
 
 ```scss
 // styles.scss — global utilities
-.full-height { height: 100%; }
-.flex-row    { display: flex; flex-direction: row; }
-.flex-col    { display: flex; flex-direction: column; }
-.gap-8       { gap: 8px; }
-.gap-16      { gap: 16px; }
-.p-16        { padding: 16px; }
-.flex-1      { flex: 1; }
+.full-height {
+  height: 100%;
+}
+.flex-row {
+  display: flex;
+  flex-direction: row;
+}
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+.gap-8 {
+  gap: 8px;
+}
+.gap-16 {
+  gap: 16px;
+}
+.p-16 {
+  padding: 16px;
+}
+.flex-1 {
+  flex: 1;
+}
 ```
 
 Component SCSS uses BEM-style class names:
@@ -495,11 +525,11 @@ Component SCSS uses BEM-style class names:
 ## 15. Custom Pipes
 
 ```typescript
-@Pipe({ name: 'fileSize', standalone: true })
+@Pipe({ name: "fileSize", standalone: true })
 export class FileSizePipe implements PipeTransform {
   transform(bytes: number): string {
-    if (bytes === 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    if (bytes === 0) return "0 B";
+    const units = ["B", "KB", "MB", "GB", "TB"];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
   }
@@ -515,19 +545,21 @@ All pipes must be `standalone: true` and declared in the component's `imports: [
 ### Unit Tests — Jasmine + Karma
 
 ```typescript
-describe('GalleryComponent', () => {
+describe("GalleryComponent", () => {
   let component: GalleryComponent;
   let fixture: ComponentFixture<GalleryComponent>;
   let assetServiceSpy: jasmine.SpyObj<AssetService>;
 
   beforeEach(async () => {
-    assetServiceSpy = jasmine.createSpyObj('AssetService', ['getAssets']);
-    assetServiceSpy.getAssets.and.returnValue(of({
-      items: [],
-      pageIndex: 0,
-      totalPages: 0,
-      totalItems: 0,
-    }));
+    assetServiceSpy = jasmine.createSpyObj("AssetService", ["getAssets"]);
+    assetServiceSpy.getAssets.and.returnValue(
+      of({
+        items: [],
+        pageIndex: 0,
+        totalPages: 0,
+        totalItems: 0,
+      }),
+    );
 
     await TestBed.configureTestingModule({
       imports: [GalleryComponent],
@@ -543,17 +575,18 @@ describe('GalleryComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it('should call getAssets on init', () => {
+  it("should call getAssets on init", () => {
     expect(assetServiceSpy.getAssets).toHaveBeenCalled();
   });
 });
 ```
 
 **Testing rules:**
+
 - Use `TestBed.configureTestingModule` with `imports: [StandaloneComponent]` — no module setup.
 - Mock services with `jasmine.createSpyObj`.
 - Use `provideNoopAnimations()` and `provideRouter([])` instead of real providers.
@@ -565,16 +598,13 @@ describe('GalleryComponent', () => {
 ### Service Tests
 
 ```typescript
-describe('AssetService', () => {
+describe("AssetService", () => {
   let service: AssetService;
   let httpMock: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        AssetService,
-        provideHttpClientTesting(),
-      ],
+      providers: [AssetService, provideHttpClientTesting()],
     });
     service = TestBed.inject(AssetService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -582,13 +612,18 @@ describe('AssetService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('should fetch assets', () => {
-    const mockData: PaginatedData<Asset> = { items: [], pageIndex: 0, totalPages: 0, totalItems: 0 };
-    service.getAssets('/photos', 0, 'FILE_NAME').subscribe(data => {
+  it("should fetch assets", () => {
+    const mockData: PaginatedData<Asset> = {
+      items: [],
+      pageIndex: 0,
+      totalPages: 0,
+      totalItems: 0,
+    };
+    service.getAssets("/photos", 0, "FILE_NAME").subscribe((data) => {
       expect(data).toEqual(mockData);
     });
-    const req = httpMock.expectOne(r => r.url.includes('/api/assets'));
-    expect(req.request.method).toBe('GET');
+    const req = httpMock.expectOne((r) => r.url.includes("/api/assets"));
+    expect(req.request.method).toBe("GET");
     req.flush(mockData);
   });
 });
@@ -608,7 +643,7 @@ describe('AssetService', () => {
 - **Unsubscribe on destroy** — close `EventSource` and unsubscribe from observables in `ngOnDestroy`.
 - **`track` in `@for`** — always provide a track expression: `@for (item of items; track item.id)`.
 - **Prefer `Set<T>`** for selection or deduplication over arrays with `indexOf`.
-- **No comments that restate the code** — add a comment only when the *why* is non-obvious.
+- **No comments that restate the code** — add a comment only when the _why_ is non-obvious.
 - **One component per file** — no barrel re-exports unless the project already uses them.
 
 ---
@@ -618,26 +653,26 @@ describe('AssetService', () => {
 For wizard-like flows (configure → running → results):
 
 ```typescript
-type StepState = 'configure' | 'running' | 'results';
+type StepState = "configure" | "running" | "results";
 
 export class SyncComponent implements OnDestroy {
-  stepState: StepState = 'configure';
+  stepState: StepState = "configure";
   syncResult?: SyncResult;
   private syncEventSource?: EventSource;
 
   startSync(): void {
-    this.stepState = 'running';
+    this.stepState = "running";
     this.syncEventSource = this.syncService.runSync();
-    this.syncEventSource.addEventListener('sync', (event: MessageEvent) => {
+    this.syncEventSource.addEventListener("sync", (event: MessageEvent) => {
       const result: SyncResult = JSON.parse(event.data);
       this.syncResult = result;
-      this.stepState = 'results';
+      this.stepState = "results";
       this.syncEventSource?.close();
     });
   }
 
   restart(): void {
-    this.stepState = 'configure';
+    this.stepState = "configure";
     this.syncResult = undefined;
   }
 
