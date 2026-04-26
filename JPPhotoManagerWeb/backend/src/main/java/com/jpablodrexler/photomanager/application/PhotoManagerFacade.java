@@ -17,10 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
-import java.nio.file.FileSystems;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -33,6 +32,13 @@ public class PhotoManagerFacade {
 
     private static final int PAGE_SIZE = 100;
     private static final int MAX_RECENT_PATHS = 20;
+    private static final Sort DEFAULT_SORT = Sort.by("fileName").ascending();
+    private static final Map<SortCriteria, Sort> SORT_MAP = Map.of(
+            SortCriteria.FILE_NAME, DEFAULT_SORT,
+            SortCriteria.FILE_SIZE, Sort.by("fileSize").descending(),
+            SortCriteria.FILE_CREATION_DATE_TIME, Sort.by("fileCreationDateTime").descending(),
+            SortCriteria.FILE_MODIFICATION_DATE_TIME, Sort.by("fileModificationDateTime").descending(),
+            SortCriteria.THUMBNAIL_CREATION_DATE_TIME, Sort.by("thumbnailCreationDateTime").descending());
 
     private final AssetRepository assetRepository;
     private final FolderRepository folderRepository;
@@ -46,7 +52,8 @@ public class PhotoManagerFacade {
     private final ConvertAssetsService convertAssetsService;
     private final StorageService storageService;
 
-    public record AssetImage(byte[] bytes, String fileName) {}
+    public record AssetImage(byte[] bytes, String fileName) {
+    }
 
     @Value("${photomanager.initial-directory:${user.home}/Pictures}")
     private String initialDirectory;
@@ -84,7 +91,8 @@ public class PhotoManagerFacade {
                     return folderRepository.save(f);
                 });
 
-        boolean result = moveAssetsService.moveAssets(assets.toArray(new Asset[0]), destinationFolder, preserveOriginal);
+        boolean result = moveAssetsService.moveAssets(assets.toArray(new Asset[0]), destinationFolder,
+                preserveOriginal);
 
         if (result) {
             saveRecentTargetPath(destinationFolderPath);
@@ -180,14 +188,9 @@ public class PhotoManagerFacade {
     }
 
     private Sort buildSort(SortCriteria criteria) {
-        if (criteria == null) return Sort.by("fileName").ascending();
-        return switch (criteria) {
-            case FILE_NAME -> Sort.by("fileName").ascending();
-            case FILE_SIZE -> Sort.by("fileSize").descending();
-            case FILE_CREATION_DATE_TIME -> Sort.by("fileCreationDateTime").descending();
-            case FILE_MODIFICATION_DATE_TIME -> Sort.by("fileModificationDateTime").descending();
-            case THUMBNAIL_CREATION_DATE_TIME -> Sort.by("thumbnailCreationDateTime").descending();
-            default -> Sort.by("fileName").ascending();
-        };
+        if (criteria == null) {
+            return DEFAULT_SORT;
+        }
+        return SORT_MAP.getOrDefault(criteria, DEFAULT_SORT);
     }
 }
