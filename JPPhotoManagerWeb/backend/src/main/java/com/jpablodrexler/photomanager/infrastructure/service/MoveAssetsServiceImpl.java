@@ -5,6 +5,7 @@ import com.jpablodrexler.photomanager.domain.entity.Folder;
 import com.jpablodrexler.photomanager.domain.repository.AssetRepository;
 import com.jpablodrexler.photomanager.domain.service.MoveAssetsService;
 import com.jpablodrexler.photomanager.domain.service.StorageService;
+import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

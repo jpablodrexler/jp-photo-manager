@@ -6,7 +6,7 @@ import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.domain.entity.Asset;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
-import com.jpablodrexler.photomanager.infrastructure.service.ThumbnailStorageService;
+import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;

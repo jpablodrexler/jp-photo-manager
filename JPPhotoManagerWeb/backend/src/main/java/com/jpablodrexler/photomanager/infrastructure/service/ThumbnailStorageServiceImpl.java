@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
+import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -11,11 +12,12 @@ import java.nio.file.Paths;
 
 @Service
 @Slf4j
-public class ThumbnailStorageService {
+public class ThumbnailStorageServiceImpl implements ThumbnailStorageService {
 
     @Value("${photomanager.thumbnails-directory:${user.home}/.photomanager/thumbnails}")
     private String thumbnailsDirectory;
 
+    @Override
     public void saveThumbnail(String blobName, byte[] data) {
         try {
             Path dir = Paths.get(thumbnailsDirectory);
@@ -26,6 +28,7 @@ public class ThumbnailStorageService {
         }
     }
 
+    @Override
     public byte[] loadThumbnail(String blobName) {
         try {
             Path path = Paths.get(thumbnailsDirectory).resolve(blobName);
@@ -38,6 +41,7 @@ public class ThumbnailStorageService {
         return null;
     }
 
+    @Override
     public void deleteThumbnail(String blobName) {
         try {
             Files.deleteIfExists(Paths.get(thumbnailsDirectory).resolve(blobName));
@@ -46,6 +50,7 @@ public class ThumbnailStorageService {
         }
     }
 
+    @Override
     public boolean thumbnailExists(String blobName) {
         return Files.exists(Paths.get(thumbnailsDirectory).resolve(blobName));
     }
