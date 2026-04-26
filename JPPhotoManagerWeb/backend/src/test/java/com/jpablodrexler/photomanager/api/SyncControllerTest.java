@@ -25,9 +25,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class SyncControllerTest {
 
-    @Autowired MockMvc mockMvc;
-    @Autowired ObjectMapper objectMapper;
-    @MockBean PhotoManagerFacade facade;
+    @Autowired
+    MockMvc mockMvc;
+    @Autowired
+    ObjectMapper objectMapper;
+    @MockBean
+    PhotoManagerFacade facade;
 
     // --- GET /api/sync/configuration ---
 
@@ -59,8 +62,8 @@ class SyncControllerTest {
         List<SyncAssetsDirectoriesDefinition> defs = List.of(buildDef("/src", "/dst"));
 
         mockMvc.perform(put("/api/sync/configuration")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(defs)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(defs)))
                 .andExpect(status().isNoContent());
 
         verify(facade).setSyncAssetsConfiguration(any());

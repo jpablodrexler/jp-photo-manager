@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager.api;
 import com.jpablodrexler.photomanager.api.dto.AssetDto;
 import com.jpablodrexler.photomanager.api.dto.MoveAssetsRequest;
 import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
+import com.jpablodrexler.photomanager.application.PhotoManagerFacadeImpl;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.domain.entity.Asset;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
@@ -39,8 +40,7 @@ public class AssetController {
                 data.getItems().stream().map(this::toDto).collect(Collectors.toList()),
                 data.getPageIndex(),
                 data.getTotalPages(),
-                data.getTotalItems()
-        );
+                data.getTotalItems());
         return ResponseEntity.ok(result);
     }
 
@@ -58,7 +58,7 @@ public class AssetController {
     @GetMapping("/{assetId}/image")
     public ResponseEntity<byte[]> getFullImage(@PathVariable Long assetId) {
         try {
-            PhotoManagerFacade.AssetImage image = facade.getAssetImage(assetId);
+            PhotoManagerFacadeImpl.AssetImage image = facade.getAssetImage(assetId);
             return ResponseEntity.ok()
                     .contentType(detectMediaType(image.fileName()))
                     .body(image.bytes());
@@ -69,8 +69,10 @@ public class AssetController {
 
     private MediaType detectMediaType(String fileName) {
         String lower = fileName.toLowerCase();
-        if (lower.endsWith(".png")) return MediaType.IMAGE_PNG;
-        if (lower.endsWith(".gif")) return MediaType.IMAGE_GIF;
+        if (lower.endsWith(".png"))
+            return MediaType.IMAGE_PNG;
+        if (lower.endsWith(".gif"))
+            return MediaType.IMAGE_GIF;
         return MediaType.IMAGE_JPEG;
     }
 

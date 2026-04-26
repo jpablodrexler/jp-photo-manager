@@ -25,9 +25,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class ConvertControllerTest {
 
-    @Autowired MockMvc mockMvc;
-    @Autowired ObjectMapper objectMapper;
-    @MockBean PhotoManagerFacade facade;
+    @Autowired
+    MockMvc mockMvc;
+    @Autowired
+    ObjectMapper objectMapper;
+    @MockBean
+    PhotoManagerFacade facade;
 
     // --- GET /api/convert/configuration ---
 
@@ -59,8 +62,8 @@ class ConvertControllerTest {
         List<ConvertAssetsDirectoriesDefinition> defs = List.of(buildDef("/src", "/dst"));
 
         mockMvc.perform(put("/api/convert/configuration")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(defs)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(defs)))
                 .andExpect(status().isNoContent());
 
         verify(facade).setConvertAssetsConfiguration(any());

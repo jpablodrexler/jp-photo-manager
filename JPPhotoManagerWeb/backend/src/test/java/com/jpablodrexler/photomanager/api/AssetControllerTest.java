@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager.api;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpablodrexler.photomanager.api.dto.MoveAssetsRequest;
 import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
+import com.jpablodrexler.photomanager.application.PhotoManagerFacadeImpl;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.domain.entity.Asset;
 import com.jpablodrexler.photomanager.domain.entity.Folder;
@@ -16,7 +17,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -29,11 +29,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class AssetControllerTest {
 
-    @Autowired MockMvc mockMvc;
-    @Autowired ObjectMapper objectMapper;
+    @Autowired
+    MockMvc mockMvc;
+    @Autowired
+    ObjectMapper objectMapper;
 
-    @MockBean PhotoManagerFacade facade;
-    @MockBean ThumbnailStorageService thumbnailStorageService;
+    @MockBean
+    PhotoManagerFacade facade;
+    @MockBean
+    ThumbnailStorageService thumbnailStorageService;
 
     // --- GET /api/assets ---
 
@@ -46,8 +50,8 @@ class AssetControllerTest {
         when(facade.getAssets(eq("/photos"), eq(0), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/assets")
-                        .param("folderPath", "/photos")
-                        .param("page", "0"))
+                .param("folderPath", "/photos")
+                .param("page", "0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray())
                 .andExpect(jsonPath("$.items[0].fileName").value("photo.jpg"))
@@ -61,8 +65,8 @@ class AssetControllerTest {
         when(facade.getAssets(eq("/empty"), eq(0), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/assets")
-                        .param("folderPath", "/empty")
-                        .param("page", "0"))
+                .param("folderPath", "/empty")
+                .param("page", "0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isEmpty())
                 .andExpect(jsonPath("$.totalItems").value(0));
@@ -72,7 +76,7 @@ class AssetControllerTest {
 
     @Test
     void getThumbnail_thumbnailExists_returns200WithJpegBytes() throws Exception {
-        when(thumbnailStorageService.loadThumbnail("42.bin")).thenReturn(new byte[]{(byte) 0xFF, (byte) 0xD8});
+        when(thumbnailStorageService.loadThumbnail("42.bin")).thenReturn(new byte[] { (byte) 0xFF, (byte) 0xD8 });
 
         mockMvc.perform(get("/api/assets/42/thumbnail"))
                 .andExpect(status().isOk())
@@ -92,7 +96,7 @@ class AssetControllerTest {
     @Test
     void getFullImage_assetFound_returns200WithImageBytes() throws Exception {
         when(facade.getAssetImage(1L))
-                .thenReturn(new PhotoManagerFacade.AssetImage(new byte[]{1, 2, 3}, "photo.jpg"));
+                .thenReturn(new PhotoManagerFacadeImpl.AssetImage(new byte[] { 1, 2, 3 }, "photo.jpg"));
 
         mockMvc.perform(get("/api/assets/1/image"))
                 .andExpect(status().isOk())
@@ -110,7 +114,7 @@ class AssetControllerTest {
     @Test
     void getFullImage_pngFile_returns200WithPngContentType() throws Exception {
         when(facade.getAssetImage(2L))
-                .thenReturn(new PhotoManagerFacade.AssetImage(new byte[]{1, 2, 3}, "image.png"));
+                .thenReturn(new PhotoManagerFacadeImpl.AssetImage(new byte[] { 1, 2, 3 }, "image.png"));
 
         mockMvc.perform(get("/api/assets/2/image"))
                 .andExpect(status().isOk())
@@ -138,13 +142,13 @@ class AssetControllerTest {
         when(facade.moveAssets(any(), eq("/dest"), eq(false))).thenReturn(true);
 
         MoveAssetsRequest request = new MoveAssetsRequest();
-        request.setAssetIds(new Long[]{1L, 2L});
+        request.setAssetIds(new Long[] { 1L, 2L });
         request.setDestinationFolderPath("/dest");
         request.setPreserveOriginal(false);
 
         mockMvc.perform(post("/api/assets/move")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(content().string("true"));
     }
@@ -154,13 +158,13 @@ class AssetControllerTest {
         when(facade.moveAssets(any(), eq("/dest"), eq(false))).thenReturn(false);
 
         MoveAssetsRequest request = new MoveAssetsRequest();
-        request.setAssetIds(new Long[]{1L});
+        request.setAssetIds(new Long[] { 1L });
         request.setDestinationFolderPath("/dest");
         request.setPreserveOriginal(false);
 
         mockMvc.perform(post("/api/assets/move")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(content().string("false"));
     }
@@ -172,8 +176,8 @@ class AssetControllerTest {
         doNothing().when(facade).deleteAssets(any(), anyBoolean());
 
         mockMvc.perform(delete("/api/assets")
-                        .param("assetIds", "1", "2")
-                        .param("deleteFiles", "true"))
+                .param("assetIds", "1", "2")
+                .param("deleteFiles", "true"))
                 .andExpect(status().isNoContent());
     }
 

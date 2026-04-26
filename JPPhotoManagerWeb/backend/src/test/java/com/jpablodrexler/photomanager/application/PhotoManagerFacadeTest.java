@@ -32,19 +32,31 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PhotoManagerFacadeTest {
 
-    @Mock AssetRepository assetRepository;
-    @Mock FolderRepository folderRepository;
-    @Mock RecentTargetPathRepository recentTargetPathRepository;
-    @Mock SyncAssetsConfigRepository syncAssetsConfigRepository;
-    @Mock ConvertAssetsConfigRepository convertAssetsConfigRepository;
-    @Mock CatalogAssetsService catalogAssetsService;
-    @Mock FindDuplicatedAssetsService findDuplicatedAssetsService;
-    @Mock MoveAssetsService moveAssetsService;
-    @Mock SyncAssetsService syncAssetsService;
-    @Mock ConvertAssetsService convertAssetsService;
-    @Mock StorageService storageService;
+    @Mock
+    AssetRepository assetRepository;
+    @Mock
+    FolderRepository folderRepository;
+    @Mock
+    RecentTargetPathRepository recentTargetPathRepository;
+    @Mock
+    SyncAssetsConfigRepository syncAssetsConfigRepository;
+    @Mock
+    ConvertAssetsConfigRepository convertAssetsConfigRepository;
+    @Mock
+    CatalogAssetsService catalogAssetsService;
+    @Mock
+    FindDuplicatedAssetsService findDuplicatedAssetsService;
+    @Mock
+    MoveAssetsService moveAssetsService;
+    @Mock
+    SyncAssetsService syncAssetsService;
+    @Mock
+    ConvertAssetsService convertAssetsService;
+    @Mock
+    StorageService storageService;
 
-    @InjectMocks PhotoManagerFacade sut;
+    @InjectMocks
+    PhotoManagerFacadeImpl sut;
 
     @BeforeEach
     void setUp() {
@@ -129,7 +141,7 @@ class PhotoManagerFacadeTest {
         when(moveAssetsService.moveAssets(any(), eq(dest), eq(false))).thenReturn(true);
         when(recentTargetPathRepository.existsByPath("/dest")).thenReturn(true);
 
-        boolean result = sut.moveAssets(new Long[]{10L}, "/dest", false);
+        boolean result = sut.moveAssets(new Long[] { 10L }, "/dest", false);
 
         assertThat(result).isTrue();
         verify(folderRepository, never()).save(any());
@@ -147,7 +159,7 @@ class PhotoManagerFacadeTest {
         when(moveAssetsService.moveAssets(any(), eq(savedFolder), eq(false))).thenReturn(true);
         when(recentTargetPathRepository.existsByPath("/newdest")).thenReturn(true);
 
-        sut.moveAssets(new Long[]{10L}, "/newdest", false);
+        sut.moveAssets(new Long[] { 10L }, "/newdest", false);
 
         verify(folderRepository).save(argThat(f -> "/newdest".equals(f.getPath())));
     }
@@ -164,7 +176,7 @@ class PhotoManagerFacadeTest {
         when(recentTargetPathRepository.existsByPath("/dest")).thenReturn(false);
         when(recentTargetPathRepository.findAllByOrderByIdDesc()).thenReturn(List.of());
 
-        sut.moveAssets(new Long[]{5L}, "/dest", false);
+        sut.moveAssets(new Long[] { 5L }, "/dest", false);
 
         verify(recentTargetPathRepository).save(argThat(r -> "/dest".equals(r.getPath())));
     }
@@ -179,7 +191,7 @@ class PhotoManagerFacadeTest {
         when(folderRepository.findByPath("/dest")).thenReturn(Optional.of(dest));
         when(moveAssetsService.moveAssets(any(), eq(dest), eq(false))).thenReturn(false);
 
-        boolean result = sut.moveAssets(new Long[]{5L}, "/dest", false);
+        boolean result = sut.moveAssets(new Long[] { 5L }, "/dest", false);
 
         assertThat(result).isFalse();
         verify(recentTargetPathRepository, never()).save(any());
@@ -196,7 +208,7 @@ class PhotoManagerFacadeTest {
         when(moveAssetsService.moveAssets(any(), eq(dest), eq(false))).thenReturn(true);
         when(recentTargetPathRepository.existsByPath("/dest")).thenReturn(true);
 
-        sut.moveAssets(new Long[]{5L}, "/dest", false);
+        sut.moveAssets(new Long[] { 5L }, "/dest", false);
 
         verify(recentTargetPathRepository, never()).save(any());
     }
@@ -218,7 +230,7 @@ class PhotoManagerFacadeTest {
         when(recentTargetPathRepository.existsByPath("/dest")).thenReturn(false);
         when(recentTargetPathRepository.findAllByOrderByIdDesc()).thenReturn(existingPaths);
 
-        sut.moveAssets(new Long[]{5L}, "/dest", false);
+        sut.moveAssets(new Long[] { 5L }, "/dest", false);
 
         verify(recentTargetPathRepository).deleteAll(existingPaths.subList(20, 21));
     }
@@ -231,7 +243,7 @@ class PhotoManagerFacadeTest {
         asset.setAssetId(7L);
         when(assetRepository.findAllById(List.of(7L))).thenReturn(List.of(asset));
 
-        sut.deleteAssets(new Long[]{7L}, true);
+        sut.deleteAssets(new Long[] { 7L }, true);
 
         verify(moveAssetsService).deleteAssets(any(), eq(true));
     }
@@ -382,12 +394,12 @@ class PhotoManagerFacadeTest {
         Asset asset = buildAsset(folder, "photo.jpg");
         asset.setAssetId(42L);
         when(assetRepository.findById(42L)).thenReturn(Optional.of(asset));
-        when(storageService.readFileBytes("/photos/photo.jpg")).thenReturn(new byte[]{1, 2, 3});
+        when(storageService.readFileBytes("/photos/photo.jpg")).thenReturn(new byte[] { 1, 2, 3 });
 
-        PhotoManagerFacade.AssetImage result = sut.getAssetImage(42L);
+        PhotoManagerFacadeImpl.AssetImage result = sut.getAssetImage(42L);
 
         assertThat(result.fileName()).isEqualTo("photo.jpg");
-        assertThat(result.bytes()).isEqualTo(new byte[]{1, 2, 3});
+        assertThat(result.bytes()).isEqualTo(new byte[] { 1, 2, 3 });
     }
 
     @Test

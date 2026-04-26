@@ -20,8 +20,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class FolderControllerTest {
 
-    @Autowired MockMvc mockMvc;
-    @MockBean PhotoManagerFacade facade;
+    @Autowired
+    MockMvc mockMvc;
+    @MockBean
+    PhotoManagerFacade facade;
 
     // --- GET /api/folders ---
 
