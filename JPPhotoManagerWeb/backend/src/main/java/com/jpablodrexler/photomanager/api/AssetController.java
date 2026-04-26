@@ -3,7 +3,7 @@ package com.jpablodrexler.photomanager.api;
 import com.jpablodrexler.photomanager.api.dto.AssetDto;
 import com.jpablodrexler.photomanager.api.dto.MoveAssetsRequest;
 import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
-import com.jpablodrexler.photomanager.application.PhotoManagerFacadeImpl;
+import com.jpablodrexler.photomanager.application.dto.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.domain.entity.Asset;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
@@ -58,7 +58,7 @@ public class AssetController {
     @GetMapping("/{assetId}/image")
     public ResponseEntity<byte[]> getFullImage(@PathVariable Long assetId) {
         try {
-            PhotoManagerFacadeImpl.AssetImage image = facade.getAssetImage(assetId);
+            AssetImage image = facade.getAssetImage(assetId);
             return ResponseEntity.ok()
                     .contentType(detectMediaType(image.fileName()))
                     .body(image.bytes());

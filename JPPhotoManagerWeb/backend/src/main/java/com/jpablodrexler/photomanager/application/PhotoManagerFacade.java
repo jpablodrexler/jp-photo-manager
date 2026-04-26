@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import com.jpablodrexler.photomanager.application.PhotoManagerFacadeImpl.AssetImage;
+import com.jpablodrexler.photomanager.application.dto.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.application.dto.ConvertAssetsResult;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;

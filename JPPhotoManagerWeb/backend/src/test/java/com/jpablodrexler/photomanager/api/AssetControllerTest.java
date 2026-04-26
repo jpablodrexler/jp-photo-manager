@@ -3,7 +3,7 @@ package com.jpablodrexler.photomanager.api;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpablodrexler.photomanager.api.dto.MoveAssetsRequest;
 import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
-import com.jpablodrexler.photomanager.application.PhotoManagerFacadeImpl;
+import com.jpablodrexler.photomanager.application.dto.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.domain.entity.Asset;
 import com.jpablodrexler.photomanager.domain.entity.Folder;
@@ -97,7 +97,7 @@ class AssetControllerTest {
     @Test
     void getFullImage_assetFound_returns200WithImageBytes() throws Exception {
         when(facade.getAssetImage(1L))
-                .thenReturn(new PhotoManagerFacadeImpl.AssetImage(new byte[] { 1, 2, 3 }, "photo.jpg"));
+                .thenReturn(new AssetImage(new byte[] { 1, 2, 3 }, "photo.jpg"));
 
         mockMvc.perform(get("/api/assets/1/image"))
                 .andExpect(status().isOk())
@@ -115,7 +115,7 @@ class AssetControllerTest {
     @Test
     void getFullImage_pngFile_returns200WithPngContentType() throws Exception {
         when(facade.getAssetImage(2L))
-                .thenReturn(new PhotoManagerFacadeImpl.AssetImage(new byte[] { 1, 2, 3 }, "image.png"));
+                .thenReturn(new AssetImage(new byte[] { 1, 2, 3 }, "image.png"));
 
         mockMvc.perform(get("/api/assets/2/image"))
                 .andExpect(status().isOk())

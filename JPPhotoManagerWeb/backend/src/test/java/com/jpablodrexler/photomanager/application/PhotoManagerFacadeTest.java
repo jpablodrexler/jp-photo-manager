@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.application;
 
+import com.jpablodrexler.photomanager.application.dto.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.ConvertAssetsResult;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.application.dto.SyncAssetsResult;
@@ -396,7 +397,7 @@ class PhotoManagerFacadeTest {
         when(assetRepository.findById(42L)).thenReturn(Optional.of(asset));
         when(storageService.readFileBytes("/photos/photo.jpg")).thenReturn(new byte[] { 1, 2, 3 });
 
-        PhotoManagerFacadeImpl.AssetImage result = sut.getAssetImage(42L);
+        AssetImage result = sut.getAssetImage(42L);
 
         assertThat(result.fileName()).isEqualTo("photo.jpg");
         assertThat(result.bytes()).isEqualTo(new byte[] { 1, 2, 3 });

@@ -1,6 +1,10 @@
 package com.jpablodrexler.photomanager.application;
 
-import com.jpablodrexler.photomanager.application.dto.*;
+import com.jpablodrexler.photomanager.application.dto.AssetImage;
+import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
+import com.jpablodrexler.photomanager.application.dto.ConvertAssetsResult;
+import com.jpablodrexler.photomanager.application.dto.PaginatedData;
+import com.jpablodrexler.photomanager.application.dto.SyncAssetsResult;
 import com.jpablodrexler.photomanager.domain.entity.*;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 import com.jpablodrexler.photomanager.domain.repository.*;
@@ -51,9 +55,6 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
     private final SyncAssetsService syncAssetsService;
     private final ConvertAssetsService convertAssetsService;
     private final StorageService storageService;
-
-    public record AssetImage(byte[] bytes, String fileName) {
-    }
 
     @Value("${photomanager.initial-directory:${user.home}/Pictures}")
     private String initialDirectory;
