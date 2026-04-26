@@ -26,8 +26,9 @@ describe("FolderNavComponent", () => {
   }
 
   it("should create the component", () => {
-    mountComponent();
-    cy.get("app-folder-nav").should("exist");
+    mountComponent().then(({ fixture }) => {
+      expect(fixture.componentInstance).to.be.ok;
+    });
   });
 
   it("should load and display folders on init", () => {
@@ -37,17 +38,17 @@ describe("FolderNavComponent", () => {
   });
 
   it("should render a top-level folder when its parent is not returned by the API", () => {
-    const nestedFolders: Folder[] = [
-      { folderId: 1, path: "/photos", name: "photos" },
+    const foldersWithMissingParent: Folder[] = [
       {
         folderId: 2,
         path: "/photos/vacation",
         name: "vacation",
         parentPath: "/photos",
+        // "/photos" is intentionally absent — vacation becomes a root node
       },
     ];
 
-    const getFolders = cy.stub().returns(of(nestedFolders));
+    const getFolders = cy.stub().returns(of(foldersWithMissingParent));
     cy.mount(FolderNavComponent, {
       providers: [
         provideNoopAnimations(),
@@ -55,7 +56,6 @@ describe("FolderNavComponent", () => {
       ],
     });
 
-    cy.contains("photos").should("exist");
     cy.contains("vacation").should("exist");
   });
 

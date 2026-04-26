@@ -8,6 +8,7 @@
     "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "cypress run --component",
+    "test:coverage": "cypress run --component --env coverage=true",
     "cypress:open": "cypress open --component",
     "lint": "ng lint"
   },
@@ -31,7 +32,11 @@
     "@angular-devkit/build-angular": "^19.0.0",
     "@angular/cli": "^19.0.0",
     "@angular/compiler-cli": "^19.0.0",
+    "@babel/core": "^7.29.0",
+    "@cypress/code-coverage": "^3.14.7",
     "@types/node": "^18.18.0",
+    "babel-loader": "^10.1.1",
+    "babel-plugin-istanbul": "^8.0.0",
     "cypress": "^13.0.0",
     "typescript": "~5.6.0"
   }

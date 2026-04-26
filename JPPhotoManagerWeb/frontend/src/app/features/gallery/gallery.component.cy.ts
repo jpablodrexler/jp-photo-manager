@@ -4,6 +4,7 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { GalleryComponent } from './gallery.component';
 import { AssetService } from '../../core/services/asset.service';
+import { FolderService } from '../../core/services/folder.service';
 import { Asset } from '../../core/models/asset.model';
 import { PaginatedData } from '../../core/models/paginated-data.model';
 import { MockEventSource } from '../../../../cypress/support/mock-event-source';
@@ -46,18 +47,24 @@ describe('GalleryComponent', () => {
       ...assetServiceOverrides,
     };
 
+    const folderServiceStub: Partial<FolderService> = {
+      getFolders: cy.stub().returns(of([])),
+    };
+
     return cy.mount(GalleryComponent, {
       providers: [
         provideNoopAnimations(),
         provideRouter([]),
         { provide: AssetService, useValue: assetServiceStub },
+        { provide: FolderService, useValue: folderServiceStub },
       ],
     }).then(result => ({ ...result, mockSource, assetServiceStub }));
   }
 
   it('should create the component', () => {
-    mountGallery();
-    cy.get('app-gallery').should('exist');
+    mountGallery().then(({ fixture }) => {
+      expect(fixture.componentInstance).to.be.ok;
+    });
   });
 
   it('should start in thumbnails view mode', () => {
@@ -227,6 +234,7 @@ describe('GalleryComponent', () => {
     const catalogAssets = cy.stub().returns(mockSource);
 
     mountGallery({ catalogAssets }).then(({ fixture }) => {
+      fixture.detectChanges(); // trigger ngOnInit so startCatalog() registers listeners
       mockSource.emit('catalog', { percentCompleted: 60, message: 'Scanning…', reason: 'SCANNING' });
       fixture.detectChanges();
       expect(fixture.componentInstance.catalogProgress).to.equal(60);
@@ -238,6 +246,7 @@ describe('GalleryComponent', () => {
     const catalogAssets = cy.stub().returns(mockSource);
 
     mountGallery({ catalogAssets }).then(({ fixture }) => {
+      fixture.detectChanges(); // trigger ngOnInit so startCatalog() sets cataloging = true
       expect(fixture.componentInstance.cataloging).to.be.true;
       mockSource.dispatchEvent(new Event('error'));
       fixture.detectChanges();

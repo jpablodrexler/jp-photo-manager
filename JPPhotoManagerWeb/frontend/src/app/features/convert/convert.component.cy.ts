@@ -35,8 +35,9 @@ describe('ConvertComponent', () => {
   }
 
   it('should create the component', () => {
-    mountComponent();
-    cy.get('app-convert').should('exist');
+    mountComponent().then(({ fixture }) => {
+      expect(fixture.componentInstance).to.be.ok;
+    });
   });
 
   it('should start on the configure step', () => {
@@ -53,6 +54,7 @@ describe('ConvertComponent', () => {
 
   it('should populate definitions from loaded configuration', () => {
     mountComponent().then(({ fixture }) => {
+      fixture.detectChanges();
       expect(fixture.componentInstance.definitions).to.deep.equal(mockDefinitions);
     });
   });

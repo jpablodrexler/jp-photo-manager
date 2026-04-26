@@ -14,7 +14,11 @@ describe('AppComponent', () => {
   });
 
   it('should create the app', () => {
-    cy.get('app-root').should('exist');
+    cy.mount(AppComponent, {
+      providers: [provideRouter([]), provideNoopAnimations()],
+    }).then(({ fixture }) => {
+      expect(fixture.componentInstance).to.be.ok;
+    });
   });
 
   it('should render the navigation toolbar', () => {

@@ -41,8 +41,9 @@ describe('DuplicatesComponent', () => {
   }
 
   it('should create the component', () => {
-    mountComponent();
-    cy.get('app-duplicates').should('exist');
+    mountComponent().then(({ fixture }) => {
+      expect(fixture.componentInstance).to.be.ok;
+    });
   });
 
   it('should load duplicates on init', () => {
@@ -53,18 +54,21 @@ describe('DuplicatesComponent', () => {
 
   it('should display the correct number of duplicate groups', () => {
     mountComponent().then(({ fixture }) => {
+      fixture.detectChanges();
       expect(fixture.componentInstance.groups).to.have.length(2);
     });
   });
 
   it('should calculate totalDuplicates correctly', () => {
     mountComponent().then(({ fixture }) => {
+      fixture.detectChanges();
       expect(fixture.componentInstance.totalDuplicates).to.equal(3);
     });
   });
 
   it('should default keepIndex to 0 for each group', () => {
     mountComponent().then(({ fixture }) => {
+      fixture.detectChanges();
       fixture.componentInstance.groups.forEach(group => {
         expect(group.keepIndex).to.equal(0);
       });
@@ -73,6 +77,7 @@ describe('DuplicatesComponent', () => {
 
   it('should update keepIndex when markAsKeep is called', () => {
     mountComponent().then(({ fixture }) => {
+      fixture.detectChanges();
       const component = fixture.componentInstance;
       const group = component.groups[0];
       component.markAsKeep(group, 1);
@@ -84,6 +89,7 @@ describe('DuplicatesComponent', () => {
     const deleteAssets = cy.stub().returns(of(undefined));
 
     mountComponent({ deleteAssets }).then(({ fixture }) => {
+      fixture.detectChanges();
       const component = fixture.componentInstance;
       const group = component.groups[0];
       component.deleteGroup(group);
@@ -93,6 +99,7 @@ describe('DuplicatesComponent', () => {
 
   it('should remove the group from the list after successful deletion', () => {
     mountComponent().then(({ fixture }) => {
+      fixture.detectChanges();
       const component = fixture.componentInstance;
       const initialLength = component.groups.length;
       component.deleteGroup(component.groups[0]);
@@ -104,6 +111,7 @@ describe('DuplicatesComponent', () => {
     const deleteAssets = cy.stub().returns(of(undefined));
 
     mountComponent({ deleteAssets }).then(({ fixture }) => {
+      fixture.detectChanges();
       const component = fixture.componentInstance;
       const group = component.groups[1];
       component.markAsKeep(group, 1);
