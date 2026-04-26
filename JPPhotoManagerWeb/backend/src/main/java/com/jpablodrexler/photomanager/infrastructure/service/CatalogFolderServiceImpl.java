@@ -1,0 +1,133 @@
+package com.jpablodrexler.photomanager.infrastructure.service;
+
+import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
+import com.jpablodrexler.photomanager.domain.entity.Asset;
+import com.jpablodrexler.photomanager.domain.entity.Folder;
+import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
+import com.jpablodrexler.photomanager.domain.repository.AssetRepository;
+import com.jpablodrexler.photomanager.domain.repository.FolderRepository;
+import com.jpablodrexler.photomanager.domain.service.CatalogFolderService;
+import com.jpablodrexler.photomanager.domain.service.StorageService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class CatalogFolderServiceImpl implements CatalogFolderService {
+
+    private static final int THUMBNAIL_MAX_WIDTH = 200;
+    private static final int THUMBNAIL_MAX_HEIGHT = 150;
+
+    private final AssetRepository assetRepository;
+    private final FolderRepository folderRepository;
+    private final StorageService storageService;
+    private final ThumbnailStorageService thumbnailStorageService;
+
+    @Transactional
+    public void catalogFolder(String folderPath, Consumer<CatalogChangeNotification> callback,
+                              AtomicInteger processed, int total) {
+        Folder folder = folderRepository.findByPath(folderPath).orElseGet(() -> {
+            Folder f = new Folder();
+            f.setPath(folderPath);
+            Folder saved = folderRepository.save(f);
+            if (callback != null) {
+                callback.accept(new CatalogChangeNotification(ReasonEnum.FOLDER_CREATED, folderPath,
+                        computePercent(processed.get(), total)));
+            }
+            return saved;
+        });
+
+        List<String> filesOnDisk = storageService.listFiles(folderPath);
+        Set<String> fileNamesOnDisk = new HashSet<>();
+        for (String filePath : filesOnDisk) {
+            fileNamesOnDisk.add(Paths.get(filePath).getFileName().toString());
+        }
+
+        List<Asset> cataloguedAssets = assetRepository.findByFolder(folder);
+        Set<String> cataloguedFileNames = new HashSet<>();
+        for (Asset asset : cataloguedAssets) {
+            cataloguedFileNames.add(asset.getFileName());
+        }
+
+        for (String filePath : filesOnDisk) {
+            String fileName = Paths.get(filePath).getFileName().toString();
+            if (!cataloguedFileNames.contains(fileName)) {
+                try {
+                    Asset asset = createAsset(folder, folderPath, fileName);
+                    if (callback != null) {
+                        callback.accept(new CatalogChangeNotification(ReasonEnum.ASSET_CREATED, asset,
+                                computePercent(processed.get(), total)));
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to catalog asset: {}", filePath, e);
+                }
+            }
+        }
+
+        for (Asset asset : cataloguedAssets) {
+            if (!fileNamesOnDisk.contains(asset.getFileName())) {
+                assetRepository.delete(asset);
+                thumbnailStorageService.deleteThumbnail(asset.getThumbnailBlobName());
+                if (callback != null) {
+                    callback.accept(new CatalogChangeNotification(ReasonEnum.ASSET_DELETED, asset,
+                            computePercent(processed.get(), total)));
+                }
+            }
+        }
+
+        processed.incrementAndGet();
+    }
+
+    @Transactional
+    public Asset createAsset(String directoryPath, String fileName) {
+        Folder folder = folderRepository.findByPath(directoryPath).orElseGet(() -> {
+            Folder f = new Folder();
+            f.setPath(directoryPath);
+            return folderRepository.save(f);
+        });
+        return createAsset(folder, directoryPath, fileName);
+    }
+
+    // Runs within the caller's transaction (catalogFolder or createAsset).
+    // The folder entity is already managed in that transaction, so no detached-entity issues.
+    private Asset createAsset(Folder folder, String directoryPath, String fileName) {
+        String filePath = directoryPath + "/" + fileName;
+        try {
+            Asset asset = new Asset();
+            asset.setFolder(folder);
+            asset.setFileName(fileName);
+            asset.setFileSize(storageService.getFileSize(filePath));
+            asset.setHash(storageService.computeHash(filePath));
+            asset.setFileCreationDateTime(storageService.getFileCreationDateTime(filePath));
+            asset.setFileModificationDateTime(storageService.getFileModificationDateTime(filePath));
+            asset.setThumbnailCreationDateTime(LocalDateTime.now());
+            asset.setImageRotation(storageService.getImageRotation(filePath));
+
+            byte[] thumbnail = storageService.generateThumbnail(filePath, THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT);
+            asset = assetRepository.save(asset);
+            thumbnailStorageService.saveThumbnail(asset.getThumbnailBlobName(), thumbnail);
+
+            return asset;
+        } catch (IOException e) {
+            log.error("Failed to create asset for {}", filePath, e);
+            throw new RuntimeException("Failed to create asset", e);
+        }
+    }
+
+    private int computePercent(int processed, int total) {
+        if (total == 0) return 100;
+        return (int) ((double) processed / total * 100);
+    }
+}
