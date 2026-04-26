@@ -29,13 +29,13 @@ Make a todo list and work through it one task at a time.
 
 `spring-boot-starter-test` pulls in all required test dependencies automatically:
 
-| Library         | Version (managed) | Role                              |
-| --------------- | ----------------- | --------------------------------- |
-| JUnit 5         | 5.x               | Test runner and annotations       |
-| Mockito         | 5.x               | Mocking and stubbing              |
-| AssertJ         | 3.x               | Fluent assertions                 |
-| Spring Test     | managed           | `@SpringBootTest`, `MockMvc`, etc |
-| Hamcrest        | 2.x               | (available but AssertJ preferred) |
+| Library     | Version (managed) | Role                              |
+| ----------- | ----------------- | --------------------------------- |
+| JUnit 5     | 5.x               | Test runner and annotations       |
+| Mockito     | 5.x               | Mocking and stubbing              |
+| AssertJ     | 3.x               | Fluent assertions                 |
+| Spring Test | managed           | `@SpringBootTest`, `MockMvc`, etc |
+| Hamcrest    | 2.x               | (available but AssertJ preferred) |
 
 No additional `pom.xml` entries are needed for unit tests; `spring-boot-starter-test` is already declared with `<scope>test</scope>`.
 
@@ -60,21 +60,21 @@ Mirror the main package structure exactly. A test for
 
 ## 2. File Naming and Location
 
-| Rule                                                            | Example                                             |
-| --------------------------------------------------------------- | --------------------------------------------------- |
-| Test class sits in the same package as the class under test     | `CatalogFolderServiceImplTest` alongside `CatalogFolderServiceImpl` |
-| File name is `{ClassName}Test.java` or `{ClassName}Tests.java`  | `CatalogAssetsServiceImplTest.java`                 |
-| Integration test classes use the `IT` suffix or `Integration` suffix | `ApplicationIntegrationTest.java`              |
+| Rule                                                                 | Example                                                             |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Test class sits in the same package as the class under test          | `CatalogFolderServiceImplTest` alongside `CatalogFolderServiceImpl` |
+| File name is `{ClassName}Test.java` or `{ClassName}Tests.java`       | `CatalogAssetsServiceImplTest.java`                                 |
+| Integration test classes use the `IT` suffix or `Integration` suffix | `ApplicationIntegrationTest.java`                                   |
 
 ---
 
 ## 3. Naming Conventions
 
-| Element      | Convention                         | Example                                           |
-| ------------ | ---------------------------------- | ------------------------------------------------- |
-| Test class   | `{ClassName}Test`                  | `CatalogAssetsServiceImplTest`                    |
-| Test method  | `methodName_condition_expectedResult` | `catalogFolder_newFile_createsAsset`           |
-| SUT variable | always `sut`                       | `@InjectMocks CatalogFolderServiceImpl sut;`      |
+| Element       | Convention                             | Example                                      |
+| ------------- | -------------------------------------- | -------------------------------------------- |
+| Test class    | `{ClassName}Test`                      | `CatalogAssetsServiceImplTest`               |
+| Test method   | `methodName_condition_expectedResult`  | `catalogFolder_newFile_createsAsset`         |
+| SUT variable  | always `sut`                           | `@InjectMocks CatalogFolderServiceImpl sut;` |
 | Mock variable | `{type}` or `{field}` name (camelCase) | `@Mock StorageService storageService;`       |
 
 ---
@@ -188,22 +188,22 @@ when(storageService.listImageFiles(any())).thenThrow(new IOException("disk error
 
 Always import `org.assertj.core.api.Assertions.assertThat`:
 
-| Scenario                     | AssertJ assertion                                            |
-| ---------------------------- | ------------------------------------------------------------ |
-| Not null                     | `assertThat(result).isNotNull()`                             |
-| Equality                     | `assertThat(result).isEqualTo(expected)`                     |
-| Boolean true/false           | `assertThat(flag).isTrue()` / `.isFalse()`                  |
-| List size                    | `assertThat(list).hasSize(3)`                                |
-| List contains element        | `assertThat(list).contains(element)`                         |
-| List contains exactly        | `assertThat(list).containsExactly(a, b, c)`                 |
-| List is empty                | `assertThat(list).isEmpty()`                                 |
-| String contains              | `assertThat(str).contains("substring")`                      |
-| String starts with           | `assertThat(str).startsWith("prefix")`                       |
-| Optional is present          | `assertThat(opt).isPresent()`                                |
-| Optional has value           | `assertThat(opt).hasValue(expected)`                         |
-| Exception thrown             | `assertThatThrownBy(() -> sut.method()).isInstanceOf(RuntimeException.class)` |
-| Exception message            | `assertThatThrownBy(...).hasMessageContaining("disk error")` |
-| Field value via extracting   | `assertThat(asset).extracting(Asset::getFileName).isEqualTo("photo.jpg")` |
+| Scenario                   | AssertJ assertion                                                             |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| Not null                   | `assertThat(result).isNotNull()`                                              |
+| Equality                   | `assertThat(result).isEqualTo(expected)`                                      |
+| Boolean true/false         | `assertThat(flag).isTrue()` / `.isFalse()`                                    |
+| List size                  | `assertThat(list).hasSize(3)`                                                 |
+| List contains element      | `assertThat(list).contains(element)`                                          |
+| List contains exactly      | `assertThat(list).containsExactly(a, b, c)`                                   |
+| List is empty              | `assertThat(list).isEmpty()`                                                  |
+| String contains            | `assertThat(str).contains("substring")`                                       |
+| String starts with         | `assertThat(str).startsWith("prefix")`                                        |
+| Optional is present        | `assertThat(opt).isPresent()`                                                 |
+| Optional has value         | `assertThat(opt).hasValue(expected)`                                          |
+| Exception thrown           | `assertThatThrownBy(() -> sut.method()).isInstanceOf(RuntimeException.class)` |
+| Exception message          | `assertThatThrownBy(...).hasMessageContaining("disk error")`                  |
+| Field value via extracting | `assertThat(asset).extracting(Asset::getFileName).isEqualTo("photo.jpg")`     |
 
 ---
 
@@ -343,7 +343,7 @@ class CatalogFolderServiceIntegrationTest {
     @Test
     void catalogFolder_newFolder_persistsFolderAndAsset() {
         // use a temp directory with a real image file if needed,
-        // or mock StorageService via @MockBean
+        // or mock StorageService via @MockitoBean
         // ...
         assertThat(folderRepository.findAll()).hasSize(1);
     }
@@ -354,7 +354,7 @@ class CatalogFolderServiceIntegrationTest {
 
 - Always annotate integration tests with `@ActiveProfiles("test")` — without it the test
   will target the production SQLite database.
-- Use `@MockBean` to replace Spring beans that touch the real filesystem (e.g. `StorageService`).
+- Use `@MockitoBean` to replace Spring beans that touch the real filesystem (e.g. `StorageService`).
 - Clean up persistent state in `@AfterEach` to keep tests independent.
 - Use `WebEnvironment.NONE` unless the test exercises HTTP endpoints.
 
@@ -371,7 +371,7 @@ full application context:
 class AssetControllerTest {
 
     @Autowired MockMvc mockMvc;
-    @MockBean PhotoManagerFacade facade;
+    @MockitoBean PhotoManagerFacade facade;
 
     @Test
     void getAssets_validFolderPath_returns200() throws Exception {
@@ -404,7 +404,7 @@ class AssetControllerTest {
 **Rules:**
 
 - `@WebMvcTest` auto-configures `MockMvc` and only loads the specified controller.
-- Use `@MockBean` for every bean the controller depends on (the facade and any others).
+- Use `@MockitoBean` for every bean the controller depends on (the facade and any others).
 - Use `jsonPath(...)` from `spring-test` for JSON response assertions.
 - Never use `@SpringBootTest` just to test a controller.
 
@@ -491,4 +491,4 @@ After creating or modifying test files, provide a brief summary covering:
    cd JPPhotoManagerWeb/backend
    mvn test -Dtest=YourNewTest
    ```
-4. Any `@MockBean` or `application-test.yml` changes needed for integration tests
+4. Any `@MockitoBean` or `application-test.yml` changes needed for integration tests
