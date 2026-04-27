@@ -31,7 +31,7 @@ import { FileSizePipe } from '../../pipes/file-size.pipe';
       transition: transform 0.15s, box-shadow 0.15s;
 
       &:hover { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-      &.selected { outline: 3px solid #3f51b5; }
+      &.selected { outline: 3px solid #4caf50; }
 
       img {
         width: 100%;
@@ -52,7 +52,7 @@ import { FileSizePipe } from '../../pipes/file-size.pipe';
     }
     .thumbnail-size {
       font-size: 11px;
-      color: rgba(0,0,0,0.5);
+      color: rgba(255,255,255,0.5);
     }
   `]
 })

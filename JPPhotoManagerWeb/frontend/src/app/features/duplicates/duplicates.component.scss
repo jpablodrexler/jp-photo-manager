@@ -20,14 +20,14 @@
   border: 2px solid transparent;
   border-radius: 8px;
   padding: 8px;
-  background: #fafafa;
+  background: #242424;
   display: flex;
   flex-direction: column;
   gap: 8px;
 
   &.keep {
     border-color: #4caf50;
-    background: #e8f5e9;
+    background: rgba(76, 175, 80, 0.12);
   }
 
   img {
@@ -51,7 +51,7 @@
   }
 
   span {
-    color: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.6);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -61,7 +61,7 @@
 .empty-state {
   text-align: center;
   padding: 64px;
-  color: rgba(0, 0, 0, 0.38);
+  color: rgba(255, 255, 255, 0.38);
 
   p {
     font-size: 20px;

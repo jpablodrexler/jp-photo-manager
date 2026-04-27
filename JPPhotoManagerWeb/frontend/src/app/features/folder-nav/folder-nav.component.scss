@@ -7,11 +7,11 @@
     font-size: 13px;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.04);
+      background: rgba(255, 255, 255, 0.06);
     }
 
     &.selected {
-      background: rgba(63, 81, 181, 0.12);
+      background: rgba(76, 175, 80, 0.15);
       font-weight: 500;
     }
   }
