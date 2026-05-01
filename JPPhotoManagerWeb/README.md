@@ -237,6 +237,8 @@ All components are **standalone** (no NgModules). Routes are lazy-loaded:
 
 Long-running operations (catalog, sync, convert) use the browser's native `EventSource` API to consume SSE streams from the backend, displaying live progress without polling.
 
+**SSE (Server-Sent Events)** is a web standard where the server pushes a stream of text events to the client over a single long-lived HTTP connection. It is one-way (server → client only), HTTP-based — the client makes a regular `GET` request and the response stays open while the server writes `data: ...` lines as events occur — and browsers handle reconnection automatically if the connection drops.
+
 ### Running the frontend
 
 **Prerequisites:** Node.js 22, npm
