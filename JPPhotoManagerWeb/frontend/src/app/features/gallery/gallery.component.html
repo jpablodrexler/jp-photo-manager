@@ -42,11 +42,6 @@
       }
     </mat-toolbar>
 
-    <!-- Catalog progress -->
-    @if (cataloging) {
-      <mat-progress-bar mode="determinate" [value]="catalogProgress" />
-    }
-
     <!-- Thumbnails View -->
     @if (viewMode === 'thumbnails') {
       <div class="thumbnail-grid-container flex-1">

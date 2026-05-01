@@ -1,5 +1,5 @@
 import { mount } from 'cypress/angular';
-import { of, throwError } from 'rxjs';
+import { of } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { GalleryComponent } from './gallery.component';
@@ -7,7 +7,6 @@ import { AssetService } from '../../core/services/asset.service';
 import { FolderService } from '../../core/services/folder.service';
 import { Asset } from '../../core/models/asset.model';
 import { PaginatedData } from '../../core/models/paginated-data.model';
-import { MockEventSource } from '../../../../cypress/support/mock-event-source';
 
 describe('GalleryComponent', () => {
   const mockAssets: Asset[] = [
@@ -38,10 +37,9 @@ describe('GalleryComponent', () => {
   const emptyPage: PaginatedData<Asset> = { items: [], pageIndex: 0, totalPages: 0, totalItems: 0 };
 
   function mountGallery(assetServiceOverrides: Partial<AssetService> = {}) {
-    const mockSource = new MockEventSource();
     const assetServiceStub: Partial<AssetService> = {
       getAssets: cy.stub().returns(of(emptyPage)),
-      catalogAssets: cy.stub().returns(mockSource),
+      catalogAssets: cy.stub(),
       deleteAssets: cy.stub().returns(of(undefined)),
       moveAssets: cy.stub().returns(of(true)),
       ...assetServiceOverrides,
@@ -58,7 +56,7 @@ describe('GalleryComponent', () => {
         { provide: AssetService, useValue: assetServiceStub },
         { provide: FolderService, useValue: folderServiceStub },
       ],
-    }).then(result => ({ ...result, mockSource, assetServiceStub }));
+    }).then(result => ({ ...result, assetServiceStub }));
   }
 
   it('should create the component', () => {
@@ -73,10 +71,15 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('should start cataloging on init', () => {
-    const catalogAssets = cy.stub().returns(new MockEventSource());
+  it('ngOnInit_doesNotCallCatalogAssets', () => {
+    const catalogAssets = cy.stub();
     mountGallery({ catalogAssets });
-    cy.wrap(catalogAssets).should('have.been.calledOnce');
+    cy.wrap(catalogAssets).should('not.have.been.called');
+  });
+
+  it('should not render a progress bar', () => {
+    mountGallery();
+    cy.get('mat-progress-bar').should('not.exist');
   });
 
   it('should load assets when a folder is selected', () => {
@@ -226,31 +229,6 @@ describe('GalleryComponent', () => {
       component.pageIndex = 3;
       component.onSortChange();
       expect(component.pageIndex).to.equal(0);
-    });
-  });
-
-  it('should update catalogProgress when catalog SSE event is received', () => {
-    const mockSource = new MockEventSource();
-    const catalogAssets = cy.stub().returns(mockSource);
-
-    mountGallery({ catalogAssets }).then(({ fixture }) => {
-      fixture.detectChanges(); // trigger ngOnInit so startCatalog() registers listeners
-      mockSource.emit('catalog', { percentCompleted: 60, message: 'Scanning…', reason: 'SCANNING' });
-      fixture.detectChanges();
-      expect(fixture.componentInstance.catalogProgress).to.equal(60);
-    });
-  });
-
-  it('should stop cataloging when SSE error is received', () => {
-    const mockSource = new MockEventSource();
-    const catalogAssets = cy.stub().returns(mockSource);
-
-    mountGallery({ catalogAssets }).then(({ fixture }) => {
-      fixture.detectChanges(); // trigger ngOnInit so startCatalog() sets cataloging = true
-      expect(fixture.componentInstance.cataloging).to.be.true;
-      mockSource.dispatchEvent(new Event('error'));
-      fixture.detectChanges();
-      expect(fixture.componentInstance.cataloging).to.be.false;
     });
   });
 

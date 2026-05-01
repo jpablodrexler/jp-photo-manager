@@ -9,6 +9,7 @@ import com.jpablodrexler.photomanager.domain.repository.AssetRepository;
 import com.jpablodrexler.photomanager.domain.repository.FolderRepository;
 import com.jpablodrexler.photomanager.domain.service.StorageService;
 import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -26,11 +27,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CatalogFolderServiceImplTest {
+
+    private static final Runnable NO_OP_HEARTBEAT = () -> {};
 
     @Mock
     AssetRepository assetRepository;
@@ -47,6 +51,11 @@ class CatalogFolderServiceImplTest {
     @InjectMocks
     CatalogFolderServiceImpl sut;
 
+    @BeforeEach
+    void setUp() {
+        sut.batchSize = 1000;
+    }
+
     @Test
     void catalogFolder_newFolder_savesFolderToRepository() {
         when(folderRepository.findByPath("/photos")).thenReturn(Optional.empty());
@@ -54,7 +63,7 @@ class CatalogFolderServiceImplTest {
         when(storageService.listFiles("/photos")).thenReturn(List.of());
         when(assetRepository.findByFolder(any())).thenReturn(List.of());
 
-        sut.catalogFolder("/photos", null, new AtomicInteger(0), 1);
+        sut.catalogFolder("/photos", null, NO_OP_HEARTBEAT, new AtomicInteger(0), 1);
 
         verify(folderRepository).save(argThat(f -> f.getPath().equals("/photos")));
     }
@@ -67,7 +76,7 @@ class CatalogFolderServiceImplTest {
         when(assetRepository.findByFolder(any())).thenReturn(List.of());
         List<CatalogChangeNotification> notifications = new ArrayList<>();
 
-        sut.catalogFolder("/photos", notifications::add, new AtomicInteger(0), 1);
+        sut.catalogFolder("/photos", notifications::add, NO_OP_HEARTBEAT, new AtomicInteger(0), 1);
 
         assertThat(notifications).anyMatch(n -> n.getReason() == ReasonEnum.FOLDER_CREATED
                 && "/photos".equals(n.getFolderPath()));
@@ -80,7 +89,7 @@ class CatalogFolderServiceImplTest {
         when(storageService.listFiles("/photos")).thenReturn(List.of());
         when(assetRepository.findByFolder(existing)).thenReturn(List.of());
 
-        sut.catalogFolder("/photos", null, new AtomicInteger(0), 1);
+        sut.catalogFolder("/photos", null, NO_OP_HEARTBEAT, new AtomicInteger(0), 1);
 
         verify(folderRepository, never()).save(any());
     }
@@ -93,7 +102,7 @@ class CatalogFolderServiceImplTest {
         when(assetRepository.findByFolder(folder)).thenReturn(List.of());
         stubAssetCreationOk(folder, "/photos/new.jpg");
 
-        sut.catalogFolder("/photos", null, new AtomicInteger(0), 1);
+        sut.catalogFolder("/photos", null, NO_OP_HEARTBEAT, new AtomicInteger(0), 1);
 
         verify(assetRepository).save(argThat(a -> "new.jpg".equals(a.getFileName())));
     }
@@ -107,7 +116,7 @@ class CatalogFolderServiceImplTest {
         stubAssetCreationOk(folder, "/photos/new.jpg");
         List<CatalogChangeNotification> notifications = new ArrayList<>();
 
-        sut.catalogFolder("/photos", notifications::add, new AtomicInteger(0), 1);
+        sut.catalogFolder("/photos", notifications::add, NO_OP_HEARTBEAT, new AtomicInteger(0), 1);
 
         assertThat(notifications).anyMatch(n -> n.getReason() == ReasonEnum.ASSET_CREATED);
     }
@@ -120,7 +129,7 @@ class CatalogFolderServiceImplTest {
         when(storageService.listFiles("/photos")).thenReturn(List.of("/photos/existing.jpg"));
         when(assetRepository.findByFolder(folder)).thenReturn(List.of(existing));
 
-        sut.catalogFolder("/photos", null, new AtomicInteger(0), 1);
+        sut.catalogFolder("/photos", null, NO_OP_HEARTBEAT, new AtomicInteger(0), 1);
 
         verify(assetRepository, never()).save(any());
     }
@@ -133,7 +142,7 @@ class CatalogFolderServiceImplTest {
         when(storageService.listFiles("/photos")).thenReturn(List.of());
         when(assetRepository.findByFolder(folder)).thenReturn(List.of(stale));
 
-        sut.catalogFolder("/photos", null, new AtomicInteger(0), 1);
+        sut.catalogFolder("/photos", null, NO_OP_HEARTBEAT, new AtomicInteger(0), 1);
 
         verify(assetRepository).delete(stale);
     }
@@ -146,7 +155,7 @@ class CatalogFolderServiceImplTest {
         when(storageService.listFiles("/photos")).thenReturn(List.of());
         when(assetRepository.findByFolder(folder)).thenReturn(List.of(stale));
 
-        sut.catalogFolder("/photos", null, new AtomicInteger(0), 1);
+        sut.catalogFolder("/photos", null, NO_OP_HEARTBEAT, new AtomicInteger(0), 1);
 
         verify(thumbnailStorageService).deleteThumbnail("10.bin");
     }
@@ -160,7 +169,7 @@ class CatalogFolderServiceImplTest {
         when(assetRepository.findByFolder(folder)).thenReturn(List.of(stale));
         List<CatalogChangeNotification> notifications = new ArrayList<>();
 
-        sut.catalogFolder("/photos", notifications::add, new AtomicInteger(0), 1);
+        sut.catalogFolder("/photos", notifications::add, NO_OP_HEARTBEAT, new AtomicInteger(0), 1);
 
         assertThat(notifications).anyMatch(n -> n.getReason() == ReasonEnum.ASSET_DELETED);
     }
@@ -172,7 +181,7 @@ class CatalogFolderServiceImplTest {
         when(storageService.listFiles("/photos")).thenReturn(List.of());
         when(assetRepository.findByFolder(folder)).thenReturn(List.of());
 
-        assertThatCode(() -> sut.catalogFolder("/photos", null, new AtomicInteger(0), 1))
+        assertThatCode(() -> sut.catalogFolder("/photos", null, NO_OP_HEARTBEAT, new AtomicInteger(0), 1))
                 .doesNotThrowAnyException();
     }
 
@@ -184,7 +193,7 @@ class CatalogFolderServiceImplTest {
         when(assetRepository.findByFolder(folder)).thenReturn(List.of());
         AtomicInteger counter = new AtomicInteger(0);
 
-        sut.catalogFolder("/photos", null, counter, 1);
+        sut.catalogFolder("/photos", null, NO_OP_HEARTBEAT, counter, 1);
 
         assertThat(counter.get()).isEqualTo(1);
     }
@@ -198,7 +207,7 @@ class CatalogFolderServiceImplTest {
         when(storageService.getFileSize("/photos/bad.jpg")).thenReturn(1000L);
         when(storageService.computeHash("/photos/bad.jpg")).thenThrow(new IOException("disk error"));
 
-        assertThatCode(() -> sut.catalogFolder("/photos", null, new AtomicInteger(0), 1))
+        assertThatCode(() -> sut.catalogFolder("/photos", null, NO_OP_HEARTBEAT, new AtomicInteger(0), 1))
                 .doesNotThrowAnyException();
     }
 
@@ -212,7 +221,7 @@ class CatalogFolderServiceImplTest {
         when(storageService.computeHash("/photos/bad.jpg")).thenThrow(new IOException("disk error"));
         AtomicInteger counter = new AtomicInteger(0);
 
-        sut.catalogFolder("/photos", null, counter, 1);
+        sut.catalogFolder("/photos", null, NO_OP_HEARTBEAT, counter, 1);
 
         assertThat(counter.get()).isEqualTo(1);
     }
@@ -225,9 +234,36 @@ class CatalogFolderServiceImplTest {
         when(assetRepository.findByFolder(any())).thenReturn(List.of());
         List<CatalogChangeNotification> notifications = new ArrayList<>();
 
-        sut.catalogFolder("/photos", notifications::add, new AtomicInteger(0), 0);
+        sut.catalogFolder("/photos", notifications::add, NO_OP_HEARTBEAT, new AtomicInteger(0), 0);
 
         assertThat(notifications).allMatch(n -> n.getPercentCompleted() == 100);
+    }
+
+    @Test
+    void catalogFolder_afterBatchSizeAssets_callsHeartbeat() throws IOException {
+        Folder folder = buildFolder(1L, "/photos");
+        when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
+        List<String> files = List.of("/photos/a.jpg", "/photos/b.jpg", "/photos/c.jpg");
+        when(storageService.listFiles("/photos")).thenReturn(files);
+        when(assetRepository.findByFolder(folder)).thenReturn(List.of());
+        when(storageService.getFileSize(anyString())).thenReturn(2048L);
+        when(storageService.computeHash(anyString())).thenReturn("abc123");
+        when(storageService.getFileCreationDateTime(anyString())).thenReturn(LocalDateTime.of(2024, 1, 1, 0, 0));
+        when(storageService.getFileModificationDateTime(anyString())).thenReturn(LocalDateTime.of(2024, 1, 2, 0, 0));
+        when(storageService.getImageRotation(anyString())).thenReturn(ImageRotation.ROTATE_0);
+        when(storageService.generateThumbnail(anyString(), anyInt(), anyInt())).thenReturn(new byte[]{1, 2, 3});
+        when(assetRepository.save(any())).thenAnswer(inv -> {
+            Asset a = inv.getArgument(0);
+            a.setAssetId(99L);
+            return a;
+        });
+        sut.batchSize = 2;
+        AtomicInteger heartbeatCallCount = new AtomicInteger(0);
+        Runnable heartbeat = heartbeatCallCount::incrementAndGet;
+
+        sut.catalogFolder("/photos", null, heartbeat, new AtomicInteger(0), 1);
+
+        assertThat(heartbeatCallCount.get()).isEqualTo(1);
     }
 
     @Test

@@ -1,11 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -29,7 +28,6 @@ type ViewMode = 'thumbnails' | 'viewer';
     MatButtonModule,
     MatIconModule,
     MatSelectModule,
-    MatProgressBarModule,
     MatCheckboxModule,
     MatMenuModule,
     MatSnackBarModule,
@@ -41,7 +39,7 @@ type ViewMode = 'thumbnails' | 'viewer';
   templateUrl: './gallery.component.html',
   styleUrl: './gallery.component.scss'
 })
-export class GalleryComponent implements OnInit, OnDestroy {
+export class GalleryComponent implements OnInit {
 
   currentFolder: string = '';
   viewMode: ViewMode = 'thumbnails';
@@ -56,11 +54,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   totalPages = 0;
   totalItems = 0;
 
-  cataloging = false;
-  catalogProgress = 0;
   statusMessage = '';
-
-  private catalogEventSource?: EventSource;
 
   readonly sortOptions: { value: SortCriteria; label: string }[] = [
     { value: 'FILE_NAME', label: 'File Name' },
@@ -76,11 +70,6 @@ export class GalleryComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.startCatalog();
-  }
-
-  ngOnDestroy(): void {
-    this.catalogEventSource?.close();
   }
 
   onFolderSelected(folderPath: string): void {
@@ -102,27 +91,6 @@ export class GalleryComponent implements OnInit, OnDestroy {
         },
         error: () => this.snackBar.open('Failed to load assets', 'Dismiss', { duration: 3000 })
       });
-  }
-
-  startCatalog(): void {
-    this.cataloging = true;
-    this.catalogProgress = 0;
-    this.catalogEventSource = this.assetService.catalogAssets();
-
-    this.catalogEventSource.addEventListener('catalog', (event: MessageEvent) => {
-      const notification = JSON.parse(event.data);
-      this.catalogProgress = notification.percentCompleted;
-      this.statusMessage = notification.message || '';
-
-      if (notification.reason === 'ASSET_CREATED' && this.currentFolder === notification.asset?.folderPath) {
-        this.loadAssets();
-      }
-    });
-
-    this.catalogEventSource.addEventListener('error', () => {
-      this.cataloging = false;
-      this.catalogEventSource?.close();
-    });
   }
 
   toggleSelection(asset: Asset): void {
