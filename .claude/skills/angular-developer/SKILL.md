@@ -441,6 +441,44 @@ imports: [
 
 Inject `MatSnackBar` for notifications; never use `alert()` or `console.log` for UI feedback.
 
+### `mat-table` data source — immutable updates required
+
+`mat-table` tracks the `dataSource` input by **reference**. When a plain array is passed, the table only re-renders when a new array reference is assigned. In-place mutations (`push`, `splice`, index-swap) leave the reference unchanged, so the table silently ignores them and the user sees no new rows.
+
+**Wrong — table will not re-render:**
+
+```typescript
+addRow(): void {
+  this.rows.push({ ...newRow });          // same reference → no re-render
+}
+removeRow(i: number): void {
+  this.rows.splice(i, 1);                 // same reference → no re-render
+}
+moveUp(i: number): void {
+  [this.rows[i - 1], this.rows[i]] = [this.rows[i], this.rows[i - 1]]; // same reference
+}
+```
+
+**Correct — always produce a new array reference:**
+
+```typescript
+addRow(): void {
+  this.rows = [...this.rows, { ...newRow }];
+}
+removeRow(i: number): void {
+  this.rows = this.rows.filter((_, idx) => idx !== i);
+}
+moveUp(i: number): void {
+  if (i > 0) {
+    const updated = [...this.rows];
+    [updated[i - 1], updated[i]] = [updated[i], updated[i - 1]];
+    this.rows = updated;
+  }
+}
+```
+
+This rule applies to every array bound to `[dataSource]`. Existing object references inside the spread array are preserved, so `[(ngModel)]` bindings on row inputs continue to work correctly.
+
 ---
 
 ## 13. CDK Tree (Folder Navigation)
@@ -643,6 +681,7 @@ describe("AssetService", () => {
 - **Unsubscribe on destroy** — close `EventSource` and unsubscribe from observables in `ngOnDestroy`.
 - **`track` in `@for`** — always provide a track expression: `@for (item of items; track item.id)`.
 - **Prefer `Set<T>`** for selection or deduplication over arrays with `indexOf`.
+- **No in-place mutation of `mat-table` data sources** — always reassign the array (`this.rows = [...this.rows, ...]`) instead of mutating it with `push`, `splice`, or index assignments; the table only re-renders when the reference changes (see section 12).
 - **No comments that restate the code** — add a comment only when the _why_ is non-obvious.
 - **One component per file** — no barrel re-exports unless the project already uses them.
 
