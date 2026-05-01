@@ -30,7 +30,8 @@
       <mat-card-content>
         <div class="assets-row">
           @for (asset of group.assets; track asset.assetId; let i = $index) {
-            <div class="asset-item" [class.keep]="i === group.keepIndex">
+            <div class="asset-item" [class.keep]="i === group.keepIndex"
+                 [matTooltip]="asset.folderPath + '/' + asset.fileName">
               <img [src]="asset.thumbnailUrl" [alt]="asset.fileName" />
               <div class="asset-info">
                 <strong>{{ asset.fileName }}</strong>

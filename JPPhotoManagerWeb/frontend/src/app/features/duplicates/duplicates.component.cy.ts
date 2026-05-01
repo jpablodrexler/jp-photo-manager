@@ -120,6 +120,26 @@ describe('DuplicatesComponent', () => {
     });
   });
 
+  it('assetItem_whenHovered_showsFullFilePath', () => {
+    mountComponent().then(({ fixture }) => {
+      fixture.detectChanges();
+      cy.get('.asset-item').first().trigger('mouseenter', { bubbles: true });
+      cy.get('.mat-mdc-tooltip').should('contain', '/photos/photo_a.jpg');
+    });
+  });
+
+  it('assetItem_eachItem_hasTooltipWithFullPath', () => {
+    mountComponent().then(({ fixture }) => {
+      fixture.detectChanges();
+      cy.get('.asset-item').each(($item, index) => {
+        const allAssets = mockDuplicateGroups.flat();
+        const asset = allAssets[index];
+        cy.wrap($item)
+          .should('have.attr', 'ng-reflect-message', `${asset.folderPath}/${asset.fileName}`);
+      });
+    });
+  });
+
   it('should hide the loading spinner after duplicates are loaded', () => {
     mountComponent();
     cy.then(() => {

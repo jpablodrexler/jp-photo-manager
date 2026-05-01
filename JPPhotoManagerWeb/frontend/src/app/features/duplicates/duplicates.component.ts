@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { AssetService } from '../../core/services/asset.service';
 import { Asset } from '../../core/models/asset.model';
 import { FileSizePipe } from '../../shared/pipes/file-size.pipe';
@@ -26,6 +27,7 @@ interface DuplicateGroup {
     MatProgressBarModule,
     MatSnackBarModule,
     MatChipsModule,
+    MatTooltipModule,
     FileSizePipe
   ],
   templateUrl: './duplicates.component.html',
