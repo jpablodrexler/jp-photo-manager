@@ -69,11 +69,58 @@ describe('ConvertComponent', () => {
     });
   });
 
+  it('addDefinition_whenAddButtonClicked_rendersNewRowInTable', () => {
+    mountComponent().then(({ fixture }) => {
+      fixture.detectChanges();
+      cy.get('mat-row').should('have.length', 1);
+      cy.get('button').contains('Add').click();
+      fixture.detectChanges();
+      cy.get('mat-row').should('have.length', 2);
+    });
+  });
+
+  it('addDefinition_whenNewRowAdded_sourceDirectoryInputIsEditable', () => {
+    mountComponent().then(({ fixture }) => {
+      fixture.detectChanges();
+      cy.get('button').contains('Add').click();
+      fixture.detectChanges();
+      cy.get('mat-row').last().find('input').first().type('/new/source').should('have.value', '/new/source');
+    });
+  });
+
+  it('addDefinition_whenNewRowAdded_createsNewArrayReference', () => {
+    mountComponent().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      const originalRef = component.definitions;
+      component.addDefinition();
+      expect(component.definitions).to.not.equal(originalRef);
+    });
+  });
+
   it('should remove a definition by index', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.removeDefinition(0);
       expect(component.definitions).to.have.length(0);
+    });
+  });
+
+  it('removeDefinition_whenDeleteButtonClicked_removesRowFromTable', () => {
+    mountComponent().then(({ fixture }) => {
+      fixture.detectChanges();
+      cy.get('mat-row').should('have.length', 1);
+      cy.get('[color="warn"]').first().click();
+      fixture.detectChanges();
+      cy.get('mat-row').should('have.length', 0);
+    });
+  });
+
+  it('removeDefinition_whenCalled_createsNewArrayReference', () => {
+    mountComponent().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      const originalRef = component.definitions;
+      component.removeDefinition(0);
+      expect(component.definitions).to.not.equal(originalRef);
     });
   });
 
@@ -86,6 +133,19 @@ describe('ConvertComponent', () => {
       ];
       component.moveUp(1);
       expect(component.definitions[0].sourceDirectory).to.equal('/b');
+    });
+  });
+
+  it('moveUp_whenCalled_createsNewArrayReference', () => {
+    mountComponent().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.definitions = [
+        { ...mockDefinitions[0], order: 0 },
+        { sourceDirectory: '/b', destinationDirectory: '/c', includeSubFolders: false, deleteAssetsNotInSource: false, order: 1 },
+      ];
+      const originalRef = component.definitions;
+      component.moveUp(1);
+      expect(component.definitions).to.not.equal(originalRef);
     });
   });
 
@@ -107,6 +167,19 @@ describe('ConvertComponent', () => {
       ];
       component.moveDown(0);
       expect(component.definitions[0].sourceDirectory).to.equal('/b');
+    });
+  });
+
+  it('moveDown_whenCalled_createsNewArrayReference', () => {
+    mountComponent().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.definitions = [
+        { ...mockDefinitions[0], order: 0 },
+        { sourceDirectory: '/b', destinationDirectory: '/c', includeSubFolders: false, deleteAssetsNotInSource: false, order: 1 },
+      ];
+      const originalRef = component.definitions;
+      component.moveDown(0);
+      expect(component.definitions).to.not.equal(originalRef);
     });
   });
 
