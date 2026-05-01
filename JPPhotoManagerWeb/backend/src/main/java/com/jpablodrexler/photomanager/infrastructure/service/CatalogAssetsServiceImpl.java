@@ -49,8 +49,8 @@ public class CatalogAssetsServiceImpl implements CatalogAssetsService {
             return;
         }
         try {
-            doRunCatalog(n -> {
-            });
+            doRunCatalog(n -> {});
+            catalogRunStateRepository.markCompleted(instanceId, Instant.now());
         } catch (Exception e) {
             log.error("Error during catalog run", e);
         } finally {
@@ -67,6 +67,7 @@ public class CatalogAssetsServiceImpl implements CatalogAssetsService {
         }
         try {
             doRunCatalog(callback);
+            catalogRunStateRepository.markCompleted(instanceId, Instant.now());
         } finally {
             catalogRunStateRepository.release(instanceId);
         }

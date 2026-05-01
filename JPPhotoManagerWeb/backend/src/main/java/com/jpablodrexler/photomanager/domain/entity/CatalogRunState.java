@@ -27,4 +27,7 @@ public class CatalogRunState {
 
     @Column(name = "instance_id")
     private String instanceId;
+
+    @Column(name = "last_completed_at")
+    private Instant lastCompletedAt;
 }

@@ -195,4 +195,34 @@ class CatalogAssetsServiceImplTest {
         verify(catalogFolderService, never()).catalogFolder(eq("/pictures/sub"), any(), any(Runnable.class), any(), anyInt());
         Thread.interrupted();
     }
+
+    @Test
+    void runCatalog_successfulRun_marksCompleted() {
+        when(catalogRunStateRepository.tryAcquire(any(), any())).thenReturn(1);
+        when(storageService.directoryExists(any())).thenReturn(false);
+
+        sut.runCatalog();
+
+        verify(catalogRunStateRepository).markCompleted(eq("test-instance-id"), any());
+    }
+
+    @Test
+    void runCatalog_failedRun_doesNotMarkCompleted() {
+        when(catalogRunStateRepository.tryAcquire(any(), any())).thenReturn(1);
+        when(storageService.directoryExists(any())).thenThrow(new RuntimeException("disk error"));
+
+        sut.runCatalog();
+
+        verify(catalogRunStateRepository, never()).markCompleted(any(), any());
+    }
+
+    @Test
+    void catalogAssetsAsync_successfulRun_marksCompleted() throws Exception {
+        when(catalogRunStateRepository.tryAcquire(any(), any())).thenReturn(1);
+        when(storageService.directoryExists(any())).thenReturn(false);
+
+        sut.catalogAssetsAsync(null).get();
+
+        verify(catalogRunStateRepository).markCompleted(eq("test-instance-id"), any());
+    }
 }

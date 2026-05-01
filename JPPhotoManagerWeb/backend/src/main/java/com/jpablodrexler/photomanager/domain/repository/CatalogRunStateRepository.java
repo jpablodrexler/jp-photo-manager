@@ -35,4 +35,9 @@ public interface CatalogRunStateRepository extends JpaRepository<CatalogRunState
     @Transactional
     @Query("UPDATE CatalogRunState s SET s.running = false, s.startedAt = null, s.lastHeartbeatAt = null, s.instanceId = null WHERE s.id = 1 AND s.running = true AND s.instanceId != :instanceId AND s.lastHeartbeatAt < :threshold")
     int releaseStaleForOtherInstances(String instanceId, Instant threshold);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE CatalogRunState s SET s.lastCompletedAt = :now WHERE s.id = 1 AND s.instanceId = :instanceId")
+    void markCompleted(String instanceId, Instant now);
 }
