@@ -31,6 +31,7 @@ photomanager:
   root-catalog-folders: ${user.home}/Pictures
   catalog-batch-size: 1000
   catalog-cooldown-minutes: 2
+  catalog-timeout: 60
   thumbnails-directory: ${user.home}/.photomanager/thumbnails
   github:
     owner: jpablodrexler

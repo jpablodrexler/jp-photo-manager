@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 public interface CatalogFolderService {
 
     void catalogFolder(String folderPath, Consumer<CatalogChangeNotification> callback,
-                       AtomicInteger processed, int total);
+                       Runnable heartbeatCallback, AtomicInteger processed, int total);
 
     Asset createAsset(String directoryPath, String fileName);
 }

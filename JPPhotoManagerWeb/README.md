@@ -303,3 +303,54 @@ Two GitHub Actions workflows are defined in `.github/workflows/`:
 | Web Release | `web-release.yml` | Tags matching `web-v*` |
 
 Each workflow has separate jobs for the backend (Java 21 + Maven) and frontend (Node 22 + npm). The release workflow additionally creates a GitHub Release with the JAR and a zipped frontend dist as artifacts.
+
+---
+
+## Catalog Process
+
+The catalog process scans all configured root folders (`photomanager.root-catalog-folders`), generates thumbnails, computes SHA-256 hashes, and persists asset metadata to the database.
+
+### Lifecycle
+
+The backend owns the catalog lifecycle entirely. The gallery frontend no longer triggers catalog runs on page load.
+
+**Startup:** `CatalogScheduler` listens for `ApplicationReadyEvent` and immediately submits the first catalog run to a dedicated single-thread `ThreadPoolTaskScheduler`.
+
+**Periodic repetition:** After each run completes, the scheduler waits `photomanager.catalog-cooldown-minutes` (default: 2 minutes) before starting the next run. The delay is measured from the **end** of the previous run (fixed delay, not fixed rate), so runs never overlap.
+
+**Manual trigger:** The `GET /api/assets/catalog` SSE endpoint remains available for manual or troubleshooting use. If a run is already in progress the request is silently skipped and the SSE stream completes immediately.
+
+### Distributed Lock
+
+A single-row `catalog_run_state` table acts as a distributed lock across all JVM instances:
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | integer (always 1) | Single-row primary key |
+| `is_running` | boolean | Whether a run is active |
+| `started_at` | timestamptz | When the current run started |
+| `last_heartbeat_at` | timestamptz | Last heartbeat from the running instance |
+| `instance_id` | varchar | UUID of the JVM that holds the lock |
+
+Before each run the backend executes an atomic `UPDATE … WHERE id=1 AND is_running=false`. Only one instance succeeds; all others skip. The lock is released in a `finally` block using `WHERE instance_id = :thisInstance` to avoid accidentally releasing another instance's lock.
+
+### Heartbeat
+
+To keep long-running catalog runs alive, `last_heartbeat_at` is refreshed after every `photomanager.catalog-batch-size` (default: 1000) assets are saved. The heartbeat update runs in its own transaction (`propagation = REQUIRES_NEW`) so it is immediately visible to all JVM instances, even while the enclosing folder transaction is still open.
+
+### Stale Run Detection
+
+A `@Scheduled` task runs every 60 seconds. It computes `threshold = now - catalog-timeout minutes` (default: 60 minutes) and:
+
+1. If this JVM holds the lock and `last_heartbeat_at < threshold`: interrupts the catalog thread and releases the DB lock.
+2. Releases any locks held by other (crashed) instances whose heartbeat is also older than the threshold.
+
+The catalog folder loop checks `Thread.currentThread().isInterrupted()` at the start of each folder iteration and returns early if set, ensuring clean shutdown on interruption.
+
+### Configuration
+
+| Property | Default | Description |
+|---|---|---|
+| `photomanager.catalog-cooldown-minutes` | `2` | Minutes to wait between catalog runs (fixed delay from end of previous run) |
+| `photomanager.catalog-batch-size` | `1000` | Assets saved between heartbeat refreshes |
+| `photomanager.catalog-timeout` | `60` | Minutes without a heartbeat before a run is considered stale |

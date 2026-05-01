@@ -11,6 +11,7 @@ import com.jpablodrexler.photomanager.domain.service.StorageService;
 import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,9 +37,12 @@ public class CatalogFolderServiceImpl implements CatalogFolderService {
     private final StorageService storageService;
     private final ThumbnailStorageService thumbnailStorageService;
 
+    @Value("${photomanager.catalog-batch-size:1000}")
+    int batchSize;
+
     @Transactional
     public void catalogFolder(String folderPath, Consumer<CatalogChangeNotification> callback,
-                              AtomicInteger processed, int total) {
+                              Runnable heartbeatCallback, AtomicInteger processed, int total) {
         Folder folder = folderRepository.findByPath(folderPath).orElseGet(() -> {
             Folder f = new Folder();
             f.setPath(folderPath);
@@ -62,11 +66,16 @@ public class CatalogFolderServiceImpl implements CatalogFolderService {
             cataloguedFileNames.add(asset.getFileName());
         }
 
+        int assetsProcessed = 0;
         for (String filePath : filesOnDisk) {
             String fileName = Paths.get(filePath).getFileName().toString();
             if (!cataloguedFileNames.contains(fileName)) {
                 try {
                     Asset asset = createAsset(folder, folderPath, fileName);
+                    assetsProcessed++;
+                    if (heartbeatCallback != null && assetsProcessed % batchSize == 0) {
+                        heartbeatCallback.run();
+                    }
                     if (callback != null) {
                         callback.accept(new CatalogChangeNotification(ReasonEnum.ASSET_CREATED, asset,
                                 computePercent(processed.get(), total)));

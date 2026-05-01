@@ -8,6 +8,8 @@ import java.util.function.Consumer;
 
 public interface CatalogAssetsService {
 
+    void runCatalog();
+
     CompletableFuture<Void> catalogAssetsAsync(Consumer<CatalogChangeNotification> callback);
 
     Asset createAsset(String directoryPath, String fileName);
