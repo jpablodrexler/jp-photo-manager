@@ -57,30 +57,32 @@ export class SyncComponent implements OnInit {
   }
 
   addDefinition(): void {
-    this.definitions.push({
+    this.definitions = [...this.definitions, {
       sourceDirectory: '',
       destinationDirectory: '',
       includeSubFolders: false,
       deleteAssetsNotInSource: false,
       order: this.definitions.length
-    });
+    }];
   }
 
   removeDefinition(index: number): void {
-    this.definitions.splice(index, 1);
+    this.definitions = this.definitions.filter((_, i) => i !== index);
   }
 
   moveUp(index: number): void {
     if (index > 0) {
-      [this.definitions[index - 1], this.definitions[index]] =
-        [this.definitions[index], this.definitions[index - 1]];
+      const updated = [...this.definitions];
+      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+      this.definitions = updated;
     }
   }
 
   moveDown(index: number): void {
     if (index < this.definitions.length - 1) {
-      [this.definitions[index], this.definitions[index + 1]] =
-        [this.definitions[index + 1], this.definitions[index]];
+      const updated = [...this.definitions];
+      [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+      this.definitions = updated;
     }
   }
 
