@@ -52,7 +52,7 @@ class GlobalExceptionHandlerTest {
         assertThat(body).isNotNull();
         assertThat(body.status()).isEqualTo(500);
         assertThat(body.error()).isEqualTo("Internal Server Error");
-        assertThat(body.message()).isEqualTo("unexpected failure");
+        assertThat(body.message()).isEqualTo("An internal error occurred.");
         assertThat(body.timestamp()).isNotBlank();
     }
 }
