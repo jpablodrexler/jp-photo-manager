@@ -242,6 +242,13 @@ the async execution machinery needs the future to report completion or errors.
 `emitter.completeWithError()` at the end of the operation — the connection
 will hang open.
 
+🔴 Flag any `SecurityFilterChain` that does **not** include
+`.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()` as the first
+authorisation rule. Without it, Tomcat's async dispatch thread (used by
+`SseEmitter`) re-runs the Spring Security filter chain without a
+`SecurityContext` and throws `AuthorizationDeniedException` — "response is
+already committed". This must come before all other `requestMatchers` rules.
+
 ---
 
 ## 8. Backend: Naming Conventions
@@ -395,15 +402,20 @@ method.
 
 These have caused real bugs in this codebase and deserve extra attention:
 
-| Pitfall                              | What to look for                                                                                                                                 |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `@Transactional` self-invocation     | Method annotated `@Transactional` called from same class without going through proxy                                                             |
-| Missing catalog directory            | `root-catalog-folders` pointing to a directory that may not exist on all machines; should use `application-local.yml` for machine-specific paths |
-| Lazy association outside transaction | Accessing `asset.getFolder()` or similar after the session is closed                                                                             |
-| SSE emitter not completed            | `SseEmitter` left open after the async operation finishes                                                                                        |
-| `@Async` without `@EnableAsync`      | `@Async` has no effect if `@EnableAsync` is missing from the application class                                                                   |
-| Cypress Jasmine matchers             | Using `toBe` / `toEqual` instead of Chai `to.equal` / `to.deep.equal`                                                                            |
-| `*ngIf` / `*ngFor` in new templates  | Angular 17+ control flow must be used; directives are legacy                                                                                     |
+| Pitfall                                    | What to look for                                                                                                                                 |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@Transactional` self-invocation           | Method annotated `@Transactional` called from same class without going through proxy                                                             |
+| Missing catalog directory                  | `root-catalog-folders` pointing to a directory that may not exist on all machines; should use `application-local.yml` for machine-specific paths |
+| Lazy association outside transaction       | Accessing `asset.getFolder()` or similar after the session is closed                                                                             |
+| SSE emitter not completed                  | `SseEmitter` left open after the async operation finishes                                                                                        |
+| `@Async` without `@EnableAsync`            | `@Async` has no effect if `@EnableAsync` is missing from the application class                                                                   |
+| Cypress Jasmine matchers                   | Using `toBe` / `toEqual` instead of Chai `to.equal` / `to.deep.equal`                                                                            |
+| `*ngIf` / `*ngFor` in new templates        | Angular 17+ control flow must be used; directives are legacy                                                                                     |
+| SSE + Spring Security async dispatch       | `SecurityFilterChain` missing `.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()` → `AuthorizationDeniedException` on the async thread   |
+| Token in URL for SSE / image endpoints     | `EventSource` and `<img>` do not send `Authorization` headers; tokens in query params appear in logs — use HttpOnly cookies instead              |
+| SecurityConfig circular dependency         | `@Bean UserDetailsService` defined in `SecurityConfig` while `SecurityConfig` injects a filter that depends on it — extract to separate config   |
+| JPA delete-then-insert with stale IDs      | `deleteAll()` + `saveAll(incoming)` when incoming entities still have old IDs → Hibernate merges against deleted rows; use `deleteAllInBatch()` + `setId(null)` |
+| CORS missing `PATCH`                       | `AppConfig.corsFilter()` `allowedMethods` omitting `"PATCH"` when `@PatchMapping` endpoints exist → 403 on preflight                            |
 
 ---
 

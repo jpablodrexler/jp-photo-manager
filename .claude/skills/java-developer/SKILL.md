@@ -370,6 +370,30 @@ public class CatalogAssetsServiceImpl implements CatalogAssetsService {
 }
 ```
 
+### 5.5 JPA Delete-Then-Insert Pattern
+
+When replacing a complete set of JPA entities (e.g., saving new sync/convert configuration), use `deleteAllInBatch()` and set `id = null` on each incoming entity before `saveAll()`.
+
+**Wrong — causes `ObjectOptimisticLockingFailureException`:**
+
+```java
+repository.deleteAll();               // incoming entities still carry old IDs
+repository.saveAll(incomingEntities); // Hibernate tries to MERGE deleted rows → exception
+```
+
+**Correct:**
+
+```java
+repository.deleteAllInBatch();        // single SQL DELETE
+for (int i = 0; i < incomingEntities.size(); i++) {
+    incomingEntities.get(i).setId(null);   // forces INSERT, not MERGE
+    incomingEntities.get(i).setOrder(i);   // preserve order if applicable
+}
+repository.saveAll(incomingEntities);
+```
+
+`deleteAllInBatch()` issues a single `DELETE` statement; `deleteAll()` loads then deletes each entity individually and leaves incoming entity IDs pointing at rows that no longer exist.
+
 ### 5.5 Spring Proxy & `@Transactional` — self-invocation pitfall
 
 Spring applies `@Transactional` (and `@Async`) via a proxy that wraps the bean. When a method calls **another method on the same bean** (`this.foo()`), it bypasses the proxy entirely — so `@Transactional` on the called method **has no effect**.
@@ -732,6 +756,107 @@ if (result instanceof ErrorResult error) {
 - Keep controllers thin — one method per endpoint, immediate delegation to facade.
 - Prefer streams and method references over imperative loops.
 - Add comments only when the **why** is non-obvious; omit them otherwise.
+
+---
+
+## 14. Spring Security
+
+### 14.1 JWT with HttpOnly Cookies
+
+For browser-facing APIs, store the JWT in an **HttpOnly cookie** rather than requiring an `Authorization` header. Browsers send cookies automatically with all same-origin requests — including `<img src="...">` and `EventSource` — whereas custom headers are silently dropped by those APIs.
+
+**Login — set the cookie:**
+
+```java
+ResponseCookie cookie = ResponseCookie.from("jwt", token)
+        .httpOnly(true)
+        .path("/")
+        .sameSite("Strict")
+        .maxAge(Duration.between(Instant.now(), expiresAt))
+        .build();
+response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+```
+
+**Logout — clear the cookie:**
+
+```java
+ResponseCookie cookie = ResponseCookie.from("jwt", "")
+        .httpOnly(true).path("/").sameSite("Strict").maxAge(0).build();
+response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+```
+
+**Filter — read from cookie only:**
+
+```java
+private String resolveToken(HttpServletRequest request) {
+    if (request.getCookies() == null) return null;
+    return Arrays.stream(request.getCookies())
+            .filter(c -> "jwt".equals(c.getName()))
+            .map(Cookie::getValue)
+            .findFirst().orElse(null);
+}
+```
+
+### 14.2 SseEmitter + Spring Security Async Dispatch
+
+When `SseEmitter` writes events, Tomcat creates a secondary async dispatch thread. Spring Security's filter chain re-runs on that thread, but `SecurityContextHolder` is thread-local and empty → `AuthorizationDeniedException` with "response is already committed".
+
+**Fix:** permit all `ASYNC` dispatcher types before the other rules:
+
+```java
+import jakarta.servlet.DispatcherType;
+
+.authorizeHttpRequests(auth -> auth
+        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()   // must be first
+        .requestMatchers("/api/auth/login", "/api/auth/logout").permitAll()
+        .requestMatchers("/api/**").authenticated()
+        .anyRequest().permitAll()
+)
+```
+
+This applies to every SSE endpoint (`/api/sync/run`, `/api/convert/run`, `/api/assets/catalog`).
+
+### 14.3 SecurityConfig Circular Dependency
+
+A cycle forms when `SecurityConfig` defines `@Bean UserDetailsService`, `SecurityConfig` also injects `JwtAuthenticationFilter`, and `JwtAuthenticationFilter` injects `UserDetailsService` — Spring cannot resolve the construction order.
+
+**Fix:** extract `UserDetailsService` and `PasswordEncoder` beans into a separate `@Configuration` class:
+
+```java
+@Configuration
+@Profile("!test")
+@RequiredArgsConstructor
+public class UserConfig {
+    private final UserRepository userRepository;
+
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return username -> userRepository.findByUsername(username)
+            .map(u -> User.builder()
+                .username(u.getUsername())
+                .password(u.getPasswordHash())
+                .roles("USER").build())
+            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    }
+}
+```
+
+`SecurityConfig` then only injects `JwtAuthenticationFilter`; no cycle exists.
+
+### 14.4 CORS: Include All HTTP Methods in Use
+
+Browsers send an `Origin` header with state-changing requests even for same-origin SPA calls. If `PATCH` (or any other method) is missing from the CORS allowlist, preflight requests return 403.
+
+```java
+config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+```
+
+Always keep this list in sync with the set of HTTP methods actually used by the API.
 
 ---
 

@@ -414,6 +414,8 @@ stopCatalog(): void {
 
 Always close the `EventSource` in `ngOnDestroy` to prevent memory leaks.
 
+**Authentication with EventSource:** The browser's `EventSource` API does not support custom request headers. Never pass a JWT as a query parameter (`?token=...`) — tokens in URLs appear in server logs and browser history. Use HttpOnly cookies instead (see section 19); the browser sends them automatically with same-origin EventSource connections.
+
 ---
 
 ## 12. Angular Material Usage
@@ -720,6 +722,68 @@ export class SyncComponent implements OnDestroy {
   }
 }
 ```
+
+---
+
+## 19. HttpOnly Cookie Authentication
+
+When the backend uses HttpOnly cookie JWT (the correct pattern for browser apps), the Angular side stores only session metadata in `localStorage` — never the token itself. The cookie is invisible to JavaScript and sent automatically by the browser.
+
+**AuthService — store metadata only:**
+
+```typescript
+const SESSION_KEY = 'photomanager_session';
+
+interface LoginResponse { username: string; expiresAt: string; }
+interface Session { username: string; expiresAt: number; }
+
+login(username: string, password: string): Observable<void> {
+  return this.http.post<LoginResponse>('/api/auth/login', { username, password }).pipe(
+    tap(resp => {
+      const session: Session = { username: resp.username, expiresAt: new Date(resp.expiresAt).getTime() };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    }),
+    map(() => undefined)
+  );
+}
+
+logout(): void {
+  this.http.post('/api/auth/logout', {}).subscribe();   // clears the cookie server-side
+  this.clearSession();
+}
+
+clearSession(): void {
+  localStorage.removeItem(SESSION_KEY);
+}
+
+isLoggedIn(): boolean {
+  const raw = localStorage.getItem(SESSION_KEY);
+  if (!raw) return false;
+  const session: Session = JSON.parse(raw);
+  return session.expiresAt > Date.now();
+}
+```
+
+**Auth interceptor — handle 401 only (no header injection):**
+
+```typescript
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  return next(req).pipe(
+    catchError(error => {
+      if (error instanceof HttpErrorResponse && error.status === 401
+          && !req.url.includes('/api/auth/login')) {
+        inject(AuthService).clearSession();
+        inject(Router).navigateByUrl('/login');
+      }
+      return throwError(() => error);
+    })
+  );
+};
+```
+
+There is no `Authorization` header to add. The cookie is attached by the browser for all same-origin requests (HttpClient, `<img>`, `EventSource`) without any extra code.
+
+**Dev proxy — no changes needed:** the Angular dev proxy (`proxy.conf.json`) forwards all cookies with `/api` requests to `localhost:8080` automatically, because all requests are same-origin from the browser's perspective.
 
 ---
 
