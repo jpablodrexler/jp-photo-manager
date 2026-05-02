@@ -22,7 +22,7 @@ A web rewrite of the JP Photo Manager desktop application. It replaces the origi
 └──────────────────────┬──────────────────────────────────┘
                        │ JDBC (Hibernate + PostgreSQL dialect)
 ┌──────────────────────▼──────────────────────────────────┐
-│              PostgreSQL 15+ database                     │
+│              PostgreSQL 18 database                      │
 │  host: $POSTGRES_HOST  db: $POSTGRES_DB                  │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -31,8 +31,15 @@ A web rewrite of the JP Photo Manager desktop application. It replaces the origi
 
 ```
 JPPhotoManagerWeb/
-├── backend/    # Java 21 + Spring Boot 3 Maven project
-└── frontend/   # Angular 19 npm project
+├── backend/            # Java 21 + Spring Boot 3 Maven project
+│   ├── Dockerfile      # Multi-stage build (Maven → JRE Alpine)
+│   └── .dockerignore
+├── frontend/           # Angular 19 npm project
+│   ├── Dockerfile      # Multi-stage build (Node → Nginx Alpine)
+│   ├── nginx.conf      # Serves SPA + reverse-proxies /api to backend
+│   └── .dockerignore
+├── docker-compose.yml  # Orchestrates db, backend, and frontend
+└── .env.example        # Template for local Docker configuration
 ```
 
 ---
@@ -94,7 +101,7 @@ Controllers are thin: they delegate immediately to `PhotoManagerFacade`, which o
 
 ### Persistence
 
-- **Database:** PostgreSQL 15+
+- **Database:** PostgreSQL 18
 - **Schema migrations:** Flyway, scripts in `src/main/resources/db/migration/`
 - **ORM:** Spring Data JPA with the Hibernate PostgreSQL dialect
 - **Connection:** configured via environment variables `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USERNAME`, `POSTGRES_PASSWORD` (defaults: `localhost`, `5432`, `photomanager`, `postgres`, `postgres`)
@@ -132,23 +139,25 @@ All settings live in `src/main/resources/application.yml`:
 | `photomanager.root-catalog-folders` | `~/Pictures` | Semicolon-separated folder roots to catalog |
 | `photomanager.catalog-batch-size` | `1000` | Files processed per catalog pass |
 | `photomanager.catalog-cooldown-minutes` | `2` | Minimum minutes between catalog runs |
-| `photomanager.thumbnails-directory` | `~/.photomanager/thumbnails` | Thumbnail storage path |
+| `photomanager.thumbnails-directory` | `~/.photomanager/thumbnails` | Thumbnail storage path — overridden by `THUMBNAILS_DIR` env var |
 | `POSTGRES_HOST` | `localhost` | PostgreSQL host |
 | `POSTGRES_PORT` | `5432` | PostgreSQL port |
 | `POSTGRES_DB` | `photomanager` | Database name |
 | `POSTGRES_USERNAME` | `postgres` | Database user |
 | `POSTGRES_PASSWORD` | `postgres` | Database password |
+| `CATALOG_DIR` | *(unset — falls back to `~/Pictures`)* | Overrides `initial-directory` and `root-catalog-folders` |
+| `THUMBNAILS_DIR` | *(unset — falls back to `~/.photomanager/thumbnails`)* | Overrides `thumbnails-directory` |
 
 ### Running the backend
 
-**Prerequisites:** Java 21, Maven 3.9+, PostgreSQL 15+ (or Docker)
+**Prerequisites:** Java 21, Maven 3.9+, PostgreSQL 18 (or Docker)
 
 Start a local PostgreSQL instance if you don't have one:
 ```bash
 docker run -d --name photomanager-db \
   -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=photomanager \
-  -p 5432:5432 postgres:15
+  -p 5432:5432 postgres:18
 ```
 
 ```bash
@@ -275,7 +284,92 @@ npm test -- --watch=false --browsers=ChromeHeadless
 
 ---
 
-## Running the full application
+## Running with Docker Compose
+
+The fastest way to run the full stack. No local Java, Maven, Node.js, or PostgreSQL installation required.
+
+### Prerequisites
+
+- Docker 24+
+- Docker Compose v2 (`docker compose` — not the legacy `docker-compose`)
+
+### Setup
+
+1. Copy the environment template and fill in your values:
+   ```bash
+   cd JPPhotoManagerWeb
+   cp .env.example .env
+   ```
+
+2. Edit `.env` — the only required change is `HOST_IMAGE_DIR`:
+
+   | Variable | Description |
+   |---|---|
+   | `HOST_IMAGE_DIR` | **Required.** Absolute path on your machine to the directory containing images to catalogue (e.g. `/home/yourname/Pictures`). Mounted read-write so all write features work on your actual files. |
+   | `JWT_SECRET` | **Required.** HS256 signing secret. Generate with `openssl rand -base64 32`. |
+   | `POSTGRES_DB` | Database name (default: `photomanager`). |
+   | `POSTGRES_USERNAME` | Database user (default: `postgres`). |
+   | `POSTGRES_PASSWORD` | Database password (default: `postgres`). |
+
+3. Build and start all three services:
+   ```bash
+   docker compose up --build
+   ```
+
+4. Open `http://localhost` in your browser.
+
+### Services
+
+| Service | Container | Exposed port | Description |
+|---|---|---|---|
+| `db` | `postgres:18` | *(internal only)* | PostgreSQL 18; data persisted in the `pgdata` named volume |
+| `backend` | JRE 21 Alpine | *(internal only)* | Spring Boot API; `HOST_IMAGE_DIR` bind-mounted at `/catalog` |
+| `frontend` | Nginx Alpine | `80` | Angular SPA; reverse-proxies `/api` to the backend |
+
+### Volume behaviour
+
+| Volume | Type | Description |
+|---|---|---|
+| `pgdata` | Named Docker volume | PostgreSQL data — survives `docker compose down`, removed by `docker compose down -v` |
+| `thumbnails` | Named Docker volume | Generated thumbnail files — survives `docker compose down`, removed by `docker compose down -v` |
+| `HOST_IMAGE_DIR` | Bind mount (read-write) | Your photos directory — changes made by the app are reflected on your host filesystem |
+
+### Common commands
+
+```bash
+# Start (build images on first run or after code changes)
+docker compose up --build
+
+# Start without rebuilding
+docker compose up
+
+# Stop (keeps volumes — data preserved)
+docker compose down
+
+# Stop and wipe all volumes (full reset — deletes DB and thumbnails)
+docker compose down -v
+
+# View logs for a specific service
+docker compose logs -f backend
+```
+
+### Linux file permission note
+
+If write operations (delete, move, convert) fail with `AccessDeniedException`, the container user's UID doesn't match the owner of `HOST_IMAGE_DIR`. Fix by adding `user` to the `backend` service in `docker-compose.yml`:
+
+```yaml
+backend:
+  user: "${UID}:${GID}"
+```
+
+Then start with:
+```bash
+UID=$(id -u) GID=$(id -g) docker compose up
+```
+
+---
+
+## Running the full application (without Docker)
 
 1. Start the backend:
    ```bash
@@ -398,7 +492,7 @@ The application uses **JWT Bearer token** authentication. All `/api/**` endpoint
 | `photomanager.jwt-secret` | *(empty — must be set)* | HS256 signing secret (≥ 32 bytes) |
 | `photomanager.jwt-expiry-hours` | `24` | Token validity in hours |
 
-### Setup
+### Setup (local development)
 
 1. Copy `src/main/resources/application-local.yml.example` to `src/main/resources/application-local.yml`
 2. Generate a secure secret:
@@ -408,6 +502,13 @@ The application uses **JWT Bearer token** authentication. All `/api/**` endpoint
 3. Paste the output into `photomanager.jwt-secret` in `application-local.yml`
 
 > **Important:** The application **will not start** if `photomanager.jwt-secret` is blank. `application-local.yml` is git-ignored and must never be committed.
+
+### Setup (Docker Compose)
+
+Set `JWT_SECRET` in `JPPhotoManagerWeb/.env`:
+```bash
+echo "JWT_SECRET=$(openssl rand -base64 32)" >> JPPhotoManagerWeb/.env
+```
 
 ### Default admin user
 
