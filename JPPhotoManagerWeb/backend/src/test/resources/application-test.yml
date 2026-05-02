@@ -21,3 +21,4 @@ photomanager:
   thumbnails-directory: /tmp/thumbnails
   jwt-secret: "test-jwt-secret-for-testing-only-minimum-32-characters"
   jwt-expiry-hours: 1
+  cors-allowed-origins: http://localhost:4200

@@ -38,4 +38,5 @@ photomanager:
     repo: jp-photo-manager
   jwt-secret: ""  # override in application-local.yml — see README Authentication section
   jwt-expiry-hours: 24
+  cors-allowed-origins: http://localhost:4200
 

@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -16,6 +17,9 @@ import java.util.concurrent.Executor;
 @Configuration
 @EnableScheduling
 public class AppConfig {
+
+    @Value("${photomanager.cors-allowed-origins}")
+    private List<String> corsAllowedOrigins;
 
     @Bean(name = "taskExecutor")
     public Executor taskExecutor() {
@@ -45,7 +49,7 @@ public class AppConfig {
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedOrigins(corsAllowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
