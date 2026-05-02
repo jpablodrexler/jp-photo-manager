@@ -75,9 +75,9 @@ config/               → AppConfig (CORS, async executor)
 
 **Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by **Flyway**; migrations live in `src/main/resources/db/migration/`. Connection is configured via environment variables (see table below).
 
-**Local development prerequisite:** PostgreSQL 15+ must be running. Quickstart:
+**Local development prerequisite:** PostgreSQL 18+ must be running. Quickstart:
 ```bash
-docker run -d --name photomanager-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=photomanager -p 5432:5432 postgres:15
+docker run -d --name photomanager-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=photomanager -p 5432:5432 postgres:18
 ```
 
 **Thumbnails:** stored as `{assetId}.bin` files under `~/.photomanager/thumbnails/` managed by `ThumbnailStorageService`.
