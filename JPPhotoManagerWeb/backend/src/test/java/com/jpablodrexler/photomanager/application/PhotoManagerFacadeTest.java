@@ -293,7 +293,9 @@ class PhotoManagerFacadeTest {
 
         assertThat(def0.getOrder()).isZero();
         assertThat(def1.getOrder()).isEqualTo(1);
-        verify(syncAssetsConfigRepository).deleteAll();
+        assertThat(def0.getId()).isNull();
+        assertThat(def1.getId()).isNull();
+        verify(syncAssetsConfigRepository).deleteAllInBatch();
         verify(syncAssetsConfigRepository).saveAll(defs);
     }
 
@@ -319,7 +321,9 @@ class PhotoManagerFacadeTest {
 
         assertThat(def0.getOrder()).isZero();
         assertThat(def1.getOrder()).isEqualTo(1);
-        verify(convertAssetsConfigRepository).deleteAll();
+        assertThat(def0.getId()).isNull();
+        assertThat(def1.getId()).isNull();
+        verify(convertAssetsConfigRepository).deleteAllInBatch();
         verify(convertAssetsConfigRepository).saveAll(defs);
     }
 
