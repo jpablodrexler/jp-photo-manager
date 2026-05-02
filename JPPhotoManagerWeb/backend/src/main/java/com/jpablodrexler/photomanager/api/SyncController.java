@@ -17,7 +17,6 @@ import java.util.concurrent.Executors;
 @RestController
 @RequestMapping("/api/sync")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class SyncController {
 
     private final PhotoManagerFacade facade;

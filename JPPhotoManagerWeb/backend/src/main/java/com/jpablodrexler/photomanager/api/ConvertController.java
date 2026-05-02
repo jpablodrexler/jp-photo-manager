@@ -17,7 +17,6 @@ import java.util.concurrent.Executors;
 @RestController
 @RequestMapping("/api/convert")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class ConvertController {
 
     private final PhotoManagerFacade facade;

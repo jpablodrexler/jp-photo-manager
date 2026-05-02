@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/assets")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class AssetController {
 
     private final PhotoManagerFacade facade;

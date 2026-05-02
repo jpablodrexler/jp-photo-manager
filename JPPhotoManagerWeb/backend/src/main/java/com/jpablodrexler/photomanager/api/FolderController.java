@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/folders")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class FolderController {
 
     private final PhotoManagerFacade facade;
