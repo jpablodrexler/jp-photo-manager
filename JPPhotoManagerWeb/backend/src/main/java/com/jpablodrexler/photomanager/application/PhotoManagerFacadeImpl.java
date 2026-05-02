@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager.application;
 import com.jpablodrexler.photomanager.application.dto.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.application.dto.ConvertAssetsResult;
+import com.jpablodrexler.photomanager.application.dto.HomeStats;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.application.dto.SyncAssetsResult;
 import com.jpablodrexler.photomanager.domain.entity.*;
@@ -46,6 +47,7 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
 
     private final AssetRepository assetRepository;
     private final FolderRepository folderRepository;
+    private final CatalogRunStateRepository catalogRunStateRepository;
     private final RecentTargetPathRepository recentTargetPathRepository;
     private final SyncAssetsConfigRepository syncAssetsConfigRepository;
     private final ConvertAssetsConfigRepository convertAssetsConfigRepository;
@@ -131,8 +133,9 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
     @Override
     @Transactional
     public void setSyncAssetsConfiguration(List<SyncAssetsDirectoriesDefinition> definitions) {
-        syncAssetsConfigRepository.deleteAll();
+        syncAssetsConfigRepository.deleteAllInBatch();
         for (int i = 0; i < definitions.size(); i++) {
+            definitions.get(i).setId(null);
             definitions.get(i).setOrder(i);
         }
         syncAssetsConfigRepository.saveAll(definitions);
@@ -147,8 +150,9 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
     @Override
     @Transactional
     public void setConvertAssetsConfiguration(List<ConvertAssetsDirectoriesDefinition> definitions) {
-        convertAssetsConfigRepository.deleteAll();
+        convertAssetsConfigRepository.deleteAllInBatch();
         for (int i = 0; i < definitions.size(); i++) {
+            definitions.get(i).setId(null);
             definitions.get(i).setOrder(i);
         }
         convertAssetsConfigRepository.saveAll(definitions);
@@ -191,6 +195,17 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
         String filePath = asset.getFolder().getPath() + "/" + asset.getFileName();
         byte[] bytes = storageService.readFileBytes(filePath);
         return new AssetImage(bytes, asset.getFileName());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public HomeStats getHomeStats() {
+        long folderCount = folderRepository.count();
+        long assetCount = assetRepository.count();
+        var lastCompleted = catalogRunStateRepository.findById(1)
+                .map(state -> state.getLastCompletedAt())
+                .orElse(null);
+        return new HomeStats(folderCount, assetCount, lastCompleted);
     }
 
     private void saveRecentTargetPath(String path) {

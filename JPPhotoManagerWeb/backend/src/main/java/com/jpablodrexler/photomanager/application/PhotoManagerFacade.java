@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 import com.jpablodrexler.photomanager.application.dto.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.application.dto.ConvertAssetsResult;
+import com.jpablodrexler.photomanager.application.dto.HomeStats;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.application.dto.SyncAssetsResult;
 import com.jpablodrexler.photomanager.domain.entity.Asset;
@@ -48,4 +49,6 @@ public interface PhotoManagerFacade {
     String getInitialFolder();
 
     AssetImage getAssetImage(Long assetId) throws IOException;
+
+    HomeStats getHomeStats();
 }

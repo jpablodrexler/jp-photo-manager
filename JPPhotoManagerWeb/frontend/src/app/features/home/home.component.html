@@ -1,0 +1,37 @@
+<div class="home-container">
+  <h1 class="app-title">JP Photo Manager</h1>
+
+  @if (stats) {
+    <div class="stats-grid">
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <mat-icon class="stat-icon">folder</mat-icon>
+          <div class="stat-value">{{ stats.folderCount }}</div>
+          <div class="stat-label">Folders Catalogued</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <mat-icon class="stat-icon">photo_library</mat-icon>
+          <div class="stat-value">{{ stats.assetCount }}</div>
+          <div class="stat-label">Assets Catalogued</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <mat-icon class="stat-icon">schedule</mat-icon>
+          <div class="stat-value">
+            @if (stats.lastCatalogCompletedAt) {
+              {{ stats.lastCatalogCompletedAt | date:'medium' }}
+            } @else {
+              Never
+            }
+          </div>
+          <div class="stat-label">Last Catalog Completed</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</div>

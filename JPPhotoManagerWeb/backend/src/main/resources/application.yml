@@ -36,10 +36,6 @@ photomanager:
   github:
     owner: jpablodrexler
     repo: jp-photo-manager
+  jwt-secret: ""  # override in application-local.yml — see README Authentication section
+  jwt-expiry-hours: 24
 
-logging:
-  level:
-    com.jpablodrexler: INFO
-    org.springframework: WARN
-  file:
-    name: ${user.home}/.photomanager/logs/photomanager.log

@@ -138,7 +138,6 @@ All settings live in `src/main/resources/application.yml`:
 | `POSTGRES_DB` | `photomanager` | Database name |
 | `POSTGRES_USERNAME` | `postgres` | Database user |
 | `POSTGRES_PASSWORD` | `postgres` | Database password |
-| `logging.file.name` | `~/.photomanager/logs/photomanager.log` | Log file path |
 
 ### Running the backend
 
@@ -356,3 +355,76 @@ The catalog folder loop checks `Thread.currentThread().isInterrupted()` at the s
 | `photomanager.catalog-cooldown-minutes` | `2` | Minutes to wait between catalog runs (fixed delay from end of previous run) |
 | `photomanager.catalog-batch-size` | `1000` | Assets saved between heartbeat refreshes |
 | `photomanager.catalog-timeout` | `60` | Minutes without a heartbeat before a run is considered stale |
+
+---
+
+## Logging
+
+Application logs are written to two outputs simultaneously:
+
+- **File:** `~/.photomanager/logs/photomanager.log` — structured **JSON** format (one JSON object per line, using `logstash-logback-encoder`). Each entry includes `@timestamp`, `level`, `logger_name`, `thread_name`, `message`, and any MDC fields or exception details.
+- **Console:** human-readable plain-text format (`yyyy-MM-dd HH:mm:ss.SSS [thread] LEVEL logger - message`).
+
+### Log rotation
+
+Logs rotate **daily**. Rotated files are compressed and stored alongside the active log file as `photomanager.log.yyyy-MM-dd.gz`. Files older than **30 days** are deleted automatically.
+
+### Configuration
+
+Logging is configured entirely via `src/main/resources/logback-spring.xml`. The `logging.*` properties in `application.yml` have no effect while `logback-spring.xml` is present — all tuning must happen in that file.
+
+---
+
+## Authentication
+
+The application uses **JWT Bearer token** authentication. All `/api/**` endpoints except `POST /api/auth/login` require a valid `Authorization: Bearer <token>` header.
+
+### Public endpoint
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/auth/login` | Authenticate; returns `{ "token": "..." }` |
+
+### JWT flow
+
+1. `POST /api/auth/login` with `{ "username": "...", "password": "..." }` → receive JWT
+2. Include `Authorization: Bearer <token>` on all subsequent API calls
+3. The frontend stores the token in `localStorage` and attaches it automatically via an HTTP interceptor
+
+### Configuration properties
+
+| Property | Default | Description |
+|---|---|---|
+| `photomanager.jwt-secret` | *(empty — must be set)* | HS256 signing secret (≥ 32 bytes) |
+| `photomanager.jwt-expiry-hours` | `24` | Token validity in hours |
+
+### Setup
+
+1. Copy `src/main/resources/application-local.yml.example` to `src/main/resources/application-local.yml`
+2. Generate a secure secret:
+   ```bash
+   openssl rand -base64 32
+   ```
+3. Paste the output into `photomanager.jwt-secret` in `application-local.yml`
+
+> **Important:** The application **will not start** if `photomanager.jwt-secret` is blank. `application-local.yml` is git-ignored and must never be committed.
+
+### Default admin user
+
+On first startup, if no users exist in the database, the application automatically creates a default administrator:
+
+| Username | Password |
+|---|---|
+| `admin` | `admin` |
+
+**Change this password immediately** after first login using the **User Administration** page (`/admin/users`).
+
+### User Administration
+
+Navigate to **Users** in the navigation bar (or `/admin/users`) to:
+- View all users
+- Add new users
+- Change a user's password
+- Delete users
+
+There is no self-registration; all user management is done by an authenticated administrator.

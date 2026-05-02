@@ -1,4 +1,9 @@
 spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
@@ -12,3 +17,5 @@ photomanager:
   initial-directory: /tmp/photos
   root-catalog-folders: /tmp/photos
   thumbnails-directory: /tmp/thumbnails
+  jwt-secret: "test-jwt-secret-for-testing-only-minimum-32-characters"
+  jwt-expiry-hours: 1

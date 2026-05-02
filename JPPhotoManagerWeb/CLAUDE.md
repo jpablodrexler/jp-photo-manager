@@ -100,25 +100,46 @@ docker run -d --name photomanager-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_D
 
 ### REST API
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/assets` | Paginated assets for a folder (`folderPath`, `page`, `sort`) |
-| `GET` | `/api/assets/{id}/thumbnail` | 200×150 JPEG thumbnail |
-| `GET` | `/api/assets/{id}/image` | Full-size original image |
-| `GET` | `/api/assets/catalog` | SSE stream: catalog progress events |
-| `GET` | `/api/assets/duplicates` | Grouped duplicate assets |
-| `POST` | `/api/assets/move` | Move/copy assets to a destination folder |
-| `DELETE` | `/api/assets` | Remove assets from catalog (optionally delete files) |
-| `GET` | `/api/folders` | Catalogued folders (optionally filtered by `parentPath`) |
-| `GET` | `/api/folders/drives` | Available filesystem roots |
-| `GET` | `/api/folders/initial` | Configured initial folder |
-| `GET` | `/api/folders/recent-paths` | Recently used destination paths |
-| `GET` | `/api/sync/configuration` | Load sync directory pairs |
-| `PUT` | `/api/sync/configuration` | Save sync directory pairs |
-| `GET` | `/api/sync/run` | SSE stream: run sync and stream status |
-| `GET` | `/api/convert/configuration` | Load convert directory pairs |
-| `PUT` | `/api/convert/configuration` | Save convert directory pairs |
-| `GET` | `/api/convert/run` | SSE stream: run convert and stream status |
+| Method | Path | Auth required | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/login` | No | Authenticate; sets `jwt` HttpOnly cookie |
+| `POST` | `/api/auth/logout` | No | Clears `jwt` cookie |
+| `GET` | `/api/admin/users` | Yes | List all users |
+| `POST` | `/api/admin/users` | Yes | Create a user |
+| `PATCH` | `/api/admin/users/{id}/password` | Yes | Change a user's password |
+| `DELETE` | `/api/admin/users/{id}` | Yes | Delete a user |
+| `GET` | `/api/assets` | Yes | Paginated assets for a folder (`folderPath`, `page`, `sort`) |
+| `GET` | `/api/assets/{id}/thumbnail` | Yes | 200×150 JPEG thumbnail |
+| `GET` | `/api/assets/{id}/image` | Yes | Full-size original image |
+| `GET` | `/api/assets/catalog` | Yes | SSE stream: catalog progress events |
+| `GET` | `/api/assets/duplicates` | Yes | Grouped duplicate assets |
+| `POST` | `/api/assets/move` | Yes | Move/copy assets to a destination folder |
+| `DELETE` | `/api/assets` | Yes | Remove assets from catalog (optionally delete files) |
+| `GET` | `/api/folders` | Yes | Catalogued folders (optionally filtered by `parentPath`) |
+| `GET` | `/api/folders/drives` | Yes | Available filesystem roots |
+| `GET` | `/api/folders/initial` | Yes | Configured initial folder |
+| `GET` | `/api/folders/recent-paths` | Yes | Recently used destination paths |
+| `GET` | `/api/sync/configuration` | Yes | Load sync directory pairs |
+| `PUT` | `/api/sync/configuration` | Yes | Save sync directory pairs |
+| `GET` | `/api/sync/run` | Yes | SSE stream: run sync and stream status |
+| `GET` | `/api/convert/configuration` | Yes | Load convert directory pairs |
+| `PUT` | `/api/convert/configuration` | Yes | Save convert directory pairs |
+| `GET` | `/api/convert/run` | Yes | SSE stream: run convert and stream status |
+
+### Authentication & Security
+
+The app uses **JWT stored in an HttpOnly cookie** (`SameSite=Strict`, `Path=/`).
+
+- **Why HttpOnly cookie:** The browser sends cookies automatically with all same-origin requests — including `<img src="...">` and the native `EventSource` API — which do not support custom `Authorization` headers. Storing the token in `localStorage` and injecting it as a header would break image loading and SSE.
+- **Login flow:** `POST /api/auth/login` validates credentials and sets the `jwt` cookie. The response body contains `{username, expiresAt}` only — the token is never returned to JavaScript.
+- **Logout flow:** `POST /api/auth/logout` returns a `Set-Cookie: jwt=; Max-Age=0` header to clear the cookie. The Angular `AuthService` also removes the session metadata from `localStorage`.
+- **SSE + Spring Security:** Tomcat creates a new async dispatch thread for `SseEmitter` writes. Spring Security's filter chain re-runs on that thread where `SecurityContextHolder` is empty. Fix: `.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()` must appear as the first rule in `SecurityFilterChain`.
+- **Default admin user:** `DataInitializer` seeds `admin`/`admin` on first startup if no users exist. Change this password immediately after first login.
+- **Security configuration classes:**
+  - `config/SecurityConfig.java` — `SecurityFilterChain` bean; `@Profile("!test")`
+  - `config/UserConfig.java` — `UserDetailsService` + `BCryptPasswordEncoder` beans; kept separate from `SecurityConfig` to avoid circular dependency
+  - `infrastructure/service/JwtAuthenticationFilter.java` — reads `jwt` cookie on every request
+  - `infrastructure/service/JwtUtil.java` — HMAC-SHA256 token generation/validation
 
 ### Testing Conventions
 
@@ -196,18 +217,23 @@ Angular 19 SPA using **standalone components** and **lazy-loaded routes**. No Ng
 
 ```
 src/app/
-  app.component.ts/html/scss   → Shell with top navigation bar
-  app.routes.ts                → Lazy routes: /gallery, /sync, /convert, /duplicates
-  app.config.ts                → ApplicationConfig (HttpClient, Router, Animations)
+  app.component.ts/html/scss   → Shell with top navigation bar (shows nav only when logged in)
+  app.routes.ts                → Lazy routes; all except /login protected by authGuard
+  app.config.ts                → ApplicationConfig (HttpClient with interceptor, Router, Animations)
   core/
     models/                    → TypeScript interfaces (Asset, Folder, PaginatedData, …)
     services/                  → Angular services wrapping the backend API
+    guards/                    → auth.guard.ts — redirects unauthenticated users to /login
+    interceptors/              → auth.interceptor.ts — handles 401 → redirect to /login
   features/
+    auth/login/                → LoginComponent (/login)
+    home/                      → HomeComponent (/home) — dashboard with stats
     gallery/                   → Thumbnail grid + full-size viewer
     folder-nav/                → Folder tree (Angular CDK FlatTreeControl)
     sync/                      → Sync configuration and execution
     convert/                   → Convert configuration and execution
     duplicates/                → Duplicate detection and cleanup
+    admin/users/               → UserAdminComponent (/admin/users) — add/change password/delete users
   shared/
     components/thumbnail/      → Reusable thumbnail card component
     pipes/file-size.pipe.ts    → Human-readable file size formatting
@@ -215,16 +241,20 @@ src/app/
 
 **Routing:**
 
-| Path | Component | Description |
-|---|---|---|
-| `/gallery` | `GalleryComponent` | Main photo browser (default) |
-| `/sync` | `SyncComponent` | Configure and run directory sync |
-| `/convert` | `ConvertComponent` | Configure and run PNG→JPEG conversion |
-| `/duplicates` | `DuplicatesComponent` | Find and remove duplicate images |
+| Path | Component | Auth | Description |
+|---|---|---|---|
+| `/login` | `LoginComponent` | No | Login form |
+| `/home` | `HomeComponent` | Yes | Dashboard (default redirect) |
+| `/gallery` | `GalleryComponent` | Yes | Main photo browser |
+| `/sync` | `SyncComponent` | Yes | Configure and run directory sync |
+| `/convert` | `ConvertComponent` | Yes | Configure and run PNG→JPEG conversion |
+| `/duplicates` | `DuplicatesComponent` | Yes | Find and remove duplicate images |
+| `/admin/users` | `UserAdminComponent` | Yes | User administration |
 
 **API communication:**
 - Standard HTTP calls go through Angular's `HttpClient` in the `core/services/` classes.
 - Long-running operations (catalog, sync, convert) use the browser's native `EventSource` to consume SSE streams from the backend.
+- Authentication uses HttpOnly cookies — no `Authorization` header is needed; the browser attaches the cookie to all same-origin requests automatically, including `<img>` and `EventSource`.
 
 **Gallery modes:**
 - **Thumbnails mode** — paginated grid; each card shows the 200×150 thumbnail (`thumbnailUrl`).
