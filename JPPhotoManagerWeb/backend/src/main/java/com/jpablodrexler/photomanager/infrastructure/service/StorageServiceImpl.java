@@ -13,6 +13,7 @@ import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
@@ -36,6 +37,7 @@ public class StorageServiceImpl implements StorageService {
 
     private static final int THUMBNAIL_MAX_WIDTH = 200;
     private static final int THUMBNAIL_MAX_HEIGHT = 150;
+    private static final int IMAGE_DIMENSION_LIMIT = 20_000;
 
     @Override
     public List<String> listFiles(String directoryPath) {
@@ -111,11 +113,33 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public BufferedImage loadImage(String filePath) throws IOException {
-        BufferedImage image = ImageIO.read(Paths.get(filePath).toFile());
-        if (image == null) {
-            throw new IOException("Could not decode image: " + filePath);
+        try (ImageInputStream iis = ImageIO.createImageInputStream(Paths.get(filePath).toFile())) {
+            if (iis == null) {
+                throw new IOException("Could not decode image: " + filePath);
+            }
+            var readers = ImageIO.getImageReaders(iis);
+            if (!readers.hasNext()) {
+                throw new IOException("No image reader available for: " + filePath);
+            }
+            var reader = readers.next();
+            try {
+                reader.setInput(iis, false, true);
+                int width = reader.getWidth(0);
+                int height = reader.getHeight(0);
+                if (width > IMAGE_DIMENSION_LIMIT || height > IMAGE_DIMENSION_LIMIT) {
+                    throw new IOException(
+                            "Image dimensions " + width + "x" + height +
+                            " exceed the limit of " + IMAGE_DIMENSION_LIMIT + " px");
+                }
+                BufferedImage image = reader.read(0);
+                if (image == null) {
+                    throw new IOException("Could not decode image: " + filePath);
+                }
+                return image;
+            } finally {
+                reader.dispose();
+            }
         }
-        return image;
     }
 
     @Override
