@@ -27,16 +27,16 @@ server:
   port: 8080
 
 photomanager:
-  initial-directory: ${user.home}/Pictures
-  root-catalog-folders: ${user.home}/Pictures
+  initial-directory: ${CATALOG_DIR:${user.home}/Pictures}
+  root-catalog-folders: ${CATALOG_DIR:${user.home}/Pictures}
   catalog-batch-size: 1000
   catalog-cooldown-minutes: 2
   catalog-timeout: 60
-  thumbnails-directory: ${user.home}/.photomanager/thumbnails
+  thumbnails-directory: ${THUMBNAILS_DIR:${user.home}/.photomanager/thumbnails}
   github:
     owner: jpablodrexler
     repo: jp-photo-manager
-  jwt-secret: ""  # override in application-local.yml — see README Authentication section
+  jwt-secret: ${JWT_SECRET:}
   jwt-expiry-hours: 24
   cors-allowed-origins: http://localhost:4200
 
