@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.imaging.Imaging;
 import org.apache.commons.imaging.common.ImageMetadata;
 import org.apache.commons.imaging.formats.jpeg.JpegImageMetadata;
+import org.apache.commons.imaging.formats.tiff.TiffField;
+import org.apache.commons.imaging.formats.tiff.TiffImageMetadata;
 import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants;
 import org.springframework.stereotype.Service;
 
@@ -159,15 +161,18 @@ public class StorageServiceImpl implements StorageService {
         try {
             ImageMetadata metadata = Imaging.getMetadata(Paths.get(filePath).toFile());
             if (metadata instanceof JpegImageMetadata jpegMetadata) {
-                var orientationField = jpegMetadata.findEXIFValueWithExactMatch(TiffTagConstants.TIFF_TAG_ORIENTATION);
-                if (orientationField != null) {
-                    int orientation = orientationField.getIntValue();
-                    return switch (orientation) {
-                        case 6 -> ImageRotation.ROTATE_90;
-                        case 3 -> ImageRotation.ROTATE_180;
-                        case 8 -> ImageRotation.ROTATE_270;
-                        default -> ImageRotation.ROTATE_0;
-                    };
+                TiffImageMetadata exif = jpegMetadata.getExif();
+                if (exif != null) {
+                    TiffField orientationField = exif.findField(TiffTagConstants.TIFF_TAG_ORIENTATION);
+                    if (orientationField != null) {
+                        int orientation = orientationField.getIntValueOrArraySum();
+                        return switch (orientation) {
+                            case 6 -> ImageRotation.ROTATE_90;
+                            case 3 -> ImageRotation.ROTATE_180;
+                            case 8 -> ImageRotation.ROTATE_270;
+                            default -> ImageRotation.ROTATE_0;
+                        };
+                    }
                 }
             }
         } catch (Exception e) {

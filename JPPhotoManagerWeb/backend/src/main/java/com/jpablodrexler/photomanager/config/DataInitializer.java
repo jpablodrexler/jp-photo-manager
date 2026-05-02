@@ -22,7 +22,11 @@ public class DataInitializer {
     public void seedDefaultAdmin() {
         if (userRepository.count() == 0) {
             userService.register("admin", "admin");
-            log.warn("*** Default admin user created (username: admin, password: admin). CHANGE THIS PASSWORD IMMEDIATELY via the User Administration page. ***");
+            userRepository.findByUsername("admin").ifPresent(user -> {
+                user.setRole("ADMIN");
+                userRepository.save(user);
+            });
+            log.warn("*** Default admin user created. CHANGE THIS PASSWORD IMMEDIATELY via the User Administration page. ***");
         }
     }
 }
