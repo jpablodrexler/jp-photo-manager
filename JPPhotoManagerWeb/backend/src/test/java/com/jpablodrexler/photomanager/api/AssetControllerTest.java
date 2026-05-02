@@ -95,9 +95,9 @@ class AssetControllerTest {
     // --- GET /api/assets/{id}/image ---
 
     @Test
-    void getFullImage_assetFound_returns200WithImageBytes() throws Exception {
+    void getFullImage_jpegMagicBytes_returns200WithJpegContentType() throws Exception {
         when(facade.getAssetImage(1L))
-                .thenReturn(new AssetImage(new byte[] { 1, 2, 3 }, "photo.jpg"));
+                .thenReturn(new AssetImage(new byte[] { (byte) 0xFF, (byte) 0xD8, (byte) 0xFF }, "photo.jpg"));
 
         mockMvc.perform(get("/api/assets/1/image"))
                 .andExpect(status().isOk())
@@ -113,11 +113,43 @@ class AssetControllerTest {
     }
 
     @Test
-    void getFullImage_pngFile_returns200WithPngContentType() throws Exception {
+    void getFullImage_pngMagicBytes_returns200WithPngContentType() throws Exception {
+        byte[] pngBytes = { (byte) 0x89, 'P', 'N', 'G', '\r', '\n', (byte) 0x1A, '\n' };
         when(facade.getAssetImage(2L))
-                .thenReturn(new AssetImage(new byte[] { 1, 2, 3 }, "image.png"));
+                .thenReturn(new AssetImage(pngBytes, "image.png"));
 
         mockMvc.perform(get("/api/assets/2/image"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.IMAGE_PNG));
+    }
+
+    @Test
+    void getFullImage_gifMagicBytes_returns200WithGifContentType() throws Exception {
+        byte[] gifBytes = { 'G', 'I', 'F', '8', '9', 'a' };
+        when(facade.getAssetImage(3L))
+                .thenReturn(new AssetImage(gifBytes, "anim.gif"));
+
+        mockMvc.perform(get("/api/assets/3/image"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.IMAGE_GIF));
+    }
+
+    @Test
+    void getFullImage_unknownMagicBytes_returns415() throws Exception {
+        when(facade.getAssetImage(4L))
+                .thenReturn(new AssetImage(new byte[] { 1, 2, 3 }, "disguised.jpg"));
+
+        mockMvc.perform(get("/api/assets/4/image"))
+                .andExpect(status().isUnsupportedMediaType());
+    }
+
+    @Test
+    void getFullImage_pngMagicBytesWithJpgExtension_returns200WithPngContentType() throws Exception {
+        byte[] pngBytes = { (byte) 0x89, 'P', 'N', 'G', '\r', '\n', (byte) 0x1A, '\n' };
+        when(facade.getAssetImage(5L))
+                .thenReturn(new AssetImage(pngBytes, "misleading.jpg"));
+
+        mockMvc.perform(get("/api/assets/5/image"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.IMAGE_PNG));
     }

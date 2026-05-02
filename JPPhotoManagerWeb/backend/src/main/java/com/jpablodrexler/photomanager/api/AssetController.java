@@ -10,6 +10,7 @@ import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -58,21 +59,40 @@ public class AssetController {
     public ResponseEntity<byte[]> getFullImage(@PathVariable Long assetId) {
         try {
             AssetImage image = facade.getAssetImage(assetId);
+            MediaType mediaType = detectMediaType(image.bytes());
+            if (mediaType == null) {
+                return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
+            }
             return ResponseEntity.ok()
-                    .contentType(detectMediaType(image.fileName()))
+                    .contentType(mediaType)
                     .body(image.bytes());
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    private MediaType detectMediaType(String fileName) {
-        String lower = fileName.toLowerCase();
-        if (lower.endsWith(".png"))
+    private MediaType detectMediaType(byte[] bytes) {
+        if (bytes.length >= 3
+                && (bytes[0] & 0xFF) == 0xFF
+                && (bytes[1] & 0xFF) == 0xD8
+                && (bytes[2] & 0xFF) == 0xFF) {
+            return MediaType.IMAGE_JPEG;
+        }
+        if (bytes.length >= 4
+                && (bytes[0] & 0xFF) == 0x89
+                && bytes[1] == 'P'
+                && bytes[2] == 'N'
+                && bytes[3] == 'G') {
             return MediaType.IMAGE_PNG;
-        if (lower.endsWith(".gif"))
+        }
+        if (bytes.length >= 4
+                && bytes[0] == 'G'
+                && bytes[1] == 'I'
+                && bytes[2] == 'F'
+                && bytes[3] == '8') {
             return MediaType.IMAGE_GIF;
-        return MediaType.IMAGE_JPEG;
+        }
+        return null;
     }
 
     @GetMapping("/catalog")
