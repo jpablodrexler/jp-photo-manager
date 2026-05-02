@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +63,9 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
     @Value("${photomanager.initial-directory:${user.home}/Pictures}")
     private String initialDirectory;
 
+    @Value("${photomanager.root-catalog-folders:${user.home}/Pictures}")
+    private String rootCatalogFolders;
+
     @Override
     @Transactional(readOnly = true)
     public PaginatedData<Asset> getAssets(String folderPath, int pageIndex, SortCriteria sortCriteria) {
@@ -90,6 +95,7 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
     @Override
     @Transactional
     public boolean moveAssets(Long[] assetIds, String destinationFolderPath, boolean preserveOriginal) {
+        validateDestinationPath(destinationFolderPath);
         List<Asset> assets = assetRepository.findAllById(Arrays.asList(assetIds));
         Folder destinationFolder = folderRepository.findByPath(destinationFolderPath)
                 .orElseGet(() -> {
@@ -206,6 +212,16 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
                 .map(state -> state.getLastCompletedAt())
                 .orElse(null);
         return new HomeStats(folderCount, assetCount, lastCompleted);
+    }
+
+    private void validateDestinationPath(String destinationFolderPath) {
+        Path destination = Paths.get(destinationFolderPath).normalize().toAbsolutePath();
+        boolean withinRoot = Arrays.stream(rootCatalogFolders.split(";"))
+                .map(root -> Paths.get(root.trim()).normalize().toAbsolutePath())
+                .anyMatch(destination::startsWith);
+        if (!withinRoot) {
+            throw new IllegalArgumentException("Destination path is outside the allowed catalog roots.");
+        }
     }
 
     private void saveRecentTargetPath(String path) {

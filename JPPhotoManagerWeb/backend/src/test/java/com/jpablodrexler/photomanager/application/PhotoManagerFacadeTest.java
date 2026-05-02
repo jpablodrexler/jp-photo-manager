@@ -62,6 +62,8 @@ class PhotoManagerFacadeTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(sut, "initialDirectory", "/home/user/Pictures");
+        // Use "/" as the catalog root so all test paths (e.g. "/dest", "/src") pass validation.
+        ReflectionTestUtils.setField(sut, "rootCatalogFolders", "/");
     }
 
     // --- getAssets ---
@@ -234,6 +236,22 @@ class PhotoManagerFacadeTest {
         sut.moveAssets(new Long[] { 5L }, "/dest", false);
 
         verify(recentTargetPathRepository).deleteAll(existingPaths.subList(20, 21));
+    }
+
+    @Test
+    void moveAssets_destinationOutsideAllowedRoots_throwsIllegalArgumentException() {
+        ReflectionTestUtils.setField(sut, "rootCatalogFolders", "/tmp/photos");
+
+        assertThatThrownBy(() -> sut.moveAssets(new Long[] { 1L }, "/etc/cron.d", false))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void moveAssets_pathTraversalInDestination_throwsIllegalArgumentException() {
+        ReflectionTestUtils.setField(sut, "rootCatalogFolders", "/tmp/photos");
+
+        assertThatThrownBy(() -> sut.moveAssets(new Long[] { 1L }, "/tmp/photos/../../../etc", false))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     // --- deleteAssets ---
