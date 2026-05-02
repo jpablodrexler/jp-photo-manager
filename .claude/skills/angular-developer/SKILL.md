@@ -2,9 +2,12 @@
 name: angular-developer
 description: >
   Angular developer skill for writing Angular 19 applications following the
-  JPPhotoManager frontend code style. Use when creating or modifying TypeScript
-  files (components, services, models, pipes, tests) in an Angular project with
-  a feature-based architecture of core → features ← shared.
+  JPPhotoManager frontend code style. TRIGGER whenever work touches
+  JPPhotoManagerWeb/frontend — including when implementing OpenSpec tasks:
+  creating or modifying components, services, models, pipes, or routes in an
+  Angular project with a feature-based architecture of
+  core → features ← shared. Invoke this skill proactively — do not wait to
+  be asked.
 metadata:
   scope: [JPPhotoManagerWeb/frontend]
 ---

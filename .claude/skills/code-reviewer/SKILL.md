@@ -2,13 +2,13 @@
 name: code-reviewer
 description: >
   Code review skill for the JPPhotoManager project (Spring Boot 3.4 / Java 21
-  backend + Angular 19 frontend). Use when asked to review, audit, or check
-  code for correctness, style, or standards compliance — whether that means
-  reviewing a pull request, checking a file before committing, validating that
-  a new class follows project conventions, or assessing the quality of a change
-  that was just written. Covers both sub-projects (backend and frontend) and
-  all cross-cutting concerns: architecture, naming, transactions, async,
-  testing, and TypeScript/Java style rules.
+  backend + Angular 19 frontend). TRIGGER after implementing any feature, fix,
+  or refactor — including after completing an OpenSpec task or a set of tasks.
+  Do not wait to be asked: review code proactively after writing it. Also
+  triggers when explicitly asked to review a pull request, file, or change.
+  Covers both sub-projects (backend and frontend) and all cross-cutting
+  concerns: architecture, naming, transactions, async, testing, and
+  TypeScript/Java style rules.
 metadata:
   scope: [JPPhotoManagerWeb]
 ---

@@ -2,14 +2,15 @@
 name: java-developer
 description: >
   Java developer skill for the JPPhotoManager Spring Boot 3.4 / Java 21
-  backend. Use whenever work touches the backend: adding a new service,
-  controller, entity, repository, DTO, or enum; fixing a bug in any Java
-  class; refactoring or extracting logic into a new class; wiring up
-  transactions, async operations, or Spring beans; writing or updating unit /
-  integration tests. The skill enforces the project's clean-architecture
-  layering (api → application → domain ← infrastructure), the
+  backend. TRIGGER whenever work touches JPPhotoManagerWeb/backend — including
+  when implementing OpenSpec tasks: adding a new service, controller, entity,
+  repository, DTO, or enum; fixing a bug in any Java class; refactoring or
+  extracting logic into a new class; wiring up transactions, async operations,
+  or Spring beans. Enforces clean-architecture layering
+  (api → application → domain ← infrastructure), the
   interface-in-domain / implementation-in-infrastructure split for every
-  service, and all other coding standards documented below.
+  service, and all other coding standards. Invoke this skill proactively —
+  do not wait to be asked.
 metadata:
   scope: [JPPhotoManagerWeb/backend]
 ---

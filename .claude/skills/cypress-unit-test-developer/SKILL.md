@@ -2,9 +2,13 @@
 name: cypress-unit-test-developer
 description: >
   Cypress Component Testing skill for writing unit/component tests for the
-  JPPhotoManager Angular 19 frontend. Use when creating or modifying *.cy.ts
-  test files for standalone components, services, or pipes following the
-  project's strict TypeScript conventions and feature-based architecture.
+  JPPhotoManager Angular 19 frontend. TRIGGER when creating or modifying
+  *.cy.ts test files for standalone components, services, or pipes —
+  including when an OpenSpec task calls for frontend tests. Always invoke
+  alongside angular-developer when a new Angular component or service is
+  created. Enforces the project's strict TypeScript conventions and
+  feature-based architecture. Invoke this skill proactively — do not wait
+  to be asked.
 metadata:
   scope: [JPPhotoManagerWeb/frontend]
 ---

@@ -2,11 +2,14 @@
 name: java-unit-test-developer
 description: >
   JUnit 5 unit and integration test skill for the JPPhotoManager Spring Boot
-  3.4 / Java 21 backend. Use when creating, fixing, or updating test files for
-  any backend class: services, repositories, controllers, facades, or entities.
-  Enforces the project's testing conventions: Mockito for mocking,
-  AssertJ for assertions, sut naming, one concept per test, and the
-  method_condition_result naming pattern.
+  3.4 / Java 21 backend. TRIGGER when creating, fixing, or updating test files
+  for any backend class: services, repositories, controllers, facades, or
+  entities — including when an OpenSpec task calls for backend tests. Always
+  invoke alongside java-developer when a new backend class is created or
+  substantially modified. Enforces the project's testing conventions: Mockito
+  for mocking, AssertJ for assertions, sut naming, one concept per test, and
+  the method_condition_result naming pattern. Invoke this skill proactively —
+  do not wait to be asked.
 metadata:
   scope: [JPPhotoManagerWeb/backend]
 ---
