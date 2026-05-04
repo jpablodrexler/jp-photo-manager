@@ -2,11 +2,14 @@ package com.jpablodrexler.photomanager.infrastructure.service;
 
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.domain.entity.Asset;
+import com.jpablodrexler.photomanager.domain.entity.AssetExif;
 import com.jpablodrexler.photomanager.domain.entity.Folder;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
+import com.jpablodrexler.photomanager.domain.repository.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.repository.AssetRepository;
 import com.jpablodrexler.photomanager.domain.repository.FolderRepository;
 import com.jpablodrexler.photomanager.domain.service.CatalogFolderService;
+import com.jpablodrexler.photomanager.domain.service.ExifMetadata;
 import com.jpablodrexler.photomanager.domain.service.StorageService;
 import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +36,7 @@ public class CatalogFolderServiceImpl implements CatalogFolderService {
     private static final int THUMBNAIL_MAX_HEIGHT = 150;
 
     private final AssetRepository assetRepository;
+    private final AssetExifRepository assetExifRepository;
     private final FolderRepository folderRepository;
     private final StorageService storageService;
     private final ThumbnailStorageService thumbnailStorageService;
@@ -129,10 +133,35 @@ public class CatalogFolderServiceImpl implements CatalogFolderService {
             asset = assetRepository.save(asset);
             thumbnailStorageService.saveThumbnail(asset.getThumbnailBlobName(), thumbnail);
 
+            saveExifMetadata(asset, filePath);
+
             return asset;
         } catch (IOException e) {
             log.error("Failed to create asset for {}", filePath, e);
             throw new RuntimeException("Failed to create asset", e);
+        }
+    }
+
+    private void saveExifMetadata(Asset asset, String filePath) {
+        try {
+            ExifMetadata exif = storageService.getExifMetadata(filePath);
+            AssetExif assetExif = assetExifRepository.findByAssetAssetId(asset.getAssetId())
+                    .orElseGet(() -> { AssetExif e = new AssetExif(); e.setAsset(asset); return e; });
+            assetExif.setCameraMake(exif.cameraMake());
+            assetExif.setCameraModel(exif.cameraModel());
+            assetExif.setLensModel(exif.lensModel());
+            assetExif.setExposureTime(exif.exposureTime());
+            assetExif.setFNumber(exif.fNumber());
+            assetExif.setIsoSpeed(exif.isoSpeed());
+            assetExif.setFocalLength(exif.focalLength());
+            assetExif.setDateTaken(exif.dateTaken());
+            assetExif.setWidthPixels(exif.widthPixels());
+            assetExif.setHeightPixels(exif.heightPixels());
+            assetExif.setGpsLatitude(exif.gpsLatitude());
+            assetExif.setGpsLongitude(exif.gpsLongitude());
+            assetExifRepository.save(assetExif);
+        } catch (Exception e) {
+            log.warn("Failed to save EXIF metadata for asset {}", asset.getAssetId(), e);
         }
     }
 

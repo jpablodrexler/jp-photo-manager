@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Asset, SortCriteria } from '../models/asset.model';
+import { ExifMetadata } from '../models/exif-metadata.model';
 import { PaginatedData } from '../models/paginated-data.model';
 
 @Injectable({ providedIn: 'root' })
@@ -44,5 +45,9 @@ export class AssetService {
 
   catalogAssets(): EventSource {
     return new EventSource(`${this.baseUrl}/catalog`);
+  }
+
+  getExifMetadata(assetId: number): Observable<ExifMetadata | null> {
+    return this.http.get<ExifMetadata | null>(`${this.baseUrl}/${assetId}/exif`);
   }
 }

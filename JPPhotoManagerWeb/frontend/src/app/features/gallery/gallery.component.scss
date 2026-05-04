@@ -46,4 +46,12 @@
       opacity: 0.3;
     }
   }
+
+  .viewer-exif-panel {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 20;
+    max-width: 300px;
+  }
 }

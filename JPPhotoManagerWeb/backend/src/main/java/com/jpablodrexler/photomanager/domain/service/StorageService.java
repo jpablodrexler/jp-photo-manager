@@ -40,4 +40,6 @@ public interface StorageService {
     java.time.LocalDateTime getFileCreationDateTime(String filePath) throws IOException;
 
     java.time.LocalDateTime getFileModificationDateTime(String filePath) throws IOException;
+
+    ExifMetadata getExifMetadata(String filePath);
 }

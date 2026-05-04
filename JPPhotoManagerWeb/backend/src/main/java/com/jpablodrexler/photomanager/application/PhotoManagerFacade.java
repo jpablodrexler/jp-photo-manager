@@ -12,6 +12,7 @@ import com.jpablodrexler.photomanager.application.dto.HomeStats;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.application.dto.SyncAssetsResult;
 import com.jpablodrexler.photomanager.domain.entity.Asset;
+import com.jpablodrexler.photomanager.domain.entity.AssetExif;
 import com.jpablodrexler.photomanager.domain.entity.ConvertAssetsDirectoriesDefinition;
 import com.jpablodrexler.photomanager.domain.entity.Folder;
 import com.jpablodrexler.photomanager.domain.entity.SyncAssetsDirectoriesDefinition;
@@ -51,4 +52,6 @@ public interface PhotoManagerFacade {
     AssetImage getAssetImage(Long assetId) throws IOException;
 
     HomeStats getHomeStats();
+
+    AssetExif getAssetExif(Long assetId);
 }

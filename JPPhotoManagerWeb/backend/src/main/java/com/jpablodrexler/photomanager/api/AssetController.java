@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.api;
 
 import com.jpablodrexler.photomanager.api.dto.AssetDto;
+import com.jpablodrexler.photomanager.api.dto.ExifMetadataDto;
 import com.jpablodrexler.photomanager.api.dto.MoveAssetsRequest;
 import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
 import com.jpablodrexler.photomanager.application.dto.AssetImage;
@@ -141,6 +142,19 @@ public class AssetController {
                 .map(group -> group.stream().map(this::toDto).collect(Collectors.toList()))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{assetId}/exif")
+    public ResponseEntity<ExifMetadataDto> getExifMetadata(@PathVariable Long assetId) {
+        try {
+            ExifMetadataDto dto = ExifMetadataDto.from(facade.getAssetExif(assetId));
+            if (dto == null) {
+                return ResponseEntity.noContent().build();
+            }
+            return ResponseEntity.ok(dto);
+        } catch (java.util.NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     private AssetDto toDto(Asset asset) {

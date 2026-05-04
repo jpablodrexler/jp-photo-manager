@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
+import com.jpablodrexler.photomanager.domain.service.ExifMetadata;
 import com.jpablodrexler.photomanager.domain.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,7 @@ import org.apache.commons.imaging.common.ImageMetadata;
 import org.apache.commons.imaging.formats.jpeg.JpegImageMetadata;
 import org.apache.commons.imaging.formats.tiff.TiffField;
 import org.apache.commons.imaging.formats.tiff.TiffImageMetadata;
+import org.apache.commons.imaging.formats.tiff.constants.ExifTagConstants;
 import org.apache.commons.imaging.formats.tiff.constants.TiffTagConstants;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +28,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -224,6 +227,101 @@ public class StorageServiceImpl implements StorageService {
     public LocalDateTime getFileModificationDateTime(String filePath) throws IOException {
         BasicFileAttributes attrs = Files.readAttributes(Paths.get(filePath), BasicFileAttributes.class);
         return attrs.lastModifiedTime().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+    }
+
+    @Override
+    public ExifMetadata getExifMetadata(String filePath) {
+        String cameraMake = null;
+        String cameraModel = null;
+        String lensModel = null;
+        String exposureTime = null;
+        Double fNumber = null;
+        Integer isoSpeed = null;
+        Double focalLength = null;
+        LocalDateTime dateTaken = null;
+        Integer widthPixels = null;
+        Integer heightPixels = null;
+        Double gpsLatitude = null;
+        Double gpsLongitude = null;
+
+        try {
+            ImageMetadata metadata = Imaging.getMetadata(Paths.get(filePath).toFile());
+            if (!(metadata instanceof JpegImageMetadata jpegMetadata)) {
+                return new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null);
+            }
+            TiffImageMetadata exif = jpegMetadata.getExif();
+            if (exif == null) {
+                return new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null);
+            }
+
+            try {
+                TiffField f = exif.findField(TiffTagConstants.TIFF_TAG_MAKE);
+                if (f != null) cameraMake = f.getStringValue().trim();
+            } catch (Exception e) { log.debug("EXIF make read failed for {}", filePath); }
+
+            try {
+                TiffField f = exif.findField(TiffTagConstants.TIFF_TAG_MODEL);
+                if (f != null) cameraModel = f.getStringValue().trim();
+            } catch (Exception e) { log.debug("EXIF model read failed for {}", filePath); }
+
+            try {
+                TiffField f = exif.findField(ExifTagConstants.EXIF_TAG_LENS_MODEL);
+                if (f != null) lensModel = f.getStringValue().trim();
+            } catch (Exception e) { log.debug("EXIF lens model read failed for {}", filePath); }
+
+            try {
+                TiffField f = exif.findField(ExifTagConstants.EXIF_TAG_EXPOSURE_TIME);
+                if (f != null) exposureTime = f.getValueDescription();
+            } catch (Exception e) { log.debug("EXIF exposure time read failed for {}", filePath); }
+
+            try {
+                TiffField f = exif.findField(ExifTagConstants.EXIF_TAG_FNUMBER);
+                if (f != null) fNumber = ((Number) f.getValue()).doubleValue();
+            } catch (Exception e) { log.debug("EXIF f-number read failed for {}", filePath); }
+
+            try {
+                TiffField f = exif.findField(ExifTagConstants.EXIF_TAG_ISO);
+                if (f != null) isoSpeed = f.getIntValueOrArraySum();
+            } catch (Exception e) { log.debug("EXIF ISO read failed for {}", filePath); }
+
+            try {
+                TiffField f = exif.findField(ExifTagConstants.EXIF_TAG_FOCAL_LENGTH);
+                if (f != null) focalLength = ((Number) f.getValue()).doubleValue();
+            } catch (Exception e) { log.debug("EXIF focal length read failed for {}", filePath); }
+
+            try {
+                TiffField f = exif.findField(ExifTagConstants.EXIF_TAG_DATE_TIME_ORIGINAL);
+                if (f != null) {
+                    String raw = f.getStringValue().trim();
+                    dateTaken = LocalDateTime.parse(raw, DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss"));
+                }
+            } catch (Exception e) { log.debug("EXIF date taken read failed for {}", filePath); }
+
+            try {
+                TiffField f = exif.findField(ExifTagConstants.EXIF_TAG_EXIF_IMAGE_WIDTH);
+                if (f != null) widthPixels = f.getIntValueOrArraySum();
+            } catch (Exception e) { log.debug("EXIF image width read failed for {}", filePath); }
+
+            try {
+                TiffField f = exif.findField(ExifTagConstants.EXIF_TAG_EXIF_IMAGE_LENGTH);
+                if (f != null) heightPixels = f.getIntValueOrArraySum();
+            } catch (Exception e) { log.debug("EXIF image height read failed for {}", filePath); }
+
+            try {
+                TiffImageMetadata.GpsInfo gps = exif.getGpsInfo();
+                if (gps != null) {
+                    gpsLatitude = gps.getLatitudeAsDegreesNorth();
+                    gpsLongitude = gps.getLongitudeAsDegreesEast();
+                }
+            } catch (Exception e) { log.debug("EXIF GPS read failed for {}", filePath); }
+
+        } catch (Exception e) {
+            log.debug("Could not read EXIF metadata for {}", filePath);
+        }
+
+        return new ExifMetadata(cameraMake, cameraModel, lensModel, exposureTime,
+                fNumber, isoSpeed, focalLength, dateTaken, widthPixels, heightPixels,
+                gpsLatitude, gpsLongitude);
     }
 
     private boolean isImageFile(String fileName) {

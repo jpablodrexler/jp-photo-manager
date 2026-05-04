@@ -38,6 +38,9 @@
       @if (viewMode === 'viewer') {
         <button mat-icon-button (click)="zoomOut()"><mat-icon>zoom_out</mat-icon></button>
         <button mat-icon-button (click)="zoomIn()"><mat-icon>zoom_in</mat-icon></button>
+        <button mat-icon-button (click)="toggleExifPanel()" [class.active]="showExifPanel" title="EXIF info">
+          <mat-icon>info</mat-icon>
+        </button>
         <button mat-icon-button (click)="closeViewer()"><mat-icon>grid_view</mat-icon></button>
       }
     </mat-toolbar>
@@ -88,6 +91,11 @@
         <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="viewerNext()" [disabled]="currentViewerIndex >= assets.length - 1">
           <mat-icon>chevron_right</mat-icon>
         </button>
+        @if (showExifPanel) {
+          <div class="viewer-exif-panel">
+            <app-exif-panel [assetId]="currentViewerAsset.assetId" />
+          </div>
+        }
       </div>
     }
 

@@ -1,0 +1,55 @@
+.exif-panel {
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
+  padding: 12px;
+  color: #fff;
+  font-size: 13px;
+  min-width: 240px;
+}
+
+.exif-loading {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.exif-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.exif-row {
+  display: grid;
+  grid-template-columns: 20px 90px 1fr;
+  align-items: center;
+  gap: 6px;
+}
+
+.exif-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.exif-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.exif-value {
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exif-empty {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  text-align: center;
+  padding: 8px 0;
+}

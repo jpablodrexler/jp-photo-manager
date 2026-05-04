@@ -6,6 +6,7 @@ import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
 import com.jpablodrexler.photomanager.application.dto.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.domain.entity.Asset;
+import com.jpablodrexler.photomanager.domain.entity.AssetExif;
 import com.jpablodrexler.photomanager.domain.entity.Folder;
 import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
 import org.junit.jupiter.api.Test;
@@ -236,6 +237,43 @@ class AssetControllerTest {
         mockMvc.perform(get("/api/assets/duplicates"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
+    }
+
+    // --- GET /api/assets/{assetId}/exif ---
+
+    @Test
+    void getExifMetadata_exifExists_returns200WithFields() throws Exception {
+        Folder folder = buildFolder(1L, "/photos");
+        Asset asset = buildAsset(folder, "photo.jpg", 42L);
+        AssetExif exif = new AssetExif();
+        exif.setAsset(asset);
+        exif.setCameraMake("Canon");
+        exif.setCameraModel("EOS 90D");
+        exif.setIsoSpeed(400);
+
+        when(facade.getAssetExif(42L)).thenReturn(exif);
+
+        mockMvc.perform(get("/api/assets/42/exif"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cameraMake").value("Canon"))
+                .andExpect(jsonPath("$.cameraModel").value("EOS 90D"))
+                .andExpect(jsonPath("$.isoSpeed").value(400));
+    }
+
+    @Test
+    void getExifMetadata_noExifRow_returns204() throws Exception {
+        when(facade.getAssetExif(42L)).thenReturn(null);
+
+        mockMvc.perform(get("/api/assets/42/exif"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void getExifMetadata_assetNotFound_returns404() throws Exception {
+        when(facade.getAssetExif(99L)).thenThrow(new java.util.NoSuchElementException("not found"));
+
+        mockMvc.perform(get("/api/assets/99/exif"))
+                .andExpect(status().isNotFound());
     }
 
     // --- helpers ---

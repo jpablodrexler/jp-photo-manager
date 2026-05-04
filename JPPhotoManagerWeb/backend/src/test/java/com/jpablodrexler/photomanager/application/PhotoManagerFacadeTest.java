@@ -36,6 +36,8 @@ class PhotoManagerFacadeTest {
     @Mock
     AssetRepository assetRepository;
     @Mock
+    AssetExifRepository assetExifRepository;
+    @Mock
     FolderRepository folderRepository;
     @Mock
     RecentTargetPathRepository recentTargetPathRepository;
@@ -430,6 +432,48 @@ class PhotoManagerFacadeTest {
         when(assetRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> sut.getAssetImage(99L))
+                .isInstanceOf(NoSuchElementException.class);
+    }
+
+    // --- getAssetExif ---
+
+    @Test
+    void getAssetExif_assetAndExifFound_returnsExif() {
+        Folder folder = buildFolder(1L, "/photos");
+        Asset asset = buildAsset(folder, "photo.jpg");
+        asset.setAssetId(42L);
+        AssetExif exif = new AssetExif();
+        exif.setAsset(asset);
+        exif.setCameraMake("Canon");
+
+        when(assetRepository.findById(42L)).thenReturn(Optional.of(asset));
+        when(assetExifRepository.findByAssetAssetId(42L)).thenReturn(Optional.of(exif));
+
+        AssetExif result = sut.getAssetExif(42L);
+
+        assertThat(result).isSameAs(exif);
+        assertThat(result.getCameraMake()).isEqualTo("Canon");
+    }
+
+    @Test
+    void getAssetExif_assetFoundButNoExifRow_returnsNull() {
+        Folder folder = buildFolder(1L, "/photos");
+        Asset asset = buildAsset(folder, "photo.jpg");
+        asset.setAssetId(42L);
+
+        when(assetRepository.findById(42L)).thenReturn(Optional.of(asset));
+        when(assetExifRepository.findByAssetAssetId(42L)).thenReturn(Optional.empty());
+
+        AssetExif result = sut.getAssetExif(42L);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void getAssetExif_assetNotFound_throwsNoSuchElementException() {
+        when(assetRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> sut.getAssetExif(99L))
                 .isInstanceOf(NoSuchElementException.class);
     }
 

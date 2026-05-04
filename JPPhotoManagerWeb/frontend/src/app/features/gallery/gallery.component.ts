@@ -11,6 +11,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { FolderNavComponent } from '../folder-nav/folder-nav.component';
 import { ThumbnailComponent } from '../../shared/components/thumbnail/thumbnail.component';
+import { ExifPanelComponent } from '../../shared/components/exif-panel/exif-panel.component';
 import { AssetService } from '../../core/services/asset.service';
 import { Asset, SortCriteria } from '../../core/models/asset.model';
 import { PaginatedData } from '../../core/models/paginated-data.model';
@@ -34,6 +35,7 @@ type ViewMode = 'thumbnails' | 'viewer';
     MatDialogModule,
     FolderNavComponent,
     ThumbnailComponent,
+    ExifPanelComponent,
     FileSizePipe
   ],
   templateUrl: './gallery.component.html',
@@ -55,6 +57,7 @@ export class GalleryComponent implements OnInit {
   totalItems = 0;
 
   statusMessage = '';
+  showExifPanel = false;
 
   readonly sortOptions: { value: SortCriteria; label: string }[] = [
     { value: 'FILE_NAME', label: 'File Name' },
@@ -109,10 +112,16 @@ export class GalleryComponent implements OnInit {
     this.currentViewerIndex = index;
     this.viewMode = 'viewer';
     this.viewerZoom = 1;
+    this.showExifPanel = false;
   }
 
   closeViewer(): void {
     this.viewMode = 'thumbnails';
+    this.showExifPanel = false;
+  }
+
+  toggleExifPanel(): void {
+    this.showExifPanel = !this.showExifPanel;
   }
 
   viewerPrev(): void {

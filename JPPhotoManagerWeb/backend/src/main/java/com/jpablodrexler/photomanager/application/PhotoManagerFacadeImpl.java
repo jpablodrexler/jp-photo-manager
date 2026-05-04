@@ -9,6 +9,7 @@ import com.jpablodrexler.photomanager.application.dto.SyncAssetsResult;
 import com.jpablodrexler.photomanager.domain.entity.*;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 import com.jpablodrexler.photomanager.domain.repository.*;
+import com.jpablodrexler.photomanager.domain.repository.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.service.*;
 import lombok.RequiredArgsConstructor;
 import java.io.IOException;
@@ -48,6 +49,7 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
             SortCriteria.THUMBNAIL_CREATION_DATE_TIME, Sort.by("thumbnailCreationDateTime").descending());
 
     private final AssetRepository assetRepository;
+    private final AssetExifRepository assetExifRepository;
     private final FolderRepository folderRepository;
     private final CatalogRunStateRepository catalogRunStateRepository;
     private final RecentTargetPathRepository recentTargetPathRepository;
@@ -233,6 +235,14 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
                 recentTargetPathRepository.deleteAll(toDelete);
             }
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AssetExif getAssetExif(Long assetId) {
+        assetRepository.findById(assetId)
+                .orElseThrow(() -> new NoSuchElementException("Asset not found: " + assetId));
+        return assetExifRepository.findByAssetAssetId(assetId).orElse(null);
     }
 
     private Sort buildSort(SortCriteria criteria) {
