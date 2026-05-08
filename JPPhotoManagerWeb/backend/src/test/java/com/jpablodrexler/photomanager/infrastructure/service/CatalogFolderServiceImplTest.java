@@ -2,11 +2,14 @@ package com.jpablodrexler.photomanager.infrastructure.service;
 
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.domain.entity.Asset;
+import com.jpablodrexler.photomanager.domain.entity.AssetExif;
 import com.jpablodrexler.photomanager.domain.entity.Folder;
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
+import com.jpablodrexler.photomanager.domain.repository.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.repository.AssetRepository;
 import com.jpablodrexler.photomanager.domain.repository.FolderRepository;
+import com.jpablodrexler.photomanager.domain.service.ExifMetadata;
 import com.jpablodrexler.photomanager.domain.service.StorageService;
 import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,8 +30,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,6 +43,9 @@ class CatalogFolderServiceImplTest {
 
     @Mock
     AssetRepository assetRepository;
+
+    @Mock
+    AssetExifRepository assetExifRepository;
 
     @Mock
     FolderRepository folderRepository;
@@ -311,6 +319,10 @@ class CatalogFolderServiceImplTest {
         when(storageService.getFileModificationDateTime(filePath)).thenReturn(LocalDateTime.of(2024, 1, 2, 0, 0));
         when(storageService.getImageRotation(filePath)).thenReturn(ImageRotation.ROTATE_0);
         when(storageService.generateThumbnail(eq(filePath), anyInt(), anyInt())).thenReturn(new byte[]{1, 2, 3});
+        when(storageService.getExifMetadata(filePath)).thenReturn(
+                new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null));
+        when(assetExifRepository.findByAssetAssetId(anyLong())).thenReturn(java.util.Optional.empty());
+        when(assetExifRepository.save(any(AssetExif.class))).thenAnswer(inv -> inv.getArgument(0));
         when(assetRepository.save(any())).thenAnswer(inv -> {
             Asset a = inv.getArgument(0);
             a.setAssetId(99L);

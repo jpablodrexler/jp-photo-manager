@@ -1,22 +1,52 @@
-.exif-panel {
+:host {
+  width: 320px;
+  flex-shrink: 0;
+  flex-direction: column;
+  height: 100%;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  overflow-y: auto;
   background: rgba(0, 0, 0, 0.7);
-  border-radius: 8px;
-  padding: 12px;
+}
+
+.exif-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   color: #fff;
   font-size: 13px;
-  min-width: 240px;
+}
+
+.exif-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.exif-title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.exif-close {
+  color: rgba(255, 255, 255, 0.7);
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
 }
 
 .exif-loading {
   display: flex;
   justify-content: center;
-  padding: 12px 0;
+  padding: 24px 0;
 }
 
 .exif-grid {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 12px;
 }
 
 .exif-row {
@@ -51,5 +81,14 @@
   color: rgba(255, 255, 255, 0.5);
   font-style: italic;
   text-align: center;
-  padding: 8px 0;
+  padding: 24px 12px;
+}
+
+@media (max-width: 768px) {
+  :host {
+    width: 100%;
+    height: auto;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+  }
 }

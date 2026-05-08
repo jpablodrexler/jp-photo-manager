@@ -79,23 +79,25 @@
 
     <!-- Viewer -->
     @if (viewMode === 'viewer' && currentViewerAsset) {
-      <div class="image-viewer flex-1">
-        <button mat-icon-button class="viewer-nav viewer-nav--prev" (click)="viewerPrev()" [disabled]="currentViewerIndex === 0">
-          <mat-icon>chevron_left</mat-icon>
-        </button>
-        <img
-          [src]="currentViewerAsset.imageUrl"
-          [alt]="currentViewerAsset.fileName"
-          [style.transform]="'scale(' + viewerZoom + ')'"
+      <div class="viewer-layout">
+        <div class="image-viewer flex-1">
+          <button mat-icon-button class="viewer-nav viewer-nav--prev" (click)="viewerPrev()" [disabled]="currentViewerIndex === 0">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <img
+            [src]="currentViewerAsset.imageUrl"
+            [alt]="currentViewerAsset.fileName"
+            [style.transform]="'scale(' + viewerZoom + ')'"
+          />
+          <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="viewerNext()" [disabled]="currentViewerIndex >= assets.length - 1">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+        <app-exif-panel
+          [assetId]="currentViewerAsset.assetId"
+          [visible]="showExifPanel"
+          (closed)="showExifPanel = false"
         />
-        <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="viewerNext()" [disabled]="currentViewerIndex >= assets.length - 1">
-          <mat-icon>chevron_right</mat-icon>
-        </button>
-        @if (showExifPanel) {
-          <div class="viewer-exif-panel">
-            <app-exif-panel [assetId]="currentViewerAsset.assetId" />
-          </div>
-        }
       </div>
     }
 

@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { AssetService } from './asset.service';
+import { ExifMetadata } from '../models/exif-metadata.model';
 import { PaginatedData } from '../models/paginated-data.model';
 import { Asset } from '../models/asset.model';
 
@@ -108,5 +109,39 @@ describe('AssetService', () => {
     const source = service.catalogAssets();
     expect(source).to.be.instanceOf(EventSource);
     source.close();
+  });
+
+  it('getExifMetadata_validId_issuesGetRequestAndReturnsMappedObject', () => {
+    const mockExif: ExifMetadata = {
+      cameraMake: 'Canon',
+      cameraModel: 'EOS 90D',
+      lensModel: null,
+      exposureTime: '1/500',
+      fNumber: 5.6,
+      isoSpeed: 200,
+      focalLength: 85,
+      dateTaken: '2024-06-15T10:30:00',
+      widthPixels: 6000,
+      heightPixels: 4000,
+      gpsLatitude: null,
+      gpsLongitude: null,
+    };
+
+    service.getExifMetadata(1).subscribe(data => {
+      expect(data).to.deep.equal(mockExif);
+    });
+
+    const req = httpMock.expectOne('/api/assets/1/exif');
+    expect(req.request.method).to.equal('GET');
+    req.flush(mockExif);
+  });
+
+  it('getExifMetadata_assetWithNoExif_returnsNull', () => {
+    service.getExifMetadata(99).subscribe(data => {
+      expect(data).to.be.null;
+    });
+
+    const req = httpMock.expectOne('/api/assets/99/exif');
+    req.flush(null);
   });
 });

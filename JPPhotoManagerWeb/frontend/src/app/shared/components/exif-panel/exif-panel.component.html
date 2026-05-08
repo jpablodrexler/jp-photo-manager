@@ -1,4 +1,11 @@
 <div class="exif-panel">
+  <div class="exif-header">
+    <span class="exif-title">EXIF Info</span>
+    <button mat-icon-button class="exif-close" (click)="close()" aria-label="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
   @if (loading) {
     <div class="exif-loading">
       <mat-spinner diameter="24"></mat-spinner>

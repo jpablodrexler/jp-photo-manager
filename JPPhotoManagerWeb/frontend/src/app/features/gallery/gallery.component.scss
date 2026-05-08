@@ -28,8 +28,16 @@
   font-size: 18px;
 }
 
+.viewer-layout {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  overflow: hidden;
+}
+
 .image-viewer {
   position: relative;
+  overflow: hidden;
 
   .viewer-nav {
     position: absolute;
@@ -45,13 +53,5 @@
     &:disabled {
       opacity: 0.3;
     }
-  }
-
-  .viewer-exif-panel {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    z-index: 20;
-    max-width: 300px;
   }
 }
