@@ -1,5 +1,5 @@
 import { mount } from 'cypress/angular';
-import { of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { GalleryComponent } from './gallery.component';
@@ -90,6 +90,7 @@ describe('GalleryComponent', () => {
     mountGallery({ getAssets }).then(({ fixture }) => {
       fixture.componentInstance.onFolderSelected('/photos');
       fixture.detectChanges();
+      return Promise.resolve().then(() => fixture.detectChanges());
     });
 
     cy.get('app-thumbnail').should('have.length', 2);
@@ -193,33 +194,6 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('should go to next page and reload assets', () => {
-    const getAssets = cy.stub().returns(of({ items: mockAssets, pageIndex: 0, totalPages: 3, totalItems: 6 }));
-
-    mountGallery({ getAssets }).then(({ fixture }) => {
-      const component = fixture.componentInstance;
-      component.currentFolder = '/photos';
-      component.totalPages = 3;
-      component.pageIndex = 0;
-      fixture.detectChanges();
-
-      component.nextPage();
-      expect(component.pageIndex).to.equal(1);
-    });
-  });
-
-  it('should go to previous page and reload assets', () => {
-    const getAssets = cy.stub().returns(of(emptyPage));
-
-    mountGallery({ getAssets }).then(({ fixture }) => {
-      const component = fixture.componentInstance;
-      component.currentFolder = '/photos';
-      component.pageIndex = 2;
-      component.prevPage();
-      expect(component.pageIndex).to.equal(1);
-    });
-  });
-
   it('should reset page to 0 when sort changes', () => {
     const getAssets = cy.stub().returns(of(emptyPage));
 
@@ -253,5 +227,105 @@ describe('GalleryComponent', () => {
       fixture.componentInstance.deleteSelected(false);
       cy.wrap(deleteAssets).should('not.have.been.called');
     });
+  });
+
+  // --- Virtual scrolling tests ---
+
+  it('thumbnailsView_withMultiplePages_noPaginationBarRendered', () => {
+    const getAssets = cy.stub().returns(of({ items: mockAssets, pageIndex: 0, totalPages: 3, totalItems: 6 }));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.loadNextPage();
+      fixture.detectChanges();
+    });
+
+    cy.get('.pagination-bar').should('not.exist');
+  });
+
+  it('loadNextPage_afterPage0_appendsAssetsAndCallsGetAssetsWithPage1', () => {
+    const page0: PaginatedData<Asset> = { items: mockAssets, pageIndex: 0, totalPages: 2, totalItems: 4 };
+    const page1: PaginatedData<Asset> = { items: [...mockAssets], pageIndex: 1, totalPages: 2, totalItems: 4 };
+    const getAssets = cy.stub()
+      .onFirstCall().returns(of(page0))
+      .onSecondCall().returns(of(page1));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.loadNextPage();
+      component.loadNextPage();
+      fixture.detectChanges();
+    });
+
+    cy.wrap(getAssets).should('have.been.calledTwice');
+    cy.wrap(getAssets).should('have.been.calledWith', '/photos', 1, 'FILE_NAME');
+  });
+
+  it('onFolderSelected_resetsAssetsAndCallsGetAssetsWithPage0', () => {
+    const getAssets = cy.stub().returns(of({ items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2 }));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets = [...mockAssets];
+      component.onFolderSelected('/new-folder');
+      expect(component.assets).to.deep.equal([]);
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.wrap(getAssets).should('have.been.calledWith', '/new-folder', 0, 'FILE_NAME');
+    cy.get('app-thumbnail').should('have.length', 2);
+  });
+
+  it('onSortChange_resetsAssetsAndCallsGetAssetsWithPage0', () => {
+    const getAssets = cy.stub().returns(of({ items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2 }));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.assets = [...mockAssets];
+      component.sortCriteria = 'FILE_SIZE';
+      component.onSortChange();
+      expect(component.assets).to.deep.equal([]);
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'FILE_SIZE');
+  });
+
+  it('isLoading_true_progressBarVisible', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.isLoading = true;
+      fixture.detectChanges();
+    });
+
+    cy.get('mat-progress-bar').should('exist');
+  });
+
+  it('allLoaded_true_endOfListVisible', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets = [...mockAssets];
+      component.allLoaded = true;
+      fixture.detectChanges();
+    });
+
+    cy.get('.end-of-list').should('be.visible');
+  });
+
+  it('loadNextPage_whenAllLoaded_doesNotCallGetAssets', () => {
+    const getAssets = cy.stub().returns(of(emptyPage));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.allLoaded = true;
+      component.loadNextPage();
+    });
+
+    cy.wrap(getAssets).should('not.have.been.called');
   });
 });

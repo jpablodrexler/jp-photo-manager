@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -7,8 +7,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { MatDialogModule } from '@angular/material/dialog';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 import { FolderNavComponent } from '../folder-nav/folder-nav.component';
 import { ThumbnailComponent } from '../../shared/components/thumbnail/thumbnail.component';
 import { ExifPanelComponent } from '../../shared/components/exif-panel/exif-panel.component';
@@ -33,6 +35,8 @@ type ViewMode = 'thumbnails' | 'viewer';
     MatMenuModule,
     MatSnackBarModule,
     MatDialogModule,
+    MatProgressBarModule,
+    ScrollingModule,
     FolderNavComponent,
     ThumbnailComponent,
     ExifPanelComponent,
@@ -41,7 +45,10 @@ type ViewMode = 'thumbnails' | 'viewer';
   templateUrl: './gallery.component.html',
   styleUrl: './gallery.component.scss'
 })
-export class GalleryComponent implements OnInit {
+export class GalleryComponent implements OnInit, OnDestroy {
+
+  @ViewChild('scrollSentinel') private sentinel!: ElementRef<HTMLDivElement>;
+  private observer: IntersectionObserver | null = null;
 
   currentFolder: string = '';
   viewMode: ViewMode = 'thumbnails';
@@ -53,8 +60,9 @@ export class GalleryComponent implements OnInit {
   viewerZoom = 1;
 
   pageIndex = 0;
-  totalPages = 0;
   totalItems = 0;
+  isLoading = false;
+  allLoaded = false;
 
   statusMessage = '';
   showExifPanel = false;
@@ -72,28 +80,69 @@ export class GalleryComponent implements OnInit {
     private snackBar: MatSnackBar
   ) {}
 
-  ngOnInit(): void {
+  ngOnInit(): void {}
+
+  ngOnDestroy(): void {
+    this.disconnectObserver();
   }
 
   onFolderSelected(folderPath: string): void {
     this.currentFolder = folderPath;
+    this.assets = [];
     this.pageIndex = 0;
+    this.isLoading = false;
+    this.allLoaded = false;
     this.selectedAssets.clear();
-    this.loadAssets();
+    this.disconnectObserver();
+    Promise.resolve().then(() => {
+      this.setupSentinelObserver();
+      this.loadNextPage();
+    });
   }
 
-  loadAssets(): void {
-    if (!this.currentFolder) return;
-
+  loadNextPage(): void {
+    if (this.isLoading || this.allLoaded || !this.currentFolder) return;
+    this.isLoading = true;
     this.assetService.getAssets(this.currentFolder, this.pageIndex, this.sortCriteria)
       .subscribe({
         next: (data: PaginatedData<Asset>) => {
-          this.assets = data.items;
-          this.totalPages = data.totalPages;
+          this.assets = [...this.assets, ...data.items];
           this.totalItems = data.totalItems;
+          this.pageIndex++;
+          this.allLoaded = this.pageIndex >= data.totalPages;
+          this.isLoading = false;
         },
-        error: () => this.snackBar.open('Failed to load assets', 'Dismiss', { duration: 3000 })
+        error: () => {
+          this.isLoading = false;
+          this.snackBar.open('Failed to load assets', 'Dismiss', { duration: 3000 });
+        }
       });
+  }
+
+  setupSentinelObserver(): void {
+    if (!this.sentinel?.nativeElement) return;
+    this.observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) this.loadNextPage(); },
+      { threshold: 0.1 }
+    );
+    this.observer.observe(this.sentinel.nativeElement);
+  }
+
+  disconnectObserver(): void {
+    this.observer?.disconnect();
+    this.observer = null;
+  }
+
+  loadAssets(): void {
+    this.assets = [];
+    this.pageIndex = 0;
+    this.isLoading = false;
+    this.allLoaded = false;
+    this.disconnectObserver();
+    Promise.resolve().then(() => {
+      this.setupSentinelObserver();
+      this.loadNextPage();
+    });
   }
 
   toggleSelection(asset: Asset): void {
@@ -146,23 +195,16 @@ export class GalleryComponent implements OnInit {
     this.viewerZoom = Math.max(this.viewerZoom - 0.25, 0.25);
   }
 
-  prevPage(): void {
-    if (this.pageIndex > 0) {
-      this.pageIndex--;
-      this.loadAssets();
-    }
-  }
-
-  nextPage(): void {
-    if (this.pageIndex < this.totalPages - 1) {
-      this.pageIndex++;
-      this.loadAssets();
-    }
-  }
-
   onSortChange(): void {
+    this.assets = [];
     this.pageIndex = 0;
-    this.loadAssets();
+    this.isLoading = false;
+    this.allLoaded = false;
+    this.disconnectObserver();
+    Promise.resolve().then(() => {
+      this.setupSentinelObserver();
+      this.loadNextPage();
+    });
   }
 
   deleteSelected(deleteFiles: boolean): void {

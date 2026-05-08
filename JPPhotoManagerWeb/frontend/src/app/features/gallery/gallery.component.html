@@ -61,20 +61,16 @@
             <div class="empty-state">No images found in this folder.</div>
           }
         </div>
+        @if (isLoading) {
+          <div class="loading-row">
+            <mat-progress-bar mode="indeterminate" />
+          </div>
+        }
+        @if (allLoaded && assets.length > 0) {
+          <div class="end-of-list">All photos loaded</div>
+        }
+        <div #scrollSentinel class="scroll-sentinel"></div>
       </div>
-
-      <!-- Pagination -->
-      @if (totalPages > 1) {
-        <div class="pagination-bar">
-          <button mat-icon-button (click)="prevPage()" [disabled]="pageIndex === 0">
-            <mat-icon>chevron_left</mat-icon>
-          </button>
-          <span>{{ pageIndex + 1 }} / {{ totalPages }} ({{ totalItems }} items)</span>
-          <button mat-icon-button (click)="nextPage()" [disabled]="pageIndex >= totalPages - 1">
-            <mat-icon>chevron_right</mat-icon>
-          </button>
-        </div>
-      }
     }
 
     <!-- Viewer -->
@@ -103,7 +99,11 @@
 
     <!-- Status Bar -->
     <div class="status-bar">
-      <span>{{ currentFolder }}</span>
+      @if (currentFolder && totalItems > 0) {
+        <span>{{ assets.length }} of {{ totalItems }} photos</span>
+      } @else {
+        <span>{{ currentFolder }}</span>
+      }
       @if (selectedCount > 0) {
         <span>{{ selectedCount }} selected</span>
       }

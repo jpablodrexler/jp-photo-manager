@@ -20,6 +20,27 @@
   overflow-y: auto;
 }
 
+.scroll-sentinel {
+  height: 1px;
+}
+
+.loading-row {
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+
+  mat-progress-bar {
+    width: 200px;
+  }
+}
+
+.end-of-list {
+  text-align: center;
+  padding: 16px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
 .empty-state {
   grid-column: 1 / -1;
   text-align: center;
