@@ -18,6 +18,7 @@ import { AssetService } from '../../core/services/asset.service';
 import { Asset, SortCriteria } from '../../core/models/asset.model';
 import { PaginatedData } from '../../core/models/paginated-data.model';
 import { FileSizePipe } from '../../shared/pipes/file-size.pipe';
+import { DropZoneComponent } from './drop-zone/drop-zone.component';
 
 type ViewMode = 'thumbnails' | 'viewer';
 
@@ -40,7 +41,8 @@ type ViewMode = 'thumbnails' | 'viewer';
     FolderNavComponent,
     ThumbnailComponent,
     ExifPanelComponent,
-    FileSizePipe
+    FileSizePipe,
+    DropZoneComponent
   ],
   templateUrl: './gallery.component.html',
   styleUrl: './gallery.component.scss'
@@ -193,6 +195,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   zoomOut(): void {
     this.viewerZoom = Math.max(this.viewerZoom - 0.25, 0.25);
+  }
+
+  onUploadComplete(): void {
+    this.loadAssets();
   }
 
   onSortChange(): void {

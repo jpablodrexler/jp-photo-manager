@@ -1,0 +1,53 @@
+.drop-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px dashed #4caf50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  font-size: 24px;
+  color: white;
+  pointer-events: none;
+}
+
+.upload-queue {
+  padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.upload-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+
+  .upload-filename {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  mat-progress-bar {
+    width: 120px;
+  }
+}
+
+.status-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+
+  &.status-done {
+    color: #4caf50;
+  }
+
+  &.status-error {
+    color: #f44336;
+  }
+}

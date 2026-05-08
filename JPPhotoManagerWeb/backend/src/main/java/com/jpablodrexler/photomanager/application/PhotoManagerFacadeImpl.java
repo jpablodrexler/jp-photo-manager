@@ -22,9 +22,13 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.jpablodrexler.photomanager.api.exception.FolderNotFoundException;
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.UUID;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +59,7 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
     private final RecentTargetPathRepository recentTargetPathRepository;
     private final SyncAssetsConfigRepository syncAssetsConfigRepository;
     private final ConvertAssetsConfigRepository convertAssetsConfigRepository;
+    private final CatalogFolderService catalogFolderService;
     private final CatalogAssetsService catalogAssetsService;
     private final FindDuplicatedAssetsService findDuplicatedAssetsService;
     private final MoveAssetsService moveAssetsService;
@@ -214,6 +219,23 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
                 .map(state -> state.getLastCompletedAt())
                 .orElse(null);
         return new HomeStats(folderCount, assetCount, lastCompleted);
+    }
+
+    @Override
+    @Transactional
+    public Asset uploadAsset(String folderPath, MultipartFile file) throws IOException {
+        if (!folderRepository.existsByPath(folderPath)) {
+            throw new FolderNotFoundException(folderPath);
+        }
+        Path tempFile = Files.createTempFile(UUID.randomUUID().toString() + "_", "_" + file.getOriginalFilename());
+        try {
+            file.transferTo(tempFile.toFile());
+            String destPath = folderPath + "/" + file.getOriginalFilename();
+            storageService.copyFile(tempFile.toString(), destPath);
+            return catalogFolderService.createAsset(folderPath, file.getOriginalFilename());
+        } finally {
+            Files.deleteIfExists(tempFile);
+        }
     }
 
     private void validateDestinationPath(String destinationFolderPath) {

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Asset, SortCriteria } from '../models/asset.model';
 import { ExifMetadata } from '../models/exif-metadata.model';
@@ -49,5 +49,15 @@ export class AssetService {
 
   getExifMetadata(assetId: number): Observable<ExifMetadata | null> {
     return this.http.get<ExifMetadata | null>(`${this.baseUrl}/${assetId}/exif`);
+  }
+
+  uploadAsset(folderPath: string, file: File): Observable<HttpEvent<Asset>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folderPath', folderPath);
+    return this.http.post<Asset>(`${this.baseUrl}/upload`, formData, {
+      reportProgress: true,
+      observe: 'events',
+    });
   }
 }

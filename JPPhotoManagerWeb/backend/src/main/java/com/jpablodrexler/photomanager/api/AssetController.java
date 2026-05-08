@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager.api;
 import com.jpablodrexler.photomanager.api.dto.AssetDto;
 import com.jpablodrexler.photomanager.api.dto.ExifMetadataDto;
 import com.jpablodrexler.photomanager.api.dto.MoveAssetsRequest;
+import com.jpablodrexler.photomanager.api.exception.FolderNotFoundException;
 import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
 import com.jpablodrexler.photomanager.application.dto.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
@@ -15,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
@@ -154,6 +156,34 @@ public class AssetController {
             return ResponseEntity.ok(dto);
         } catch (java.util.NoSuchElementException e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    private static final java.util.Set<String> ALLOWED_CONTENT_TYPES = java.util.Set.of(
+            "image/jpeg", "image/png", "image/gif", "image/bmp", "image/tiff", "image/webp");
+    private static final java.util.Set<String> ALLOWED_EXTENSIONS = java.util.Set.of(
+            "jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif", "webp");
+
+    @PostMapping("/upload")
+    public ResponseEntity<AssetDto> uploadAsset(
+            @RequestPart("file") MultipartFile file,
+            @RequestPart("folderPath") String folderPath) {
+        String contentType = file.getContentType();
+        String originalFilename = file.getOriginalFilename();
+        String extension = originalFilename != null && originalFilename.contains(".")
+                ? originalFilename.substring(originalFilename.lastIndexOf('.') + 1).toLowerCase()
+                : "";
+        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)
+                || !ALLOWED_EXTENSIONS.contains(extension)) {
+            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
+        }
+        try {
+            Asset asset = facade.uploadAsset(folderPath, file);
+            return ResponseEntity.status(HttpStatus.CREATED).body(toDto(asset));
+        } catch (FolderNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 

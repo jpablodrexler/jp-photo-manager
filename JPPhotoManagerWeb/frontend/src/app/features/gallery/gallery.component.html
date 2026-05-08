@@ -48,6 +48,9 @@
     <!-- Thumbnails View -->
     @if (viewMode === 'thumbnails') {
       <div class="thumbnail-grid-container flex-1">
+        @if (currentFolder) {
+          <app-drop-zone [folderPath]="currentFolder" (uploadComplete)="onUploadComplete()" />
+        }
         <div class="thumbnail-grid">
           @for (asset of assets; track asset.assetId; let i = $index) {
             <app-thumbnail

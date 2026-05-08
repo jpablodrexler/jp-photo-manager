@@ -13,6 +13,7 @@ import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.application.dto.SyncAssetsResult;
 import com.jpablodrexler.photomanager.domain.entity.Asset;
 import com.jpablodrexler.photomanager.domain.entity.AssetExif;
+import org.springframework.web.multipart.MultipartFile;
 import com.jpablodrexler.photomanager.domain.entity.ConvertAssetsDirectoriesDefinition;
 import com.jpablodrexler.photomanager.domain.entity.Folder;
 import com.jpablodrexler.photomanager.domain.entity.SyncAssetsDirectoriesDefinition;
@@ -54,4 +55,6 @@ public interface PhotoManagerFacade {
     HomeStats getHomeStats();
 
     AssetExif getAssetExif(Long assetId);
+
+    Asset uploadAsset(String folderPath, MultipartFile file) throws IOException;
 }
