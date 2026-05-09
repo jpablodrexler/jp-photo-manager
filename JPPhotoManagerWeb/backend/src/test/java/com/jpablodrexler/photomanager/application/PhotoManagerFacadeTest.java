@@ -5,6 +5,8 @@ import com.jpablodrexler.photomanager.application.dto.ConvertAssetsResult;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.application.dto.SyncAssetsResult;
 import com.jpablodrexler.photomanager.domain.entity.*;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 import com.jpablodrexler.photomanager.domain.repository.*;
 import com.jpablodrexler.photomanager.domain.service.*;
@@ -76,7 +78,7 @@ class PhotoManagerFacadeTest {
     void getAssets_folderNotFound_returnsEmptyPaginatedData() {
         when(folderRepository.findByPath("/photos")).thenReturn(Optional.empty());
 
-        PaginatedData<Asset> result = sut.getAssets("/photos", 0, SortCriteria.FILE_NAME);
+        PaginatedData<Asset> result = sut.getAssets("/photos", 0, SortCriteria.FILE_NAME, null, null, null);
 
         assertThat(result.getItems()).isEmpty();
         assertThat(result.getTotalItems()).isZero();
@@ -89,9 +91,9 @@ class PhotoManagerFacadeTest {
         Page<Asset> page = new PageImpl<>(List.of(asset));
 
         when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
-        when(assetRepository.findByFolder(eq(folder), any(Pageable.class))).thenReturn(page);
+        when(assetRepository.findByFolderWithFilters(eq(folder), isNull(), isNull(), isNull(), any(Pageable.class))).thenReturn(page);
 
-        PaginatedData<Asset> result = sut.getAssets("/photos", 0, SortCriteria.FILE_NAME);
+        PaginatedData<Asset> result = sut.getAssets("/photos", 0, SortCriteria.FILE_NAME, null, null, null);
 
         assertThat(result.getItems()).hasSize(1);
         assertThat(result.getTotalItems()).isEqualTo(1);
@@ -104,11 +106,31 @@ class PhotoManagerFacadeTest {
         Page<Asset> page = new PageImpl<>(List.of());
 
         when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
-        when(assetRepository.findByFolder(eq(folder), any(Pageable.class))).thenReturn(page);
+        when(assetRepository.findByFolderWithFilters(eq(folder), isNull(), isNull(), isNull(), any(Pageable.class))).thenReturn(page);
 
-        PaginatedData<Asset> result = sut.getAssets("/photos", 0, null);
+        PaginatedData<Asset> result = sut.getAssets("/photos", 0, null, null, null, null);
 
         assertThat(result.getItems()).isEmpty();
+    }
+
+    @Test
+    void getAssets_withSearchAndDateFilters_passesConvertedLocalDateTimesToRepository() {
+        Folder folder = buildFolder(1L, "/photos");
+        Page<Asset> page = new PageImpl<>(List.of());
+        LocalDate dateFrom = LocalDate.of(2024, 1, 1);
+        LocalDate dateTo   = LocalDate.of(2024, 12, 31);
+
+        when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
+        when(assetRepository.findByFolderWithFilters(any(), any(), any(), any(), any(Pageable.class))).thenReturn(page);
+
+        sut.getAssets("/photos", 0, SortCriteria.FILE_NAME, "vacation", dateFrom, dateTo);
+
+        verify(assetRepository).findByFolderWithFilters(
+                eq(folder),
+                eq("vacation"),
+                argThat(dt -> dt.toLocalDate().equals(dateFrom) && dt.toLocalTime().equals(LocalTime.MIDNIGHT)),
+                argThat(dt -> dt.toLocalDate().equals(dateTo) && dt.toLocalTime().equals(LocalTime.MAX)),
+                any(Pageable.class));
     }
 
     // --- catalogAssetsAsync ---

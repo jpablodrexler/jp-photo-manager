@@ -24,10 +24,12 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @RestController
 @RequestMapping("/api/assets")
@@ -44,8 +46,11 @@ public class AssetController {
     public ResponseEntity<PaginatedData<AssetDto>> getAssets(
             @RequestParam String folderPath,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "FILE_NAME") SortCriteria sort) {
-        PaginatedData<Asset> data = facade.getAssets(folderPath, page, sort);
+            @RequestParam(defaultValue = "FILE_NAME") SortCriteria sort,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
+        PaginatedData<Asset> data = facade.getAssets(folderPath, page, sort, search, dateFrom, dateTo);
         PaginatedData<AssetDto> result = new PaginatedData<>(
                 data.getItems().stream().map(this::toDto).collect(Collectors.toList()),
                 data.getPageIndex(),

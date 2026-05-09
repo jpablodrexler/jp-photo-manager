@@ -361,4 +361,68 @@ describe('GalleryComponent', () => {
 
     cy.wrap(getAssets).should('not.have.been.called');
   });
+
+  // --- Search and filter tests ---
+
+  it('loadNextPage_withSearchTerm_callsGetAssetsWithSearchParam', () => {
+    const getAssets = cy.stub().returns(of(emptyPage));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.searchTerm = 'vacation';
+      component.loadNextPage();
+    });
+
+    cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'FILE_NAME', 'vacation', undefined, undefined);
+  });
+
+  it('onDateChange_withDateFrom_callsGetAssetsWithIsoDateString', () => {
+    const getAssets = cy.stub().returns(of(emptyPage));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.dateFrom = new Date(2024, 5, 15, 12, 0, 0); // noon local — safe for all UTC offsets
+      component.onDateChange();
+    });
+
+    cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'FILE_NAME', undefined, '2024-06-15', undefined);
+  });
+
+  it('clearFilters_resetsFilterStateAndReloads', () => {
+    const getAssets = cy.stub().returns(of(emptyPage));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.searchTerm = 'old-search';
+      component.dateFrom = new Date('2024-01-01');
+      component.dateTo = new Date('2024-12-31');
+      component.clearFilters();
+      component.loadAssets();
+
+      expect(component.searchTerm).to.equal('');
+      expect(component.dateFrom).to.be.null;
+      expect(component.dateTo).to.be.null;
+    });
+
+    cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'FILE_NAME', undefined, undefined, undefined);
+  });
+
+  it('onFolderSelected_clearsFilersThenLoadsAssets', () => {
+    const getAssets = cy.stub().returns(of({ items: [], pageIndex: 0, totalPages: 1, totalItems: 0 }));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.searchTerm = 'old-search';
+      component.dateFrom = new Date('2024-01-01');
+      component.onFolderSelected('/new-folder');
+
+      expect(component.searchTerm).to.equal('');
+      expect(component.dateFrom).to.be.null;
+    });
+
+    cy.wrap(getAssets).should('have.been.calledWith', '/new-folder', 0, 'FILE_NAME', undefined, undefined, undefined);
+  });
 });

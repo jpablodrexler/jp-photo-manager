@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,4 +36,18 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
 
     @Query("SELECT aa FROM Album a JOIN a.assets aa WHERE a.albumId = :albumId")
     Page<Asset> findByAlbumId(@Param("albumId") Long albumId, Pageable pageable);
+
+    @Query("""
+        SELECT a FROM Asset a
+        WHERE a.folder = :folder
+          AND (:search IS NULL OR LOWER(a.fileName) LIKE LOWER(CONCAT('%', :search, '%')))
+          AND (:dateFrom IS NULL OR a.fileCreationDateTime >= :dateFrom)
+          AND (:dateTo   IS NULL OR a.fileCreationDateTime <= :dateTo)
+        """)
+    Page<Asset> findByFolderWithFilters(
+        @Param("folder") Folder folder,
+        @Param("search") String search,
+        @Param("dateFrom") LocalDateTime dateFrom,
+        @Param("dateTo")   LocalDateTime dateTo,
+        Pageable pageable);
 }

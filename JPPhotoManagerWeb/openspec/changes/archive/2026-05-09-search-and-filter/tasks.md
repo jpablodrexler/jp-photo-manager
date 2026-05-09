@@ -1,6 +1,6 @@
 ## 1. Backend — Repository
 
-- [ ] 1.1 Add the following JPQL query method to `AssetRepository`:
+- [x] 1.1 Add the following JPQL query method to `AssetRepository`:
   ```java
   @Query("""
       SELECT a FROM Asset a
@@ -20,13 +20,13 @@
 
 ## 2. Backend — Facade interface and implementation
 
-- [ ] 2.1 Change the `getAssets` signature in `PhotoManagerFacade` to:
+- [x] 2.1 Change the `getAssets` signature in `PhotoManagerFacade` to:
   ```java
   PaginatedData<Asset> getAssets(String folderPath, int pageIndex, SortCriteria sortCriteria,
                                   String search, LocalDate dateFrom, LocalDate dateTo);
   ```
   Add `import java.time.LocalDate;`
-- [ ] 2.2 Update `PhotoManagerFacadeImpl.getAssets`: after resolving the `Folder`, convert:
+- [x] 2.2 Update `PhotoManagerFacadeImpl.getAssets`: after resolving the `Folder`, convert:
   ```java
   LocalDateTime dateFromDt = (dateFrom != null) ? dateFrom.atStartOfDay() : null;
   LocalDateTime dateToDt   = (dateTo   != null) ? dateTo.atTime(LocalTime.MAX)  : null;
@@ -35,31 +35,31 @@
 
 ## 3. Backend — Controller
 
-- [ ] 3.1 Update `AssetController.getAssets` to add three new `@RequestParam(required = false)` parameters:
+- [x] 3.1 Update `AssetController.getAssets` to add three new `@RequestParam(required = false)` parameters:
   ```java
   @RequestParam(required = false) String search,
   @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
   @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo
   ```
   Import `org.springframework.format.annotation.DateTimeFormat` and `java.time.LocalDate`
-- [ ] 3.2 Pass all three new parameters to `facade.getAssets(folderPath, page, sort, search, dateFrom, dateTo)`
+- [x] 3.2 Pass all three new parameters to `facade.getAssets(folderPath, page, sort, search, dateFrom, dateTo)`
 
 ## 4. Backend — Tests
 
-- [ ] 4.1 Create `AssetControllerSearchTest` (`@WebMvcTest(AssetController.class)`): mock `PhotoManagerFacade` and `ThumbnailStorageService`; assert `GET /api/assets?folderPath=/photos&page=0&sort=FILE_NAME` (no filters) calls `facade.getAssets` with `null, null, null` for the filter arguments and returns `200 OK`
-- [ ] 4.2 Add test: `GET /api/assets?folderPath=/photos&search=vacation` calls `facade.getAssets` with `search="vacation"`, `dateFrom=null`, `dateTo=null`
-- [ ] 4.3 Add test: `GET /api/assets?folderPath=/photos&dateFrom=2024-01-01&dateTo=2024-12-31` calls `facade.getAssets` with `search=null`, `dateFrom=LocalDate.of(2024,1,1)`, `dateTo=LocalDate.of(2024,12,31)`
-- [ ] 4.4 Add unit test for `PhotoManagerFacadeImpl.getAssets` with filters: mock `assetRepository.findByFolderWithFilters`; call with non-null `search` and `dateFrom`; assert the repository receives a `LocalDateTime` with time `00:00:00` for the lower bound and `LocalTime.MAX` for the upper bound
-- [ ] 4.5 Run `mvn test` and confirm all tests pass
+- [x] 4.1 Create `AssetControllerSearchTest` (`@WebMvcTest(AssetController.class)`): mock `PhotoManagerFacade` and `ThumbnailStorageService`; assert `GET /api/assets?folderPath=/photos&page=0&sort=FILE_NAME` (no filters) calls `facade.getAssets` with `null, null, null` for the filter arguments and returns `200 OK`
+- [x] 4.2 Add test: `GET /api/assets?folderPath=/photos&search=vacation` calls `facade.getAssets` with `search="vacation"`, `dateFrom=null`, `dateTo=null`
+- [x] 4.3 Add test: `GET /api/assets?folderPath=/photos&dateFrom=2024-01-01&dateTo=2024-12-31` calls `facade.getAssets` with `search=null`, `dateFrom=LocalDate.of(2024,1,1)`, `dateTo=LocalDate.of(2024,12,31)`
+- [x] 4.4 Add unit test for `PhotoManagerFacadeImpl.getAssets` with filters: mock `assetRepository.findByFolderWithFilters`; call with non-null `search` and `dateFrom`; assert the repository receives a `LocalDateTime` with time `00:00:00` for the lower bound and `LocalTime.MAX` for the upper bound
+- [x] 4.5 Run `mvn test` and confirm all tests pass
 
 ## 5. Frontend — AssetService
 
-- [ ] 5.1 Update `getAssets` in `asset.service.ts` to accept three optional parameters:
+- [x] 5.1 Update `getAssets` in `asset.service.ts` to accept three optional parameters:
   ```typescript
   getAssets(folderPath: string, page = 0, sort: SortCriteria = 'FILE_NAME',
             search?: string, dateFrom?: string, dateTo?: string): Observable<PaginatedData<Asset>>
   ```
-- [ ] 5.2 Append each optional parameter to `HttpParams` only when it is non-null and non-empty:
+- [x] 5.2 Append each optional parameter to `HttpParams` only when it is non-null and non-empty:
   ```typescript
   let params = new HttpParams()
     .set('folderPath', folderPath)
@@ -73,7 +73,7 @@
 
 ## 6. Frontend — GalleryComponent
 
-- [ ] 6.1 Add state fields to `GalleryComponent`:
+- [x] 6.1 Add state fields to `GalleryComponent`:
   ```typescript
   searchTerm = '';
   dateFrom: Date | null = null;
@@ -82,19 +82,19 @@
   private searchSubscription?: Subscription;
   ```
   Import `Subject`, `Subscription` from `rxjs`; `debounceTime`, `distinctUntilChanged` from `rxjs/operators`
-- [ ] 6.2 In `ngOnInit`, subscribe to the debounced search:
+- [x] 6.2 In `ngOnInit`, subscribe to the debounced search:
   ```typescript
   this.searchSubscription = this.searchSubject.pipe(
     debounceTime(400),
     distinctUntilChanged()
   ).subscribe(() => { this.pageIndex = 0; this.loadAssets(); });
   ```
-- [ ] 6.3 Implement `ngOnDestroy`: call `this.searchSubscription?.unsubscribe()` — add `implements OnDestroy` to the class declaration and import `OnDestroy` from `@angular/core`
-- [ ] 6.4 Add `onSearchChange(value: string)`: set `this.searchTerm = value`; call `this.searchSubject.next(value)`
-- [ ] 6.5 Add `onDateChange()`: set `this.pageIndex = 0`; call `this.loadAssets()`
-- [ ] 6.6 Add `clearFilters()`: set `this.searchTerm = ''`, `this.dateFrom = null`, `this.dateTo = null`, `this.pageIndex = 0`; call `this.loadAssets()`
-- [ ] 6.7 Update `onFolderSelected()`: call `this.clearFilters()` before calling `this.loadAssets()` (replace the direct `this.pageIndex = 0` reset)
-- [ ] 6.8 Update `loadAssets()` to format and pass filters:
+- [x] 6.3 Implement `ngOnDestroy`: call `this.searchSubscription?.unsubscribe()` — add `implements OnDestroy` to the class declaration and import `OnDestroy` from `@angular/core`
+- [x] 6.4 Add `onSearchChange(value: string)`: set `this.searchTerm = value`; call `this.searchSubject.next(value)`
+- [x] 6.5 Add `onDateChange()`: set `this.pageIndex = 0`; call `this.loadAssets()`
+- [x] 6.6 Add `clearFilters()`: set `this.searchTerm = ''`, `this.dateFrom = null`, `this.dateTo = null`, `this.pageIndex = 0`; call `this.loadAssets()`
+- [x] 6.7 Update `onFolderSelected()`: call `this.clearFilters()` before calling `this.loadAssets()` (replace the direct `this.pageIndex = 0` reset)
+- [x] 6.8 Update `loadAssets()` to format and pass filters:
   ```typescript
   const search = this.searchTerm.trim() || undefined;
   const dateFrom = this.dateFrom ? this.dateFrom.toISOString().substring(0, 10) : undefined;
@@ -102,11 +102,11 @@
   this.assetService.getAssets(this.currentFolder, this.pageIndex, this.sortCriteria, search, dateFrom, dateTo)
     .subscribe({ ... });
   ```
-- [ ] 6.9 Add to `GalleryComponent` imports array: `MatInputModule`, `MatDatepickerModule`, `MatNativeDateModule` from `@angular/material`; `ReactiveFormsModule` is not needed — plain template binding is sufficient
+- [x] 6.9 Add to `GalleryComponent` imports array: `MatInputModule`, `MatDatepickerModule`, `MatNativeDateModule` from `@angular/material`; `ReactiveFormsModule` is not needed — plain template binding is sufficient
 
 ## 7. Frontend — Template
 
-- [ ] 7.1 Add a filter toolbar row in `gallery.component.html` directly below the `<mat-toolbar>`, inside `@if (viewMode === 'thumbnails')`:
+- [x] 7.1 Add a filter toolbar row in `gallery.component.html` directly below the `<mat-toolbar>`, inside `@if (viewMode === 'thumbnails')`:
   ```html
   <div class="filter-toolbar">
     <mat-form-field appearance="outline" class="filter-search">
@@ -137,7 +137,7 @@
 
 ## 8. Frontend — Styles
 
-- [ ] 8.1 Add to `gallery.component.scss`:
+- [x] 8.1 Add to `gallery.component.scss`:
   ```scss
   .filter-toolbar {
     display: flex;
@@ -155,8 +155,8 @@
 
 ## 9. Frontend — Tests
 
-- [ ] 9.1 In `gallery.component.cy.ts`, add test: mount `GalleryComponent` with stubbed `AssetService`; type "vacation" in the search input; after 400 ms (use `cy.clock` + `cy.tick`); assert `assetService.getAssets` was called with `search = 'vacation'`
-- [ ] 9.2 Add test: set a `dateFrom` via the datepicker; assert `assetService.getAssets` is called with the correct ISO date string
-- [ ] 9.3 Add test: click the "Clear filters" button; assert `searchTerm`, `dateFrom`, `dateTo` are reset; assert `assetService.getAssets` is called with no filter parameters
-- [ ] 9.4 Add test: changing the folder calls `clearFilters()` then `loadAssets()` — assert filters are empty when the new folder request is made
-- [ ] 9.5 Run `npm test` and confirm all tests pass
+- [x] 9.1 In `gallery.component.cy.ts`, add test: mount `GalleryComponent` with stubbed `AssetService`; type "vacation" in the search input; after 400 ms (use `cy.clock` + `cy.tick`); assert `assetService.getAssets` was called with `search = 'vacation'`
+- [x] 9.2 Add test: set a `dateFrom` via the datepicker; assert `assetService.getAssets` is called with the correct ISO date string
+- [x] 9.3 Add test: click the "Clear filters" button; assert `searchTerm`, `dateFrom`, `dateTo` are reset; assert `assetService.getAssets` is called with no filter parameters
+- [x] 9.4 Add test: changing the folder calls `clearFilters()` then `loadAssets()` — assert filters are empty when the new folder request is made
+- [x] 9.5 Run `npm test` and confirm all tests pass

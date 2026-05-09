@@ -68,6 +68,20 @@
   }
 }
 
+.filter-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 16px;
+  background: rgba(0, 0, 0, 0.15);
+
+  .filter-search { flex: 1; min-width: 180px; max-width: 320px; }
+  .filter-date   { width: 160px; }
+
+  // collapse Material bottom padding
+  mat-form-field { margin-bottom: -1.25em; }
+}
+
 .viewer-layout {
   display: flex;
   align-items: flex-start;

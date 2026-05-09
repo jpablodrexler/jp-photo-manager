@@ -49,7 +49,7 @@ class AssetControllerTest {
         Asset asset = buildAsset(folder, "photo.jpg", 1L);
         PaginatedData<Asset> page = new PaginatedData<>(List.of(asset), 0, 1, 1L);
 
-        when(facade.getAssets(eq("/photos"), eq(0), any())).thenReturn(page);
+        when(facade.getAssets(eq("/photos"), eq(0), any(), any(), any(), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/assets")
                 .param("folderPath", "/photos")
@@ -64,7 +64,7 @@ class AssetControllerTest {
     @Test
     void getAssets_emptyFolder_returns200WithEmptyItems() throws Exception {
         PaginatedData<Asset> page = new PaginatedData<>(List.of(), 0, 0, 0L);
-        when(facade.getAssets(eq("/empty"), eq(0), any())).thenReturn(page);
+        when(facade.getAssets(eq("/empty"), eq(0), any(), any(), any(), any())).thenReturn(page);
 
         mockMvc.perform(get("/api/assets")
                 .param("folderPath", "/empty")

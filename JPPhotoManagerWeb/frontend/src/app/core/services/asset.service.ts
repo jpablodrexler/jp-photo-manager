@@ -12,11 +12,15 @@ export class AssetService {
 
   constructor(private http: HttpClient) {}
 
-  getAssets(folderPath: string, page = 0, sort: SortCriteria = 'FILE_NAME'): Observable<PaginatedData<Asset>> {
-    const params = new HttpParams()
+  getAssets(folderPath: string, page = 0, sort: SortCriteria = 'FILE_NAME',
+            search?: string, dateFrom?: string, dateTo?: string): Observable<PaginatedData<Asset>> {
+    let params = new HttpParams()
       .set('folderPath', folderPath)
       .set('page', page)
       .set('sort', sort);
+    if (search) params = params.set('search', search);
+    if (dateFrom) params = params.set('dateFrom', dateFrom);
+    if (dateTo)   params = params.set('dateTo', dateTo);
     return this.http.get<PaginatedData<Asset>>(this.baseUrl, { params });
   }
 

@@ -15,6 +15,9 @@ import com.jpablodrexler.photomanager.domain.service.*;
 import lombok.RequiredArgsConstructor;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -83,7 +86,8 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
 
     @Override
     @Transactional(readOnly = true)
-    public PaginatedData<Asset> getAssets(String folderPath, int pageIndex, SortCriteria sortCriteria) {
+    public PaginatedData<Asset> getAssets(String folderPath, int pageIndex, SortCriteria sortCriteria,
+                                          String search, LocalDate dateFrom, LocalDate dateTo) {
         Optional<Folder> folder = folderRepository.findByPath(folderPath);
         if (folder.isEmpty()) {
             return new PaginatedData<>(List.of(), 0, 0, 0);
@@ -91,7 +95,11 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
 
         Sort sort = buildSort(sortCriteria);
         PageRequest pageRequest = PageRequest.of(pageIndex, PAGE_SIZE, sort);
-        Page<Asset> page = assetRepository.findByFolder(folder.get(), pageRequest);
+        String searchParam = (search != null && !search.isBlank()) ? search.trim() : null;
+        LocalDateTime dateFromDt = (dateFrom != null) ? dateFrom.atStartOfDay() : null;
+        LocalDateTime dateToDt   = (dateTo   != null) ? dateTo.atTime(LocalTime.MAX) : null;
+        Page<Asset> page = assetRepository.findByFolderWithFilters(
+                folder.get(), searchParam, dateFromDt, dateToDt, pageRequest);
 
         return new PaginatedData<>(page.getContent(), pageIndex, page.getTotalPages(), page.getTotalElements());
     }

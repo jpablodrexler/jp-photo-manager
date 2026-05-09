@@ -2,6 +2,7 @@ package com.jpablodrexler.photomanager.application;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -23,7 +24,8 @@ import com.jpablodrexler.photomanager.domain.entity.SyncAssetsDirectoriesDefinit
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 
 public interface PhotoManagerFacade {
-    PaginatedData<Asset> getAssets(String folderPath, int pageIndex, SortCriteria sortCriteria);
+    PaginatedData<Asset> getAssets(String folderPath, int pageIndex, SortCriteria sortCriteria,
+                                    String search, LocalDate dateFrom, LocalDate dateTo);
 
     CompletableFuture<Void> catalogAssetsAsync(Consumer<CatalogChangeNotification> callback);
 

@@ -4,12 +4,17 @@ import { FormsModule } from '@angular/forms';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { FolderNavComponent } from '../folder-nav/folder-nav.component';
 import { ThumbnailComponent } from '../../shared/components/thumbnail/thumbnail.component';
@@ -34,6 +39,9 @@ type ViewMode = 'thumbnails' | 'viewer';
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
+    MatInputModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
     MatSelectModule,
     MatCheckboxModule,
     MatMenuModule,
@@ -58,6 +66,12 @@ export class GalleryComponent implements OnInit, OnDestroy {
   currentFolder: string = '';
   viewMode: ViewMode = 'thumbnails';
   sortCriteria: SortCriteria = 'FILE_NAME';
+
+  searchTerm = '';
+  dateFrom: Date | null = null;
+  dateTo: Date | null = null;
+  private readonly searchSubject = new Subject<string>();
+  private searchSubscription?: Subscription;
 
   assets: Asset[] = [];
   selectedAssets: Set<number> = new Set();
@@ -88,18 +102,21 @@ export class GalleryComponent implements OnInit, OnDestroy {
     private dialog: MatDialog
   ) {}
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    this.searchSubscription = this.searchSubject.pipe(
+      debounceTime(400),
+      distinctUntilChanged()
+    ).subscribe(() => { this.pageIndex = 0; this.loadAssets(); });
+  }
 
   ngOnDestroy(): void {
     this.disconnectObserver();
+    this.searchSubscription?.unsubscribe();
   }
 
   onFolderSelected(folderPath: string): void {
     this.currentFolder = folderPath;
-    this.assets = [];
-    this.pageIndex = 0;
-    this.isLoading = false;
-    this.allLoaded = false;
+    this.clearFilters();
     this.selectedAssets.clear();
     this.disconnectObserver();
     this.albumService.getAlbums().subscribe({
@@ -112,10 +129,33 @@ export class GalleryComponent implements OnInit, OnDestroy {
     });
   }
 
+  onSearchChange(value: string): void {
+    this.searchTerm = value;
+    this.searchSubject.next(value);
+  }
+
+  onDateChange(): void {
+    this.pageIndex = 0;
+    this.loadAssets();
+  }
+
+  clearFilters(): void {
+    this.searchTerm = '';
+    this.dateFrom = null;
+    this.dateTo = null;
+    this.assets = [];
+    this.pageIndex = 0;
+    this.isLoading = false;
+    this.allLoaded = false;
+  }
+
   loadNextPage(): void {
     if (this.isLoading || this.allLoaded || !this.currentFolder) return;
     this.isLoading = true;
-    this.assetService.getAssets(this.currentFolder, this.pageIndex, this.sortCriteria)
+    const search = this.searchTerm.trim() || undefined;
+    const dateFrom = this.dateFrom ? this.dateFrom.toISOString().substring(0, 10) : undefined;
+    const dateTo   = this.dateTo   ? this.dateTo.toISOString().substring(0, 10)   : undefined;
+    this.assetService.getAssets(this.currentFolder, this.pageIndex, this.sortCriteria, search, dateFrom, dateTo)
       .subscribe({
         next: (data: PaginatedData<Asset>) => {
           this.assets = [...this.assets, ...data.items];

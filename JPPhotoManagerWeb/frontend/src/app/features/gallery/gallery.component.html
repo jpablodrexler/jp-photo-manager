@@ -48,6 +48,35 @@
       }
     </mat-toolbar>
 
+    <!-- Filter Toolbar -->
+    @if (viewMode === 'thumbnails') {
+      <div class="filter-toolbar">
+        <mat-form-field appearance="outline" class="filter-search">
+          <mat-label>Search by filename</mat-label>
+          <input matInput [value]="searchTerm" (input)="onSearchChange($any($event.target).value)" />
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-date">
+          <mat-label>Date from</mat-label>
+          <input matInput [matDatepicker]="pickerFrom" [(ngModel)]="dateFrom" (dateChange)="onDateChange()" />
+          <mat-datepicker-toggle matIconSuffix [for]="pickerFrom" />
+          <mat-datepicker #pickerFrom />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-date">
+          <mat-label>Date to</mat-label>
+          <input matInput [matDatepicker]="pickerTo" [(ngModel)]="dateTo" (dateChange)="onDateChange()" />
+          <mat-datepicker-toggle matIconSuffix [for]="pickerTo" />
+          <mat-datepicker #pickerTo />
+        </mat-form-field>
+
+        <button mat-icon-button (click)="clearFilters(); loadAssets()" title="Clear filters">
+          <mat-icon>filter_alt_off</mat-icon>
+        </button>
+      </div>
+    }
+
     <!-- Thumbnails View -->
     @if (viewMode === 'thumbnails') {
       <div class="thumbnail-grid-container flex-1">
