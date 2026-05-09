@@ -2,6 +2,7 @@ import { mount } from 'cypress/angular';
 import { of, throwError } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { GalleryComponent } from './gallery.component';
 import { AssetService } from '../../core/services/asset.service';
 import { AlbumService } from '../../core/services/album.service';
@@ -520,5 +521,62 @@ describe('GalleryComponent', () => {
     });
 
     cy.wrap(getAssets).should('have.been.calledWith', '/new-folder', 0, 'FILE_NAME', undefined, undefined, undefined);
+  });
+
+  // --- Responsive sidenav tests ---
+
+  it('mobileViewport_sidenavInOverMode_toggleButtonVisible', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.isMobile = true;
+      component.sidenavOpen = false;
+      fixture.detectChanges();
+    });
+
+    cy.get('button[aria-label="Toggle folder panel"]').should('be.visible');
+    cy.get('mat-sidenav.mat-drawer-over').should('exist');
+  });
+
+  it('desktopViewport_sidenavInSideMode_toggleButtonNotRendered', () => {
+    const bpObs: Partial<BreakpointObserver> = {
+      observe: cy.stub().returns(of({ matches: false, breakpoints: {} })),
+    };
+
+    const assetServiceStub: Partial<AssetService> = {
+      getAssets: cy.stub().returns(of({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 })),
+      catalogAssets: cy.stub(),
+      deleteAssets: cy.stub().returns(of(undefined)),
+      moveAssets: cy.stub().returns(of(true)),
+    };
+
+    cy.mount(GalleryComponent, {
+      providers: [
+        provideNoopAnimations(),
+        provideRouter([]),
+        { provide: AssetService, useValue: assetServiceStub },
+        { provide: FolderService, useValue: { getFolders: cy.stub().returns(of([])) } },
+        { provide: AlbumService, useValue: { getAlbums: cy.stub().returns(of([])) } },
+        { provide: BreakpointObserver, useValue: bpObs },
+      ],
+    });
+
+    cy.get('button[aria-label="Toggle folder panel"]').should('not.exist');
+    cy.get('mat-sidenav').should('have.class', 'mat-drawer-side');
+    cy.get('app-folder-nav').should('exist');
+  });
+
+  it('mobileViewport_onFolderSelected_closesSidenav', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.isMobile = true;
+      component.sidenavOpen = true;
+      fixture.detectChanges();
+
+      component.onFolderSelected('/photos');
+      fixture.detectChanges();
+
+      expect(component.sidenavOpen).to.be.false;
+      cy.get('mat-sidenav').should('not.have.class', 'mat-drawer-opened');
+    });
   });
 });

@@ -3,33 +3,51 @@
   <span style="margin-left: 8px;">JP Photo Manager</span>
   <span style="flex: 1"></span>
   @if (isLoggedIn) {
-    <a mat-button routerLink="/home" routerLinkActive="active">
-      <mat-icon>home</mat-icon> Home
-    </a>
-    <a mat-button routerLink="/gallery" routerLinkActive="active">
-      <mat-icon>photo</mat-icon> Gallery
-    </a>
-    <a mat-button routerLink="/sync" routerLinkActive="active">
-      <mat-icon>sync</mat-icon> Sync
-    </a>
-    <a mat-button routerLink="/convert" routerLinkActive="active">
-      <mat-icon>transform</mat-icon> Convert
-    </a>
-    <a mat-button routerLink="/duplicates" routerLinkActive="active">
-      <mat-icon>content_copy</mat-icon> Duplicates
-    </a>
-    <a mat-button routerLink="/albums" routerLinkActive="active">
-      <mat-icon>photo_album</mat-icon> Albums
-    </a>
-    <a mat-button routerLink="/recycle-bin" routerLinkActive="active">
-      <mat-icon>delete</mat-icon> Recycle Bin
-    </a>
-    <a mat-button routerLink="/admin/users" routerLinkActive="active">
-      <mat-icon>manage_accounts</mat-icon> Users
-    </a>
-    <button mat-button (click)="logout()">
-      <mat-icon>logout</mat-icon> Logout
-    </button>
+    @if (isMobile) {
+      <button mat-icon-button [matMenuTriggerFor]="navMenu" aria-label="Open navigation">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <mat-menu #navMenu="matMenu">
+        <button mat-menu-item routerLink="/home"><mat-icon>home</mat-icon> Home</button>
+        <button mat-menu-item routerLink="/gallery"><mat-icon>photo</mat-icon> Gallery</button>
+        <button mat-menu-item routerLink="/sync"><mat-icon>sync</mat-icon> Sync</button>
+        <button mat-menu-item routerLink="/convert"><mat-icon>transform</mat-icon> Convert</button>
+        <button mat-menu-item routerLink="/duplicates"><mat-icon>content_copy</mat-icon> Duplicates</button>
+        <button mat-menu-item routerLink="/albums"><mat-icon>photo_album</mat-icon> Albums</button>
+        <button mat-menu-item routerLink="/recycle-bin"><mat-icon>delete</mat-icon> Recycle Bin</button>
+        <button mat-menu-item routerLink="/admin/users"><mat-icon>manage_accounts</mat-icon> Users</button>
+        <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon> Logout</button>
+      </mat-menu>
+    }
+    @if (!isMobile) {
+      <a mat-button routerLink="/home" routerLinkActive="active">
+        <mat-icon>home</mat-icon> Home
+      </a>
+      <a mat-button routerLink="/gallery" routerLinkActive="active">
+        <mat-icon>photo</mat-icon> Gallery
+      </a>
+      <a mat-button routerLink="/sync" routerLinkActive="active">
+        <mat-icon>sync</mat-icon> Sync
+      </a>
+      <a mat-button routerLink="/convert" routerLinkActive="active">
+        <mat-icon>transform</mat-icon> Convert
+      </a>
+      <a mat-button routerLink="/duplicates" routerLinkActive="active">
+        <mat-icon>content_copy</mat-icon> Duplicates
+      </a>
+      <a mat-button routerLink="/albums" routerLinkActive="active">
+        <mat-icon>photo_album</mat-icon> Albums
+      </a>
+      <a mat-button routerLink="/recycle-bin" routerLinkActive="active">
+        <mat-icon>delete</mat-icon> Recycle Bin
+      </a>
+      <a mat-button routerLink="/admin/users" routerLinkActive="active">
+        <mat-icon>manage_accounts</mat-icon> Users
+      </a>
+      <button mat-button (click)="logout()">
+        <mat-icon>logout</mat-icon> Logout
+      </button>
+    }
   }
 </mat-toolbar>
 

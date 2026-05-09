@@ -126,3 +126,19 @@ html, body {
     transition: transform 0.2s;
   }
 }
+
+@media (max-width: 767px) {
+  .thumbnail-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .thumbnail-card img {
+    height: 110px;
+  }
+
+  .gallery-toolbar .current-folder {
+    max-width: 120px;
+  }
+}

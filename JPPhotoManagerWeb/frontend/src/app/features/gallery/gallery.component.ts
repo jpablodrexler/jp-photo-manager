@@ -11,8 +11,10 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ScrollingModule } from '@angular/cdk/scrolling';
@@ -48,6 +50,7 @@ type ViewMode = 'thumbnails' | 'viewer' | 'slideshow';
     MatSnackBarModule,
     MatDialogModule,
     MatProgressBarModule,
+    MatSidenavModule,
     ScrollingModule,
     FolderNavComponent,
     ThumbnailComponent,
@@ -62,6 +65,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   @ViewChild('scrollSentinel') private sentinel!: ElementRef<HTMLDivElement>;
   private observer: IntersectionObserver | null = null;
+
+  isMobile = false;
+  sidenavOpen = true;
+  private bpSub!: Subscription;
 
   currentFolder: string = '';
   viewMode: ViewMode = 'thumbnails';
@@ -104,7 +111,8 @@ export class GalleryComponent implements OnInit, OnDestroy {
     private assetService: AssetService,
     private albumService: AlbumService,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private breakpointObserver: BreakpointObserver
   ) {}
 
   ngOnInit(): void {
@@ -112,16 +120,27 @@ export class GalleryComponent implements OnInit, OnDestroy {
       debounceTime(400),
       distinctUntilChanged()
     ).subscribe(() => { this.pageIndex = 0; this.loadAssets(); });
+
+    this.bpSub = this.breakpointObserver.observe([Breakpoints.Handset]).subscribe(result => {
+      this.isMobile = result.matches;
+      this.sidenavOpen = !result.matches;
+    });
   }
 
   ngOnDestroy(): void {
     this.stopSlideshow();
     this.disconnectObserver();
     this.searchSubscription?.unsubscribe();
+    this.bpSub.unsubscribe();
+  }
+
+  toggleSidenav(): void {
+    this.sidenavOpen = !this.sidenavOpen;
   }
 
   onFolderSelected(folderPath: string): void {
     this.currentFolder = folderPath;
+    if (this.isMobile) { this.sidenavOpen = false; }
     this.clearFilters();
     this.selectedAssets.clear();
     this.disconnectObserver();

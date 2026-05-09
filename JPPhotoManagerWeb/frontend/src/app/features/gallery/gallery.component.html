@@ -1,15 +1,22 @@
-<div class="gallery-layout full-height flex-row">
+<mat-sidenav-container class="gallery-layout full-height">
 
-  <!-- Folder Navigation -->
-  <div class="folder-tree">
+  <mat-sidenav
+    [mode]="isMobile ? 'over' : 'side'"
+    [opened]="sidenavOpen"
+    (closedStart)="sidenavOpen = false"
+    class="folder-sidenav">
     <app-folder-nav (folderSelected)="onFolderSelected($event)" />
-  </div>
+  </mat-sidenav>
 
-  <!-- Main Content -->
-  <div class="flex-1 flex-col">
+  <mat-sidenav-content class="flex-col">
 
     <!-- Toolbar -->
     <mat-toolbar class="gallery-toolbar">
+      @if (isMobile) {
+        <button mat-icon-button (click)="toggleSidenav()" aria-label="Toggle folder panel">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
       <span class="current-folder">{{ currentFolder || 'Select a folder' }}</span>
       <span style="flex: 1"></span>
 
@@ -207,5 +214,5 @@
       }
     </div>
 
-  </div>
-</div>
+  </mat-sidenav-content>
+</mat-sidenav-container>
