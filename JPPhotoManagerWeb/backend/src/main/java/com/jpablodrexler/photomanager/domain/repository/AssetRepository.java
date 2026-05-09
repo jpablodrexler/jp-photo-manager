@@ -54,7 +54,7 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
         SELECT a FROM Asset a
         WHERE a.folder = :folder
           AND a.deletedAt IS NULL
-          AND (:search IS NULL OR LOWER(a.fileName) LIKE LOWER(CONCAT('%', :search, '%')))
+          AND (:search IS NULL OR LOWER(a.fileName) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))
           AND (:dateFrom IS NULL OR a.fileCreationDateTime >= :dateFrom)
           AND (:dateTo   IS NULL OR a.fileCreationDateTime <= :dateTo)
           AND (:minRating IS NULL OR a.rating >= :minRating)
