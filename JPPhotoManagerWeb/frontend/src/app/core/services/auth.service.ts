@@ -16,13 +16,41 @@ interface Session {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private refreshTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor(private http: HttpClient) {}
 
   login(username: string, password: string): Observable<void> {
     return this.http.post<LoginResponse>('/api/auth/login', { username, password }).pipe(
       tap(res => this.storeSession(res.username, res.expiresAt)),
+      tap(() => this.scheduleProactiveRefresh()),
       map(() => undefined)
     );
+  }
+
+  refresh(): Observable<void> {
+    return this.http.post<LoginResponse>('/api/auth/refresh', {}).pipe(
+      tap(res => {
+        this.storeSession(res.username, res.expiresAt);
+        this.scheduleProactiveRefresh();
+      }),
+      map(() => undefined)
+    );
+  }
+
+  scheduleProactiveRefresh(): void {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return;
+    try {
+      const session: Session = JSON.parse(raw);
+      const delay = session.expiresAt - Date.now() - 5 * 60 * 1000;
+      if (delay > 0) {
+        if (this.refreshTimer) clearTimeout(this.refreshTimer);
+        this.refreshTimer = setTimeout(() => this.refresh().subscribe(), delay);
+      }
+    } catch {
+      // ignore
+    }
   }
 
   logout(): void {
@@ -31,6 +59,10 @@ export class AuthService {
   }
 
   clearSession(): void {
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
+    }
     localStorage.removeItem(SESSION_KEY);
   }
 

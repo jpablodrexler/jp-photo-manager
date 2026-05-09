@@ -38,5 +38,6 @@ photomanager:
     repo: jp-photo-manager
   jwt-secret: ${JWT_SECRET:}
   jwt-expiry-hours: 24
+  refresh-token-expiry-days: 30
   cors-allowed-origins: http://localhost:4200
 

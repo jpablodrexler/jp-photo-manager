@@ -12,7 +12,7 @@ This document records all planned improvements to the JPPhotoManagerWeb applicat
 | 2 | `virtual-scrolling-gallery` | Replace page-flip pagination with infinite scroll; render only visible thumbnails in the DOM via Angular CDK Virtual Scroll | ✅ Created | ✅ Implemented |
 | 3 | `drag-and-drop-upload` | Upload image files directly from the browser by dropping them onto the gallery grid or clicking an Upload button; files are saved to the selected folder and indexed immediately | ✅ Created | ✅ Implemented |
 | 4 | `virtual-albums` | User-scoped named collections; assets can belong to multiple albums; albums have their own paginated asset view and CRUD API | ✅ Created | ✅ Implemented |
-| 5 | `refresh-token` | Long-lived HttpOnly refresh-token cookie with rotate-on-use; Angular service proactively refreshes before expiry; interceptor retries 401s transparently | ✅ Created | ⏳ Pending |
+| 5 | `refresh-token` | Long-lived HttpOnly refresh-token cookie with rotate-on-use; Angular service proactively refreshes before expiry; interceptor retries 401s transparently | ✅ Created | ✅ Implemented |
 | 6 | `bulk-download-zip` | Download a selection of assets as a ZIP archive via a streaming `ZipOutputStream`; configurable per-request size cap | ✅ Created | ⏳ Pending |
 | 7 | `search-and-filter` | Filter gallery assets by filename keyword, date-from, and date-to via a `findByFolderWithFilters` JPQL query; 400 ms debounced search input | ✅ Created | ⏳ Pending |
 | 8 | `slideshow-mode` | Third `ViewMode` in the gallery that auto-advances through assets on a configurable interval; animated progress bar; keyboard shortcuts; pause on manual navigation | ✅ Created | ⏳ Pending |
