@@ -17,6 +17,7 @@ export interface Asset {
   fileModificationDateTime?: string;
   thumbnailUrl: string;
   imageUrl: string;
+  rating: number;
 }
 
 export type SortCriteria =
@@ -24,4 +25,5 @@ export type SortCriteria =
   | 'FILE_SIZE'
   | 'FILE_CREATION_DATE_TIME'
   | 'FILE_MODIFICATION_DATE_TIME'
-  | 'THUMBNAIL_CREATION_DATE_TIME';
+  | 'THUMBNAIL_CREATION_DATE_TIME'
+  | 'RATING';

@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -17,6 +17,14 @@ import { FileSizePipe } from '../../pipes/file-size.pipe';
         loading="lazy"
         (error)="onImgError($event)"
       />
+      <div class="thumbnail-stars">
+        @for (star of [1,2,3,4,5]; track star) {
+          <mat-icon class="thumb-star" [class.filled]="rating >= star"
+                    (click)="ratingChange.emit(star); $event.stopPropagation()">
+            {{ rating >= star ? 'star' : 'star_border' }}
+          </mat-icon>
+        }
+      </div>
       <mat-card-content class="thumbnail-info">
         <span class="thumbnail-name" [title]="asset.fileName">{{ asset.fileName }}</span>
         <span class="thumbnail-size">{{ asset.fileSize | fileSize }}</span>
@@ -40,6 +48,18 @@ import { FileSizePipe } from '../../pipes/file-size.pipe';
         display: block;
       }
     }
+    .thumbnail-stars {
+      display: flex;
+      justify-content: center;
+      gap: 2px;
+      padding: 4px 0;
+    }
+    .thumb-star {
+      font-size: 16px;
+      cursor: pointer;
+      color: rgba(255,255,255,0.38);
+      &.filled { color: #ffa726; }
+    }
     .thumbnail-info {
       padding: 6px 8px !important;
     }
@@ -59,6 +79,8 @@ import { FileSizePipe } from '../../pipes/file-size.pipe';
 export class ThumbnailComponent {
   @Input({ required: true }) asset!: Asset;
   @Input() selected = false;
+  @Input() rating = 0;
+  @Output() ratingChange = new EventEmitter<number>();
 
   onImgError(event: Event): void {
     const img = event.target as HTMLImageElement;

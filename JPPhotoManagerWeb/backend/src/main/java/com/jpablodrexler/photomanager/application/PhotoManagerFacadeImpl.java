@@ -60,7 +60,8 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
             SortCriteria.FILE_SIZE, Sort.by("fileSize").descending(),
             SortCriteria.FILE_CREATION_DATE_TIME, Sort.by("fileCreationDateTime").descending(),
             SortCriteria.FILE_MODIFICATION_DATE_TIME, Sort.by("fileModificationDateTime").descending(),
-            SortCriteria.THUMBNAIL_CREATION_DATE_TIME, Sort.by("thumbnailCreationDateTime").descending());
+            SortCriteria.THUMBNAIL_CREATION_DATE_TIME, Sort.by("thumbnailCreationDateTime").descending(),
+            SortCriteria.RATING, Sort.by("rating").descending());
 
     private final AssetRepository assetRepository;
     private final AssetExifRepository assetExifRepository;
@@ -89,7 +90,7 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
     @Override
     @Transactional(readOnly = true)
     public PaginatedData<Asset> getAssets(String folderPath, int pageIndex, SortCriteria sortCriteria,
-                                          String search, LocalDate dateFrom, LocalDate dateTo) {
+                                          String search, LocalDate dateFrom, LocalDate dateTo, Integer minRating) {
         Optional<Folder> folder = folderRepository.findByPath(folderPath);
         if (folder.isEmpty()) {
             return new PaginatedData<>(List.of(), 0, 0, 0);
@@ -100,10 +101,20 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
         String searchParam = (search != null && !search.isBlank()) ? search.trim() : null;
         LocalDateTime dateFromDt = (dateFrom != null) ? dateFrom.atStartOfDay() : null;
         LocalDateTime dateToDt   = (dateTo   != null) ? dateTo.atTime(LocalTime.MAX) : null;
+        Integer ratingFilter = (minRating != null && minRating > 0) ? minRating : null;
         Page<Asset> page = assetRepository.findByFolderWithFilters(
-                folder.get(), searchParam, dateFromDt, dateToDt, pageRequest);
+                folder.get(), searchParam, dateFromDt, dateToDt, ratingFilter, pageRequest);
 
         return new PaginatedData<>(page.getContent(), pageIndex, page.getTotalPages(), page.getTotalElements());
+    }
+
+    @Override
+    @Transactional
+    public void rateAsset(Long assetId, int rating) {
+        Asset asset = assetRepository.findById(assetId)
+                .orElseThrow(() -> new NoSuchElementException("Asset not found: " + assetId));
+        asset.setRating(rating);
+        assetRepository.save(asset);
     }
 
     @Override

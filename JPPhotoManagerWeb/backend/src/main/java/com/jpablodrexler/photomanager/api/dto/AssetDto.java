@@ -24,4 +24,5 @@ public class AssetDto {
     private LocalDateTime fileModificationDateTime;
     private String thumbnailUrl;
     private String imageUrl;
+    private int rating;
 }

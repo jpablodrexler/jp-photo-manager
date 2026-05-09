@@ -54,6 +54,11 @@
       @if (viewMode === 'viewer') {
         <button mat-icon-button (click)="zoomOut()"><mat-icon>zoom_out</mat-icon></button>
         <button mat-icon-button (click)="zoomIn()"><mat-icon>zoom_in</mat-icon></button>
+        @for (star of [1,2,3,4,5]; track star) {
+          <button mat-icon-button (click)="rateCurrentAsset(star)">
+            <mat-icon>{{ (currentViewerAsset?.rating ?? 0) >= star ? 'star' : 'star_border' }}</mat-icon>
+          </button>
+        }
         <button mat-icon-button (click)="toggleExifPanel()" [class.active]="showExifPanel" title="EXIF info">
           <mat-icon>info</mat-icon>
         </button>
@@ -101,6 +106,16 @@
           <mat-datepicker #pickerTo />
         </mat-form-field>
 
+        <div class="filter-rating">
+          @for (star of [1,2,3,4,5]; track star) {
+            <mat-icon class="filter-star" [class.active]="minRating >= star"
+                      (click)="minRating = (minRating === star ? 0 : star); onMinRatingChange()">
+              {{ minRating >= star ? 'star' : 'star_border' }}
+            </mat-icon>
+          }
+          <span class="filter-rating-label">{{ minRating > 0 ? minRating + '★ +' : 'Any rating' }}</span>
+        </div>
+
         <button mat-icon-button (click)="clearFilters(); loadAssets()" title="Clear filters">
           <mat-icon>filter_alt_off</mat-icon>
         </button>
@@ -118,9 +133,11 @@
             <div class="asset-cell">
               <app-thumbnail
                 [asset]="asset"
+                [rating]="asset.rating"
                 [selected]="isSelected(asset)"
                 (click)="toggleSelection(asset)"
                 (dblclick)="openViewer(i)"
+                (ratingChange)="rateAsset(asset, $event)"
               />
               <button
                 mat-icon-button

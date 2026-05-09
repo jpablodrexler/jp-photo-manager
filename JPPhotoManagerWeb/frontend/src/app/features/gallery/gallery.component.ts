@@ -77,6 +77,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   searchTerm = '';
   dateFrom: Date | null = null;
   dateTo: Date | null = null;
+  minRating = 0;
   private readonly searchSubject = new Subject<string>();
   private searchSubscription?: Subscription;
 
@@ -104,7 +105,8 @@ export class GalleryComponent implements OnInit, OnDestroy {
     { value: 'FILE_SIZE', label: 'File Size' },
     { value: 'FILE_CREATION_DATE_TIME', label: 'Date Created' },
     { value: 'FILE_MODIFICATION_DATE_TIME', label: 'Date Modified' },
-    { value: 'THUMBNAIL_CREATION_DATE_TIME', label: 'Date Cataloged' }
+    { value: 'THUMBNAIL_CREATION_DATE_TIME', label: 'Date Cataloged' },
+    { value: 'RATING', label: 'Rating: High → Low' }
   ];
 
   constructor(
@@ -164,10 +166,28 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.loadAssets();
   }
 
+  onMinRatingChange(): void {
+    this.pageIndex = 0;
+    this.loadAssets();
+  }
+
+  rateAsset(asset: Asset, star: number): void {
+    const newRating = asset.rating === star ? 0 : star;
+    this.assetService.rateAsset(asset.assetId, newRating).subscribe({
+      next: () => { asset.rating = newRating; },
+      error: () => this.snackBar.open('Failed to rate asset', 'Dismiss', { duration: 3000 })
+    });
+  }
+
+  rateCurrentAsset(star: number): void {
+    this.rateAsset(this.currentViewerAsset!, star);
+  }
+
   clearFilters(): void {
     this.searchTerm = '';
     this.dateFrom = null;
     this.dateTo = null;
+    this.minRating = 0;
     this.assets = [];
     this.pageIndex = 0;
     this.isLoading = false;
@@ -180,7 +200,8 @@ export class GalleryComponent implements OnInit, OnDestroy {
     const search = this.searchTerm.trim() || undefined;
     const dateFrom = this.dateFrom ? this.dateFrom.toISOString().substring(0, 10) : undefined;
     const dateTo   = this.dateTo   ? this.dateTo.toISOString().substring(0, 10)   : undefined;
-    this.assetService.getAssets(this.currentFolder, this.pageIndex, this.sortCriteria, search, dateFrom, dateTo)
+    const minRating = this.minRating > 0 ? this.minRating : undefined;
+    this.assetService.getAssets(this.currentFolder, this.pageIndex, this.sortCriteria, search, dateFrom, dateTo, minRating)
       .subscribe({
         next: (data: PaginatedData<Asset>) => {
           this.assets = [...this.assets, ...data.items];

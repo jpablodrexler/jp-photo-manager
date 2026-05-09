@@ -25,7 +25,9 @@ import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 
 public interface PhotoManagerFacade {
     PaginatedData<Asset> getAssets(String folderPath, int pageIndex, SortCriteria sortCriteria,
-                                    String search, LocalDate dateFrom, LocalDate dateTo);
+                                    String search, LocalDate dateFrom, LocalDate dateTo, Integer minRating);
+
+    void rateAsset(Long assetId, int rating);
 
     CompletableFuture<Void> catalogAssetsAsync(Consumer<CatalogChangeNotification> callback);
 

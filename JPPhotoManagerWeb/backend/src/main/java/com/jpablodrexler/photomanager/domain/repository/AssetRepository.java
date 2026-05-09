@@ -57,11 +57,13 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
           AND (:search IS NULL OR LOWER(a.fileName) LIKE LOWER(CONCAT('%', :search, '%')))
           AND (:dateFrom IS NULL OR a.fileCreationDateTime >= :dateFrom)
           AND (:dateTo   IS NULL OR a.fileCreationDateTime <= :dateTo)
+          AND (:minRating IS NULL OR a.rating >= :minRating)
         """)
     Page<Asset> findByFolderWithFilters(
-        @Param("folder") Folder folder,
-        @Param("search") String search,
-        @Param("dateFrom") LocalDateTime dateFrom,
-        @Param("dateTo")   LocalDateTime dateTo,
+        @Param("folder")    Folder folder,
+        @Param("search")    String search,
+        @Param("dateFrom")  LocalDateTime dateFrom,
+        @Param("dateTo")    LocalDateTime dateTo,
+        @Param("minRating") Integer minRating,
         Pageable pageable);
 }

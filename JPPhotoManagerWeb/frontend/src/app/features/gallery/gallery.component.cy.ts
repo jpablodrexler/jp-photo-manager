@@ -22,6 +22,7 @@ describe('GalleryComponent', () => {
       hash: 'abc123',
       thumbnailUrl: '/api/assets/1/thumbnail',
       imageUrl: '/api/assets/1/image',
+      rating: 0,
     },
     {
       assetId: 2,
@@ -33,6 +34,7 @@ describe('GalleryComponent', () => {
       hash: 'def456',
       thumbnailUrl: '/api/assets/2/thumbnail',
       imageUrl: '/api/assets/2/image',
+      rating: 0,
     },
   ];
 
@@ -372,6 +374,7 @@ describe('GalleryComponent', () => {
         assetId: 3, folderId: 1, folderPath: '/photos', fileName: 'mountain.jpg',
         fileSize: 768000, thumbnailCreationDateTime: '2024-06-03T10:00:00',
         hash: 'ghi789', thumbnailUrl: '/api/assets/3/thumbnail', imageUrl: '/api/assets/3/image',
+        rating: 0,
       },
     ];
     const getAssets = cy.stub().returns(of({ items: threeAssets, pageIndex: 0, totalPages: 1, totalItems: 3 }));
@@ -578,5 +581,64 @@ describe('GalleryComponent', () => {
       expect(component.sidenavOpen).to.be.false;
       cy.get('mat-sidenav').should('not.have.class', 'mat-drawer-opened');
     });
+  });
+
+  // --- Star rating tests ---
+
+  it('rateAsset_clickFourthStar_callsRateAssetAndUpdatesThumbnail', () => {
+    const rateAsset = cy.stub().returns(of(undefined));
+    const getAssets = cy.stub().returns(of({ items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2 }));
+
+    mountGallery({ getAssets, rateAsset }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.loadNextPage();
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.get('app-thumbnail').first().find('.thumb-star').eq(3).click();
+    cy.wrap(rateAsset).should('have.been.calledWith', 1, 4);
+  });
+
+  it('rateAsset_clickSameStar_togglesRatingToZero', () => {
+    const ratedAssets: Asset[] = [{ ...mockAssets[0], rating: 4 }, { ...mockAssets[1], rating: 0 }];
+    const rateAsset = cy.stub().returns(of(undefined));
+    const getAssets = cy.stub().returns(of({ items: ratedAssets, pageIndex: 0, totalPages: 1, totalItems: 2 }));
+
+    mountGallery({ getAssets, rateAsset }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.loadNextPage();
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.get('app-thumbnail').first().find('.thumb-star').eq(3).click();
+    cy.wrap(rateAsset).should('have.been.calledWith', 1, 0);
+  });
+
+  it('onMinRatingChange_filterStar3_callsGetAssetsWithMinRating3', () => {
+    const getAssets = cy.stub().returns(of(emptyPage));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.minRating = 3;
+      component.onMinRatingChange();
+    });
+
+    cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'FILE_NAME', undefined, undefined, undefined, 3);
+  });
+
+  it('onSortChange_ratingSortSelected_callsGetAssetsWithRatingSort', () => {
+    const getAssets = cy.stub().returns(of(emptyPage));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.sortCriteria = 'RATING';
+      component.onSortChange();
+    });
+
+    cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'RATING');
   });
 });

@@ -43,7 +43,7 @@ class AssetControllerSearchTest {
 
     @Test
     void getAssets_noFilters_callsFacadeWithNullFilterArgs() throws Exception {
-        when(facade.getAssets(any(), any(int.class), any(SortCriteria.class), isNull(), isNull(), isNull()))
+        when(facade.getAssets(any(), any(int.class), any(SortCriteria.class), isNull(), isNull(), isNull(), isNull()))
                 .thenReturn(emptyPage());
 
         mockMvc.perform(get("/api/assets")
@@ -53,12 +53,12 @@ class AssetControllerSearchTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isArray());
 
-        verify(facade).getAssets(eq("/photos"), eq(0), eq(SortCriteria.FILE_NAME), isNull(), isNull(), isNull());
+        verify(facade).getAssets(eq("/photos"), eq(0), eq(SortCriteria.FILE_NAME), isNull(), isNull(), isNull(), isNull());
     }
 
     @Test
     void getAssets_withSearchParam_callsFacadeWithSearchAndNullDates() throws Exception {
-        when(facade.getAssets(any(), any(int.class), any(SortCriteria.class), any(), isNull(), isNull()))
+        when(facade.getAssets(any(), any(int.class), any(SortCriteria.class), any(), isNull(), isNull(), isNull()))
                 .thenReturn(emptyPage());
 
         mockMvc.perform(get("/api/assets")
@@ -67,12 +67,12 @@ class AssetControllerSearchTest {
                 .andExpect(status().isOk());
 
         verify(facade).getAssets(eq("/photos"), eq(0), eq(SortCriteria.FILE_NAME),
-                eq("vacation"), isNull(), isNull());
+                eq("vacation"), isNull(), isNull(), isNull());
     }
 
     @Test
     void getAssets_withDateParams_callsFacadeWithParsedLocalDates() throws Exception {
-        when(facade.getAssets(any(), any(int.class), any(SortCriteria.class), isNull(), any(), any()))
+        when(facade.getAssets(any(), any(int.class), any(SortCriteria.class), isNull(), any(), any(), isNull()))
                 .thenReturn(emptyPage());
 
         mockMvc.perform(get("/api/assets")
@@ -84,6 +84,7 @@ class AssetControllerSearchTest {
         verify(facade).getAssets(eq("/photos"), eq(0), eq(SortCriteria.FILE_NAME),
                 isNull(),
                 eq(LocalDate.of(2024, 1, 1)),
-                eq(LocalDate.of(2024, 12, 31)));
+                eq(LocalDate.of(2024, 12, 31)),
+                isNull());
     }
 }

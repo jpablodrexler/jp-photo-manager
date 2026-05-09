@@ -13,7 +13,7 @@ export class AssetService {
   constructor(private http: HttpClient) {}
 
   getAssets(folderPath: string, page = 0, sort: SortCriteria = 'FILE_NAME',
-            search?: string, dateFrom?: string, dateTo?: string): Observable<PaginatedData<Asset>> {
+            search?: string, dateFrom?: string, dateTo?: string, minRating?: number): Observable<PaginatedData<Asset>> {
     let params = new HttpParams()
       .set('folderPath', folderPath)
       .set('page', page)
@@ -21,7 +21,12 @@ export class AssetService {
     if (search) params = params.set('search', search);
     if (dateFrom) params = params.set('dateFrom', dateFrom);
     if (dateTo)   params = params.set('dateTo', dateTo);
+    if (minRating && minRating > 0) params = params.set('minRating', minRating);
     return this.http.get<PaginatedData<Asset>>(this.baseUrl, { params });
+  }
+
+  rateAsset(assetId: number, rating: number): Observable<void> {
+    return this.http.patch<void>(`${this.baseUrl}/${assetId}/rating`, { rating });
   }
 
   getThumbnailUrl(assetId: number): string {

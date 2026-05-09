@@ -59,6 +59,9 @@ public class Asset {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    @Column(name = "rating", nullable = false)
+    private int rating = 0;
+
     @Transient
     public String getThumbnailBlobName() {
         return assetId + ".bin";

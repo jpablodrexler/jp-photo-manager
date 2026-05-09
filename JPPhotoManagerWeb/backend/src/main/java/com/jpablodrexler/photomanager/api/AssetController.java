@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.api.dto.AssetDto;
 import com.jpablodrexler.photomanager.api.dto.DownloadAssetsRequest;
 import com.jpablodrexler.photomanager.api.dto.ExifMetadataDto;
 import com.jpablodrexler.photomanager.api.dto.MoveAssetsRequest;
+import com.jpablodrexler.photomanager.api.dto.RateAssetRequest;
 import com.jpablodrexler.photomanager.api.exception.FolderNotFoundException;
 import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
 import com.jpablodrexler.photomanager.application.dto.AssetImage;
@@ -49,8 +50,9 @@ public class AssetController {
             @RequestParam(defaultValue = "FILE_NAME") SortCriteria sort,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo) {
-        PaginatedData<Asset> data = facade.getAssets(folderPath, page, sort, search, dateFrom, dateTo);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            @RequestParam(required = false) Integer minRating) {
+        PaginatedData<Asset> data = facade.getAssets(folderPath, page, sort, search, dateFrom, dateTo, minRating);
         PaginatedData<AssetDto> result = new PaginatedData<>(
                 data.getItems().stream().map(this::toDto).collect(Collectors.toList()),
                 data.getPageIndex(),
@@ -154,6 +156,13 @@ public class AssetController {
         facade.downloadAssets(request.getAssetIds(), response.getOutputStream());
     }
 
+    @PatchMapping("/{id}/rating")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void rateAsset(@PathVariable Long id,
+                          @Valid @RequestBody RateAssetRequest body) {
+        facade.rateAsset(id, body.rating());
+    }
+
     @DeleteMapping
     public ResponseEntity<Void> deleteAssets(
             @RequestParam Long[] assetIds,
@@ -230,6 +239,7 @@ public class AssetController {
         dto.setFileModificationDateTime(asset.getFileModificationDateTime());
         dto.setThumbnailUrl("/api/assets/" + asset.getAssetId() + "/thumbnail");
         dto.setImageUrl("/api/assets/" + asset.getAssetId() + "/image");
+        dto.setRating(asset.getRating());
         return dto;
     }
 }
