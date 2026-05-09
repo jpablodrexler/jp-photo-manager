@@ -14,7 +14,12 @@ import com.jpablodrexler.photomanager.domain.repository.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.service.*;
 import lombok.RequiredArgsConstructor;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.HashSet;
 import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -327,6 +332,36 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
     @Transactional
     public void removeAssetsFromAlbum(Long albumId, UUID userId, List<Long> assetIds) {
         albumService.removeAssets(albumId, userId, assetIds);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void downloadAssets(List<Long> assetIds, OutputStream out) throws IOException {
+        List<Asset> assets = assetRepository.findAllById(assetIds);
+
+        Set<String> seenNames = new HashSet<>();
+        Map<Long, String> entryNameByAssetId = new java.util.LinkedHashMap<>();
+        for (Asset asset : assets) {
+            String name = asset.getFileName();
+            if (!seenNames.add(name)) {
+                name = asset.getAssetId() + "_" + asset.getFileName();
+            }
+            entryNameByAssetId.put(asset.getAssetId(), name);
+        }
+
+        ZipOutputStream zipOut = new ZipOutputStream(out);
+        for (Asset asset : assets) {
+            String entryName = entryNameByAssetId.get(asset.getAssetId());
+            try {
+                byte[] bytes = storageService.readFileBytes(asset.getFullPath());
+                zipOut.putNextEntry(new ZipEntry(entryName));
+                zipOut.write(bytes);
+                zipOut.closeEntry();
+            } catch (IOException e) {
+                log.warn("Skipping unreadable asset {}: {}", asset.getAssetId(), e.getMessage());
+            }
+        }
+        zipOut.finish();
     }
 
     private AlbumData toAlbumData(Album album) {

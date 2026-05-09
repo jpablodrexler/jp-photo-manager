@@ -51,6 +51,10 @@ export class AssetService {
     return this.http.get<ExifMetadata | null>(`${this.baseUrl}/${assetId}/exif`);
   }
 
+  downloadAssets(assetIds: number[]): Observable<Blob> {
+    return this.http.post(`${this.baseUrl}/download`, { assetIds }, { responseType: 'blob' as 'json' }) as Observable<Blob>;
+  }
+
   uploadAsset(folderPath: string, file: File): Observable<HttpEvent<Asset>> {
     const formData = new FormData();
     formData.append('file', file);

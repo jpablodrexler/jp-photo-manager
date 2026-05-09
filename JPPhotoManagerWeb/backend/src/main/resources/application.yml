@@ -40,4 +40,5 @@ photomanager:
   jwt-expiry-hours: 24
   refresh-token-expiry-days: 30
   cors-allowed-origins: http://localhost:4200
+  max-download-assets: 500
 

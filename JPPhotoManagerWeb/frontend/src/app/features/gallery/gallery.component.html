@@ -25,6 +25,9 @@
             <mat-icon>more_vert</mat-icon>
           </button>
           <mat-menu #actionsMenu="matMenu">
+            <button mat-menu-item (click)="downloadSelected()">
+              <mat-icon>download</mat-icon> Download
+            </button>
             <button mat-menu-item (click)="deleteSelected(false)">
               <mat-icon>delete_outline</mat-icon> Remove from catalog
             </button>

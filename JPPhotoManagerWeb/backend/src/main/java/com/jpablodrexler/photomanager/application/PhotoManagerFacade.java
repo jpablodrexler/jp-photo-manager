@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.application;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -75,4 +76,6 @@ public interface PhotoManagerFacade {
     void addAssetsToAlbum(Long albumId, UUID userId, List<Long> assetIds);
 
     void removeAssetsFromAlbum(Long albumId, UUID userId, List<Long> assetIds);
+
+    void downloadAssets(List<Long> assetIds, OutputStream out) throws IOException;
 }

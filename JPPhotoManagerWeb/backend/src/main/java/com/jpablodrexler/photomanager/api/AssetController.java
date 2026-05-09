@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.api;
 
 import com.jpablodrexler.photomanager.api.dto.AssetDto;
+import com.jpablodrexler.photomanager.api.dto.DownloadAssetsRequest;
 import com.jpablodrexler.photomanager.api.dto.ExifMetadataDto;
 import com.jpablodrexler.photomanager.api.dto.MoveAssetsRequest;
 import com.jpablodrexler.photomanager.api.exception.FolderNotFoundException;
@@ -10,8 +11,11 @@ import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.domain.entity.Asset;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +36,9 @@ public class AssetController {
 
     private final PhotoManagerFacade facade;
     private final ThumbnailStorageService thumbnailStorageService;
+
+    @Value("${photomanager.max-download-assets:500}")
+    private int maxDownloadAssets;
 
     @GetMapping
     public ResponseEntity<PaginatedData<AssetDto>> getAssets(
@@ -127,6 +134,19 @@ public class AssetController {
         boolean result = facade.moveAssets(request.getAssetIds(), request.getDestinationFolderPath(),
                 request.isPreserveOriginal());
         return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/download")
+    public void downloadAssets(
+            @Valid @RequestBody DownloadAssetsRequest request,
+            HttpServletResponse response) throws IOException {
+        if (request.getAssetIds().size() > maxDownloadAssets) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        response.setContentType("application/zip");
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"photos.zip\"");
+        facade.downloadAssets(request.getAssetIds(), response.getOutputStream());
     }
 
     @DeleteMapping

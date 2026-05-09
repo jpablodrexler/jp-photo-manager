@@ -223,6 +223,30 @@ export class GalleryComponent implements OnInit, OnDestroy {
     });
   }
 
+  downloadSelected(): void {
+    const ids = Array.from(this.selectedAssets);
+    if (ids.length === 0) return;
+
+    const snackRef = this.snackBar.open('Preparing download…', undefined, { duration: 0 });
+    this.assetService.downloadAssets(ids).subscribe({
+      next: blob => {
+        snackRef.dismiss();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'photos.zip';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      },
+      error: () => {
+        snackRef.dismiss();
+        this.snackBar.open('Failed to download assets', 'Dismiss', { duration: 3000 });
+      }
+    });
+  }
+
   deleteSelected(deleteFiles: boolean): void {
     const ids = Array.from(this.selectedAssets);
     if (ids.length === 0) return;

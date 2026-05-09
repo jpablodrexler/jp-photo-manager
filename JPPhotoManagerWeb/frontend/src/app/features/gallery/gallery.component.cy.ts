@@ -1,5 +1,5 @@
 import { mount } from 'cypress/angular';
-import { Observable, of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { GalleryComponent } from './gallery.component';
@@ -320,6 +320,33 @@ describe('GalleryComponent', () => {
     });
 
     cy.get('.end-of-list').should('be.visible');
+  });
+
+  // --- Download tests ---
+
+  it('downloadSelected_withSelectedAsset_callsDownloadAssetsWithCorrectIds', () => {
+    const downloadAssets = cy.stub().returns(of(new Blob()));
+    cy.stub(URL, 'createObjectURL').returns('blob:http://localhost/fake');
+    cy.stub(URL, 'revokeObjectURL');
+
+    mountGallery({ downloadAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.selectedAssets.add(1);
+      component.downloadSelected();
+      cy.wrap(downloadAssets).should('have.been.calledWith', [1]);
+    });
+  });
+
+  it('downloadSelected_serviceReturnsError_showsFailedSnackBar', () => {
+    const downloadAssets = cy.stub().returns(throwError(() => new Error('network error')));
+
+    mountGallery({ downloadAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.selectedAssets.add(1);
+      component.downloadSelected();
+    });
+
+    cy.get('.mat-mdc-snack-bar-label').should('contain', 'Failed to download assets');
   });
 
   it('loadNextPage_whenAllLoaded_doesNotCallGetAssets', () => {

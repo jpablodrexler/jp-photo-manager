@@ -19,12 +19,14 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.zip.ZipInputStream;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -475,6 +477,78 @@ class PhotoManagerFacadeTest {
 
         assertThatThrownBy(() -> sut.getAssetExif(99L))
                 .isInstanceOf(NoSuchElementException.class);
+    }
+
+    // --- downloadAssets ---
+
+    @Test
+    void downloadAssets_twoReadableAssets_bothEntriesPresentInZip() throws Exception {
+        Folder folder = buildFolder(1L, "/photos");
+        Asset a = buildAsset(folder, "a.jpg");
+        a.setAssetId(1L);
+        Asset b = buildAsset(folder, "b.jpg");
+        b.setAssetId(2L);
+
+        when(assetRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(a, b));
+        when(storageService.readFileBytes("/photos/a.jpg")).thenReturn(new byte[]{1, 2});
+        when(storageService.readFileBytes("/photos/b.jpg")).thenReturn(new byte[]{3, 4});
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        sut.downloadAssets(List.of(1L, 2L), out);
+
+        List<String> entryNames = readZipEntryNames(out);
+        assertThat(entryNames).containsExactlyInAnyOrder("a.jpg", "b.jpg");
+    }
+
+    @Test
+    void downloadAssets_duplicateFileNames_secondEntryPrefixedWithAssetId() throws Exception {
+        Folder folder = buildFolder(1L, "/photos");
+        Asset a = buildAsset(folder, "IMG_0001.jpg");
+        a.setAssetId(101L);
+        Asset b = buildAsset(folder, "IMG_0001.jpg");
+        b.setAssetId(102L);
+
+        when(assetRepository.findAllById(List.of(101L, 102L))).thenReturn(List.of(a, b));
+        when(storageService.readFileBytes(any())).thenReturn(new byte[]{1});
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        sut.downloadAssets(List.of(101L, 102L), out);
+
+        List<String> entryNames = readZipEntryNames(out);
+        assertThat(entryNames).containsExactlyInAnyOrder("IMG_0001.jpg", "102_IMG_0001.jpg");
+    }
+
+    @Test
+    void downloadAssets_unreadableAssetSkipped_remainingAssetStillInZip() throws Exception {
+        Folder folder = buildFolder(1L, "/photos");
+        Asset a = buildAsset(folder, "readable.jpg");
+        a.setAssetId(1L);
+        Asset b = buildAsset(folder, "missing.jpg");
+        b.setAssetId(2L);
+
+        when(assetRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(a, b));
+        when(storageService.readFileBytes("/photos/readable.jpg")).thenReturn(new byte[]{1, 2});
+        when(storageService.readFileBytes("/photos/missing.jpg")).thenThrow(new IOException("not found"));
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        sut.downloadAssets(List.of(1L, 2L), out);
+
+        List<String> entryNames = readZipEntryNames(out);
+        assertThat(entryNames).containsExactly("readable.jpg");
+        assertThat(entryNames).doesNotContain("missing.jpg");
+    }
+
+    private List<String> readZipEntryNames(ByteArrayOutputStream out) throws IOException {
+        List<String> names = new ArrayList<>();
+        try (ZipInputStream zip = new ZipInputStream(
+                new java.io.ByteArrayInputStream(out.toByteArray()))) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                names.add(entry.getName());
+                zip.closeEntry();
+            }
+        }
+        return names;
     }
 
     // --- helpers ---
