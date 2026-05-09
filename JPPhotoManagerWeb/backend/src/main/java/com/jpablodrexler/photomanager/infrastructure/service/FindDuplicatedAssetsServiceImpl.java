@@ -25,7 +25,7 @@ public class FindDuplicatedAssetsServiceImpl implements FindDuplicatedAssetsServ
     @Override
     @Transactional(readOnly = true)
     public List<List<Asset>> getDuplicatedAssets() {
-        List<Asset> allAssets = assetRepository.findAll();
+        List<Asset> allAssets = assetRepository.findByDeletedAtIsNull();
 
         // Remove stale assets (files deleted externally)
         List<Asset> validAssets = allAssets.stream()

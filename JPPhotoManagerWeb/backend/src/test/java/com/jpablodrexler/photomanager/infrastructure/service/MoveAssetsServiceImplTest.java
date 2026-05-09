@@ -161,12 +161,35 @@ class MoveAssetsServiceImplTest {
     }
 
     @Test
-    void deleteAssets_always_deletesThumbnailAndRemovesFromRepository() throws IOException {
+    void deleteAssets_deleteFileTrue_deletesThumbnailAndRemovesFromRepository() throws IOException {
+        Asset asset = buildAsset(1L, "photo.jpg", "/photos");
+
+        sut.deleteAssets(new Asset[]{asset}, true);
+
+        verify(thumbnailStorageService).deleteThumbnail(eq("1.bin"));
+        verify(assetRepository).delete(asset);
+    }
+
+    @Test
+    void deleteAssets_deleteFileFalse_softDeletesSetsDeletedAtAndDoesNotDeleteThumbnail() throws IOException {
         Asset asset = buildAsset(1L, "photo.jpg", "/photos");
 
         sut.deleteAssets(new Asset[]{asset}, false);
 
-        verify(thumbnailStorageService).deleteThumbnail(eq("1.bin"));
+        verify(thumbnailStorageService, never()).deleteThumbnail(any());
+        verify(assetRepository, never()).delete(any(Asset.class));
+        assertThat(asset.getDeletedAt()).isNotNull();
+        verify(assetRepository).save(asset);
+    }
+
+    @Test
+    void deleteAssets_deleteFileTrue_callsDeleteFileAndThumbnailAndDeletesRow() throws IOException {
+        Asset asset = buildAsset(1L, "photo.jpg", "/photos");
+
+        sut.deleteAssets(new Asset[]{asset}, true);
+
+        verify(storageService).deleteFile("/photos/photo.jpg");
+        verify(thumbnailStorageService).deleteThumbnail("1.bin");
         verify(assetRepository).delete(asset);
     }
 

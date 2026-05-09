@@ -29,7 +29,7 @@ class FindDuplicatedAssetsServiceImplTest {
 
     @Test
     void getDuplicatedAssets_noAssets_returnsEmptyList() {
-        when(assetRepository.findAll()).thenReturn(List.of());
+        when(assetRepository.findByDeletedAtIsNull()).thenReturn(List.of());
 
         List<List<Asset>> result = sut.getDuplicatedAssets();
 
@@ -40,7 +40,7 @@ class FindDuplicatedAssetsServiceImplTest {
     void getDuplicatedAssets_allUniqueHashes_returnsEmptyList() {
         Asset assetA = buildAsset(1L, "a.jpg", "hash-aaa", "/photos");
         Asset assetB = buildAsset(2L, "b.jpg", "hash-bbb", "/photos");
-        when(assetRepository.findAll()).thenReturn(List.of(assetA, assetB));
+        when(assetRepository.findByDeletedAtIsNull()).thenReturn(List.of(assetA, assetB));
         when(storageService.directoryExists("/photos")).thenReturn(true);
         when(storageService.getFileSize("/photos/a.jpg")).thenReturn(1000L);
         when(storageService.getFileSize("/photos/b.jpg")).thenReturn(2000L);
@@ -54,7 +54,7 @@ class FindDuplicatedAssetsServiceImplTest {
     void getDuplicatedAssets_duplicatesFound_returnsGroupWithBothAssets() {
         Asset assetA = buildAsset(1L, "a.jpg", "same-hash", "/photos");
         Asset assetB = buildAsset(2L, "b.jpg", "same-hash", "/photos");
-        when(assetRepository.findAll()).thenReturn(List.of(assetA, assetB));
+        when(assetRepository.findByDeletedAtIsNull()).thenReturn(List.of(assetA, assetB));
         when(storageService.directoryExists("/photos")).thenReturn(true);
         when(storageService.getFileSize("/photos/a.jpg")).thenReturn(1000L);
         when(storageService.getFileSize("/photos/b.jpg")).thenReturn(1000L);
@@ -70,7 +70,7 @@ class FindDuplicatedAssetsServiceImplTest {
     void getDuplicatedAssets_staleAsset_filteredOutBeforeGrouping() {
         Asset validAsset = buildAsset(1L, "a.jpg", "same-hash", "/photos");
         Asset staleAsset = buildAsset(2L, "b.jpg", "same-hash", "/stale");
-        when(assetRepository.findAll()).thenReturn(List.of(validAsset, staleAsset));
+        when(assetRepository.findByDeletedAtIsNull()).thenReturn(List.of(validAsset, staleAsset));
         when(storageService.directoryExists("/photos")).thenReturn(true);
         when(storageService.getFileSize("/photos/a.jpg")).thenReturn(1000L);
         when(storageService.directoryExists("/stale")).thenReturn(false);
@@ -84,7 +84,7 @@ class FindDuplicatedAssetsServiceImplTest {
     void getDuplicatedAssets_assetWithZeroFileSize_treatedAsStale() {
         Asset assetA = buildAsset(1L, "a.jpg", "same-hash", "/photos");
         Asset assetB = buildAsset(2L, "b.jpg", "same-hash", "/photos");
-        when(assetRepository.findAll()).thenReturn(List.of(assetA, assetB));
+        when(assetRepository.findByDeletedAtIsNull()).thenReturn(List.of(assetA, assetB));
         when(storageService.directoryExists("/photos")).thenReturn(true);
         when(storageService.getFileSize("/photos/a.jpg")).thenReturn(1000L);
         when(storageService.getFileSize("/photos/b.jpg")).thenReturn(0L);
@@ -100,7 +100,7 @@ class FindDuplicatedAssetsServiceImplTest {
         Asset assetA2 = buildAsset(2L, "a2.jpg", "hash-A", "/photos");
         Asset assetB1 = buildAsset(3L, "b1.jpg", "hash-B", "/photos");
         Asset assetB2 = buildAsset(4L, "b2.jpg", "hash-B", "/photos");
-        when(assetRepository.findAll()).thenReturn(List.of(assetA1, assetA2, assetB1, assetB2));
+        when(assetRepository.findByDeletedAtIsNull()).thenReturn(List.of(assetA1, assetA2, assetB1, assetB2));
         when(storageService.directoryExists("/photos")).thenReturn(true);
         when(storageService.getFileSize("/photos/a1.jpg")).thenReturn(500L);
         when(storageService.getFileSize("/photos/a2.jpg")).thenReturn(500L);

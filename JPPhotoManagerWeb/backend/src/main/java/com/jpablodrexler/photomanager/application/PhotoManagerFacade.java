@@ -80,4 +80,10 @@ public interface PhotoManagerFacade {
     void removeAssetsFromAlbum(Long albumId, UUID userId, List<Long> assetIds);
 
     void downloadAssets(List<Long> assetIds, OutputStream out) throws IOException;
+
+    PaginatedData<Asset> getRecycleBin(int pageIndex);
+
+    void restoreAssets(List<Long> assetIds);
+
+    void purgeRecycleBin(List<Long> assetIds);
 }

@@ -12,6 +12,7 @@ import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 import com.jpablodrexler.photomanager.domain.repository.*;
 import com.jpablodrexler.photomanager.domain.repository.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.service.*;
+import com.jpablodrexler.photomanager.domain.service.RecycleBinService;
 import lombok.RequiredArgsConstructor;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -77,6 +78,7 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
     private final StorageService storageService;
     private final AlbumService albumService;
     private final AlbumRepository albumRepository;
+    private final RecycleBinService recycleBinService;
 
     @Value("${photomanager.initial-directory:${user.home}/Pictures}")
     private String initialDirectory;
@@ -370,6 +372,28 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
             }
         }
         zipOut.finish();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginatedData<Asset> getRecycleBin(int pageIndex) {
+        return recycleBinService.getDeletedAssets(pageIndex);
+    }
+
+    @Override
+    @Transactional
+    public void restoreAssets(List<Long> assetIds) {
+        recycleBinService.restoreAssets(assetIds);
+    }
+
+    @Override
+    @Transactional
+    public void purgeRecycleBin(List<Long> assetIds) {
+        if (assetIds == null) {
+            recycleBinService.purgeAll();
+        } else {
+            recycleBinService.purgeAssets(assetIds);
+        }
     }
 
     private AlbumData toAlbumData(Album album) {

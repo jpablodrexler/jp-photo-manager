@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.domain.entity.Asset;
 import com.jpablodrexler.photomanager.domain.entity.Folder;
 import com.jpablodrexler.photomanager.domain.repository.AssetRepository;
 import com.jpablodrexler.photomanager.domain.service.MoveAssetsService;
+import java.time.LocalDateTime;
 import com.jpablodrexler.photomanager.domain.service.StorageService;
 import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
 import lombok.RequiredArgsConstructor;
@@ -61,9 +62,12 @@ public class MoveAssetsServiceImpl implements MoveAssetsService {
                 } catch (IOException e) {
                     log.error("Failed to delete file {}", filePath, e);
                 }
+                thumbnailStorageService.deleteThumbnail(asset.getThumbnailBlobName());
+                assetRepository.delete(asset);
+            } else {
+                asset.setDeletedAt(LocalDateTime.now());
+                assetRepository.save(asset);
             }
-            thumbnailStorageService.deleteThumbnail(asset.getThumbnailBlobName());
-            assetRepository.delete(asset);
         }
     }
 }

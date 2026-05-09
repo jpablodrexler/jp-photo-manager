@@ -28,6 +28,19 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
 
     void deleteByFolderAndFileName(Folder folder, String fileName);
 
+    Page<Asset> findByFolderAndDeletedAtIsNull(Folder folder, Pageable pageable);
+
+    List<Asset> findByFolderAndDeletedAtIsNull(Folder folder);
+
+    Page<Asset> findByDeletedAtIsNotNullOrderByDeletedAtDesc(Pageable pageable);
+
+    List<Asset> findByDeletedAtBeforeAndDeletedAtIsNotNull(LocalDateTime cutoff);
+
+    List<Asset> findByDeletedAtIsNull();
+
+    @Query("SELECT a FROM Asset a WHERE a.hash = :hash AND a.deletedAt IS NULL")
+    List<Asset> findByHashAndDeletedAtIsNull(String hash);
+
     @Query("SELECT a FROM Asset a WHERE a.hash = :hash")
     List<Asset> findByHash(String hash);
 
@@ -40,6 +53,7 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
     @Query("""
         SELECT a FROM Asset a
         WHERE a.folder = :folder
+          AND a.deletedAt IS NULL
           AND (:search IS NULL OR LOWER(a.fileName) LIKE LOWER(CONCAT('%', :search, '%')))
           AND (:dateFrom IS NULL OR a.fileCreationDateTime >= :dateFrom)
           AND (:dateTo   IS NULL OR a.fileCreationDateTime <= :dateTo)

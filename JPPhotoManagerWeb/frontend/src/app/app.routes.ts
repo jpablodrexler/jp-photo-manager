@@ -59,5 +59,11 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/albums/album-detail/album-detail.component').then(m => m.AlbumDetailComponent),
     canActivate: [authGuard]
+  },
+  {
+    path: 'recycle-bin',
+    loadComponent: () =>
+      import('./features/recycle-bin/recycle-bin.component').then(m => m.RecycleBinComponent),
+    canActivate: [authGuard]
   }
 ];
