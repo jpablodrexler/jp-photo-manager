@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -28,7 +28,7 @@ import { FileSizePipe } from '../../shared/pipes/file-size.pipe';
 import { DropZoneComponent } from './drop-zone/drop-zone.component';
 import { AddToAlbumDialogComponent } from './add-to-album-dialog/add-to-album-dialog.component';
 
-type ViewMode = 'thumbnails' | 'viewer';
+type ViewMode = 'thumbnails' | 'viewer' | 'slideshow';
 
 @Component({
   selector: 'app-gallery',
@@ -77,6 +77,11 @@ export class GalleryComponent implements OnInit, OnDestroy {
   selectedAssets: Set<number> = new Set();
   currentViewerIndex = 0;
   viewerZoom = 1;
+  slideshowInterval = 5;
+  slideshowPlaying = false;
+  private slideshowTimer: ReturnType<typeof setInterval> | null = null;
+  slideshowResetTick = false;
+  readonly intervalOptions = [3, 5, 10, 15];
   userAlbums: AlbumSummary[] = [];
 
   pageIndex = 0;
@@ -110,6 +115,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.stopSlideshow();
     this.disconnectObserver();
     this.searchSubscription?.unsubscribe();
   }
@@ -219,6 +225,94 @@ export class GalleryComponent implements OnInit, OnDestroy {
   closeViewer(): void {
     this.viewMode = 'thumbnails';
     this.showExifPanel = false;
+  }
+
+  @HostListener('keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent): void {
+    switch (event.key) {
+      case 'Escape':
+        if (this.viewMode === 'slideshow') { this.exitSlideshow(); event.preventDefault(); }
+        break;
+      case ' ':
+        if (this.viewMode === 'slideshow') { this.toggleSlideshowPlay(); event.preventDefault(); }
+        break;
+      case 'ArrowLeft':
+        if (this.viewMode === 'slideshow') { this.stepSlideshow(-1); event.preventDefault(); }
+        else if (this.viewMode === 'viewer') { this.viewerPrev(); event.preventDefault(); }
+        break;
+      case 'ArrowRight':
+        if (this.viewMode === 'slideshow') { this.stepSlideshow(1); event.preventDefault(); }
+        else if (this.viewMode === 'viewer') { this.viewerNext(); event.preventDefault(); }
+        break;
+    }
+  }
+
+  startSlideshow(index: number): void {
+    this.currentViewerIndex = index;
+    this.viewerZoom = 1;
+    this.viewMode = 'slideshow';
+    this.slideshowPlaying = true;
+    this.slideshowTimer = setInterval(() => this.advanceSlideshow(), this.slideshowInterval * 1000);
+  }
+
+  advanceSlideshow(): void {
+    if (this.currentViewerIndex < this.assets.length - 1) {
+      this.currentViewerIndex++;
+      this.viewerZoom = 1;
+      this.slideshowResetTick = !this.slideshowResetTick;
+    } else {
+      this.stopSlideshow();
+      this.statusMessage = 'Slideshow complete';
+      setTimeout(() => { this.statusMessage = ''; }, 3000);
+    }
+  }
+
+  pauseSlideshow(): void {
+    if (this.slideshowTimer !== null) {
+      clearInterval(this.slideshowTimer);
+      this.slideshowTimer = null;
+      this.slideshowPlaying = false;
+    }
+  }
+
+  resumeSlideshow(): void {
+    this.slideshowPlaying = true;
+    this.slideshowTimer = setInterval(() => this.advanceSlideshow(), this.slideshowInterval * 1000);
+  }
+
+  toggleSlideshowPlay(): void {
+    if (this.slideshowPlaying) {
+      this.pauseSlideshow();
+    } else {
+      this.resumeSlideshow();
+    }
+  }
+
+  stopSlideshow(): void {
+    this.pauseSlideshow();
+    this.slideshowPlaying = false;
+  }
+
+  exitSlideshow(): void {
+    this.stopSlideshow();
+    this.viewMode = 'viewer';
+  }
+
+  stepSlideshow(direction: -1 | 1): void {
+    this.pauseSlideshow();
+    if (direction === -1) {
+      this.viewerPrev();
+    } else {
+      this.viewerNext();
+    }
+  }
+
+  onIntervalChange(): void {
+    if (this.slideshowPlaying) {
+      this.pauseSlideshow();
+      this.resumeSlideshow();
+    }
+    this.slideshowResetTick = !this.slideshowResetTick;
   }
 
   toggleExifPanel(): void {

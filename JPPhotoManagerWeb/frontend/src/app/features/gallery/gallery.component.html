@@ -36,6 +36,12 @@
             </button>
           </mat-menu>
         }
+
+        @if (assets.length > 0) {
+          <button mat-icon-button (click)="startSlideshow(0)" title="Start slideshow">
+            <mat-icon>slideshow</mat-icon>
+          </button>
+        }
       }
 
       @if (viewMode === 'viewer') {
@@ -44,7 +50,24 @@
         <button mat-icon-button (click)="toggleExifPanel()" [class.active]="showExifPanel" title="EXIF info">
           <mat-icon>info</mat-icon>
         </button>
+        <button mat-icon-button (click)="startSlideshow(currentViewerIndex)" title="Slideshow">
+          <mat-icon>slideshow</mat-icon>
+        </button>
         <button mat-icon-button (click)="closeViewer()"><mat-icon>grid_view</mat-icon></button>
+      }
+
+      @if (viewMode === 'slideshow') {
+        <button mat-icon-button (click)="toggleSlideshowPlay()" [title]="slideshowPlaying ? 'Pause' : 'Play'">
+          <mat-icon>{{ slideshowPlaying ? 'pause' : 'play_arrow' }}</mat-icon>
+        </button>
+        <mat-select [(ngModel)]="slideshowInterval" (ngModelChange)="onIntervalChange()" style="width: 80px;" title="Interval">
+          @for (opt of intervalOptions; track opt) {
+            <mat-option [value]="opt">{{ opt }}s</mat-option>
+          }
+        </mat-select>
+        <button mat-icon-button (click)="exitSlideshow()" title="Exit slideshow">
+          <mat-icon>close</mat-icon>
+        </button>
       }
     </mat-toolbar>
 
@@ -140,6 +163,33 @@
           (closed)="showExifPanel = false"
         />
       </div>
+    }
+
+    <!-- Slideshow -->
+    @if (viewMode === 'slideshow' && currentViewerAsset) {
+      <div class="image-viewer flex-1">
+        <button mat-icon-button class="viewer-nav viewer-nav--prev" (click)="stepSlideshow(-1)" [disabled]="currentViewerIndex === 0">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <img
+          [src]="currentViewerAsset.imageUrl"
+          [alt]="currentViewerAsset.fileName"
+        />
+        <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="stepSlideshow(1)" [disabled]="currentViewerIndex >= assets.length - 1">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+      @if (slideshowResetTick) {
+        <div class="slideshow-progress-bar"
+             [style.animation-duration]="slideshowInterval + 's'"
+             [style.animation-play-state]="slideshowPlaying ? 'running' : 'paused'">
+        </div>
+      } @else {
+        <div class="slideshow-progress-bar"
+             [style.animation-duration]="slideshowInterval + 's'"
+             [style.animation-play-state]="slideshowPlaying ? 'running' : 'paused'">
+        </div>
+      }
     }
 
     <!-- Status Bar -->

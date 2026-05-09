@@ -89,6 +89,21 @@
   overflow: hidden;
 }
 
+@keyframes progress-fill {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+.slideshow-progress-bar {
+  height: 3px;
+  background: #4caf50;
+  width: 0;
+  animation-name: progress-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+}
+
 .image-viewer {
   position: relative;
   overflow: hidden;

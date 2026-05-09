@@ -362,6 +362,102 @@ describe('GalleryComponent', () => {
     cy.wrap(getAssets).should('not.have.been.called');
   });
 
+  // --- Slideshow tests ---
+
+  it('startSlideshow_fromThumbnailsToolbar_entersSlideshowModeAndShowsControls', () => {
+    const threeAssets: Asset[] = [
+      ...mockAssets,
+      {
+        assetId: 3, folderId: 1, folderPath: '/photos', fileName: 'mountain.jpg',
+        fileSize: 768000, thumbnailCreationDateTime: '2024-06-03T10:00:00',
+        hash: 'ghi789', thumbnailUrl: '/api/assets/3/thumbnail', imageUrl: '/api/assets/3/image',
+      },
+    ];
+    const getAssets = cy.stub().returns(of({ items: threeAssets, pageIndex: 0, totalPages: 1, totalItems: 3 }));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.loadNextPage();
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.get('[title="Start slideshow"]').click();
+    cy.get('[title="Pause"]').should('exist');
+    cy.get('.slideshow-progress-bar').should('exist');
+  });
+
+  it('advanceSlideshow_afterInterval_incrementsCurrentViewerIndex', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets = [...mockAssets];
+      component.startSlideshow(0);
+      fixture.detectChanges();
+      expect(component.currentViewerIndex).to.equal(0);
+      component.advanceSlideshow();
+      expect(component.currentViewerIndex).to.equal(1);
+    });
+  });
+
+  it('pauseSlideshow_whilePlaying_stopsAdvancing', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets = [...mockAssets];
+      component.startSlideshow(0);
+      component.pauseSlideshow();
+      expect(component.slideshowPlaying).to.be.false;
+      expect(component.slideshowTimer).to.be.null;
+      expect(component.currentViewerIndex).to.equal(0);
+    });
+  });
+
+  it('exitSlideshow_onEscapeKey_returnsToViewerMode', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets = [...mockAssets];
+      component.startSlideshow(0);
+      fixture.detectChanges();
+      component.onKeyDown(new KeyboardEvent('keydown', { key: 'Escape' }));
+      expect(component.viewMode).to.equal('viewer');
+    });
+  });
+
+  it('toggleSlideshowPlay_onSpaceKey_togglesPlayPause', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets = [...mockAssets];
+      component.startSlideshow(0);
+      expect(component.slideshowPlaying).to.be.true;
+      component.onKeyDown(new KeyboardEvent('keydown', { key: ' ' }));
+      expect(component.slideshowPlaying).to.be.false;
+      component.onKeyDown(new KeyboardEvent('keydown', { key: ' ' }));
+      expect(component.slideshowPlaying).to.be.true;
+    });
+  });
+
+  it('advanceSlideshow_atLastAsset_stopsSlideshowAndShowsCompleteMessage', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets = [...mockAssets];
+      component.startSlideshow(1); // last index
+      component.advanceSlideshow(); // at last asset — should stop
+      expect(component.slideshowPlaying).to.be.false;
+      expect(component.statusMessage).to.equal('Slideshow complete');
+    });
+  });
+
+  it('startSlideshow_fromViewerToolbar_keepsSameIndex', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets = [...mockAssets];
+      component.openViewer(1);
+      expect(component.viewMode).to.equal('viewer');
+      component.startSlideshow(component.currentViewerIndex);
+      expect(component.viewMode).to.equal('slideshow');
+      expect(component.currentViewerIndex).to.equal(1);
+    });
+  });
+
   // --- Search and filter tests ---
 
   it('loadNextPage_withSearchTerm_callsGetAssetsWithSearchParam', () => {
