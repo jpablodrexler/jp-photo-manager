@@ -2,9 +2,11 @@ package com.jpablodrexler.photomanager.application;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+import com.jpablodrexler.photomanager.application.dto.AlbumData;
 import com.jpablodrexler.photomanager.application.dto.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.application.dto.ConvertAssetsResult;
@@ -57,4 +59,20 @@ public interface PhotoManagerFacade {
     AssetExif getAssetExif(Long assetId);
 
     Asset uploadAsset(String folderPath, MultipartFile file) throws IOException;
+
+    List<AlbumData> getAlbums(UUID userId);
+
+    AlbumData createAlbum(UUID userId, String name, String description);
+
+    AlbumData getAlbumSummary(Long albumId, UUID userId);
+
+    PaginatedData<Asset> getAlbumAssets(Long albumId, UUID userId, int pageIndex);
+
+    AlbumData updateAlbum(Long albumId, UUID userId, String name, String description);
+
+    void deleteAlbum(Long albumId, UUID userId);
+
+    void addAssetsToAlbum(Long albumId, UUID userId, List<Long> assetIds);
+
+    void removeAssetsFromAlbum(Long albumId, UUID userId, List<Long> assetIds);
 }

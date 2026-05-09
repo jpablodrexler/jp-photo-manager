@@ -1,0 +1,39 @@
+@if (album) {
+  <mat-toolbar>
+    <button mat-icon-button routerLink="/albums" title="Back to albums">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <span>{{ album.name }}</span>
+  </mat-toolbar>
+
+  <div class="thumbnail-grid">
+    @for (asset of album.assets.items; track asset.assetId) {
+      <div class="asset-wrapper">
+        <app-thumbnail [asset]="asset" />
+        <button
+          mat-icon-button
+          class="remove-btn"
+          (click)="removeAsset(asset.assetId)"
+          title="Remove from album"
+        >
+          <mat-icon>remove_circle</mat-icon>
+        </button>
+      </div>
+    }
+    @if (album.assets.items.length === 0) {
+      <div class="empty-state">No photos in this album.</div>
+    }
+  </div>
+
+  @if (totalPages > 1) {
+    <div class="pagination">
+      <button mat-icon-button [disabled]="currentPage === 0" (click)="loadPage(currentPage - 1)">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <span>{{ currentPage + 1 }} / {{ totalPages }}</span>
+      <button mat-icon-button [disabled]="currentPage >= totalPages - 1" (click)="loadPage(currentPage + 1)">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+  }
+}

@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.api;
 
+import com.jpablodrexler.photomanager.api.exception.AlbumNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,13 @@ import java.time.Instant;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AlbumNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAlbumNotFound(AlbumNotFoundException ex) {
+        log.warn("Album not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(Instant.now().toString(), 404, "Not Found", ex.getMessage()));
+    }
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleEntityNotFound(EntityNotFoundException ex) {

@@ -9,16 +9,19 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { FolderNavComponent } from '../folder-nav/folder-nav.component';
 import { ThumbnailComponent } from '../../shared/components/thumbnail/thumbnail.component';
 import { ExifPanelComponent } from '../../shared/components/exif-panel/exif-panel.component';
 import { AssetService } from '../../core/services/asset.service';
+import { AlbumService } from '../../core/services/album.service';
 import { Asset, SortCriteria } from '../../core/models/asset.model';
+import { AlbumSummary } from '../../core/models/album.model';
 import { PaginatedData } from '../../core/models/paginated-data.model';
 import { FileSizePipe } from '../../shared/pipes/file-size.pipe';
 import { DropZoneComponent } from './drop-zone/drop-zone.component';
+import { AddToAlbumDialogComponent } from './add-to-album-dialog/add-to-album-dialog.component';
 
 type ViewMode = 'thumbnails' | 'viewer';
 
@@ -60,6 +63,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   selectedAssets: Set<number> = new Set();
   currentViewerIndex = 0;
   viewerZoom = 1;
+  userAlbums: AlbumSummary[] = [];
 
   pageIndex = 0;
   totalItems = 0;
@@ -79,7 +83,9 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   constructor(
     private assetService: AssetService,
-    private snackBar: MatSnackBar
+    private albumService: AlbumService,
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {}
@@ -96,6 +102,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.allLoaded = false;
     this.selectedAssets.clear();
     this.disconnectObserver();
+    this.albumService.getAlbums().subscribe({
+      next: albums => (this.userAlbums = albums),
+      error: () => {}
+    });
     Promise.resolve().then(() => {
       this.setupSentinelObserver();
       this.loadNextPage();
@@ -224,6 +234,36 @@ export class GalleryComponent implements OnInit, OnDestroy {
         this.snackBar.open(`Deleted ${ids.length} asset(s)`, undefined, { duration: 2000 });
       },
       error: () => this.snackBar.open('Failed to delete assets', 'Dismiss', { duration: 3000 })
+    });
+  }
+
+  addToAlbum(asset: Asset): void {
+    const dialogRef = this.dialog.open(AddToAlbumDialogComponent, {
+      width: '400px',
+      data: { albums: this.userAlbums }
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (!result) return;
+      if (result.newAlbumName) {
+        this.albumService.createAlbum({ name: result.newAlbumName }).subscribe({
+          next: album => {
+            this.userAlbums = [...this.userAlbums, album];
+            this.albumService.addAssets(album.albumId, [asset.assetId]).subscribe({
+              next: () => this.snackBar.open(`Added to "${album.name}"`, undefined, { duration: 2000 }),
+              error: () => this.snackBar.open('Failed to add to album', 'Dismiss', { duration: 3000 })
+            });
+          },
+          error: () => this.snackBar.open('Failed to create album', 'Dismiss', { duration: 3000 })
+        });
+      } else if (result.albumId) {
+        this.albumService.addAssets(result.albumId, [asset.assetId]).subscribe({
+          next: () => {
+            const album = this.userAlbums.find(a => a.albumId === result.albumId);
+            this.snackBar.open(`Added to "${album?.name ?? 'album'}"`, undefined, { duration: 2000 });
+          },
+          error: () => this.snackBar.open('Failed to add to album', 'Dismiss', { duration: 3000 })
+        });
+      }
     });
   }
 

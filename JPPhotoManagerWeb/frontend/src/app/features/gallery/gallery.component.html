@@ -53,12 +53,22 @@
         }
         <div class="thumbnail-grid">
           @for (asset of assets; track asset.assetId; let i = $index) {
-            <app-thumbnail
-              [asset]="asset"
-              [selected]="isSelected(asset)"
-              (click)="toggleSelection(asset)"
-              (dblclick)="openViewer(i)"
-            />
+            <div class="asset-cell">
+              <app-thumbnail
+                [asset]="asset"
+                [selected]="isSelected(asset)"
+                (click)="toggleSelection(asset)"
+                (dblclick)="openViewer(i)"
+              />
+              <button
+                mat-icon-button
+                class="add-to-album-btn"
+                (click)="$event.stopPropagation(); addToAlbum(asset)"
+                title="Add to album"
+              >
+                <mat-icon>collections_bookmark</mat-icon>
+              </button>
+            </div>
           }
           @if (assets.length === 0 && currentFolder) {
             <div class="empty-state">No images found in this folder.</div>

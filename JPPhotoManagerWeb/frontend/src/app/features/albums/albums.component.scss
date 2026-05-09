@@ -1,0 +1,29 @@
+.create-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+
+  mat-form-field {
+    flex: 1;
+    max-width: 400px;
+  }
+}
+
+.albums-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+.album-card {
+  cursor: pointer;
+}
+
+.empty-state {
+  color: rgba(255, 255, 255, 0.5);
+  padding: 32px;
+  text-align: center;
+  grid-column: 1 / -1;
+}

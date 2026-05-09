@@ -47,5 +47,17 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/admin/users/user-admin.component').then(m => m.UserAdminComponent),
     canActivate: [authGuard]
+  },
+  {
+    path: 'albums',
+    loadComponent: () =>
+      import('./features/albums/albums.component').then(m => m.AlbumsComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'albums/:id',
+    loadComponent: () =>
+      import('./features/albums/album-detail/album-detail.component').then(m => m.AlbumDetailComponent),
+    canActivate: [authGuard]
   }
 ];

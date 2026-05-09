@@ -267,6 +267,7 @@ JPPhotoManager/tools
 JPPhotoManagerWeb/backend/target/
 JPPhotoManagerWeb/backend/src/main/resources/application-local.yml
 JPPhotoManagerWeb/frontend/.angular/
+JPPhotoManagerWeb/frontend/dist/
 JPPhotoManagerWeb/frontend/coverage/
 JPPhotoManagerWeb/frontend/.nyc_output/
 JPPhotoManagerWeb/frontend/cypress/screenshots/

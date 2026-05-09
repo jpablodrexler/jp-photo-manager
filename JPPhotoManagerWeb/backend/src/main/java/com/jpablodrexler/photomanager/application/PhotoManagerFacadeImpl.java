@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.application;
 
+import com.jpablodrexler.photomanager.application.dto.AlbumData;
 import com.jpablodrexler.photomanager.application.dto.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.application.dto.ConvertAssetsResult;
@@ -14,6 +15,7 @@ import com.jpablodrexler.photomanager.domain.service.*;
 import lombok.RequiredArgsConstructor;
 import java.io.IOException;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -27,7 +29,6 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.UUID;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.Arrays;
 import java.util.List;
@@ -66,6 +67,8 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
     private final SyncAssetsService syncAssetsService;
     private final ConvertAssetsService convertAssetsService;
     private final StorageService storageService;
+    private final AlbumService albumService;
+    private final AlbumRepository albumRepository;
 
     @Value("${photomanager.initial-directory:${user.home}/Pictures}")
     private String initialDirectory;
@@ -272,5 +275,62 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
             return DEFAULT_SORT;
         }
         return SORT_MAP.getOrDefault(criteria, DEFAULT_SORT);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AlbumData> getAlbums(UUID userId) {
+        return albumService.findByUserId(userId).stream()
+                .map(this::toAlbumData)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public AlbumData createAlbum(UUID userId, String name, String description) {
+        return toAlbumData(albumService.createAlbum(userId, name, description));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AlbumData getAlbumSummary(Long albumId, UUID userId) {
+        Album album = albumService.findByIdAndUserId(albumId, userId)
+                .orElseThrow(() -> new com.jpablodrexler.photomanager.api.exception.AlbumNotFoundException(albumId));
+        return toAlbumData(album);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginatedData<Asset> getAlbumAssets(Long albumId, UUID userId, int pageIndex) {
+        return albumService.getAlbumAssets(albumId, userId, pageIndex);
+    }
+
+    @Override
+    @Transactional
+    public AlbumData updateAlbum(Long albumId, UUID userId, String name, String description) {
+        return toAlbumData(albumService.updateAlbum(albumId, userId, name, description));
+    }
+
+    @Override
+    @Transactional
+    public void deleteAlbum(Long albumId, UUID userId) {
+        albumService.deleteAlbum(albumId, userId);
+    }
+
+    @Override
+    @Transactional
+    public void addAssetsToAlbum(Long albumId, UUID userId, List<Long> assetIds) {
+        albumService.addAssets(albumId, userId, assetIds);
+    }
+
+    @Override
+    @Transactional
+    public void removeAssetsFromAlbum(Long albumId, UUID userId, List<Long> assetIds) {
+        albumService.removeAssets(albumId, userId, assetIds);
+    }
+
+    private AlbumData toAlbumData(Album album) {
+        long count = albumRepository.countAssets(album.getAlbumId());
+        return new AlbumData(album.getAlbumId(), album.getName(), album.getDescription(), album.getCreatedAt(), count);
     }
 }

@@ -4,6 +4,7 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { GalleryComponent } from './gallery.component';
 import { AssetService } from '../../core/services/asset.service';
+import { AlbumService } from '../../core/services/album.service';
 import { FolderService } from '../../core/services/folder.service';
 import { Asset } from '../../core/models/asset.model';
 import { PaginatedData } from '../../core/models/paginated-data.model';
@@ -49,12 +50,17 @@ describe('GalleryComponent', () => {
       getFolders: cy.stub().returns(of([])),
     };
 
+    const albumServiceStub: Partial<AlbumService> = {
+      getAlbums: cy.stub().returns(of([])),
+    };
+
     return cy.mount(GalleryComponent, {
       providers: [
         provideNoopAnimations(),
         provideRouter([]),
         { provide: AssetService, useValue: assetServiceStub },
         { provide: FolderService, useValue: folderServiceStub },
+        { provide: AlbumService, useValue: albumServiceStub },
       ],
     }).then(result => ({ ...result, assetServiceStub }));
   }
