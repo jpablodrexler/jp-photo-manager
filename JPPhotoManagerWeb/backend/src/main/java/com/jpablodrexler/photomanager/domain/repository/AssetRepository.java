@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface AssetRepository extends JpaRepository<Asset, Long> {
+public interface AssetRepository extends JpaRepository<Asset, Long>, AssetRepositoryCustom {
 
     Page<Asset> findByFolder(Folder folder, Pageable pageable);
 
@@ -53,21 +53,4 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
     @Query("SELECT aa FROM Album a JOIN a.assets aa JOIN FETCH aa.folder WHERE a.albumId = :albumId")
     Page<Asset> findByAlbumId(@Param("albumId") Long albumId, Pageable pageable);
 
-    @Query("""
-            SELECT a FROM Asset a
-            JOIN FETCH a.folder
-            WHERE a.folder = :folder
-              AND a.deletedAt IS NULL
-              AND (:search IS NULL OR LOWER(a.fileName) LIKE :search)
-              AND (:dateFrom IS NULL OR a.fileCreationDateTime >= :dateFrom)
-              AND (:dateTo   IS NULL OR a.fileCreationDateTime <= :dateTo)
-              AND (:minRating IS NULL OR a.rating >= :minRating)
-            """)
-    Page<Asset> findByFolderWithFilters(
-            @Param("folder") Folder folder,
-            @Param("search") String search,
-            @Param("dateFrom") LocalDateTime dateFrom,
-            @Param("dateTo") LocalDateTime dateTo,
-            @Param("minRating") Integer minRating,
-            Pageable pageable);
 }
