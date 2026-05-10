@@ -117,7 +117,7 @@
         </div>
 
         <mat-select [(ngModel)]="selectedPresetId"
-                    (ngModelChange)="applyPreset(presets.find(p => p.presetId === $event)!)"
+                    (ngModelChange)="onPresetSelected($event)"
                     placeholder="Load preset"
                     class="preset-select">
           @for (preset of presets; track preset.presetId) {

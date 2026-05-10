@@ -565,6 +565,12 @@ export class GalleryComponent implements OnInit, OnDestroy {
       .subscribe({ next: (p) => (this.presets = p) });
   }
 
+  onPresetSelected(presetId: number | null): void {
+    if (presetId === null) return;
+    const preset = this.presets.find((p) => p.presetId === presetId);
+    if (preset) this.applyPreset(preset);
+  }
+
   applyPreset(preset: SearchPreset): void {
     this.searchTerm = preset.search ?? "";
     this.dateFrom = preset.dateFrom ? new Date(preset.dateFrom) : null;
