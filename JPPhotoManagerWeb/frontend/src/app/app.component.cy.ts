@@ -7,19 +7,28 @@ import { AppComponent } from './app.component';
 import { AuthService } from './core/services/auth.service';
 
 describe('AppComponent', () => {
-  beforeEach(() => {
-    cy.mount(AppComponent, {
+  function mountApp() {
+    const authServiceStub: Partial<AuthService> = {
+      isLoggedIn: () => true,
+      logout: (() => {}) as unknown as () => void,
+    };
+    const bpObsStub: Partial<BreakpointObserver> = {
+      observe: cy.stub().returns(of({ matches: false, breakpoints: {} })),
+    };
+    return cy.mount(AppComponent, {
       providers: [
         provideRouter([]),
         provideNoopAnimations(),
+        { provide: AuthService, useValue: authServiceStub },
+        { provide: BreakpointObserver, useValue: bpObsStub },
       ],
     });
-  });
+  }
+
+  beforeEach(() => { mountApp(); });
 
   it('should create the app', () => {
-    cy.mount(AppComponent, {
-      providers: [provideRouter([]), provideNoopAnimations()],
-    }).then(({ fixture }) => {
+    mountApp().then(({ fixture }) => {
       expect(fixture.componentInstance).to.be.ok;
     });
   });

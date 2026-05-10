@@ -72,10 +72,9 @@ describe('ConvertComponent', () => {
   it('addDefinition_whenAddButtonClicked_rendersNewRowInTable', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
-      cy.get('mat-row').should('have.length', 1);
+      cy.get('tr[mat-row]').should('have.length', 1);
       cy.get('button').contains('Add').click();
-      fixture.detectChanges();
-      cy.get('mat-row').should('have.length', 2);
+      cy.get('tr[mat-row]').should('have.length', 2);
     });
   });
 
@@ -83,8 +82,7 @@ describe('ConvertComponent', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
       cy.get('button').contains('Add').click();
-      fixture.detectChanges();
-      cy.get('mat-row').last().find('input').first().type('/new/source').should('have.value', '/new/source');
+      cy.get('tr[mat-row]').last().find('input').first().type('/new/source').should('have.value', '/new/source');
     });
   });
 
@@ -108,10 +106,9 @@ describe('ConvertComponent', () => {
   it('removeDefinition_whenDeleteButtonClicked_removesRowFromTable', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
-      cy.get('mat-row').should('have.length', 1);
+      cy.get('tr[mat-row]').should('have.length', 1);
       cy.get('[color="warn"]').first().click();
-      fixture.detectChanges();
-      cy.get('mat-row').should('have.length', 0);
+      cy.get('tr[mat-row]').should('have.length', 0);
     });
   });
 

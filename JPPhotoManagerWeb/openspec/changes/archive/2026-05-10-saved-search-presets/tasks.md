@@ -252,4 +252,4 @@
 - [x] 14.2 Add test: select the first preset from the dropdown; assert all filter fields (`searchTerm`, `dateFrom`, `dateTo`, `minRating`) are populated from the preset; assert `assetService.getAssets` is called with the restored filter values
 - [x] 14.3 Add test: click the save-preset button; type a name in the dialog; assert `searchPresetService.createPreset` is called with the current filter state and the entered name; assert the new preset appears in the dropdown
 - [x] 14.4 Add test: click the close icon on a preset option; assert `searchPresetService.deletePreset` is called with the correct `presetId`; assert the preset is removed from the dropdown
-- [ ] 14.5 Run `npm test` and confirm all tests pass
+- [x] 14.5 Run `npm test` and confirm all tests pass

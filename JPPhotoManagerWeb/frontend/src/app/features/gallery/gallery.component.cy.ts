@@ -573,6 +573,7 @@ describe('GalleryComponent', () => {
         { provide: FolderService, useValue: { getFolders: cy.stub().returns(of([])) } },
         { provide: AlbumService, useValue: { getAlbums: cy.stub().returns(of([])) } },
         { provide: BreakpointObserver, useValue: bpObs },
+        { provide: SearchPresetService, useValue: { listPresets: cy.stub().returns(of([])), createPreset: cy.stub().returns(of({})), deletePreset: cy.stub().returns(of(undefined)) } },
       ],
     });
 
