@@ -204,7 +204,7 @@ void execute(UUID userId);
 
 Each secondary port in `domain/port/out/` must be a plain Java interface. Representative contracts:
 
-### AssetRepositoryPort
+### AssetRepository
 
 ```java
 Optional<Asset> findById(Long id);
@@ -218,7 +218,7 @@ long countTotal();
 long countDeleted();
 ```
 
-### FolderRepositoryPort
+### FolderRepository
 
 ```java
 Optional<Folder> findById(Long id);
@@ -266,7 +266,7 @@ graph LR
             DSVC["domain/service/\nFindDuplicatedAssetsService"]
         end
         subgraph PortOut["domain/port/out — Driven Ports"]
-            REPO_P["AssetRepositoryPort\nFolderRepositoryPort\nAlbumRepositoryPort\n… 11 repository ports"]
+            REPO_P["AssetRepository\nFolderRepository\nAlbumRepository\n… 11 repository ports"]
             SVC_P["StoragePort · ThumbnailPort\nHashCalculatorPort · JwtTokenPort"]
         end
     end

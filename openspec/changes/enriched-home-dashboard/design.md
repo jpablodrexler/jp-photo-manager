@@ -3,11 +3,11 @@
 `GET /api/home/stats` currently returns a single `HomeStats` record with three fields: `folderCount`, `assetCount`, and `lastCatalogCompletedAt`. The `HomeComponent` renders these as three `MatCard` tiles and nothing else. The page is stateless — it loads once on navigation and has no interactive elements.
 
 The backend already has all the data needed to power a richer dashboard:
-- `AssetRepositoryPort` can count assets grouped by folder and sum file sizes.
+- `AssetRepository` can count assets grouped by folder and sum file sizes.
 - `FindDuplicatedAssetsService` already computes duplicate groups for the `/duplicates` route.
-- `AssetRepositoryPort` can return the most recently cataloged assets ordered by `thumbnailCreationDateTime`.
+- `AssetRepository` can return the most recently cataloged assets ordered by `thumbnailCreationDateTime`.
 
-> **Architecture note:** This design targets the post-hexagonal-architecture backend. Business logic lives in `application/usecase/home/GetHomeStatsUseCaseImpl`, repository queries are declared on `domain/port/out/AssetRepositoryPort` and implemented in `infrastructure/persistence/adapter/AssetRepositoryAdapter`, and projections are defined in `infrastructure/persistence/jpa/`.
+> **Architecture note:** This design targets the post-hexagonal-architecture backend. Business logic lives in `application/usecase/home/GetHomeStatsUseCaseImpl`, repository queries are declared on `domain/port/out/AssetRepository` and implemented in `infrastructure/persistence/adapter/AssetRepositoryAdapter`, and projections are defined in `infrastructure/persistence/jpa/`.
 
 No new tables, migrations, or external dependencies are needed.
 

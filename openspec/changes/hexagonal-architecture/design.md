@@ -163,17 +163,17 @@ com.jpablodrexler.photomanager/
 │   │   │       ├── UpdatePasswordUseCase.java
 │   │   │       └── DeleteUserUseCase.java
 │   │   └── out/                                  ← secondary / driven port interfaces
-│   │       ├── AssetRepositoryPort.java
-│   │       ├── AssetExifRepositoryPort.java
-│   │       ├── FolderRepositoryPort.java
-│   │       ├── AlbumRepositoryPort.java
-│   │       ├── UserRepositoryPort.java
-│   │       ├── RefreshTokenRepositoryPort.java
-│   │       ├── SearchPresetRepositoryPort.java
-│   │       ├── SyncConfigRepositoryPort.java
-│   │       ├── ConvertConfigRepositoryPort.java
-│   │       ├── CatalogStateRepositoryPort.java
-│   │       ├── RecentTargetPathRepositoryPort.java
+│   │       ├── AssetRepository.java
+│   │       ├── AssetExifRepository.java
+│   │       ├── FolderRepository.java
+│   │       ├── AlbumRepository.java
+│   │       ├── UserRepository.java
+│   │       ├── RefreshTokenRepository.java
+│   │       ├── SearchPresetRepository.java
+│   │       ├── SyncConfigRepository.java
+│   │       ├── ConvertConfigRepository.java
+│   │       ├── CatalogStateRepository.java
+│   │       ├── RecentTargetPathRepository.java
 │   │       ├── StoragePort.java
 │   │       ├── ThumbnailPort.java
 │   │       ├── HashCalculatorPort.java

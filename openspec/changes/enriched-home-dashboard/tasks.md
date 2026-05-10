@@ -8,16 +8,16 @@
 
 ## 2. Backend: Repository Port and Adapter
 
-- [ ] 2.1 Add `long sumFileSize()` method to `domain/port/out/AssetRepositoryPort`; implement in `infrastructure/persistence/adapter/AssetRepositoryAdapter` using a JPQL `@Query` on `JpaAssetRepository` that returns `SUM(a.fileSize)` across all non-deleted assets
-- [ ] 2.2 Add `long countDuplicates()` method to `domain/port/out/AssetRepositoryPort`; implement in `AssetRepositoryAdapter` using a JPQL `@Query` on `JpaAssetRepository` that counts assets whose hash appears more than once (scalar subquery approach)
-- [ ] 2.3 Add `List<FolderStat> findTopFoldersByAssetCount(int limit)` to `domain/port/out/AssetRepositoryPort`; create `FolderAssetCount` Spring Data interface projection in `infrastructure/persistence/jpa/`; implement in `AssetRepositoryAdapter` using a `GROUP BY` JPQL query on `JpaAssetRepository` returning folder path and count ordered descending
-- [ ] 2.4 Add `List<Asset> findRecentAssets(int limit)` to `domain/port/out/AssetRepositoryPort`; implement in `AssetRepositoryAdapter` by querying `JpaAssetRepository` with the `AssetSummary` projection ordered by `thumbnailCreationDateTime DESC`, then mapping to domain `Asset` objects
+- [ ] 2.1 Add `long sumFileSize()` method to `domain/port/out/AssetRepository`; implement in `infrastructure/persistence/adapter/AssetRepositoryAdapter` using a JPQL `@Query` on `JpaAssetRepository` that returns `SUM(a.fileSize)` across all non-deleted assets
+- [ ] 2.2 Add `long countDuplicates()` method to `domain/port/out/AssetRepository`; implement in `AssetRepositoryAdapter` using a JPQL `@Query` on `JpaAssetRepository` that counts assets whose hash appears more than once (scalar subquery approach)
+- [ ] 2.3 Add `List<FolderStat> findTopFoldersByAssetCount(int limit)` to `domain/port/out/AssetRepository`; create `FolderAssetCount` Spring Data interface projection in `infrastructure/persistence/jpa/`; implement in `AssetRepositoryAdapter` using a `GROUP BY` JPQL query on `JpaAssetRepository` returning folder path and count ordered descending
+- [ ] 2.4 Add `List<Asset> findRecentAssets(int limit)` to `domain/port/out/AssetRepository`; implement in `AssetRepositoryAdapter` by querying `JpaAssetRepository` with the `AssetSummary` projection ordered by `thumbnailCreationDateTime DESC`, then mapping to domain `Asset` objects
 
 ## 3. Backend: Use Case and Controller
 
-- [ ] 3.1 Update `application/usecase/home/GetHomeStatsUseCaseImpl` to call the four new `AssetRepositoryPort` methods and populate the extended `HomeStats` record; wrap each new call in a null-safe guard for empty libraries
+- [ ] 3.1 Update `application/usecase/home/GetHomeStatsUseCaseImpl` to call the four new `AssetRepository` methods and populate the extended `HomeStats` record; wrap each new call in a null-safe guard for empty libraries
 - [ ] 3.2 Verify `infrastructure/web/controller/HomeController` delegates to `GetHomeStatsUseCase` — no HTTP changes needed; same endpoint, same path; update any DTO mapping in `infrastructure/web/mapper/` if the controller uses an HTTP-layer DTO
-- [ ] 3.3 Write unit tests for `GetHomeStatsUseCaseImpl`: verify each new field is populated correctly; mock `AssetRepositoryPort`; cover the empty-library case
+- [ ] 3.3 Write unit tests for `GetHomeStatsUseCaseImpl`: verify each new field is populated correctly; mock `AssetRepository`; cover the empty-library case
 
 ## 4. Backend: API Tests
 

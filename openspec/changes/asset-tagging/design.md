@@ -2,7 +2,7 @@
 
 Assets currently carry three forms of user-assigned metadata: folder path (implicit from disk location), album membership (many-to-many via `album_assets`), and star rating (integer 0–5 on the `Asset` domain model). Tags are the missing lightweight labeling primitive — free-form keywords that can span folders and compose with the existing search and filter system.
 
-The existing filter pipeline (`GET /api/assets` → `GetAssetsUseCase` → `AssetRepositoryPort`) already composes multiple optional predicates via `AssetFilter`. Tags integrate as one more optional field on `AssetFilter`, minimizing changes to the query layer.
+The existing filter pipeline (`GET /api/assets` → `GetAssetsUseCase` → `AssetRepository`) already composes multiple optional predicates via `AssetFilter`. Tags integrate as one more optional field on `AssetFilter`, minimizing changes to the query layer.
 
 > **Architecture note:** This design targets the post-hexagonal-architecture backend. JPA entities live in `infrastructure/persistence/entity/`, domain models in `domain/model/`, use-case logic in `application/usecase/`, and controllers in `infrastructure/web/controller/`.
 

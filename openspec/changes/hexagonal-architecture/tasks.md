@@ -6,17 +6,17 @@
 
 ## Phase 2 — Driven Port Interfaces (port/out)
 
-- [ ] 2.1 Create `domain/port/out/AssetRepositoryPort.java` — plain Java interface with methods: `Optional<Asset> findById(Long id)`, `Optional<Asset> findByFolderAndFileName(Folder folder, String fileName)`, `PaginatedResult<Asset> findFiltered(AssetFilter filter)`, `List<Asset> findByFolder(Folder folder)`, `List<Asset> findAll()`, `Asset save(Asset asset)`, `void delete(Long id)` — use domain model types only, no Spring or JPA imports
-- [ ] 2.2 Create `domain/port/out/AssetExifRepositoryPort.java`
-- [ ] 2.3 Create `domain/port/out/FolderRepositoryPort.java`
-- [ ] 2.4 Create `domain/port/out/AlbumRepositoryPort.java`
-- [ ] 2.5 Create `domain/port/out/UserRepositoryPort.java`
-- [ ] 2.6 Create `domain/port/out/RefreshTokenRepositoryPort.java`
-- [ ] 2.7 Create `domain/port/out/SearchPresetRepositoryPort.java`
-- [ ] 2.8 Create `domain/port/out/SyncConfigRepositoryPort.java`
-- [ ] 2.9 Create `domain/port/out/ConvertConfigRepositoryPort.java`
-- [ ] 2.10 Create `domain/port/out/CatalogStateRepositoryPort.java`
-- [ ] 2.11 Create `domain/port/out/RecentTargetPathRepositoryPort.java`
+- [ ] 2.1 Create `domain/port/out/AssetRepository.java` — plain Java interface with methods: `Optional<Asset> findById(Long id)`, `Optional<Asset> findByFolderAndFileName(Folder folder, String fileName)`, `PaginatedResult<Asset> findFiltered(AssetFilter filter)`, `List<Asset> findByFolder(Folder folder)`, `List<Asset> findAll()`, `Asset save(Asset asset)`, `void delete(Long id)` — use domain model types only, no Spring or JPA imports
+- [ ] 2.2 Create `domain/port/out/AssetExifRepository.java`
+- [ ] 2.3 Create `domain/port/out/FolderRepository.java`
+- [ ] 2.4 Create `domain/port/out/AlbumRepository.java`
+- [ ] 2.5 Create `domain/port/out/UserRepository.java`
+- [ ] 2.6 Create `domain/port/out/RefreshTokenRepository.java`
+- [ ] 2.7 Create `domain/port/out/SearchPresetRepository.java`
+- [ ] 2.8 Create `domain/port/out/SyncConfigRepository.java`
+- [ ] 2.9 Create `domain/port/out/ConvertConfigRepository.java`
+- [ ] 2.10 Create `domain/port/out/CatalogStateRepository.java`
+- [ ] 2.11 Create `domain/port/out/RecentTargetPathRepository.java`
 - [ ] 2.12 Create `domain/port/out/StoragePort.java` — mirror the existing `domain/service/StorageService.java` interface signature but use domain model types; remove `java.awt.image.BufferedImage` from the port if it belongs in the adapter
 - [ ] 2.13 Create `domain/port/out/ThumbnailPort.java`
 - [ ] 2.14 Create `domain/port/out/HashCalculatorPort.java`
@@ -29,7 +29,7 @@
 - [ ] 3.1 Create `infrastructure/persistence/entity/` package; rename/copy each `domain/entity/*.java` to `infrastructure/persistence/entity/*Entity.java` — preserve all JPA annotations; update `@Table`, `@Entity`, `@ManyToOne` etc. to reference entity classes within the same package
 - [ ] 3.2 Create `infrastructure/persistence/jpa/` package; move each `domain/repository/*.java` interface to `infrastructure/persistence/jpa/Jpa*.java`; update generic type parameters to use `*Entity` classes
 - [ ] 3.3 Create `infrastructure/persistence/mapper/` with one mapper per entity type (e.g. `AssetEntityMapper`) converting between `AssetEntity` ↔ `Asset` domain model; use MapStruct `@Mapper` or hand-write if conversion logic is non-trivial
-- [ ] 3.4 Create `infrastructure/persistence/adapter/AssetRepositoryAdapter.java` — annotate `@Service`; inject `JpaAssetRepository` + `AssetEntityMapper`; implement all methods of `AssetRepositoryPort` by delegating to the JPA repository and mapping results
+- [ ] 3.4 Create `infrastructure/persistence/adapter/AssetRepositoryAdapter.java` — annotate `@Service`; inject `JpaAssetRepository` + `AssetEntityMapper`; implement all methods of `AssetRepository` by delegating to the JPA repository and mapping results
 - [ ] 3.5 Create remaining adapter classes: `AssetExifRepositoryAdapter`, `FolderRepositoryAdapter`, `AlbumRepositoryAdapter`, `UserRepositoryAdapter`, `RefreshTokenRepositoryAdapter`, `SearchPresetRepositoryAdapter`, `SyncConfigRepositoryAdapter`, `ConvertConfigRepositoryAdapter`, `CatalogStateRepositoryAdapter`, `RecentTargetPathRepositoryAdapter`
 - [ ] 3.6 Delete `domain/entity/` package
 - [ ] 3.7 Delete `domain/repository/` package
