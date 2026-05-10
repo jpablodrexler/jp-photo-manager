@@ -116,6 +116,25 @@
           <span class="filter-rating-label">{{ minRating > 0 ? minRating + '★ +' : 'Any rating' }}</span>
         </div>
 
+        <mat-select [(ngModel)]="selectedPresetId"
+                    (ngModelChange)="applyPreset(presets.find(p => p.presetId === $event)!)"
+                    placeholder="Load preset"
+                    class="preset-select">
+          @for (preset of presets; track preset.presetId) {
+            <mat-option [value]="preset.presetId">
+              {{ preset.name }}
+              <button mat-icon-button class="preset-delete-btn"
+                      (click)="deletePreset(preset, $event)">
+                <mat-icon>close</mat-icon>
+              </button>
+            </mat-option>
+          }
+        </mat-select>
+
+        <button mat-icon-button (click)="saveCurrentFiltersAsPreset()" title="Save as preset">
+          <mat-icon>bookmark_add</mat-icon>
+        </button>
+
         <button mat-icon-button (click)="clearFilters(); loadAssets()" title="Clear filters">
           <mat-icon>filter_alt_off</mat-icon>
         </button>

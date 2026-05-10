@@ -7,8 +7,10 @@ import { GalleryComponent } from './gallery.component';
 import { AssetService } from '../../core/services/asset.service';
 import { AlbumService } from '../../core/services/album.service';
 import { FolderService } from '../../core/services/folder.service';
+import { SearchPresetService } from '../../core/services/search-preset.service';
 import { Asset } from '../../core/models/asset.model';
 import { PaginatedData } from '../../core/models/paginated-data.model';
+import { SearchPreset } from '../../core/models/search-preset.model';
 
 describe('GalleryComponent', () => {
   const mockAssets: Asset[] = [
@@ -40,7 +42,10 @@ describe('GalleryComponent', () => {
 
   const emptyPage: PaginatedData<Asset> = { items: [], pageIndex: 0, totalPages: 0, totalItems: 0 };
 
-  function mountGallery(assetServiceOverrides: Partial<AssetService> = {}) {
+  function mountGallery(
+    assetServiceOverrides: Partial<AssetService> = {},
+    searchPresetServiceOverrides: Partial<SearchPresetService> = {}
+  ) {
     const assetServiceStub: Partial<AssetService> = {
       getAssets: cy.stub().returns(of(emptyPage)),
       catalogAssets: cy.stub(),
@@ -57,6 +62,13 @@ describe('GalleryComponent', () => {
       getAlbums: cy.stub().returns(of([])),
     };
 
+    const searchPresetServiceStub: Partial<SearchPresetService> = {
+      listPresets: cy.stub().returns(of([])),
+      createPreset: cy.stub().returns(of({})),
+      deletePreset: cy.stub().returns(of(undefined)),
+      ...searchPresetServiceOverrides,
+    };
+
     return cy.mount(GalleryComponent, {
       providers: [
         provideNoopAnimations(),
@@ -64,8 +76,9 @@ describe('GalleryComponent', () => {
         { provide: AssetService, useValue: assetServiceStub },
         { provide: FolderService, useValue: folderServiceStub },
         { provide: AlbumService, useValue: albumServiceStub },
+        { provide: SearchPresetService, useValue: searchPresetServiceStub },
       ],
-    }).then(result => ({ ...result, assetServiceStub }));
+    }).then(result => ({ ...result, assetServiceStub, searchPresetServiceStub }));
   }
 
   it('should create the component', () => {
@@ -640,5 +653,87 @@ describe('GalleryComponent', () => {
     });
 
     cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'RATING');
+  });
+
+  // --- Search preset tests ---
+
+  const mockPresets: SearchPreset[] = [
+    { presetId: 1, name: 'Vacation 3-star', createdAt: '2024-06-01T00:00:00Z', search: 'vacation', minRating: 3 },
+    { presetId: 2, name: '2024 photos', createdAt: '2024-06-02T00:00:00Z', dateFrom: '2024-01-01', dateTo: '2024-12-31' },
+  ];
+
+  it('presetDropdown_withTwoPresets_rendersBothPresetNames', () => {
+    const listPresets = cy.stub().returns(of(mockPresets));
+
+    mountGallery({}, { listPresets }).then(({ fixture }) => {
+      fixture.detectChanges();
+    });
+
+    cy.get('mat-select.preset-select').click();
+    cy.get('mat-option').should('contain', 'Vacation 3-star');
+    cy.get('mat-option').should('contain', '2024 photos');
+  });
+
+  it('applyPreset_selectFirstPreset_populatesFilterFieldsAndCallsGetAssets', () => {
+    const listPresets = cy.stub().returns(of(mockPresets));
+    const getAssets = cy.stub().returns(of(emptyPage));
+
+    mountGallery({ getAssets }, { listPresets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.applyPreset(mockPresets[0]);
+      expect(component.searchTerm).to.equal('vacation');
+      expect(component.minRating).to.equal(3);
+    });
+
+    cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'FILE_NAME', 'vacation', undefined, undefined, 3);
+  });
+
+  it('applyPreset_presetWithDateRange_populatesDateFieldsAndCallsGetAssets', () => {
+    const listPresets = cy.stub().returns(of(mockPresets));
+    const getAssets = cy.stub().returns(of(emptyPage));
+
+    mountGallery({ getAssets }, { listPresets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.applyPreset(mockPresets[1]);
+      expect(component.dateFrom).to.not.be.null;
+      expect(component.dateTo).to.not.be.null;
+      expect(component.minRating).to.equal(0);
+    });
+
+    cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'FILE_NAME', undefined, '2024-01-01', '2024-12-31', undefined);
+  });
+
+  it('saveCurrentFiltersAsPreset_confirmDialog_callsCreatePresetAndAppendsToList', () => {
+    const newPreset: SearchPreset = { presetId: 3, name: 'Birthday 2024', createdAt: '2024-06-03T00:00:00Z', search: 'birthday' };
+    const createPreset = cy.stub().returns(of(newPreset));
+    const listPresets = cy.stub().returns(of([]));
+
+    mountGallery({}, { listPresets, createPreset }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.searchTerm = 'birthday';
+      component.saveCurrentFiltersAsPreset();
+    });
+
+    cy.get('app-save-preset-dialog input[matInput]').type('Birthday 2024');
+    cy.get('app-save-preset-dialog button').contains('Save').click();
+
+    cy.wrap(createPreset).should('have.been.calledOnce');
+    cy.wrap(createPreset).should('have.been.calledWithMatch', { name: 'Birthday 2024', search: 'birthday' });
+  });
+
+  it('deletePreset_clickCloseIcon_callsDeletePresetAndRemovesFromList', () => {
+    const deletePreset = cy.stub().returns(of(undefined));
+    const listPresets = cy.stub().returns(of(mockPresets));
+
+    mountGallery({}, { listPresets, deletePreset }).then(({ fixture }) => {
+      fixture.detectChanges();
+    });
+
+    cy.get('mat-select.preset-select').click();
+    cy.get('mat-option').first().find('button.preset-delete-btn').click({ force: true });
+
+    cy.wrap(deletePreset).should('have.been.calledWith', 1);
   });
 });

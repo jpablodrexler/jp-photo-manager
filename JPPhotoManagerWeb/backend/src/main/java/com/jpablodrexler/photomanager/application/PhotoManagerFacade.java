@@ -8,6 +8,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+import com.jpablodrexler.photomanager.api.dto.CreatePresetRequest;
+import com.jpablodrexler.photomanager.api.dto.SearchPresetDto;
 import com.jpablodrexler.photomanager.application.dto.AlbumData;
 import com.jpablodrexler.photomanager.application.dto.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
@@ -88,4 +90,10 @@ public interface PhotoManagerFacade {
     void restoreAssets(List<Long> assetIds);
 
     void purgeRecycleBin(List<Long> assetIds);
+
+    List<SearchPresetDto> listSearchPresets(UUID userId);
+
+    SearchPresetDto saveSearchPreset(UUID userId, CreatePresetRequest request);
+
+    void deleteSearchPreset(UUID userId, Long presetId);
 }

@@ -33,7 +33,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jpablodrexler.photomanager.api.dto.CreatePresetRequest;
+import com.jpablodrexler.photomanager.api.dto.SearchPresetDto;
 import com.jpablodrexler.photomanager.api.exception.FolderNotFoundException;
+import com.jpablodrexler.photomanager.application.dto.FilterPreset;
+import com.jpablodrexler.photomanager.domain.entity.SearchPreset;
+import com.jpablodrexler.photomanager.domain.service.SearchPresetService;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -80,6 +87,8 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
     private final AlbumService albumService;
     private final AlbumRepository albumRepository;
     private final RecycleBinService recycleBinService;
+    private final SearchPresetService searchPresetService;
+    private final ObjectMapper objectMapper;
 
     @Value("${photomanager.initial-directory:${user.home}/Pictures}")
     private String initialDirectory;
@@ -405,6 +414,46 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
         } else {
             recycleBinService.purgeAssets(assetIds);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SearchPresetDto> listSearchPresets(UUID userId) {
+        return searchPresetService.listPresets(userId).stream()
+                .map(this::toSearchPresetDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public SearchPresetDto saveSearchPreset(UUID userId, CreatePresetRequest request) {
+        FilterPreset filter = new FilterPreset(request.search(), request.dateFrom(), request.dateTo(), request.minRating());
+        SearchPreset preset = searchPresetService.createPreset(userId, request.name(), filter);
+        return toSearchPresetDto(preset);
+    }
+
+    @Override
+    @Transactional
+    public void deleteSearchPreset(UUID userId, Long presetId) {
+        searchPresetService.deletePreset(userId, presetId);
+    }
+
+    private SearchPresetDto toSearchPresetDto(SearchPreset preset) {
+        FilterPreset filter;
+        try {
+            filter = objectMapper.readValue(preset.getFilterJson(), FilterPreset.class);
+        } catch (JsonProcessingException e) {
+            filter = new FilterPreset(null, null, null, null);
+        }
+        return new SearchPresetDto(
+                preset.getPresetId(),
+                preset.getName(),
+                preset.getCreatedAt(),
+                filter.search(),
+                filter.dateFrom(),
+                filter.dateTo(),
+                filter.minRating()
+        );
     }
 
     private AlbumData toAlbumData(Album album) {

@@ -87,6 +87,21 @@
   mat-form-field { margin-bottom: -1.25em; }
 }
 
+.preset-select {
+  width: 180px;
+  font-size: 13px;
+}
+
+.preset-delete-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+}
+
 .filter-rating {
   display: flex;
   align-items: center;

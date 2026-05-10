@@ -1,39 +1,49 @@
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatSelectModule } from '@angular/material/select';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { ScrollingModule } from '@angular/cdk/scrolling';
-import { FolderNavComponent } from '../folder-nav/folder-nav.component';
-import { ThumbnailComponent } from '../../shared/components/thumbnail/thumbnail.component';
-import { ExifPanelComponent } from '../../shared/components/exif-panel/exif-panel.component';
-import { AssetService } from '../../core/services/asset.service';
-import { AlbumService } from '../../core/services/album.service';
-import { Asset, SortCriteria } from '../../core/models/asset.model';
-import { AlbumSummary } from '../../core/models/album.model';
-import { PaginatedData } from '../../core/models/paginated-data.model';
-import { FileSizePipe } from '../../shared/pipes/file-size.pipe';
-import { DropZoneComponent } from './drop-zone/drop-zone.component';
-import { AddToAlbumDialogComponent } from './add-to-album-dialog/add-to-album-dialog.component';
+import {
+  Component,
+  ElementRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
+import { MatToolbarModule } from "@angular/material/toolbar";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatDatepickerModule } from "@angular/material/datepicker";
+import { MatNativeDateModule } from "@angular/material/core";
+import { MatSelectModule } from "@angular/material/select";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatMenuModule } from "@angular/material/menu";
+import { MatProgressBarModule } from "@angular/material/progress-bar";
+import { MatSidenavModule } from "@angular/material/sidenav";
+import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
+import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { BreakpointObserver, Breakpoints } from "@angular/cdk/layout";
+import { Subject, Subscription } from "rxjs";
+import { debounceTime, distinctUntilChanged } from "rxjs/operators";
+import { ScrollingModule } from "@angular/cdk/scrolling";
+import { FolderNavComponent } from "../folder-nav/folder-nav.component";
+import { ThumbnailComponent } from "../../shared/components/thumbnail/thumbnail.component";
+import { ExifPanelComponent } from "../../shared/components/exif-panel/exif-panel.component";
+import { AssetService } from "../../core/services/asset.service";
+import { AlbumService } from "../../core/services/album.service";
+import { SearchPresetService } from "../../core/services/search-preset.service";
+import { Asset, SortCriteria } from "../../core/models/asset.model";
+import { AlbumSummary } from "../../core/models/album.model";
+import { SearchPreset } from "../../core/models/search-preset.model";
+import { PaginatedData } from "../../core/models/paginated-data.model";
+import { FileSizePipe } from "../../shared/pipes/file-size.pipe";
+import { DropZoneComponent } from "./drop-zone/drop-zone.component";
+import { AddToAlbumDialogComponent } from "./add-to-album-dialog/add-to-album-dialog.component";
+import { SavePresetDialogComponent } from "./save-preset-dialog/save-preset-dialog.component";
 
-type ViewMode = 'thumbnails' | 'viewer' | 'slideshow';
+type ViewMode = "thumbnails" | "viewer" | "slideshow";
 
 @Component({
-  selector: 'app-gallery',
+  selector: "app-gallery",
   standalone: true,
   imports: [
     CommonModule,
@@ -55,26 +65,24 @@ type ViewMode = 'thumbnails' | 'viewer' | 'slideshow';
     FolderNavComponent,
     ThumbnailComponent,
     ExifPanelComponent,
-    FileSizePipe,
-    DropZoneComponent
+    DropZoneComponent,
   ],
-  templateUrl: './gallery.component.html',
-  styleUrl: './gallery.component.scss'
+  templateUrl: "./gallery.component.html",
+  styleUrl: "./gallery.component.scss",
 })
 export class GalleryComponent implements OnInit, OnDestroy {
-
-  @ViewChild('scrollSentinel') private sentinel!: ElementRef<HTMLDivElement>;
+  @ViewChild("scrollSentinel") private sentinel!: ElementRef<HTMLDivElement>;
   private observer: IntersectionObserver | null = null;
 
   isMobile = false;
   sidenavOpen = true;
   private bpSub!: Subscription;
 
-  currentFolder: string = '';
-  viewMode: ViewMode = 'thumbnails';
-  sortCriteria: SortCriteria = 'FILE_NAME';
+  currentFolder: string = "";
+  viewMode: ViewMode = "thumbnails";
+  sortCriteria: SortCriteria = "FILE_NAME";
 
-  searchTerm = '';
+  searchTerm = "";
   dateFrom: Date | null = null;
   dateTo: Date | null = null;
   minRating = 0;
@@ -91,42 +99,51 @@ export class GalleryComponent implements OnInit, OnDestroy {
   slideshowResetTick = false;
   readonly intervalOptions = [3, 5, 10, 15];
   userAlbums: AlbumSummary[] = [];
+  presets: SearchPreset[] = [];
+  selectedPresetId: number | null = null;
 
   pageIndex = 0;
   totalItems = 0;
   isLoading = false;
   allLoaded = false;
 
-  statusMessage = '';
+  statusMessage = "";
   showExifPanel = false;
 
   readonly sortOptions: { value: SortCriteria; label: string }[] = [
-    { value: 'FILE_NAME', label: 'File Name' },
-    { value: 'FILE_SIZE', label: 'File Size' },
-    { value: 'FILE_CREATION_DATE_TIME', label: 'Date Created' },
-    { value: 'FILE_MODIFICATION_DATE_TIME', label: 'Date Modified' },
-    { value: 'THUMBNAIL_CREATION_DATE_TIME', label: 'Date Cataloged' },
-    { value: 'RATING', label: 'Rating: High → Low' }
+    { value: "FILE_NAME", label: "File Name" },
+    { value: "FILE_SIZE", label: "File Size" },
+    { value: "FILE_CREATION_DATE_TIME", label: "Date Created" },
+    { value: "FILE_MODIFICATION_DATE_TIME", label: "Date Modified" },
+    { value: "THUMBNAIL_CREATION_DATE_TIME", label: "Date Cataloged" },
+    { value: "RATING", label: "Rating: High → Low" },
   ];
 
   constructor(
     private assetService: AssetService,
     private albumService: AlbumService,
+    private searchPresetService: SearchPresetService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
-    private breakpointObserver: BreakpointObserver
+    private breakpointObserver: BreakpointObserver,
   ) {}
 
   ngOnInit(): void {
-    this.searchSubscription = this.searchSubject.pipe(
-      debounceTime(400),
-      distinctUntilChanged()
-    ).subscribe(() => { this.pageIndex = 0; this.loadAssets(); });
+    this.searchSubscription = this.searchSubject
+      .pipe(debounceTime(400), distinctUntilChanged())
+      .subscribe(() => {
+        this.pageIndex = 0;
+        this.loadAssets();
+      });
 
-    this.bpSub = this.breakpointObserver.observe([Breakpoints.Handset]).subscribe(result => {
-      this.isMobile = result.matches;
-      this.sidenavOpen = !result.matches;
-    });
+    this.bpSub = this.breakpointObserver
+      .observe([Breakpoints.Handset])
+      .subscribe((result) => {
+        this.isMobile = result.matches;
+        this.sidenavOpen = !result.matches;
+      });
+
+    this.loadPresets();
   }
 
   ngOnDestroy(): void {
@@ -142,13 +159,15 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   onFolderSelected(folderPath: string): void {
     this.currentFolder = folderPath;
-    if (this.isMobile) { this.sidenavOpen = false; }
+    if (this.isMobile) {
+      this.sidenavOpen = false;
+    }
     this.clearFilters();
     this.selectedAssets.clear();
     this.disconnectObserver();
     this.albumService.getAlbums().subscribe({
-      next: albums => (this.userAlbums = albums),
-      error: () => {}
+      next: (albums) => (this.userAlbums = albums),
+      error: () => {},
     });
     Promise.resolve().then(() => {
       this.setupSentinelObserver();
@@ -174,8 +193,13 @@ export class GalleryComponent implements OnInit, OnDestroy {
   rateAsset(asset: Asset, star: number): void {
     const newRating = asset.rating === star ? 0 : star;
     this.assetService.rateAsset(asset.assetId, newRating).subscribe({
-      next: () => { asset.rating = newRating; },
-      error: () => this.snackBar.open('Failed to rate asset', 'Dismiss', { duration: 3000 })
+      next: () => {
+        asset.rating = newRating;
+      },
+      error: () =>
+        this.snackBar.open("Failed to rate asset", "Dismiss", {
+          duration: 3000,
+        }),
     });
   }
 
@@ -184,7 +208,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   clearFilters(): void {
-    this.searchTerm = '';
+    this.searchTerm = "";
     this.dateFrom = null;
     this.dateTo = null;
     this.minRating = 0;
@@ -198,10 +222,23 @@ export class GalleryComponent implements OnInit, OnDestroy {
     if (this.isLoading || this.allLoaded || !this.currentFolder) return;
     this.isLoading = true;
     const search = this.searchTerm.trim() || undefined;
-    const dateFrom = this.dateFrom ? this.dateFrom.toISOString().substring(0, 10) : undefined;
-    const dateTo   = this.dateTo   ? this.dateTo.toISOString().substring(0, 10)   : undefined;
+    const dateFrom = this.dateFrom
+      ? this.dateFrom.toISOString().substring(0, 10)
+      : undefined;
+    const dateTo = this.dateTo
+      ? this.dateTo.toISOString().substring(0, 10)
+      : undefined;
     const minRating = this.minRating > 0 ? this.minRating : undefined;
-    this.assetService.getAssets(this.currentFolder, this.pageIndex, this.sortCriteria, search, dateFrom, dateTo, minRating)
+    this.assetService
+      .getAssets(
+        this.currentFolder,
+        this.pageIndex,
+        this.sortCriteria,
+        search,
+        dateFrom,
+        dateTo,
+        minRating,
+      )
       .subscribe({
         next: (data: PaginatedData<Asset>) => {
           this.assets = [...this.assets, ...data.items];
@@ -212,16 +249,20 @@ export class GalleryComponent implements OnInit, OnDestroy {
         },
         error: () => {
           this.isLoading = false;
-          this.snackBar.open('Failed to load assets', 'Dismiss', { duration: 3000 });
-        }
+          this.snackBar.open("Failed to load assets", "Dismiss", {
+            duration: 3000,
+          });
+        },
       });
   }
 
   setupSentinelObserver(): void {
     if (!this.sentinel?.nativeElement) return;
     this.observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting) this.loadNextPage(); },
-      { threshold: 0.1 }
+      (entries) => {
+        if (entries[0].isIntersecting) this.loadNextPage();
+      },
+      { threshold: 0.1 },
     );
     this.observer.observe(this.sentinel.nativeElement);
   }
@@ -257,32 +298,48 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   openViewer(index: number): void {
     this.currentViewerIndex = index;
-    this.viewMode = 'viewer';
+    this.viewMode = "viewer";
     this.viewerZoom = 1;
     this.showExifPanel = false;
   }
 
   closeViewer(): void {
-    this.viewMode = 'thumbnails';
+    this.viewMode = "thumbnails";
     this.showExifPanel = false;
   }
 
-  @HostListener('keydown', ['$event'])
+  @HostListener("keydown", ["$event"])
   onKeyDown(event: KeyboardEvent): void {
     switch (event.key) {
-      case 'Escape':
-        if (this.viewMode === 'slideshow') { this.exitSlideshow(); event.preventDefault(); }
+      case "Escape":
+        if (this.viewMode === "slideshow") {
+          this.exitSlideshow();
+          event.preventDefault();
+        }
         break;
-      case ' ':
-        if (this.viewMode === 'slideshow') { this.toggleSlideshowPlay(); event.preventDefault(); }
+      case " ":
+        if (this.viewMode === "slideshow") {
+          this.toggleSlideshowPlay();
+          event.preventDefault();
+        }
         break;
-      case 'ArrowLeft':
-        if (this.viewMode === 'slideshow') { this.stepSlideshow(-1); event.preventDefault(); }
-        else if (this.viewMode === 'viewer') { this.viewerPrev(); event.preventDefault(); }
+      case "ArrowLeft":
+        if (this.viewMode === "slideshow") {
+          this.stepSlideshow(-1);
+          event.preventDefault();
+        } else if (this.viewMode === "viewer") {
+          this.viewerPrev();
+          event.preventDefault();
+        }
         break;
-      case 'ArrowRight':
-        if (this.viewMode === 'slideshow') { this.stepSlideshow(1); event.preventDefault(); }
-        else if (this.viewMode === 'viewer') { this.viewerNext(); event.preventDefault(); }
+      case "ArrowRight":
+        if (this.viewMode === "slideshow") {
+          this.stepSlideshow(1);
+          event.preventDefault();
+        } else if (this.viewMode === "viewer") {
+          this.viewerNext();
+          event.preventDefault();
+        }
         break;
     }
   }
@@ -290,9 +347,12 @@ export class GalleryComponent implements OnInit, OnDestroy {
   startSlideshow(index: number): void {
     this.currentViewerIndex = index;
     this.viewerZoom = 1;
-    this.viewMode = 'slideshow';
+    this.viewMode = "slideshow";
     this.slideshowPlaying = true;
-    this.slideshowTimer = setInterval(() => this.advanceSlideshow(), this.slideshowInterval * 1000);
+    this.slideshowTimer = setInterval(
+      () => this.advanceSlideshow(),
+      this.slideshowInterval * 1000,
+    );
   }
 
   advanceSlideshow(): void {
@@ -302,8 +362,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
       this.slideshowResetTick = !this.slideshowResetTick;
     } else {
       this.stopSlideshow();
-      this.statusMessage = 'Slideshow complete';
-      setTimeout(() => { this.statusMessage = ''; }, 3000);
+      this.statusMessage = "Slideshow complete";
+      setTimeout(() => {
+        this.statusMessage = "";
+      }, 3000);
     }
   }
 
@@ -317,7 +379,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   resumeSlideshow(): void {
     this.slideshowPlaying = true;
-    this.slideshowTimer = setInterval(() => this.advanceSlideshow(), this.slideshowInterval * 1000);
+    this.slideshowTimer = setInterval(
+      () => this.advanceSlideshow(),
+      this.slideshowInterval * 1000,
+    );
   }
 
   toggleSlideshowPlay(): void {
@@ -335,7 +400,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   exitSlideshow(): void {
     this.stopSlideshow();
-    this.viewMode = 'viewer';
+    this.viewMode = "viewer";
   }
 
   stepSlideshow(direction: -1 | 1): void {
@@ -401,14 +466,16 @@ export class GalleryComponent implements OnInit, OnDestroy {
     const ids = Array.from(this.selectedAssets);
     if (ids.length === 0) return;
 
-    const snackRef = this.snackBar.open('Preparing download…', undefined, { duration: 0 });
+    const snackRef = this.snackBar.open("Preparing download…", undefined, {
+      duration: 0,
+    });
     this.assetService.downloadAssets(ids).subscribe({
-      next: blob => {
+      next: (blob) => {
         snackRef.dismiss();
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
-        a.download = 'photos.zip';
+        a.download = "photos.zip";
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -416,8 +483,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
       },
       error: () => {
         snackRef.dismiss();
-        this.snackBar.open('Failed to download assets', 'Dismiss', { duration: 3000 });
-      }
+        this.snackBar.open("Failed to download assets", "Dismiss", {
+          duration: 3000,
+        });
+      },
     });
   }
 
@@ -429,39 +498,122 @@ export class GalleryComponent implements OnInit, OnDestroy {
       next: () => {
         this.selectedAssets.clear();
         this.loadAssets();
-        this.snackBar.open(`Deleted ${ids.length} asset(s)`, undefined, { duration: 2000 });
+        this.snackBar.open(`Deleted ${ids.length} asset(s)`, undefined, {
+          duration: 2000,
+        });
       },
-      error: () => this.snackBar.open('Failed to delete assets', 'Dismiss', { duration: 3000 })
+      error: () =>
+        this.snackBar.open("Failed to delete assets", "Dismiss", {
+          duration: 3000,
+        }),
     });
   }
 
   addToAlbum(asset: Asset): void {
     const dialogRef = this.dialog.open(AddToAlbumDialogComponent, {
-      width: '400px',
-      data: { albums: this.userAlbums }
+      width: "400px",
+      data: { albums: this.userAlbums },
     });
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (!result) return;
       if (result.newAlbumName) {
         this.albumService.createAlbum({ name: result.newAlbumName }).subscribe({
-          next: album => {
+          next: (album) => {
             this.userAlbums = [...this.userAlbums, album];
-            this.albumService.addAssets(album.albumId, [asset.assetId]).subscribe({
-              next: () => this.snackBar.open(`Added to "${album.name}"`, undefined, { duration: 2000 }),
-              error: () => this.snackBar.open('Failed to add to album', 'Dismiss', { duration: 3000 })
-            });
+            this.albumService
+              .addAssets(album.albumId, [asset.assetId])
+              .subscribe({
+                next: () =>
+                  this.snackBar.open(`Added to "${album.name}"`, undefined, {
+                    duration: 2000,
+                  }),
+                error: () =>
+                  this.snackBar.open("Failed to add to album", "Dismiss", {
+                    duration: 3000,
+                  }),
+              });
           },
-          error: () => this.snackBar.open('Failed to create album', 'Dismiss', { duration: 3000 })
+          error: () =>
+            this.snackBar.open("Failed to create album", "Dismiss", {
+              duration: 3000,
+            }),
         });
       } else if (result.albumId) {
         this.albumService.addAssets(result.albumId, [asset.assetId]).subscribe({
           next: () => {
-            const album = this.userAlbums.find(a => a.albumId === result.albumId);
-            this.snackBar.open(`Added to "${album?.name ?? 'album'}"`, undefined, { duration: 2000 });
+            const album = this.userAlbums.find(
+              (a) => a.albumId === result.albumId,
+            );
+            this.snackBar.open(
+              `Added to "${album?.name ?? "album"}"`,
+              undefined,
+              { duration: 2000 },
+            );
           },
-          error: () => this.snackBar.open('Failed to add to album', 'Dismiss', { duration: 3000 })
+          error: () =>
+            this.snackBar.open("Failed to add to album", "Dismiss", {
+              duration: 3000,
+            }),
         });
       }
+    });
+  }
+
+  loadPresets(): void {
+    this.searchPresetService
+      .listPresets()
+      .subscribe({ next: (p) => (this.presets = p) });
+  }
+
+  applyPreset(preset: SearchPreset): void {
+    this.searchTerm = preset.search ?? "";
+    this.dateFrom = preset.dateFrom ? new Date(preset.dateFrom) : null;
+    this.dateTo = preset.dateTo ? new Date(preset.dateTo) : null;
+    this.minRating = preset.minRating ?? 0;
+    this.pageIndex = 0;
+    this.loadAssets();
+  }
+
+  saveCurrentFiltersAsPreset(): void {
+    const dialogRef = this.dialog.open(SavePresetDialogComponent, {
+      width: "360px",
+    });
+    dialogRef.afterClosed().subscribe((name) => {
+      if (!name) return;
+      const dateFrom = this.dateFrom
+        ? this.dateFrom.toISOString().substring(0, 10)
+        : undefined;
+      const dateTo = this.dateTo
+        ? this.dateTo.toISOString().substring(0, 10)
+        : undefined;
+      const req = {
+        name,
+        search: this.searchTerm.trim() || undefined,
+        dateFrom,
+        dateTo,
+        minRating: this.minRating > 0 ? this.minRating : undefined,
+      };
+      this.searchPresetService.createPreset(req).subscribe({
+        next: (preset) => {
+          this.presets = [...this.presets, preset];
+          this.snackBar.open("Preset saved", undefined, { duration: 2000 });
+        },
+      });
+    });
+  }
+
+  deletePreset(preset: SearchPreset, event: Event): void {
+    event.stopPropagation();
+    this.searchPresetService.deletePreset(preset.presetId).subscribe({
+      next: () => {
+        this.presets = this.presets.filter(
+          (p) => p.presetId !== preset.presetId,
+        );
+        if (this.selectedPresetId === preset.presetId) {
+          this.selectedPresetId = null;
+        }
+        this.snackBar.open("Preset deleted", undefined, { duration: 2000 });
+      },
     });
   }
 
