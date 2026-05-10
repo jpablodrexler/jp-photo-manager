@@ -127,7 +127,7 @@ class PhotoManagerFacadeTest {
 
         verify(assetRepository).findByFolderWithFilters(
                 eq(folder),
-                eq("vacation"),
+                eq("%vacation%"),
                 argThat(dt -> dt.toLocalDate().equals(dateFrom) && dt.toLocalTime().equals(LocalTime.MIDNIGHT)),
                 argThat(dt -> dt.toLocalDate().equals(dateTo) && dt.toLocalTime().equals(LocalTime.MAX)),
                 isNull(),

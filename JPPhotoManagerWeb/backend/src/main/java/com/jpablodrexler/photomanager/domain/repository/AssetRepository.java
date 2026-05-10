@@ -58,7 +58,7 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
             JOIN FETCH a.folder
             WHERE a.folder = :folder
               AND a.deletedAt IS NULL
-              AND (:search IS NULL OR LOWER(a.fileName) LIKE CONCAT('%', :search, '%'))
+              AND (:search IS NULL OR LOWER(a.fileName) LIKE :search)
               AND (:dateFrom IS NULL OR a.fileCreationDateTime >= :dateFrom)
               AND (:dateTo   IS NULL OR a.fileCreationDateTime <= :dateTo)
               AND (:minRating IS NULL OR a.rating >= :minRating)

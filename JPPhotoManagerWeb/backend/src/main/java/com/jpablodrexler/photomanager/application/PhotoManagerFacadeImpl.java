@@ -107,7 +107,7 @@ public class PhotoManagerFacadeImpl implements PhotoManagerFacade {
 
         Sort sort = buildSort(sortCriteria);
         PageRequest pageRequest = PageRequest.of(pageIndex, PAGE_SIZE, sort);
-        String searchParam = (search != null && !search.isBlank()) ? search.trim() : null;
+        String searchParam = (search != null && !search.isBlank()) ? "%" + search.trim().toLowerCase() + "%" : null;
         LocalDateTime dateFromDt = (dateFrom != null) ? dateFrom.atStartOfDay() : null;
         LocalDateTime dateToDt   = (dateTo   != null) ? dateTo.atTime(LocalTime.MAX) : null;
         Integer ratingFilter = (minRating != null && minRating > 0) ? minRating : null;
