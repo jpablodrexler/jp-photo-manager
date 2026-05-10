@@ -1,3 +1,5 @@
+> **Note:** This change is entirely frontend. It has no dependency on the `hexagonal-architecture` change and can be applied independently in any order. The `POST /api/assets/move` endpoint it calls already exists and its URL and request/response contract will not change after the hexagonal-architecture refactor.
+
 ## 1. Folder Picker Dialog Component
 
 - [ ] 1.1 Create `features/gallery/folder-picker-dialog/folder-picker-dialog.component.ts` as a standalone `MatDialog` component; inject `MAT_DIALOG_DATA` typed as `{ mode: 'move' | 'copy', assetCount: number }`

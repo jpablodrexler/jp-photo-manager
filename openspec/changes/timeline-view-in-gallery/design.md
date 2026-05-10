@@ -2,6 +2,8 @@
 
 The gallery currently renders assets in a flat paginated grid using `GET /api/assets`, with infinite scroll powered by an `IntersectionObserver`. Sort options include `FILE_CREATION_DATE_TIME` and `FILE_MODIFICATION_DATE_TIME`, but there is no visual grouping — a user who sorts by date sees thumbnails in order but has no way to tell where one day ends and another begins.
 
+> **Architecture note:** This design targets the post-hexagonal-architecture backend. The new endpoint is implemented as `GetAssetsTimelineUseCase` / `GetAssetsTimelineUseCaseImpl`, the domain group model is `TimelineGroup` in `domain/model/`, the HTTP DTO is `TimelineGroupDto` in `infrastructure/web/dto/`, and filtering reuses `AssetFilter` from `application/dto/`.
+
 The desired outcome is a **Timeline** view mode that groups assets by day (newest first) with month + day headings, while keeping all existing filters (search, date range, min rating, search presets) working identically.
 
 ## Goals / Non-Goals
@@ -62,7 +64,7 @@ The desired outcome is a **Timeline** view mode that groups assets by day (newes
 | Risk | Mitigation |
 |------|------------|
 | A day with 500+ photos causes a slow API response | Add a per-day item cap (e.g., 200) as a safety valve; surface the cap in the `TimelineGroupDto` with a `truncated: boolean` flag |
-| Timeline endpoint duplicates much of the asset-filter logic | Extract a shared `AssetFilterSpec` / Criteria API builder used by both endpoints |
+| Timeline endpoint duplicates much of the asset-filter logic | Reuse `AssetFilter` from `application/dto/` as the input to both `GetAssetsUseCase` and `GetAssetsTimelineUseCase`; shared Criteria API filtering lives in `AssetRepositoryAdapter` |
 | Sticky headers break on mobile with the sidenav overlay | Apply sticky only when `sidenavOpen` is false on mobile; fall back to non-sticky on small viewports |
 | No virtual scroll → large DOM on scroll | Limit `timelinePageSize` to 30 days; browser handles ~1500 thumbnail nodes well within that range |
 

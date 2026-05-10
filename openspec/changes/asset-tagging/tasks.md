@@ -1,30 +1,32 @@
+> **Prerequisite:** Apply the `hexagonal-architecture` change before this one. The tasks below target the post-refactor package structure: use-case interfaces in `domain/port/in/`, driven ports in `domain/port/out/`, use-case implementations in `application/usecase/`, controllers in `infrastructure/web/controller/`, HTTP DTOs in `infrastructure/web/dto/`, JPA entities in `infrastructure/persistence/entity/`.
+
 ## 1. Backend: Database Schema
 
 - [ ] 1.1 Write Flyway migration `V<next>__create_tags_tables.sql` creating the `tags` table (`tag_id SERIAL PK`, `name VARCHAR(100) NOT NULL UNIQUE`) and the `asset_tags` join table (`asset_id BIGINT FK`, `tag_id BIGINT FK`, `PK(asset_id, tag_id)`)
-- [ ] 1.2 Create `Tag` JPA entity in `domain/entity/` with `@ManyToMany` relationship to `Asset`
-- [ ] 1.3 Add `Set<Tag> tags` field to the `Asset` entity with the appropriate `@ManyToMany(fetch = LAZY)` and `@JoinTable` annotation
+- [ ] 1.2 Create `TagEntity` JPA entity in `infrastructure/persistence/entity/` with `@ManyToMany` relationship to `AssetEntity`; create matching plain POJO `Tag` in `domain/model/` with a `String name` field
+- [ ] 1.3 Add `Set<TagEntity> tags` field to `AssetEntity` in `infrastructure/persistence/entity/` with `@ManyToMany(fetch = LAZY)` and `@JoinTable`; add `Set<String> tags` field to the `Asset` domain model in `domain/model/`; update `AssetEntityMapper` to map between the two representations
 
-## 2. Backend: Repository and Domain Service
+## 2. Backend: Repository Ports and Use Cases
 
-- [ ] 2.1 Create `TagRepository` extending `JpaRepository<Tag, Long>` with a `findByNameContainingIgnoreCase(String q, Pageable p)` query method
-- [ ] 2.2 Add `addTag`, `removeTag`, `bulkAddTag`, `bulkRemoveTag`, and `listTags` method signatures to the `PhotoManagerFacade` interface
-- [ ] 2.3 Implement these methods in `PhotoManagerFacadeImpl`: normalize tag name to lowercase, create-or-find tag, manage join table entries, delete orphan tags after removal
-- [ ] 2.4 Extend the existing Criteria API asset filter in `AssetRepository` to accept an optional `Set<String> tags` predicate (AND semantics via `GROUP BY / HAVING COUNT`)
+- [ ] 2.1 Create `domain/port/out/TagRepositoryPort.java` — plain Java interface with methods: `Optional<Tag> findByName(String name)`, `List<Tag> findByNameContaining(String q, int limit)`, `Tag save(Tag tag)`, `void deleteById(Long id)`, `boolean isUsedByOtherAssets(Long tagId, Long excludeAssetId)`; create `infrastructure/persistence/jpa/JpaTagRepository.java` extending `JpaRepository<TagEntity, Long>`; create `infrastructure/persistence/adapter/TagRepositoryAdapter.java` implementing `TagRepositoryPort`
+- [ ] 2.2 Create use-case interfaces in `domain/port/in/tag/`: `AddTagToAssetUseCase.java` — `void execute(Long assetId, String name)`; `RemoveTagFromAssetUseCase.java` — `void execute(Long assetId, String name)`; `BulkAddTagUseCase.java` — `void execute(List<Long> assetIds, String name)`; `BulkRemoveTagUseCase.java` — `void execute(List<Long> assetIds, String name)`; `ListTagsUseCase.java` — `List<Tag> execute(String query)`
+- [ ] 2.3 Create use-case implementations in `application/usecase/tag/`: `AddTagToAssetUseCaseImpl`, `RemoveTagFromAssetUseCaseImpl`, `BulkAddTagUseCaseImpl`, `BulkRemoveTagUseCaseImpl`, `ListTagsUseCaseImpl`; each annotated `@Service @Transactional`; inject only `AssetRepositoryPort` and `TagRepositoryPort`; normalize tag name to lowercase, create-or-find tag, manage join table entries, delete orphan tags after removal
+- [ ] 2.4 Add `Set<String> tags` field to `application/dto/AssetFilter.java`; update the `AssetRepositoryAdapter` Criteria API implementation to apply the `tags` AND predicate when `filter.getTags()` is non-empty (AND semantics via `GROUP BY / HAVING COUNT`)
 
 ## 3. Backend: API Endpoints
 
-- [ ] 3.1 Add `POST /api/assets/{id}/tags` endpoint to `AssetController` accepting `{ "name": "..." }` body; delegates to facade; returns `201 Created`
-- [ ] 3.2 Add `DELETE /api/assets/{id}/tags?name=...` endpoint to `AssetController`; returns `204 No Content` or `404`
-- [ ] 3.3 Add `GET /api/tags?q=...` endpoint (new `TagController` or additional mapping in `AssetController`); returns `List<String>` capped at 20
-- [ ] 3.4 Add `POST /api/assets/tags/bulk` and `DELETE /api/assets/tags/bulk` endpoints for bulk tag add/remove across a list of asset IDs
-- [ ] 3.5 Add `tags` query parameter to `GET /api/assets` endpoint (comma-separated); forward to the updated facade method
-- [ ] 3.6 Add `List<String> tags` field to `AssetDto` and populate it in the `toDto()` mapper
+- [ ] 3.1 Add `POST /api/assets/{id}/tags` endpoint to `infrastructure/web/controller/AssetController`; inject `AddTagToAssetUseCase`; delegate to `addTagUseCase.execute(id, dto.name())`; return `201 Created`
+- [ ] 3.2 Add `DELETE /api/assets/{id}/tags?name=...` endpoint to `infrastructure/web/controller/AssetController`; inject `RemoveTagFromAssetUseCase`; return `204 No Content` or `404`
+- [ ] 3.3 Create `infrastructure/web/controller/TagController.java` with `GET /api/tags?q=...`; inject `ListTagsUseCase`; return `List<String>` capped at 20
+- [ ] 3.4 Add `POST /api/assets/tags/bulk` and `DELETE /api/assets/tags/bulk` endpoints to `infrastructure/web/controller/AssetController`; inject `BulkAddTagUseCase` and `BulkRemoveTagUseCase`
+- [ ] 3.5 Add `tags` query parameter to `GET /api/assets` endpoint (comma-separated); forward to `AssetFilter.tags` in the request mapping in `AssetController`
+- [ ] 3.6 Add `List<String> tags` field to `infrastructure/web/dto/AssetDto`; update `AssetDtoMapper` in `infrastructure/web/mapper/` to map `asset.getTags()` from the domain model
 
 ## 4. Backend: Tests
 
-- [ ] 4.1 Unit-test `PhotoManagerFacadeImpl` tag methods: add (new tag, existing tag, duplicate idempotency), remove (orphan cleanup, tag still used), bulk operations
-- [ ] 4.2 Unit-test the updated Criteria API filter for the `tags` AND predicate
-- [ ] 4.3 Write `@WebMvcTest` for the tag endpoints: `POST`, `DELETE`, `GET /api/tags`, bulk endpoints, and `GET /api/assets?tags=`
+- [ ] 4.1 Unit-test each use-case implementation (`AddTagToAssetUseCaseImpl`, `RemoveTagFromAssetUseCaseImpl`, `BulkAddTagUseCaseImpl`, `BulkRemoveTagUseCaseImpl`): add (new tag, existing tag, duplicate idempotency), remove (orphan cleanup, tag still used), bulk operations; mock `AssetRepositoryPort` and `TagRepositoryPort`
+- [ ] 4.2 Unit-test the updated `AssetRepositoryAdapter` filter for the `tags` AND predicate
+- [ ] 4.3 Write `@WebMvcTest` for `AssetController` (tag endpoints: `POST /api/assets/{id}/tags`, `DELETE /api/assets/{id}/tags`, bulk endpoints, `GET /api/assets?tags=`) and `TagController` (`GET /api/tags`); mock each use-case interface
 - [ ] 4.4 Write an integration test (`@SpringBootTest` + Testcontainers) covering the full add-tag → filter-by-tag → remove-tag lifecycle
 
 ## 5. Frontend: Models and Service

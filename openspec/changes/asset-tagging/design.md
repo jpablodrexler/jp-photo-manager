@@ -1,13 +1,15 @@
 ## Context
 
-Assets currently carry three forms of user-assigned metadata: folder path (implicit from disk location), album membership (many-to-many via `album_assets`), and star rating (integer 0–5 on the `Asset` entity). Tags are the missing lightweight labeling primitive — free-form keywords that can span folders and compose with the existing search and filter system.
+Assets currently carry three forms of user-assigned metadata: folder path (implicit from disk location), album membership (many-to-many via `album_assets`), and star rating (integer 0–5 on the `Asset` domain model). Tags are the missing lightweight labeling primitive — free-form keywords that can span folders and compose with the existing search and filter system.
 
-The existing filter pipeline (`GET /api/assets` → Criteria API in `AssetRepository`) already composes multiple optional predicates. Tags integrate as one more optional predicate, minimizing changes to the query layer.
+The existing filter pipeline (`GET /api/assets` → `GetAssetsUseCase` → `AssetRepositoryPort`) already composes multiple optional predicates via `AssetFilter`. Tags integrate as one more optional field on `AssetFilter`, minimizing changes to the query layer.
+
+> **Architecture note:** This design targets the post-hexagonal-architecture backend. JPA entities live in `infrastructure/persistence/entity/`, domain models in `domain/model/`, use-case logic in `application/usecase/`, and controllers in `infrastructure/web/controller/`.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- A `Tag` entity normalized to lowercase, and an `AssetTag` join table.
+- A `TagEntity` JPA entity (in `infrastructure/persistence/entity/`) and a `Tag` domain model (in `domain/model/`), normalized to lowercase, with an `asset_tags` join table.
 - CRUD tag endpoints: assign, remove, list-all (for autocomplete).
 - Tags as an additional optional filter on `GET /api/assets`.
 - Tag chip editor in the gallery EXIF panel and info overlay.
@@ -54,14 +56,16 @@ Tags are stored once in the `tags` table and referenced by many assets via `asse
 
 **Alternatives considered:** *OR semantics* — easier SQL (`IN` clause), but less useful: selecting "vacation" OR "family" returns everything tagged with either, which is rarely the user's intent.
 
-### 4. API surface: three endpoints, no dedicated tag controller
+### 4. API surface: asset tag endpoints in `AssetController`, autocomplete in `TagController`
 
-**Decision:** Tag management is handled via three endpoints added to `AssetController`:
-- `POST /api/assets/{id}/tags` — body `{ "name": "vacation" }`; creates tag if new, assigns to asset.
-- `DELETE /api/assets/{id}/tags/{tagName}` — removes assignment; deletes orphan tag.
-- `GET /api/tags?q=vac` — returns all tags whose name contains the query string (for autocomplete); no auth restriction beyond the standard `authGuard`.
+**Decision:** Tag management endpoints live in `infrastructure/web/controller/AssetController`:
+- `POST /api/assets/{id}/tags` — body `{ "name": "vacation" }`; delegates to `AddTagToAssetUseCase`.
+- `DELETE /api/assets/{id}/tags?name=vacation` — delegates to `RemoveTagFromAssetUseCase`; deletes orphan tag.
+- `POST /api/assets/tags/bulk` / `DELETE /api/assets/tags/bulk` — bulk operations via `BulkAddTagUseCase` / `BulkRemoveTagUseCase`.
 
-**Rationale:** Tags are asset metadata, so keeping them under `/api/assets` matches the existing structure (e.g., `/api/assets/{id}/rating`). A dedicated `TagController` would be premature given the limited surface area.
+The autocomplete endpoint `GET /api/tags?q=vac` lives in a dedicated `infrastructure/web/controller/TagController` and delegates to `ListTagsUseCase`.
+
+**Rationale:** Tag CRUD belongs under `/api/assets` since tags are asset metadata. A separate `TagController` for the read-only autocomplete endpoint keeps the tag-search concern isolated and avoids crowding `AssetController` with an unrelated GET mapping.
 
 ### 5. Orphan tag cleanup: delete on last removal
 

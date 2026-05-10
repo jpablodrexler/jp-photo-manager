@@ -1,25 +1,27 @@
+> **Prerequisite:** Apply the `hexagonal-architecture` change before this one. The tasks below target the post-refactor package structure: use-case implementations in `application/usecase/`, driven ports in `domain/port/out/`, controllers in `infrastructure/web/controller/`, JPA interfaces in `infrastructure/persistence/jpa/`, persistence adapters in `infrastructure/persistence/adapter/`.
+
 ## 1. Backend: Data Projections and DTOs
 
-- [ ] 1.1 Create `AssetSummary` Spring Data interface projection in `domain/repository/` with `getAssetId()`, `getFileName()`, `getFolderPath()`, and `getThumbnailUrl()` (derived as `/api/assets/{assetId}/thumbnail`)
+- [ ] 1.1 Create `AssetSummary` Spring Data interface projection in `infrastructure/persistence/jpa/` with `getAssetId()`, `getFileName()`, `getFolderPath()`, and `getThumbnailUrl()` (derived as `/api/assets/{assetId}/thumbnail`)
 - [ ] 1.2 Create `FolderStat` record in `application/dto/` with fields `String path` and `long assetCount`
 - [ ] 1.3 Extend the `HomeStats` record in `application/dto/` with four new fields: `long totalFileSize`, `long duplicateCount`, `List<FolderStat> topFolders`, `List<AssetSummaryDto> recentAssets`
 
-## 2. Backend: Repository Queries
+## 2. Backend: Repository Port and Adapter
 
-- [ ] 2.1 Add `Long sumFileSize()` JPQL query method to `AssetRepository` that returns `SUM(a.fileSize)` across all non-deleted assets
-- [ ] 2.2 Add `Long countDuplicates()` JPQL query to `AssetRepository` that counts assets whose hash appears more than once (scalar subquery approach)
-- [ ] 2.3 Add `List<FolderAssetCount> findTopFoldersByAssetCount(Pageable p)` query to `AssetRepository` using a `GROUP BY folder` projection, returning folder path and count ordered descending
-- [ ] 2.4 Add `List<AssetSummary> findRecentAssets(Pageable p)` to `AssetRepository` ordered by `thumbnailCreationDateTime DESC`, returning the `AssetSummary` projection
+- [ ] 2.1 Add `long sumFileSize()` method to `domain/port/out/AssetRepositoryPort`; implement in `infrastructure/persistence/adapter/AssetRepositoryAdapter` using a JPQL `@Query` on `JpaAssetRepository` that returns `SUM(a.fileSize)` across all non-deleted assets
+- [ ] 2.2 Add `long countDuplicates()` method to `domain/port/out/AssetRepositoryPort`; implement in `AssetRepositoryAdapter` using a JPQL `@Query` on `JpaAssetRepository` that counts assets whose hash appears more than once (scalar subquery approach)
+- [ ] 2.3 Add `List<FolderStat> findTopFoldersByAssetCount(int limit)` to `domain/port/out/AssetRepositoryPort`; create `FolderAssetCount` Spring Data interface projection in `infrastructure/persistence/jpa/`; implement in `AssetRepositoryAdapter` using a `GROUP BY` JPQL query on `JpaAssetRepository` returning folder path and count ordered descending
+- [ ] 2.4 Add `List<Asset> findRecentAssets(int limit)` to `domain/port/out/AssetRepositoryPort`; implement in `AssetRepositoryAdapter` by querying `JpaAssetRepository` with the `AssetSummary` projection ordered by `thumbnailCreationDateTime DESC`, then mapping to domain `Asset` objects
 
-## 3. Backend: Facade and Controller
+## 3. Backend: Use Case and Controller
 
-- [ ] 3.1 Update `PhotoManagerFacadeImpl.getHomeStats()` to call the four new repository methods and populate the extended `HomeStats` record; wrap each new call in a null-safe guard for empty libraries
-- [ ] 3.2 Update `HomeController` response type to the new `HomeStats` shape (no HTTP changes needed — same endpoint, same path)
-- [ ] 3.3 Write unit tests for the updated `getHomeStats()` method: verify each new field is populated correctly; mock repository methods; cover the empty-library case
+- [ ] 3.1 Update `application/usecase/home/GetHomeStatsUseCaseImpl` to call the four new `AssetRepositoryPort` methods and populate the extended `HomeStats` record; wrap each new call in a null-safe guard for empty libraries
+- [ ] 3.2 Verify `infrastructure/web/controller/HomeController` delegates to `GetHomeStatsUseCase` — no HTTP changes needed; same endpoint, same path; update any DTO mapping in `infrastructure/web/mapper/` if the controller uses an HTTP-layer DTO
+- [ ] 3.3 Write unit tests for `GetHomeStatsUseCaseImpl`: verify each new field is populated correctly; mock `AssetRepositoryPort`; cover the empty-library case
 
 ## 4. Backend: API Tests
 
-- [ ] 4.1 Update `HomeControllerTest` to assert the four new fields are present in the response JSON
+- [ ] 4.1 Update the `@WebMvcTest` for `infrastructure/web/controller/HomeController` to assert the four new fields are present in the response JSON; mock `GetHomeStatsUseCase`
 - [ ] 4.2 Write an integration test (`@SpringBootTest` + Testcontainers) that seeds assets with known sizes and hashes, calls `GET /api/home/stats`, and asserts `totalFileSize`, `duplicateCount`, `topFolders`, and `recentAssets` values
 
 ## 5. Frontend: Models

@@ -1,11 +1,13 @@
-## 1. Backend: Timeline DTO and Endpoint
+> **Prerequisite:** Apply the `hexagonal-architecture` change before this one. The tasks below target the post-refactor package structure: use-case interfaces in `domain/port/in/`, use-case implementations in `application/usecase/`, controllers in `infrastructure/web/controller/`, HTTP DTOs in `infrastructure/web/dto/`.
 
-- [ ] 1.1 Create `TimelineGroupDto` record in `api/dto/` with fields `localDate`, `label`, and `List<AssetDto> assets`
-- [ ] 1.2 Add `getAssetsTimeline(folderPath, page, search, dateFrom, dateTo, minRating)` method signature to `PhotoManagerFacade` interface
-- [ ] 1.3 Implement the method in `PhotoManagerFacadeImpl`: query assets filtered and sorted by `fileCreationDateTime` DESC, group by `localDate`, page by day count (30 days/page), return `PaginatedData<TimelineGroup>`
-- [ ] 1.4 Add `GET /api/assets/timeline` endpoint to `AssetController` mapping to the facade method and converting to `TimelineGroupDto`
-- [ ] 1.5 Write unit test for the timeline facade method (filter, grouping, pagination logic) in `PhotoManagerFacadeImplTest`
-- [ ] 1.6 Write `@WebMvcTest` for the new controller endpoint covering the success case and the empty-folder case
+## 1. Backend: Timeline Domain Model, Use Case, and Endpoint
+
+- [ ] 1.1 Create `TimelineGroup` domain model in `domain/model/` with fields `localDate`, `label`, and `List<Asset> assets`; create `TimelineGroupDto` record in `infrastructure/web/dto/` with fields `localDate`, `label`, and `List<AssetDto> assets`
+- [ ] 1.2 Create `domain/port/in/asset/GetAssetsTimelineUseCase.java` — `PaginatedResult<TimelineGroup> execute(AssetFilter filter)`; the existing `AssetFilter` is used as-is (sort is ignored — timeline always sorts by `fileCreationDateTime` DESC)
+- [ ] 1.3 Create `application/usecase/asset/GetAssetsTimelineUseCaseImpl.java` annotated `@Service @Transactional(readOnly = true)`; inject `AssetRepositoryPort`; query assets filtered and sorted by `fileCreationDateTime` DESC, group by `localDate`, page by day count (30 days/page); return `PaginatedResult<TimelineGroup>`
+- [ ] 1.4 Add `GET /api/assets/timeline` endpoint to `infrastructure/web/controller/AssetController`; inject `GetAssetsTimelineUseCase`; convert request params to `AssetFilter`; delegate to `useCase.execute(filter)`; convert result to `List<TimelineGroupDto>` via `AssetDtoMapper`
+- [ ] 1.5 Write unit test for `GetAssetsTimelineUseCaseImpl` (filter, grouping, pagination logic); mock `AssetRepositoryPort`
+- [ ] 1.6 Write `@WebMvcTest` for `infrastructure/web/controller/AssetController` covering `GET /api/assets/timeline`; mock `GetAssetsTimelineUseCase`; cover the success case and the empty-folder case
 
 ## 2. Frontend: Timeline Data Model and Service
 

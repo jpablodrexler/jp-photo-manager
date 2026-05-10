@@ -3,9 +3,11 @@
 `GET /api/home/stats` currently returns a single `HomeStats` record with three fields: `folderCount`, `assetCount`, and `lastCatalogCompletedAt`. The `HomeComponent` renders these as three `MatCard` tiles and nothing else. The page is stateless — it loads once on navigation and has no interactive elements.
 
 The backend already has all the data needed to power a richer dashboard:
-- `AssetRepository` can count assets grouped by folder and sum file sizes.
+- `AssetRepositoryPort` can count assets grouped by folder and sum file sizes.
 - `FindDuplicatedAssetsService` already computes duplicate groups for the `/duplicates` route.
-- `AssetRepository` can return the most recently cataloged assets ordered by `thumbnailCreationDateTime`.
+- `AssetRepositoryPort` can return the most recently cataloged assets ordered by `thumbnailCreationDateTime`.
+
+> **Architecture note:** This design targets the post-hexagonal-architecture backend. Business logic lives in `application/usecase/home/GetHomeStatsUseCaseImpl`, repository queries are declared on `domain/port/out/AssetRepositoryPort` and implemented in `infrastructure/persistence/adapter/AssetRepositoryAdapter`, and projections are defined in `infrastructure/persistence/jpa/`.
 
 No new tables, migrations, or external dependencies are needed.
 
@@ -27,7 +29,7 @@ No new tables, migrations, or external dependencies are needed.
 
 ### 1. Extend `HomeStats` record rather than create a new endpoint
 
-**Decision:** Add the four new fields directly to the existing `HomeStats` Java record and populate them in `PhotoManagerFacadeImpl.getHomeStats()`. The endpoint path and HTTP method remain unchanged.
+**Decision:** Add the four new fields directly to the existing `HomeStats` Java record and populate them in `GetHomeStatsUseCaseImpl`. The endpoint path and HTTP method remain unchanged.
 
 **Rationale:** A single endpoint call on page load is the simplest contract. Adding a second endpoint would require the frontend to make multiple parallel requests and merge results, adding latency and error-handling complexity. The `HomeStats` record is only used by `HomeController` and `HomeComponent` — extending it has zero ripple effect.
 
@@ -68,7 +70,7 @@ No new tables, migrations, or external dependencies are needed.
 | `getHomeStats()` now runs 4 queries instead of 1; latency increases | All queries are indexed and scalar or paginated to 12/5 rows — total added latency is <50 ms at gallery scale |
 | `duplicateCount` query is approximate (counts by hash, not by group) | The count is used only for the alert badge, not for the duplicates page itself; approximate is acceptable |
 | `?folder` query param navigation requires changes to `GalleryComponent` | Scope is small: read one query param in `ngOnInit`, call existing `onFolderSelected()` — one method, no new state |
-| `AssetSummary` projection requires a new JPQL or interface-based projection | Use a Spring Data interface projection `AssetSummary` with `getAssetId()`, `getFileName()`, `getFolderPath()` — no new entity class needed |
+| `AssetSummary` projection requires a new JPQL or interface-based projection | Use a Spring Data interface projection `AssetSummary` in `infrastructure/persistence/jpa/` with `getAssetId()`, `getFileName()`, `getFolderPath()` — no new entity class needed |
 
 ## Migration Plan
 
