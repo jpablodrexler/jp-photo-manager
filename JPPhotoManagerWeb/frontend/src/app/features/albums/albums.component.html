@@ -1,0 +1,43 @@
+<mat-toolbar>
+  <span>Albums</span>
+  <span style="flex: 1"></span>
+  <button mat-icon-button (click)="showCreateForm = !showCreateForm" title="New album">
+    <mat-icon>add</mat-icon>
+  </button>
+</mat-toolbar>
+
+@if (showCreateForm) {
+  <div class="create-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Album name</mat-label>
+      <input matInput [(ngModel)]="newAlbumName" (keyup.enter)="createAlbum(newAlbumName)" />
+    </mat-form-field>
+    <button mat-raised-button color="primary" (click)="createAlbum(newAlbumName)">Create</button>
+    <button mat-button (click)="showCreateForm = false">Cancel</button>
+  </div>
+}
+
+<div class="albums-grid">
+  @for (album of albums; track album.albumId) {
+    <mat-card class="album-card">
+      <mat-card-header>
+        <mat-card-title>{{ album.name }}</mat-card-title>
+        <mat-card-subtitle>{{ album.assetCount }} photo{{ album.assetCount === 1 ? '' : 's' }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        @if (album.description) {
+          <p>{{ album.description }}</p>
+        }
+      </mat-card-content>
+      <mat-card-actions>
+        <a mat-button color="primary" [routerLink]="['/albums', album.albumId]">Open</a>
+        <button mat-icon-button color="warn" (click)="deleteAlbum(album)" title="Delete album">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  }
+  @if (albums.length === 0) {
+    <div class="empty-state">No albums yet. Create one to get started.</div>
+  }
+</div>

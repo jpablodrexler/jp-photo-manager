@@ -1,0 +1,50 @@
+<div class="recycle-bin-layout full-height flex-col">
+
+  <mat-toolbar class="recycle-bin-toolbar">
+    <mat-icon>delete</mat-icon>
+    <span style="margin-left: 8px;">Recycle Bin</span>
+    <span style="flex: 1"></span>
+
+    @if (selectedCount > 0) {
+      <button mat-button (click)="restoreSelected()">
+        <mat-icon>restore</mat-icon> Restore
+      </button>
+      <button mat-button color="warn" (click)="purgeSelected()">
+        <mat-icon>delete_forever</mat-icon> Delete Permanently
+      </button>
+    }
+
+    <button mat-icon-button (click)="purgeAll()" title="Empty Recycle Bin">
+      <mat-icon>delete_forever</mat-icon>
+    </button>
+  </mat-toolbar>
+
+  <div class="thumbnail-grid-container flex-1">
+    <div class="thumbnail-grid">
+      @for (asset of assets; track asset.assetId) {
+        <div class="asset-cell" (click)="toggleSelection(asset)">
+          <app-thumbnail
+            [asset]="asset"
+            [selected]="isSelected(asset)"
+          />
+        </div>
+      }
+      @if (assets.length === 0) {
+        <div class="empty-state">Recycle bin is empty.</div>
+      }
+    </div>
+  </div>
+
+  @if (totalPages > 1) {
+    <div class="pagination-bar">
+      <button mat-icon-button [disabled]="pageIndex === 0" (click)="loadPage(pageIndex - 1)">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <span>Page {{ pageIndex + 1 }} of {{ totalPages }}</span>
+      <button mat-icon-button [disabled]="pageIndex >= totalPages - 1" (click)="loadPage(pageIndex + 1)">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+  }
+
+</div>

@@ -1,0 +1,14 @@
+.app-toolbar {
+  background-color: #2e7d32 !important;
+  color: white !important;
+}
+
+.app-content {
+  height: calc(100vh - 64px);
+  overflow: hidden;
+}
+
+a.active {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}

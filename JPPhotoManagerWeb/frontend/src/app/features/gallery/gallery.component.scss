@@ -1,0 +1,165 @@
+.gallery-layout {
+  height: 100%;
+}
+
+.folder-sidenav {
+  width: 280px;
+  background-color: #1a1a1a;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.gallery-toolbar {
+  font-size: 14px;
+
+  .current-folder {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 400px;
+  }
+}
+
+.thumbnail-grid-container {
+  overflow-y: auto;
+  position: relative;
+}
+
+.scroll-sentinel {
+  height: 1px;
+}
+
+.loading-row {
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+
+  mat-progress-bar {
+    width: 200px;
+  }
+}
+
+.end-of-list {
+  text-align: center;
+  padding: 16px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px;
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 18px;
+}
+
+.asset-cell {
+  position: relative;
+
+  .add-to-album-btn {
+    position: absolute;
+    bottom: 36px;
+    right: 4px;
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  &:hover .add-to-album-btn {
+    opacity: 1;
+  }
+}
+
+.filter-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 16px;
+  background: rgba(0, 0, 0, 0.15);
+
+  .filter-search { flex: 1; min-width: 180px; max-width: 320px; }
+  .filter-date   { width: 160px; }
+
+  // collapse Material bottom padding
+  mat-form-field { margin-bottom: -1.25em; }
+}
+
+.preset-select {
+  width: 180px;
+  font-size: 13px;
+}
+
+.preset-delete-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+}
+
+.filter-rating {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  .filter-star {
+    cursor: pointer;
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.38);
+    &.active { color: #ffa726; }
+  }
+
+  .filter-rating-label {
+    font-size: 12px;
+    margin-left: 6px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+}
+
+.viewer-layout {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  overflow: hidden;
+}
+
+@keyframes progress-fill {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+.slideshow-progress-bar {
+  height: 3px;
+  background: #4caf50;
+  width: 0;
+  animation-name: progress-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  animation-iteration-count: 1;
+}
+
+.image-viewer {
+  position: relative;
+  overflow: hidden;
+
+  .viewer-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.4);
+    color: white;
+
+    &--prev { left: 16px; }
+    &--next { right: 16px; }
+
+    &:disabled {
+      opacity: 0.3;
+    }
+  }
+}

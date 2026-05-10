@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.angular/
+*.md
+.idea/
+.vscode/
+.DS_Store
+cypress/videos/
+cypress/screenshots/

@@ -38,3 +38,50 @@ Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoM
 * [Octokit.net](https://octokitnet.readthedocs.io/en/latest/)
 * [coverlet](https://github.com/coverlet-coverage/coverlet)
 * [ReportGenerator](https://github.com/danielpalme/ReportGenerator)
+
+---
+
+## Web Application
+
+JPPhotoManager Web is a browser-based rewrite of the desktop application, built with a **Java 21 + Spring Boot 3** REST API backend and an **Angular 19** single-page application frontend.
+
+### Features
+* Visualization of image galleries (thumbnail grid and full-size viewer)
+* Find duplicates
+* Copy/move images between folders
+* Sync images between directory pairs
+* Convert PNG images to JPEG
+* Streaming real-time progress for long-running operations via Server-Sent Events
+
+### Run the web application
+
+**Backend** (requires Java 21 and Maven 3.9+):
+```bash
+cd JPPhotoManagerWeb/backend
+mvn spring-boot:run
+```
+The API starts at `http://localhost:8080`.
+
+**Frontend** (requires Node.js 22):
+```bash
+cd JPPhotoManagerWeb/frontend
+npm install
+npm start
+```
+Open `http://localhost:4200` in your browser. The dev server automatically proxies `/api` requests to the backend.
+
+### Technologies used (web application)
+* [Java 21](https://openjdk.org/)
+* [Spring Boot 3](https://spring.io/projects/spring-boot)
+* [Spring Data JPA](https://spring.io/projects/spring-data-jpa)
+* [SQLite](https://www.sqlite.org/index.html)
+* [Flyway](https://flywaydb.org/)
+* [Lombok](https://projectlombok.org/)
+* [MapStruct](https://mapstruct.org/)
+* [Apache Commons Imaging](https://commons.apache.org/proper/commons-imaging/)
+* [Angular 19](https://angular.dev/)
+* [Angular Material](https://material.angular.io/)
+* [Cypress](https://www.cypress.io/)
+* [JUnit 5](https://junit.org/junit5/)
+* [Mockito](https://site.mockito.org/)
+* [AssertJ](https://assertj.github.io/doc/)

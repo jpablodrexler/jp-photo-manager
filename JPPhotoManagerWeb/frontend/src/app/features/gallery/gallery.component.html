@@ -1,0 +1,254 @@
+<mat-sidenav-container class="gallery-layout full-height">
+
+  <mat-sidenav
+    [mode]="isMobile ? 'over' : 'side'"
+    [opened]="sidenavOpen"
+    (closedStart)="sidenavOpen = false"
+    class="folder-sidenav">
+    <app-folder-nav (folderSelected)="onFolderSelected($event)" />
+  </mat-sidenav>
+
+  <mat-sidenav-content class="flex-col">
+
+    <!-- Toolbar -->
+    <mat-toolbar class="gallery-toolbar">
+      @if (isMobile) {
+        <button mat-icon-button (click)="toggleSidenav()" aria-label="Toggle folder panel">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+      <span class="current-folder">{{ currentFolder || 'Select a folder' }}</span>
+      <span style="flex: 1"></span>
+
+      @if (viewMode === 'thumbnails') {
+        <mat-select [(ngModel)]="sortCriteria" (ngModelChange)="onSortChange()" style="width: 160px;">
+          @for (opt of sortOptions; track opt.value) {
+            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+          }
+        </mat-select>
+
+        @if (selectedCount > 0) {
+          <button mat-icon-button [matMenuTriggerFor]="actionsMenu" title="Actions">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #actionsMenu="matMenu">
+            <button mat-menu-item (click)="downloadSelected()">
+              <mat-icon>download</mat-icon> Download
+            </button>
+            <button mat-menu-item (click)="deleteSelected(false)">
+              <mat-icon>delete_outline</mat-icon> Remove from catalog
+            </button>
+            <button mat-menu-item (click)="deleteSelected(true)">
+              <mat-icon>delete_forever</mat-icon> Delete files
+            </button>
+          </mat-menu>
+        }
+
+        @if (assets.length > 0) {
+          <button mat-icon-button (click)="startSlideshow(0)" title="Start slideshow">
+            <mat-icon>slideshow</mat-icon>
+          </button>
+        }
+      }
+
+      @if (viewMode === 'viewer') {
+        <button mat-icon-button (click)="zoomOut()"><mat-icon>zoom_out</mat-icon></button>
+        <button mat-icon-button (click)="zoomIn()"><mat-icon>zoom_in</mat-icon></button>
+        @for (star of [1,2,3,4,5]; track star) {
+          <button mat-icon-button (click)="rateCurrentAsset(star)">
+            <mat-icon>{{ (currentViewerAsset?.rating ?? 0) >= star ? 'star' : 'star_border' }}</mat-icon>
+          </button>
+        }
+        <button mat-icon-button (click)="toggleExifPanel()" [class.active]="showExifPanel" title="EXIF info">
+          <mat-icon>info</mat-icon>
+        </button>
+        <button mat-icon-button (click)="startSlideshow(currentViewerIndex)" title="Slideshow">
+          <mat-icon>slideshow</mat-icon>
+        </button>
+        <button mat-icon-button (click)="closeViewer()"><mat-icon>grid_view</mat-icon></button>
+      }
+
+      @if (viewMode === 'slideshow') {
+        <button mat-icon-button (click)="toggleSlideshowPlay()" [title]="slideshowPlaying ? 'Pause' : 'Play'">
+          <mat-icon>{{ slideshowPlaying ? 'pause' : 'play_arrow' }}</mat-icon>
+        </button>
+        <mat-select [(ngModel)]="slideshowInterval" (ngModelChange)="onIntervalChange()" style="width: 80px;" title="Interval">
+          @for (opt of intervalOptions; track opt) {
+            <mat-option [value]="opt">{{ opt }}s</mat-option>
+          }
+        </mat-select>
+        <button mat-icon-button (click)="exitSlideshow()" title="Exit slideshow">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-toolbar>
+
+    <!-- Filter Toolbar -->
+    @if (viewMode === 'thumbnails') {
+      <div class="filter-toolbar">
+        <mat-form-field appearance="outline" class="filter-search">
+          <mat-label>Search by filename</mat-label>
+          <input matInput [value]="searchTerm" (input)="onSearchChange($any($event.target).value)" />
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-date">
+          <mat-label>Date from</mat-label>
+          <input matInput [matDatepicker]="pickerFrom" [(ngModel)]="dateFrom" (dateChange)="onDateChange()" />
+          <mat-datepicker-toggle matIconSuffix [for]="pickerFrom" />
+          <mat-datepicker #pickerFrom />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-date">
+          <mat-label>Date to</mat-label>
+          <input matInput [matDatepicker]="pickerTo" [(ngModel)]="dateTo" (dateChange)="onDateChange()" />
+          <mat-datepicker-toggle matIconSuffix [for]="pickerTo" />
+          <mat-datepicker #pickerTo />
+        </mat-form-field>
+
+        <div class="filter-rating">
+          @for (star of [1,2,3,4,5]; track star) {
+            <mat-icon class="filter-star" [class.active]="minRating >= star"
+                      (click)="minRating = (minRating === star ? 0 : star); onMinRatingChange()">
+              {{ minRating >= star ? 'star' : 'star_border' }}
+            </mat-icon>
+          }
+          <span class="filter-rating-label">{{ minRating > 0 ? minRating + '★ +' : 'Any rating' }}</span>
+        </div>
+
+        <mat-select [(ngModel)]="selectedPresetId"
+                    (ngModelChange)="onPresetSelected($event)"
+                    placeholder="Load preset"
+                    class="preset-select">
+          @for (preset of presets; track preset.presetId) {
+            <mat-option [value]="preset.presetId">
+              {{ preset.name }}
+              <button mat-icon-button class="preset-delete-btn"
+                      (click)="deletePreset(preset, $event)">
+                <mat-icon>close</mat-icon>
+              </button>
+            </mat-option>
+          }
+        </mat-select>
+
+        <button mat-icon-button (click)="saveCurrentFiltersAsPreset()" title="Save as preset">
+          <mat-icon>bookmark_add</mat-icon>
+        </button>
+
+        <button mat-icon-button (click)="clearFilters(); loadAssets()" title="Clear filters">
+          <mat-icon>filter_alt_off</mat-icon>
+        </button>
+      </div>
+    }
+
+    <!-- Thumbnails View -->
+    @if (viewMode === 'thumbnails') {
+      <div class="thumbnail-grid-container flex-1">
+        @if (currentFolder) {
+          <app-drop-zone [folderPath]="currentFolder" (uploadComplete)="onUploadComplete()" />
+        }
+        <div class="thumbnail-grid">
+          @for (asset of assets; track asset.assetId; let i = $index) {
+            <div class="asset-cell">
+              <app-thumbnail
+                [asset]="asset"
+                [rating]="asset.rating"
+                [selected]="isSelected(asset)"
+                (click)="toggleSelection(asset)"
+                (dblclick)="openViewer(i)"
+                (ratingChange)="rateAsset(asset, $event)"
+              />
+              <button
+                mat-icon-button
+                class="add-to-album-btn"
+                (click)="$event.stopPropagation(); addToAlbum(asset)"
+                title="Add to album"
+              >
+                <mat-icon>collections_bookmark</mat-icon>
+              </button>
+            </div>
+          }
+          @if (assets.length === 0 && currentFolder) {
+            <div class="empty-state">No images found in this folder.</div>
+          }
+        </div>
+        @if (isLoading) {
+          <div class="loading-row">
+            <mat-progress-bar mode="indeterminate" />
+          </div>
+        }
+        @if (allLoaded && assets.length > 0) {
+          <div class="end-of-list">All photos loaded</div>
+        }
+        <div #scrollSentinel class="scroll-sentinel"></div>
+      </div>
+    }
+
+    <!-- Viewer -->
+    @if (viewMode === 'viewer' && currentViewerAsset) {
+      <div class="viewer-layout">
+        <div class="image-viewer flex-1">
+          <button mat-icon-button class="viewer-nav viewer-nav--prev" (click)="viewerPrev()" [disabled]="currentViewerIndex === 0">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <img
+            [src]="currentViewerAsset.imageUrl"
+            [alt]="currentViewerAsset.fileName"
+            [style.transform]="'scale(' + viewerZoom + ')'"
+          />
+          <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="viewerNext()" [disabled]="currentViewerIndex >= assets.length - 1">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+        <app-exif-panel
+          [assetId]="currentViewerAsset.assetId"
+          [visible]="showExifPanel"
+          (closed)="showExifPanel = false"
+        />
+      </div>
+    }
+
+    <!-- Slideshow -->
+    @if (viewMode === 'slideshow' && currentViewerAsset) {
+      <div class="image-viewer flex-1">
+        <button mat-icon-button class="viewer-nav viewer-nav--prev" (click)="stepSlideshow(-1)" [disabled]="currentViewerIndex === 0">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <img
+          [src]="currentViewerAsset.imageUrl"
+          [alt]="currentViewerAsset.fileName"
+        />
+        <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="stepSlideshow(1)" [disabled]="currentViewerIndex >= assets.length - 1">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+      @if (slideshowResetTick) {
+        <div class="slideshow-progress-bar"
+             [style.animation-duration]="slideshowInterval + 's'"
+             [style.animation-play-state]="slideshowPlaying ? 'running' : 'paused'">
+        </div>
+      } @else {
+        <div class="slideshow-progress-bar"
+             [style.animation-duration]="slideshowInterval + 's'"
+             [style.animation-play-state]="slideshowPlaying ? 'running' : 'paused'">
+        </div>
+      }
+    }
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      @if (currentFolder && totalItems > 0) {
+        <span>{{ assets.length }} of {{ totalItems }} photos</span>
+      } @else {
+        <span>{{ currentFolder }}</span>
+      }
+      @if (selectedCount > 0) {
+        <span>{{ selectedCount }} selected</span>
+      }
+      @if (statusMessage) {
+        <span>{{ statusMessage }}</span>
+      }
+    </div>
+
+  </mat-sidenav-content>
+</mat-sidenav-container>

@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: jp-photo-manager
+
+  config:
+    import: optional:classpath:application-local.yml
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:photomanager}
+    username: ${POSTGRES_USERNAME:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: 8080
+
+photomanager:
+  initial-directory: ${CATALOG_DIR:${user.home}/Pictures}
+  root-catalog-folders: ${CATALOG_DIR:${user.home}/Pictures}
+  catalog-batch-size: 1000
+  catalog-cooldown-minutes: 2
+  catalog-timeout: 60
+  thumbnails-directory: ${THUMBNAILS_DIR:${user.home}/.photomanager/thumbnails}
+  github:
+    owner: jpablodrexler
+    repo: jp-photo-manager
+  jwt-secret: ${JWT_SECRET:}
+  jwt-expiry-hours: 24
+  refresh-token-expiry-days: 30
+  cors-allowed-origins: http://localhost:4200
+  max-download-assets: 500
+  recycle-bin-retention-days: 30
+

@@ -1,0 +1,7 @@
+# Copy this file to application-local.yml (git-ignored) and fill in the values.
+#
+# Generate a secure JWT secret:
+#   openssl rand -base64 32
+#
+photomanager:
+  jwt-secret: "REPLACE_WITH_OUTPUT_OF_openssl_rand_-base64_32"

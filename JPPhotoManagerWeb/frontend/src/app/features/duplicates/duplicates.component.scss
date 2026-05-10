@@ -1,0 +1,70 @@
+.duplicates-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.group-card {
+  margin-bottom: 24px;
+}
+
+.assets-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.asset-item {
+  width: 200px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 8px;
+  background: #242424;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &.keep {
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.12);
+  }
+
+  img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+}
+
+.asset-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+
+  strong {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  span {
+    color: rgba(255, 255, 255, 0.6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 64px;
+  color: rgba(255, 255, 255, 0.38);
+
+  p {
+    font-size: 20px;
+    margin-top: 16px;
+  }
+}
