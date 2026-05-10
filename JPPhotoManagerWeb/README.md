@@ -4,30 +4,182 @@ A web rewrite of the JP Photo Manager desktop application. It replaces the origi
 
 ---
 
-## Architecture Overview
+## Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Browser (Angular 19)                  │
-│  Gallery │ Folder Tree │ Sync │ Convert │ Duplicates     │
-│  HTTP + EventSource (SSE)                               │
-└──────────────────────┬──────────────────────────────────┘
-                       │ HTTP / SSE
-┌──────────────────────▼──────────────────────────────────┐
-│              Spring Boot 3.4 REST API (port 8080)        │
-│  api/         → REST controllers                         │
-│  application/ → PhotoManagerFacade (orchestration)       │
-│  domain/      → Entities, interfaces, enums              │
-│  infrastructure/ → Service implementations, storage      │
-└──────────────────────┬──────────────────────────────────┘
-                       │ JDBC (Hibernate + PostgreSQL dialect)
-┌──────────────────────▼──────────────────────────────────┐
-│              PostgreSQL 18 database                      │
-│  host: $POSTGRES_HOST  db: $POSTGRES_DB                  │
-└─────────────────────────────────────────────────────────┘
+### System Architecture
+
+```mermaid
+graph TB
+    subgraph browser["Browser"]
+        Angular["Angular 19 SPA\nGallery · Albums · Sync · Convert · Duplicates · Recycle Bin"]
+    end
+
+    subgraph api["Backend — port 8080"]
+        SpringBoot["Spring Boot 3 REST API\n(Java 21)"]
+    end
+
+    subgraph persistence["Persistence"]
+        PG[("PostgreSQL 18\nphotomanager")]
+        FS[("File System\nimages + thumbnails")]
+    end
+
+    Angular -->|"HTTP REST (JSON)"| SpringBoot
+    Angular -->|"SSE (EventSource)"| SpringBoot
+    SpringBoot -->|"JDBC / JPA (Hibernate)"| PG
+    SpringBoot -->|"File I/O"| FS
 ```
 
-### Project structure
+### Backend Layer Architecture
+
+The backend follows **clean architecture** with strict, unidirectional layer dependencies:
+
+```mermaid
+graph LR
+    subgraph A["api/"]
+        C["Controllers\n+ Request/Response DTOs"]
+    end
+    subgraph APP["application/"]
+        F["PhotoManagerFacade\n(orchestration)"]
+        ADTO["Application DTOs\n(CatalogChangeNotification,\nPaginatedData…)"]
+    end
+    subgraph D["domain/"]
+        SI["Service Interfaces\n(CatalogAssetsService,\nSyncAssetsService…)"]
+        RI["Repository Interfaces\n(AssetRepository,\nFolderRepository…)"]
+        E["Entities & Enums\n(Asset, Folder,\nAlbum, User…)"]
+    end
+    subgraph I["infrastructure/"]
+        SImpl["Service Implementations\n(CatalogAssetsServiceImpl,\nStorageServiceImpl…)"]
+        Sec["Security\n(JwtUtil,\nJwtAuthenticationFilter)"]
+    end
+
+    C --> F
+    F --> SI
+    F --> ADTO
+    SImpl -.->|"implements"| SI
+    SImpl --> RI
+    SImpl --> E
+    RI --> E
+```
+
+**Dependency flow:** `api` → `application` → `domain` ← `infrastructure` — the domain layer has no outward dependencies.
+
+### Database Schema
+
+```mermaid
+erDiagram
+    folders {
+        bigserial folder_id PK
+        text path UK
+    }
+    assets {
+        bigserial asset_id PK
+        bigint folder_id FK
+        text file_name
+        bigint file_size
+        integer pixel_width
+        integer pixel_height
+        text image_rotation
+        text hash
+        integer rating
+        timestamp file_creation_date_time
+        timestamp deleted_at
+    }
+    asset_exif {
+        bigserial exif_id PK
+        bigint asset_id FK
+        text make
+        text model
+        integer iso
+        float aperture
+        float exposure_time
+        float focal_length
+    }
+    users {
+        uuid id PK
+        varchar username UK
+        text password_hash
+        varchar role
+        timestamp created_at
+    }
+    albums {
+        bigserial album_id PK
+        uuid user_id FK
+        text name
+        text description
+        timestamp created_at
+    }
+    album_assets {
+        bigint album_id FK
+        bigint asset_id FK
+    }
+    refresh_tokens {
+        bigserial id PK
+        uuid user_id FK
+        text token_hash
+        timestamp expires_at
+    }
+    search_presets {
+        bigserial preset_id PK
+        uuid user_id FK
+        text name
+        text search_criteria
+        timestamp created_at
+    }
+    sync_assets_directories_definitions {
+        bigserial id PK
+        text source_directory
+        text destination_directory
+        boolean include_sub_folders
+        boolean delete_assets_not_in_source
+    }
+    convert_assets_directories_definitions {
+        bigserial id PK
+        text source_directory
+        text destination_directory
+        boolean include_sub_folders
+        boolean delete_assets_not_in_source
+    }
+    catalog_run_state {
+        integer id PK
+        boolean is_running
+        varchar instance_id
+        timestamp started_at
+        timestamp last_heartbeat_at
+    }
+
+    folders ||--o{ assets : "contains"
+    assets ||--o| asset_exif : "has EXIF"
+    users ||--o{ albums : "owns"
+    users ||--o{ refresh_tokens : "has"
+    users ||--o{ search_presets : "owns"
+    albums }o--o{ assets : "album_assets"
+```
+
+### Frontend Component Hierarchy
+
+All routes are lazy-loaded via Angular's `loadComponent()`. Every route except `/login` is protected by `authGuard`, which redirects unauthenticated users to `/login`.
+
+```mermaid
+graph TD
+    App["AppComponent\n(Shell + Navigation Bar)"]
+
+    App --> Login["LoginComponent\n/login — public"]
+    App --> Home["HomeComponent\n/home — dashboard"]
+    App --> Gallery["GalleryComponent\n/gallery"]
+    App --> Sync["SyncComponent\n/sync"]
+    App --> Convert["ConvertComponent\n/convert"]
+    App --> Duplicates["DuplicatesComponent\n/duplicates"]
+    App --> Albums["AlbumsComponent\n/albums"]
+    App --> RecycleBin["RecycleBinComponent\n/recycle-bin"]
+    App --> UserAdmin["UserAdminComponent\n/admin/users"]
+
+    Gallery --> FolderNav["FolderNavComponent\n(folder tree sidebar)"]
+    Gallery --> Thumbnail["ThumbnailComponent\n(shared card)"]
+    Albums --> AlbumDetail["AlbumDetailComponent\n/albums/:id"]
+    AlbumDetail --> Thumbnail
+```
+
+### Project Structure
 
 ```
 JPPhotoManagerWeb/
@@ -246,6 +398,32 @@ All components are **standalone** (no NgModules). Routes are lazy-loaded:
 Long-running operations (catalog, sync, convert) use the browser's native `EventSource` API to consume SSE streams from the backend, displaying live progress without polling.
 
 **SSE (Server-Sent Events)** is a web standard where the server pushes a stream of text events to the client over a single long-lived HTTP connection. It is one-way (server → client only), HTTP-based — the client makes a regular `GET` request and the response stays open while the server writes `data: ...` lines as events occur — and browsers handle reconnection automatically if the connection drops.
+
+```mermaid
+sequenceDiagram
+    participant Angular
+    participant API as Spring Boot API
+    participant FS as File System
+    participant DB as PostgreSQL
+
+    Angular->>API: GET /api/assets/catalog (EventSource)
+    API->>DB: Acquire catalog_run_state lock (atomic UPDATE WHERE is_running=false)
+
+    loop Per configured root folder
+        API->>FS: Scan folder recursively
+        loop Per file batch (catalog-batch-size assets)
+            API->>API: Compute SHA-256 hash
+            API->>API: Generate 200×150 thumbnail
+            API->>DB: Upsert Asset records
+            API->>DB: Update last_heartbeat_at (REQUIRES_NEW transaction)
+            API-->>Angular: SSE event {processed, total, currentFolder}
+            Angular-->>Angular: Update progress bar / status text
+        end
+    end
+
+    API->>DB: Release catalog_run_state lock
+    API-->>Angular: SSE stream closed
+```
 
 ### Running the frontend
 
@@ -471,19 +649,47 @@ Logging is configured entirely via `src/main/resources/logback-spring.xml`. The 
 
 ## Authentication
 
-The application uses **JWT Bearer token** authentication. All `/api/**` endpoints except `POST /api/auth/login` require a valid `Authorization: Bearer <token>` header.
+The application uses **JWT stored in an HttpOnly cookie** (`SameSite=Strict`, `Path=/`). All `/api/**` endpoints except `POST /api/auth/login` require this cookie. Because the browser attaches cookies automatically to every same-origin request — including `<img src="...">` image loads and the native `EventSource` API — no custom `Authorization` header is needed and there is no risk of token theft via JavaScript.
 
 ### Public endpoint
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/auth/login` | Authenticate; returns `{ "token": "..." }` |
+| `POST` | `/api/auth/login` | Authenticate; sets `jwt` HttpOnly cookie and returns `{ "username": "...", "expiresAt": "..." }` |
 
 ### JWT flow
 
-1. `POST /api/auth/login` with `{ "username": "...", "password": "..." }` → receive JWT
-2. Include `Authorization: Bearer <token>` on all subsequent API calls
-3. The frontend stores the token in `localStorage` and attaches it automatically via an HTTP interceptor
+```mermaid
+sequenceDiagram
+    participant User
+    participant Angular
+    participant API as Spring Boot API
+    participant DB as PostgreSQL
+
+    User->>Angular: Navigate to protected route
+    Angular->>Angular: authGuard checks localStorage for session
+    Angular-->>User: Redirect to /login (no valid session)
+
+    User->>Angular: Submit credentials
+    Angular->>API: POST /api/auth/login {username, password}
+    API->>DB: Look up user, verify BCrypt hash
+    DB-->>API: User record
+    API-->>Angular: Set-Cookie: jwt=<token> (HttpOnly, SameSite=Strict) + {username, expiresAt}
+    Angular->>Angular: Store {username, expiresAt} in localStorage
+    Angular->>Angular: Schedule proactive refresh at (expiresAt − 5 min)
+    Angular-->>User: Redirect to /home
+
+    Note over Angular,API: Cookie is sent automatically with every subsequent request
+
+    Angular->>API: GET /api/assets (cookie sent by browser)
+    API->>API: JwtAuthenticationFilter validates cookie
+    API-->>Angular: 200 OK + data
+
+    Angular->>API: POST /api/auth/logout
+    API-->>Angular: Set-Cookie: jwt=; Max-Age=0 (clears cookie)
+    Angular->>Angular: Clear localStorage + cancel refresh timer
+    Angular-->>User: Redirect to /login
+```
 
 ### Configuration properties
 
