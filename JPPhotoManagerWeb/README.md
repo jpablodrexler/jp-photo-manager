@@ -114,7 +114,7 @@ graph LR
 
     subgraph Hexagon["Domain Hexagon"]
         subgraph PortIn["domain/port/in — Driving Ports"]
-            UC["GetAssetsUseCase\nMutateAssetsUseCase\nCatalogAssetsUseCase\nManageAlbumsUseCase\n… 12 use-case interfaces"]
+            UC["asset/ · catalog/ · album/ · sync/\nconvert/ · folder/ · recycle/\nsearch/ · home/ · user/\n38 single-method interfaces"]
         end
         subgraph DomainCore["domain core"]
             MODEL["domain/model/\nAsset · Folder · Album\nUser · SearchPreset…"]
@@ -127,7 +127,7 @@ graph LR
     end
 
     subgraph AppLayer["application/usecase/"]
-        IMPL["GetAssetsUseCaseImpl\nMutateAssetsUseCaseImpl\n… 12 implementations\n(@Service @Transactional only)"]
+        IMPL["38 implementation classes\none per interface\n(@Service @Transactional only)"]
     end
 
     subgraph Secondary["Secondary Adapters — Driven"]

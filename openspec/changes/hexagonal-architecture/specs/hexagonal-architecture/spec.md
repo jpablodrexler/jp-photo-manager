@@ -42,102 +42,160 @@ No functional behaviour, REST API surface, or database schema changes.
 
 Each driving port interface in `domain/port/in/` represents a single cohesive domain operation. The contract for each interface:
 
-### GetAssetsUseCase
+Each interface has exactly one method named `execute`. Each implementation class implements exactly one interface.
+
+### asset/ (8 interfaces)
 
 ```java
-PaginatedResult<Asset> getAssets(AssetFilter filter);
-AssetImage getAssetImage(Long assetId) throws IOException;
-AssetExif getAssetExif(Long assetId);
-void downloadAssets(List<Long> assetIds, OutputStream out) throws IOException;
+// GetAssetsUseCase          → GetAssetsUseCaseImpl
+PaginatedResult<Asset> execute(AssetFilter filter);
+
+// GetAssetImageUseCase      → GetAssetImageUseCaseImpl
+AssetImage execute(Long assetId) throws IOException;
+
+// GetAssetExifUseCase       → GetAssetExifUseCaseImpl
+AssetExif execute(Long assetId);
+
+// DownloadAssetsUseCase     → DownloadAssetsUseCaseImpl
+void execute(List<Long> assetIds, OutputStream out) throws IOException;
+
+// RateAssetUseCase          → RateAssetUseCaseImpl
+void execute(Long assetId, int rating);
+
+// MoveAssetsUseCase         → MoveAssetsUseCaseImpl
+void execute(List<Long> assetIds, String destinationPath, boolean preserveOriginal) throws IOException;
+
+// UploadAssetUseCase        → UploadAssetUseCaseImpl
+void execute(String folderPath, String fileName, byte[] content) throws IOException;
+
+// DeleteAssetsUseCase       → DeleteAssetsUseCaseImpl
+void execute(List<Long> assetIds, boolean permanently) throws IOException;
 ```
 
-### MutateAssetsUseCase
+### catalog/ (2 interfaces)
 
 ```java
-void rateAsset(Long assetId, int rating);
-void moveAssets(List<Long> assetIds, String destinationPath, boolean preserveOriginal) throws IOException;
-void uploadAsset(String folderPath, String fileName, byte[] content) throws IOException;
-void deleteAssets(List<Long> assetIds, boolean permanently) throws IOException;
+// CatalogAssetsUseCase      → CatalogAssetsUseCaseImpl
+CompletableFuture<Void> execute(Consumer<CatalogChangeNotification> listener);
+
+// GetDuplicatedAssetsUseCase → GetDuplicatedAssetsUseCaseImpl
+List<List<Asset>> execute();
 ```
 
-### CatalogAssetsUseCase
+### album/ (7 interfaces)
 
 ```java
-CompletableFuture<Void> catalogAssetsAsync(Consumer<CatalogChangeNotification> listener);
+// GetAlbumsUseCase          → GetAlbumsUseCaseImpl
+PaginatedResult<AlbumData> execute(UUID userId, int page);
+
+// CreateAlbumUseCase        → CreateAlbumUseCaseImpl
+AlbumData execute(UUID userId, String name, String description);
+
+// GetAlbumUseCase           → GetAlbumUseCaseImpl
+AlbumData execute(Long albumId, UUID userId, int page);
+
+// UpdateAlbumUseCase        → UpdateAlbumUseCaseImpl
+AlbumData execute(Long albumId, UUID userId, String name, String description);
+
+// DeleteAlbumUseCase        → DeleteAlbumUseCaseImpl
+void execute(Long albumId, UUID userId);
+
+// AddAssetsToAlbumUseCase   → AddAssetsToAlbumUseCaseImpl
+void execute(Long albumId, UUID userId, List<Long> assetIds);
+
+// RemoveAssetsFromAlbumUseCase → RemoveAssetsFromAlbumUseCaseImpl
+void execute(Long albumId, UUID userId, List<Long> assetIds);
 ```
 
-### GetDuplicatedAssetsUseCase
+### sync/ (3 interfaces)
 
 ```java
-List<List<Asset>> getDuplicatedAssets();
+// GetSyncConfigUseCase      → GetSyncConfigUseCaseImpl
+List<SyncDirectoriesDefinition> execute();
+
+// SaveSyncConfigUseCase     → SaveSyncConfigUseCaseImpl
+void execute(List<SyncDirectoriesDefinition> definitions);
+
+// SyncAssetsUseCase         → SyncAssetsUseCaseImpl
+CompletableFuture<Void> execute(Consumer<SyncAssetsResult> listener);
 ```
 
-### ManageAlbumsUseCase
+### convert/ (3 interfaces)
 
 ```java
-PaginatedResult<AlbumData> getAlbums(UUID userId, int page);
-AlbumData createAlbum(UUID userId, String name, String description);
-AlbumData getAlbum(Long albumId, UUID userId, int page);
-AlbumData updateAlbum(Long albumId, UUID userId, String name, String description);
-void deleteAlbum(Long albumId, UUID userId);
-void addAssetsToAlbum(Long albumId, UUID userId, List<Long> assetIds);
-void removeAssetsFromAlbum(Long albumId, UUID userId, List<Long> assetIds);
+// GetConvertConfigUseCase   → GetConvertConfigUseCaseImpl
+List<ConvertDirectoriesDefinition> execute();
+
+// SaveConvertConfigUseCase  → SaveConvertConfigUseCaseImpl
+void execute(List<ConvertDirectoriesDefinition> definitions);
+
+// ConvertAssetsUseCase      → ConvertAssetsUseCaseImpl
+CompletableFuture<Void> execute(Consumer<ConvertAssetsResult> listener);
 ```
 
-### SyncAssetsUseCase
+### folder/ (4 interfaces)
 
 ```java
-List<SyncDirectoriesDefinition> getSyncConfiguration();
-void saveSyncConfiguration(List<SyncDirectoriesDefinition> definitions);
-CompletableFuture<Void> syncAssetsAsync(Consumer<SyncAssetsResult> listener);
+// GetSubFoldersUseCase      → GetSubFoldersUseCaseImpl
+List<Folder> execute(String parentPath);
+
+// GetDrivesUseCase          → GetDrivesUseCaseImpl
+List<String> execute();
+
+// GetInitialFolderUseCase   → GetInitialFolderUseCaseImpl
+String execute();
+
+// GetRecentTargetPathsUseCase → GetRecentTargetPathsUseCaseImpl
+List<String> execute();
 ```
 
-### ConvertAssetsUseCase
+### recycle/ (3 interfaces)
 
 ```java
-List<ConvertDirectoriesDefinition> getConvertConfiguration();
-void saveConvertConfiguration(List<ConvertDirectoriesDefinition> definitions);
-CompletableFuture<Void> convertAssetsAsync(Consumer<ConvertAssetsResult> listener);
+// GetDeletedAssetsUseCase   → GetDeletedAssetsUseCaseImpl
+PaginatedResult<Asset> execute(int page);
+
+// RestoreAssetsUseCase      → RestoreAssetsUseCaseImpl
+void execute(List<Long> assetIds);
+
+// PurgeAssetsUseCase        → PurgeAssetsUseCaseImpl
+void execute(List<Long> assetIds) throws IOException;
 ```
 
-### GetFoldersUseCase
+### search/ (3 interfaces)
 
 ```java
-List<Folder> getSubFolders(String parentPath);
-List<String> getDrives();
-String getInitialFolder();
-List<String> getRecentTargetPaths();
+// GetSearchPresetsUseCase   → GetSearchPresetsUseCaseImpl
+List<SearchPreset> execute(UUID userId);
+
+// CreateSearchPresetUseCase → CreateSearchPresetUseCaseImpl
+SearchPreset execute(UUID userId, String name, FilterPreset criteria);
+
+// DeleteSearchPresetUseCase → DeleteSearchPresetUseCaseImpl
+void execute(Long presetId, UUID userId);
 ```
 
-### RecycleBinUseCase
+### home/ (1 interface)
 
 ```java
-PaginatedResult<Asset> getDeletedAssets(int page);
-void restoreAssets(List<Long> assetIds);
-void purgeAssets(List<Long> assetIds) throws IOException;
+// GetHomeStatsUseCase       → GetHomeStatsUseCaseImpl
+HomeStats execute();
 ```
 
-### ManageSearchPresetsUseCase
+### user/ (4 interfaces)
 
 ```java
-List<SearchPreset> getPresets(UUID userId);
-SearchPreset createPreset(UUID userId, String name, FilterPreset criteria);
-void deletePreset(Long presetId, UUID userId);
-```
+// ListUsersUseCase          → ListUsersUseCaseImpl
+List<UserSummary> execute();
 
-### GetHomeStatsUseCase
+// CreateUserUseCase         → CreateUserUseCaseImpl
+UserSummary execute(String username, String password, String role);
 
-```java
-HomeStats getHomeStats();
-```
+// UpdatePasswordUseCase     → UpdatePasswordUseCaseImpl
+void execute(UUID userId, String newPassword);
 
-### UserAdminUseCase
-
-```java
-List<UserSummary> listUsers();
-UserSummary createUser(String username, String password, String role);
-void updatePassword(UUID userId, String newPassword);
-void deleteUser(UUID userId);
+// DeleteUserUseCase         → DeleteUserUseCaseImpl
+void execute(UUID userId);
 ```
 
 ---
@@ -201,7 +259,7 @@ graph LR
 
     subgraph Hexagon["Domain Hexagon"]
         subgraph PortIn["domain/port/in — Driving Ports"]
-            UC["GetAssetsUseCase\nMutateAssetsUseCase\nCatalogAssetsUseCase\nManageAlbumsUseCase\n… 12 use-case interfaces"]
+            UC["asset/ · catalog/ · album/ · sync/\nconvert/ · folder/ · recycle/\nsearch/ · home/ · user/\n38 single-method use-case interfaces"]
         end
         subgraph DomainCore["domain core"]
             MODEL["domain/model/\nAsset · Folder · Album\nUser · SearchPreset…"]
@@ -214,7 +272,7 @@ graph LR
     end
 
     subgraph AppLayer["application/usecase/"]
-        IMPL["GetAssetsUseCaseImpl\nMutateAssetsUseCaseImpl\n… 12 implementations\n(@Service @Transactional only)"]
+        IMPL["38 implementation classes\none per interface\n(@Service @Transactional only)"]
     end
 
     subgraph Secondary["Secondary Adapters — Driven"]

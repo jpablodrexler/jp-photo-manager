@@ -54,11 +54,22 @@ mvn test -Dtest=CatalogAssetsServiceImplTest#methodName
 domain/
   model/              → Plain POJO domain objects (Asset, Folder, Album, User…)
   port/
-    in/               → Use-case interfaces (driving ports) — one per operation group
-                        GetAssetsUseCase, MutateAssetsUseCase, CatalogAssetsUseCase,
-                        ManageAlbumsUseCase, SyncAssetsUseCase, ConvertAssetsUseCase,
-                        GetFoldersUseCase, RecycleBinUseCase, ManageSearchPresetsUseCase,
-                        GetHomeStatsUseCase, GetDuplicatedAssetsUseCase, UserAdminUseCase
+    in/               → Use-case interfaces (driving ports) — one interface, one method each
+      asset/          →   GetAssetsUseCase, GetAssetImageUseCase, GetAssetExifUseCase,
+                          DownloadAssetsUseCase, RateAssetUseCase, MoveAssetsUseCase,
+                          UploadAssetUseCase, DeleteAssetsUseCase
+      catalog/        →   CatalogAssetsUseCase, GetDuplicatedAssetsUseCase
+      album/          →   GetAlbumsUseCase, CreateAlbumUseCase, GetAlbumUseCase,
+                          UpdateAlbumUseCase, DeleteAlbumUseCase,
+                          AddAssetsToAlbumUseCase, RemoveAssetsFromAlbumUseCase
+      sync/           →   GetSyncConfigUseCase, SaveSyncConfigUseCase, SyncAssetsUseCase
+      convert/        →   GetConvertConfigUseCase, SaveConvertConfigUseCase, ConvertAssetsUseCase
+      folder/         →   GetSubFoldersUseCase, GetDrivesUseCase,
+                          GetInitialFolderUseCase, GetRecentTargetPathsUseCase
+      recycle/        →   GetDeletedAssetsUseCase, RestoreAssetsUseCase, PurgeAssetsUseCase
+      search/         →   GetSearchPresetsUseCase, CreateSearchPresetUseCase, DeleteSearchPresetUseCase
+      home/           →   GetHomeStatsUseCase
+      user/           →   ListUsersUseCase, CreateUserUseCase, UpdatePasswordUseCase, DeleteUserUseCase
     out/              → Secondary port interfaces (driven ports) — plain Java only
                         AssetRepositoryPort, FolderRepositoryPort, AlbumRepositoryPort,
                         StoragePort, ThumbnailPort, HashCalculatorPort, JwtTokenPort…
@@ -68,9 +79,9 @@ domain/
 application/
   dto/                → Framework-free application DTOs (AssetFilter, PaginatedResult,
                         CatalogChangeNotification, SyncAssetsResult…)
-  usecase/            → Use-case implementations (@Service @Transactional only)
-                        GetAssetsUseCaseImpl, MutateAssetsUseCaseImpl,
-                        CatalogAssetsUseCaseImpl… (one impl per port/in interface)
+  usecase/            → One implementation class per interface (@Service @Transactional only)
+    asset/   catalog/   album/   sync/   convert/
+    folder/  recycle/   search/  home/   user/   ← mirrors port/in subpackage layout
 
 infrastructure/
   persistence/
@@ -203,7 +214,7 @@ Integration tests annotate with `@SpringBootTest`, extend `PostgresIntegrationTe
 - **Transactions:** read-only queries use `@Transactional(readOnly = true)`; writes use `@Transactional`.
 - **Async:** long-running methods are annotated `@Async` and return `CompletableFuture<T>`; the thread pool is configured in `AppConfig`.
 - **Logging:** use the SLF4J logger injected by `@Slf4j`, not `System.out`.
-- **New use case:** declare a driving port interface in `domain/port/in/`; implement it in `application/usecase/` (annotate `@Service @Transactional` only; inject only `domain/port/out/` interfaces); inject the new use-case interface into the relevant controller in `infrastructure/web/controller/`.
+- **New use case:** declare a single-method interface in `domain/port/in/<subpackage>/`; create one implementation class in the mirrored `application/usecase/<subpackage>/` path (annotate `@Service @Transactional` only; inject only `domain/port/out/` interfaces); inject the interface into the relevant controller in `infrastructure/web/controller/`.
 - **New secondary service:** declare a driven port interface in `domain/port/out/`; implement it as an adapter in `infrastructure/service/` or `infrastructure/persistence/adapter/` (annotate `@Service`; all framework imports stay here).
 - **New endpoints:** add a `@RestController` in `infrastructure/web/controller/`; keep controllers thin (translate HTTP ↔ domain types via `infrastructure/web/mapper/`, then delegate to use-case interfaces).
 

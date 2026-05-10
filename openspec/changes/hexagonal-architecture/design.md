@@ -21,7 +21,7 @@ The overall intent is sound — infrastructure implements domain interfaces — 
 - Domain layer contains zero `jakarta.*`, `org.springframework.*`, or `com.jpablodrexler.photomanager.api.*` imports.
 - Use-case implementations in `application/usecase/` carry zero Spring annotations.
 - All framework wiring (JPA, Spring MVC, Spring Security, transactions, async) lives exclusively in the `infrastructure/` tree.
-- One focused use-case interface per operation group (replace the single `PhotoManagerFacade`).
+- One use-case interface with exactly one method per operation, grouped by domain concept in subpackages under `domain/port/in/`; one implementation class per interface in mirrored subpackages under `application/usecase/`.
 - Existing REST API surface, database schema, and behaviour are preserved exactly.
 
 **Non-Goals:**
@@ -41,28 +41,30 @@ The overall intent is sound — infrastructure implements domain interfaces — 
 **Alternatives considered:**
 - *Multi-module Maven build*: stronger compile-time enforcement, but high migration cost and out of scope for this change.
 
-### 2. Decompose `PhotoManagerFacade` into per-domain use-case interfaces
+### 2. One use-case interface, one method, one implementation class — grouped by subpackage
 
-**Decision:** Replace the single `PhotoManagerFacade` (40+ methods) with focused use-case interfaces in `domain/port/in/`, grouped by domain concept.
+**Decision:** Replace the single `PhotoManagerFacade` (40+ methods) with 38 single-method use-case interfaces in `domain/port/in/`, each implemented by exactly one class in `application/usecase/`. Both are organised into the same subpackage hierarchy by domain concept (`asset/`, `catalog/`, `album/`, `sync/`, `convert/`, `folder/`, `recycle/`, `search/`, `home/`, `user/`).
 
-**Rationale:** A single facade with 40 methods is a God Object. Controllers currently depend on the entire facade even when they only call 2–3 methods. Focused interfaces enable controller-level dependency isolation, make use cases independently testable, and align with the Interface Segregation Principle.
+**Rationale:** Applying the Interface Segregation Principle strictly means each controller method depends on exactly one interface with exactly one method — no unrelated operations are dragged in. One implementation class per interface keeps responsibilities focused and makes individual use cases independently replaceable and testable without Mockito noise from sibling methods.
 
-**Use-case interface groups (driving ports):**
+**Alternatives considered:**
+- *Multi-method grouped interfaces (e.g. `ManageAlbumsUseCase` with 7 methods)*: reduces file count but reintroduces a smaller god interface; controllers still depend on methods they never call.
+- *One implementation class per subpackage group*: allows one class to implement multiple interfaces; reduces class count but couples unrelated operations within the same file, making future extraction harder.
 
-| Interface | Methods | Used by |
+**Use-case inventory (38 total):**
+
+| Subpackage | Interfaces (one method each) | Controller |
 |---|---|---|
-| `GetAssetsUseCase` | `getAssets()`, `getAssetImage()`, `getAssetExif()`, `downloadAssets()` | `AssetController` |
-| `MutateAssetsUseCase` | `rateAsset()`, `moveAssets()`, `uploadAsset()`, `deleteAssets()` | `AssetController` |
-| `CatalogAssetsUseCase` | `catalogAssetsAsync()` | `AssetController`, `CatalogScheduler` |
-| `GetDuplicatedAssetsUseCase` | `getDuplicatedAssets()` | `AssetController` |
-| `ManageAlbumsUseCase` | CRUD + asset membership | `AlbumController` |
-| `SyncAssetsUseCase` | `syncAssetsAsync()`, config get/set | `SyncController` |
-| `ConvertAssetsUseCase` | `convertAssetsAsync()`, config get/set | `ConvertController` |
-| `GetFoldersUseCase` | `getSubFolders()`, `getDrives()`, `getInitialFolder()`, `getRecentTargetPaths()` | `FolderController` |
-| `RecycleBinUseCase` | `getDeletedAssets()`, `restoreAssets()`, `purgeAssets()` | `RecycleBinController` |
-| `ManageSearchPresetsUseCase` | CRUD presets | `SearchPresetController` |
-| `GetHomeStatsUseCase` | `getHomeStats()` | `HomeController` |
-| `UserAdminUseCase` | `listUsers()`, `createUser()`, `updatePassword()`, `deleteUser()` | `UserAdminController` |
+| `asset/` | `GetAssetsUseCase`, `GetAssetImageUseCase`, `GetAssetExifUseCase`, `DownloadAssetsUseCase`, `RateAssetUseCase`, `MoveAssetsUseCase`, `UploadAssetUseCase`, `DeleteAssetsUseCase` | `AssetController` |
+| `catalog/` | `CatalogAssetsUseCase`, `GetDuplicatedAssetsUseCase` | `AssetController`, `CatalogScheduler` |
+| `album/` | `GetAlbumsUseCase`, `CreateAlbumUseCase`, `GetAlbumUseCase`, `UpdateAlbumUseCase`, `DeleteAlbumUseCase`, `AddAssetsToAlbumUseCase`, `RemoveAssetsFromAlbumUseCase` | `AlbumController` |
+| `sync/` | `GetSyncConfigUseCase`, `SaveSyncConfigUseCase`, `SyncAssetsUseCase` | `SyncController` |
+| `convert/` | `GetConvertConfigUseCase`, `SaveConvertConfigUseCase`, `ConvertAssetsUseCase` | `ConvertController` |
+| `folder/` | `GetSubFoldersUseCase`, `GetDrivesUseCase`, `GetInitialFolderUseCase`, `GetRecentTargetPathsUseCase` | `FolderController` |
+| `recycle/` | `GetDeletedAssetsUseCase`, `RestoreAssetsUseCase`, `PurgeAssetsUseCase` | `RecycleBinController` |
+| `search/` | `GetSearchPresetsUseCase`, `CreateSearchPresetUseCase`, `DeleteSearchPresetUseCase` | `SearchPresetController` |
+| `home/` | `GetHomeStatsUseCase` | `HomeController` |
+| `user/` | `ListUsersUseCase`, `CreateUserUseCase`, `UpdatePasswordUseCase`, `DeleteUserUseCase` | `UserAdminController` |
 
 ### 3. Separate domain models from JPA entities
 
@@ -76,14 +78,15 @@ The overall intent is sound — infrastructure implements domain interfaces — 
 
 **Rationale:** `Page` and `Pageable` are Spring Data types. The domain must not know about them. `PaginatedResult<T>` is a simple record: `record PaginatedResult<T>(List<T> items, long total, int page, int pageSize) {}`. The adapter translates between the two.
 
-### 5. `application/usecase/` implementations are Spring beans — via thin wiring only
+### 5. One implementation class per use-case interface — `@Service @Transactional` only
 
-**Decision:** Use-case implementation classes (`application/usecase/`) are annotated with `@Service` and `@Transactional` — but only those two Spring annotations. All other Spring types (`@Value`, `MultipartFile`, `Page`, etc.) remain out.
+**Decision:** Each use-case interface has exactly one implementation class in the mirrored `application/usecase/<subpackage>/` path. Implementation classes carry `@Service` and `@Transactional` (or `@Transactional(readOnly = true)`) and nothing else from Spring. All other Spring types (`@Value`, `MultipartFile`, `Page`, etc.) remain out.
 
-**Rationale:** Fully removing Spring DI from use cases would require a separate DI framework or manual factory wiring, which is out of scope. Allowing `@Service` and `@Transactional` is a pragmatic trade-off: the business logic is still readable and testable in isolation (Mockito does not care about `@Service`), while Spring still manages lifecycle and transactions.
+**Rationale:** One class per interface enforces Single Responsibility and makes each use case independently navigable, testable, and replaceable. `@Service` and `@Transactional` are the minimum required to participate in Spring's DI and transaction management without importing framework types into business logic. Mockito ignores these annotations, so unit tests remain framework-free.
 
 **Alternatives considered:**
-- *Use `@Configuration` + `@Bean` factory methods*: achieves full annotation-free use cases but requires writing factory methods for every use case class — significant boilerplate.
+- *One implementation class per subpackage, implementing multiple interfaces*: keeps file count lower but reintroduces coupling between operations that happen to live in the same package.
+- *`@Configuration` + `@Bean` factory methods*: achieves fully annotation-free use cases but requires one factory method per class — significant boilerplate for 38 classes.
 
 ### 6. `api/` is renamed and relocated to `infrastructure/web/`
 
@@ -110,19 +113,55 @@ com.jpablodrexler.photomanager/
 │   │   ├── ConvertDirectoriesDefinition.java
 │   │   └── CatalogRunState.java
 │   ├── port/
-│   │   ├── in/                                   ← use-case interfaces (primary / driving ports)
-│   │   │   ├── GetAssetsUseCase.java
-│   │   │   ├── MutateAssetsUseCase.java
-│   │   │   ├── CatalogAssetsUseCase.java
-│   │   │   ├── GetDuplicatedAssetsUseCase.java
-│   │   │   ├── ManageAlbumsUseCase.java
-│   │   │   ├── SyncAssetsUseCase.java
-│   │   │   ├── ConvertAssetsUseCase.java
-│   │   │   ├── GetFoldersUseCase.java
-│   │   │   ├── RecycleBinUseCase.java
-│   │   │   ├── ManageSearchPresetsUseCase.java
-│   │   │   ├── GetHomeStatsUseCase.java
-│   │   │   └── UserAdminUseCase.java
+│   │   ├── in/                                   ← one interface per use case, one method each
+│   │   │   ├── asset/
+│   │   │   │   ├── GetAssetsUseCase.java
+│   │   │   │   ├── GetAssetImageUseCase.java
+│   │   │   │   ├── GetAssetExifUseCase.java
+│   │   │   │   ├── DownloadAssetsUseCase.java
+│   │   │   │   ├── RateAssetUseCase.java
+│   │   │   │   ├── MoveAssetsUseCase.java
+│   │   │   │   ├── UploadAssetUseCase.java
+│   │   │   │   └── DeleteAssetsUseCase.java
+│   │   │   ├── catalog/
+│   │   │   │   ├── CatalogAssetsUseCase.java
+│   │   │   │   └── GetDuplicatedAssetsUseCase.java
+│   │   │   ├── album/
+│   │   │   │   ├── GetAlbumsUseCase.java
+│   │   │   │   ├── CreateAlbumUseCase.java
+│   │   │   │   ├── GetAlbumUseCase.java
+│   │   │   │   ├── UpdateAlbumUseCase.java
+│   │   │   │   ├── DeleteAlbumUseCase.java
+│   │   │   │   ├── AddAssetsToAlbumUseCase.java
+│   │   │   │   └── RemoveAssetsFromAlbumUseCase.java
+│   │   │   ├── sync/
+│   │   │   │   ├── GetSyncConfigUseCase.java
+│   │   │   │   ├── SaveSyncConfigUseCase.java
+│   │   │   │   └── SyncAssetsUseCase.java
+│   │   │   ├── convert/
+│   │   │   │   ├── GetConvertConfigUseCase.java
+│   │   │   │   ├── SaveConvertConfigUseCase.java
+│   │   │   │   └── ConvertAssetsUseCase.java
+│   │   │   ├── folder/
+│   │   │   │   ├── GetSubFoldersUseCase.java
+│   │   │   │   ├── GetDrivesUseCase.java
+│   │   │   │   ├── GetInitialFolderUseCase.java
+│   │   │   │   └── GetRecentTargetPathsUseCase.java
+│   │   │   ├── recycle/
+│   │   │   │   ├── GetDeletedAssetsUseCase.java
+│   │   │   │   ├── RestoreAssetsUseCase.java
+│   │   │   │   └── PurgeAssetsUseCase.java
+│   │   │   ├── search/
+│   │   │   │   ├── GetSearchPresetsUseCase.java
+│   │   │   │   ├── CreateSearchPresetUseCase.java
+│   │   │   │   └── DeleteSearchPresetUseCase.java
+│   │   │   ├── home/
+│   │   │   │   └── GetHomeStatsUseCase.java
+│   │   │   └── user/
+│   │   │       ├── ListUsersUseCase.java
+│   │   │       ├── CreateUserUseCase.java
+│   │   │       ├── UpdatePasswordUseCase.java
+│   │   │       └── DeleteUserUseCase.java
 │   │   └── out/                                  ← secondary / driven port interfaces
 │   │       ├── AssetRepositoryPort.java
 │   │       ├── AssetExifRepositoryPort.java
@@ -159,19 +198,55 @@ com.jpablodrexler.photomanager/
 │   │   ├── AssetImage.java
 │   │   ├── FilterPreset.java
 │   │   └── UserSummary.java
-│   └── usecase/                                  ← use-case implementations
-│       ├── GetAssetsUseCaseImpl.java             ← @Service @Transactional only
-│       ├── MutateAssetsUseCaseImpl.java
-│       ├── CatalogAssetsUseCaseImpl.java
-│       ├── GetDuplicatedAssetsUseCaseImpl.java
-│       ├── ManageAlbumsUseCaseImpl.java
-│       ├── SyncAssetsUseCaseImpl.java
-│       ├── ConvertAssetsUseCaseImpl.java
-│       ├── GetFoldersUseCaseImpl.java
-│       ├── RecycleBinUseCaseImpl.java
-│       ├── ManageSearchPresetsUseCaseImpl.java
-│       ├── GetHomeStatsUseCaseImpl.java
-│       └── UserAdminUseCaseImpl.java
+│   └── usecase/                                  ← one class per interface, one method each
+│       ├── asset/
+│       │   ├── GetAssetsUseCaseImpl.java          ← @Service @Transactional(readOnly=true)
+│       │   ├── GetAssetImageUseCaseImpl.java
+│       │   ├── GetAssetExifUseCaseImpl.java
+│       │   ├── DownloadAssetsUseCaseImpl.java
+│       │   ├── RateAssetUseCaseImpl.java          ← @Service @Transactional
+│       │   ├── MoveAssetsUseCaseImpl.java
+│       │   ├── UploadAssetUseCaseImpl.java
+│       │   └── DeleteAssetsUseCaseImpl.java
+│       ├── catalog/
+│       │   ├── CatalogAssetsUseCaseImpl.java
+│       │   └── GetDuplicatedAssetsUseCaseImpl.java
+│       ├── album/
+│       │   ├── GetAlbumsUseCaseImpl.java
+│       │   ├── CreateAlbumUseCaseImpl.java
+│       │   ├── GetAlbumUseCaseImpl.java
+│       │   ├── UpdateAlbumUseCaseImpl.java
+│       │   ├── DeleteAlbumUseCaseImpl.java
+│       │   ├── AddAssetsToAlbumUseCaseImpl.java
+│       │   └── RemoveAssetsFromAlbumUseCaseImpl.java
+│       ├── sync/
+│       │   ├── GetSyncConfigUseCaseImpl.java
+│       │   ├── SaveSyncConfigUseCaseImpl.java
+│       │   └── SyncAssetsUseCaseImpl.java
+│       ├── convert/
+│       │   ├── GetConvertConfigUseCaseImpl.java
+│       │   ├── SaveConvertConfigUseCaseImpl.java
+│       │   └── ConvertAssetsUseCaseImpl.java
+│       ├── folder/
+│       │   ├── GetSubFoldersUseCaseImpl.java
+│       │   ├── GetDrivesUseCaseImpl.java
+│       │   ├── GetInitialFolderUseCaseImpl.java
+│       │   └── GetRecentTargetPathsUseCaseImpl.java
+│       ├── recycle/
+│       │   ├── GetDeletedAssetsUseCaseImpl.java
+│       │   ├── RestoreAssetsUseCaseImpl.java
+│       │   └── PurgeAssetsUseCaseImpl.java
+│       ├── search/
+│       │   ├── GetSearchPresetsUseCaseImpl.java
+│       │   ├── CreateSearchPresetUseCaseImpl.java
+│       │   └── DeleteSearchPresetUseCaseImpl.java
+│       ├── home/
+│       │   └── GetHomeStatsUseCaseImpl.java
+│       └── user/
+│           ├── ListUsersUseCaseImpl.java
+│           ├── CreateUserUseCaseImpl.java
+│           ├── UpdatePasswordUseCaseImpl.java
+│           └── DeleteUserUseCaseImpl.java
 │
 └── infrastructure/                               ← all framework-specific code
     ├── persistence/
@@ -265,7 +340,6 @@ com.jpablodrexler.photomanager/
     │   ├── JwtAuthenticationFilter.java
     │   ├── JwtUtil.java
     │   ├── CatalogScheduler.java
-    │   ├── AlbumServiceImpl.java                 ← (to be absorbed into ManageAlbumsUseCaseImpl)
     │   ├── RefreshTokenServiceImpl.java
     │   └── UserServiceImpl.java
     └── config/
