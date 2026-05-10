@@ -306,3 +306,61 @@ graph LR
 - [ ] `mvn clean package` exits 0
 - [ ] `mvn test` exits 0
 - [ ] App starts and gallery loads with real data
+
+---
+
+## Documentation Requirements
+
+After the refactor is complete, `CLAUDE.md` and `README.md` must reflect the new architecture so that the project's reference documentation is accurate.
+
+### CLAUDE.md — Backend architecture section
+
+The _Web Architecture → Backend_ section must be updated to match the hexagonal layout:
+
+**Package tree** (replace the existing diagram):
+
+```
+domain/
+  model/               → Plain POJO domain models (no JPA annotations)
+  port/
+    in/                → Driving port interfaces (use-case contracts)
+      asset/ catalog/ album/ sync/ convert/ folder/ recycle/ search/ home/ user/
+    out/               → Driven port interfaces (repository + service contracts)
+  service/             → Stateless domain services (e.g. FindDuplicatedAssetsService)
+  enums/               → ImageRotation, SortCriteria, …
+application/
+  usecase/             → Use-case implementations (@Service @Transactional only)
+    asset/ catalog/ album/ sync/ convert/ folder/ recycle/ search/ home/ user/
+  dto/                 → PaginatedResult<T>, AssetFilter, and other application-layer DTOs
+infrastructure/
+  persistence/
+    entity/            → JPA entities (*Entity classes, all @Entity annotations live here)
+    jpa/               → Spring Data JPA interfaces (extends JpaRepository)
+    adapter/           → Repository adapters implementing domain/port/out/ interfaces
+    mapper/            → Entity ↔ domain model mappers
+  web/
+    controller/        → @RestController classes (one per domain area)
+    dto/               → HTTP request/response DTOs
+    mapper/            → Domain model ↔ HTTP DTO converters
+    exception/         → GlobalExceptionHandler and error types
+  service/             → Service adapters (StorageServiceAdapter, ThumbnailStorageServiceAdapter, JwtTokenAdapter)
+config/                → AppConfig (CORS, async executor)
+```
+
+**Dependency flow** (replace existing line):
+
+```
+infrastructure/web → application/usecase → domain ← infrastructure/persistence
+                                                    ← infrastructure/service
+```
+
+**Key domain services** — update the prose to describe use-case interfaces instead of old service classes; remove all references to `PhotoManagerFacade` and `PhotoManagerFacadeImpl`.
+
+### README.md — Backend architecture
+
+The README must include:
+
+1. The Mermaid architecture diagram from this spec (Primary Adapters → Domain Hexagon → Secondary Adapters).
+2. A short explanation of the `domain/port/in/` convention: each interface has exactly one `execute` method and represents a single use case; implementations live in `application/usecase/`.
+3. A short explanation of the `domain/port/out/` convention: plain Java interfaces that infrastructure adapters implement; no Spring or JPA types in method signatures.
+4. A note that `infrastructure/web/controller/` classes inject use-case interfaces directly — they never call repositories or service adapters.
