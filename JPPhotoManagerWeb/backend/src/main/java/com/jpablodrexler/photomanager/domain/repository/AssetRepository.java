@@ -32,38 +32,42 @@ public interface AssetRepository extends JpaRepository<Asset, Long> {
 
     List<Asset> findByFolderAndDeletedAtIsNull(Folder folder);
 
+    @Query("SELECT a FROM Asset a JOIN FETCH a.folder WHERE a.deletedAt IS NOT NULL ORDER BY a.deletedAt DESC")
     Page<Asset> findByDeletedAtIsNotNullOrderByDeletedAtDesc(Pageable pageable);
 
+    @Query("SELECT a FROM Asset a JOIN FETCH a.folder WHERE a.deletedAt < :cutoff AND a.deletedAt IS NOT NULL")
     List<Asset> findByDeletedAtBeforeAndDeletedAtIsNotNull(LocalDateTime cutoff);
 
+    @Query("SELECT a FROM Asset a JOIN FETCH a.folder WHERE a.deletedAt IS NULL")
     List<Asset> findByDeletedAtIsNull();
 
-    @Query("SELECT a FROM Asset a WHERE a.hash = :hash AND a.deletedAt IS NULL")
+    @Query("SELECT a FROM Asset a JOIN FETCH a.folder WHERE a.hash = :hash AND a.deletedAt IS NULL")
     List<Asset> findByHashAndDeletedAtIsNull(String hash);
 
-    @Query("SELECT a FROM Asset a WHERE a.hash = :hash")
+    @Query("SELECT a FROM Asset a JOIN FETCH a.folder WHERE a.hash = :hash")
     List<Asset> findByHash(String hash);
 
     @Query("SELECT a FROM Asset a GROUP BY a.hash HAVING COUNT(a) > 1")
     List<String> findDuplicateHashes();
 
-    @Query("SELECT aa FROM Album a JOIN a.assets aa WHERE a.albumId = :albumId")
+    @Query("SELECT aa FROM Album a JOIN a.assets aa JOIN FETCH aa.folder WHERE a.albumId = :albumId")
     Page<Asset> findByAlbumId(@Param("albumId") Long albumId, Pageable pageable);
 
     @Query("""
-        SELECT a FROM Asset a
-        WHERE a.folder = :folder
-          AND a.deletedAt IS NULL
-          AND (:search IS NULL OR LOWER(a.fileName) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))
-          AND (:dateFrom IS NULL OR a.fileCreationDateTime >= :dateFrom)
-          AND (:dateTo   IS NULL OR a.fileCreationDateTime <= :dateTo)
-          AND (:minRating IS NULL OR a.rating >= :minRating)
-        """)
+            SELECT a FROM Asset a
+            JOIN FETCH a.folder
+            WHERE a.folder = :folder
+              AND a.deletedAt IS NULL
+              AND (:search IS NULL OR LOWER(a.fileName) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))
+              AND (:dateFrom IS NULL OR a.fileCreationDateTime >= :dateFrom)
+              AND (:dateTo   IS NULL OR a.fileCreationDateTime <= :dateTo)
+              AND (:minRating IS NULL OR a.rating >= :minRating)
+            """)
     Page<Asset> findByFolderWithFilters(
-        @Param("folder")    Folder folder,
-        @Param("search")    String search,
-        @Param("dateFrom")  LocalDateTime dateFrom,
-        @Param("dateTo")    LocalDateTime dateTo,
-        @Param("minRating") Integer minRating,
-        Pageable pageable);
+            @Param("folder") Folder folder,
+            @Param("search") String search,
+            @Param("dateFrom") LocalDateTime dateFrom,
+            @Param("dateTo") LocalDateTime dateTo,
+            @Param("minRating") Integer minRating,
+            Pageable pageable);
 }
