@@ -48,30 +48,73 @@ mvn test -Dtest=CatalogAssetsServiceImplTest#methodName
 
 ### Architecture
 
-Clean architecture in a single Maven module (`com.jpablodrexler.photo-manager`), mirroring the original desktop app's layer separation:
+**Hexagonal Architecture** (Ports & Adapters) in a single Maven module (`com.jpablodrexler.photo-manager`). The domain is completely free of framework dependencies; all Spring, JPA, and file-I/O concerns live exclusively in the `infrastructure/` package tree.
 
 ```
-api/                  → REST controllers + request/response DTOs
-application/          → PhotoManagerFacade (orchestration) + application DTOs
 domain/
-  entity/             → JPA entities (Asset, Folder, …)
+  model/              → Plain POJO domain objects (Asset, Folder, Album, User…)
+  port/
+    in/               → Use-case interfaces (driving ports) — one interface, one method each
+      asset/          →   GetAssetsUseCase, GetAssetImageUseCase, GetAssetExifUseCase,
+                          DownloadAssetsUseCase, RateAssetUseCase, MoveAssetsUseCase,
+                          UploadAssetUseCase, DeleteAssetsUseCase
+      catalog/        →   CatalogAssetsUseCase, GetDuplicatedAssetsUseCase
+      album/          →   GetAlbumsUseCase, CreateAlbumUseCase, GetAlbumUseCase,
+                          UpdateAlbumUseCase, DeleteAlbumUseCase,
+                          AddAssetsToAlbumUseCase, RemoveAssetsFromAlbumUseCase
+      sync/           →   GetSyncConfigUseCase, SaveSyncConfigUseCase, SyncAssetsUseCase
+      convert/        →   GetConvertConfigUseCase, SaveConvertConfigUseCase, ConvertAssetsUseCase
+      folder/         →   GetSubFoldersUseCase, GetDrivesUseCase,
+                          GetInitialFolderUseCase, GetRecentTargetPathsUseCase
+      recycle/        →   GetDeletedAssetsUseCase, RestoreAssetsUseCase, PurgeAssetsUseCase
+      search/         →   GetSearchPresetsUseCase, CreateSearchPresetUseCase, DeleteSearchPresetUseCase
+      home/           →   GetHomeStatsUseCase
+      user/           →   ListUsersUseCase, CreateUserUseCase, UpdatePasswordUseCase, DeleteUserUseCase
+    out/              → Secondary port interfaces (driven ports) — plain Java only
+                        AssetRepositoryPort, FolderRepositoryPort, AlbumRepositoryPort,
+                        StoragePort, ThumbnailPort, HashCalculatorPort, JwtTokenPort…
+  service/            → Stateless pure-domain logic (FindDuplicatedAssetsService)
   enums/              → ImageRotation, SortCriteria, WallpaperStyle, ReasonEnum
-  repository/         → Spring Data JPA interfaces
-  service/            → Domain service interfaces
+
+application/
+  dto/                → Framework-free application DTOs (AssetFilter, PaginatedResult,
+                        CatalogChangeNotification, SyncAssetsResult…)
+  usecase/            → One implementation class per interface (@Service @Transactional only)
+    asset/   catalog/   album/   sync/   convert/
+    folder/  recycle/   search/  home/   user/   ← mirrors port/in subpackage layout
+
 infrastructure/
-  service/            → Service implementations, StorageServiceImpl, ThumbnailStorageService
-config/               → AppConfig (CORS, async executor)
+  persistence/
+    entity/           → @Entity JPA classes (AssetEntity, FolderEntity…)
+    jpa/              → Spring Data JPA interfaces (JpaAssetRepository…)
+    adapter/          → Implements domain/port/out persistence ports
+    mapper/           → Entity ↔ domain model conversions
+  web/
+    controller/       → @RestController primary adapters (AssetController…)
+    dto/              → HTTP request/response DTOs
+    mapper/           → Domain model ↔ HTTP DTO conversions
+    exception/        → GlobalExceptionHandler, domain exceptions
+  service/            → Secondary service adapters (StorageServiceAdapter,
+                        ThumbnailStorageServiceAdapter, JwtTokenAdapter,
+                        CatalogScheduler, JwtAuthenticationFilter…)
+  config/             → AppConfig, SecurityConfig, DataInitializer, UserConfig
 ```
 
-**Dependency flow:** `api` → `application` → `domain` ← `infrastructure`
+**Dependency flow:** Primary Adapters → `port/in` → Use Cases → `port/out` ← Secondary Adapters
 
-**Key domain services** (interfaces in `domain/service/`, implementations in `infrastructure/service/`):
-- `CatalogAssetsService` — recursively scans folders, generates thumbnails (200×150 px), computes SHA-256 hashes, persists to DB; runs asynchronously and streams progress via `Consumer<CatalogChangeNotification>`
-- `SyncAssetsService` — copies new files between directory pairs, optionally deletes files missing from the source
-- `ConvertAssetsService` — converts PNG images to JPEG
-- `FindDuplicatedAssetsService` — groups assets by hash, filters out stale entries
-- `MoveAssetsService` — copies or moves files on disk and updates the DB record
-- `StorageService` — file I/O, thumbnail generation, EXIF rotation (Apache Commons Imaging), SHA-256
+**Key rules when adding code:**
+- `domain/` must have zero `jakarta.*` or `org.springframework.*` imports.
+- `domain/port/out/` interfaces use plain Java types — never `JpaRepository`, `Page`, or `Pageable`.
+- `application/usecase/` implementations may only carry `@Service` and `@Transactional` — no other Spring annotations.
+- All `@Entity`, `@RestController`, and Spring Data repository interfaces belong exclusively in `infrastructure/`.
+
+**Key use cases** (interfaces in `domain/port/in/`, implementations in `application/usecase/`):
+- `CatalogAssetsUseCase` — recursively scans folders, generates thumbnails (200×150 px), computes SHA-256 hashes, persists to DB; runs asynchronously and streams progress via `Consumer<CatalogChangeNotification>`
+- `SyncAssetsUseCase` — copies new files between directory pairs, optionally deletes files missing from the source
+- `ConvertAssetsUseCase` — converts PNG images to JPEG
+- `GetDuplicatedAssetsUseCase` — groups assets by hash, filters out stale entries
+- `MutateAssetsUseCase` — move, copy, rate, upload, and delete assets
+- `StoragePort` / `StorageServiceAdapter` — file I/O, thumbnail generation, EXIF rotation (Apache Commons Imaging), SHA-256
 
 **Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by **Flyway**; migrations live in `src/main/resources/db/migration/`. Connection is configured via environment variables (see table below).
 
@@ -143,19 +186,19 @@ The app uses **JWT stored in an HttpOnly cookie** (`SameSite=Strict`, `Path=/`).
 
 ### Testing Conventions
 
-Tests use **JUnit 5** + **Mockito** + **AssertJ**. Typical unit test pattern:
+Tests use **JUnit 5** + **Mockito** + **AssertJ**. Mock the domain port interfaces — never Spring Data repository interfaces or concrete implementations. Typical unit test pattern:
 
 ```java
 @ExtendWith(MockitoExtension.class)
-class CatalogAssetsServiceImplTest {
+class CatalogAssetsUseCaseImplTest {
 
-    @Mock StorageService storageService;
-    @Mock AssetRepository assetRepository;
-    @InjectMocks CatalogAssetsServiceImpl sut;
+    @Mock StoragePort storagePort;
+    @Mock AssetRepositoryPort assetRepository;
+    @InjectMocks CatalogAssetsUseCaseImpl sut;
 
     @Test
     void methodName_condition_expectedResult() {
-        when(storageService.listFiles(any())).thenReturn(List.of("/photos/a.jpg"));
+        when(storagePort.listFiles(any())).thenReturn(List.of("/photos/a.jpg"));
         // ...
         assertThat(result).isNotNull();
     }
@@ -171,8 +214,9 @@ Integration tests annotate with `@SpringBootTest`, extend `PostgresIntegrationTe
 - **Transactions:** read-only queries use `@Transactional(readOnly = true)`; writes use `@Transactional`.
 - **Async:** long-running methods are annotated `@Async` and return `CompletableFuture<T>`; the thread pool is configured in `AppConfig`.
 - **Logging:** use the SLF4J logger injected by `@Slf4j`, not `System.out`.
-- **New services:** declare the interface in `domain/service/`, implement in `infrastructure/service/`, and let Spring autowire via the interface. No manual bean registration needed — `@Service` is sufficient.
-- **New endpoints:** add a `@RestController` in `api/`; keep controllers thin (delegate immediately to `PhotoManagerFacade`).
+- **New use case:** declare a single-method interface in `domain/port/in/<subpackage>/`; create one implementation class in the mirrored `application/usecase/<subpackage>/` path (annotate `@Service @Transactional` only; inject only `domain/port/out/` interfaces); inject the interface into the relevant controller in `infrastructure/web/controller/`.
+- **New secondary service:** declare a driven port interface in `domain/port/out/`; implement it as an adapter in `infrastructure/service/` or `infrastructure/persistence/adapter/` (annotate `@Service`; all framework imports stay here).
+- **New endpoints:** add a `@RestController` in `infrastructure/web/controller/`; keep controllers thin (translate HTTP ↔ domain types via `infrastructure/web/mapper/`, then delegate to use-case interfaces).
 
 ---
 

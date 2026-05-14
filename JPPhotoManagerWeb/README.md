@@ -101,39 +101,62 @@ graph TB
     SpringBoot -->|"File I/O"| FS
 ```
 
-### Backend Layer Architecture
+### Backend Architecture (Hexagonal / Ports & Adapters)
 
-The backend follows **clean architecture** with strict, unidirectional layer dependencies:
+The backend follows **Hexagonal Architecture** (also called Ports & Adapters). The domain sits at the centre and is completely free of framework dependencies. All Spring, JPA, and file-I/O concerns live in the infrastructure layer and communicate with the domain only through explicit port interfaces.
 
 ```mermaid
 graph LR
-    subgraph A["api/"]
-        C["Controllers\n+ Request/Response DTOs"]
-    end
-    subgraph APP["application/"]
-        F["PhotoManagerFacade\n(orchestration)"]
-        ADTO["Application DTOs\n(CatalogChangeNotification,\nPaginatedData…)"]
-    end
-    subgraph D["domain/"]
-        SI["Service Interfaces\n(CatalogAssetsService,\nSyncAssetsService…)"]
-        RI["Repository Interfaces\n(AssetRepository,\nFolderRepository…)"]
-        E["Entities & Enums\n(Asset, Folder,\nAlbum, User…)"]
-    end
-    subgraph I["infrastructure/"]
-        SImpl["Service Implementations\n(CatalogAssetsServiceImpl,\nStorageServiceImpl…)"]
-        Sec["Security\n(JwtUtil,\nJwtAuthenticationFilter)"]
+    subgraph Primary["Primary Adapters — Driving"]
+        WEB["infrastructure/web/controller/\nAssetController · AlbumController\nFolderController · SyncController…"]
+        SCHED["infrastructure/service/\nCatalogScheduler"]
     end
 
-    C --> F
-    F --> SI
-    F --> ADTO
-    SImpl -.->|"implements"| SI
-    SImpl --> RI
-    SImpl --> E
-    RI --> E
+    subgraph Hexagon["Domain Hexagon"]
+        subgraph PortIn["domain/port/in — Driving Ports"]
+            UC["asset/ · catalog/ · album/ · sync/\nconvert/ · folder/ · recycle/\nsearch/ · home/ · user/\n38 single-method interfaces"]
+        end
+        subgraph DomainCore["domain core"]
+            MODEL["domain/model/\nAsset · Folder · Album\nUser · SearchPreset…"]
+            DSVC["domain/service/\nFindDuplicatedAssetsService"]
+        end
+        subgraph PortOut["domain/port/out — Driven Ports"]
+            REPO_P["AssetRepositoryPort\nFolderRepositoryPort\nAlbumRepositoryPort\n… 11 repository ports"]
+            SVC_P["StoragePort · ThumbnailPort\nHashCalculatorPort · JwtTokenPort"]
+        end
+    end
+
+    subgraph AppLayer["application/usecase/"]
+        IMPL["38 implementation classes\none per interface\n(@Service @Transactional only)"]
+    end
+
+    subgraph Secondary["Secondary Adapters — Driven"]
+        JPA["infrastructure/persistence/adapter/\nAssetRepositoryAdapter\nFolderRepositoryAdapter…\n(Spring Data JPA)"]
+        SRVC["infrastructure/service/\nStorageServiceAdapter\nThumbnailStorageServiceAdapter\nJwtTokenAdapter"]
+    end
+
+    HTTP[/"Angular SPA\nHTTP · SSE"/] --> WEB
+    TIMER[/"Spring Scheduler"/] --> SCHED
+    WEB -->|"port/in"| UC
+    SCHED -->|"port/in"| UC
+    UC --> IMPL
+    IMPL --> MODEL
+    IMPL --> DSVC
+    IMPL -->|"port/out"| REPO_P
+    IMPL -->|"port/out"| SVC_P
+    JPA -.->|"implements"| REPO_P
+    SRVC -.->|"implements"| SVC_P
+    JPA --> PG[("PostgreSQL")]
+    SRVC --> FS[("File System")]
 ```
 
-**Dependency flow:** `api` → `application` → `domain` ← `infrastructure` — the domain layer has no outward dependencies.
+**Key rules:**
+- `domain/` has zero `jakarta.*` or `org.springframework.*` imports.
+- `domain/port/out/` interfaces use plain Java types only — no `JpaRepository`, `Page`, or `Pageable`.
+- `application/usecase/` implementations carry `@Service` and `@Transactional` only — no other Spring annotations, no HTTP types.
+- `infrastructure/` is the only layer allowed to import Spring, JPA, Jackson, and external libraries.
+
+**Dependency flow:** Primary Adapters → `port/in` → Use Cases → `port/out` ← Secondary Adapters — the domain hexagon has no outward framework dependencies.
 
 ### Database Schema
 
