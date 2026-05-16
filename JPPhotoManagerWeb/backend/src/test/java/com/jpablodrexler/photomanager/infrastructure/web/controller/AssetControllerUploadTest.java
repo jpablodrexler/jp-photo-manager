@@ -1,10 +1,22 @@
-package com.jpablodrexler.photomanager.api;
+package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.api.exception.FolderNotFoundException;
-import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
-import com.jpablodrexler.photomanager.domain.entity.Asset;
-import com.jpablodrexler.photomanager.domain.entity.Folder;
-import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
+import com.jpablodrexler.photomanager.application.exception.FolderNotFoundException;
+import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.Folder;
+import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
+import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -16,8 +28,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -30,9 +41,31 @@ class AssetControllerUploadTest {
     MockMvc mockMvc;
 
     @MockitoBean
-    PhotoManagerFacade facade;
+    GetAssetsUseCase getAssetsUseCase;
     @MockitoBean
-    ThumbnailStorageService thumbnailStorageService;
+    GetAssetImageUseCase getAssetImageUseCase;
+    @MockitoBean
+    GetAssetExifUseCase getAssetExifUseCase;
+    @MockitoBean
+    DownloadAssetsUseCase downloadAssetsUseCase;
+    @MockitoBean
+    RateAssetUseCase rateAssetUseCase;
+    @MockitoBean
+    MoveAssetsUseCase moveAssetsUseCase;
+    @MockitoBean
+    UploadAssetUseCase uploadAssetUseCase;
+    @MockitoBean
+    DeleteAssetsUseCase deleteAssetsUseCase;
+    @MockitoBean
+    CatalogAssetsUseCase catalogAssetsUseCase;
+    @MockitoBean
+    GetDuplicatedAssetsUseCase getDuplicatedAssetsUseCase;
+    @MockitoBean
+    ThumbnailPort thumbnailPort;
+    @MockitoBean
+    FolderRepository folderRepository;
+    @MockitoBean
+    AssetWebMapper assetWebMapper;
 
     @Test
     void uploadAsset_validJpeg_returns201WithAssetDto() throws Exception {
@@ -46,7 +79,12 @@ class AssetControllerUploadTest {
         asset.setFileName("photo.jpg");
         asset.setFileSize(1024L);
 
-        when(facade.uploadAsset(eq("/photos"), any())).thenReturn(asset);
+        AssetDto dto = new AssetDto();
+        dto.setAssetId(42L);
+        dto.setFileName("photo.jpg");
+
+        when(uploadAssetUseCase.execute(eq("/photos"), eq("photo.jpg"), any())).thenReturn(asset);
+        when(assetWebMapper.toDto(asset)).thenReturn(dto);
 
         MockMultipartFile file = new MockMultipartFile(
                 "file", "photo.jpg", "image/jpeg", new byte[]{(byte) 0xFF, (byte) 0xD8});
@@ -54,8 +92,8 @@ class AssetControllerUploadTest {
                 "folderPath", "", MediaType.TEXT_PLAIN_VALUE, "/photos".getBytes());
 
         mockMvc.perform(multipart("/api/assets/upload")
-                .file(file)
-                .file(folderPathPart))
+                        .file(file)
+                        .file(folderPathPart))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.assetId").value(42))
                 .andExpect(jsonPath("$.fileName").value("photo.jpg"));
@@ -69,8 +107,8 @@ class AssetControllerUploadTest {
                 "folderPath", "", MediaType.TEXT_PLAIN_VALUE, "/photos".getBytes());
 
         mockMvc.perform(multipart("/api/assets/upload")
-                .file(file)
-                .file(folderPathPart))
+                        .file(file)
+                        .file(folderPathPart))
                 .andExpect(status().isUnsupportedMediaType());
     }
 
@@ -82,14 +120,14 @@ class AssetControllerUploadTest {
                 "folderPath", "", MediaType.TEXT_PLAIN_VALUE, "/photos".getBytes());
 
         mockMvc.perform(multipart("/api/assets/upload")
-                .file(file)
-                .file(folderPathPart))
+                        .file(file)
+                        .file(folderPathPart))
                 .andExpect(status().isUnsupportedMediaType());
     }
 
     @Test
     void uploadAsset_unknownFolder_returns404() throws Exception {
-        when(facade.uploadAsset(eq("/unknown"), any()))
+        when(uploadAssetUseCase.execute(eq("/unknown"), anyString(), any()))
                 .thenThrow(new FolderNotFoundException("/unknown"));
 
         MockMultipartFile file = new MockMultipartFile(
@@ -98,14 +136,14 @@ class AssetControllerUploadTest {
                 "folderPath", "", MediaType.TEXT_PLAIN_VALUE, "/unknown".getBytes());
 
         mockMvc.perform(multipart("/api/assets/upload")
-                .file(file)
-                .file(folderPathPart))
+                        .file(file)
+                        .file(folderPathPart))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void uploadAsset_ioException_returns500() throws Exception {
-        when(facade.uploadAsset(eq("/photos"), any()))
+        when(uploadAssetUseCase.execute(eq("/photos"), anyString(), any()))
                 .thenThrow(new IOException("disk full"));
 
         MockMultipartFile file = new MockMultipartFile(
@@ -114,8 +152,8 @@ class AssetControllerUploadTest {
                 "folderPath", "", MediaType.TEXT_PLAIN_VALUE, "/photos".getBytes());
 
         mockMvc.perform(multipart("/api/assets/upload")
-                .file(file)
-                .file(folderPathPart))
+                        .file(file)
+                        .file(folderPathPart))
                 .andExpect(status().isInternalServerError());
     }
 }

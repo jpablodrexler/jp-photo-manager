@@ -1,9 +1,20 @@
-package com.jpablodrexler.photomanager.api;
+package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jpablodrexler.photomanager.api.dto.DownloadAssetsRequest;
-import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
-import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
+import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
+import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.DownloadAssetsRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -35,17 +46,38 @@ class AssetControllerDownloadTest {
     ObjectMapper objectMapper;
 
     @MockitoBean
-    PhotoManagerFacade facade;
-
+    GetAssetsUseCase getAssetsUseCase;
     @MockitoBean
-    ThumbnailStorageService thumbnailStorageService;
+    GetAssetImageUseCase getAssetImageUseCase;
+    @MockitoBean
+    GetAssetExifUseCase getAssetExifUseCase;
+    @MockitoBean
+    DownloadAssetsUseCase downloadAssetsUseCase;
+    @MockitoBean
+    RateAssetUseCase rateAssetUseCase;
+    @MockitoBean
+    MoveAssetsUseCase moveAssetsUseCase;
+    @MockitoBean
+    UploadAssetUseCase uploadAssetUseCase;
+    @MockitoBean
+    DeleteAssetsUseCase deleteAssetsUseCase;
+    @MockitoBean
+    CatalogAssetsUseCase catalogAssetsUseCase;
+    @MockitoBean
+    GetDuplicatedAssetsUseCase getDuplicatedAssetsUseCase;
+    @MockitoBean
+    ThumbnailPort thumbnailPort;
+    @MockitoBean
+    FolderRepository folderRepository;
+    @MockitoBean
+    AssetWebMapper assetWebMapper;
 
     @Test
     void downloadAssets_validRequest_returns200WithZipHeaders() throws Exception {
         DownloadAssetsRequest request = new DownloadAssetsRequest();
         request.setAssetIds(List.of(10L, 20L, 30L));
 
-        doNothing().when(facade).downloadAssets(eq(List.of(10L, 20L, 30L)), any());
+        doNothing().when(downloadAssetsUseCase).execute(eq(List.of(10L, 20L, 30L)), any());
 
         mockMvc.perform(post("/api/assets/download")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -54,7 +86,7 @@ class AssetControllerDownloadTest {
                 .andExpect(header().string("Content-Type", "application/zip"))
                 .andExpect(header().string("Content-Disposition", "attachment; filename=\"photos.zip\""));
 
-        verify(facade).downloadAssets(eq(List.of(10L, 20L, 30L)), any());
+        verify(downloadAssetsUseCase).execute(eq(List.of(10L, 20L, 30L)), any());
     }
 
     @Test

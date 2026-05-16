@@ -1,10 +1,10 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
-import com.jpablodrexler.photomanager.api.exception.InvalidRefreshTokenException;
-import com.jpablodrexler.photomanager.domain.entity.RefreshToken;
-import com.jpablodrexler.photomanager.domain.entity.User;
-import com.jpablodrexler.photomanager.domain.repository.RefreshTokenRepository;
-import com.jpablodrexler.photomanager.domain.repository.UserRepository;
+import com.jpablodrexler.photomanager.infrastructure.web.exception.InvalidRefreshTokenException;
+import com.jpablodrexler.photomanager.domain.model.RefreshToken;
+import com.jpablodrexler.photomanager.domain.model.User;
+import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenRepository;
+import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import com.jpablodrexler.photomanager.domain.service.RefreshTokenService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

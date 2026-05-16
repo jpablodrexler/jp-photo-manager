@@ -1,7 +1,12 @@
-package com.jpablodrexler.photomanager.api;
+package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
-import com.jpablodrexler.photomanager.domain.entity.Folder;
+import com.jpablodrexler.photomanager.domain.model.Folder;
+import com.jpablodrexler.photomanager.domain.port.in.folder.GetDrivesUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.folder.GetInitialFolderUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.folder.GetRecentTargetPathsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.folder.GetSubFoldersUseCase;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.FolderDto;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.FolderWebMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -22,15 +27,26 @@ class FolderControllerTest {
 
     @Autowired
     MockMvc mockMvc;
+
     @MockitoBean
-    PhotoManagerFacade facade;
+    GetSubFoldersUseCase getSubFoldersUseCase;
+    @MockitoBean
+    GetDrivesUseCase getDrivesUseCase;
+    @MockitoBean
+    GetInitialFolderUseCase getInitialFolderUseCase;
+    @MockitoBean
+    GetRecentTargetPathsUseCase getRecentTargetPathsUseCase;
+    @MockitoBean
+    FolderWebMapper folderWebMapper;
 
     // --- GET /api/folders ---
 
     @Test
     void getFolders_noParentPath_returnsAllFolders() throws Exception {
         Folder folder = buildFolder(1L, "/photos");
-        when(facade.getSubFolders(null)).thenReturn(List.of(folder));
+        FolderDto dto = buildFolderDto(1L, "/photos");
+        when(getSubFoldersUseCase.execute(null)).thenReturn(List.of(folder));
+        when(folderWebMapper.toDto(folder)).thenReturn(dto);
 
         mockMvc.perform(get("/api/folders"))
                 .andExpect(status().isOk())
@@ -42,7 +58,9 @@ class FolderControllerTest {
     @Test
     void getFolders_withParentPath_returnsSubFolders() throws Exception {
         Folder sub = buildFolder(2L, "/photos/2024");
-        when(facade.getSubFolders("/photos")).thenReturn(List.of(sub));
+        FolderDto dto = buildFolderDto(2L, "/photos/2024");
+        when(getSubFoldersUseCase.execute("/photos")).thenReturn(List.of(sub));
+        when(folderWebMapper.toDto(sub)).thenReturn(dto);
 
         mockMvc.perform(get("/api/folders").param("parentPath", "/photos"))
                 .andExpect(status().isOk())
@@ -51,7 +69,7 @@ class FolderControllerTest {
 
     @Test
     void getFolders_emptyResult_returns200WithEmptyArray() throws Exception {
-        when(facade.getSubFolders(any())).thenReturn(List.of());
+        when(getSubFoldersUseCase.execute(any())).thenReturn(List.of());
 
         mockMvc.perform(get("/api/folders"))
                 .andExpect(status().isOk())
@@ -62,7 +80,7 @@ class FolderControllerTest {
 
     @Test
     void getDrives_returns200WithDriveList() throws Exception {
-        when(facade.getDrives()).thenReturn(List.of("/", "/mnt/usb"));
+        when(getDrivesUseCase.execute()).thenReturn(List.of("/", "/mnt/usb"));
 
         mockMvc.perform(get("/api/folders/drives"))
                 .andExpect(status().isOk())
@@ -74,7 +92,7 @@ class FolderControllerTest {
 
     @Test
     void getInitialFolder_returns200WithConfiguredPath() throws Exception {
-        when(facade.getInitialFolder()).thenReturn("/home/user/Pictures");
+        when(getInitialFolderUseCase.execute()).thenReturn("/home/user/Pictures");
 
         mockMvc.perform(get("/api/folders/initial"))
                 .andExpect(status().isOk())
@@ -85,7 +103,7 @@ class FolderControllerTest {
 
     @Test
     void getRecentTargetPaths_returns200WithPaths() throws Exception {
-        when(facade.getRecentTargetPaths()).thenReturn(List.of("/dest1", "/dest2"));
+        when(getRecentTargetPathsUseCase.execute()).thenReturn(List.of("/dest1", "/dest2"));
 
         mockMvc.perform(get("/api/folders/recent-paths"))
                 .andExpect(status().isOk())
@@ -95,7 +113,7 @@ class FolderControllerTest {
 
     @Test
     void getRecentTargetPaths_noPaths_returns200WithEmptyArray() throws Exception {
-        when(facade.getRecentTargetPaths()).thenReturn(List.of());
+        when(getRecentTargetPathsUseCase.execute()).thenReturn(List.of());
 
         mockMvc.perform(get("/api/folders/recent-paths"))
                 .andExpect(status().isOk())
@@ -109,5 +127,13 @@ class FolderControllerTest {
         folder.setFolderId(id);
         folder.setPath(path);
         return folder;
+    }
+
+    private FolderDto buildFolderDto(Long id, String path) {
+        FolderDto dto = new FolderDto();
+        dto.setFolderId(id);
+        dto.setPath(path);
+        dto.setName(path.substring(path.lastIndexOf('/') + 1));
+        return dto;
     }
 }

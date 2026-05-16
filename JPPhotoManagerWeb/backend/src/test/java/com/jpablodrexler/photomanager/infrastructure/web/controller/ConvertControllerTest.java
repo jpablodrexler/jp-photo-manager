@@ -1,9 +1,11 @@
-package com.jpablodrexler.photomanager.api;
+package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
 import com.jpablodrexler.photomanager.application.dto.ConvertAssetsResult;
-import com.jpablodrexler.photomanager.domain.entity.ConvertAssetsDirectoriesDefinition;
+import com.jpablodrexler.photomanager.domain.model.ConvertDirectoriesDefinition;
+import com.jpablodrexler.photomanager.domain.port.in.convert.ConvertAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.convert.GetConvertConfigUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.convert.SaveConvertConfigUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -30,15 +32,20 @@ class ConvertControllerTest {
     MockMvc mockMvc;
     @Autowired
     ObjectMapper objectMapper;
+
     @MockitoBean
-    PhotoManagerFacade facade;
+    GetConvertConfigUseCase getConvertConfigUseCase;
+    @MockitoBean
+    SaveConvertConfigUseCase saveConvertConfigUseCase;
+    @MockitoBean
+    ConvertAssetsUseCase convertAssetsUseCase;
 
     // --- GET /api/convert/configuration ---
 
     @Test
     void getConfiguration_returns200WithDefinitions() throws Exception {
-        ConvertAssetsDirectoriesDefinition def = buildDef("/src", "/dst");
-        when(facade.getConvertAssetsConfiguration()).thenReturn(List.of(def));
+        ConvertDirectoriesDefinition def = buildDef("/src", "/dst");
+        when(getConvertConfigUseCase.execute()).thenReturn(List.of(def));
 
         mockMvc.perform(get("/api/convert/configuration"))
                 .andExpect(status().isOk())
@@ -48,7 +55,7 @@ class ConvertControllerTest {
 
     @Test
     void getConfiguration_emptyList_returns200WithEmptyArray() throws Exception {
-        when(facade.getConvertAssetsConfiguration()).thenReturn(List.of());
+        when(getConvertConfigUseCase.execute()).thenReturn(List.of());
 
         mockMvc.perform(get("/api/convert/configuration"))
                 .andExpect(status().isOk())
@@ -59,15 +66,15 @@ class ConvertControllerTest {
 
     @Test
     void setConfiguration_validBody_returns204() throws Exception {
-        doNothing().when(facade).setConvertAssetsConfiguration(any());
-        List<ConvertAssetsDirectoriesDefinition> defs = List.of(buildDef("/src", "/dst"));
+        doNothing().when(saveConvertConfigUseCase).execute(any());
+        List<ConvertDirectoriesDefinition> defs = List.of(buildDef("/src", "/dst"));
 
         mockMvc.perform(put("/api/convert/configuration")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(defs)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(defs)))
                 .andExpect(status().isNoContent());
 
-        verify(facade).setConvertAssetsConfiguration(any());
+        verify(saveConvertConfigUseCase).execute(any());
     }
 
     // --- GET /api/convert/run (SSE) ---
@@ -76,7 +83,7 @@ class ConvertControllerTest {
     void run_initiatesAsyncConversion_returns200() throws Exception {
         ConvertAssetsResult result = new ConvertAssetsResult();
         result.setSuccess(true);
-        when(facade.convertAssetsAsync(any()))
+        when(convertAssetsUseCase.execute(any()))
                 .thenReturn(CompletableFuture.completedFuture(List.of(result)));
 
         MvcResult mvcResult = mockMvc.perform(get("/api/convert/run"))
@@ -89,8 +96,8 @@ class ConvertControllerTest {
 
     // --- helper ---
 
-    private ConvertAssetsDirectoriesDefinition buildDef(String source, String dest) {
-        ConvertAssetsDirectoriesDefinition def = new ConvertAssetsDirectoriesDefinition();
+    private ConvertDirectoriesDefinition buildDef(String source, String dest) {
+        ConvertDirectoriesDefinition def = new ConvertDirectoriesDefinition();
         def.setSourceDirectory(source);
         def.setDestinationDirectory(dest);
         return def;

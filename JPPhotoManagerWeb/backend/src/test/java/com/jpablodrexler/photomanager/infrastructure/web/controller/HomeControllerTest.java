@@ -1,7 +1,7 @@
-package com.jpablodrexler.photomanager.api;
+package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
 import com.jpablodrexler.photomanager.application.dto.HomeStats;
+import com.jpablodrexler.photomanager.domain.port.in.home.GetHomeStatsUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -23,23 +23,27 @@ class HomeControllerTest {
     MockMvc mockMvc;
 
     @MockitoBean
-    PhotoManagerFacade facade;
+    GetHomeStatsUseCase getHomeStatsUseCase;
+
+    // --- GET /api/home/stats ---
 
     @Test
     void getStats_returnsCountsAndLastCompleted() throws Exception {
-        Instant lastCompleted = Instant.parse("2026-05-01T10:00:00Z");
-        when(facade.getHomeStats()).thenReturn(new HomeStats(42L, 1234L, lastCompleted));
+        Instant lastCatalog = Instant.parse("2025-01-15T10:00:00Z");
+        HomeStats stats = new HomeStats(42L, 1000L, lastCatalog);
+        when(getHomeStatsUseCase.execute()).thenReturn(stats);
 
         mockMvc.perform(get("/api/home/stats"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.folderCount").value(42))
-                .andExpect(jsonPath("$.assetCount").value(1234))
+                .andExpect(jsonPath("$.assetCount").value(1000))
                 .andExpect(jsonPath("$.lastCatalogCompletedAt").isNotEmpty());
     }
 
     @Test
     void getStats_noCompletedCatalog_returnsNullTimestamp() throws Exception {
-        when(facade.getHomeStats()).thenReturn(new HomeStats(0L, 0L, null));
+        HomeStats stats = new HomeStats(0L, 0L, null);
+        when(getHomeStatsUseCase.execute()).thenReturn(stats);
 
         mockMvc.perform(get("/api/home/stats"))
                 .andExpect(status().isOk())

@@ -1,17 +1,27 @@
-package com.jpablodrexler.photomanager.api;
+package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jpablodrexler.photomanager.api.dto.CreateAlbumRequest;
-import com.jpablodrexler.photomanager.api.dto.UpdateAlbumRequest;
-import com.jpablodrexler.photomanager.api.dto.AlbumAssetIdsRequest;
-import com.jpablodrexler.photomanager.api.exception.AlbumNotFoundException;
-import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
 import com.jpablodrexler.photomanager.application.dto.AlbumData;
-import com.jpablodrexler.photomanager.application.dto.PaginatedData;
-import com.jpablodrexler.photomanager.domain.entity.Asset;
-import com.jpablodrexler.photomanager.domain.entity.Folder;
-import com.jpablodrexler.photomanager.domain.entity.User;
-import com.jpablodrexler.photomanager.domain.repository.UserRepository;
+import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
+import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.Folder;
+import com.jpablodrexler.photomanager.domain.model.User;
+import com.jpablodrexler.photomanager.domain.port.in.album.AddAssetsToAlbumUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.album.CreateAlbumUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.album.DeleteAlbumUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.album.RemoveAssetsFromAlbumUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.album.UpdateAlbumUseCase;
+import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.AlbumAssetIdsRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.AlbumSummaryDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.CreateAlbumRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.UpdateAlbumRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.AlbumWebMapper;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,10 +53,25 @@ class AlbumControllerTest {
     ObjectMapper objectMapper;
 
     @MockitoBean
-    PhotoManagerFacade facade;
-
+    GetAlbumsUseCase getAlbumsUseCase;
+    @MockitoBean
+    CreateAlbumUseCase createAlbumUseCase;
+    @MockitoBean
+    GetAlbumUseCase getAlbumUseCase;
+    @MockitoBean
+    UpdateAlbumUseCase updateAlbumUseCase;
+    @MockitoBean
+    DeleteAlbumUseCase deleteAlbumUseCase;
+    @MockitoBean
+    AddAssetsToAlbumUseCase addAssetsToAlbumUseCase;
+    @MockitoBean
+    RemoveAssetsFromAlbumUseCase removeAssetsFromAlbumUseCase;
     @MockitoBean
     UserRepository userRepository;
+    @MockitoBean
+    AlbumWebMapper albumWebMapper;
+    @MockitoBean
+    AssetWebMapper assetWebMapper;
 
     private UUID userId;
     private Instant now;
@@ -67,7 +92,13 @@ class AlbumControllerTest {
     @WithMockUser("user")
     void listAlbums_returnsAlbumList_200() throws Exception {
         AlbumData album = new AlbumData(1L, "Wedding", null, now, 5L);
-        when(facade.getAlbums(userId)).thenReturn(List.of(album));
+        AlbumSummaryDto dto = new AlbumSummaryDto();
+        dto.setAlbumId(1L);
+        dto.setName("Wedding");
+        dto.setAssetCount(5L);
+
+        when(getAlbumsUseCase.execute(userId)).thenReturn(List.of(album));
+        when(albumWebMapper.toSummaryDto(album)).thenReturn(dto);
 
         mockMvc.perform(get("/api/albums"))
                 .andExpect(status().isOk())
@@ -82,7 +113,13 @@ class AlbumControllerTest {
     @WithMockUser("user")
     void createAlbum_validRequest_returns201WithDto() throws Exception {
         AlbumData created = new AlbumData(2L, "Vacation 2025", null, now, 0L);
-        when(facade.createAlbum(eq(userId), eq("Vacation 2025"), isNull())).thenReturn(created);
+        AlbumSummaryDto dto = new AlbumSummaryDto();
+        dto.setAlbumId(2L);
+        dto.setName("Vacation 2025");
+        dto.setAssetCount(0L);
+
+        when(createAlbumUseCase.execute(eq(userId), eq("Vacation 2025"), isNull())).thenReturn(created);
+        when(albumWebMapper.toSummaryDto(created)).thenReturn(dto);
 
         CreateAlbumRequest req = new CreateAlbumRequest("Vacation 2025", null);
         mockMvc.perform(post("/api/albums")
@@ -102,10 +139,15 @@ class AlbumControllerTest {
         AlbumData summary = new AlbumData(1L, "Wedding", "2024", now, 3L);
         Folder folder = buildFolder(1L, "/photos");
         Asset asset = buildAsset(folder, "photo.jpg", 10L);
-        PaginatedData<Asset> assets = new PaginatedData<>(List.of(asset), 0, 1, 1L);
+        PaginatedResult<Asset> assets = new PaginatedResult<>(List.of(asset), 1L, 0, 50);
 
-        when(facade.getAlbumSummary(1L, userId)).thenReturn(summary);
-        when(facade.getAlbumAssets(1L, userId, 0)).thenReturn(assets);
+        AssetDto assetDto = new AssetDto();
+        assetDto.setAssetId(10L);
+        assetDto.setFileName("photo.jpg");
+
+        when(getAlbumUseCase.executeSummary(1L, userId)).thenReturn(summary);
+        when(getAlbumUseCase.executeAssets(1L, userId, 0)).thenReturn(assets);
+        when(assetWebMapper.toDto(asset)).thenReturn(assetDto);
 
         mockMvc.perform(get("/api/albums/1"))
                 .andExpect(status().isOk())
@@ -117,7 +159,7 @@ class AlbumControllerTest {
     @Test
     @WithMockUser("user")
     void getAlbum_unknownAlbum_returns404() throws Exception {
-        when(facade.getAlbumSummary(999L, userId)).thenThrow(new AlbumNotFoundException(999L));
+        when(getAlbumUseCase.executeSummary(999L, userId)).thenThrow(new AlbumNotFoundException(999L));
 
         mockMvc.perform(get("/api/albums/999"))
                 .andExpect(status().isNotFound());
@@ -129,7 +171,12 @@ class AlbumControllerTest {
     @WithMockUser("user")
     void updateAlbum_validRequest_returns200() throws Exception {
         AlbumData updated = new AlbumData(1L, "New Name", null, now, 3L);
-        when(facade.updateAlbum(eq(1L), eq(userId), eq("New Name"), isNull())).thenReturn(updated);
+        AlbumSummaryDto dto = new AlbumSummaryDto();
+        dto.setAlbumId(1L);
+        dto.setName("New Name");
+
+        when(updateAlbumUseCase.execute(eq(1L), eq(userId), eq("New Name"), isNull())).thenReturn(updated);
+        when(albumWebMapper.toSummaryDto(updated)).thenReturn(dto);
 
         UpdateAlbumRequest req = new UpdateAlbumRequest("New Name", null);
         mockMvc.perform(put("/api/albums/1")
@@ -144,7 +191,7 @@ class AlbumControllerTest {
     @Test
     @WithMockUser("user")
     void deleteAlbum_existingAlbum_returns204() throws Exception {
-        doNothing().when(facade).deleteAlbum(1L, userId);
+        doNothing().when(deleteAlbumUseCase).execute(1L, userId);
 
         mockMvc.perform(delete("/api/albums/1"))
                 .andExpect(status().isNoContent());
@@ -155,7 +202,7 @@ class AlbumControllerTest {
     @Test
     @WithMockUser("user")
     void addAssets_validRequest_returns204() throws Exception {
-        doNothing().when(facade).addAssetsToAlbum(eq(1L), eq(userId), anyList());
+        doNothing().when(addAssetsToAlbumUseCase).execute(eq(1L), eq(userId), anyList());
 
         AlbumAssetIdsRequest req = new AlbumAssetIdsRequest(List.of(101L, 102L));
         mockMvc.perform(post("/api/albums/1/assets")
@@ -169,7 +216,7 @@ class AlbumControllerTest {
     @Test
     @WithMockUser("user")
     void removeAssets_validRequest_returns204() throws Exception {
-        doNothing().when(facade).removeAssetsFromAlbum(eq(1L), eq(userId), anyList());
+        doNothing().when(removeAssetsFromAlbumUseCase).execute(eq(1L), eq(userId), anyList());
 
         AlbumAssetIdsRequest req = new AlbumAssetIdsRequest(List.of(102L));
         mockMvc.perform(delete("/api/albums/1/assets")

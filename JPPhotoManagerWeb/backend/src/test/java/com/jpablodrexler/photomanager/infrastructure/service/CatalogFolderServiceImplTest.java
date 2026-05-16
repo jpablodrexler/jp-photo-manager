@@ -1,14 +1,14 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
-import com.jpablodrexler.photomanager.domain.entity.Asset;
-import com.jpablodrexler.photomanager.domain.entity.AssetExif;
-import com.jpablodrexler.photomanager.domain.entity.Folder;
+import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.AssetExif;
+import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
-import com.jpablodrexler.photomanager.domain.repository.AssetExifRepository;
-import com.jpablodrexler.photomanager.domain.repository.AssetRepository;
-import com.jpablodrexler.photomanager.domain.repository.FolderRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.service.ExifMetadata;
 import com.jpablodrexler.photomanager.domain.service.StorageService;
 import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
@@ -152,7 +152,7 @@ class CatalogFolderServiceImplTest {
 
         sut.catalogFolder("/photos", null, NO_OP_HEARTBEAT, new AtomicInteger(0), 1);
 
-        verify(assetRepository).delete(stale);
+        verify(assetRepository).deleteById(stale.getAssetId());
     }
 
     @Test
@@ -321,7 +321,7 @@ class CatalogFolderServiceImplTest {
         when(storageService.generateThumbnail(eq(filePath), anyInt(), anyInt())).thenReturn(new byte[]{1, 2, 3});
         when(storageService.getExifMetadata(filePath)).thenReturn(
                 new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null));
-        when(assetExifRepository.findByAssetAssetId(anyLong())).thenReturn(java.util.Optional.empty());
+        when(assetExifRepository.findByAssetId(anyLong())).thenReturn(java.util.Optional.empty());
         when(assetExifRepository.save(any(AssetExif.class))).thenAnswer(inv -> inv.getArgument(0));
         when(assetRepository.save(any())).thenAnswer(inv -> {
             Asset a = inv.getArgument(0);

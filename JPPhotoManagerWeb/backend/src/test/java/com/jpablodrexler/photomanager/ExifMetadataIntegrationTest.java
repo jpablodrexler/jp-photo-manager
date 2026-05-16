@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager;
 
-import com.jpablodrexler.photomanager.domain.entity.Asset;
-import com.jpablodrexler.photomanager.domain.repository.AssetRepository;
+import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.service.CatalogFolderService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
