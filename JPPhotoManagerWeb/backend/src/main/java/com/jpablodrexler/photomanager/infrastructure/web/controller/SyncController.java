@@ -1,8 +1,10 @@
-package com.jpablodrexler.photomanager.api;
+package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.application.PhotoManagerFacade;
 import com.jpablodrexler.photomanager.application.dto.SyncAssetsResult;
-import com.jpablodrexler.photomanager.domain.entity.SyncAssetsDirectoriesDefinition;
+import com.jpablodrexler.photomanager.domain.model.SyncDirectoriesDefinition;
+import com.jpablodrexler.photomanager.domain.port.in.sync.GetSyncConfigUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.sync.SaveSyncConfigUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.sync.SyncAssetsUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,17 +21,18 @@ import java.util.concurrent.Executors;
 @RequiredArgsConstructor
 public class SyncController {
 
-    private final PhotoManagerFacade facade;
+    private final GetSyncConfigUseCase getSyncConfigUseCase;
+    private final SaveSyncConfigUseCase saveSyncConfigUseCase;
+    private final SyncAssetsUseCase syncAssetsUseCase;
 
     @GetMapping("/configuration")
-    public ResponseEntity<List<SyncAssetsDirectoriesDefinition>> getConfiguration() {
-        return ResponseEntity.ok(facade.getSyncAssetsConfiguration());
+    public ResponseEntity<List<SyncDirectoriesDefinition>> getConfiguration() {
+        return ResponseEntity.ok(getSyncConfigUseCase.execute());
     }
 
     @PutMapping("/configuration")
-    public ResponseEntity<Void> setConfiguration(
-            @Valid @RequestBody List<SyncAssetsDirectoriesDefinition> definitions) {
-        facade.setSyncAssetsConfiguration(definitions);
+    public ResponseEntity<Void> setConfiguration(@Valid @RequestBody List<SyncDirectoriesDefinition> definitions) {
+        saveSyncConfigUseCase.execute(definitions);
         return ResponseEntity.noContent().build();
     }
 
@@ -39,7 +42,7 @@ public class SyncController {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
             try {
-                List<SyncAssetsResult> results = facade.syncAssetsAsync(status -> {
+                List<SyncAssetsResult> results = syncAssetsUseCase.execute(status -> {
                     try {
                         emitter.send(SseEmitter.event().name("status").data(status));
                     } catch (IOException e) {

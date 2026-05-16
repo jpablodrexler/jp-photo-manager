@@ -1,9 +1,11 @@
-package com.jpablodrexler.photomanager.api;
+package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.api.exception.InvalidRefreshTokenException;
 import com.jpablodrexler.photomanager.domain.service.JwtTokenService;
 import com.jpablodrexler.photomanager.domain.service.RefreshTokenService;
 import com.jpablodrexler.photomanager.domain.service.UserService;
+import com.jpablodrexler.photomanager.infrastructure.web.AuthRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.LoginResponse;
+import com.jpablodrexler.photomanager.infrastructure.web.exception.InvalidRefreshTokenException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
