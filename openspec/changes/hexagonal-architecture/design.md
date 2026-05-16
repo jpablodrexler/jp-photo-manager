@@ -70,7 +70,7 @@ The overall intent is sound — infrastructure implements domain interfaces — 
 
 **Decision:** Create pure POJO classes in `domain/model/` and move JPA-annotated classes to `infrastructure/persistence/entity/`. Add mappers in `infrastructure/persistence/mapper/`.
 
-**Rationale:** This is the most invasive part of the change but is required for the domain to be framework-free. MapStruct or hand-written mappers convert between the two representations at the adapter boundary.
+**Rationale:** This is the most invasive part of the change but is required for the domain to be framework-free. MapStruct `@Mapper(componentModel = "spring")` interfaces convert between the two representations at the adapter boundary; hand-writing is not permitted.
 
 ### 4. Repository ports use plain Java types only
 
@@ -90,7 +90,7 @@ The overall intent is sound — infrastructure implements domain interfaces — 
 
 ### 6. `api/` is renamed and relocated to `infrastructure/web/`
 
-**Decision:** All classes currently in `api/` (controllers, DTOs, exceptions) move to `infrastructure/web/controller/`, `infrastructure/web/dto/`, and `infrastructure/web/exception/`. HTTP-to-domain mappers go in `infrastructure/web/mapper/`.
+**Decision:** All classes currently in `api/` (controllers, DTOs, exceptions) move to `infrastructure/web/controller/`, `infrastructure/web/dto/`, and `infrastructure/web/exception/`. HTTP-to-domain mappers go in `infrastructure/web/mapper/` as MapStruct `@Mapper(componentModel = "spring")` interfaces.
 
 **Rationale:** Controllers are adapters — they translate HTTP concepts to use-case calls and domain types to HTTP responses. Placing them under `infrastructure/web/` makes the adapter role explicit in the package name.
 
@@ -274,18 +274,18 @@ com.jpablodrexler.photomanager/
     │   │   ├── JpaConvertConfigRepository.java
     │   │   ├── JpaCatalogStateRepository.java
     │   │   └── JpaRecentTargetPathRepository.java
-    │   ├── adapter/                              ← implements domain/port/out persistence ports
-    │   │   ├── AssetRepositoryAdapter.java
-    │   │   ├── AssetExifRepositoryAdapter.java
-    │   │   ├── FolderRepositoryAdapter.java
-    │   │   ├── AlbumRepositoryAdapter.java
-    │   │   ├── UserRepositoryAdapter.java
-    │   │   ├── RefreshTokenRepositoryAdapter.java
-    │   │   ├── SearchPresetRepositoryAdapter.java
-    │   │   ├── SyncConfigRepositoryAdapter.java
-    │   │   ├── ConvertConfigRepositoryAdapter.java
-    │   │   ├── CatalogStateRepositoryAdapter.java
-    │   │   └── RecentTargetPathRepositoryAdapter.java
+    │   ├── adapter/                              ← implements domain/port/out repository interfaces
+    │   │   ├── AssetRepositoryImpl.java
+    │   │   ├── AssetExifRepositoryImpl.java
+    │   │   ├── FolderRepositoryImpl.java
+    │   │   ├── AlbumRepositoryImpl.java
+    │   │   ├── UserRepositoryImpl.java
+    │   │   ├── RefreshTokenRepositoryImpl.java
+    │   │   ├── SearchPresetRepositoryImpl.java
+    │   │   ├── SyncConfigRepositoryImpl.java
+    │   │   ├── ConvertConfigRepositoryImpl.java
+    │   │   ├── CatalogStateRepositoryImpl.java
+    │   │   └── RecentTargetPathRepositoryImpl.java
     │   └── mapper/                               ← entity ↔ domain model conversions
     │       ├── AssetEntityMapper.java
     │       ├── AssetExifEntityMapper.java
@@ -355,18 +355,19 @@ com.jpablodrexler.photomanager/
 | Risk | Mitigation |
 |---|---|
 | High volume of file renames and import changes across ~100 files | Migrate layer-by-layer (domain models first, then ports, then adapters) with the test suite green after each phase |
-| Entity ↔ model mapping adds boilerplate | Use MapStruct for structural mappings; hand-write only where business logic is needed in the conversion |
+| Entity ↔ model mapping adds boilerplate | Use MapStruct `@Mapper(componentModel = "spring")` for all entity ↔ domain model conversions; use `@Named` qualifiers when a mapper exposes multiple methods returning the same type |
 | `@Transactional` boundaries shift when logic moves from infrastructure services to application use cases | Audit transaction propagation carefully during phase 4; keep `REQUIRES_NEW` heartbeat transaction in the adapter |
 | Existing unit tests mock `JpaRepository` methods that will no longer appear in port interfaces | Rewrite those tests to mock the new port interfaces instead — this is the desired state |
-| Spring Security filter chain references `UserRepository` directly (via `UserDetailsService`) | `UserDetailsService` stays in `infrastructure/config/UserConfig.java`; it calls `UserRepositoryAdapter`, not the domain port |
+| Spring Security filter chain references `UserRepository` directly (via `UserDetailsService`) | `UserDetailsService` stays in `infrastructure/config/UserConfig.java`; it calls `UserRepositoryImpl`, not the domain port |
 
 ## Migration Plan
 
-Migration proceeds in six phases, each leaving the test suite green:
+Migration proceeds in seven phases, each leaving the test suite green:
 
 1. **Phase 1 — Domain models:** Create `domain/model/` POJOs (copy fields, remove JPA annotations). Keep old entities in place.
-2. **Phase 2 — Driven ports:** Create `domain/port/out/` interfaces with plain Java types. Create `PaginatedResult<T>` record.
-3. **Phase 3 — Persistence adapters:** Create `infrastructure/persistence/entity/`, `jpa/`, `adapter/`, `mapper/`. Wire adapters as `@Service` beans. Delete old `domain/entity/` and `domain/repository/`.
+2. **Phase 2 — Driven ports:** Create `domain/port/out/` interfaces with plain Java types. Create `PaginatedResult<T>` record. Repository interfaces use `Repository` suffix; service ports use `Port` suffix.
+3. **Phase 3 — Persistence adapters:** Create `infrastructure/persistence/entity/`, `jpa/`, `adapter/`, `mapper/`. Implement all mappers as MapStruct `@Mapper(componentModel = "spring")` interfaces. Wire repository implementations (`RepositoryImpl` suffix) as `@Service` beans. Delete old `domain/entity/` and `domain/repository/`.
 4. **Phase 4 — Driving ports + use cases:** Create `domain/port/in/` interfaces. Create `application/usecase/` implementations that use port/out interfaces. Delete `PhotoManagerFacade` and `PhotoManagerFacadeImpl`.
-5. **Phase 5 — Web adapters:** Move `api/` to `infrastructure/web/`. Update controllers to inject use-case interfaces instead of facade. Add HTTP ↔ domain mappers.
-6. **Phase 6 — Service adapters:** Rename `infrastructure/service/` adapters to match port interfaces. Verify all tests pass.
+5. **Phase 5 — Web adapters:** Move `api/` to `infrastructure/web/`. Update controllers to inject use-case interfaces instead of facade. Add HTTP ↔ domain MapStruct mappers.
+6. **Phase 6 — Service adapters:** Rename `infrastructure/service/` adapters to match port interfaces (`ServiceAdapter` suffix). Verify all tests pass.
+7. **Phase 7 — Verification and documentation:** Full build and test verification; update `CLAUDE.md` and `README.md` to document the hexagonal structure, naming conventions (`Repository`/`RepositoryImpl`, `Port`/`ServiceAdapter`), and the MapStruct-only mapping rule.

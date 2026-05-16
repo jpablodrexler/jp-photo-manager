@@ -7,7 +7,7 @@ The backend already has all the data needed to power a richer dashboard:
 - `FindDuplicatedAssetsService` already computes duplicate groups for the `/duplicates` route.
 - `AssetRepository` can return the most recently cataloged assets ordered by `thumbnailCreationDateTime`.
 
-> **Architecture note:** This design targets the post-hexagonal-architecture backend. Business logic lives in `application/usecase/home/GetHomeStatsUseCaseImpl`, repository queries are declared on `domain/port/out/AssetRepository` and implemented in `infrastructure/persistence/adapter/AssetRepositoryAdapter`, and projections are defined in `infrastructure/persistence/jpa/`.
+> **Architecture note:** This design targets the post-hexagonal-architecture backend. Business logic lives in `application/usecase/home/GetHomeStatsUseCaseImpl`, repository queries are declared on `domain/port/out/AssetRepository` and implemented in `infrastructure/persistence/adapter/AssetRepositoryImpl`, and projections are defined in `infrastructure/persistence/jpa/`.
 
 No new tables, migrations, or external dependencies are needed.
 

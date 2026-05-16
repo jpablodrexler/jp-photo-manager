@@ -276,7 +276,7 @@ graph LR
     end
 
     subgraph Secondary["Secondary Adapters — Driven"]
-        JPA["infrastructure/persistence/adapter/\nAssetRepositoryAdapter\nFolderRepositoryAdapter…\n(Spring Data JPA)"]
+        JPA["infrastructure/persistence/adapter/\nAssetRepositoryImpl\nFolderRepositoryImpl…\n(Spring Data JPA)"]
         SRVC["infrastructure/service/\nStorageServiceAdapter\nThumbnailStorageServiceAdapter\nJwtTokenAdapter"]
     end
 

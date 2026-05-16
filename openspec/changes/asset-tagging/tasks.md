@@ -8,10 +8,10 @@
 
 ## 2. Backend: Repository Ports and Use Cases
 
-- [ ] 2.1 Create `domain/port/out/TagRepository.java` — plain Java interface with methods: `Optional<Tag> findByName(String name)`, `List<Tag> findByNameContaining(String q, int limit)`, `Tag save(Tag tag)`, `void deleteById(Long id)`, `boolean isUsedByOtherAssets(Long tagId, Long excludeAssetId)`; create `infrastructure/persistence/jpa/JpaTagRepository.java` extending `JpaRepository<TagEntity, Long>`; create `infrastructure/persistence/adapter/TagRepositoryAdapter.java` implementing `TagRepository`
+- [ ] 2.1 Create `domain/port/out/TagRepository.java` — plain Java interface with methods: `Optional<Tag> findByName(String name)`, `List<Tag> findByNameContaining(String q, int limit)`, `Tag save(Tag tag)`, `void deleteById(Long id)`, `boolean isUsedByOtherAssets(Long tagId, Long excludeAssetId)`; create `infrastructure/persistence/jpa/JpaTagRepository.java` extending `JpaRepository<TagEntity, Long>`; create `infrastructure/persistence/adapter/TagRepositoryImpl.java` implementing `TagRepository`
 - [ ] 2.2 Create use-case interfaces in `domain/port/in/tag/`: `AddTagToAssetUseCase.java` — `void execute(Long assetId, String name)`; `RemoveTagFromAssetUseCase.java` — `void execute(Long assetId, String name)`; `BulkAddTagUseCase.java` — `void execute(List<Long> assetIds, String name)`; `BulkRemoveTagUseCase.java` — `void execute(List<Long> assetIds, String name)`; `ListTagsUseCase.java` — `List<Tag> execute(String query)`
 - [ ] 2.3 Create use-case implementations in `application/usecase/tag/`: `AddTagToAssetUseCaseImpl`, `RemoveTagFromAssetUseCaseImpl`, `BulkAddTagUseCaseImpl`, `BulkRemoveTagUseCaseImpl`, `ListTagsUseCaseImpl`; each annotated `@Service @Transactional`; inject only `AssetRepository` and `TagRepository`; normalize tag name to lowercase, create-or-find tag, manage join table entries, delete orphan tags after removal
-- [ ] 2.4 Add `Set<String> tags` field to `application/dto/AssetFilter.java`; update the `AssetRepositoryAdapter` Criteria API implementation to apply the `tags` AND predicate when `filter.getTags()` is non-empty (AND semantics via `GROUP BY / HAVING COUNT`)
+- [ ] 2.4 Add `Set<String> tags` field to `application/dto/AssetFilter.java`; update the `AssetRepositoryImpl` Criteria API implementation to apply the `tags` AND predicate when `filter.getTags()` is non-empty (AND semantics via `GROUP BY / HAVING COUNT`)
 
 ## 3. Backend: API Endpoints
 
@@ -25,7 +25,7 @@
 ## 4. Backend: Tests
 
 - [ ] 4.1 Unit-test each use-case implementation (`AddTagToAssetUseCaseImpl`, `RemoveTagFromAssetUseCaseImpl`, `BulkAddTagUseCaseImpl`, `BulkRemoveTagUseCaseImpl`): add (new tag, existing tag, duplicate idempotency), remove (orphan cleanup, tag still used), bulk operations; mock `AssetRepository` and `TagRepository`
-- [ ] 4.2 Unit-test the updated `AssetRepositoryAdapter` filter for the `tags` AND predicate
+- [ ] 4.2 Unit-test the updated `AssetRepositoryImpl` filter for the `tags` AND predicate
 - [ ] 4.3 Write `@WebMvcTest` for `AssetController` (tag endpoints: `POST /api/assets/{id}/tags`, `DELETE /api/assets/{id}/tags`, bulk endpoints, `GET /api/assets?tags=`) and `TagController` (`GET /api/tags`); mock each use-case interface
 - [ ] 4.4 Write an integration test (`@SpringBootTest` + Testcontainers) covering the full add-tag → filter-by-tag → remove-tag lifecycle
 
