@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.api;
+package com.jpablodrexler.photomanager.infrastructure.web;
 
 import java.time.Instant;
 

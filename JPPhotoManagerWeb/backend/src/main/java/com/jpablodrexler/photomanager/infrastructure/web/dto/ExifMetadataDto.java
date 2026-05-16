@@ -1,6 +1,6 @@
-package com.jpablodrexler.photomanager.api.dto;
+package com.jpablodrexler.photomanager.infrastructure.web.dto;
 
-import com.jpablodrexler.photomanager.domain.entity.AssetExif;
+import com.jpablodrexler.photomanager.domain.model.AssetExif;
 
 import java.time.LocalDateTime;
 

@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.api.dto;
+package com.jpablodrexler.photomanager.infrastructure.web.dto;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
