@@ -26,8 +26,8 @@ public class DataInitializer {
                 user.setRole("ADMIN");
                 userRepository.save(user);
             });
-            log.warn("*** Default admin user created. CHANGE THIS PASSWORD IMMEDIATELY via the User Administration page. ***");
+            log.warn(
+                    "*** Default admin user created. CHANGE THIS PASSWORD IMMEDIATELY via the User Administration page. ***");
         }
     }
-
 }
