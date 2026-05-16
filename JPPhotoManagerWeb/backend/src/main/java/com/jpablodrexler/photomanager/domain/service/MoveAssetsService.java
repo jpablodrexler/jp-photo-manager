@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.domain.service;
 
-import com.jpablodrexler.photomanager.domain.entity.Asset;
-import com.jpablodrexler.photomanager.domain.entity.Folder;
+import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.Folder;
 
 public interface MoveAssetsService {
 

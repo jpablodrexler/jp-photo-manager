@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.domain.service;
 
 import com.jpablodrexler.photomanager.application.dto.FilterPreset;
-import com.jpablodrexler.photomanager.domain.entity.SearchPreset;
+import com.jpablodrexler.photomanager.domain.model.SearchPreset;
 
 import java.util.List;
 import java.util.UUID;

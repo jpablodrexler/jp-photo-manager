@@ -8,8 +8,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import com.jpablodrexler.photomanager.api.dto.CreatePresetRequest;
-import com.jpablodrexler.photomanager.api.dto.SearchPresetDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.CreatePresetRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.SearchPresetDto;
 import com.jpablodrexler.photomanager.application.dto.AlbumData;
 import com.jpablodrexler.photomanager.application.dto.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
@@ -17,13 +17,13 @@ import com.jpablodrexler.photomanager.application.dto.ConvertAssetsResult;
 import com.jpablodrexler.photomanager.application.dto.HomeStats;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.application.dto.SyncAssetsResult;
-import com.jpablodrexler.photomanager.domain.entity.Asset;
-import com.jpablodrexler.photomanager.domain.entity.AssetExif;
-import org.springframework.web.multipart.MultipartFile;
-import com.jpablodrexler.photomanager.domain.entity.ConvertAssetsDirectoriesDefinition;
-import com.jpablodrexler.photomanager.domain.entity.Folder;
-import com.jpablodrexler.photomanager.domain.entity.SyncAssetsDirectoriesDefinition;
+import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.AssetExif;
+import com.jpablodrexler.photomanager.domain.model.ConvertDirectoriesDefinition;
+import com.jpablodrexler.photomanager.domain.model.Folder;
+import com.jpablodrexler.photomanager.domain.model.SyncDirectoriesDefinition;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface PhotoManagerFacade {
     PaginatedData<Asset> getAssets(String folderPath, int pageIndex, SortCriteria sortCriteria,
@@ -43,13 +43,13 @@ public interface PhotoManagerFacade {
 
     CompletableFuture<List<ConvertAssetsResult>> convertAssetsAsync(Consumer<String> statusCallback);
 
-    List<SyncAssetsDirectoriesDefinition> getSyncAssetsConfiguration();
+    List<SyncDirectoriesDefinition> getSyncAssetsConfiguration();
 
-    void setSyncAssetsConfiguration(List<SyncAssetsDirectoriesDefinition> definitions);
+    void setSyncAssetsConfiguration(List<SyncDirectoriesDefinition> definitions);
 
-    List<ConvertAssetsDirectoriesDefinition> getConvertAssetsConfiguration();
+    List<ConvertDirectoriesDefinition> getConvertAssetsConfiguration();
 
-    void setConvertAssetsConfiguration(List<ConvertAssetsDirectoriesDefinition> definitions);
+    void setConvertAssetsConfiguration(List<ConvertDirectoriesDefinition> definitions);
 
     List<String> getRecentTargetPaths();
 

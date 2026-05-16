@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.domain.service;
 
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
-import com.jpablodrexler.photomanager.domain.entity.Asset;
+import com.jpablodrexler.photomanager.domain.model.Asset;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;

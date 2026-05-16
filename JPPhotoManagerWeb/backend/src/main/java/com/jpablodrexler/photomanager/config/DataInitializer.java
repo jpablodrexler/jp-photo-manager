@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.config;
 
-import com.jpablodrexler.photomanager.domain.repository.UserRepository;
+import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import com.jpablodrexler.photomanager.domain.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,4 +29,5 @@ public class DataInitializer {
             log.warn("*** Default admin user created. CHANGE THIS PASSWORD IMMEDIATELY via the User Administration page. ***");
         }
     }
+
 }

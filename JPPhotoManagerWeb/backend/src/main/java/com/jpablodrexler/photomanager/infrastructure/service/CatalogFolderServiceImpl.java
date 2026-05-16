@@ -1,13 +1,13 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
-import com.jpablodrexler.photomanager.domain.entity.Asset;
-import com.jpablodrexler.photomanager.domain.entity.AssetExif;
-import com.jpablodrexler.photomanager.domain.entity.Folder;
+import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.AssetExif;
+import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
-import com.jpablodrexler.photomanager.domain.repository.AssetExifRepository;
-import com.jpablodrexler.photomanager.domain.repository.AssetRepository;
-import com.jpablodrexler.photomanager.domain.repository.FolderRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.service.CatalogFolderService;
 import com.jpablodrexler.photomanager.domain.service.ExifMetadata;
 import com.jpablodrexler.photomanager.domain.service.StorageService;
@@ -92,7 +92,7 @@ public class CatalogFolderServiceImpl implements CatalogFolderService {
 
         for (Asset asset : cataloguedAssets) {
             if (!fileNamesOnDisk.contains(asset.getFileName())) {
-                assetRepository.delete(asset);
+                assetRepository.deleteById(asset.getAssetId());
                 thumbnailStorageService.deleteThumbnail(asset.getThumbnailBlobName());
                 if (callback != null) {
                     callback.accept(new CatalogChangeNotification(ReasonEnum.ASSET_DELETED, asset,
@@ -145,8 +145,8 @@ public class CatalogFolderServiceImpl implements CatalogFolderService {
     private void saveExifMetadata(Asset asset, String filePath) {
         try {
             ExifMetadata exif = storageService.getExifMetadata(filePath);
-            AssetExif assetExif = assetExifRepository.findByAssetAssetId(asset.getAssetId())
-                    .orElseGet(() -> { AssetExif e = new AssetExif(); e.setAsset(asset); return e; });
+            AssetExif assetExif = assetExifRepository.findByAssetId(asset.getAssetId())
+                    .orElseGet(() -> { AssetExif e = new AssetExif(); e.setAssetId(asset.getAssetId()); return e; });
             assetExif.setCameraMake(exif.cameraMake());
             assetExif.setCameraModel(exif.cameraModel());
             assetExif.setLensModel(exif.lensModel());

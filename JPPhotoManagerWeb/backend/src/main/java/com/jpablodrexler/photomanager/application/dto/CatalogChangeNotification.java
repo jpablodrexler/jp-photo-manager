@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.application.dto;
 
-import com.jpablodrexler.photomanager.domain.entity.Asset;
+import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
 import lombok.Data;
 

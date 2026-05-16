@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
+import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.service.ExifMetadata;
 import com.jpablodrexler.photomanager.domain.service.StorageService;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +37,7 @@ import java.util.stream.Stream;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class StorageServiceImpl implements StorageService {
+public class StorageServiceImpl implements StorageService, StoragePort {
 
     private static final int THUMBNAIL_MAX_WIDTH = 200;
     private static final int THUMBNAIL_MAX_HEIGHT = 150;
@@ -322,6 +323,16 @@ public class StorageServiceImpl implements StorageService {
         return new ExifMetadata(cameraMake, cameraModel, lensModel, exposureTime,
                 fNumber, isoSpeed, focalLength, dateTaken, widthPixels, heightPixels,
                 gpsLatitude, gpsLongitude);
+    }
+
+    @Override
+    public void convertPngToJpeg(String sourcePath, String destinationPath) throws IOException {
+        BufferedImage image = loadImage(sourcePath);
+        BufferedImage jpegImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
+        jpegImage.createGraphics().drawImage(image, 0, 0, java.awt.Color.WHITE, null);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(jpegImage, "JPEG", baos);
+        Files.write(Paths.get(destinationPath), baos.toByteArray());
     }
 
     private boolean isImageFile(String fileName) {

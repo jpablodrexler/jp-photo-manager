@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
+import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,7 +13,7 @@ import java.nio.file.Paths;
 
 @Service
 @Slf4j
-public class ThumbnailStorageServiceImpl implements ThumbnailStorageService {
+public class ThumbnailStorageServiceImpl implements ThumbnailStorageService, ThumbnailPort {
 
     @Value("${photomanager.thumbnails-directory:${user.home}/.photomanager/thumbnails}")
     private String thumbnailsDirectory;
