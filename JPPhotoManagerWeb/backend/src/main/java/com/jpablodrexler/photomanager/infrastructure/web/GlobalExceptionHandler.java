@@ -1,7 +1,7 @@
-package com.jpablodrexler.photomanager.api;
+package com.jpablodrexler.photomanager.infrastructure.web;
 
-import com.jpablodrexler.photomanager.api.exception.AlbumNotFoundException;
-import com.jpablodrexler.photomanager.api.exception.SearchPresetNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.SearchPresetNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
