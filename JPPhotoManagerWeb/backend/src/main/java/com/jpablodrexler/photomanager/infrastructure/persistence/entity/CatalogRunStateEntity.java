@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.domain.entity;
+package com.jpablodrexler.photomanager.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -10,7 +10,7 @@ import java.time.Instant;
 @Table(name = "catalog_run_state")
 @Data
 @NoArgsConstructor
-public class CatalogRunState {
+public class CatalogRunStateEntity {
 
     @Id
     @Column(name = "id")

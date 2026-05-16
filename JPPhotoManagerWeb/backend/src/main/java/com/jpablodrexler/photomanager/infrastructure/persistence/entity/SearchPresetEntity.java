@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.domain.entity;
+package com.jpablodrexler.photomanager.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -10,7 +10,7 @@ import java.time.Instant;
 @Table(name = "search_presets")
 @Data
 @NoArgsConstructor
-public class SearchPreset {
+public class SearchPresetEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,7 +19,7 @@ public class SearchPreset {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private UserEntity user;
 
     @Column(name = "name", nullable = false)
     private String name;

@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.domain.entity;
+package com.jpablodrexler.photomanager.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "sync_assets_directories_definitions")
 @Data
 @NoArgsConstructor
-public class SyncAssetsDirectoriesDefinition {
+public class SyncAssetsDirectoriesDefinitionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

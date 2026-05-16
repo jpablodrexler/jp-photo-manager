@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.domain.entity;
+package com.jpablodrexler.photomanager.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -12,7 +12,7 @@ import java.util.List;
 @Table(name = "albums")
 @Data
 @NoArgsConstructor
-public class Album {
+public class AlbumEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,7 +21,7 @@ public class Album {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private UserEntity user;
 
     @Column(nullable = false)
     private String name;
@@ -36,5 +36,5 @@ public class Album {
             name = "album_assets",
             joinColumns = @JoinColumn(name = "album_id"),
             inverseJoinColumns = @JoinColumn(name = "asset_id"))
-    private List<Asset> assets = new ArrayList<>();
+    private List<AssetEntity> assets = new ArrayList<>();
 }

@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.domain.entity;
+package com.jpablodrexler.photomanager.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "asset_exif")
 @Data
-public class AssetExif {
+public class AssetExifEntity {
 
     @Id
     @Column(name = "asset_id")
@@ -17,7 +17,7 @@ public class AssetExif {
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
     @JoinColumn(name = "asset_id")
-    private Asset asset;
+    private AssetEntity asset;
 
     @Column(name = "camera_make")
     private String cameraMake;

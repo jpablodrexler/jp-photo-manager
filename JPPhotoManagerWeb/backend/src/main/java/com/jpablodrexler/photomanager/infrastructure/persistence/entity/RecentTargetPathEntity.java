@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.domain.entity;
+package com.jpablodrexler.photomanager.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "recent_target_paths")
 @Data
 @NoArgsConstructor
-public class RecentTargetPath {
+public class RecentTargetPathEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,7 +17,7 @@ public class RecentTargetPath {
     @Column(name = "path", nullable = false)
     private String path;
 
-    public RecentTargetPath(String path) {
+    public RecentTargetPathEntity(String path) {
         this.path = path;
     }
 }

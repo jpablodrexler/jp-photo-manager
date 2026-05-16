@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.domain.entity;
+package com.jpablodrexler.photomanager.infrastructure.persistence.entity;
 
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
 import jakarta.persistence.*;
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Table(name = "assets", indexes = @Index(name = "ix_assets_folder_id", columnList = "folder_id"))
 @Data
 @NoArgsConstructor
-public class Asset {
+public class AssetEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,7 +20,7 @@ public class Asset {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "folder_id", nullable = false)
-    private Folder folder;
+    private FolderEntity folder;
 
     @Column(name = "file_name", nullable = false)
     private String fileName;
@@ -61,14 +61,4 @@ public class Asset {
 
     @Column(name = "rating", nullable = false)
     private int rating = 0;
-
-    @Transient
-    public String getThumbnailBlobName() {
-        return assetId + ".bin";
-    }
-
-    @Transient
-    public String getFullPath() {
-        return folder != null ? folder.getPath() + "/" + fileName : fileName;
-    }
 }
