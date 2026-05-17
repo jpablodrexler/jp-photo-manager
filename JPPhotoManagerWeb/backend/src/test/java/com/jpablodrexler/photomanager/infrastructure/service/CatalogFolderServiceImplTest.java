@@ -6,12 +6,12 @@ import com.jpablodrexler.photomanager.domain.model.AssetExif;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
+import com.jpablodrexler.photomanager.domain.model.ExifMetadata;
 import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
-import com.jpablodrexler.photomanager.domain.service.ExifMetadata;
-import com.jpablodrexler.photomanager.domain.service.StorageService;
-import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
+import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
+import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,10 +51,10 @@ class CatalogFolderServiceImplTest {
     FolderRepository folderRepository;
 
     @Mock
-    StorageService storageService;
+    StoragePort storageService;
 
     @Mock
-    ThumbnailStorageService thumbnailStorageService;
+    ThumbnailPort thumbnailStorageService;
 
     @InjectMocks
     CatalogFolderServiceImpl sut;

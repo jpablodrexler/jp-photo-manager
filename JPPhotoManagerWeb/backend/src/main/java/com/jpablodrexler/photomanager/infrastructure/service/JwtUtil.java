@@ -15,7 +15,7 @@ import java.util.Date;
 
 @Component
 @Slf4j
-public class JwtUtil implements com.jpablodrexler.photomanager.domain.service.JwtTokenService {
+public class JwtUtil {
 
     @Value("${photomanager.jwt-secret}")
     private String jwtSecret;

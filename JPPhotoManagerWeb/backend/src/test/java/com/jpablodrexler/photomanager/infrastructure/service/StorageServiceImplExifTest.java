@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
-import com.jpablodrexler.photomanager.domain.service.ExifMetadata;
+import com.jpablodrexler.photomanager.domain.model.ExifMetadata;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class StorageServiceImplExifTest {
 
     @InjectMocks
-    StorageServiceImpl sut;
+    StorageServiceAdapter sut;
 
     @TempDir
     Path tempDir;

@@ -6,6 +6,7 @@ import com.jpablodrexler.photomanager.infrastructure.persistence.entity.AssetEnt
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.AssetExifEntity;
 import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.JpaAssetExifRepository;
 import com.jpablodrexler.photomanager.infrastructure.persistence.mapper.AssetExifEntityMapper;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,7 @@ public class AssetExifRepositoryImpl implements AssetExifRepository {
 
     private final JpaAssetExifRepository jpa;
     private final AssetExifEntityMapper mapper;
+    private final EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -30,9 +32,7 @@ public class AssetExifRepositoryImpl implements AssetExifRepository {
     public AssetExif save(AssetExif assetExif) {
         AssetExifEntity entity = jpa.findByAssetAssetId(assetExif.getAssetId())
                 .orElseGet(AssetExifEntity::new);
-        AssetEntity assetRef = new AssetEntity();
-        assetRef.setAssetId(assetExif.getAssetId());
-        entity.setAsset(assetRef);
+        entity.setAsset(entityManager.getReference(AssetEntity.class, assetExif.getAssetId()));
         entity.setCameraMake(assetExif.getCameraMake());
         entity.setCameraModel(assetExif.getCameraModel());
         entity.setLensModel(assetExif.getLensModel());

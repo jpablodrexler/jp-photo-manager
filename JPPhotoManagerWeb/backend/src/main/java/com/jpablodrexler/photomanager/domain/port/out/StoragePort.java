@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.domain.port.out;
 
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
+import com.jpablodrexler.photomanager.domain.model.ExifMetadata;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -37,4 +38,6 @@ public interface StoragePort {
     LocalDateTime getFileModificationDateTime(String filePath) throws IOException;
 
     void convertPngToJpeg(String sourcePath, String destinationPath) throws IOException;
+
+    ExifMetadata getExifMetadata(String filePath);
 }

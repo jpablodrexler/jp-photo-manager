@@ -166,28 +166,28 @@ Each use-case interface has exactly one method. Each implementation class implem
 
 ## Phase 6 — Service Adapters
 
-- [ ] 6.1 Rename `infrastructure/service/StorageServiceImpl.java` → `StorageServiceAdapter.java`; annotate class as implementing `StoragePort`; remove the old `domain/service/StorageService` interface if it is now unused
-- [ ] 6.2 Rename `ThumbnailStorageServiceImpl` → `ThumbnailStorageServiceAdapter`; implement `ThumbnailPort`
-- [ ] 6.3 Rename `AssetHashCalculatorService` → `AssetHashCalculatorAdapter`; implement `HashCalculatorPort`
-- [ ] 6.4 Create `JwtTokenAdapter` implementing `JwtTokenPort`; delegate to `JwtUtil`
-- [ ] 6.5 Delete the now-unused interfaces from `domain/service/`: `StorageService`, `ThumbnailStorageService`, `CatalogAssetsService`, `SyncAssetsService`, `ConvertAssetsService`, `FindDuplicatedAssetsService`, `MoveAssetsService`, `AlbumService`, `RecycleBinService`, `SearchPresetService`, `JwtTokenService`, `CatalogFolderService`, `UserService`, `UserAdminService`, `RefreshTokenService`, `ExifMetadata`
-- [ ] 6.6 Delete `domain/service/` package once empty
-- [ ] 6.7 Run `mvn test` — all tests pass
+- [x] 6.1 Rename `infrastructure/service/StorageServiceImpl.java` → `StorageServiceAdapter.java`; annotate class as implementing `StoragePort`; remove the old `domain/service/StorageService` interface if it is now unused
+- [x] 6.2 Rename `ThumbnailStorageServiceImpl` → `ThumbnailStorageServiceAdapter`; implement `ThumbnailPort`
+- [x] 6.3 Rename `AssetHashCalculatorService` → `AssetHashCalculatorAdapter`; implement `HashCalculatorPort`
+- [x] 6.4 Create `JwtTokenAdapter` implementing `JwtTokenPort`; delegate to `JwtUtil`
+- [x] 6.5 Delete the now-unused interfaces from `domain/service/`: `StorageService`, `ThumbnailStorageService`, `CatalogAssetsService`, `SyncAssetsService`, `ConvertAssetsService`, `FindDuplicatedAssetsService`, `MoveAssetsService`, `AlbumService`, `RecycleBinService`, `SearchPresetService`, `JwtTokenService`, `CatalogFolderService`, `UserService`, `UserAdminService`, `RefreshTokenService`, `ExifMetadata`
+- [x] 6.6 Delete `domain/service/` package once empty
+- [x] 6.7 Run `mvn test` — all tests pass
 
 ## Phase 7 — Verification and Documentation
 
-- [ ] 7.1 Run `mvn clean package` — build succeeds with no warnings
-- [ ] 7.2 Run `mvn test` — all tests pass
-- [ ] 7.3 Verify that no class in `domain/` imports from `jakarta.*`, `org.springframework.*`, or `infrastructure.*` (use `grep -r "import jakarta\|import org.springframework\|import.*infrastructure" src/main/java/com/jpablodrexler/photomanager/domain/` — must return empty)
-- [ ] 7.4 Verify that no class in `application/usecase/` imports from `infrastructure.*` or `org.springframework.web.*` or `org.springframework.data.*`
-- [ ] 7.5 Start the application locally (`mvn spring-boot:run`), authenticate as `admin/admin`, and verify: gallery loads, catalog runs, album creation works, sync config saves, duplicate detection works
-- [ ] 7.6 Update `CLAUDE.md` — replace the **Backend** architecture section under _Web Architecture_ with the new hexagonal layout:
+- [x] 7.1 Run `mvn clean package` — build succeeds with no warnings
+- [x] 7.2 Run `mvn test` — all tests pass
+- [x] 7.3 Verify that no class in `domain/` imports from `jakarta.*`, `org.springframework.*`, or `infrastructure.*` (use `grep -r "import jakarta\|import org.springframework\|import.*infrastructure" src/main/java/com/jpablodrexler/photomanager/domain/` — must return empty)
+- [x] 7.4 Verify that no class in `application/usecase/` imports from `infrastructure.*` or `org.springframework.web.*` or `org.springframework.data.*`
+- [x] 7.5 Start the application locally (`mvn spring-boot:run`), authenticate as `admin/admin`, and verify: gallery loads, catalog runs, album creation works, sync config saves, duplicate detection works
+- [x] 7.6 Update `CLAUDE.md` — replace the **Backend** architecture section under _Web Architecture_ with the new hexagonal layout:
   - Update the package tree diagram to show `domain/model/`, `domain/port/in/`, `domain/port/out/`, `application/usecase/`, `infrastructure/persistence/` (entity, jpa, adapter, mapper), `infrastructure/web/` (controller, dto, mapper, exception), and `infrastructure/service/`
   - Update the dependency-flow line to `infrastructure/web → application/usecase → domain ← infrastructure/persistence | infrastructure/service`
   - Update the _Key domain services_ prose to describe use-case interfaces instead of the old service interfaces; remove references to `PhotoManagerFacade`
   - Add a **Key Conventions** entry: repository interfaces in `domain/port/out/` use the `Repository` suffix; their infrastructure implementations in `infrastructure/persistence/adapter/` use the `RepositoryImpl` suffix; service ports in `domain/port/out/` use the `Port` suffix; their infrastructure implementations use the `ServiceAdapter` suffix (e.g. `StorageServiceAdapter implements StoragePort`)
   - Add a **Key Conventions** entry: all entity ↔ domain model and HTTP DTO ↔ domain model mappings are implemented as MapStruct `@Mapper(componentModel = "spring")` interfaces in `infrastructure/persistence/mapper/` and `infrastructure/web/mapper/` respectively; hand-writing mappers is not permitted; use `@Named` qualifiers when a mapper interface exposes multiple methods returning the same type (e.g. `toEntityRef` for FK-only references vs `toEntity` for full mapping)
-- [ ] 7.7 Update `README.md` — add or replace the backend architecture diagram (ASCII or Mermaid) to reflect the hexagonal structure:
+- [x] 7.7 Update `README.md` — add or replace the backend architecture diagram (ASCII or Mermaid) to reflect the hexagonal structure:
   - Document the `domain/port/in/` (use-case interfaces) and `domain/port/out/` (repository and service port interfaces) conventions
   - Document the naming convention: `XxxRepository` / `XxxRepositoryImpl` for persistence ports; `XxxPort` / `XxxServiceAdapter` for service ports
   - Add a note that controllers in `infrastructure/web/controller/` delegate directly to use-case interfaces and never touch repositories or service adapters directly

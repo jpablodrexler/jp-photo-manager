@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
-import com.jpablodrexler.photomanager.domain.repository.CatalogRunStateRepository;
-import com.jpablodrexler.photomanager.domain.service.CatalogAssetsService;
+import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.out.CatalogStateRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,8 +18,8 @@ import java.time.Instant;
 @Slf4j
 public class CatalogScheduler {
 
-    private final CatalogAssetsService catalogAssetsService;
-    private final CatalogRunStateRepository catalogRunStateRepository;
+    private final CatalogAssetsUseCase catalogAssetsUseCase;
+    private final CatalogStateRepository catalogStateRepository;
     private final TaskScheduler catalogTaskScheduler;
     private final String instanceId;
 
@@ -29,14 +29,12 @@ public class CatalogScheduler {
     @Value("${photomanager.catalog-timeout:60}")
     private int catalogTimeoutMinutes;
 
-    private volatile Thread catalogRunThread;
-
-    public CatalogScheduler(CatalogAssetsService catalogAssetsService,
-                            CatalogRunStateRepository catalogRunStateRepository,
+    public CatalogScheduler(CatalogAssetsUseCase catalogAssetsUseCase,
+                            CatalogStateRepository catalogStateRepository,
                             @Qualifier("catalogTaskScheduler") TaskScheduler catalogTaskScheduler,
                             @Qualifier("catalogInstanceId") String instanceId) {
-        this.catalogAssetsService = catalogAssetsService;
-        this.catalogRunStateRepository = catalogRunStateRepository;
+        this.catalogAssetsUseCase = catalogAssetsUseCase;
+        this.catalogStateRepository = catalogStateRepository;
         this.catalogTaskScheduler = catalogTaskScheduler;
         this.instanceId = instanceId;
     }
@@ -51,11 +49,10 @@ public class CatalogScheduler {
     }
 
     private void executeCatalogRun() {
-        catalogRunThread = Thread.currentThread();
         try {
-            catalogAssetsService.runCatalog();
-        } finally {
-            catalogRunThread = null;
+            catalogAssetsUseCase.execute(notification -> {}).get();
+        } catch (Exception e) {
+            log.error("Scheduled catalog run failed", e);
         }
     }
 
@@ -63,16 +60,12 @@ public class CatalogScheduler {
     public void cleanupStaleCatalogs() {
         Instant threshold = Instant.now().minus(Duration.ofMinutes(catalogTimeoutMinutes));
 
-        if (catalogRunStateRepository.isStaleForInstance(instanceId, threshold)) {
-            log.warn("Stale catalog run detected on this instance, interrupting and releasing lock");
-            Thread runThread = catalogRunThread;
-            if (runThread != null) {
-                runThread.interrupt();
-            }
-            catalogRunStateRepository.release(instanceId);
+        if (catalogStateRepository.isStaleForInstance(instanceId, threshold)) {
+            log.warn("Stale catalog run detected on this instance, releasing lock");
+            catalogStateRepository.release(instanceId);
         }
 
-        int released = catalogRunStateRepository.releaseStaleForOtherInstances(instanceId, threshold);
+        int released = catalogStateRepository.releaseStaleForOtherInstances(instanceId, threshold);
         if (released > 0) {
             log.warn("Released {} stale catalog lock(s) from other instances", released);
         }

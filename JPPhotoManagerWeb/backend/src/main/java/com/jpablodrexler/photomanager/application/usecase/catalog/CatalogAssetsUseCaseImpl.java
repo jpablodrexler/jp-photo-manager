@@ -2,9 +2,9 @@ package com.jpablodrexler.photomanager.application.usecase.catalog;
 
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
 import com.jpablodrexler.photomanager.domain.port.out.CatalogStateRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
-import com.jpablodrexler.photomanager.domain.service.CatalogFolderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 @Slf4j
 public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
 
-    private final CatalogFolderService catalogFolderService;
+    private final CatalogFolderPort catalogFolderService;
     private final StoragePort storagePort;
     private final CatalogStateRepository catalogStateRepository;
     private final String instanceId;
@@ -31,7 +31,7 @@ public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
     @Value("${photomanager.root-catalog-folders:${user.home}/Pictures}")
     private String rootCatalogFolders;
 
-    public CatalogAssetsUseCaseImpl(CatalogFolderService catalogFolderService,
+    public CatalogAssetsUseCaseImpl(CatalogFolderPort catalogFolderService,
             StoragePort storagePort,
             CatalogStateRepository catalogStateRepository,
             @Qualifier("catalogInstanceId") String instanceId) {

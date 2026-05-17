@@ -2,7 +2,7 @@ package com.jpablodrexler.photomanager;
 
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
-import com.jpablodrexler.photomanager.domain.service.CatalogFolderService;
+import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -50,7 +50,7 @@ class ExifMetadataIntegrationTest {
     MockMvc mockMvc;
 
     @Autowired
-    CatalogFolderService catalogFolderService;
+    CatalogFolderPort catalogFolderService;
 
     @Autowired
     AssetRepository assetRepository;

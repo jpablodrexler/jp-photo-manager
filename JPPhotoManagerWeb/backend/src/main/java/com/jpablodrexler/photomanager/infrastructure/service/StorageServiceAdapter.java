@@ -1,9 +1,8 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
+import com.jpablodrexler.photomanager.domain.model.ExifMetadata;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
-import com.jpablodrexler.photomanager.domain.service.ExifMetadata;
-import com.jpablodrexler.photomanager.domain.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.imaging.Imaging;
@@ -37,7 +36,7 @@ import java.util.stream.Stream;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class StorageServiceImpl implements StorageService, StoragePort {
+public class StorageServiceAdapter implements StoragePort {
 
     private static final int THUMBNAIL_MAX_WIDTH = 200;
     private static final int THUMBNAIL_MAX_HEIGHT = 150;
@@ -115,7 +114,6 @@ public class StorageServiceImpl implements StorageService, StoragePort {
         Files.deleteIfExists(Paths.get(filePath));
     }
 
-    @Override
     public BufferedImage loadImage(String filePath) throws IOException {
         try (ImageInputStream iis = ImageIO.createImageInputStream(Paths.get(filePath).toFile())) {
             if (iis == null) {
@@ -153,7 +151,6 @@ public class StorageServiceImpl implements StorageService, StoragePort {
         return generateThumbnail(image, maxWidth, maxHeight, rotation);
     }
 
-    @Override
     public byte[] generateThumbnail(BufferedImage image, int maxWidth, int maxHeight, ImageRotation rotation) throws IOException {
         BufferedImage rotated = applyRotation(image, rotation);
         BufferedImage thumbnail = scaleThumbnail(rotated, maxWidth, maxHeight);

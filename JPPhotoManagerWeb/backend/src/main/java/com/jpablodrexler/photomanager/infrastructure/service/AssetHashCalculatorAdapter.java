@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
+import com.jpablodrexler.photomanager.domain.port.out.HashCalculatorPort;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -10,9 +11,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 @Component
-public class AssetHashCalculatorService {
+public class AssetHashCalculatorAdapter implements HashCalculatorPort {
 
-    public String calculateHash(String filePath) throws IOException {
+    @Override
+    public String computeSha256(String filePath) throws IOException {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             try (InputStream is = Files.newInputStream(Paths.get(filePath))) {

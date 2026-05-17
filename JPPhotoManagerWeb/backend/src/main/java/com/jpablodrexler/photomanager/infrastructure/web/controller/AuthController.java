@@ -1,8 +1,8 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.domain.service.JwtTokenService;
-import com.jpablodrexler.photomanager.domain.service.RefreshTokenService;
-import com.jpablodrexler.photomanager.domain.service.UserService;
+import com.jpablodrexler.photomanager.domain.port.out.JwtTokenPort;
+import com.jpablodrexler.photomanager.infrastructure.service.RefreshTokenServiceImpl;
+import com.jpablodrexler.photomanager.infrastructure.service.UserServiceImpl;
 import com.jpablodrexler.photomanager.infrastructure.web.AuthRequest;
 import com.jpablodrexler.photomanager.infrastructure.web.LoginResponse;
 import com.jpablodrexler.photomanager.infrastructure.web.exception.InvalidRefreshTokenException;
@@ -28,9 +28,9 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserService userService;
-    private final JwtTokenService jwtTokenService;
-    private final RefreshTokenService refreshTokenService;
+    private final UserServiceImpl userService;
+    private final JwtTokenPort jwtTokenService;
+    private final RefreshTokenServiceImpl refreshTokenService;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody AuthRequest request,
@@ -70,7 +70,7 @@ public class AuthController {
         }
 
         try {
-            RefreshTokenService.RotatedToken rotated = refreshTokenService.validateAndRotate(tokenValue);
+            RefreshTokenServiceImpl.RotatedToken rotated = refreshTokenService.validateAndRotate(tokenValue);
 
             String newJwt = jwtTokenService.generateToken(rotated.username());
             Instant newExpiresAt = jwtTokenService.tokenExpiry(newJwt);

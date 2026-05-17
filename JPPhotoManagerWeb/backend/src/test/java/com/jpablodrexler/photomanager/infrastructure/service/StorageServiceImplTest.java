@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class StorageServiceImplTest {
 
     @InjectMocks
-    StorageServiceImpl sut;
+    StorageServiceAdapter sut;
 
     @TempDir
     Path tempDir;

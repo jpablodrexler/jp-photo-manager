@@ -1,8 +1,8 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.domain.service.JwtTokenService;
-import com.jpablodrexler.photomanager.domain.service.RefreshTokenService;
-import com.jpablodrexler.photomanager.domain.service.UserService;
+import com.jpablodrexler.photomanager.domain.port.out.JwtTokenPort;
+import com.jpablodrexler.photomanager.infrastructure.service.RefreshTokenServiceImpl;
+import com.jpablodrexler.photomanager.infrastructure.service.UserServiceImpl;
 import com.jpablodrexler.photomanager.infrastructure.web.exception.InvalidRefreshTokenException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,18 +26,18 @@ class AuthControllerRefreshTest {
     MockMvc mockMvc;
 
     @MockitoBean
-    UserService userService;
+    UserServiceImpl userService;
     @MockitoBean
-    JwtTokenService jwtTokenService;
+    JwtTokenPort jwtTokenService;
     @MockitoBean
-    RefreshTokenService refreshTokenService;
+    RefreshTokenServiceImpl refreshTokenService;
 
     // --- POST /api/auth/refresh ---
 
     @Test
     void refresh_validToken_returns200WithNewJwtCookie() throws Exception {
         Instant newExpiry = Instant.parse("2025-12-31T00:00:00Z");
-        RefreshTokenService.RotatedToken rotated = new RefreshTokenService.RotatedToken("new-refresh", "alice", newExpiry);
+        RefreshTokenServiceImpl.RotatedToken rotated = new RefreshTokenServiceImpl.RotatedToken("new-refresh", "alice", newExpiry);
 
         when(refreshTokenService.validateAndRotate("valid-refresh")).thenReturn(rotated);
         when(jwtTokenService.generateToken("alice")).thenReturn("new-jwt");

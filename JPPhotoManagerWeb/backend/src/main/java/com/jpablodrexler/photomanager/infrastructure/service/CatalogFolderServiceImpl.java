@@ -5,13 +5,13 @@ import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
+import com.jpablodrexler.photomanager.domain.model.ExifMetadata;
 import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
-import com.jpablodrexler.photomanager.domain.service.CatalogFolderService;
-import com.jpablodrexler.photomanager.domain.service.ExifMetadata;
-import com.jpablodrexler.photomanager.domain.service.StorageService;
-import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
+import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
+import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CatalogFolderServiceImpl implements CatalogFolderService {
+public class CatalogFolderServiceImpl implements CatalogFolderPort {
 
     private static final int THUMBNAIL_MAX_WIDTH = 200;
     private static final int THUMBNAIL_MAX_HEIGHT = 150;
@@ -38,8 +38,8 @@ public class CatalogFolderServiceImpl implements CatalogFolderService {
     private final AssetRepository assetRepository;
     private final AssetExifRepository assetExifRepository;
     private final FolderRepository folderRepository;
-    private final StorageService storageService;
-    private final ThumbnailStorageService thumbnailStorageService;
+    private final StoragePort storageService;
+    private final ThumbnailPort thumbnailStorageService;
 
     @Value("${photomanager.catalog-batch-size:1000}")
     int batchSize;

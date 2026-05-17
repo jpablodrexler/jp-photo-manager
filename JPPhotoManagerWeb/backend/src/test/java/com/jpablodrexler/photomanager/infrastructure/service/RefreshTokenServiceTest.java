@@ -5,7 +5,6 @@ import com.jpablodrexler.photomanager.domain.model.RefreshToken;
 import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenRepository;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
-import com.jpablodrexler.photomanager.domain.service.RefreshTokenService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -85,7 +84,7 @@ class RefreshTokenServiceTest {
         when(refreshTokenRepository.findByToken(argThat(t -> !"existing-token-value".equals(t))))
                 .thenReturn(Optional.of(newToken));
 
-        RefreshTokenService.RotatedToken result = sut.validateAndRotate("existing-token-value");
+        RefreshTokenServiceImpl.RotatedToken result = sut.validateAndRotate("existing-token-value");
 
         assertThat(result).isNotNull();
         assertThat(result.username()).isEqualTo("alice");

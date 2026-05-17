@@ -101,39 +101,56 @@ graph TB
     SpringBoot -->|"File I/O"| FS
 ```
 
-### Backend Layer Architecture
+### Backend Hexagonal Architecture
 
-The backend follows **clean architecture** with strict, unidirectional layer dependencies:
+The backend follows **Hexagonal (Ports and Adapters) Architecture** with strict, unidirectional layer dependencies enforced by package naming.
 
 ```mermaid
 graph LR
-    subgraph A["api/"]
-        C["Controllers\n+ Request/Response DTOs"]
+    subgraph WEB["infrastructure/web/"]
+        C["Controllers\n(primary adapters)"]
+        WDTO["HTTP DTOs\n+ MapStruct mappers"]
     end
-    subgraph APP["application/"]
-        F["PhotoManagerFacade\n(orchestration)"]
-        ADTO["Application DTOs\n(CatalogChangeNotification,\nPaginatedData…)"]
+    subgraph APP["application/usecase/"]
+        UC["Use-case Impls\n(one class per interface\n@Service @Transactional)"]
+        ADTO["Application DTOs\n(AssetFilter,\nPaginatedResult…)"]
     end
     subgraph D["domain/"]
-        SI["Service Interfaces\n(CatalogAssetsService,\nSyncAssetsService…)"]
-        RI["Repository Interfaces\n(AssetRepository,\nFolderRepository…)"]
-        E["Entities & Enums\n(Asset, Folder,\nAlbum, User…)"]
+        PI["port/in/\n(use-case interfaces)"]
+        PO["port/out/\n(repository + service ports)"]
+        M["model/\n(pure POJOs)"]
+        E["enums/"]
     end
-    subgraph I["infrastructure/"]
-        SImpl["Service Implementations\n(CatalogAssetsServiceImpl,\nStorageServiceImpl…)"]
-        Sec["Security\n(JwtUtil,\nJwtAuthenticationFilter)"]
+    subgraph INFRA["infrastructure/persistence/ + service/"]
+        PA["Persistence Adapters\n(XxxRepositoryImpl)"]
+        SA["Service Adapters\n(StorageServiceAdapter,\nJwtTokenAdapter…)"]
+        JPA["Spring Data JPA\n+ @Entity classes"]
+        EM["MapStruct entity\nmappers"]
     end
 
-    C --> F
-    F --> SI
-    F --> ADTO
-    SImpl -.->|"implements"| SI
-    SImpl --> RI
-    SImpl --> E
-    RI --> E
+    C -->|"calls"| PI
+    C --> WDTO
+    UC -.->|"implements"| PI
+    UC -->|"injects"| PO
+    UC --> ADTO
+    PA -.->|"implements"| PO
+    SA -.->|"implements"| PO
+    PA --> JPA
+    PA --> EM
+    PO --> M
+    PI --> M
 ```
 
-**Dependency flow:** `api` → `application` → `domain` ← `infrastructure` — the domain layer has no outward dependencies.
+**Dependency flow:** `infrastructure/web → application/usecase → domain ← infrastructure/persistence | infrastructure/service`
+
+The domain layer (`domain/model/`, `domain/port/in/`, `domain/port/out/`) has zero `jakarta.*`, `org.springframework.*`, or infrastructure imports.
+
+Controllers in `infrastructure/web/controller/` delegate directly to use-case interfaces and never touch repositories or service adapters directly.
+
+**Naming conventions:**
+- Repository port interfaces: `XxxRepository` (in `domain/port/out/`) → `XxxRepositoryImpl` (in `infrastructure/persistence/adapter/`)
+- Service port interfaces: `XxxPort` (in `domain/port/out/`) → `XxxServiceAdapter` (in `infrastructure/service/`)
+- All entity↔domain and DTO↔domain conversions go through MapStruct-generated mappers; the `toEntityRef` pattern is used for FK-only references to avoid accidental updates to the referenced row
 
 ### Database Schema
 

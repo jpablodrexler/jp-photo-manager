@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.domain.service;
+package com.jpablodrexler.photomanager.domain.model;
 
 import java.time.LocalDateTime;
 

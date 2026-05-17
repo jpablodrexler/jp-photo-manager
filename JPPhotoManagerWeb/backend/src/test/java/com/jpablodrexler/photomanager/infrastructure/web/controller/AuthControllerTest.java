@@ -1,9 +1,9 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jpablodrexler.photomanager.domain.service.JwtTokenService;
-import com.jpablodrexler.photomanager.domain.service.RefreshTokenService;
-import com.jpablodrexler.photomanager.domain.service.UserService;
+import com.jpablodrexler.photomanager.domain.port.out.JwtTokenPort;
+import com.jpablodrexler.photomanager.infrastructure.service.RefreshTokenServiceImpl;
+import com.jpablodrexler.photomanager.infrastructure.service.UserServiceImpl;
 import com.jpablodrexler.photomanager.infrastructure.web.AuthRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,11 +33,11 @@ class AuthControllerTest {
     ObjectMapper objectMapper;
 
     @MockitoBean
-    UserService userService;
+    UserServiceImpl userService;
     @MockitoBean
-    JwtTokenService jwtTokenService;
+    JwtTokenPort jwtTokenService;
     @MockitoBean
-    RefreshTokenService refreshTokenService;
+    RefreshTokenServiceImpl refreshTokenService;
 
     // --- POST /api/auth/login ---
 

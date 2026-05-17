@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AssetHashCalculatorServiceTest {
 
     @InjectMocks
-    AssetHashCalculatorService sut;
+    AssetHashCalculatorAdapter sut;
 
     @TempDir
     Path tempDir;
@@ -28,7 +28,7 @@ class AssetHashCalculatorServiceTest {
         Path file = tempDir.resolve("photo.jpg");
         Files.write(file, "sample image content".getBytes(StandardCharsets.UTF_8));
 
-        String hash = sut.calculateHash(file.toString());
+        String hash = sut.computeSha256(file.toString());
 
         assertThat(hash).matches("[0-9a-f]{64}");
     }
@@ -38,8 +38,8 @@ class AssetHashCalculatorServiceTest {
         Path file = tempDir.resolve("photo.jpg");
         Files.write(file, "deterministic content".getBytes(StandardCharsets.UTF_8));
 
-        String first = sut.calculateHash(file.toString());
-        String second = sut.calculateHash(file.toString());
+        String first = sut.computeSha256(file.toString());
+        String second = sut.computeSha256(file.toString());
 
         assertThat(first).isEqualTo(second);
     }
@@ -51,8 +51,8 @@ class AssetHashCalculatorServiceTest {
         Files.write(fileA, "content A".getBytes(StandardCharsets.UTF_8));
         Files.write(fileB, "content B".getBytes(StandardCharsets.UTF_8));
 
-        String hashA = sut.calculateHash(fileA.toString());
-        String hashB = sut.calculateHash(fileB.toString());
+        String hashA = sut.computeSha256(fileA.toString());
+        String hashB = sut.computeSha256(fileB.toString());
 
         assertThat(hashA).isNotEqualTo(hashB);
     }
@@ -62,7 +62,7 @@ class AssetHashCalculatorServiceTest {
         Path file = tempDir.resolve("empty.jpg");
         Files.write(file, new byte[0]);
 
-        String hash = sut.calculateHash(file.toString());
+        String hash = sut.computeSha256(file.toString());
 
         assertThat(hash).isEqualTo("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
     }
@@ -71,7 +71,7 @@ class AssetHashCalculatorServiceTest {
     void calculateHash_nonExistentFile_throwsIOException() {
         String missing = tempDir.resolve("missing.jpg").toString();
 
-        assertThatThrownBy(() -> sut.calculateHash(missing))
+        assertThatThrownBy(() -> sut.computeSha256(missing))
                 .isInstanceOf(IOException.class);
     }
 }

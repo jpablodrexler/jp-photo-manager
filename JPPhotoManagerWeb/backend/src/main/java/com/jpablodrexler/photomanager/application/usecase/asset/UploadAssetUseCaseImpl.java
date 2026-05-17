@@ -3,9 +3,9 @@ package com.jpablodrexler.photomanager.application.usecase.asset;
 import com.jpablodrexler.photomanager.application.exception.FolderNotFoundException;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
+import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
-import com.jpablodrexler.photomanager.domain.service.CatalogFolderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +21,7 @@ public class UploadAssetUseCaseImpl implements UploadAssetUseCase {
 
     private final FolderRepository folderRepository;
     private final StoragePort storagePort;
-    private final CatalogFolderService catalogFolderService;
+    private final CatalogFolderPort catalogFolderService;
 
     @Override
     @Transactional
