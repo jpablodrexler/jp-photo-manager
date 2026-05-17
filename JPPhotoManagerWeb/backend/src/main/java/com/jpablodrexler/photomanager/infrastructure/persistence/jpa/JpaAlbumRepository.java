@@ -27,6 +27,9 @@ public interface JpaAlbumRepository extends JpaRepository<AlbumEntity, Long> {
     @Query("SELECT aa FROM AlbumEntity a JOIN a.assets aa JOIN FETCH aa.folder WHERE a.albumId = :albumId")
     Page<AssetEntity> findAssetsByAlbumId(@Param("albumId") Long albumId, Pageable pageable);
 
+    @Query(value = "SELECT COUNT(*) > 0 FROM album_assets WHERE album_id = :albumId AND asset_id = :assetId", nativeQuery = true)
+    boolean existsAsset(@Param("albumId") Long albumId, @Param("assetId") Long assetId);
+
     @Modifying
     @Query(value = "INSERT INTO album_assets (album_id, asset_id) VALUES (:albumId, :assetId)", nativeQuery = true)
     void addAsset(@Param("albumId") Long albumId, @Param("assetId") Long assetId);

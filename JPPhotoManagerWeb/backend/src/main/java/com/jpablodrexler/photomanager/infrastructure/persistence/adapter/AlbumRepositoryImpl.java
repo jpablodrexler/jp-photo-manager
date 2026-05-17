@@ -71,7 +71,9 @@ public class AlbumRepositoryImpl implements AlbumRepository {
     @Transactional
     public void addAssets(Long albumId, List<Long> assetIds) {
         for (Long assetId : assetIds) {
-            jpa.addAsset(albumId, assetId);
+            if (!jpa.existsAsset(albumId, assetId)) {
+                jpa.addAsset(albumId, assetId);
+            }
         }
     }
 
