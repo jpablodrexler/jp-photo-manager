@@ -1,11 +1,10 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
-import com.jpablodrexler.photomanager.api.exception.InvalidRefreshTokenException;
-import com.jpablodrexler.photomanager.domain.entity.RefreshToken;
-import com.jpablodrexler.photomanager.domain.entity.User;
-import com.jpablodrexler.photomanager.domain.repository.RefreshTokenRepository;
-import com.jpablodrexler.photomanager.domain.repository.UserRepository;
-import com.jpablodrexler.photomanager.domain.service.RefreshTokenService;
+import com.jpablodrexler.photomanager.infrastructure.web.exception.InvalidRefreshTokenException;
+import com.jpablodrexler.photomanager.domain.model.RefreshToken;
+import com.jpablodrexler.photomanager.domain.model.User;
+import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenRepository;
+import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +19,9 @@ import java.util.Base64;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class RefreshTokenServiceImpl implements RefreshTokenService {
+public class RefreshTokenServiceImpl {
+
+    public record RotatedToken(String newTokenValue, String username, java.time.Instant newExpiresAt) {}
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
@@ -30,7 +31,6 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     private final SecureRandom secureRandom = new SecureRandom();
 
-    @Override
     @Transactional
     public String issueRefreshToken(String username) {
         User user = userRepository.findByUsername(username)
@@ -52,7 +52,6 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         return tokenValue;
     }
 
-    @Override
     @Transactional
     public RotatedToken validateAndRotate(String tokenValue) {
         RefreshToken existing = refreshTokenRepository.findByToken(tokenValue)
@@ -74,11 +73,10 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         return new RotatedToken(newTokenValue, username, newExpiresAt);
     }
 
-    @Override
     @Transactional
     public void revokeAllForUser(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
-        refreshTokenRepository.deleteByUser_Id(user.getId());
+        refreshTokenRepository.deleteByUserId(user.getId());
     }
 }

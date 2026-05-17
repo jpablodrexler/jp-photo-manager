@@ -16,8 +16,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import com.jpablodrexler.photomanager.domain.repository.FolderRepository;
-import com.jpablodrexler.photomanager.domain.entity.Folder;
+import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
+import com.jpablodrexler.photomanager.domain.model.Folder;
 
 import java.io.InputStream;
 import java.nio.file.Files;

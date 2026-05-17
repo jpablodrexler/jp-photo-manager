@@ -64,7 +64,7 @@ The desired outcome is a **Timeline** view mode that groups assets by day (newes
 | Risk | Mitigation |
 |------|------------|
 | A day with 500+ photos causes a slow API response | Add a per-day item cap (e.g., 200) as a safety valve; surface the cap in the `TimelineGroupDto` with a `truncated: boolean` flag |
-| Timeline endpoint duplicates much of the asset-filter logic | Reuse `AssetFilter` from `application/dto/` as the input to both `GetAssetsUseCase` and `GetAssetsTimelineUseCase`; shared Criteria API filtering lives in `AssetRepositoryAdapter` |
+| Timeline endpoint duplicates much of the asset-filter logic | Reuse `AssetFilter` from `application/dto/` as the input to both `GetAssetsUseCase` and `GetAssetsTimelineUseCase`; shared Criteria API filtering lives in `AssetRepositoryImpl` |
 | Sticky headers break on mobile with the sidenav overlay | Apply sticky only when `sidenavOpen` is false on mobile; fall back to non-sticky on small viewports |
 | No virtual scroll → large DOM on scroll | Limit `timelinePageSize` to 30 days; browser handles ~1500 thumbnail nodes well within that range |
 

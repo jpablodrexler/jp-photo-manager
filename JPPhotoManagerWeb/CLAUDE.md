@@ -48,30 +48,59 @@ mvn test -Dtest=CatalogAssetsServiceImplTest#methodName
 
 ### Architecture
 
-Clean architecture in a single Maven module (`com.jpablodrexler.photo-manager`), mirroring the original desktop app's layer separation:
+Hexagonal (Ports and Adapters) architecture in a single Maven module (`com.jpablodrexler.photo-manager`). Boundaries are enforced by package naming and import discipline.
 
 ```
-api/                  → REST controllers + request/response DTOs
-application/          → PhotoManagerFacade (orchestration) + application DTOs
 domain/
-  entity/             → JPA entities (Asset, Folder, …)
+  model/              → Pure POJO domain objects (no framework imports)
+  port/
+    in/               → Use-case interfaces (one interface, one method each)
+      asset/          → GetAssetsUseCase, GetAssetImageUseCase, …
+      catalog/        → CatalogAssetsUseCase, GetDuplicatedAssetsUseCase
+      album/          → GetAlbumsUseCase, CreateAlbumUseCase, …
+      sync/           → GetSyncConfigUseCase, SaveSyncConfigUseCase, SyncAssetsUseCase
+      convert/        → GetConvertConfigUseCase, SaveConvertConfigUseCase, ConvertAssetsUseCase
+      folder/         → GetSubFoldersUseCase, GetDrivesUseCase, …
+      recycle/        → GetDeletedAssetsUseCase, RestoreAssetsUseCase, PurgeAssetsUseCase
+      search/         → GetSearchPresetsUseCase, CreateSearchPresetUseCase, DeleteSearchPresetUseCase
+      home/           → GetHomeStatsUseCase
+      user/           → ListUsersUseCase, CreateUserUseCase, UpdatePasswordUseCase, DeleteUserUseCase
+    out/              → Repository and service port interfaces (driven ports)
   enums/              → ImageRotation, SortCriteria, WallpaperStyle, ReasonEnum
-  repository/         → Spring Data JPA interfaces
-  service/            → Domain service interfaces
+
+application/
+  dto/                → Framework-free application DTOs (AssetFilter, PaginatedResult, …)
+  usecase/            → One implementation class per use-case interface (@Service @Transactional)
+
 infrastructure/
-  service/            → Service implementations, StorageServiceImpl, ThumbnailStorageService
-config/               → AppConfig (CORS, async executor)
+  persistence/
+    entity/           → @Entity JPA classes
+    jpa/              → Spring Data JPA interfaces (JpaXxxRepository)
+    adapter/          → Implements domain/port/out/ repository interfaces (XxxRepositoryImpl)
+    mapper/           → MapStruct entity ↔ domain model mappers
+  web/
+    controller/       → @RestController classes (HTTP primary adapters)
+    dto/              → HTTP request/response DTOs
+    mapper/           → MapStruct domain ↔ HTTP DTO mappers
+    exception/        → GlobalExceptionHandler and HTTP exceptions
+  service/            → Service adapters (StorageServiceAdapter, ThumbnailStorageServiceAdapter, …)
+  config/             → AppConfig, SecurityConfig, UserConfig, DataInitializer
 ```
 
-**Dependency flow:** `api` → `application` → `domain` ← `infrastructure`
+**Dependency flow:** `infrastructure/web → application/usecase → domain ← infrastructure/persistence | infrastructure/service`
 
-**Key domain services** (interfaces in `domain/service/`, implementations in `infrastructure/service/`):
-- `CatalogAssetsService` — recursively scans folders, generates thumbnails (200×150 px), computes SHA-256 hashes, persists to DB; runs asynchronously and streams progress via `Consumer<CatalogChangeNotification>`
-- `SyncAssetsService` — copies new files between directory pairs, optionally deletes files missing from the source
-- `ConvertAssetsService` — converts PNG images to JPEG
-- `FindDuplicatedAssetsService` — groups assets by hash, filters out stale entries
-- `MoveAssetsService` — copies or moves files on disk and updates the DB record
-- `StorageService` — file I/O, thumbnail generation, EXIF rotation (Apache Commons Imaging), SHA-256
+**Key use cases** (interfaces in `domain/port/in/`, implementations in `application/usecase/`):
+- `CatalogAssetsUseCase` — recursively scans folders, generates thumbnails (200×150 px), computes SHA-256 hashes, persists to DB; runs asynchronously and streams progress via `Consumer<CatalogChangeNotification>`
+- `SyncAssetsUseCase` — copies new files between directory pairs, optionally deletes files missing from the source
+- `ConvertAssetsUseCase` — converts PNG images to JPEG
+- `GetDuplicatedAssetsUseCase` — groups assets by hash, filters out stale entries
+- `MoveAssetsUseCase` — copies or moves files on disk and updates the DB record
+
+**Key service ports** (interfaces in `domain/port/out/`, adapters in `infrastructure/service/`):
+- `StoragePort` / `StorageServiceAdapter` — file I/O, thumbnail generation, EXIF rotation (Apache Commons Imaging), SHA-256
+- `ThumbnailPort` / `ThumbnailStorageServiceAdapter` — thumbnail read/write/delete on disk
+- `HashCalculatorPort` / `AssetHashCalculatorAdapter` — SHA-256 hash computation
+- `JwtTokenPort` / `JwtTokenAdapter` — JWT generation and validation (delegates to `JwtUtil`)
 
 **Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by **Flyway**; migrations live in `src/main/resources/db/migration/`. Connection is configured via environment variables (see table below).
 
@@ -80,7 +109,7 @@ config/               → AppConfig (CORS, async executor)
 docker run -d --name photomanager-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=photomanager -p 5432:5432 postgres:18
 ```
 
-**Thumbnails:** stored as `{assetId}.bin` files under `~/.photomanager/thumbnails/` managed by `ThumbnailStorageService`.
+**Thumbnails:** stored as `{assetId}.bin` files under `~/.photomanager/thumbnails/` managed by `ThumbnailStorageServiceAdapter`.
 
 **Real-time progress:** long-running operations (catalog, sync, convert) use Spring's `SseEmitter` to stream status events to the frontend.
 
@@ -147,15 +176,15 @@ Tests use **JUnit 5** + **Mockito** + **AssertJ**. Typical unit test pattern:
 
 ```java
 @ExtendWith(MockitoExtension.class)
-class CatalogAssetsServiceImplTest {
+class CatalogAssetsUseCaseImplTest {
 
-    @Mock StorageService storageService;
+    @Mock StoragePort storagePort;
     @Mock AssetRepository assetRepository;
-    @InjectMocks CatalogAssetsServiceImpl sut;
+    @InjectMocks CatalogAssetsUseCaseImpl sut;
 
     @Test
     void methodName_condition_expectedResult() {
-        when(storageService.listFiles(any())).thenReturn(List.of("/photos/a.jpg"));
+        when(storagePort.listFiles(any())).thenReturn(List.of("/photos/a.jpg"));
         // ...
         assertThat(result).isNotNull();
     }
@@ -171,8 +200,11 @@ Integration tests annotate with `@SpringBootTest`, extend `PostgresIntegrationTe
 - **Transactions:** read-only queries use `@Transactional(readOnly = true)`; writes use `@Transactional`.
 - **Async:** long-running methods are annotated `@Async` and return `CompletableFuture<T>`; the thread pool is configured in `AppConfig`.
 - **Logging:** use the SLF4J logger injected by `@Slf4j`, not `System.out`.
-- **New services:** declare the interface in `domain/service/`, implement in `infrastructure/service/`, and let Spring autowire via the interface. No manual bean registration needed — `@Service` is sufficient.
-- **New endpoints:** add a `@RestController` in `api/`; keep controllers thin (delegate immediately to `PhotoManagerFacade`).
+- **New use cases:** declare a single-method interface in `domain/port/in/<subpackage>/`, implement in `application/usecase/<subpackage>/` with `@Service @Transactional`; inject only `domain/port/out/` interfaces — no Spring MVC, Spring Data, or HTTP types permitted in use cases.
+- **New endpoints:** add a `@RestController` in `infrastructure/web/controller/`; keep controllers thin — inject use-case interfaces and delegate immediately; use MapStruct mappers in `infrastructure/web/mapper/` for HTTP ↔ domain conversion.
+- **Repository naming:** port interfaces in `domain/port/out/` use the `Repository` suffix (e.g. `AssetRepository`); their persistence adapters in `infrastructure/persistence/adapter/` use `RepositoryImpl` suffix (e.g. `AssetRepositoryImpl`).
+- **Service port naming:** service port interfaces in `domain/port/out/` use the `Port` suffix (e.g. `StoragePort`); their service adapters in `infrastructure/service/` use `ServiceAdapter` suffix (e.g. `StorageServiceAdapter`).
+- **Mappers:** all entity ↔ domain model and HTTP DTO ↔ domain model conversions are implemented as MapStruct `@Mapper(componentModel = "spring")` interfaces in `infrastructure/persistence/mapper/` and `infrastructure/web/mapper/` respectively; hand-writing mappers is not permitted; use `@Named` qualifiers when a mapper exposes multiple methods returning the same type (e.g. `toEntityRef` for FK-only references vs `toEntity` for full mapping).
 
 ---
 

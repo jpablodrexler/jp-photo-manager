@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 class ThumbnailStorageServiceImplTest {
 
     @InjectMocks
-    ThumbnailStorageServiceImpl sut;
+    ThumbnailStorageServiceAdapter sut;
 
     @TempDir
     Path tempDir;

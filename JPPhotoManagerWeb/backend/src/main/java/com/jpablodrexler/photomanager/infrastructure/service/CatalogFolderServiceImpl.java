@@ -1,17 +1,17 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
-import com.jpablodrexler.photomanager.domain.entity.Asset;
-import com.jpablodrexler.photomanager.domain.entity.AssetExif;
-import com.jpablodrexler.photomanager.domain.entity.Folder;
+import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.AssetExif;
+import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
-import com.jpablodrexler.photomanager.domain.repository.AssetExifRepository;
-import com.jpablodrexler.photomanager.domain.repository.AssetRepository;
-import com.jpablodrexler.photomanager.domain.repository.FolderRepository;
-import com.jpablodrexler.photomanager.domain.service.CatalogFolderService;
-import com.jpablodrexler.photomanager.domain.service.ExifMetadata;
-import com.jpablodrexler.photomanager.domain.service.StorageService;
-import com.jpablodrexler.photomanager.domain.service.ThumbnailStorageService;
+import com.jpablodrexler.photomanager.domain.model.ExifMetadata;
+import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
+import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
+import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
+import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CatalogFolderServiceImpl implements CatalogFolderService {
+public class CatalogFolderServiceImpl implements CatalogFolderPort {
 
     private static final int THUMBNAIL_MAX_WIDTH = 200;
     private static final int THUMBNAIL_MAX_HEIGHT = 150;
@@ -38,8 +38,8 @@ public class CatalogFolderServiceImpl implements CatalogFolderService {
     private final AssetRepository assetRepository;
     private final AssetExifRepository assetExifRepository;
     private final FolderRepository folderRepository;
-    private final StorageService storageService;
-    private final ThumbnailStorageService thumbnailStorageService;
+    private final StoragePort storageService;
+    private final ThumbnailPort thumbnailStorageService;
 
     @Value("${photomanager.catalog-batch-size:1000}")
     int batchSize;
@@ -92,7 +92,7 @@ public class CatalogFolderServiceImpl implements CatalogFolderService {
 
         for (Asset asset : cataloguedAssets) {
             if (!fileNamesOnDisk.contains(asset.getFileName())) {
-                assetRepository.delete(asset);
+                assetRepository.deleteById(asset.getAssetId());
                 thumbnailStorageService.deleteThumbnail(asset.getThumbnailBlobName());
                 if (callback != null) {
                     callback.accept(new CatalogChangeNotification(ReasonEnum.ASSET_DELETED, asset,
@@ -145,8 +145,8 @@ public class CatalogFolderServiceImpl implements CatalogFolderService {
     private void saveExifMetadata(Asset asset, String filePath) {
         try {
             ExifMetadata exif = storageService.getExifMetadata(filePath);
-            AssetExif assetExif = assetExifRepository.findByAssetAssetId(asset.getAssetId())
-                    .orElseGet(() -> { AssetExif e = new AssetExif(); e.setAsset(asset); return e; });
+            AssetExif assetExif = assetExifRepository.findByAssetId(asset.getAssetId())
+                    .orElseGet(() -> { AssetExif e = new AssetExif(); e.setAssetId(asset.getAssetId()); return e; });
             assetExif.setCameraMake(exif.cameraMake());
             assetExif.setCameraModel(exif.cameraModel());
             assetExif.setLensModel(exif.lensModel());

@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.config;
 
-import com.jpablodrexler.photomanager.domain.repository.UserRepository;
-import com.jpablodrexler.photomanager.domain.service.UserService;
+import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
+import com.jpablodrexler.photomanager.infrastructure.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class DataInitializer {
 
     private final UserRepository userRepository;
-    private final UserService userService;
+    private final UserServiceImpl userService;
 
     @EventListener(ApplicationReadyEvent.class)
     public void seedDefaultAdmin() {
@@ -26,7 +26,8 @@ public class DataInitializer {
                 user.setRole("ADMIN");
                 userRepository.save(user);
             });
-            log.warn("*** Default admin user created. CHANGE THIS PASSWORD IMMEDIATELY via the User Administration page. ***");
+            log.warn(
+                    "*** Default admin user created. CHANGE THIS PASSWORD IMMEDIATELY via the User Administration page. ***");
         }
     }
 }

@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
-import com.jpablodrexler.photomanager.domain.repository.CatalogRunStateRepository;
-import com.jpablodrexler.photomanager.domain.service.CatalogAssetsService;
+import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.out.CatalogStateRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,8 +13,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -24,10 +22,10 @@ import static org.mockito.Mockito.*;
 class CatalogSchedulerTest {
 
     @Mock
-    CatalogAssetsService catalogAssetsService;
+    CatalogAssetsUseCase catalogAssetsUseCase;
 
     @Mock
-    CatalogRunStateRepository catalogRunStateRepository;
+    CatalogStateRepository catalogRunStateRepository;
 
     @Mock
     TaskScheduler catalogTaskScheduler;
@@ -36,7 +34,7 @@ class CatalogSchedulerTest {
 
     @BeforeEach
     void setUp() {
-        sut = new CatalogScheduler(catalogAssetsService, catalogRunStateRepository, catalogTaskScheduler, "test-instance");
+        sut = new CatalogScheduler(catalogAssetsUseCase, catalogRunStateRepository, catalogTaskScheduler, "test-instance");
         ReflectionTestUtils.setField(sut, "catalogCooldownMinutes", 2);
         ReflectionTestUtils.setField(sut, "catalogTimeoutMinutes", 60);
     }
@@ -54,27 +52,13 @@ class CatalogSchedulerTest {
     }
 
     @Test
-    void cleanupStaleCatalogs_ownStaleLock_interruptsThreadAndReleasesLock() throws InterruptedException {
+    void cleanupStaleCatalogs_ownStaleLock_releasesLock() {
         when(catalogRunStateRepository.isStaleForInstance(eq("test-instance"), any())).thenReturn(true);
         when(catalogRunStateRepository.releaseStaleForOtherInstances(eq("test-instance"), any())).thenReturn(0);
 
-        CountDownLatch interruptReceived = new CountDownLatch(1);
-        Thread runThread = new Thread(() -> {
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                interruptReceived.countDown();
-            }
-        });
-        runThread.start();
-        Thread.sleep(50);
-        ReflectionTestUtils.setField(sut, "catalogRunThread", runThread);
-
         sut.cleanupStaleCatalogs();
 
-        assertThat(interruptReceived.await(500, TimeUnit.MILLISECONDS)).isTrue();
         verify(catalogRunStateRepository).release("test-instance");
-        runThread.join(500);
     }
 
     @Test

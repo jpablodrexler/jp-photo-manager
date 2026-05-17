@@ -1,15 +1,16 @@
 package com.jpablodrexler.photomanager;
 
-import com.jpablodrexler.photomanager.application.dto.PaginatedData;
-import com.jpablodrexler.photomanager.domain.entity.Asset;
-import com.jpablodrexler.photomanager.domain.entity.Folder;
-import com.jpablodrexler.photomanager.domain.entity.User;
-import com.jpablodrexler.photomanager.domain.repository.AssetRepository;
-import com.jpablodrexler.photomanager.domain.repository.FolderRepository;
-import com.jpablodrexler.photomanager.domain.repository.UserRepository;
-import com.jpablodrexler.photomanager.domain.service.AlbumService;
-import com.jpablodrexler.photomanager.domain.entity.Album;
-import com.jpablodrexler.photomanager.api.exception.AlbumNotFoundException;
+import com.jpablodrexler.photomanager.application.dto.AlbumData;
+import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
+import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.Folder;
+import com.jpablodrexler.photomanager.domain.model.User;
+import com.jpablodrexler.photomanager.domain.port.in.album.*;
+import com.jpablodrexler.photomanager.domain.port.out.AlbumRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
+import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,31 +30,40 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AlbumServiceIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
-    AlbumService albumService;
-
+    CreateAlbumUseCase createAlbumUseCase;
+    @Autowired
+    GetAlbumUseCase getAlbumUseCase;
+    @Autowired
+    DeleteAlbumUseCase deleteAlbumUseCase;
+    @Autowired
+    AddAssetsToAlbumUseCase addAssetsToAlbumUseCase;
+    @Autowired
+    RemoveAssetsFromAlbumUseCase removeAssetsFromAlbumUseCase;
+    @Autowired
+    AlbumRepository albumRepository;
     @Autowired
     UserRepository userRepository;
-
     @Autowired
     AssetRepository assetRepository;
-
     @Autowired
     FolderRepository folderRepository;
 
-    private User testUser;
+    private UUID testUserId;
     private Asset asset1;
     private Asset asset2;
 
     @BeforeEach
     void setUp() {
-        assetRepository.deleteAll();
-        userRepository.deleteAll();
+        assetRepository.findAll().forEach(a -> assetRepository.deleteById(a.getAssetId()));
+        userRepository.findAll().forEach(u -> userRepository.deleteById(u.getId()));
 
-        testUser = new User();
+        User testUser = new User();
         testUser.setUsername("testuser_" + System.nanoTime());
         testUser.setPasswordHash("hash");
         testUser.setCreatedAt(Instant.now());
+        testUser.setRole("USER");
         testUser = userRepository.save(testUser);
+        testUserId = testUser.getId();
 
         Folder folder = new Folder();
         folder.setPath("/test/photos_" + System.nanoTime());
@@ -78,53 +88,52 @@ class AlbumServiceIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void createAlbum_andAddAssets_getAlbumAssetsReturnsCorrectPage() {
-        Album album = albumService.createAlbum(testUser.getId(), "My Album", "desc");
-        assertThat(album.getAlbumId()).isNotNull();
+        AlbumData album = createAlbumUseCase.execute(testUserId, "My Album", "desc");
+        assertThat(album.albumId()).isNotNull();
 
-        albumService.addAssets(album.getAlbumId(), testUser.getId(), List.of(asset1.getAssetId(), asset2.getAssetId()));
+        addAssetsToAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId(), asset2.getAssetId()));
 
-        PaginatedData<Asset> page = albumService.getAlbumAssets(album.getAlbumId(), testUser.getId(), 0);
-        assertThat(page.getTotalItems()).isEqualTo(2);
-        assertThat(page.getItems()).extracting(Asset::getAssetId)
+        PaginatedResult<Asset> page = getAlbumUseCase.executeAssets(album.albumId(), testUserId, 0);
+        assertThat(page.total()).isEqualTo(2);
+        assertThat(page.items()).extracting(Asset::getAssetId)
                 .containsExactlyInAnyOrder(asset1.getAssetId(), asset2.getAssetId());
     }
 
     @Test
     void addAssets_duplicate_isIdempotent() {
-        Album album = albumService.createAlbum(testUser.getId(), "Album", null);
-        albumService.addAssets(album.getAlbumId(), testUser.getId(), List.of(asset1.getAssetId()));
-        albumService.addAssets(album.getAlbumId(), testUser.getId(), List.of(asset1.getAssetId()));
+        AlbumData album = createAlbumUseCase.execute(testUserId, "Album", null);
+        addAssetsToAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId()));
+        addAssetsToAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId()));
 
-        PaginatedData<Asset> page = albumService.getAlbumAssets(album.getAlbumId(), testUser.getId(), 0);
-        assertThat(page.getTotalItems()).isEqualTo(1);
+        PaginatedResult<Asset> page = getAlbumUseCase.executeAssets(album.albumId(), testUserId, 0);
+        assertThat(page.total()).isEqualTo(1);
     }
 
     @Test
     void removeAsset_decrementCount() {
-        Album album = albumService.createAlbum(testUser.getId(), "Album", null);
-        albumService.addAssets(album.getAlbumId(), testUser.getId(), List.of(asset1.getAssetId(), asset2.getAssetId()));
+        AlbumData album = createAlbumUseCase.execute(testUserId, "Album", null);
+        addAssetsToAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId(), asset2.getAssetId()));
 
-        albumService.removeAssets(album.getAlbumId(), testUser.getId(), List.of(asset1.getAssetId()));
+        removeAssetsFromAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId()));
 
-        PaginatedData<Asset> page = albumService.getAlbumAssets(album.getAlbumId(), testUser.getId(), 0);
-        assertThat(page.getTotalItems()).isEqualTo(1);
-        assertThat(page.getItems().get(0).getAssetId()).isEqualTo(asset2.getAssetId());
+        PaginatedResult<Asset> page = getAlbumUseCase.executeAssets(album.albumId(), testUserId, 0);
+        assertThat(page.total()).isEqualTo(1);
+        assertThat(page.items().get(0).getAssetId()).isEqualTo(asset2.getAssetId());
     }
 
     @Test
     void deleteAlbum_albumNoLongerFound() {
-        Album album = albumService.createAlbum(testUser.getId(), "Temp Album", null);
-        Long albumId = album.getAlbumId();
+        AlbumData album = createAlbumUseCase.execute(testUserId, "Temp Album", null);
+        Long albumId = album.albumId();
 
-        albumService.deleteAlbum(albumId, testUser.getId());
+        deleteAlbumUseCase.execute(albumId, testUserId);
 
-        Optional<Album> found = albumService.findByIdAndUserId(albumId, testUser.getId());
-        assertThat(found).isEmpty();
+        assertThat(albumRepository.findByIdAndUserId(albumId, testUserId)).isEmpty();
     }
 
     @Test
     void getAlbumAssets_unknownAlbum_throwsAlbumNotFoundException() {
-        assertThatThrownBy(() -> albumService.getAlbumAssets(99999L, testUser.getId(), 0))
+        assertThatThrownBy(() -> getAlbumUseCase.executeAssets(99999L, testUserId, 0))
                 .isInstanceOf(AlbumNotFoundException.class);
     }
 }
