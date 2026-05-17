@@ -2,13 +2,17 @@ package com.jpablodrexler.photomanager.infrastructure.persistence.jpa;
 
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.AssetEntity;
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.FolderEntity;
+import com.jpablodrexler.photomanager.infrastructure.persistence.entity.TagEntity;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -17,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface JpaAssetRepository extends JpaRepository<AssetEntity, Long>, JpaSpecificationExecutor<AssetEntity> {
@@ -51,8 +56,20 @@ public interface JpaAssetRepository extends JpaRepository<AssetEntity, Long>, Jp
     @Query("SELECT a FROM AssetEntity a JOIN FETCH a.folder WHERE a.deletedAt < :cutoff AND a.deletedAt IS NOT NULL")
     List<AssetEntity> findByDeletedAtBefore(@Param("cutoff") LocalDateTime cutoff);
 
+    @Modifying(clearAutomatically = true)
+    @Query(value = "INSERT INTO asset_tags (asset_id, tag_id) VALUES (:assetId, :tagId) ON CONFLICT DO NOTHING", nativeQuery = true)
+    void addTagToAsset(@Param("assetId") Long assetId, @Param("tagId") Long tagId);
+
+    @Modifying(clearAutomatically = true)
+    @Query(value = "DELETE FROM asset_tags WHERE asset_id = :assetId AND tag_id = :tagId", nativeQuery = true)
+    int removeTagFromAsset(@Param("assetId") Long assetId, @Param("tagId") Long tagId);
+
+    @Query(value = "SELECT COUNT(*) > 0 FROM asset_tags WHERE asset_id = :assetId AND tag_id = :tagId", nativeQuery = true)
+    boolean hasTag(@Param("assetId") Long assetId, @Param("tagId") Long tagId);
+
     default Page<AssetEntity> findWithFilters(FolderEntity folder, String search, LocalDateTime dateFrom,
-                                              LocalDateTime dateTo, Integer minRating, Pageable pageable) {
+                                              LocalDateTime dateTo, Integer minRating, Set<String> tags,
+                                              Pageable pageable) {
         Specification<AssetEntity> spec = (root, query, cb) -> {
             if (!Long.class.equals(query.getResultType())) {
                 root.fetch("folder", JoinType.INNER);
@@ -71,6 +88,19 @@ public interface JpaAssetRepository extends JpaRepository<AssetEntity, Long>, Jp
             }
             if (minRating != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("rating"), minRating));
+            }
+            if (tags != null && !tags.isEmpty()) {
+                for (String tagName : tags) {
+                    Subquery<Long> sub = query.subquery(Long.class);
+                    Root<AssetEntity> subAsset = sub.from(AssetEntity.class);
+                    jakarta.persistence.criteria.Join<AssetEntity, TagEntity> subTag = subAsset.join("tags");
+                    sub.select(subAsset.get("assetId"))
+                            .where(cb.and(
+                                    cb.equal(subAsset.get("assetId"), root.get("assetId")),
+                                    cb.equal(subTag.get("name"), tagName.toLowerCase())
+                            ));
+                    predicates.add(cb.exists(sub));
+                }
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };

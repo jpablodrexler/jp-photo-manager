@@ -4,8 +4,11 @@ import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "assets", indexes = @Index(name = "ix_assets_folder_id", columnList = "folder_id"))
@@ -61,4 +64,13 @@ public class AssetEntity {
 
     @Column(name = "rating", nullable = false)
     private int rating = 0;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "asset_tags",
+            joinColumns = @JoinColumn(name = "asset_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    @BatchSize(size = 50)
+    private Set<TagEntity> tags = new HashSet<>();
 }

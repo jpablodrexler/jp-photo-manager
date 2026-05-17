@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class AssetDto {
@@ -25,4 +26,5 @@ public class AssetDto {
     private String thumbnailUrl;
     private String imageUrl;
     private int rating;
+    private List<String> tags;
 }

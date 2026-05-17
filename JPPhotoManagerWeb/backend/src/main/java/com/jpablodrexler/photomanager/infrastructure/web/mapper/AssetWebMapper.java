@@ -4,6 +4,12 @@ import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 @Mapper(componentModel = "spring")
 public interface AssetWebMapper {
@@ -14,5 +20,14 @@ public interface AssetWebMapper {
              expression = "java(\"/api/assets/\" + asset.getAssetId() + \"/thumbnail\")")
     @Mapping(target = "imageUrl",
              expression = "java(\"/api/assets/\" + asset.getAssetId() + \"/image\")")
+    @Mapping(source = "tags", target = "tags", qualifiedByName = "tagsSetToList")
     AssetDto toDto(Asset asset);
+
+    @Named("tagsSetToList")
+    default List<String> tagsSetToList(Set<String> tags) {
+        if (tags == null) return Collections.emptyList();
+        List<String> list = new ArrayList<>(tags);
+        Collections.sort(list);
+        return list;
+    }
 }

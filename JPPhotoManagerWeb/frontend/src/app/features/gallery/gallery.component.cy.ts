@@ -5,6 +5,7 @@ import { provideRouter } from '@angular/router';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { GalleryComponent } from './gallery.component';
 import { AssetService } from '../../core/services/asset.service';
+import { TagService } from '../../core/services/tag.service';
 import { AlbumService } from '../../core/services/album.service';
 import { FolderService } from '../../core/services/folder.service';
 import { SearchPresetService } from '../../core/services/search-preset.service';
@@ -25,6 +26,7 @@ describe('GalleryComponent', () => {
       thumbnailUrl: '/api/assets/1/thumbnail',
       imageUrl: '/api/assets/1/image',
       rating: 0,
+      tags: [],
     },
     {
       assetId: 2,
@@ -37,6 +39,7 @@ describe('GalleryComponent', () => {
       thumbnailUrl: '/api/assets/2/thumbnail',
       imageUrl: '/api/assets/2/image',
       rating: 0,
+      tags: [],
     },
   ];
 
@@ -44,7 +47,8 @@ describe('GalleryComponent', () => {
 
   function mountGallery(
     assetServiceOverrides: Partial<AssetService> = {},
-    searchPresetServiceOverrides: Partial<SearchPresetService> = {}
+    searchPresetServiceOverrides: Partial<SearchPresetService> = {},
+    tagServiceOverrides: Partial<TagService> = {},
   ) {
     const assetServiceStub: Partial<AssetService> = {
       getAssets: cy.stub().returns(of(emptyPage)),
@@ -52,6 +56,13 @@ describe('GalleryComponent', () => {
       deleteAssets: cy.stub().returns(of(undefined)),
       moveAssets: cy.stub().returns(of(true)),
       ...assetServiceOverrides,
+    };
+
+    const tagServiceStub: Partial<TagService> = {
+      searchTags: cy.stub().returns(of([])),
+      bulkAddTag: cy.stub().returns(of(undefined)),
+      bulkRemoveTag: cy.stub().returns(of(undefined)),
+      ...tagServiceOverrides,
     };
 
     const folderServiceStub: Partial<FolderService> = {
@@ -74,11 +85,12 @@ describe('GalleryComponent', () => {
         provideNoopAnimations(),
         provideRouter([]),
         { provide: AssetService, useValue: assetServiceStub },
+        { provide: TagService, useValue: tagServiceStub },
         { provide: FolderService, useValue: folderServiceStub },
         { provide: AlbumService, useValue: albumServiceStub },
         { provide: SearchPresetService, useValue: searchPresetServiceStub },
       ],
-    }).then(result => ({ ...result, assetServiceStub, searchPresetServiceStub }));
+    }).then(result => ({ ...result, assetServiceStub, searchPresetServiceStub, tagServiceStub }));
   }
 
   it('should create the component', () => {
@@ -387,7 +399,7 @@ describe('GalleryComponent', () => {
         assetId: 3, folderId: 1, folderPath: '/photos', fileName: 'mountain.jpg',
         fileSize: 768000, thumbnailCreationDateTime: '2024-06-03T10:00:00',
         hash: 'ghi789', thumbnailUrl: '/api/assets/3/thumbnail', imageUrl: '/api/assets/3/image',
-        rating: 0,
+        rating: 0, tags: [],
       },
     ];
     const getAssets = cy.stub().returns(of({ items: threeAssets, pageIndex: 0, totalPages: 1, totalItems: 3 }));
@@ -574,6 +586,7 @@ describe('GalleryComponent', () => {
         { provide: AlbumService, useValue: { getAlbums: cy.stub().returns(of([])) } },
         { provide: BreakpointObserver, useValue: bpObs },
         { provide: SearchPresetService, useValue: { listPresets: cy.stub().returns(of([])), createPreset: cy.stub().returns(of({})), deletePreset: cy.stub().returns(of(undefined)) } },
+        { provide: TagService, useValue: { searchTags: cy.stub().returns(of([])) } },
       ],
     });
 
@@ -736,5 +749,44 @@ describe('GalleryComponent', () => {
     cy.get('mat-option').first().find('button.preset-delete-btn').click({ force: true });
 
     cy.wrap(deletePreset).should('have.been.calledWith', 1);
+  });
+
+  // --- Tag filter tests ---
+
+  it('tagFilter_addTagViaInput_reloadsAssetsWithTagParam', () => {
+    const getAssets = cy.stub().returns(of(emptyPage));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.addTagFilter({ value: 'vacation', chipInput: { clear: () => {} } } as any);
+      expect(component.selectedTags).to.deep.equal(['vacation']);
+      expect(component.pageIndex).to.equal(0);
+    });
+
+    cy.wrap(getAssets).should('have.been.called');
+  });
+
+  it('tagFilter_removeTagChip_reloadsAssetsWithoutTag', () => {
+    const getAssets = cy.stub().returns(of(emptyPage));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.selectedTags = ['vacation', 'family'];
+      component.removeTagFilter('vacation');
+      expect(component.selectedTags).to.deep.equal(['family']);
+    });
+
+    cy.wrap(getAssets).should('have.been.called');
+  });
+
+  it('tagFilter_clearFilters_clearsSelectedTags', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.selectedTags = ['vacation'];
+      component.clearFilters();
+      expect(component.selectedTags).to.deep.equal([]);
+    });
   });
 });

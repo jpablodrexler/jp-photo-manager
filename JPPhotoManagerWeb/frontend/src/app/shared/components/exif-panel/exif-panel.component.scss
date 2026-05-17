@@ -84,6 +84,40 @@
   padding: 24px 12px;
 }
 
+.exif-tags-section {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.exif-section-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.exif-chip-grid {
+  width: 100%;
+  --mdc-chip-label-text-color: #fff;
+  --mdc-chip-container-color: rgba(255, 255, 255, 0.15);
+  --mdc-chip-with-icon-icon-color: rgba(255, 255, 255, 0.7);
+}
+
+.exif-tag-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 13px;
+  min-width: 80px;
+  padding: 4px 0;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+}
+
 @media (max-width: 768px) {
   :host {
     width: 100%;

@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @Builder
@@ -29,6 +31,7 @@ public class Asset {
     private LocalDateTime fileModificationDateTime;
     private LocalDateTime deletedAt;
     private int rating;
+    private Set<String> tags = new HashSet<>();
 
     public String getThumbnailBlobName() {
         return assetId + ".bin";

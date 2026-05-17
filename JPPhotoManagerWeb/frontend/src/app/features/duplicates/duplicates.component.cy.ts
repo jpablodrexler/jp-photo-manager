@@ -17,6 +17,8 @@ describe('DuplicatesComponent', () => {
     hash: 'samehash',
     thumbnailUrl: `/api/assets/${id}/thumbnail`,
     imageUrl: `/api/assets/${id}/image`,
+    rating: 0,
+    tags: [],
   });
 
   const mockDuplicateGroups: Asset[][] = [

@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -76,85 +77,85 @@ class AssetRepositoryImplTest {
 
     @Test
     void findFiltered_noFilters_callsJpaWithNullSearchAndNulls() {
-        AssetFilter filter = new AssetFilter(1L, null, null, null, null, null, 0, 10, false);
+        AssetFilter filter = new AssetFilter(1L, null, null, null, null, null, 0, 10, false, null);
         Page<AssetEntity> emptyPage = new PageImpl<>(List.of());
-        when(jpa.findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), any())).thenReturn(emptyPage);
+        when(jpa.findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), isNull(), any())).thenReturn(emptyPage);
 
         PaginatedResult<Asset> result = sut.findFiltered(filter);
 
         assertThat(result.total()).isZero();
-        verify(jpa).findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), any());
+        verify(jpa).findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), isNull(), any());
     }
 
     @Test
     void findFiltered_withSearchText_passesSearchWithWildcards() {
-        AssetFilter filter = new AssetFilter(1L, " Cat ", null, null, null, null, 0, 10, false);
+        AssetFilter filter = new AssetFilter(1L, " Cat ", null, null, null, null, 0, 10, false, null);
         Page<AssetEntity> emptyPage = new PageImpl<>(List.of());
-        when(jpa.findWithFilters(any(), eq("%cat%"), isNull(), isNull(), isNull(), any())).thenReturn(emptyPage);
+        when(jpa.findWithFilters(any(), eq("%cat%"), isNull(), isNull(), isNull(), isNull(), any())).thenReturn(emptyPage);
 
         sut.findFiltered(filter);
 
-        verify(jpa).findWithFilters(any(), eq("%cat%"), isNull(), isNull(), isNull(), any());
+        verify(jpa).findWithFilters(any(), eq("%cat%"), isNull(), isNull(), isNull(), isNull(), any());
     }
 
     @Test
     void findFiltered_withBlankSearch_passesNullSearch() {
-        AssetFilter filter = new AssetFilter(1L, "   ", null, null, null, null, 0, 10, false);
+        AssetFilter filter = new AssetFilter(1L, "   ", null, null, null, null, 0, 10, false, null);
         Page<AssetEntity> emptyPage = new PageImpl<>(List.of());
-        when(jpa.findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), any())).thenReturn(emptyPage);
+        when(jpa.findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), isNull(), any())).thenReturn(emptyPage);
 
         sut.findFiltered(filter);
 
-        verify(jpa).findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), any());
+        verify(jpa).findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), isNull(), any());
     }
 
     @Test
     void findFiltered_withDateRange_passesDateTimeRangeToJpa() {
         LocalDate from = LocalDate.of(2024, 1, 1);
         LocalDate to = LocalDate.of(2024, 12, 31);
-        AssetFilter filter = new AssetFilter(1L, null, from, to, null, null, 0, 10, false);
+        AssetFilter filter = new AssetFilter(1L, null, from, to, null, null, 0, 10, false, null);
         Page<AssetEntity> emptyPage = new PageImpl<>(List.of());
         LocalDateTime expectedFrom = from.atStartOfDay();
         LocalDateTime expectedTo = to.atTime(LocalTime.MAX);
-        when(jpa.findWithFilters(any(), isNull(), eq(expectedFrom), eq(expectedTo), isNull(), any())).thenReturn(emptyPage);
+        when(jpa.findWithFilters(any(), isNull(), eq(expectedFrom), eq(expectedTo), isNull(), isNull(), any())).thenReturn(emptyPage);
 
         sut.findFiltered(filter);
 
-        verify(jpa).findWithFilters(any(), isNull(), eq(expectedFrom), eq(expectedTo), isNull(), any());
+        verify(jpa).findWithFilters(any(), isNull(), eq(expectedFrom), eq(expectedTo), isNull(), isNull(), any());
     }
 
     @Test
     void findFiltered_withPositiveMinRating_passesMinRatingToJpa() {
-        AssetFilter filter = new AssetFilter(1L, null, null, null, 3, null, 0, 10, false);
+        AssetFilter filter = new AssetFilter(1L, null, null, null, 3, null, 0, 10, false, null);
         Page<AssetEntity> emptyPage = new PageImpl<>(List.of());
-        when(jpa.findWithFilters(any(), isNull(), isNull(), isNull(), eq(3), any())).thenReturn(emptyPage);
+        when(jpa.findWithFilters(any(), isNull(), isNull(), isNull(), eq(3), isNull(), any())).thenReturn(emptyPage);
 
         sut.findFiltered(filter);
 
-        verify(jpa).findWithFilters(any(), isNull(), isNull(), isNull(), eq(3), any());
+        verify(jpa).findWithFilters(any(), isNull(), isNull(), isNull(), eq(3), isNull(), any());
     }
 
     @Test
     void findFiltered_withZeroMinRating_passesNullMinRating() {
-        AssetFilter filter = new AssetFilter(1L, null, null, null, 0, null, 0, 10, false);
+        AssetFilter filter = new AssetFilter(1L, null, null, null, 0, null, 0, 10, false, null);
         Page<AssetEntity> emptyPage = new PageImpl<>(List.of());
-        when(jpa.findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), any())).thenReturn(emptyPage);
+        when(jpa.findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), isNull(), any())).thenReturn(emptyPage);
 
         sut.findFiltered(filter);
 
-        verify(jpa).findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), any());
+        verify(jpa).findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), isNull(), any());
     }
 
     @Test
     void findFiltered_withFileSizeSort_usesFileSizeDescSort() {
-        AssetFilter filter = new AssetFilter(1L, null, null, null, null, SortCriteria.FILE_SIZE, 0, 10, false);
+        AssetFilter filter = new AssetFilter(1L, null, null, null, null, SortCriteria.FILE_SIZE, 0, 10, false, null);
         Page<AssetEntity> emptyPage = new PageImpl<>(List.of());
-        when(jpa.findWithFilters(any(), any(), any(), any(), any(), any())).thenReturn(emptyPage);
+        when(jpa.findWithFilters(any(), any(), any(), any(), any(), any(), any())).thenReturn(emptyPage);
 
         sut.findFiltered(filter);
 
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        verify(jpa).findWithFilters(any(), any(), any(), any(), any(), pageableCaptor.capture());
+        verify(jpa).findWithFilters(any(), any(), any(), any(), any(), any(), pageableCaptor.capture());
         Sort sort = pageableCaptor.getValue().getSort();
         assertThat(sort.getOrderFor("fileSize")).isNotNull();
         assertThat(sort.getOrderFor("fileSize").getDirection()).isEqualTo(Sort.Direction.DESC);
@@ -162,9 +163,9 @@ class AssetRepositoryImplTest {
 
     @Test
     void findFiltered_withZeroPageSize_usesDefaultPageSize() {
-        AssetFilter filter = new AssetFilter(1L, null, null, null, null, null, 0, 0, false);
+        AssetFilter filter = new AssetFilter(1L, null, null, null, null, null, 0, 0, false, null);
         Page<AssetEntity> emptyPage = new PageImpl<>(List.of());
-        when(jpa.findWithFilters(any(), any(), any(), any(), any(), any())).thenReturn(emptyPage);
+        when(jpa.findWithFilters(any(), any(), any(), any(), any(), any(), any())).thenReturn(emptyPage);
 
         PaginatedResult<Asset> result = sut.findFiltered(filter);
 
@@ -288,5 +289,46 @@ class AssetRepositoryImplTest {
     void count_delegatesToJpa() {
         when(jpa.count()).thenReturn(47L);
         assertThat(sut.count()).isEqualTo(47L);
+    }
+
+    @Test
+    void findFiltered_withTags_passesTagsToJpa() {
+        Set<String> tags = Set.of("vacation", "family");
+        AssetFilter filter = new AssetFilter(1L, null, null, null, null, null, 0, 10, false, tags);
+        Page<AssetEntity> emptyPage = new PageImpl<>(List.of());
+        when(jpa.findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), eq(tags), any())).thenReturn(emptyPage);
+
+        sut.findFiltered(filter);
+
+        verify(jpa).findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), eq(tags), any());
+    }
+
+    @Test
+    void findFiltered_withEmptyTags_passesEmptySetToJpa() {
+        AssetFilter filter = new AssetFilter(1L, null, null, null, null, null, 0, 10, false, Set.of());
+        Page<AssetEntity> emptyPage = new PageImpl<>(List.of());
+        when(jpa.findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), eq(Set.of()), any())).thenReturn(emptyPage);
+
+        sut.findFiltered(filter);
+
+        verify(jpa).findWithFilters(any(), isNull(), isNull(), isNull(), isNull(), eq(Set.of()), any());
+    }
+
+    @Test
+    void addTagToAsset_delegatesToJpa() {
+        sut.addTagToAsset(1L, 10L);
+        verify(jpa).addTagToAsset(1L, 10L);
+    }
+
+    @Test
+    void removeTagFromAsset_delegatesToJpaAndReturnsCount() {
+        when(jpa.removeTagFromAsset(1L, 10L)).thenReturn(1);
+        assertThat(sut.removeTagFromAsset(1L, 10L)).isEqualTo(1);
+    }
+
+    @Test
+    void hasTag_delegatesToJpa() {
+        when(jpa.hasTag(1L, 10L)).thenReturn(true);
+        assertThat(sut.hasTag(1L, 10L)).isTrue();
     }
 }

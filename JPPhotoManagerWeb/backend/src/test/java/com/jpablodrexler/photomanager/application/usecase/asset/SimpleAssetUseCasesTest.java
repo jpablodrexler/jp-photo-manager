@@ -38,7 +38,7 @@ class SimpleAssetUseCasesTest {
 
         @Test
         void execute_delegatesToRepository() {
-            AssetFilter filter = new AssetFilter(1L, null, null, null, null, null, 0, 20, false);
+            AssetFilter filter = new AssetFilter(1L, null, null, null, null, null, 0, 20, false, null);
             PaginatedResult<Asset> expected = new PaginatedResult<>(List.of(), 0L, 0, 20);
             when(assetRepository.findFiltered(filter)).thenReturn(expected);
 

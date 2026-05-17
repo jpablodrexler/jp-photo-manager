@@ -20,9 +20,15 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.tag.BulkAddTagUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.AddTagRequest;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.BulkTagRequest;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.DownloadAssetsRequest;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.ExifMetadataDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.MoveAssetsRequest;
@@ -43,7 +49,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -63,6 +72,10 @@ public class AssetController {
     private final DeleteAssetsUseCase deleteAssetsUseCase;
     private final CatalogAssetsUseCase catalogAssetsUseCase;
     private final GetDuplicatedAssetsUseCase getDuplicatedAssetsUseCase;
+    private final AddTagToAssetUseCase addTagToAssetUseCase;
+    private final RemoveTagFromAssetUseCase removeTagFromAssetUseCase;
+    private final BulkAddTagUseCase bulkAddTagUseCase;
+    private final BulkRemoveTagUseCase bulkRemoveTagUseCase;
     private final ThumbnailPort thumbnailPort;
     private final FolderRepository folderRepository;
     private final AssetWebMapper assetWebMapper;
@@ -78,9 +91,11 @@ public class AssetController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
-            @RequestParam(required = false) Integer minRating) {
+            @RequestParam(required = false) Integer minRating,
+            @RequestParam(required = false) String tags) {
         Long folderId = folderRepository.findByPath(folderPath).map(Folder::getFolderId).orElse(null);
-        AssetFilter filter = new AssetFilter(folderId, search, dateFrom, dateTo, minRating, sort, page, 50, false);
+        Set<String> tagSet = parseTags(tags);
+        AssetFilter filter = new AssetFilter(folderId, search, dateFrom, dateTo, minRating, sort, page, 50, false, tagSet);
         PaginatedResult<Asset> result = getAssetsUseCase.execute(filter);
         List<AssetDto> dtos = result.items().stream().map(assetWebMapper::toDto).collect(Collectors.toList());
         int totalPages = result.pageSize() > 0 ? (int) Math.ceil((double) result.total() / result.pageSize()) : 0;
@@ -213,6 +228,42 @@ public class AssetController {
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    @PostMapping("/{id}/tags")
+    public ResponseEntity<Void> addTag(@PathVariable Long id, @Valid @RequestBody AddTagRequest body) {
+        addTagToAssetUseCase.execute(id, body.name());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @DeleteMapping("/{id}/tags")
+    public ResponseEntity<Void> removeTag(@PathVariable Long id, @RequestParam String name) {
+        try {
+            removeTagFromAssetUseCase.execute(id, name);
+            return ResponseEntity.noContent().build();
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/tags/bulk")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void bulkAddTag(@Valid @RequestBody BulkTagRequest body) {
+        bulkAddTagUseCase.execute(body.assetIds(), body.name());
+    }
+
+    @DeleteMapping("/tags/bulk")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void bulkRemoveTag(@Valid @RequestBody BulkTagRequest body) {
+        bulkRemoveTagUseCase.execute(body.assetIds(), body.name());
+    }
+
+    private Set<String> parseTags(String tags) {
+        if (tags == null || tags.isBlank()) return null;
+        return Arrays.stream(tags.split(","))
+                .map(String::trim)
+                .filter(t -> !t.isEmpty())
+                .collect(Collectors.toSet());
     }
 
     private MediaType detectMediaType(byte[] bytes) {

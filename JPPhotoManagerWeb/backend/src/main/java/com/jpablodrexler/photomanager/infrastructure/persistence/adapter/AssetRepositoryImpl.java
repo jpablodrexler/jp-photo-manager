@@ -52,6 +52,12 @@ public class AssetRepositoryImpl implements AssetRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public boolean existsById(Long id) {
+        return jpa.existsById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<Asset> findByFolderAndFileName(Folder folder, String fileName) {
         FolderEntity folderEntity = folderMapper.toEntity(folder);
         return jpa.findByFolderAndFileName(folderEntity, fileName).map(assetMapper::toDomain);
@@ -75,7 +81,7 @@ public class AssetRepositoryImpl implements AssetRepository {
         LocalDateTime dateTo = filter.dateTo() != null ? filter.dateTo().atTime(LocalTime.MAX) : null;
         Integer minRating = (filter.minRating() != null && filter.minRating() > 0) ? filter.minRating() : null;
 
-        Page<AssetEntity> page = jpa.findWithFilters(folderEntity, search, dateFrom, dateTo, minRating, pageRequest);
+        Page<AssetEntity> page = jpa.findWithFilters(folderEntity, search, dateFrom, dateTo, minRating, filter.tags(), pageRequest);
         List<Asset> items = page.getContent().stream().map(assetMapper::toDomain).toList();
         return new PaginatedResult<>(items, page.getTotalElements(), filter.page(), pageSize);
     }
@@ -156,5 +162,23 @@ public class AssetRepositoryImpl implements AssetRepository {
     @Transactional(readOnly = true)
     public long count() {
         return jpa.count();
+    }
+
+    @Override
+    @Transactional
+    public void addTagToAsset(Long assetId, Long tagId) {
+        jpa.addTagToAsset(assetId, tagId);
+    }
+
+    @Override
+    @Transactional
+    public int removeTagFromAsset(Long assetId, Long tagId) {
+        return jpa.removeTagFromAsset(assetId, tagId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasTag(Long assetId, Long tagId) {
+        return jpa.hasTag(assetId, tagId);
     }
 }

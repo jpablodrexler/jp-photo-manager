@@ -7,7 +7,7 @@ import {
   ViewChild,
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { FormsModule } from "@angular/forms";
+import { FormsModule, ReactiveFormsModule, FormControl } from "@angular/forms";
 import { MatToolbarModule } from "@angular/material/toolbar";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -21,14 +21,18 @@ import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatSidenavModule } from "@angular/material/sidenav";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { MatChipsModule, MatChipInputEvent } from "@angular/material/chips";
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from "@angular/material/autocomplete";
+import { COMMA, ENTER } from "@angular/cdk/keycodes";
 import { BreakpointObserver, Breakpoints } from "@angular/cdk/layout";
 import { Subject, Subscription } from "rxjs";
-import { debounceTime, distinctUntilChanged } from "rxjs/operators";
+import { debounceTime, distinctUntilChanged, takeUntil } from "rxjs/operators";
 import { ScrollingModule } from "@angular/cdk/scrolling";
 import { FolderNavComponent } from "../folder-nav/folder-nav.component";
 import { ThumbnailComponent } from "../../shared/components/thumbnail/thumbnail.component";
 import { ExifPanelComponent } from "../../shared/components/exif-panel/exif-panel.component";
 import { AssetService } from "../../core/services/asset.service";
+import { TagService } from "../../core/services/tag.service";
 import { AlbumService } from "../../core/services/album.service";
 import { SearchPresetService } from "../../core/services/search-preset.service";
 import { Asset, SortCriteria } from "../../core/models/asset.model";
@@ -39,6 +43,7 @@ import { FileSizePipe } from "../../shared/pipes/file-size.pipe";
 import { DropZoneComponent } from "./drop-zone/drop-zone.component";
 import { AddToAlbumDialogComponent } from "./add-to-album-dialog/add-to-album-dialog.component";
 import { SavePresetDialogComponent } from "./save-preset-dialog/save-preset-dialog.component";
+import { BulkTagDialogComponent } from "./bulk-tag-dialog/bulk-tag-dialog.component";
 
 type ViewMode = "thumbnails" | "viewer" | "slideshow";
 
@@ -48,6 +53,7 @@ type ViewMode = "thumbnails" | "viewer" | "slideshow";
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
@@ -61,6 +67,8 @@ type ViewMode = "thumbnails" | "viewer" | "slideshow";
     MatDialogModule,
     MatProgressBarModule,
     MatSidenavModule,
+    MatChipsModule,
+    MatAutocompleteModule,
     ScrollingModule,
     FolderNavComponent,
     ThumbnailComponent,
@@ -86,8 +94,13 @@ export class GalleryComponent implements OnInit, OnDestroy {
   dateFrom: Date | null = null;
   dateTo: Date | null = null;
   minRating = 0;
+  selectedTags: string[] = [];
+  tagSuggestions: string[] = [];
+  tagFilterControl = new FormControl<string>('', { nonNullable: true });
+  readonly tagSeparatorKeysCodes = [ENTER, COMMA] as const;
   private readonly searchSubject = new Subject<string>();
   private searchSubscription?: Subscription;
+  private readonly destroy$ = new Subject<void>();
 
   assets: Asset[] = [];
   selectedAssets: Set<number> = new Set();
@@ -121,6 +134,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   constructor(
     private assetService: AssetService,
+    private tagService: TagService,
     private albumService: AlbumService,
     private searchPresetService: SearchPresetService,
     private snackBar: MatSnackBar,
@@ -135,6 +149,20 @@ export class GalleryComponent implements OnInit, OnDestroy {
         this.pageIndex = 0;
         this.loadAssets();
       });
+
+    this.tagFilterControl.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$),
+    ).subscribe(q => {
+      if (q && q.length >= 1) {
+        this.tagService.searchTags(q).subscribe(tags => {
+          this.tagSuggestions = tags.filter(t => !this.selectedTags.includes(t));
+        });
+      } else {
+        this.tagSuggestions = [];
+      }
+    });
 
     this.bpSub = this.breakpointObserver
       .observe([Breakpoints.Handset])
@@ -151,6 +179,8 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.disconnectObserver();
     this.searchSubscription?.unsubscribe();
     this.bpSub.unsubscribe();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   toggleSidenav(): void {
@@ -212,6 +242,9 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.dateFrom = null;
     this.dateTo = null;
     this.minRating = 0;
+    this.selectedTags = [];
+    this.tagSuggestions = [];
+    this.tagFilterControl.setValue('', { emitEvent: false });
     this.assets = [];
     this.pageIndex = 0;
     this.isLoading = false;
@@ -229,6 +262,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
       ? this.dateTo.toISOString().substring(0, 10)
       : undefined;
     const minRating = this.minRating > 0 ? this.minRating : undefined;
+    const tags = this.selectedTags.length > 0 ? this.selectedTags : undefined;
     this.assetService
       .getAssets(
         this.currentFolder,
@@ -238,6 +272,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
         dateFrom,
         dateTo,
         minRating,
+        tags,
       )
       .subscribe({
         next: (data: PaginatedData<Asset>) => {
@@ -620,6 +655,43 @@ export class GalleryComponent implements OnInit, OnDestroy {
         }
         this.snackBar.open("Preset deleted", undefined, { duration: 2000 });
       },
+    });
+  }
+
+  addTagFilter(event: MatChipInputEvent): void {
+    const name = (event.value ?? '').trim().toLowerCase();
+    event.chipInput.clear();
+    this.tagFilterControl.setValue('', { emitEvent: false });
+    if (!name || this.selectedTags.includes(name)) return;
+    this.selectedTags = [...this.selectedTags, name];
+    this.pageIndex = 0;
+    this.loadAssets();
+  }
+
+  addTagFilterFromAutocomplete(event: MatAutocompleteSelectedEvent): void {
+    const name = event.option.viewValue.toLowerCase();
+    this.tagFilterControl.setValue('', { emitEvent: false });
+    this.tagSuggestions = [];
+    if (!name || this.selectedTags.includes(name)) return;
+    this.selectedTags = [...this.selectedTags, name];
+    this.pageIndex = 0;
+    this.loadAssets();
+  }
+
+  removeTagFilter(name: string): void {
+    this.selectedTags = this.selectedTags.filter(t => t !== name);
+    this.pageIndex = 0;
+    this.loadAssets();
+  }
+
+  openBulkTagDialog(): void {
+    const ids = Array.from(this.selectedAssets);
+    if (ids.length === 0) return;
+    this.dialog.open(BulkTagDialogComponent, {
+      width: '440px',
+      data: { assetIds: ids },
+    }).afterClosed().subscribe((changed) => {
+      if (changed) this.loadAssets();
     });
   }
 

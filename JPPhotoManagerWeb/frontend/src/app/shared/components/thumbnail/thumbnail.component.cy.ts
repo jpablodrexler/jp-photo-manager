@@ -14,6 +14,8 @@ describe('ThumbnailComponent', () => {
     hash: 'abc123',
     thumbnailUrl: '/api/assets/1/thumbnail',
     imageUrl: '/api/assets/1/image',
+    rating: 0,
+    tags: [],
   };
 
   it('should render the asset file name', () => {

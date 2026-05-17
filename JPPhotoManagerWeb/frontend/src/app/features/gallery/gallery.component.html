@@ -32,6 +32,9 @@
             <mat-icon>more_vert</mat-icon>
           </button>
           <mat-menu #actionsMenu="matMenu">
+            <button mat-menu-item (click)="openBulkTagDialog()">
+              <mat-icon>label</mat-icon> Tag selected
+            </button>
             <button mat-menu-item (click)="downloadSelected()">
               <mat-icon>download</mat-icon> Download
             </button>
@@ -139,6 +142,38 @@
           <mat-icon>filter_alt_off</mat-icon>
         </button>
       </div>
+
+      <!-- Tag filter row -->
+      <div class="filter-tags-row">
+        <span class="filter-tags-label">
+          <mat-icon class="filter-tags-icon">label</mat-icon>
+          Tags
+        </span>
+        <mat-chip-grid #tagFilterChipGrid aria-label="Filter by tags" class="tag-filter-chip-grid">
+          @for (tag of selectedTags; track tag) {
+            <mat-chip-row (removed)="removeTagFilter(tag)">
+              {{ tag }}
+              <button matChipRemove [attr.aria-label]="'Remove tag filter ' + tag">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </mat-chip-row>
+          }
+          <input
+            placeholder="Filter by tag…"
+            [formControl]="tagFilterControl"
+            [matChipInputFor]="tagFilterChipGrid"
+            [matChipInputSeparatorKeyCodes]="tagSeparatorKeysCodes"
+            [matAutocomplete]="tagFilterAuto"
+            (matChipInputTokenEnd)="addTagFilter($event)"
+            class="tag-filter-input"
+          />
+        </mat-chip-grid>
+        <mat-autocomplete #tagFilterAuto="matAutocomplete" (optionSelected)="addTagFilterFromAutocomplete($event)">
+          @for (suggestion of tagSuggestions; track suggestion) {
+            <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
+          }
+        </mat-autocomplete>
+      </div>
     }
 
     <!-- Thumbnails View -->
@@ -201,7 +236,7 @@
           </button>
         </div>
         <app-exif-panel
-          [assetId]="currentViewerAsset.assetId"
+          [asset]="currentViewerAsset"
           [visible]="showExifPanel"
           (closed)="showExifPanel = false"
         />

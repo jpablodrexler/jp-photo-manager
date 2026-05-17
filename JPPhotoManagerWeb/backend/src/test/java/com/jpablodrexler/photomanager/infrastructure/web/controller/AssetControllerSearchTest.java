@@ -14,6 +14,10 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.tag.BulkAddTagUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
@@ -27,6 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
@@ -62,6 +67,14 @@ class AssetControllerSearchTest {
     CatalogAssetsUseCase catalogAssetsUseCase;
     @MockitoBean
     GetDuplicatedAssetsUseCase getDuplicatedAssetsUseCase;
+    @MockitoBean
+    AddTagToAssetUseCase addTagToAssetUseCase;
+    @MockitoBean
+    RemoveTagFromAssetUseCase removeTagFromAssetUseCase;
+    @MockitoBean
+    BulkAddTagUseCase bulkAddTagUseCase;
+    @MockitoBean
+    BulkRemoveTagUseCase bulkRemoveTagUseCase;
     @MockitoBean
     ThumbnailPort thumbnailPort;
     @MockitoBean
@@ -116,5 +129,19 @@ class AssetControllerSearchTest {
         verify(getAssetsUseCase).execute(argThat(filter ->
                 LocalDate.of(2024, 1, 1).equals(filter.dateFrom()) &&
                 LocalDate.of(2024, 12, 31).equals(filter.dateTo())));
+    }
+
+    @Test
+    void getAssets_withTagsParam_passesTagSetToUseCase() throws Exception {
+        when(folderRepository.findByPath(any())).thenReturn(Optional.empty());
+        when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(emptyPage());
+
+        mockMvc.perform(get("/api/assets")
+                        .param("folderPath", "/photos")
+                        .param("tags", "vacation,family"))
+                .andExpect(status().isOk());
+
+        verify(getAssetsUseCase).execute(argThat(filter ->
+                filter.tags() != null && filter.tags().containsAll(Set.of("vacation", "family"))));
     }
 }

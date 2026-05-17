@@ -13,7 +13,8 @@ export class AssetService {
   constructor(private http: HttpClient) {}
 
   getAssets(folderPath: string, page = 0, sort: SortCriteria = 'FILE_NAME',
-            search?: string, dateFrom?: string, dateTo?: string, minRating?: number): Observable<PaginatedData<Asset>> {
+            search?: string, dateFrom?: string, dateTo?: string, minRating?: number,
+            tags?: string[]): Observable<PaginatedData<Asset>> {
     let params = new HttpParams()
       .set('folderPath', folderPath)
       .set('page', page)
@@ -22,6 +23,7 @@ export class AssetService {
     if (dateFrom) params = params.set('dateFrom', dateFrom);
     if (dateTo)   params = params.set('dateTo', dateTo);
     if (minRating && minRating > 0) params = params.set('minRating', minRating);
+    if (tags && tags.length > 0) params = params.set('tags', tags.join(','));
     return this.http.get<PaginatedData<Asset>>(this.baseUrl, { params });
   }
 

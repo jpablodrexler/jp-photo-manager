@@ -11,6 +11,10 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.tag.BulkAddTagUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.DownloadAssetsRequest;
@@ -65,6 +69,14 @@ class AssetControllerDownloadTest {
     CatalogAssetsUseCase catalogAssetsUseCase;
     @MockitoBean
     GetDuplicatedAssetsUseCase getDuplicatedAssetsUseCase;
+    @MockitoBean
+    AddTagToAssetUseCase addTagToAssetUseCase;
+    @MockitoBean
+    RemoveTagFromAssetUseCase removeTagFromAssetUseCase;
+    @MockitoBean
+    BulkAddTagUseCase bulkAddTagUseCase;
+    @MockitoBean
+    BulkRemoveTagUseCase bulkRemoveTagUseCase;
     @MockitoBean
     ThumbnailPort thumbnailPort;
     @MockitoBean

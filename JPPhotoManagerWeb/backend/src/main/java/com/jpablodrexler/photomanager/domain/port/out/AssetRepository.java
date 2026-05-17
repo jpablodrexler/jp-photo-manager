@@ -13,6 +13,8 @@ public interface AssetRepository {
 
     Optional<Asset> findById(Long id);
 
+    boolean existsById(Long id);
+
     Optional<Asset> findByFolderAndFileName(Folder folder, String fileName);
 
     PaginatedResult<Asset> findFiltered(AssetFilter filter);
@@ -34,6 +36,12 @@ public interface AssetRepository {
     Asset save(Asset asset);
 
     void deleteById(Long id);
+
+    void addTagToAsset(Long assetId, Long tagId);
+
+    int removeTagFromAsset(Long assetId, Long tagId);
+
+    boolean hasTag(Long assetId, Long tagId);
 
     long countTotal();
 

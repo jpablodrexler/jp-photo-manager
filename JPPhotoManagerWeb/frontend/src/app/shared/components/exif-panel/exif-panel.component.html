@@ -6,6 +6,35 @@
     </button>
   </div>
 
+  <!-- Tag chip editor -->
+  <div class="exif-tags-section">
+    <div class="exif-section-label">Tags</div>
+    <mat-chip-grid #chipGrid aria-label="Asset tags" class="exif-chip-grid">
+      @for (tag of asset.tags; track tag) {
+        <mat-chip-row (removed)="removeTag(tag)">
+          {{ tag }}
+          <button matChipRemove [attr.aria-label]="'Remove tag ' + tag">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </mat-chip-row>
+      }
+      <input
+        placeholder="Add tag…"
+        [formControl]="tagInputControl"
+        [matChipInputFor]="chipGrid"
+        [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+        [matAutocomplete]="auto"
+        (matChipInputTokenEnd)="addTag($event)"
+        class="exif-tag-input"
+      />
+    </mat-chip-grid>
+    <mat-autocomplete #auto="matAutocomplete" (optionSelected)="addTagFromAutocomplete($event)">
+      @for (suggestion of tagSuggestions; track suggestion) {
+        <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
+      }
+    </mat-autocomplete>
+  </div>
+
   @if (loading) {
     <div class="exif-loading">
       <mat-spinner diameter="24"></mat-spinner>

@@ -18,6 +18,7 @@ export interface Asset {
   thumbnailUrl: string;
   imageUrl: string;
   rating: number;
+  tags: string[];
 }
 
 export type SortCriteria =
