@@ -2,18 +2,10 @@ package com.jpablodrexler.photomanager.infrastructure.web.mapper;
 
 import com.jpablodrexler.photomanager.application.dto.AlbumData;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.AlbumSummaryDto;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
 
-@Component
-public class AlbumWebMapper {
+@Mapper(componentModel = "spring")
+public interface AlbumWebMapper {
 
-    public AlbumSummaryDto toSummaryDto(AlbumData data) {
-        AlbumSummaryDto dto = new AlbumSummaryDto();
-        dto.setAlbumId(data.albumId());
-        dto.setName(data.name());
-        dto.setDescription(data.description());
-        dto.setCreatedAt(data.createdAt());
-        dto.setAssetCount(data.assetCount());
-        return dto;
-    }
+    AlbumSummaryDto toSummaryDto(AlbumData data);
 }

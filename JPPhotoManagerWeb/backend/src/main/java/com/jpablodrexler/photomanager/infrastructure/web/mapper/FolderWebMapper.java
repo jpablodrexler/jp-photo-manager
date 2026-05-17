@@ -2,17 +2,10 @@ package com.jpablodrexler.photomanager.infrastructure.web.mapper;
 
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.FolderDto;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
 
-@Component
-public class FolderWebMapper {
+@Mapper(componentModel = "spring")
+public interface FolderWebMapper {
 
-    public FolderDto toDto(Folder folder) {
-        FolderDto dto = new FolderDto();
-        dto.setFolderId(folder.getFolderId());
-        dto.setPath(folder.getPath());
-        dto.setName(folder.getName());
-        dto.setParentPath(folder.getParentPath());
-        return dto;
-    }
+    FolderDto toDto(Folder folder);
 }

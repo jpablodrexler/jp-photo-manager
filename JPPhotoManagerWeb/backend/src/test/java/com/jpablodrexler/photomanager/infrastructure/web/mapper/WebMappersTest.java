@@ -16,9 +16,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class WebMappersTest {
 
-    private final AssetWebMapper assetWebMapper = new AssetWebMapper();
-    private final FolderWebMapper folderWebMapper = new FolderWebMapper();
-    private final AlbumWebMapper albumWebMapper = new AlbumWebMapper();
+    private final AssetWebMapper assetWebMapper = new AssetWebMapperImpl();
+    private final FolderWebMapper folderWebMapper = new FolderWebMapperImpl();
+    private final AlbumWebMapper albumWebMapper = new AlbumWebMapperImpl();
 
     @Test
     void assetWebMapper_toDto_mapsAllFields() {
