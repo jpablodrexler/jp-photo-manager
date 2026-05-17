@@ -61,6 +61,7 @@ class AlbumServiceIntegrationTest extends PostgresIntegrationTest {
         testUser.setUsername("testuser_" + System.nanoTime());
         testUser.setPasswordHash("hash");
         testUser.setCreatedAt(Instant.now());
+        testUser.setRole("USER");
         testUser = userRepository.save(testUser);
         testUserId = testUser.getId();
 
