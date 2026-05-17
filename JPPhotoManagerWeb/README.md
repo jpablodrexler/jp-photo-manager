@@ -430,6 +430,13 @@ mvn test -Dtest=CatalogAssetsServiceImplTest#methodName
 
 Tests use the `test` Spring profile (`src/test/resources/application-test.yml`). Unit tests (`@ExtendWith(MockitoExtension.class)`, `@WebMvcTest`) need no database. Integration tests (`@SpringBootTest`) use Testcontainers to spin up a real PostgreSQL container automatically — Docker must be running.
 
+> **Linux tip:** If integration tests are skipped with a Testcontainers "no valid configuration" error, your user may not have permission to reach the Docker socket. Add yourself to the `docker` group and apply it immediately:
+> ```bash
+> sudo usermod -aG docker $USER
+> newgrp docker
+> ```
+> The `newgrp` command activates the new group in your current shell without requiring a full logout.
+
 ---
 
 ## Frontend
