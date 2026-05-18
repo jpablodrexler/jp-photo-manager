@@ -67,6 +67,18 @@ public interface JpaAssetRepository extends JpaRepository<AssetEntity, Long>, Jp
     @Query(value = "SELECT COUNT(*) > 0 FROM asset_tags WHERE asset_id = :assetId AND tag_id = :tagId", nativeQuery = true)
     boolean hasTag(@Param("assetId") Long assetId, @Param("tagId") Long tagId);
 
+    @Query("SELECT COALESCE(SUM(a.fileSize), 0) FROM AssetEntity a WHERE a.deletedAt IS NULL")
+    long sumFileSize();
+
+    @Query("SELECT COUNT(a) FROM AssetEntity a WHERE a.deletedAt IS NULL AND a.hash IN (SELECT a2.hash FROM AssetEntity a2 WHERE a2.deletedAt IS NULL GROUP BY a2.hash HAVING COUNT(a2) > 1)")
+    long countDuplicates();
+
+    @Query("SELECT f.path as folderPath, COUNT(a) as assetCount FROM AssetEntity a JOIN a.folder f WHERE a.deletedAt IS NULL GROUP BY f.path ORDER BY COUNT(a) DESC")
+    List<FolderAssetCount> findTopFoldersByAssetCount(Pageable pageable);
+
+    @Query("SELECT a.assetId as assetId, a.fileName as fileName, f.path as folderPath FROM AssetEntity a JOIN a.folder f WHERE a.deletedAt IS NULL ORDER BY a.thumbnailCreationDateTime DESC")
+    List<AssetSummary> findRecentAssets(Pageable pageable);
+
     default Page<AssetEntity> findWithFilters(FolderEntity folder, String search, LocalDateTime dateFrom,
                                               LocalDateTime dateTo, Integer minRating, Set<String> tags,
                                               Pageable pageable) {

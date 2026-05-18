@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ConvertAssetsDirectoriesDefinition, ConvertAssetsResult } from '../models/convert-config.model';
+import { ConvertAssetsDirectoriesDefinition } from '../models/convert-config.model';
 
 @Injectable({ providedIn: 'root' })
 export class ConvertService {

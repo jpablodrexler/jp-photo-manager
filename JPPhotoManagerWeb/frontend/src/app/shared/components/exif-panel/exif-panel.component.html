@@ -62,21 +62,21 @@
           <span class="exif-value">{{ exif.exposureTime }}</span>
         </div>
       }
-      @if (exif.fNumber != null) {
+      @if (exif.fNumber !== null) {
         <div class="exif-row">
           <mat-icon class="exif-icon">camera</mat-icon>
           <span class="exif-label">Aperture</span>
           <span class="exif-value">f/{{ exif.fNumber }}</span>
         </div>
       }
-      @if (exif.isoSpeed != null) {
+      @if (exif.isoSpeed !== null) {
         <div class="exif-row">
           <mat-icon class="exif-icon">iso</mat-icon>
           <span class="exif-label">ISO</span>
           <span class="exif-value">{{ exif.isoSpeed }}</span>
         </div>
       }
-      @if (exif.focalLength != null) {
+      @if (exif.focalLength !== null) {
         <div class="exif-row">
           <mat-icon class="exif-icon">center_focus_strong</mat-icon>
           <span class="exif-label">Focal Length</span>
@@ -90,14 +90,14 @@
           <span class="exif-value">{{ exif.dateTaken | date:'medium' }}</span>
         </div>
       }
-      @if (exif.widthPixels != null && exif.heightPixels != null) {
+      @if (exif.widthPixels !== null && exif.heightPixels !== null) {
         <div class="exif-row">
           <mat-icon class="exif-icon">photo_size_select_large</mat-icon>
           <span class="exif-label">Dimensions</span>
           <span class="exif-value">{{ exif.widthPixels }} × {{ exif.heightPixels }}</span>
         </div>
       }
-      @if (exif.gpsLatitude != null && exif.gpsLongitude != null) {
+      @if (exif.gpsLatitude !== null && exif.gpsLongitude !== null) {
         <div class="exif-row">
           <mat-icon class="exif-icon">location_on</mat-icon>
           <span class="exif-label">GPS</span>

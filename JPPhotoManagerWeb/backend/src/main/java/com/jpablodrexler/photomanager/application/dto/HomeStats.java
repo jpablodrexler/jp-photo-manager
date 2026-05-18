@@ -1,6 +1,14 @@
 package com.jpablodrexler.photomanager.application.dto;
 
 import java.time.Instant;
+import java.util.List;
 
-public record HomeStats(long folderCount, long assetCount, Instant lastCatalogCompletedAt) {
+public record HomeStats(
+        long folderCount,
+        long assetCount,
+        Instant lastCatalogCompletedAt,
+        long totalFileSize,
+        long duplicateCount,
+        List<FolderStat> topFolders,
+        List<AssetSummaryDto> recentAssets) {
 }

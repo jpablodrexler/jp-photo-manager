@@ -6,6 +6,7 @@ import {
   OnInit,
   ViewChild,
 } from "@angular/core";
+import { ActivatedRoute } from "@angular/router";
 import { CommonModule } from "@angular/common";
 import { FormsModule, ReactiveFormsModule, FormControl } from "@angular/forms";
 import { MatToolbarModule } from "@angular/material/toolbar";
@@ -39,7 +40,6 @@ import { Asset, SortCriteria } from "../../core/models/asset.model";
 import { AlbumSummary } from "../../core/models/album.model";
 import { SearchPreset } from "../../core/models/search-preset.model";
 import { PaginatedData } from "../../core/models/paginated-data.model";
-import { FileSizePipe } from "../../shared/pipes/file-size.pipe";
 import { DropZoneComponent } from "./drop-zone/drop-zone.component";
 import { AddToAlbumDialogComponent } from "./add-to-album-dialog/add-to-album-dialog.component";
 import { SavePresetDialogComponent } from "./save-preset-dialog/save-preset-dialog.component";
@@ -140,6 +140,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
     private breakpointObserver: BreakpointObserver,
+    private route: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
@@ -172,6 +173,11 @@ export class GalleryComponent implements OnInit, OnDestroy {
       });
 
     this.loadPresets();
+
+    const folderParam = this.route.snapshot.queryParamMap.get('folder');
+    if (folderParam) {
+      this.onFolderSelected(folderParam);
+    }
   }
 
   ngOnDestroy(): void {

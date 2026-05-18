@@ -1,7 +1,31 @@
 <div class="home-container">
   <h1 class="app-title">JP Photo Manager</h1>
 
+  <!-- Quick Actions row -->
+  <div class="quick-actions">
+    <button mat-raised-button color="primary" routerLink="/gallery">
+      <mat-icon>photo_library</mat-icon>
+      Open Gallery
+    </button>
+    <button mat-raised-button routerLink="/gallery">
+      <mat-icon>folder_search</mat-icon>
+      Run Catalog
+    </button>
+    <button mat-raised-button routerLink="/sync">
+      <mat-icon>sync</mat-icon>
+      Run Sync
+    </button>
+    <button mat-raised-button routerLink="/duplicates"
+            [matBadge]="stats?.duplicateCount"
+            [matBadgeHidden]="!stats || stats.duplicateCount === 0"
+            matBadgeColor="warn">
+      <mat-icon>content_copy</mat-icon>
+      Find Duplicates
+    </button>
+  </div>
+
   @if (stats) {
+    <!-- Library stat cards -->
     <div class="stats-grid">
       <mat-card class="stat-card">
         <mat-card-content>
@@ -32,6 +56,51 @@
           <div class="stat-label">Last Catalog Completed</div>
         </mat-card-content>
       </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <mat-icon class="stat-icon">storage</mat-icon>
+          <div class="stat-value">{{ stats.totalFileSize | fileSize }}</div>
+          <div class="stat-label">Total Size</div>
+        </mat-card-content>
+      </mat-card>
     </div>
+
+    <!-- Recent Photos strip -->
+    @if (stats.recentAssets && stats.recentAssets.length > 0) {
+      <section class="recent-photos">
+        <h2 class="section-title">Recent Photos</h2>
+        <div class="photos-strip">
+          @for (asset of stats.recentAssets; track asset.assetId) {
+            <div class="strip-item" (click)="navigateToGalleryFolder(asset)">
+              <app-thumbnail [asset]="assetSummaryToAsset(asset)"></app-thumbnail>
+            </div>
+          }
+        </div>
+      </section>
+    } @else {
+      <section class="recent-photos">
+        <h2 class="section-title">Recent Photos</h2>
+        <p class="empty-state">No photos catalogued yet.</p>
+      </section>
+    }
+
+    <!-- Top Folders list -->
+    @if (stats.topFolders && stats.topFolders.length > 0) {
+      <section class="top-folders">
+        <h2 class="section-title">Top Folders</h2>
+        <div class="folder-list">
+          @for (folder of stats.topFolders; track folder.path) {
+            <div class="folder-row">
+              <span class="folder-path" [title]="folder.path">{{ folder.path }}</span>
+              <span class="folder-count">{{ folder.assetCount }}</span>
+              <div class="folder-bar-bg">
+                <div class="folder-bar" [style.width]="(folder.assetCount / maxFolderCount) * 100 + '%'"></div>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
   }
 </div>

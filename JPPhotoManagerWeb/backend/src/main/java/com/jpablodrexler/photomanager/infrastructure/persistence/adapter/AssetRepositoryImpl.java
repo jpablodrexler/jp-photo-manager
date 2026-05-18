@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.persistence.adapter;
 
 import com.jpablodrexler.photomanager.application.dto.AssetFilter;
+import com.jpablodrexler.photomanager.application.dto.FolderStat;
 import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
@@ -180,5 +181,39 @@ public class AssetRepositoryImpl implements AssetRepository {
     @Transactional(readOnly = true)
     public boolean hasTag(Long assetId, Long tagId) {
         return jpa.hasTag(assetId, tagId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long sumFileSize() {
+        return jpa.sumFileSize();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countDuplicates() {
+        return jpa.countDuplicates();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FolderStat> findTopFoldersByAssetCount(int limit) {
+        return jpa.findTopFoldersByAssetCount(PageRequest.of(0, limit))
+                .stream()
+                .map(fc -> new FolderStat(fc.getFolderPath(), fc.getAssetCount()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Asset> findRecentAssets(int limit) {
+        return jpa.findRecentAssets(PageRequest.of(0, limit))
+                .stream()
+                .map(s -> Asset.builder()
+                        .assetId(s.getAssetId())
+                        .fileName(s.getFileName())
+                        .folder(Folder.builder().path(s.getFolderPath()).build())
+                        .build())
+                .toList();
     }
 }

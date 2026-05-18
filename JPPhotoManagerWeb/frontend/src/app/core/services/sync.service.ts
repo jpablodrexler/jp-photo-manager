@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { SyncAssetsDirectoriesDefinition, SyncAssetsResult } from '../models/sync-config.model';
+import { SyncAssetsDirectoriesDefinition } from '../models/sync-config.model';
 
 @Injectable({ providedIn: 'root' })
 export class SyncService {

@@ -2,6 +2,7 @@ import { mount } from 'cypress/angular';
 import { of, throwError } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { GalleryComponent } from './gallery.component';
 import { AssetService } from '../../core/services/asset.service';
@@ -788,5 +789,70 @@ describe('GalleryComponent', () => {
       component.clearFilters();
       expect(component.selectedTags).to.deep.equal([]);
     });
+  });
+
+  // --- Query-param pre-selection tests ---
+
+  it('ngOnInit_withFolderQueryParam_callsOnFolderSelectedWithCorrectPath', () => {
+    const getAssets = cy.stub().returns(of({ items: [], pageIndex: 0, totalPages: 1, totalItems: 0 }));
+
+    const activatedRouteStub = {
+      snapshot: {
+        queryParamMap: {
+          get: (key: string) => key === 'folder' ? '/photos' : null,
+        },
+      },
+    };
+
+    const assetServiceStub: Partial<AssetService> = {
+      getAssets,
+      catalogAssets: cy.stub(),
+      deleteAssets: cy.stub().returns(of(undefined)),
+      moveAssets: cy.stub().returns(of(true)),
+    };
+
+    cy.mount(GalleryComponent, {
+      providers: [
+        provideNoopAnimations(),
+        { provide: AssetService, useValue: assetServiceStub },
+        { provide: TagService, useValue: { searchTags: cy.stub().returns(of([])) } },
+        { provide: FolderService, useValue: { getFolders: cy.stub().returns(of([])) } },
+        { provide: AlbumService, useValue: { getAlbums: cy.stub().returns(of([])) } },
+        { provide: SearchPresetService, useValue: { listPresets: cy.stub().returns(of([])), createPreset: cy.stub().returns(of({})), deletePreset: cy.stub().returns(of(undefined)) } },
+        { provide: ActivatedRoute, useValue: activatedRouteStub },
+      ],
+    }).then(({ fixture }) => {
+      fixture.detectChanges();
+      cy.wrap(fixture.componentInstance).should('have.property', 'currentFolder', '/photos');
+    });
+  });
+
+  it('ngOnInit_withoutFolderQueryParam_doesNotPreSelectFolder', () => {
+    const getAssets = cy.stub().returns(of({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 }));
+
+    const activatedRouteStub = {
+      snapshot: {
+        queryParamMap: {
+          get: (_key: string) => null,
+        },
+      },
+    };
+
+    cy.mount(GalleryComponent, {
+      providers: [
+        provideNoopAnimations(),
+        { provide: AssetService, useValue: { getAssets, catalogAssets: cy.stub(), deleteAssets: cy.stub().returns(of(undefined)), moveAssets: cy.stub().returns(of(true)) } },
+        { provide: TagService, useValue: { searchTags: cy.stub().returns(of([])) } },
+        { provide: FolderService, useValue: { getFolders: cy.stub().returns(of([])) } },
+        { provide: AlbumService, useValue: { getAlbums: cy.stub().returns(of([])) } },
+        { provide: SearchPresetService, useValue: { listPresets: cy.stub().returns(of([])), createPreset: cy.stub().returns(of({})), deletePreset: cy.stub().returns(of(undefined)) } },
+        { provide: ActivatedRoute, useValue: activatedRouteStub },
+      ],
+    }).then(({ fixture }) => {
+      fixture.detectChanges();
+      cy.wrap(fixture.componentInstance).should('have.property', 'currentFolder', '');
+    });
+
+    cy.wrap(getAssets).should('not.have.been.called');
   });
 });
