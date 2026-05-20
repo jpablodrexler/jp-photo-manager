@@ -20,6 +20,17 @@ This document records all planned improvements to the JPPhotoManagerWeb applicat
 | 10  | `mobile-responsive-layout`  | Navigation collapses to a hamburger menu below 768 px; folder tree becomes a `MatSidenav` overlay drawer on mobile; thumbnail grid column minimum reduces to 140 px                     | ✅ Created | ✅ Implemented |
 | 11  | `star-ratings`              | 0–5 star rating per asset stored in the database; rating widget on thumbnails and in the viewer; filter by minimum rating; sort by rating descending                                    | ✅ Created | ✅ Implemented |
 | 12  | `saved-search-presets`      | Save the current filter state (search, date range, minimum rating) as a named preset scoped to the authenticated user; restore with one click from a dropdown in the filter toolbar     | ✅ Created | ✅ Implemented |
+| 13  | `gps-map-view`              | Add a Leaflet.js map panel to the EXIF viewer and a `/map` route showing clustered photo pins for the current folder or album; clicking a pin navigates to that asset in the gallery   | ⬜ Pending | ⬜ Pending      |
+| 14  | `smart-albums`              | Extend albums with an optional `filter_json` column (same shape as saved search presets) so albums can be dynamically populated at query time; UI toggle between static and dynamic mode | ⬜ Pending | ⬜ Pending      |
+| 15  | `dark-mode`                 | Angular Material dark palette toggle stored in `localStorage` with `prefers-color-scheme` fallback; preference persisted per user on the backend; toolbar toggle button                 | ⬜ Pending | ⬜ Pending      |
+| 16  | `keyboard-shortcuts`        | Global `KeyboardService` mapping shortcuts (`G` gallery, `A` albums, `D` duplicates, `1–5` rating, `Del` soft-delete, `/` search focus); `?` overlay listing all bindings               | ⬜ Pending | ⬜ Pending      |
+| 17  | `batch-rename`              | Pattern-based rename (e.g. `{date:yyyy-MM-dd}_{index:03d}_{original}`) for multi-selected assets; live preview table before applying; new `POST /api/assets/rename` endpoint             | ⬜ Pending | ⬜ Pending      |
+| 18  | `timeline-view`             | Third gallery view mode grouping assets by year then month with sticky date headers; `GET /api/assets/timeline-groups` returns counts per bucket; buckets load lazily via Intersection Observer | ⬜ Pending | ⬜ Pending |
+| 19  | `shareable-album-links`     | `POST /api/albums/{id}/share` generates a signed UUID token stored in a `shared_albums` table with optional `expires_at`; public `/s/:token` route renders the album without authentication | ⬜ Pending | ⬜ Pending |
+| 20  | `storage-analytics`         | `/analytics` route with `ngx-charts` visualizations: storage-per-folder treemap, file-format pie, photos-per-month histogram, rating distribution bar; backed by aggregate JPQL queries  | ⬜ Pending | ⬜ Pending      |
+| 21  | `video-file-support`        | Thumbnail generation via FFmpeg (`ProcessBuilder`) for `.mp4`/`.mov`/`.mkv`; catalog service accepts video MIME types; frontend shows play-overlay icon and `<video>` tag in the viewer  | ⬜ Pending | ⬜ Pending      |
+| 22  | `duplicate-auto-resolve`    | "Clean up automatically" dialog on the duplicates page with policies (keep oldest, keep newest, keep highest resolution, keep preferred folder); delegates to existing soft-delete path   | ⬜ Pending | ⬜ Pending      |
+| 23  | `progressive-web-app`       | `ng add @angular/pwa` with a cache-first strategy for thumbnails; background sync queue for offline rating/tag edits replayed on reconnect; HttpOnly cookie auth remains intact          | ⬜ Pending | ⬜ Pending      |
 
 ---
 
@@ -56,6 +67,34 @@ Flyway migration versions must be applied in ascending order. Skipping a version
 
 Improvements that touch no database schema (2, 3, 5 frontend parts, 6, 8, 10) have no migration and no deployment ordering constraint relative to each other.
 
+### Hard implementation dependencies (new improvements)
+
+**Improvement 13 → Improvement 1**
+
+`gps-map-view` requires GPS coordinates already stored in `asset_exif`. Without `exif-metadata-panel` the coordinates are never persisted.
+
+**Improvement 14 → Improvements 4, 7, 11**
+
+`smart-albums` stores a `filter_json` that references the same fields introduced by `search-and-filter` (7) and `star-ratings` (11), and it extends the album schema introduced by `virtual-albums` (4). All three should be in place first.
+
+**Improvement 19 → Improvement 4**
+
+`shareable-album-links` requires the `albums` table introduced by `virtual-albums`.
+
+**Improvement 22 → Improvement 9**
+
+`duplicate-auto-resolve` routes deleted assets through the soft-delete path introduced by `soft-delete-recycle-bin`.
+
+### Soft implementation dependencies (new improvements)
+
+**Improvement 16 → Improvement 8**
+
+`keyboard-shortcuts` extends the viewer shortcuts already present in `slideshow-mode`. Implementing 8 first avoids re-doing viewer key handling.
+
+**Improvement 23 → Improvement 10**
+
+`progressive-web-app` is significantly more valuable once `mobile-responsive-layout` is in place, since PWA installs are most common on mobile.
+
 ### Recommended implementation order
 
 For a clean, incremental delivery the natural order within the data-model cluster is:
@@ -64,4 +103,15 @@ For a clean, incremental delivery the natural order within the data-model cluste
 7 (search-and-filter) → 11 (star-ratings) → 12 (saved-search-presets)
 ```
 
-All other improvements can be delivered in any order independently of this sequence and of each other.
+For the new improvements, the recommended order within dependent clusters is:
+
+```
+1 (exif-metadata-panel, already done) → 13 (gps-map-view)
+4 (virtual-albums, already done) + 7 + 11 → 14 (smart-albums)
+4 (virtual-albums, already done) → 19 (shareable-album-links)
+9 (soft-delete-recycle-bin, already done) → 22 (duplicate-auto-resolve)
+8 (slideshow-mode, already done) → 16 (keyboard-shortcuts)
+10 (mobile-responsive-layout, already done) → 23 (progressive-web-app)
+```
+
+Improvements 15 (dark-mode), 17 (batch-rename), 18 (timeline-view), 20 (storage-analytics), and 21 (video-file-support) have no hard dependencies and can be delivered in any order.
