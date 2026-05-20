@@ -52,6 +52,7 @@ This document records all planned improvements to the JPPhotoManagerWeb applicat
 | 42  | `metrics-prometheus`        | Add `micrometer-registry-prometheus` to `pom.xml` and expose `/actuator/prometheus`; instrument three application-specific metrics not covered by Spring Boot's default JVM/HTTP metrics: a `Timer` on catalog duration per folder, a `Timer` on thumbnail generation, and a `Gauge` tracking active SSE connections (catalog, sync, convert); add Prometheus and Grafana services to `docker-compose.yml` with a pre-built dashboard | ⬜ Pending | ⬜ Pending |
 | 43  | `request-correlation-mdc`   | Add a servlet `Filter` that injects a `requestId` UUID and the authenticated `username` into SLF4J `MDC` at the start of each request and clears it on completion; `logstash-logback-encoder` is already configured in `logback-spring.xml` and will automatically include both fields in every JSON log line; also set `X-Request-ID` on the response so the Angular frontend can log the correlation ID alongside client-side errors from `global-error-handler` (#36) | ⬜ Pending | ⬜ Pending |
 | 44  | `database-backup`           | Add `DatabaseBackupService` with `@Scheduled` that runs `pg_dump` via `ProcessBuilder`, compresses the output with GZip to a temp file, and uploads it through a new `CloudStoragePort` interface (domain) with swappable infrastructure implementations for AWS S3, Google Cloud Storage, and Azure Blob; enforce a configurable retention policy (delete backups older than N days); expose `POST /api/admin/backup` for on-demand trigger and `GET /api/admin/backups` to list stored backups with timestamps and sizes; schedule, retention, cloud provider, bucket, and prefix are all configurable in `application.yml`; Option B (Docker sidecar using `prodrigestivill/postgres-backup-local` + `rclone`) is documented as a deployment alternative for environments where backup must be decoupled from application health | ⬜ Pending | ⬜ Pending |
+| 45  | `postgres-volume-mount-fix` | The `db` service in `docker-compose.yml` already runs PostgreSQL in a Docker container with a named `pgdata` volume, but the volume is mounted at `/var/lib/postgresql` instead of the correct `/var/lib/postgresql/data` (`PGDATA` default); while data is incidentally persisted because the data directory is nested within the mounted path, the mount is overly broad and diverges from the PostgreSQL Docker image's documented `PGDATA` default; fix by changing the volume binding to `pgdata:/var/lib/postgresql/data` and explicitly setting `PGDATA: /var/lib/postgresql/data` in the `db` service environment | ⬜ Pending | ⬜ Pending |
 
 ---
 
@@ -214,6 +215,10 @@ All three observability improvements are purely operational: no Flyway migration
 **Improvement 44 — no schema change**
 
 `database-backup` adds no Flyway migration; the backup metadata (listing stored files) is read directly from cloud storage at request time rather than persisted to the database.
+
+**Improvement 45 → Improvement 44**
+
+`postgres-volume-mount-fix` should be applied before `database-backup` (#44). The `pg_dump` command in the backup service connects to PostgreSQL over the network and is unaffected by the volume mount path, but fixing the mount first ensures the database data directory is cleanly aligned with `PGDATA` before the backup feature is built and tested against it. Note: changing the volume mount path on an existing deployment requires stopping the stack, migrating data from the old volume path to the new one, and restarting — this must be documented in the release notes for #45.
 
 **Improvement 40 → Improvement 13**
 
