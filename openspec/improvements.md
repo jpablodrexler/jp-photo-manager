@@ -47,6 +47,7 @@ This document records all planned improvements to the JPPhotoManagerWeb applicat
 | 37  | `asset-description`         | Add a `description` VARCHAR column to `assets` (new Flyway migration); expose `PATCH /api/assets/{id}/description`; display an editable text field in the EXIF panel in the viewer; the description field feeds directly into the `full-text-search` (#31) index once both are in place | ⬜ Pending | ⬜ Pending |
 | 38  | `folder-stats-in-tree`      | Show asset count and total size as a secondary line per folder node in the folder navigation tree; backed by `GET /api/folders/stats?path=...` running a lightweight `SELECT COUNT(*), SUM(file_size)` query per folder; distinct from the full analytics dashboard (#20) — this is inline contextual data in the tree, not a separate page | ⬜ Pending | ⬜ Pending |
 | 39  | `api-rate-limiting`         | Add `bucket4j-spring-boot-starter` with per-IP token-bucket limits on `POST /api/auth/login` (brute-force prevention) and `GET /api/assets/catalog` (prevent accidental concurrent runs from multiple browser tabs); returns `429 Too Many Requests` with a `Retry-After` header when the bucket is exhausted; no schema change required | ⬜ Pending | ⬜ Pending |
+| 40  | `circuit-breaker`           | Add Resilience4j `@CircuitBreaker` on the `GeocodingPort` adapter introduced by `gps-map-view` (#13); if the external geocoding API (e.g. Nominatim) is slow or unavailable the circuit opens and the adapter returns `null` coordinates immediately rather than stalling the EXIF panel; scope extends to any future outbound HTTP adapters (cloud storage, email); not applicable to the current backend which makes no external calls — PostgreSQL and filesystem failure modes are already covered by HikariCP | ⬜ Pending | ⬜ Pending |
 
 ---
 
@@ -189,3 +190,7 @@ A full-text search that can only index filename and tags is still useful, but th
 **Improvements 32, 33, 34, 36, 38, 39 — no dependencies**
 
 `folder-watch-service`, `role-based-access-control`, `openapi-documentation`, `global-error-handler`, `folder-stats-in-tree`, and `api-rate-limiting` have no hard dependencies on other pending improvements and can be delivered in any order.
+
+**Improvement 40 → Improvement 13**
+
+`circuit-breaker` is a follow-up to `gps-map-view`. It is not warranted in the current architecture because the backend makes no outbound calls to external services — PostgreSQL and the filesystem are the only dependencies, and the HikariCP connection pool already handles their failure modes. Once #13 introduces an outbound HTTP call to a geocoding API (e.g. Nominatim or Google Maps), that call becomes the first concrete circuit breaker target: if the geocoding service is slow or unavailable it will stall the EXIF panel for every viewed image. At that point, wrapping the `GeocodingPort` adapter with Resilience4j `@CircuitBreaker` and returning a fallback of `null` coordinates is the right response. Additional future improvements that would extend the scope of #40 include cloud storage integration and external email notifications if those are ever added.
