@@ -9,7 +9,7 @@ This document records all planned improvements to the JPPhotoManagerWeb applicat
 | #   | Change name                 | Brief description                                                                                                                                                                       | Artifacts  | Implementation |
 | --- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------- |
 | 1   | `exif-metadata-panel`       | Store full EXIF metadata during cataloging; display a collapsible panel in the viewer showing camera, exposure, GPS, and date-taken fields                                              | ✅ Created | ✅ Implemented |
-| 2   | `virtual-scrolling-gallery` | Replace page-flip pagination with infinite scroll; render only visible thumbnails in the DOM via Angular CDK Virtual Scroll                                                             | ✅ Created | ✅ Implemented |
+| 2   | `virtual-scrolling-gallery` | Replace page-flip pagination with infinite scroll; render only visible thumbnails in the DOM via Angular CDK Virtual Scroll; remove the unused `ScrollingModule` import; chunk assets into fixed-height rows so `CdkVirtualScrollViewport` can manage rendering while keeping the CSS grid layout | ⬜ Pending | ⬜ Pending |
 | 3   | `drag-and-drop-upload`      | Upload image files directly from the browser by dropping them onto the gallery grid or clicking an Upload button; files are saved to the selected folder and indexed immediately        | ✅ Created | ✅ Implemented |
 | 4   | `virtual-albums`            | User-scoped named collections; assets can belong to multiple albums; albums have their own paginated asset view and CRUD API                                                            | ✅ Created | ✅ Implemented |
 | 5   | `refresh-token`             | Long-lived HttpOnly refresh-token cookie with rotate-on-use; Angular service proactively refreshes before expiry; interceptor retries 401s transparently                                | ✅ Created | ✅ Implemented |
@@ -32,6 +32,7 @@ This document records all planned improvements to the JPPhotoManagerWeb applicat
 | 22  | `duplicate-auto-resolve`    | "Clean up automatically" dialog on the duplicates page with policies (keep oldest, keep newest, keep highest resolution, keep preferred folder); delegates to existing soft-delete path   | ⬜ Pending | ⬜ Pending      |
 | 23  | `progressive-web-app`       | `ng add @angular/pwa` with a cache-first strategy for thumbnails; background sync queue for offline rating/tag edits replayed on reconnect; HttpOnly cookie auth remains intact          | ⬜ Pending | ⬜ Pending      |
 | 24  | `wallpaper-suggestion`      | Add `aspect_ratio` float column to `assets` (populated during cataloging from the existing `pixel_width`/`pixel_height` columns); `GET /api/assets/wallpaper-suggestion?screenWidth=W&screenHeight=H` returns a random non-deleted asset where `pixel_width >= W`, `pixel_height >= H`, and `aspect_ratio` is within ±0.02 of the desktop ratio; frontend reads `window.screen.width`/`height`, calls the endpoint, and shows the suggested image with a download button | ⬜ Pending | ⬜ Pending |
+| 25  | `on-push-change-detection`  | Apply `ChangeDetectionStrategy.OnPush` to all 18 components; replace mutable state mutations with immutable assignments so Angular's OnPush check can detect changes; prioritise `ThumbnailComponent` (one instance per visible image) and `GalleryComponent` (the most complex); inject `ChangeDetectorRef` where manual `markForCheck()` calls are needed (e.g. after SSE events or async callbacks outside the Angular zone) | ⬜ Pending | ⬜ Pending |
 
 ---
 
@@ -126,3 +127,7 @@ For the new improvements, the recommended order within dependent clusters is:
 ```
 
 Improvements 15 (dark-mode), 17 (batch-rename), 18 (timeline-view), 20 (storage-analytics), 21 (video-file-support), and 24 (wallpaper-suggestion) have no hard dependencies and can be delivered in any order.
+
+**Improvement 25 → Improvement 2**
+
+`on-push-change-detection` should be applied after `virtual-scrolling-gallery` is completed. Switching to OnPush before the virtual scroll row-chunking is in place risks masking change-detection bugs in the intermediate state, since the chunked row data structures require immutable replacement to trigger OnPush checks correctly.
