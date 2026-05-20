@@ -31,6 +31,7 @@ This document records all planned improvements to the JPPhotoManagerWeb applicat
 | 21  | `video-file-support`        | Thumbnail generation via FFmpeg (`ProcessBuilder`) for `.mp4`/`.mov`/`.mkv`; catalog service accepts video MIME types; frontend shows play-overlay icon and `<video>` tag in the viewer  | ⬜ Pending | ⬜ Pending      |
 | 22  | `duplicate-auto-resolve`    | "Clean up automatically" dialog on the duplicates page with policies (keep oldest, keep newest, keep highest resolution, keep preferred folder); delegates to existing soft-delete path   | ⬜ Pending | ⬜ Pending      |
 | 23  | `progressive-web-app`       | `ng add @angular/pwa` with a cache-first strategy for thumbnails; background sync queue for offline rating/tag edits replayed on reconnect; HttpOnly cookie auth remains intact          | ⬜ Pending | ⬜ Pending      |
+| 24  | `wallpaper-suggestion`      | Add `aspect_ratio` float column to `assets` (populated during cataloging from the existing `pixel_width`/`pixel_height` columns); `GET /api/assets/wallpaper-suggestion?screenWidth=W&screenHeight=H` returns a random non-deleted asset where `pixel_width >= W`, `pixel_height >= H`, and `aspect_ratio` is within ±0.02 of the desktop ratio; frontend reads `window.screen.width`/`height`, calls the endpoint, and shows the suggested image with a download button | ⬜ Pending | ⬜ Pending |
 
 ---
 
@@ -66,6 +67,16 @@ Flyway migration versions must be applied in ascending order. Skipping a version
 | V12       | `saved-search-presets` — `search_presets` table             |
 
 Improvements that touch no database schema (2, 3, 5 frontend parts, 6, 8, 10) have no migration and no deployment ordering constraint relative to each other.
+
+Among the pending improvements, those that require a Flyway migration are:
+
+| Migration | Feature                                                                        |
+| --------- | ------------------------------------------------------------------------------ |
+| V13       | `smart-albums` — `filter_json` column on `albums`                              |
+| V14       | `shareable-album-links` — `shared_albums` table                                |
+| V15       | `wallpaper-suggestion` — `aspect_ratio` column on `assets`                    |
+
+Note: `pixel_width` and `pixel_height` are already present on `assets`; only the derived `aspect_ratio` column is new. The backfill (`aspect_ratio = pixel_width / pixel_height`) must be included in the V15 migration to populate existing rows. Assets where either dimension is zero are left as `NULL` and excluded from wallpaper queries.
 
 ### Hard implementation dependencies (new improvements)
 
@@ -114,4 +125,4 @@ For the new improvements, the recommended order within dependent clusters is:
 10 (mobile-responsive-layout, already done) → 23 (progressive-web-app)
 ```
 
-Improvements 15 (dark-mode), 17 (batch-rename), 18 (timeline-view), 20 (storage-analytics), and 21 (video-file-support) have no hard dependencies and can be delivered in any order.
+Improvements 15 (dark-mode), 17 (batch-rename), 18 (timeline-view), 20 (storage-analytics), 21 (video-file-support), and 24 (wallpaper-suggestion) have no hard dependencies and can be delivered in any order.
