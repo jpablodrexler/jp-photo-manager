@@ -373,3 +373,134 @@ When the user selects a new format preset, the crop box is recalculated to the m
 **Improvement 62 — toolbar placement**
 
 The scissors icon (`content_cut` Material icon) is inserted between the EXIF panel toggle and the slideshow button in the viewer toolbar, following the existing pattern for panel toggles. The button carries an `[class.active]="showCropPanel"` binding so it highlights when the crop panel is open, matching the EXIF button's behaviour. Activating crop mode immediately hides the `<img>` element and renders the `<canvas>` in its place; closing the crop panel (via the Cancel button or the toolbar icon) restores the `<img>` and resets all crop state.
+
+```
+VIEWER TOOLBAR — CURRENT STATE AND INSERTION POINT
+
+  ┌────────────────────────────────────────────────────────────────────┐
+  │  [folder name]                                          [  space ] │
+  │  [zoom−] [zoom+] [★][★][★][★][★]  [ⓘ EXIF]  [▶ slide]  [⊞ grid] │
+  └────────────────────────────────────────────────────────────────────┘
+                                               ↑
+                                         insert [✂ crop] here
+                                         between EXIF and slideshow
+
+  VIEWER TOOLBAR — AFTER ADDING CROP BUTTON
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │  [folder name]                                              [   space  ] │
+  │  [zoom−] [zoom+] [★][★][★][★][★]  [ⓘ EXIF]  [✂ crop]  [▶ slide]  [⊞] │
+  └──────────────────────────────────────────────────────────────────────────┘
+```
+
+**Improvement 62 — UI layout in crop mode**
+
+Entering crop mode replaces the full-size `<img>` with a `<canvas>` on the left and opens the `CropPanelComponent` on the right — the same two-column layout already used by `ExifPanelComponent`. The previous and next navigation arrows remain visible beneath the canvas so the user can switch assets without leaving crop mode (crop state resets on asset change).
+
+```
+VIEWER LAYOUT IN CROP MODE
+
+  ┌──────────────────────────────────────────────────────────────────┐
+  │  toolbar  (✂ button highlighted/active)                          │
+  ├─────────────────────────────────┬────────────────────────────────┤
+  │                                 │  CROP PANEL                    │
+  │  <canvas>                       │  ┌────────────────────────┐    │
+  │                                 │  │ Format                 │    │
+  │  ┌─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┐      │  │ [ Instagram Post ▼   ] │    │
+  │  │ ░░░░░░░░░░░░░░░░░░░░░│      │  └────────────────────────┘    │
+  │  │ ░╔═══════════════════╗░│    │                                │
+  │  │ ░║                   ║░│    │  Preview                       │
+  │  │ ░║   crop box        ║░│    │  ┌────────────────────────┐    │
+  │  │ ░║   (draggable)     ║░│    │  │   [cropped region]     │    │
+  │  │ ░╚═══════════════════╝░│    │  │   1080 × 1080          │    │
+  │  │ ░░░░░░░░░░░░░░░░░░░░░│      │  └────────────────────────┘    │
+  │  └─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┘      │                                │
+  │                                 │  [ Save & Download ]           │
+  │  [◀ prev]          [next ▶]    │  [ Cancel ]                    │
+  └─────────────────────────────────┴────────────────────────────────┘
+
+  For circle formats (profile images), the crop box contains a
+  ctx.arc() circle outline previewing the platform's circular display:
+
+  │ ░╔═══════════════╗░│
+  │ ░║   ╭───────╮   ║░│    ← circle outline inside the square crop box
+  │ ░║  │       │   ║░│
+  │ ░║   ╰───────╯   ║░│
+  │ ░╚═══════════════╝░│
+```
+
+**Improvement 62 — frontend/backend pixel work split**
+
+The canvas is used exclusively for interactive preview and user interaction. It never sends image bytes to the backend. Instead it sends four integers (crop region in original image pixel space) and a format key. All pixel processing — crop, scale to target dimensions, thumbnail generation — is done by the backend using Java2D.
+
+```
+WHO DOES THE PIXEL WORK
+
+  Frontend Canvas                      Backend Java2D
+  ───────────────────                  ──────────────────────────────
+  Draws image on canvas ✓              img.getSubimage(sx, sy, sw, sh)
+  Renders crop overlay ✓               Graphics2D.drawImage() to scale
+  Handles drag/resize events ✓         Writes file to disk
+  Translates display → pixel coords ✓  Saves new Asset + thumbnail
+  Shows circle outline preview ✓       Returns new AssetResponse
+          │
+          │  POST /api/assets/{id}/crop
+          │  { formatKey, x, y, width, height }   ──────────────▶
+          │
+          │◀──────────────────────────────────────  AssetResponse
+          │
+  Triggers browser download
+  via <a download> → GET /api/assets/{newId}/image
+```
+
+**Improvement 62 — canvas interaction state machine**
+
+The canvas tracks three state variables: `cropX`, `cropY` (top-left corner of the crop box in canvas-display space), and `cropW`, `cropH` (dimensions in canvas-display space, always aspect-locked to the selected format). Mouse events on the canvas drive three interaction modes:
+
+```
+CANVAS INTERACTION — DRAG MECHANICS
+
+  Component state
+  ───────────────
+  cropX, cropY    top-left corner of crop box (canvas-display pixels)
+  cropW, cropH    size of crop box (aspect ratio always locked to format)
+  dragMode        'move' | 'resize' | null
+  dragStart       { x, y, cropX, cropY, cropW, cropH } snapshot on mousedown
+
+  Canvas rendering (each frame)
+  ──────────────────────────────
+  1. ctx.drawImage(imgEl, 0, 0, canvas.width, canvas.height)
+  2. Semi-transparent dark overlay on the four regions outside the crop box
+  3. Bright 2px border around the crop box
+  4. Four corner handles (8 × 8 px squares)
+  5. For circle formats: ctx.arc() at center of crop box
+
+  mousedown hit-test
+  ──────────────────
+       ┌──────────────────────────────────────────────────┐
+       │ pointer inside corner handle (8 px radius)?      │
+       │         yes ──▶  dragMode = 'resize'             │
+       │         no                                       │
+       │          └─▶  pointer inside crop box?           │
+       │                    yes ──▶  dragMode = 'move'    │
+       │                    no  ──▶  (no interaction)     │
+       └──────────────────────────────────────────────────┘
+
+  mousemove
+  ─────────
+  'move' mode:
+    cropX = clamp(dragStart.cropX + dx, 0, canvas.width  - cropW)
+    cropY = clamp(dragStart.cropY + dy, 0, canvas.height - cropH)
+
+  'resize' mode (aspect-locked, anchor = opposite corner):
+    newW  = clamp(dragStart.cropW + dx, minSize, canvas.width)
+    newH  = newW / formatAspectRatio          ← ratio enforced here
+    cropW = newW
+    cropH = newH
+    (cropX, cropY adjusted to keep anchor corner fixed)
+
+  mouseup
+  ───────
+  dragMode = null
+  Constraint: crop box always stays fully within canvas bounds
+```
