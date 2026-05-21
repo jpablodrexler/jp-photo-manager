@@ -240,6 +240,31 @@ All three observability improvements are purely operational: no Flyway migration
 
 Revoking all sessions (`DELETE /api/auth/sessions`) is the recommended recovery action when a user suspects their account is compromised. Implementing `session-management` (#46) before or alongside #47 gives users the tools to respond to a potential account takeover.
 
+**Improvement 47 — external dependencies detail**
+
+*`dev.samstevens.totp:totp` (Maven, latest stable: 1.7.1)*
+
+The core TOTP library implementing RFC 6238 (TOTP) and RFC 4226 (HOTP). Provides:
+- `SecretGenerator` — generates a cryptographically random 160-bit base32 secret
+- `CodeVerifier` — validates a 6-digit user-submitted code against the stored secret; the default time-step window of ±1 step (±30 seconds) tolerates typical clock drift between client and server
+- `QrData` builder — constructs the `otpauth://totp/JPPhotoManager:{username}?secret={secret}&issuer=JPPhotoManager` URI that authenticator apps (Google Authenticator, Authy, 1Password) parse when scanning the QR code
+
+*`com.google.zxing:core` + `com.google.zxing:javase` (Maven, latest stable: 3.5.3)*
+
+ZXing (Zebra Crossing) encodes the `otpauth://` URI into a QR code bitmap. `QRCodeWriter` produces a `BitMatrix`; `MatrixToImageWriter` renders it to a PNG `ByteArrayOutputStream`. The backend returns the PNG as a base64 string so the frontend displays it as `<img src="data:image/png;base64,...">` — no extra round-trip and the image is never persisted anywhere.
+
+*No additional frontend npm package required*
+
+The base64-PNG-from-backend approach keeps the TOTP secret entirely server-side. An alternative is to return the raw `otpauth://` URI to the frontend and use the `qrcode` npm package (zero dependencies) to render the QR code client-side — but this briefly exposes the secret to JavaScript, which is less secure.
+
+*Secret storage — AES-256-GCM encryption at rest*
+
+The `totp_secret` column must never be stored in plaintext. The recommended implementation is a JPA `@Convert` annotation backed by an `AttributeConverter<String, String>` that AES-256-GCM encrypts the secret using a key loaded from the `TOTP_ENCRYPTION_KEY` environment variable. A database leak then exposes only ciphertext.
+
+*Backup codes — BCrypt-hashed*
+
+The 10 single-use recovery codes are BCrypt-hashed before insertion into `totp_backup_codes` — the same treatment as passwords — so a database leak does not expose usable codes. On use, the matching row is deleted; the plaintext codes are shown to the user exactly once during setup and never stored.
+
 **Improvement 48 → Improvement 54**
 
 `email-notifications` and `notification-center` are triggered by the same operation-completion events (end of catalog, sync, convert, backup SSE streams). Implementing them together avoids wiring the same trigger points twice; if delivered separately, #54 should come first so the notification infrastructure exists when #48 extends it with email dispatch.
