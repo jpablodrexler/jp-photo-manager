@@ -70,6 +70,7 @@ This document records all planned improvements to the JPPhotoManagerWeb applicat
 | 60  | `archive-support`           | Two related capabilities sharing the same archive-reading infrastructure (`org.apache.commons:commons-compress` for tar.gz; `java.util.zip` built-in for zip): (1) **virtual folders** — zip and tar.gz files appear as expandable nodes in the folder navigation tree using a `!` path separator convention (e.g. `/photos/album.zip!/summer/`); the catalog service extracts images to a temp location, generates thumbnails, and stores assets with the virtual path; (2) **download formats** — the bulk-download endpoint (`GET /api/assets/download`) gains a `format` query parameter (`zip` / `tar.gz`) so users can choose the archive type; the existing `ZipOutputStream` path is joined by a `TarArchiveOutputStream` wrapped in `GzipCompressorOutputStream`; no Flyway migration required for either capability | ⬜ Pending | ⬜ Pending |
 | 61  | `asset-backup`              | Backup a configurable scope of assets (folder, album, saved search result, or entire catalog) to one or more sequentially numbered archive files (e.g. `backup_photos_001.zip`, `backup_photos_002.zip`) split at a configurable volume size; format is zip or tar.gz (reuses `archive-support` #60 writing infrastructure); trigger is manual (`POST /api/backup/{id}/run`) or a per-definition cron expression scheduled dynamically via Spring `TaskScheduler` + `CronTrigger` (cancelled and rescheduled on definition update); new `/backup` frontend route mirrors the convert page structure (definitions list → configure → run → results with SSE progress and per-file logging); backend stores definitions in `backup_definitions` and run history in `backup_run_log` (timestamps, status, files written, bytes, errors); new Flyway migration | ⬜ Pending | ⬜ Pending |
 | 63  | `raw-exif-jsonb`            | Add a `raw_exif JSONB` column to the existing `asset_exif` table (new Flyway migration); during cataloging, after extracting the 13 known fields, iterate all EXIF directories returned by Apache Commons Imaging (`JpegImageMetadata.getExif().getDirectories()` → `dir.getAllFields()`) and collect every `TiffField` into a `Map<String, String>` keyed by `field.getTagInfo().name` with value `field.getValueDescription()`; the map is serialized to JSONB using Hibernate 6's `@JdbcTypeCode(SqlTypes.JSON)` on a `Map<String, String> rawExif` field in `AssetExifEntity` (no new Maven dependency — Hibernate 6 handles JSON natively via Jackson, already present); `AssetExif` domain model and `AssetExifEntityMapper` (MapStruct) gain the `rawExif` field; `ExifMetadataDto` exposes it as `Map<String, String> rawExif`; `ExifMetadata` TypeScript interface adds `rawExif: Record<string, string> \| null`; in `ExifPanelComponent`, below the existing 13 structured fields, a collapsible `MatExpansionPanel` labeled "All EXIF data" renders every key-value pair from `rawExif` as a compact two-column list; a `MatFormField` search input above the list filters entries by key name in real time using a component-level computed signal so the full raw map is never re-fetched; a single image from a modern DSLR or mirrorless camera typically carries 80–300 EXIF fields across the IFD0, ExifIFD, GPS IFD, and MakerNote directories; the search filter is essential because MakerNote alone can add 100+ manufacturer-specific fields (Nikon colour modes, Canon lens correction data, Sony face detection coordinates, etc.); existing assets cataloged before this migration have `raw_exif = NULL` and the panel section is hidden when `rawExif` is null; re-cataloging any folder populates the column for all assets in that folder; new Flyway migration | ⬜ Pending | ⬜ Pending |
+| 66  | `video-player`              | Right-side video player pane and fullscreen support for both video and audio; the gallery's existing `mat-sidenav-container` already supports a second `MatSidenav` with `position="end"` — a new `VideoPlayerComponent` occupies this right-side drawer, opening when a video asset is played and closing when playback stops or the user dismisses it; the `<video>` element fills the full width of the drawer pane with `width: 100%; aspect-ratio: 16/9` (letterboxing for other ratios); the title and any available video metadata appear directly below the video element, followed by the progress bar and the five control buttons (`skip_previous`, `stop`, `play_arrow`/`pause`, `skip_next`, `fullscreen`); `AudioPlayerService` from `audio-player` (#65) is superseded by a unified `MediaPlayerService` (`providedIn: 'root'`) that manages both media types: it holds an internal `HTMLAudioElement` for audio and accepts a reference to the `VideoPlayerComponent`'s `HTMLVideoElement` via `registerVideoElement(el: HTMLVideoElement)` called from `VideoPlayerComponent.ngAfterViewInit()`; `isVideoAsset(asset: Asset): boolean` checks the file extension (`.mp4`, `.mov`, `.mkv`, `.avi`, `.webm`) and routes `play()` calls to the appropriate element, stopping the other if it was active; all queue signals (`currentTrack`, `queue`, `currentIndex`, `isPlaying`, `currentTime`, `duration`) and methods (`play()`, `loadFolder()`, `loadPlaylist()`, `togglePause()`, `stop()`, `prev()`, `next()`, `seek()`) remain on `MediaPlayerService` and are consumed by both `AudioPlayerComponent` (bottom bar) and `VideoPlayerComponent` (right pane); **fullscreen for video** uses `HTMLVideoElement.requestFullscreen()` — browser-native fullscreen that shows the video filling the entire screen with the browser's built-in controls overlay; **fullscreen for audio** uses a custom `MediaFullscreenOverlayComponent` (`position: fixed; inset: 0; z-index: 9999; background: #000`) rendered in `AppComponent`'s template and toggled by an `isAudioFullscreen` signal on `MediaPlayerService`; the audio fullscreen overlay shows the album art cover centered and enlarged, the track title and artist name in large type below it, the progress bar spanning the full overlay width, and the five control buttons with a close/exit-fullscreen button at top-right; **video streaming** uses a new unified `GET /api/assets/{id}/stream` endpoint that replaces the audio-only `GET /api/assets/{id}/audio` proposed in `audio-player` (#65) — the endpoint returns the file via Spring MVC `Resource`-based streaming with `Accept-Ranges: bytes` and detects the MIME type from the stored `fileName` extension; video MIME types added: `.mp4` → `video/mp4`, `.mov` → `video/quicktime`, `.mkv` → `video/x-matroska`, `.avi` → `video/x-msvideo`, `.webm` → `video/webm`; the `AudioController` from #65 is renamed `MediaController` and the endpoint path changes from `/api/assets/{id}/audio` to `/api/assets/{id}/stream`; playlist parsing (`GET /api/audio/playlist/{id}`) is unchanged; no new Flyway migration (video assets are regular catalog rows, their catalog support is from `video-file-support` #21); no new Maven dependency (Spring MVC Resource streaming already covers video); no new npm package (HTML5 `<video>` element and Fullscreen API are built-in) | ⬜ Pending | ⬜ Pending |
 | 65  | `audio-player`              | Persistent audio player toolbar fixed at the bottom of `AppComponent` (below all routes) so music continues while the user browses the gallery; the player supports three queue modes: (1) **single** — clicking "Play" on an individual audio asset in the gallery loads it alone; (2) **folder** — an "Play all audio" action on a folder loads every audio asset in that folder ordered by `file_name`; (3) **playlist** — clicking an `.m3u`, `.m3u8`, or `.pls` asset calls `GET /api/audio/playlist/{assetId}` which parses the file and returns an ordered `List<AssetDto>`; a new singleton `AudioPlayerService` (`providedIn: 'root'`) wraps a private `HTMLAudioElement` and exposes Angular signals: `currentTrack`, `queue`, `currentIndex`, `isPlaying`, `currentTime`, `duration`; the service methods are `play(assets, startIndex?)`, `loadFolder(folderPath)`, `loadPlaylist(assetId)`, `togglePause()`, `stop()`, `prev()`, `next()`, and `seek(seconds)`; `prev()` restarts the current track if `currentTime > 3` (matching standard player convention), otherwise steps back one track; `AudioPlayerComponent` in `shared/components/audio-player/` is hidden via `@if (audioPlayer.currentTrack())` and shows only when a track is loaded; the top row of the player bar shows the album art cover image (the asset's `thumbnailUrl` — album art thumbnail from `audio-asset-support` #59 when available, generic music-note icon otherwise), the track title (from `asset_audio.title` if #59 is implemented, else `fileName`), and the artist name (from `asset_audio.artist`); the second row shows five control buttons using Material icons — `skip_previous`, `stop`, `play_arrow`/`pause` (toggling), `skip_next` — followed by the progress bar and a `currentTime / duration` counter; the progress bar is a native `<input type="range">` element whose `value` is updated on the `<audio>` element's `timeupdate` event and whose `change` event calls `audioPlayerService.seek()`; audio streaming uses a new backend endpoint `GET /api/assets/{id}/audio` that returns the file using Spring MVC `Resource`-based streaming with `Accept-Ranges: bytes` so the browser can send `Range: bytes=X-Y` requests for seeking without downloading the entire file first — the existing `GET /{id}/image` endpoint loads all bytes into memory and cannot seek; a new `AudioController` in `infrastructure/web/controller/` handles both `/audio/{id}` (stream) and `/audio/playlist/{id}` (parse); two playlist parser adapters implement a `PlaylistParserPort` in `domain/port/out/`: `M3uPlaylistParserAdapter` splits lines, skips `#EXTM3U` and `#EXTINF` annotations, and resolves each file path against the `assets` table by matching `folder_path + file_name`; `PlsPlaylistParserAdapter` reads the INI-style `[playlist]` section and extracts `FileN=` entries; the catalog service is extended to accept audio extensions (`.mp3`, `.flac`, `.wav`, `.aac`, `.ogg`) and playlist extensions (`.m3u`, `.m3u8`, `.pls`) — playlist file thumbnails use a static playlist-icon placeholder; no new Flyway migration (audio metadata table is from #59; playlist files are regular assets); no new Maven dependency (Spring MVC `Resource` streaming is built-in); no new npm package (HTML5 `<audio>` element is built-in) | ⬜ Pending | ⬜ Pending |
 | 64  | `catalog-spring-batch`      | Replace the custom `@Async` + `@Transactional` catalog loop with a Spring Batch job; add `spring-boot-starter-batch` to `pom.xml`; the new job lives entirely in a new `infrastructure/batch/` package and is composed of six classes: `CatalogJobConfig` (`@Configuration` defining the `Job`, `Step`, and `Partitioner` beans), `CatalogFolderPartitioner` (reads all root and sub-folders and emits one `ExecutionContext` partition per folder), `CatalogFileItemReader` (lists new files in one partition's folder — those not yet in the `assets` table), `CatalogAssetItemProcessor` (computes SHA-256 hash, generates thumbnail, reads EXIF — same logic as `CatalogFolderServiceImpl.createAsset()` today), `CatalogAssetItemWriter` (saves `Asset` + `AssetExif` rows, deletes assets whose files were removed, fires SSE notification via `SseNotificationRegistry`), and `CatalogItemWriteListener` (looks up the active SSE consumer from `SseNotificationRegistry` by job execution ID and forwards write events); `CatalogAssetsUseCaseImpl` becomes a thin adapter that calls `JobLauncher.run(catalogJob, jobParameters)` and returns the `JobExecution` ID; `CatalogScheduler` continues to exist but calls the use case rather than managing its own `CompletableFuture`; the `catalog_run_state` table and all related classes (`CatalogStateRepository`, `CatalogRunStateEntity`, `CatalogStateRepositoryImpl`, `JpaCatalogStateRepository`) are removed — Spring Batch's own `JobRepository` (`BATCH_JOB_EXECUTION` table) replaces their run-state role; the new Flyway migration (V27) creates the 9 Spring Batch schema tables and drops `catalog_run_state`; chunk size is configurable via `photomanager.catalog-chunk-size` (default 50) — every 50 assets are committed as one transaction, replacing the current single transaction per folder; folders are processed in parallel via a `PartitionStep` with a configurable grid size (`photomanager.catalog-partition-grid-size`, default 4, meaning up to 4 folders concurrently); the SSE `Consumer<CatalogChangeNotification>` is no longer passed as a method argument — instead `AssetController` registers it in a singleton `SseNotificationRegistry` keyed by job execution ID when the SSE connection opens, and `CatalogItemWriteListener` looks it up; the registry entry is removed when the SSE connection closes or the job completes | ⬜ Pending | ⬜ Pending |
 | 62  | `social-media-crop`         | Canvas-based interactive crop tool for 12 social media format presets; a scissors icon button added to the viewer toolbar toggles `showCropPanel` (same pattern as `showExifPanel`); the `<img>` is replaced by a `<canvas>` in crop mode — the image is drawn on the canvas and a semi-transparent overlay renders the draggable crop box with corner handles; the crop box aspect ratio is always locked to the selected format; dragging inside the box moves it, dragging a corner handle resizes it while keeping the ratio; for profile-image formats (Instagram Profile, Facebook Profile, LinkedIn Profile, Twitter/X Profile) a `ctx.arc()` circle outline is drawn inside the crop box to preview the platform's circular display; when the format changes the crop box snaps to maximum fit centered on the image; the 12 presets are: `INSTAGRAM_POST` 1080×1080 (1:1), `INSTAGRAM_PORTRAIT` 1080×1350 (4:5), `INSTAGRAM_LANDSCAPE` 1080×566 (~1.91:1), `INSTAGRAM_STORY` 1080×1920 (9:16), `INSTAGRAM_PROFILE` 110×110 (1:1 circle), `FACEBOOK_POST` 1200×630 (~1.91:1), `FACEBOOK_PROFILE` 170×170 (1:1 circle), `LINKEDIN_POST` 1200×627 (~1.91:1), `LINKEDIN_PROFILE` 400×400 (1:1 circle), `TWITTER_POST` 1600×900 (16:9), `TWITTER_PROFILE` 400×400 (1:1 circle), `TWITTER_HEADER` 1500×500 (3:1); on confirm the frontend translates canvas-display coordinates to original image pixel coordinates using `asset.pixelWidth` / `asset.pixelHeight` (already on the `Asset` model) and sends `POST /api/assets/{id}/crop` with `{ formatKey, x, y, width, height }`; the backend uses Java2D `BufferedImage.getSubimage(x, y, w, h)` to extract the crop region and `Graphics2D.drawImage()` to scale it to the format's target dimensions, then saves the result as a new `Asset` in the same folder (non-destructive) with a freshly generated thumbnail; after the backend returns the new `AssetResponse` the frontend immediately triggers a browser download of the cropped image by creating a temporary `<a download>` element pointing to `GET /api/assets/{newId}/image`; no Flyway migration (cropped outputs are regular assets in existing tables), no new Maven dependency (Java2D is built-in), no new npm package (Canvas API is built into all browsers) | ⬜ Pending | ⬜ Pending |
@@ -877,4 +878,156 @@ Three entry points load audio into the player queue:
     → calls GET /api/audio/playlist/{assetId}
     → backend parses file, returns List<AssetDto>
     → audioPlayerService.play(resolvedAssets, 0)
+```
+
+**Improvement 66 → Improvement 65 (hard)**
+
+`video-player` replaces `AudioPlayerService` from `audio-player` (#65) with `MediaPlayerService`. The queue management, playlist parsing, and all three load modes (single, folder, playlist) are defined in #65 and inherited by #66 without duplication. `audio-player` must be delivered first, or both improvements must be implemented together as a single unit.
+
+**Improvement 66 → Improvement 21 (soft)**
+
+`video-player` needs video assets in the catalog to be useful. `video-file-support` (#21) extends the catalog service to accept video MIME types and generates video thumbnails via FFmpeg. Without #21 there are no cataloged video assets to play. The video streaming endpoint and `VideoPlayerComponent` can be built independently, but the feature has nothing to play until #21 is in place.
+
+**Improvement 66 — VideoPlayerComponent placement**
+
+The gallery template wraps everything in `mat-sidenav-container`. It already has one `MatSidenav` on the left (folder tree). A second `MatSidenav` with `position="end"` (Angular Material's built-in right-side drawer) opens alongside the thumbnail grid when a video is playing. On desktop (`mode="side"`) the grid narrows automatically to share width with the drawer; on mobile (`mode="over"`) the drawer overlays the grid. The drawer width is fixed at 400 px on desktop, full-screen-width on mobile.
+
+```
+GALLERY LAYOUT — VIDEO PANE OPEN
+
+  mat-sidenav-container
+  ┌──────────────┬──────────────────────┬───────────────────┐
+  │ MatSidenav   │                      │ MatSidenav        │
+  │ position=    │  mat-sidenav-content │ position="end"    │
+  │ "start"      │  (gallery grid,      │                   │
+  │              │   narrower when      │  <video>          │
+  │  folder      │   end drawer open)   │  ──────────────── │
+  │  tree        │                      │  Title            │
+  │              │                      │  ─────────○────   │
+  │              │                      │  2:34/4:12        │
+  │              │                      │  [⏮][⏹][▶][⏭][⛶] │
+  └──────────────┴──────────────────────┴───────────────────┘
+                                         ↑ width: 400px desktop
+                                           full-width mobile
+```
+
+**Improvement 66 — MediaPlayerService refactor of AudioPlayerService**
+
+`AudioPlayerService` from #65 is renamed and extended. The public API for audio consumers (`AudioPlayerComponent`) is unchanged — the same signals and methods. The additions for video:
+
+```
+MediaPlayerService (replaces AudioPlayerService)
+  ─────────────────────────────────────────────────────────
+  Private state (unchanged from #65):
+    audioEl: HTMLAudioElement           internal, created in constructor
+    queue: WritableSignal<Asset[]>
+    currentIndex: WritableSignal<number>
+    isPlaying: WritableSignal<boolean>
+    currentTime: WritableSignal<number>
+    duration: WritableSignal<number>
+
+  New private state:
+    videoEl: HTMLVideoElement | null    set by VideoPlayerComponent.ngAfterViewInit()
+    isVideoPlaying: WritableSignal<boolean>
+    isAudioFullscreen: WritableSignal<boolean>   ← toggled by audio fullscreen button
+
+  New methods:
+    registerVideoElement(el: HTMLVideoElement): void
+    isVideoAsset(asset: Asset): boolean   checks extension against VIDEO_EXTENSIONS set
+    enterAudioFullscreen(): void          sets isAudioFullscreen(true)
+    exitAudioFullscreen(): void           sets isAudioFullscreen(false)
+
+  play() routing:
+    if isVideoAsset(currentTrack()):
+      audioEl.pause(); audioEl.src = ''
+      videoEl.src = streamUrl(currentTrack())   → /api/assets/{id}/stream
+      videoEl.play()
+    else:
+      videoEl?.pause(); videoEl.src = ''
+      audioEl.src = streamUrl(currentTrack())
+      audioEl.play()
+```
+
+**Improvement 66 — fullscreen behaviour for video and audio**
+
+The two fullscreen mechanisms are intentionally different because `requestFullscreen()` on a `<video>` element delivers the native browser experience (keyboard shortcuts, browser controls overlay, PiP), while audio has no visual element to fullscreen natively:
+
+```
+VIDEO FULLSCREEN — browser native
+  videoEl.requestFullscreen()
+  ┌──────────────────────────────────────────────────────┐
+  │████████████████████████████████████████████████████│
+  │█                                                  █│
+  │█              <video> fills screen                █│
+  │█                                                  █│
+  │█                                                  █│
+  │████████████████████████████████████████████████████│
+  │  browser native controls (hover to show)           │
+  └──────────────────────────────────────────────────────┘
+  Exiting: Esc key (browser default) or clicking [⛶] again
+
+AUDIO FULLSCREEN — custom MediaFullscreenOverlayComponent
+  position: fixed; inset: 0; z-index: 9999; background: #111;
+  ┌──────────────────────────────────────────────────────┐
+  │                                       [✕ exit]       │
+  │                                                      │
+  │              ┌─────────────────┐                     │
+  │              │                 │                     │
+  │              │   Album art     │                     │
+  │              │  (256×256 px)   │                     │
+  │              │                 │                     │
+  │              └─────────────────┘                     │
+  │                                                      │
+  │              Song Title  (mat-h2)                    │
+  │              Artist Name (mat-subtitle-1)            │
+  │                                                      │
+  │  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━○━━━━━━  2:34 / 4:12   │
+  │           [⏮]  [⏹]  [▶/⏸]  [⏭]                     │
+  └──────────────────────────────────────────────────────┘
+  Rendered in AppComponent template:
+    @if (mediaPlayer.isAudioFullscreen()) {
+      <app-media-fullscreen-overlay />
+    }
+```
+
+**Improvement 66 — GET /api/assets/{id}/stream replaces GET /api/assets/{id}/audio**
+
+The unified streaming endpoint serves both audio and video using the same `Resource`-based implementation. MIME type is resolved from `fileName` extension:
+
+```
+  Extension    MIME type             Type
+  ──────────   ───────────────────   ─────
+  .mp3         audio/mpeg            audio
+  .flac        audio/flac            audio
+  .wav         audio/wav             audio
+  .aac         audio/aac             audio
+  .ogg         audio/ogg             audio
+  .mp4         video/mp4             video
+  .mov         video/quicktime       video
+  .mkv         video/x-matroska      video
+  .avi         video/x-msvideo       video
+  .webm        video/webm            video
+```
+
+When implementing #65 alongside or after #66, `GET /api/assets/{id}/audio` is implemented as `GET /api/assets/{id}/stream` in `MediaController` instead of `AudioController`. The playlist endpoint `GET /api/audio/playlist/{id}` remains unchanged in path and behaviour.
+
+**Improvement 66 — gallery entry points for video**
+
+Video assets appear as thumbnail cards in the gallery with a `play_circle` overlay icon (same pattern as #21 `video-file-support` proposes for the play indicator). The three entry points mirror those from #65:
+
+```
+  Entry point 1 — single asset
+    Video asset card in gallery → clicking the play_circle overlay icon
+    → mediaPlayerService.play([asset], 0)
+    → VideoPlayerComponent's MatSidenav opens
+
+  Entry point 2 — folder
+    Folder node → context menu item "Play all video"
+    → mediaPlayerService.loadFolder(folderPath, 'video')
+    → filters assets by VIDEO_EXTENSIONS on client side
+
+  Entry point 3 — playlist file
+    .m3u / .pls asset → single click
+    (playlist may contain both audio and video paths;
+     MediaPlayerService routes each asset to the correct element)
 ```
