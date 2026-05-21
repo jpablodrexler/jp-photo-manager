@@ -69,6 +69,7 @@ This document records all planned improvements to the JPPhotoManagerWeb applicat
 | 59  | `audio-asset-support`       | Catalog audio files (.mp3, .flac, .wav, .aac, .ogg); extract ID3/Vorbis/FLAC metadata (title, artist, album, duration, bitrate, sample rate, embedded album art) via `org.jaudiotagger:jaudiotagger` (Maven); store audio-specific fields in a new `asset_audio` table mirroring `asset_exif` (Flyway migration); use embedded album art as the asset thumbnail if present, or generate a waveform PNG via FFmpeg (`ffmpeg -i input.mp3 -filter_complex "showwavespic=s=200x150" -frames:v 1 waveform.png`) as fallback; the frontend viewer switches on asset type and renders an `<audio controls>` tag for audio assets with title, artist, album, duration, and bitrate displayed alongside playback controls; once implemented, `video-from-images` (#58) can offer a "select from audio assets" music picker | ⬜ Pending | ⬜ Pending |
 | 60  | `archive-support`           | Two related capabilities sharing the same archive-reading infrastructure (`org.apache.commons:commons-compress` for tar.gz; `java.util.zip` built-in for zip): (1) **virtual folders** — zip and tar.gz files appear as expandable nodes in the folder navigation tree using a `!` path separator convention (e.g. `/photos/album.zip!/summer/`); the catalog service extracts images to a temp location, generates thumbnails, and stores assets with the virtual path; (2) **download formats** — the bulk-download endpoint (`GET /api/assets/download`) gains a `format` query parameter (`zip` / `tar.gz`) so users can choose the archive type; the existing `ZipOutputStream` path is joined by a `TarArchiveOutputStream` wrapped in `GzipCompressorOutputStream`; no Flyway migration required for either capability | ⬜ Pending | ⬜ Pending |
 | 61  | `asset-backup`              | Backup a configurable scope of assets (folder, album, saved search result, or entire catalog) to one or more sequentially numbered archive files (e.g. `backup_photos_001.zip`, `backup_photos_002.zip`) split at a configurable volume size; format is zip or tar.gz (reuses `archive-support` #60 writing infrastructure); trigger is manual (`POST /api/backup/{id}/run`) or a per-definition cron expression scheduled dynamically via Spring `TaskScheduler` + `CronTrigger` (cancelled and rescheduled on definition update); new `/backup` frontend route mirrors the convert page structure (definitions list → configure → run → results with SSE progress and per-file logging); backend stores definitions in `backup_definitions` and run history in `backup_run_log` (timestamps, status, files written, bytes, errors); new Flyway migration | ⬜ Pending | ⬜ Pending |
+| 63  | `raw-exif-jsonb`            | Add a `raw_exif JSONB` column to the existing `asset_exif` table (new Flyway migration); during cataloging, after extracting the 13 known fields, iterate all EXIF directories returned by Apache Commons Imaging (`JpegImageMetadata.getExif().getDirectories()` → `dir.getAllFields()`) and collect every `TiffField` into a `Map<String, String>` keyed by `field.getTagInfo().name` with value `field.getValueDescription()`; the map is serialized to JSONB using Hibernate 6's `@JdbcTypeCode(SqlTypes.JSON)` on a `Map<String, String> rawExif` field in `AssetExifEntity` (no new Maven dependency — Hibernate 6 handles JSON natively via Jackson, already present); `AssetExif` domain model and `AssetExifEntityMapper` (MapStruct) gain the `rawExif` field; `ExifMetadataDto` exposes it as `Map<String, String> rawExif`; `ExifMetadata` TypeScript interface adds `rawExif: Record<string, string> \| null`; in `ExifPanelComponent`, below the existing 13 structured fields, a collapsible `MatExpansionPanel` labeled "All EXIF data" renders every key-value pair from `rawExif` as a compact two-column list; a `MatFormField` search input above the list filters entries by key name in real time using a component-level computed signal so the full raw map is never re-fetched; a single image from a modern DSLR or mirrorless camera typically carries 80–300 EXIF fields across the IFD0, ExifIFD, GPS IFD, and MakerNote directories; the search filter is essential because MakerNote alone can add 100+ manufacturer-specific fields (Nikon colour modes, Canon lens correction data, Sony face detection coordinates, etc.); existing assets cataloged before this migration have `raw_exif = NULL` and the panel section is hidden when `rawExif` is null; re-cataloging any folder populates the column for all assets in that folder; new Flyway migration | ⬜ Pending | ⬜ Pending |
 | 62  | `social-media-crop`         | Canvas-based interactive crop tool for 12 social media format presets; a scissors icon button added to the viewer toolbar toggles `showCropPanel` (same pattern as `showExifPanel`); the `<img>` is replaced by a `<canvas>` in crop mode — the image is drawn on the canvas and a semi-transparent overlay renders the draggable crop box with corner handles; the crop box aspect ratio is always locked to the selected format; dragging inside the box moves it, dragging a corner handle resizes it while keeping the ratio; for profile-image formats (Instagram Profile, Facebook Profile, LinkedIn Profile, Twitter/X Profile) a `ctx.arc()` circle outline is drawn inside the crop box to preview the platform's circular display; when the format changes the crop box snaps to maximum fit centered on the image; the 12 presets are: `INSTAGRAM_POST` 1080×1080 (1:1), `INSTAGRAM_PORTRAIT` 1080×1350 (4:5), `INSTAGRAM_LANDSCAPE` 1080×566 (~1.91:1), `INSTAGRAM_STORY` 1080×1920 (9:16), `INSTAGRAM_PROFILE` 110×110 (1:1 circle), `FACEBOOK_POST` 1200×630 (~1.91:1), `FACEBOOK_PROFILE` 170×170 (1:1 circle), `LINKEDIN_POST` 1200×627 (~1.91:1), `LINKEDIN_PROFILE` 400×400 (1:1 circle), `TWITTER_POST` 1600×900 (16:9), `TWITTER_PROFILE` 400×400 (1:1 circle), `TWITTER_HEADER` 1500×500 (3:1); on confirm the frontend translates canvas-display coordinates to original image pixel coordinates using `asset.pixelWidth` / `asset.pixelHeight` (already on the `Asset` model) and sends `POST /api/assets/{id}/crop` with `{ formatKey, x, y, width, height }`; the backend uses Java2D `BufferedImage.getSubimage(x, y, w, h)` to extract the crop region and `Graphics2D.drawImage()` to scale it to the format's target dimensions, then saves the result as a new `Asset` in the same folder (non-destructive) with a freshly generated thumbnail; after the backend returns the new `AssetResponse` the frontend immediately triggers a browser download of the cropped image by creating a temporary `<a download>` element pointing to `GET /api/assets/{newId}/image`; no Flyway migration (cropped outputs are regular assets in existing tables), no new Maven dependency (Java2D is built-in), no new npm package (Canvas API is built into all browsers) | ⬜ Pending | ⬜ Pending |
 
 ---
@@ -123,6 +124,7 @@ Among the pending improvements, those that require a Flyway migration are:
 | V23       | `webp-avif-conversion` — `target_format` column on `convert_assets_directories_definitions` |
 | V24       | `audio-asset-support` — `asset_audio` table                                         |
 | V25       | `asset-backup` — `backup_definitions` and `backup_run_log` tables                   |
+| V26       | `raw-exif-jsonb` — `raw_exif` JSONB column on `asset_exif`                          |
 
 Note: `pixel_width` and `pixel_height` are already present on `assets`; only the derived `aspect_ratio` column is new. The backfill (`aspect_ratio = pixel_width / pixel_height`) must be included in the V15 migration to populate existing rows. Assets where either dimension is zero are left as `NULL` and excluded from wallpaper queries.
 
@@ -504,3 +506,82 @@ CANVAS INTERACTION — DRAG MECHANICS
   dragMode = null
   Constraint: crop box always stays fully within canvas bounds
 ```
+
+**Improvement 63 → Improvement 1 (hard)**
+
+`raw-exif-jsonb` adds a column to the `asset_exif` table introduced by `exif-metadata-panel` (#1, already implemented). The table must exist before the V26 migration can run.
+
+**Improvement 63 — no new Maven or npm dependency**
+
+Apache Commons Imaging is already a dependency in `pom.xml` and is already used in `StorageServiceAdapter` for EXIF rotation correction. The full tag-iteration API (`getDirectories()` → `getAllFields()`) is part of the same library — no new artifact is needed. Hibernate 6 (shipped with Spring Boot 3.x) maps `jsonb` natively via `@JdbcTypeCode(SqlTypes.JSON)` using the Jackson `ObjectMapper` already on the classpath. No new npm package is needed on the frontend — the raw EXIF data arrives as a plain `Record<string, string>` and is rendered with `@for` and a component-level filter signal.
+
+**Improvement 63 — EXIF directory structure and field volume**
+
+Commons Imaging exposes EXIF data through a directory hierarchy. Each directory is iterated in order and its fields merged into the single `Map<String, String>`:
+
+```
+EXIF DIRECTORY HIERARCHY (Commons Imaging)
+
+  JpegImageMetadata
+  └── TiffImageMetadata (from getExif())
+      ├── IFD0            Image width, height, make, model, software,
+      │                   copyright, date modified, resolution (~10–20 fields)
+      ├── ExifIFD         Exposure time, f-number, ISO, focal length,
+      │                   shutter speed, aperture, date original, flash,
+      │                   colour space, subject distance (~40–60 fields)
+      ├── GPS IFD         Latitude, longitude, altitude, speed, direction,
+      │                   timestamp, map datum (~15 fields)
+      ├── MakerNote       Manufacturer-specific; varies widely by brand:
+      │   ├── Nikon       Colour modes, noise reduction, active D-Lighting,
+      │   │               lens serial number, flash compensation (~80 fields)
+      │   ├── Canon       Lens info, AF point, white balance, picture style,
+      │   │               owner name, serial number (~100 fields)
+      │   └── Sony        Face detection, creative style, lens compensation,
+      │                   HDR mode, multi-frame noise reduction (~60 fields)
+      ├── Interop IFD     Interoperability index, version (~2 fields)
+      └── IFD1            Thumbnail offset and length (~5 fields)
+
+  Typical total field count per image: 80–300
+```
+
+If two directories contain a field with the same tag name (uncommon but possible), the later directory's value overwrites the earlier one. The map key is `field.getTagInfo().name` (the human-readable TIFF tag name such as `"ExposureTime"`, `"Make"`, `"GPS GPSLatitude"`); the value is `field.getValueDescription()` (always a string representation).
+
+**Improvement 63 — frontend panel layout**
+
+The raw EXIF section is appended below the 13 structured fields as a collapsible `MatExpansionPanel`. It is hidden entirely when `rawExif` is `null` (assets cataloged before the migration). The search input filters by key name only — values are not searched to avoid partial matches on numeric strings like `"0"` matching hundreds of entries.
+
+```
+EXIF PANEL LAYOUT — AFTER raw-exif-jsonb
+
+  ┌─────────────────────────────────┐
+  │  EXIF INFO                 [×]  │
+  ├─────────────────────────────────┤
+  │  Camera    Sony α7 IV           │  ← existing 13 structured fields
+  │  Lens       85mm f/1.4          │
+  │  Exposure  1/500 s · f/1.8      │
+  │  ISO        400                 │
+  │  Date       2024-06-15 10:32    │
+  │  GPS        40.7128°N 74.006°W  │
+  │  …                              │
+  ├─────────────────────────────────┤
+  │  ▼ All EXIF data  (214 fields)  │  ← MatExpansionPanel (collapsed by default)
+  │  ┌─────────────────────────┐    │
+  │  │ 🔍 Filter tags…         │    │  ← MatFormField search input
+  │  └─────────────────────────┘    │
+  │  ExposureTime          1/500    │
+  │  FNumber               1.8      │  ← @for over filteredRawExif()
+  │  ISOSpeedRatings       400      │
+  │  LensModel    FE 85mm F1.4 GM   │
+  │  Make                  SONY     │
+  │  Model         ILCE-7M4         │
+  │  …                              │
+  └─────────────────────────────────┘
+```
+
+**Improvement 63 → Improvement 31 (soft)**
+
+The `raw_exif` JSONB column is queryable with PostgreSQL's `->` and `@>` operators and GIN-indexable. Once `full-text-search` (#31) is implemented, the search vector trigger could include selected raw EXIF fields — for example, `raw_exif->>'LensModel'` or `raw_exif->>'Model'` — giving users the ability to search by equipment not captured in the 13 fixed columns. This extension requires no schema change beyond what #31 already defines; it is a trigger function update only.
+
+**Improvement 63 — backfill strategy**
+
+The V26 migration adds the column as `ALTER TABLE asset_exif ADD COLUMN raw_exif JSONB`. Existing rows have `raw_exif = NULL`. Backfilling requires re-cataloging the affected folders: `POST /api/assets/catalog` triggers the full extraction pipeline, which now includes the raw EXIF pass. No SQL-level backfill is possible because EXIF extraction reads the image file from disk, not from database data. The `ExifPanelComponent` handles `NULL` gracefully by hiding the "All EXIF data" section for assets not yet re-cataloged.
