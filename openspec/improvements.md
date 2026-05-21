@@ -63,6 +63,10 @@ This document records all planned improvements to the JPPhotoManagerWeb applicat
 | 53  | `password-strength-policy`  | Enforce minimum password complexity on user creation and password change using the `Passay` library (configurable rules: minimum length 12, at least one uppercase, one digit, one special character); the Angular user-admin form and profile page show a live strength meter powered by the same rule set mirrored client-side; returns a structured `400` with per-rule violation details so the frontend can highlight exactly which rules failed; no schema change | ⬜ Pending | ⬜ Pending |
 | 54  | `notification-center`       | In-app notification bell in the top navigation bar showing a history of completed background operations (catalog finished, sync complete, convert complete, backup uploaded); new `notifications` table (`id`, `userId`, `type`, `message`, `read_at`, `created_at`); backend writes a notification row at the end of each SSE stream; `GET /api/notifications` returns unread count and paginated history; `PATCH /api/notifications/read` marks all read; badge count clears when the panel is opened; new Flyway migration | ⬜ Pending | ⬜ Pending |
 | 55  | `webp-avif-conversion`      | Extend `ConvertAssetsUseCase` — currently PNG→JPEG only — to support JPEG/PNG→WebP and JPEG/PNG→AVIF; WebP encoding via `cwebp` invoked through `ProcessBuilder` (same pattern as #21 FFmpeg); AVIF encoding via `avifenc` through `ProcessBuilder`; the `convert_assets_directories_definitions` table gains a `target_format` VARCHAR column (Flyway migration); frontend `ConvertComponent` adds a "Target format" dropdown (JPEG / WebP / AVIF) to the directory pair configuration form | ⬜ Pending | ⬜ Pending |
+| 56  | `asset-image-editor`        | Add brightness, contrast, and hue adjustment to the viewer; CSS `filter: brightness() contrast() hue-rotate()` applied to the `<img>` tag drives live preview via three `MatSlider` inputs with zero backend calls; saving dispatches `POST /api/assets/{id}/edit` with the adjustment values; the backend invokes ImageMagick via `ProcessBuilder` (`convert input.jpg -modulate brightness,saturation,hue -brightness-contrast b×c output.jpg`) and catalogs the result as a new asset alongside the original; the original is never overwritten by default; an optional "replace original" flag covers the destructive case | ⬜ Pending | ⬜ Pending |
+| 57  | `viewer-pan-drag`           | Add mouse and touch drag-to-pan to the zoomed image viewer; the existing `transform: scale(viewerZoom)` is extended to `scale(zoom) translate(panX, panY)`; `mousedown` sets a dragging flag and captures the starting cursor position, `mousemove` updates `panX`/`panY` while dragging, `mouseup` clears the flag; `touchstart`/`touchmove`/`touchend` mirror the same logic for mobile; `panX` and `panY` reset to zero whenever zoom returns to 1× or the displayed asset changes; pure frontend change — no backend endpoint, no schema change, no external dependency | ⬜ Pending | ⬜ Pending |
+| 58  | `video-from-images`         | New wizard component lets the user select an ordered list of images, set a per-slide duration, choose a background music file (uploaded on the spot or selected from a cataloged audio asset once `audio-asset-support` #59 is in place), and trigger video generation; the backend invokes FFmpeg via `ProcessBuilder` (`ffmpeg -framerate 1/{duration} -i frame%04d.jpg -i music.mp3 -c:v libx264 -c:a aac -shortest -pix_fmt yuv420p output.mp4`), streams progress via SSE (same pattern as catalog/sync/convert), and saves the output to a user-chosen folder where it is auto-cataloged as a video asset; hard dependency on `video-file-support` (#21) for FFmpeg presence in the container | ⬜ Pending | ⬜ Pending |
+| 59  | `audio-asset-support`       | Catalog audio files (.mp3, .flac, .wav, .aac, .ogg); extract ID3/Vorbis/FLAC metadata (title, artist, album, duration, bitrate, sample rate, embedded album art) via `org.jaudiotagger:jaudiotagger` (Maven); store audio-specific fields in a new `asset_audio` table mirroring `asset_exif` (Flyway migration); use embedded album art as the asset thumbnail if present, or generate a waveform PNG via FFmpeg (`ffmpeg -i input.mp3 -filter_complex "showwavespic=s=200x150" -frames:v 1 waveform.png`) as fallback; the frontend viewer switches on asset type and renders an `<audio controls>` tag for audio assets with title, artist, album, duration, and bitrate displayed alongside playback controls; once implemented, `video-from-images` (#58) can offer a "select from audio assets" music picker | ⬜ Pending | ⬜ Pending |
 
 ---
 
@@ -114,6 +118,7 @@ Among the pending improvements, those that require a Flyway migration are:
 | V21       | `notification-center` — `notifications` table                                      |
 | V22       | `session-management` — `user_agent` column on `refresh_tokens`                     |
 | V23       | `webp-avif-conversion` — `target_format` column on `convert_assets_directories_definitions` |
+| V24       | `audio-asset-support` — `asset_audio` table                                         |
 
 Note: `pixel_width` and `pixel_height` are already present on `assets`; only the derived `aspect_ratio` column is new. The backfill (`aspect_ratio = pixel_width / pixel_height`) must be included in the V15 migration to populate existing rows. Assets where either dimension is zero are left as `NULL` and excluded from wallpaper queries.
 
@@ -288,6 +293,26 @@ The 10 single-use recovery codes are BCrypt-hashed before insertion into `totp_b
 **Improvement 45 → Improvement 44**
 
 `postgres-dockerize` must be completed before `database-backup` (#44). The backup service runs `pg_dump` against the database container over the Docker network (`POSTGRES_HOST: db`); this only works once the database is running inside the Compose stack. Running `pg_dump` against a host-based PostgreSQL from inside a container requires additional network configuration (`host.docker.internal` or `--network host`) that would be rendered unnecessary once #45 is done. The one-time host-to-container data migration script required by #45 also serves as the first real test of the dump/restore tooling that #44 will depend on in production.
+
+**Improvement 57 — no dependencies**
+
+`viewer-pan-drag` is a pure frontend change with no backend, schema, or external library involvement. It can be delivered at any point independently of all other improvements.
+
+**Improvement 56 — ImageMagick availability**
+
+`asset-image-editor` requires ImageMagick to be installed in the backend Docker image. If `video-file-support` (#21) is implemented first and FFmpeg is already in the image, adding ImageMagick to the same `Dockerfile` is a one-line change. The two can be delivered independently — ImageMagick does not depend on FFmpeg — but coordinating the Dockerfile changes is cleaner when done together.
+
+**Improvement 58 → Improvement 21**
+
+`video-from-images` has a hard dependency on `video-file-support` (#21): FFmpeg must be installed in the backend container before the video generation `ProcessBuilder` call can work. #58 cannot be delivered before #21.
+
+**Improvement 58 → Improvement 59 (soft)**
+
+`video-from-images` can accept a music file upload at video-creation time and does not require audio assets to exist. However, once `audio-asset-support` (#59) is in place the wizard gains a "select from audio assets" picker, making music selection significantly more convenient. Implementing #59 before #58 delivers the better user experience from day one.
+
+**Improvement 59 → Improvement 21 (soft)**
+
+`audio-asset-support` does not require FFmpeg for its core functionality — `jaudiotagger` handles metadata extraction and album art independently. FFmpeg is only needed for the waveform fallback thumbnail when no album art is embedded. The waveform generation can be deferred until #21 is implemented; until then, a generic music-note placeholder icon is used as the thumbnail.
 
 **Improvement 40 → Improvement 13**
 
