@@ -70,6 +70,7 @@ This document records all planned improvements to the JPPhotoManagerWeb applicat
 | 60  | `archive-support`           | Two related capabilities sharing the same archive-reading infrastructure (`org.apache.commons:commons-compress` for tar.gz; `java.util.zip` built-in for zip): (1) **virtual folders** — zip and tar.gz files appear as expandable nodes in the folder navigation tree using a `!` path separator convention (e.g. `/photos/album.zip!/summer/`); the catalog service extracts images to a temp location, generates thumbnails, and stores assets with the virtual path; (2) **download formats** — the bulk-download endpoint (`GET /api/assets/download`) gains a `format` query parameter (`zip` / `tar.gz`) so users can choose the archive type; the existing `ZipOutputStream` path is joined by a `TarArchiveOutputStream` wrapped in `GzipCompressorOutputStream`; no Flyway migration required for either capability | ⬜ Pending | ⬜ Pending |
 | 61  | `asset-backup`              | Backup a configurable scope of assets (folder, album, saved search result, or entire catalog) to one or more sequentially numbered archive files (e.g. `backup_photos_001.zip`, `backup_photos_002.zip`) split at a configurable volume size; format is zip or tar.gz (reuses `archive-support` #60 writing infrastructure); trigger is manual (`POST /api/backup/{id}/run`) or a per-definition cron expression scheduled dynamically via Spring `TaskScheduler` + `CronTrigger` (cancelled and rescheduled on definition update); new `/backup` frontend route mirrors the convert page structure (definitions list → configure → run → results with SSE progress and per-file logging); backend stores definitions in `backup_definitions` and run history in `backup_run_log` (timestamps, status, files written, bytes, errors); new Flyway migration | ⬜ Pending | ⬜ Pending |
 | 63  | `raw-exif-jsonb`            | Add a `raw_exif JSONB` column to the existing `asset_exif` table (new Flyway migration); during cataloging, after extracting the 13 known fields, iterate all EXIF directories returned by Apache Commons Imaging (`JpegImageMetadata.getExif().getDirectories()` → `dir.getAllFields()`) and collect every `TiffField` into a `Map<String, String>` keyed by `field.getTagInfo().name` with value `field.getValueDescription()`; the map is serialized to JSONB using Hibernate 6's `@JdbcTypeCode(SqlTypes.JSON)` on a `Map<String, String> rawExif` field in `AssetExifEntity` (no new Maven dependency — Hibernate 6 handles JSON natively via Jackson, already present); `AssetExif` domain model and `AssetExifEntityMapper` (MapStruct) gain the `rawExif` field; `ExifMetadataDto` exposes it as `Map<String, String> rawExif`; `ExifMetadata` TypeScript interface adds `rawExif: Record<string, string> \| null`; in `ExifPanelComponent`, below the existing 13 structured fields, a collapsible `MatExpansionPanel` labeled "All EXIF data" renders every key-value pair from `rawExif` as a compact two-column list; a `MatFormField` search input above the list filters entries by key name in real time using a component-level computed signal so the full raw map is never re-fetched; a single image from a modern DSLR or mirrorless camera typically carries 80–300 EXIF fields across the IFD0, ExifIFD, GPS IFD, and MakerNote directories; the search filter is essential because MakerNote alone can add 100+ manufacturer-specific fields (Nikon colour modes, Canon lens correction data, Sony face detection coordinates, etc.); existing assets cataloged before this migration have `raw_exif = NULL` and the panel section is hidden when `rawExif` is null; re-cataloging any folder populates the column for all assets in that folder; new Flyway migration | ⬜ Pending | ⬜ Pending |
+| 65  | `audio-player`              | Persistent audio player toolbar fixed at the bottom of `AppComponent` (below all routes) so music continues while the user browses the gallery; the player supports three queue modes: (1) **single** — clicking "Play" on an individual audio asset in the gallery loads it alone; (2) **folder** — an "Play all audio" action on a folder loads every audio asset in that folder ordered by `file_name`; (3) **playlist** — clicking an `.m3u`, `.m3u8`, or `.pls` asset calls `GET /api/audio/playlist/{assetId}` which parses the file and returns an ordered `List<AssetDto>`; a new singleton `AudioPlayerService` (`providedIn: 'root'`) wraps a private `HTMLAudioElement` and exposes Angular signals: `currentTrack`, `queue`, `currentIndex`, `isPlaying`, `currentTime`, `duration`; the service methods are `play(assets, startIndex?)`, `loadFolder(folderPath)`, `loadPlaylist(assetId)`, `togglePause()`, `stop()`, `prev()`, `next()`, and `seek(seconds)`; `prev()` restarts the current track if `currentTime > 3` (matching standard player convention), otherwise steps back one track; `AudioPlayerComponent` in `shared/components/audio-player/` is hidden via `@if (audioPlayer.currentTrack())` and shows only when a track is loaded; the top row of the player bar shows the album art cover image (the asset's `thumbnailUrl` — album art thumbnail from `audio-asset-support` #59 when available, generic music-note icon otherwise), the track title (from `asset_audio.title` if #59 is implemented, else `fileName`), and the artist name (from `asset_audio.artist`); the second row shows five control buttons using Material icons — `skip_previous`, `stop`, `play_arrow`/`pause` (toggling), `skip_next` — followed by the progress bar and a `currentTime / duration` counter; the progress bar is a native `<input type="range">` element whose `value` is updated on the `<audio>` element's `timeupdate` event and whose `change` event calls `audioPlayerService.seek()`; audio streaming uses a new backend endpoint `GET /api/assets/{id}/audio` that returns the file using Spring MVC `Resource`-based streaming with `Accept-Ranges: bytes` so the browser can send `Range: bytes=X-Y` requests for seeking without downloading the entire file first — the existing `GET /{id}/image` endpoint loads all bytes into memory and cannot seek; a new `AudioController` in `infrastructure/web/controller/` handles both `/audio/{id}` (stream) and `/audio/playlist/{id}` (parse); two playlist parser adapters implement a `PlaylistParserPort` in `domain/port/out/`: `M3uPlaylistParserAdapter` splits lines, skips `#EXTM3U` and `#EXTINF` annotations, and resolves each file path against the `assets` table by matching `folder_path + file_name`; `PlsPlaylistParserAdapter` reads the INI-style `[playlist]` section and extracts `FileN=` entries; the catalog service is extended to accept audio extensions (`.mp3`, `.flac`, `.wav`, `.aac`, `.ogg`) and playlist extensions (`.m3u`, `.m3u8`, `.pls`) — playlist file thumbnails use a static playlist-icon placeholder; no new Flyway migration (audio metadata table is from #59; playlist files are regular assets); no new Maven dependency (Spring MVC `Resource` streaming is built-in); no new npm package (HTML5 `<audio>` element is built-in) | ⬜ Pending | ⬜ Pending |
 | 64  | `catalog-spring-batch`      | Replace the custom `@Async` + `@Transactional` catalog loop with a Spring Batch job; add `spring-boot-starter-batch` to `pom.xml`; the new job lives entirely in a new `infrastructure/batch/` package and is composed of six classes: `CatalogJobConfig` (`@Configuration` defining the `Job`, `Step`, and `Partitioner` beans), `CatalogFolderPartitioner` (reads all root and sub-folders and emits one `ExecutionContext` partition per folder), `CatalogFileItemReader` (lists new files in one partition's folder — those not yet in the `assets` table), `CatalogAssetItemProcessor` (computes SHA-256 hash, generates thumbnail, reads EXIF — same logic as `CatalogFolderServiceImpl.createAsset()` today), `CatalogAssetItemWriter` (saves `Asset` + `AssetExif` rows, deletes assets whose files were removed, fires SSE notification via `SseNotificationRegistry`), and `CatalogItemWriteListener` (looks up the active SSE consumer from `SseNotificationRegistry` by job execution ID and forwards write events); `CatalogAssetsUseCaseImpl` becomes a thin adapter that calls `JobLauncher.run(catalogJob, jobParameters)` and returns the `JobExecution` ID; `CatalogScheduler` continues to exist but calls the use case rather than managing its own `CompletableFuture`; the `catalog_run_state` table and all related classes (`CatalogStateRepository`, `CatalogRunStateEntity`, `CatalogStateRepositoryImpl`, `JpaCatalogStateRepository`) are removed — Spring Batch's own `JobRepository` (`BATCH_JOB_EXECUTION` table) replaces their run-state role; the new Flyway migration (V27) creates the 9 Spring Batch schema tables and drops `catalog_run_state`; chunk size is configurable via `photomanager.catalog-chunk-size` (default 50) — every 50 assets are committed as one transaction, replacing the current single transaction per folder; folders are processed in parallel via a `PartitionStep` with a configurable grid size (`photomanager.catalog-partition-grid-size`, default 4, meaning up to 4 folders concurrently); the SSE `Consumer<CatalogChangeNotification>` is no longer passed as a method argument — instead `AssetController` registers it in a singleton `SseNotificationRegistry` keyed by job execution ID when the SSE connection opens, and `CatalogItemWriteListener` looks it up; the registry entry is removed when the SSE connection closes or the job completes | ⬜ Pending | ⬜ Pending |
 | 62  | `social-media-crop`         | Canvas-based interactive crop tool for 12 social media format presets; a scissors icon button added to the viewer toolbar toggles `showCropPanel` (same pattern as `showExifPanel`); the `<img>` is replaced by a `<canvas>` in crop mode — the image is drawn on the canvas and a semi-transparent overlay renders the draggable crop box with corner handles; the crop box aspect ratio is always locked to the selected format; dragging inside the box moves it, dragging a corner handle resizes it while keeping the ratio; for profile-image formats (Instagram Profile, Facebook Profile, LinkedIn Profile, Twitter/X Profile) a `ctx.arc()` circle outline is drawn inside the crop box to preview the platform's circular display; when the format changes the crop box snaps to maximum fit centered on the image; the 12 presets are: `INSTAGRAM_POST` 1080×1080 (1:1), `INSTAGRAM_PORTRAIT` 1080×1350 (4:5), `INSTAGRAM_LANDSCAPE` 1080×566 (~1.91:1), `INSTAGRAM_STORY` 1080×1920 (9:16), `INSTAGRAM_PROFILE` 110×110 (1:1 circle), `FACEBOOK_POST` 1200×630 (~1.91:1), `FACEBOOK_PROFILE` 170×170 (1:1 circle), `LINKEDIN_POST` 1200×627 (~1.91:1), `LINKEDIN_PROFILE` 400×400 (1:1 circle), `TWITTER_POST` 1600×900 (16:9), `TWITTER_PROFILE` 400×400 (1:1 circle), `TWITTER_HEADER` 1500×500 (3:1); on confirm the frontend translates canvas-display coordinates to original image pixel coordinates using `asset.pixelWidth` / `asset.pixelHeight` (already on the `Asset` model) and sends `POST /api/assets/{id}/crop` with `{ formatKey, x, y, width, height }`; the backend uses Java2D `BufferedImage.getSubimage(x, y, w, h)` to extract the crop region and `Graphics2D.drawImage()` to scale it to the format's target dimensions, then saves the result as a new `Asset` in the same folder (non-destructive) with a freshly generated thumbnail; after the backend returns the new `AssetResponse` the frontend immediately triggers a browser download of the cropped image by creating a temporary `<a download>` element pointing to `GET /api/assets/{newId}/image`; no Flyway migration (cropped outputs are regular assets in existing tables), no new Maven dependency (Java2D is built-in), no new npm package (Canvas API is built into all browsers) | ⬜ Pending | ⬜ Pending |
 
@@ -729,3 +730,151 @@ Adds `spring-boot-starter-batch` to `pom.xml`. This pulls in `spring-batch-core`
 **Improvement 64 — ordering note**
 
 `catalog-spring-batch` is a backend-only refactor with no API contract change — `GET /api/assets/catalog` continues to return an SSE stream of the same `CatalogChangeNotification` events. It can be delivered independently of all other improvements. If `raw-exif-jsonb` (#63) is implemented first, `CatalogAssetItemProcessor` must include the raw EXIF extraction step; if #64 lands first, #63 extends `CatalogAssetItemProcessor` with the additional extraction pass.
+
+**Improvement 65 → Improvement 59 (soft)**
+
+`audio-player` works without `audio-asset-support` (#59): the player toolbar is shown, playback works, and the progress bar and controls function fully. Without #59 the top row falls back to displaying `fileName` as the title with no artist and a generic music-note icon instead of album art. With #59 in place, the player reads `asset_audio.title`, `asset_audio.artist`, and the album-art thumbnail from `thumbnailUrl` to populate the top row. The catalog extension for audio file types (`.mp3`, `.flac`, `.wav`, `.aac`, `.ogg`) required by both improvements should be consolidated: whichever lands first adds the extension acceptance; the other inherits it.
+
+**Improvement 65 — why byte-range streaming is required**
+
+The existing `GET /api/assets/{id}/image` endpoint loads the entire file into a `byte[]` and writes it to the response body in one pass. The `<audio>` element requires byte-range support (`Accept-Ranges: bytes`, `206 Partial Content`) to enable two browser behaviours: (1) seeking — the browser sends a `Range: bytes=N-M` request to jump to a position without re-downloading from the start; (2) progressive loading — the browser fetches only what it needs to start playback immediately. Without byte-range support, seeking is disabled and large audio files must fully transfer before playback begins. Spring MVC's `Resource`-based response handles range requests automatically:
+
+```
+BYTE-RANGE STREAMING — HOW IT WORKS
+
+  Browser sends:     GET /api/assets/{id}/audio
+                     Range: bytes=1048576-2097151
+
+  Backend responds:  HTTP/1.1 206 Partial Content
+                     Accept-Ranges: bytes
+                     Content-Range: bytes 1048576-2097151/8388608
+                     Content-Type: audio/mpeg
+                     [bytes 1MB–2MB of the file]
+
+  Implementation:
+    @GetMapping("/{id}/audio")
+    public ResponseEntity<Resource> streamAudio(@PathVariable Long id,
+            @RequestHeader HttpHeaders headers) {
+        Path filePath = resolveFilePath(id);   // look up asset, get path
+        Resource resource = new FileSystemResource(filePath);
+        return ResponseEntity.ok()
+            .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+            .contentType(detectAudioMediaType(filePath))
+            .body(resource);
+        // Spring MVC's ResourceHttpMessageConverter handles Range header automatically
+    }
+```
+
+**Improvement 65 — audio MIME type detection**
+
+The existing `detectMediaType()` in `AssetController` inspects magic bytes and handles only image types. Audio MIME type detection for the new streaming endpoint uses the stored `fileName` extension (simpler and reliable for well-formed files):
+
+```
+  Extension          MIME type
+  ─────────────────  ─────────────
+  .mp3               audio/mpeg
+  .flac              audio/flac
+  .wav               audio/wav
+  .aac               audio/aac
+  .ogg               audio/ogg
+  .m4a               audio/mp4
+```
+
+**Improvement 65 — player toolbar layout**
+
+The `AudioPlayerComponent` is rendered inside `AppComponent`'s template beneath the router outlet, visible on all routes when a track is loaded:
+
+```
+AUDIO PLAYER TOOLBAR — FIXED AT BOTTOM OF SCREEN
+
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  ┌──────┐  Song Title                                               │
+  │  │cover │  Artist Name                                              │
+  │  └──────┘                                                           │
+  │           ──────────────────────────○─────────────  2:34 / 4:12    │
+  │                                                                     │
+  │           [⏮ prev]  [⏹ stop]  [▶/⏸ play·pause]  [⏭ next]         │
+  └─────────────────────────────────────────────────────────────────────┘
+
+  Material icons used:
+    skip_previous   stop   play_arrow / pause   skip_next
+
+  Cover image: 48×48 px, rounded corners, asset thumbnailUrl
+  Progress bar: <input type="range"> updating on <audio> timeupdate event
+  prev() behaviour: if currentTime > 3s → seek(0); else → step back one track
+```
+
+**Improvement 65 — playlist file format parsing**
+
+M3U and PLS are the two formats to support, covering Windows Media Player, VLC, and all major audio players:
+
+```
+M3U FORMAT (.m3u / .m3u8)
+  #EXTM3U                              ← optional header line (skip)
+  #EXTINF:180,Artist - Title           ← optional annotation (skip for now)
+  C:\Music\track01.mp3                 ← absolute or relative path
+  ../other/track02.flac
+  /home/user/Music/track03.ogg
+
+  Parsing:
+    - Skip lines starting with '#'
+    - Resolve each path: strip drive letters / root prefixes,
+      match against assets table on (folder_path + file_name)
+    - Order of resolved assets = order of lines in the file
+
+PLS FORMAT (.pls)
+  [playlist]
+  NumberOfEntries=2
+  File1=C:\Music\track01.mp3          ← FileN= lines carry the paths
+  Title1=Track One
+  Length1=180
+  File2=/home/user/Music/track02.ogg
+  Title2=Track Two
+  Length2=240
+  Version=2
+
+  Parsing:
+    - Find lines matching /^File\d+=(.+)/i
+    - Resolve paths against assets table in ascending N order
+```
+
+Both parsers implement `PlaylistParserPort` in `domain/port/out/`; `ParsePlaylistUseCaseImpl` in `application/usecase/audio/` selects the correct parser from the playlist asset's file extension.
+
+**Improvement 65 — catalog extension for audio and playlist files**
+
+`CatalogFolderServiceImpl` currently skips any file not matching the image extensions set in `StorageServiceAdapter`. The extension to accept audio and playlist files requires:
+
+1. Adding `.mp3`, `.flac`, `.wav`, `.aac`, `.ogg`, `.m3u`, `.m3u8`, `.pls` to the accepted extensions in the catalog filter
+2. For audio files: thumbnail generation must be bypassed (generating an image thumbnail from audio bytes will fail); use a pre-rendered music-note placeholder icon as the thumbnail `.bin` file instead, or defer to a `SKIP_THUMBNAIL` sentinel understood by `ThumbnailStorageServiceAdapter`
+3. For playlist files: thumbnail is a pre-rendered playlist-icon placeholder
+4. EXIF extraction is skipped for both audio and playlist files (no EXIF in these formats)
+5. The `hash` field is still computed (SHA-256 of the file bytes) for deduplication consistency
+
+This catalog extension is a prerequisite for `audio-asset-support` (#59) and should be consolidated with it if both are delivered together.
+
+**Improvement 65 — no Flyway migration**
+
+The `audio-player` improvement adds no database schema changes. Audio metadata (title, artist, album, duration) is stored in the `asset_audio` table introduced by `audio-asset-support` (#59). Playlist files are cataloged as regular rows in the `assets` table with no additional columns. The player reads existing asset data through existing API endpoints plus the two new audio endpoints.
+
+**Improvement 65 — gallery integration points**
+
+Three entry points load audio into the player queue:
+
+```
+  Entry point 1 — single asset
+    Audio asset card in gallery → "Play" button (mat-icon-button with
+    play_arrow icon) → audioPlayerService.play([asset], 0)
+
+  Entry point 2 — folder
+    Folder node in FolderNavComponent → context menu item "Play all audio"
+    → audioPlayerService.loadFolder(folderPath)
+    → internally calls GET /api/assets?folderPath=...&type=audio
+      (or filters the response by file extension on the client)
+
+  Entry point 3 — playlist file
+    .m3u / .m3u8 / .pls asset card in gallery → single click
+    → audioPlayerService.loadPlaylist(assetId)
+    → calls GET /api/audio/playlist/{assetId}
+    → backend parses file, returns List<AssetDto>
+    → audioPlayerService.play(resolvedAssets, 0)
+```
