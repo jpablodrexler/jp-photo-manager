@@ -70,6 +70,7 @@ This document records all planned improvements to the JPPhotoManagerWeb applicat
 | 60  | `archive-support`           | Two related capabilities sharing the same archive-reading infrastructure (`org.apache.commons:commons-compress` for tar.gz; `java.util.zip` built-in for zip): (1) **virtual folders** — zip and tar.gz files appear as expandable nodes in the folder navigation tree using a `!` path separator convention (e.g. `/photos/album.zip!/summer/`); the catalog service extracts images to a temp location, generates thumbnails, and stores assets with the virtual path; (2) **download formats** — the bulk-download endpoint (`GET /api/assets/download`) gains a `format` query parameter (`zip` / `tar.gz`) so users can choose the archive type; the existing `ZipOutputStream` path is joined by a `TarArchiveOutputStream` wrapped in `GzipCompressorOutputStream`; no Flyway migration required for either capability | ⬜ Pending | ⬜ Pending |
 | 61  | `asset-backup`              | Backup a configurable scope of assets (folder, album, saved search result, or entire catalog) to one or more sequentially numbered archive files (e.g. `backup_photos_001.zip`, `backup_photos_002.zip`) split at a configurable volume size; format is zip or tar.gz (reuses `archive-support` #60 writing infrastructure); trigger is manual (`POST /api/backup/{id}/run`) or a per-definition cron expression scheduled dynamically via Spring `TaskScheduler` + `CronTrigger` (cancelled and rescheduled on definition update); new `/backup` frontend route mirrors the convert page structure (definitions list → configure → run → results with SSE progress and per-file logging); backend stores definitions in `backup_definitions` and run history in `backup_run_log` (timestamps, status, files written, bytes, errors); new Flyway migration | ⬜ Pending | ⬜ Pending |
 | 63  | `raw-exif-jsonb`            | Add a `raw_exif JSONB` column to the existing `asset_exif` table (new Flyway migration); during cataloging, after extracting the 13 known fields, iterate all EXIF directories returned by Apache Commons Imaging (`JpegImageMetadata.getExif().getDirectories()` → `dir.getAllFields()`) and collect every `TiffField` into a `Map<String, String>` keyed by `field.getTagInfo().name` with value `field.getValueDescription()`; the map is serialized to JSONB using Hibernate 6's `@JdbcTypeCode(SqlTypes.JSON)` on a `Map<String, String> rawExif` field in `AssetExifEntity` (no new Maven dependency — Hibernate 6 handles JSON natively via Jackson, already present); `AssetExif` domain model and `AssetExifEntityMapper` (MapStruct) gain the `rawExif` field; `ExifMetadataDto` exposes it as `Map<String, String> rawExif`; `ExifMetadata` TypeScript interface adds `rawExif: Record<string, string> \| null`; in `ExifPanelComponent`, below the existing 13 structured fields, a collapsible `MatExpansionPanel` labeled "All EXIF data" renders every key-value pair from `rawExif` as a compact two-column list; a `MatFormField` search input above the list filters entries by key name in real time using a component-level computed signal so the full raw map is never re-fetched; a single image from a modern DSLR or mirrorless camera typically carries 80–300 EXIF fields across the IFD0, ExifIFD, GPS IFD, and MakerNote directories; the search filter is essential because MakerNote alone can add 100+ manufacturer-specific fields (Nikon colour modes, Canon lens correction data, Sony face detection coordinates, etc.); existing assets cataloged before this migration have `raw_exif = NULL` and the panel section is hidden when `rawExif` is null; re-cataloging any folder populates the column for all assets in that folder; new Flyway migration | ⬜ Pending | ⬜ Pending |
+| 64  | `catalog-spring-batch`      | Replace the custom `@Async` + `@Transactional` catalog loop with a Spring Batch job; add `spring-boot-starter-batch` to `pom.xml`; the new job lives entirely in a new `infrastructure/batch/` package and is composed of six classes: `CatalogJobConfig` (`@Configuration` defining the `Job`, `Step`, and `Partitioner` beans), `CatalogFolderPartitioner` (reads all root and sub-folders and emits one `ExecutionContext` partition per folder), `CatalogFileItemReader` (lists new files in one partition's folder — those not yet in the `assets` table), `CatalogAssetItemProcessor` (computes SHA-256 hash, generates thumbnail, reads EXIF — same logic as `CatalogFolderServiceImpl.createAsset()` today), `CatalogAssetItemWriter` (saves `Asset` + `AssetExif` rows, deletes assets whose files were removed, fires SSE notification via `SseNotificationRegistry`), and `CatalogItemWriteListener` (looks up the active SSE consumer from `SseNotificationRegistry` by job execution ID and forwards write events); `CatalogAssetsUseCaseImpl` becomes a thin adapter that calls `JobLauncher.run(catalogJob, jobParameters)` and returns the `JobExecution` ID; `CatalogScheduler` continues to exist but calls the use case rather than managing its own `CompletableFuture`; the `catalog_run_state` table and all related classes (`CatalogStateRepository`, `CatalogRunStateEntity`, `CatalogStateRepositoryImpl`, `JpaCatalogStateRepository`) are removed — Spring Batch's own `JobRepository` (`BATCH_JOB_EXECUTION` table) replaces their run-state role; the new Flyway migration (V27) creates the 9 Spring Batch schema tables and drops `catalog_run_state`; chunk size is configurable via `photomanager.catalog-chunk-size` (default 50) — every 50 assets are committed as one transaction, replacing the current single transaction per folder; folders are processed in parallel via a `PartitionStep` with a configurable grid size (`photomanager.catalog-partition-grid-size`, default 4, meaning up to 4 folders concurrently); the SSE `Consumer<CatalogChangeNotification>` is no longer passed as a method argument — instead `AssetController` registers it in a singleton `SseNotificationRegistry` keyed by job execution ID when the SSE connection opens, and `CatalogItemWriteListener` looks it up; the registry entry is removed when the SSE connection closes or the job completes | ⬜ Pending | ⬜ Pending |
 | 62  | `social-media-crop`         | Canvas-based interactive crop tool for 12 social media format presets; a scissors icon button added to the viewer toolbar toggles `showCropPanel` (same pattern as `showExifPanel`); the `<img>` is replaced by a `<canvas>` in crop mode — the image is drawn on the canvas and a semi-transparent overlay renders the draggable crop box with corner handles; the crop box aspect ratio is always locked to the selected format; dragging inside the box moves it, dragging a corner handle resizes it while keeping the ratio; for profile-image formats (Instagram Profile, Facebook Profile, LinkedIn Profile, Twitter/X Profile) a `ctx.arc()` circle outline is drawn inside the crop box to preview the platform's circular display; when the format changes the crop box snaps to maximum fit centered on the image; the 12 presets are: `INSTAGRAM_POST` 1080×1080 (1:1), `INSTAGRAM_PORTRAIT` 1080×1350 (4:5), `INSTAGRAM_LANDSCAPE` 1080×566 (~1.91:1), `INSTAGRAM_STORY` 1080×1920 (9:16), `INSTAGRAM_PROFILE` 110×110 (1:1 circle), `FACEBOOK_POST` 1200×630 (~1.91:1), `FACEBOOK_PROFILE` 170×170 (1:1 circle), `LINKEDIN_POST` 1200×627 (~1.91:1), `LINKEDIN_PROFILE` 400×400 (1:1 circle), `TWITTER_POST` 1600×900 (16:9), `TWITTER_PROFILE` 400×400 (1:1 circle), `TWITTER_HEADER` 1500×500 (3:1); on confirm the frontend translates canvas-display coordinates to original image pixel coordinates using `asset.pixelWidth` / `asset.pixelHeight` (already on the `Asset` model) and sends `POST /api/assets/{id}/crop` with `{ formatKey, x, y, width, height }`; the backend uses Java2D `BufferedImage.getSubimage(x, y, w, h)` to extract the crop region and `Graphics2D.drawImage()` to scale it to the format's target dimensions, then saves the result as a new `Asset` in the same folder (non-destructive) with a freshly generated thumbnail; after the backend returns the new `AssetResponse` the frontend immediately triggers a browser download of the cropped image by creating a temporary `<a download>` element pointing to `GET /api/assets/{newId}/image`; no Flyway migration (cropped outputs are regular assets in existing tables), no new Maven dependency (Java2D is built-in), no new npm package (Canvas API is built into all browsers) | ⬜ Pending | ⬜ Pending |
 
 ---
@@ -125,6 +126,7 @@ Among the pending improvements, those that require a Flyway migration are:
 | V24       | `audio-asset-support` — `asset_audio` table                                         |
 | V25       | `asset-backup` — `backup_definitions` and `backup_run_log` tables                   |
 | V26       | `raw-exif-jsonb` — `raw_exif` JSONB column on `asset_exif`                          |
+| V27       | `catalog-spring-batch` — 9 Spring Batch schema tables; drop `catalog_run_state`     |
 
 Note: `pixel_width` and `pixel_height` are already present on `assets`; only the derived `aspect_ratio` column is new. The backfill (`aspect_ratio = pixel_width / pixel_height`) must be included in the V15 migration to populate existing rows. Assets where either dimension is zero are left as `NULL` and excluded from wallpaper queries.
 
@@ -585,3 +587,145 @@ The `raw_exif` JSONB column is queryable with PostgreSQL's `->` and `@>` operato
 **Improvement 63 — backfill strategy**
 
 The V26 migration adds the column as `ALTER TABLE asset_exif ADD COLUMN raw_exif JSONB`. Existing rows have `raw_exif = NULL`. Backfilling requires re-cataloging the affected folders: `POST /api/assets/catalog` triggers the full extraction pipeline, which now includes the raw EXIF pass. No SQL-level backfill is possible because EXIF extraction reads the image file from disk, not from database data. The `ExifPanelComponent` handles `NULL` gracefully by hiding the "All EXIF data" section for assets not yet re-cataloged.
+
+**Improvement 64 — two specific problems in the current catalog implementation**
+
+The current `CatalogFolderServiceImpl.catalogFolder()` method is annotated `@Transactional`. This means every new file discovered in a folder — including its hash computation, thumbnail generation, EXIF extraction, and all database writes — runs inside a single database transaction that stays open for the entire folder. For a folder containing thousands of new images this transaction can run for many minutes. If the JVM crashes or the database connection is lost partway through, the entire transaction is rolled back and the whole folder must be reprocessed from scratch on the next run:
+
+```
+CURRENT: one transaction per folder
+
+  folder/   file_1   file_2   file_3  ...  file_4999   COMMIT ✓
+                                                │
+                              crash here ───────┘
+                              → all 4999 rolled back, start over next run
+```
+
+The second problem is that `doRunCatalog()` processes folders in a `for` loop — strictly sequential, one folder at a time, on a single thread. A catalog of 200 folders that each take 30 seconds processes for 100 minutes total even if the host machine has 8 idle CPU cores and fast NVMe storage.
+
+**Improvement 64 — what Spring Batch adds and what the current code already handles**
+
+The current implementation is more capable than it looks at first glance. Spring Batch's built-in features cover some ground already covered by custom code:
+
+```
+  Spring Batch brings                     Current code already handles
+  ───────────────────────────────────     ──────────────────────────────────────
+  ✓ Chunk-level transactions              ✓ Distributed lock (catalog_run_state)
+  ✓ Restart from checkpoint within folder ✓ Stale lock / heartbeat detection
+  ✓ Parallel folder processing            ✓ Thread.isInterrupted() per folder
+  ✓ Persistent job history (9 tables)     ✓ Per-folder try/catch error isolation
+  ✓ Built-in skip / retry per item        ✓ Per-file try/catch (createAsset)
+  ✓ Step-level statistics                 ✓ SSE progress reporting (Consumer)
+  ✓ JobRepository run-state management    ✓ Scheduled execution (TaskScheduler)
+                                          ✓ Idempotency (skips catalogued files)
+```
+
+The highest-value additions are chunk transactions (data integrity on crash) and parallel folder processing (throughput). The persistent job history and step statistics are a bonus that replaces the limited information currently stored in `catalog_run_state`.
+
+**Improvement 64 — chunk transaction fix**
+
+Spring Batch's chunk-oriented step commits every N items regardless of folder boundaries. With a chunk size of 50, a crash at file 4,999 loses at most 49 items:
+
+```
+SPRING BATCH: commit every 50 items (chunk size = 50)
+
+  [1..50] COMMIT  [51..100] COMMIT  ...  [4951..4999] COMMIT
+                                                    │
+                              crash here ───────────┘
+                              → restart from item 4951, at most 49 re-processed
+```
+
+Chunk size is configurable via `photomanager.catalog-chunk-size` (default 50). Larger chunks reduce commit overhead; smaller chunks reduce the re-processing window after a crash.
+
+**Improvement 64 — parallel folder processing via partitioned step**
+
+The `CatalogFolderPartitioner` implements Spring Batch's `Partitioner` interface: it collects all folders (same recursion as the current `collectSubFolders()`) and emits one `ExecutionContext` partition per folder, each containing the folder path. The `PartitionStep` distributes these partitions across a configurable thread pool (`photomanager.catalog-partition-grid-size`, default 4). Four folders are processed concurrently, each running its own `CatalogFileItemReader` → `CatalogAssetItemProcessor` → `CatalogAssetItemWriter` pipeline with independent chunk commits:
+
+```
+PARTITIONED STEP (grid-size = 4)
+
+  CatalogFolderPartitioner
+  (emits one partition per folder)
+         │
+         ├── partition:0  folder /Photos/2023  → Reader → Processor → Writer
+         ├── partition:1  folder /Photos/2024  → Reader → Processor → Writer
+         ├── partition:2  folder /Photos/Raw   → Reader → Processor → Writer
+         └── partition:3  folder /Photos/Work  → Reader → Processor → Writer
+                     ↑
+              4 threads run concurrently; next folder assigned as each finishes
+```
+
+**Improvement 64 — layer mapping**
+
+Spring Batch types (`Job`, `Step`, `ItemReader`, `ItemProcessor`, `ItemWriter`) are framework types and belong in `infrastructure/`. The use case interface and its thin launcher adapter remain in their current layers:
+
+```
+  domain/port/in/catalog/
+    CatalogAssetsUseCase          unchanged — interface with execute(Consumer) method
+
+  application/usecase/catalog/
+    CatalogAssetsUseCaseImpl      thin adapter: calls JobLauncher.run(catalogJob,
+                                  jobParameters) and registers the SSE consumer in
+                                  SseNotificationRegistry keyed by JobExecution ID
+
+  infrastructure/batch/           NEW PACKAGE — all Spring Batch types live here
+    CatalogJobConfig              @Configuration: defines Job, PartitionStep,
+                                  CatalogFolderPartitioner bean, thread pool executor
+    CatalogFolderPartitioner      Partitioner: recursively collects folders,
+                                  emits one ExecutionContext per folder
+    CatalogFileItemReader         ItemReader<String>: lists file paths in one
+                                  partition's folder that are not yet in assets table
+    CatalogAssetItemProcessor     ItemProcessor<String, Asset>: hash + thumbnail +
+                                  EXIF extraction — same logic as createAsset() today
+    CatalogAssetItemWriter        ItemWriter<Asset>: saves Asset + AssetExif rows,
+                                  deletes removed assets, fires SSE via registry
+    CatalogItemWriteListener      ItemWriteListener: resolves SSE consumer from
+                                  SseNotificationRegistry by JobExecution ID
+
+  infrastructure/service/
+    CatalogScheduler              unchanged in role — now calls CatalogAssetsUseCase
+                                  instead of managing CompletableFuture directly
+    SseNotificationRegistry       NEW: @Component singleton Map<Long, Consumer<
+                                  CatalogChangeNotification>>; registered by
+                                  AssetController when SSE opens, removed on close
+                                  or job completion
+```
+
+**Improvement 64 — SSE consumer registry**
+
+The current design passes the SSE `Consumer<CatalogChangeNotification>` directly as a method argument through `CatalogAssetsUseCaseImpl` → `CatalogFolderServiceImpl`. Spring Batch `ItemWriteListener` callbacks are wired by the framework and cannot receive non-serializable objects through `JobParameters` or `ExecutionContext`. The registry pattern decouples the SSE consumer from the Spring Batch execution graph:
+
+```
+SSE CONSUMER REGISTRY — HOW IT WORKS
+
+  ┌───────────────────────────────────────────────────────────────┐
+  │  SseNotificationRegistry                                      │
+  │  Map<Long jobExecutionId, Consumer<CatalogChangeNotification>>│
+  └───────────────────────────────────────────────────────────────┘
+         ▲ register(jobId, consumer)          ▲ lookup(jobId)
+         │                                    │
+  AssetController                     CatalogItemWriteListener
+  on GET /api/assets/catalog:          on each chunk write:
+    1. call use case → get jobId          consumer = registry.lookup(jobId)
+    2. create SseEmitter                  if consumer != null:
+    3. registry.register(jobId,             consumer.accept(notification)
+         notification → emitter.send())
+    4. on emitter complete/timeout:
+         registry.remove(jobId)
+```
+
+**Improvement 64 — what the V27 migration does**
+
+The V27 Flyway migration has two responsibilities:
+
+1. Creates the 9 Spring Batch schema tables (using the standard Spring Batch PostgreSQL DDL script as a base): `BATCH_JOB_INSTANCE`, `BATCH_JOB_EXECUTION`, `BATCH_JOB_EXECUTION_PARAMS`, `BATCH_JOB_EXECUTION_CONTEXT`, `BATCH_STEP_EXECUTION`, `BATCH_STEP_EXECUTION_CONTEXT`, `BATCH_JOB_SEQ`, `BATCH_JOB_EXECUTION_SEQ`, `BATCH_STEP_EXECUTION_SEQ`.
+
+2. Drops the `catalog_run_state` table, which is fully replaced by `BATCH_JOB_EXECUTION`. The `CatalogStateRepository` port interface, `CatalogRunStateEntity`, `CatalogStateRepositoryImpl`, and `JpaCatalogStateRepository` are all deleted as part of this improvement — no data migration is needed since `catalog_run_state` holds only transient run-state (not user data).
+
+**Improvement 64 — Maven dependency**
+
+Adds `spring-boot-starter-batch` to `pom.xml`. This pulls in `spring-batch-core` and `spring-batch-infrastructure` transitively. Spring Boot's auto-configuration wires the `JobRepository` against the existing PostgreSQL `DataSource` automatically — no additional `DataSource` or `TransactionManager` configuration is required. Spring Batch's auto-schema creation must be disabled (`spring.batch.jdbc.initialize-schema=never`) so that Flyway owns the schema exclusively.
+
+**Improvement 64 — ordering note**
+
+`catalog-spring-batch` is a backend-only refactor with no API contract change — `GET /api/assets/catalog` continues to return an SSE stream of the same `CatalogChangeNotification` events. It can be delivered independently of all other improvements. If `raw-exif-jsonb` (#63) is implemented first, `CatalogAssetItemProcessor` must include the raw EXIF extraction step; if #64 lands first, #63 extends `CatalogAssetItemProcessor` with the additional extraction pass.
