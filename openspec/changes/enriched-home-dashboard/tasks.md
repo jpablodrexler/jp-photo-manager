@@ -57,4 +57,4 @@
 - [x] 9.1 Run `mvn test` in the backend — all tests pass
 - [x] 9.2 Run `npm test` in the frontend — all Cypress component tests pass
 - [x] 9.3 Run `npm run lint` — no lint errors
-- [ ] 9.4 Start the app locally; navigate to `/home`; verify all four dashboard sections render correctly with real data; click a recent photo and confirm gallery opens at the correct folder
+- [x] 9.4 Start the app locally; navigate to `/home`; verify all four dashboard sections render correctly with real data; click a recent photo and confirm gallery opens at the correct folder
