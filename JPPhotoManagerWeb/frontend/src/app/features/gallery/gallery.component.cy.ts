@@ -131,7 +131,7 @@ describe('GalleryComponent', () => {
       return Promise.resolve().then(() => fixture.detectChanges());
     });
 
-    cy.get('app-thumbnail').should('have.length', 2);
+    cy.get('.asset-list-row').should('have.length', 2);
   });
 
   it('should not call getAssets when no folder is selected', () => {
@@ -313,7 +313,7 @@ describe('GalleryComponent', () => {
     });
 
     cy.wrap(getAssets).should('have.been.calledWith', '/new-folder', 0, 'FILE_NAME');
-    cy.get('app-thumbnail').should('have.length', 2);
+    cy.get('.asset-list-row').should('have.length', 2);
   });
 
   it('onSortChange_resetsAssetsAndCallsGetAssetsWithPage0', () => {
@@ -616,35 +616,27 @@ describe('GalleryComponent', () => {
 
   // --- Star rating tests ---
 
-  it('rateAsset_clickFourthStar_callsRateAssetAndUpdatesThumbnail', () => {
+  it('rateAsset_callWithStar4_callsServiceAndUpdatesAssetRating', () => {
     const rateAsset = cy.stub().returns(of(undefined));
-    const getAssets = cy.stub().returns(of({ items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2 }));
 
-    mountGallery({ getAssets, rateAsset }).then(({ fixture }) => {
+    mountGallery({ rateAsset }).then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.currentFolder = '/photos';
-      component.loadNextPage();
-      return Promise.resolve().then(() => fixture.detectChanges());
+      component.assets = [...mockAssets];
+      component.rateAsset(mockAssets[0], 4);
+      cy.wrap(rateAsset).should('have.been.calledWith', 1, 4);
     });
-
-    cy.get('app-thumbnail').first().find('.thumb-star').eq(3).click();
-    cy.wrap(rateAsset).should('have.been.calledWith', 1, 4);
   });
 
-  it('rateAsset_clickSameStar_togglesRatingToZero', () => {
-    const ratedAssets: Asset[] = [{ ...mockAssets[0], rating: 4 }, { ...mockAssets[1], rating: 0 }];
+  it('rateAsset_sameStarAsCurrentRating_togglesRatingToZero', () => {
+    const ratedAsset: Asset = { ...mockAssets[0], rating: 4 };
     const rateAsset = cy.stub().returns(of(undefined));
-    const getAssets = cy.stub().returns(of({ items: ratedAssets, pageIndex: 0, totalPages: 1, totalItems: 2 }));
 
-    mountGallery({ getAssets, rateAsset }).then(({ fixture }) => {
+    mountGallery({ rateAsset }).then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.currentFolder = '/photos';
-      component.loadNextPage();
-      return Promise.resolve().then(() => fixture.detectChanges());
+      component.assets = [ratedAsset, mockAssets[1]];
+      component.rateAsset(ratedAsset, 4);
+      cy.wrap(rateAsset).should('have.been.calledWith', 1, 0);
     });
-
-    cy.get('app-thumbnail').first().find('.thumb-star').eq(3).click();
-    cy.wrap(rateAsset).should('have.been.calledWith', 1, 0);
   });
 
   it('onMinRatingChange_filterStar3_callsGetAssetsWithMinRating3', () => {

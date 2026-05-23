@@ -193,40 +193,41 @@
 
     <!-- Thumbnails View -->
     @if (viewMode === 'thumbnails' && viewType === 'grid') {
-      <div class="thumbnail-grid-container flex-1">
+      <div class="thumbnail-list-container flex-1">
         @if (currentFolder) {
           <app-drop-zone [folderPath]="currentFolder" (uploadComplete)="onUploadComplete()" />
         }
-        <div class="thumbnail-grid">
-          @for (asset of assets; track asset.assetId; let i = $index) {
-            <div class="asset-cell">
-              <app-thumbnail
-                [asset]="asset"
-                [rating]="asset.rating"
-                [selected]="isSelected(asset)"
-                (click)="toggleSelection(asset)"
-                (dblclick)="openViewer(i)"
-                (ratingChange)="rateAsset(asset, $event)"
-              />
-              <button
-                mat-icon-button
-                class="add-to-album-btn"
-                (click)="$event.stopPropagation(); addToAlbum(asset)"
-                title="Add to album"
-              >
-                <mat-icon>collections_bookmark</mat-icon>
-              </button>
-            </div>
-          }
-          @if (assets.length === 0 && currentFolder) {
-            <div class="empty-state">No images found in this folder.</div>
-          }
-        </div>
         @if (isLoading) {
           <div class="loading-row">
             <mat-progress-bar mode="indeterminate" />
           </div>
         }
+        @if (!isLoading && assets.length === 0 && currentFolder) {
+          <div class="empty-state">No images found in this folder.</div>
+        }
+        <cdk-virtual-scroll-viewport itemSize="80" class="asset-virtual-viewport">
+          <div *cdkVirtualFor="let asset of assets; trackBy: trackByAssetId; let i = index"
+               class="asset-list-row"
+               [class.asset-list-row--selected]="isSelected(asset)"
+               (click)="toggleSelection(asset)"
+               (dblclick)="openViewer(i)">
+            <img [src]="asset.thumbnailUrl" [alt]="asset.fileName" class="list-thumb" />
+            <div class="list-meta">
+              <span class="list-filename" [title]="asset.fileName">{{ asset.fileName }}</span>
+              <span class="list-details">
+                {{ asset.fileSize | fileSize }}
+                @if (asset.fileCreationDateTime) {
+                  · {{ asset.fileCreationDateTime | date:'mediumDate' }}
+                }
+              </span>
+            </div>
+            <button mat-icon-button class="list-album-btn"
+                    (click)="$event.stopPropagation(); addToAlbum(asset)"
+                    title="Add to album">
+              <mat-icon>collections_bookmark</mat-icon>
+            </button>
+          </div>
+        </cdk-virtual-scroll-viewport>
         @if (allLoaded && assets.length > 0) {
           <div class="end-of-list">All photos loaded</div>
         }
@@ -248,7 +249,7 @@
       </div>
     }
 
-    @if (viewMode === 'thumbnails') {
+    @if (viewMode === 'thumbnails' && viewType === 'timeline') {
       <div #scrollSentinel class="scroll-sentinel"></div>
     }
 

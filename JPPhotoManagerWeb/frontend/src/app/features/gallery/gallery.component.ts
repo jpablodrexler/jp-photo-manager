@@ -30,8 +30,8 @@ import { Subject, Subscription } from "rxjs";
 import { debounceTime, distinctUntilChanged, takeUntil } from "rxjs/operators";
 import { ScrollingModule } from "@angular/cdk/scrolling";
 import { FolderNavComponent } from "../folder-nav/folder-nav.component";
-import { ThumbnailComponent } from "../../shared/components/thumbnail/thumbnail.component";
 import { ExifPanelComponent } from "../../shared/components/exif-panel/exif-panel.component";
+import { FileSizePipe } from "../../shared/pipes/file-size.pipe";
 import { AssetService } from "../../core/services/asset.service";
 import { TagService } from "../../core/services/tag.service";
 import { AlbumService } from "../../core/services/album.service";
@@ -75,8 +75,8 @@ type ViewType = "grid" | "timeline";
     MatAutocompleteModule,
     ScrollingModule,
     FolderNavComponent,
-    ThumbnailComponent,
     ExifPanelComponent,
+    FileSizePipe,
     DropZoneComponent,
     TimelineViewComponent,
     FolderPickerDialogComponent,
@@ -216,8 +216,12 @@ export class GalleryComponent implements OnInit, OnDestroy {
       error: () => {},
     });
     Promise.resolve().then(() => {
-      this.setupSentinelObserver();
-      this.loadNextPage();
+      if (this.viewType === 'timeline') {
+        this.setupSentinelObserver();
+        this.loadTimelinePage();
+      } else {
+        this.loadNextPage(true);
+      }
     });
   }
 
@@ -270,7 +274,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.timelineAllLoaded = false;
   }
 
-  loadNextPage(): void {
+  loadNextPage(continueLoading = false): void {
     if (this.isLoading || this.allLoaded || !this.currentFolder) return;
     this.isLoading = true;
     const search = this.searchTerm.trim() || undefined;
@@ -300,6 +304,9 @@ export class GalleryComponent implements OnInit, OnDestroy {
           this.pageIndex++;
           this.allLoaded = this.pageIndex >= data.totalPages;
           this.isLoading = false;
+          if (continueLoading && !this.allLoaded) {
+            this.loadNextPage(true);
+          }
         },
         error: () => {
           this.isLoading = false;
@@ -310,16 +317,16 @@ export class GalleryComponent implements OnInit, OnDestroy {
       });
   }
 
+  trackByAssetId(_index: number, asset: Asset): number {
+    return asset.assetId;
+  }
+
   setupSentinelObserver(): void {
     if (!this.sentinel?.nativeElement) return;
     this.observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          if (this.viewType === 'timeline') {
-            this.loadTimelinePage();
-          } else {
-            this.loadNextPage();
-          }
+          this.loadTimelinePage();
         }
       },
       { threshold: 0.1 },
@@ -365,11 +372,11 @@ export class GalleryComponent implements OnInit, OnDestroy {
       this.allLoaded = false;
     }
     Promise.resolve().then(() => {
-      this.setupSentinelObserver();
       if (type === 'timeline') {
+        this.setupSentinelObserver();
         this.loadTimelinePage();
       } else {
-        this.loadNextPage();
+        this.loadNextPage(true);
       }
     });
   }
@@ -389,11 +396,11 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.timelineAllLoaded = false;
     this.disconnectObserver();
     Promise.resolve().then(() => {
-      this.setupSentinelObserver();
       if (this.viewType === 'timeline') {
+        this.setupSentinelObserver();
         this.loadTimelinePage();
       } else {
-        this.loadNextPage();
+        this.loadNextPage(true);
       }
     });
   }
@@ -578,8 +585,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.allLoaded = false;
     this.disconnectObserver();
     Promise.resolve().then(() => {
-      this.setupSentinelObserver();
-      this.loadNextPage();
+      this.loadNextPage(true);
     });
   }
 

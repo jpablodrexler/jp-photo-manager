@@ -61,14 +61,6 @@ html, body {
   z-index: 100;
 }
 
-/* Thumbnail grid */
-.thumbnail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 8px;
-  padding: 16px;
-}
-
 .thumbnail-card {
   cursor: pointer;
   transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
@@ -128,12 +120,6 @@ html, body {
 }
 
 @media (max-width: 767px) {
-  .thumbnail-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 4px;
-    padding: 8px;
-  }
-
   .thumbnail-card img {
     height: 110px;
   }
