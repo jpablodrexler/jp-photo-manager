@@ -635,6 +635,42 @@ If you have an existing catalog in a **host PostgreSQL instance** and want to mo
 | `db` | `postgres:18` | *(internal only)* | PostgreSQL 18; data persisted in the `pgdata` named volume |
 | `backend` | JRE 21 Alpine | *(internal only)* | Spring Boot API; `HOST_IMAGE_DIR` bind-mounted at `/catalog` |
 | `frontend` | Nginx Alpine | `80` | Angular SPA; reverse-proxies `/api` to the backend |
+| `prometheus` | `prom/prometheus` | `9090` | Scrapes backend metrics from `/actuator/prometheus` every 15 s |
+| `grafana` | `grafana/grafana` | `3000` | Dashboard UI backed by Prometheus |
+
+### Monitoring (Grafana + Prometheus)
+
+After `docker compose up`, Grafana is available at **`http://localhost:3000`**.
+
+**First-time login:**
+
+| Field | Value |
+|---|---|
+| Username | `admin` |
+| Password | `admin` |
+
+Grafana will prompt you to change the password on first login.
+
+**Add the Prometheus data source:**
+
+1. Open **Connections → Data sources** (or go to `http://localhost:3000/connections/datasources`).
+2. Click **Add data source** and choose **Prometheus**.
+3. Set **URL** to `http://prometheus:9090` (containers resolve each other by service name inside the Docker network).
+4. Click **Save & test** — you should see "Successfully queried the Prometheus API".
+
+**Explore metrics:**
+
+The backend exposes Spring Boot Actuator metrics at `/actuator/prometheus`. Key metric families:
+
+| Metric prefix | Description |
+|---|---|
+| `http_server_requests_*` | HTTP request counts, error rates, and latencies |
+| `jvm_memory_*` | JVM heap and non-heap memory usage |
+| `jvm_gc_*` | Garbage collection pause times and counts |
+| `process_cpu_*` | JVM process CPU usage |
+| `hikaricp_*` | Database connection pool utilisation |
+
+You can also query Prometheus directly at **`http://localhost:9090`**.
 
 ### Volume behaviour
 
