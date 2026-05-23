@@ -29,6 +29,7 @@ public class UserServiceImpl {
         user.setUsername(normalized);
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setCreatedAt(Instant.now());
+        user.setRole("USER");
         userRepository.save(user);
     }
 

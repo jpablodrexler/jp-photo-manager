@@ -592,6 +592,42 @@ The fastest way to run the full stack. No local Java, Maven, Node.js, or Postgre
 
 4. Open `http://localhost` in your browser.
 
+### First-time migration (existing catalog)
+
+If you have an existing catalog in a **host PostgreSQL instance** and want to move it into the Docker Compose stack, run the migration script **once** before switching over.
+
+**When to run:** only if you previously ran the backend against a host PostgreSQL installation (not the Compose stack) and want to preserve your catalog data.
+
+**Steps:**
+
+1. Make sure your host PostgreSQL is running and the backend is stopped.
+
+2. From the `JPPhotoManagerWeb/` directory, run the script:
+   ```bash
+   cd JPPhotoManagerWeb
+   ./migrate-db.sh
+   ```
+   The script dumps your host database, starts only the `db` container, waits for it to be ready, and restores the dump. Pass environment variables to override the defaults:
+   ```bash
+   PGHOST=localhost PGPORT=5432 PGUSER=postgres PGDATABASE=photomanager ./migrate-db.sh
+   ```
+
+3. Once the script prints "Migration successful!", stop your host PostgreSQL service:
+   ```bash
+   # Linux (systemd)
+   sudo systemctl stop postgresql
+
+   # macOS (Homebrew)
+   brew services stop postgresql
+   ```
+
+4. Start the full stack:
+   ```bash
+   docker compose up --build
+   ```
+
+> **Rollback:** if anything goes wrong, the host database is untouched — the script only reads from it. Simply restart your host PostgreSQL and backend without the Compose stack.
+
 ### Services
 
 | Service | Container | Exposed port | Description |
