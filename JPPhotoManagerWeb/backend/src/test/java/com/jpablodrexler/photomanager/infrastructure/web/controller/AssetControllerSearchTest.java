@@ -8,6 +8,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
@@ -47,6 +48,8 @@ class AssetControllerSearchTest {
     @Autowired
     MockMvc mockMvc;
 
+    @MockitoBean
+    GetAssetsTimelineUseCase getAssetsTimelineUseCase;
     @MockitoBean
     GetAssetsUseCase getAssetsUseCase;
     @MockitoBean
