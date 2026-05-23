@@ -672,6 +672,69 @@ The backend exposes Spring Boot Actuator metrics at `/actuator/prometheus`. Key 
 
 You can also query Prometheus directly at **`http://localhost:9090`**.
 
+**Create a dashboard manually:**
+
+1. Go to **Dashboards → New → New dashboard → Add visualization**.
+2. Select your Prometheus data source.
+3. In the query editor, switch to **Code** mode and enter a PromQL expression. Useful starting points:
+
+| What you want to see | PromQL |
+|---|---|
+| HTTP request rate (req/s) | `rate(http_server_requests_seconds_count[1m])` |
+| HTTP error rate (5xx) | `rate(http_server_requests_seconds_count{status=~"5.."}[1m])` |
+| P99 request latency | `histogram_quantile(0.99, rate(http_server_requests_seconds_bucket[5m]))` |
+| JVM heap used | `jvm_memory_used_bytes{area="heap"}` |
+| GC pause time rate | `rate(jvm_gc_pause_seconds_sum[1m])` |
+| DB connection pool active | `hikaricp_connections_active` |
+
+4. Choose a visualization type (Time series, Gauge, Stat, …), set a title, and click **Apply**.
+5. Repeat for each metric, then **Save dashboard**.
+
+**Troubleshooting:**
+
+*Prometheus target shows "Error scraping target: server returned HTTP status 500"*
+
+The backend `GlobalExceptionHandler` has a catch-all `Exception` handler that intercepts `NoResourceFoundException` thrown when the `/actuator/prometheus` endpoint is not registered. Check the backend logs:
+
+```bash
+docker compose logs backend | grep -i "error\|exception\|actuator"
+```
+
+If you see `NoResourceFoundException: No static resource actuator/prometheus`, the `micrometer-registry-prometheus` JAR is missing from the running fat JAR — the container is using a stale image built before that dependency was added to `pom.xml`. Verify:
+
+```bash
+docker compose exec backend sh -c "unzip -l app.jar | grep micrometer"
+```
+
+If `micrometer-registry-prometheus-*.jar` does not appear, rebuild the backend image from scratch and force the container to use it:
+
+```bash
+docker compose build --no-cache backend
+docker compose up -d --force-recreate backend
+```
+
+Note: `docker compose up --build` reuses Docker layer cache for the `mvn dependency:go-offline` step if `pom.xml` has not changed on disk. If the dependency is still missing after that, `--no-cache` + `--force-recreate` guarantees a clean build and a new container.
+
+Confirm the endpoint is now registered:
+
+```bash
+docker compose exec backend wget -qO- http://localhost:8080/actuator
+```
+
+`prometheus` must appear in the `_links` object before Prometheus can scrape it.
+
+*Grafana panels show "No data" even though the Prometheus target is UP*
+
+Check that the Prometheus data source URL in Grafana is `http://prometheus:9090`, not `http://localhost:9090`. From inside the Grafana container, `localhost` resolves to Grafana itself, not to Prometheus. The Docker service name `prometheus` is the correct hostname.
+
+Verify end-to-end connectivity with this minimal query in any Grafana panel:
+
+```promql
+up{job="photomanager-backend"}
+```
+
+A result of `1` means the full pipeline — Grafana → Prometheus → backend — is working.
+
 ### Volume behaviour
 
 | Volume | Type | Description |
