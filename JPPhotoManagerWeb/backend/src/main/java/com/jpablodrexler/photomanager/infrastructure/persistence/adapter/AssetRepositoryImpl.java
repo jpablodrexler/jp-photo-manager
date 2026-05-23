@@ -89,6 +89,24 @@ public class AssetRepositoryImpl implements AssetRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Asset> findAllFilteredSortedByDateDesc(AssetFilter filter) {
+        FolderEntity folderEntity = new FolderEntity();
+        folderEntity.setFolderId(filter.folderId());
+
+        String search = (filter.search() != null && !filter.search().isBlank())
+                ? "%" + filter.search().trim().toLowerCase() + "%" : null;
+        LocalDateTime dateFrom = filter.dateFrom() != null ? filter.dateFrom().atStartOfDay() : null;
+        LocalDateTime dateTo = filter.dateTo() != null ? filter.dateTo().atTime(LocalTime.MAX) : null;
+        Integer minRating = (filter.minRating() != null && filter.minRating() > 0) ? filter.minRating() : null;
+
+        Sort sort = Sort.by("fileCreationDateTime").descending();
+        Page<AssetEntity> page = jpa.findWithFilters(folderEntity, search, dateFrom, dateTo, minRating, filter.tags(),
+                org.springframework.data.domain.Pageable.unpaged(sort));
+        return page.getContent().stream().map(assetMapper::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Asset> findByFolder(Folder folder) {
         FolderEntity folderEntity = folderMapper.toEntity(folder);
         return jpa.findByFolder(folderEntity).stream().map(assetMapper::toDomain).toList();

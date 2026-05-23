@@ -13,6 +13,7 @@ import { SearchPresetService } from '../../core/services/search-preset.service';
 import { Asset } from '../../core/models/asset.model';
 import { PaginatedData } from '../../core/models/paginated-data.model';
 import { SearchPreset } from '../../core/models/search-preset.model';
+import { TimelineGroup } from '../../core/models/timeline-group.model';
 
 describe('GalleryComponent', () => {
   const mockAssets: Asset[] = [
@@ -51,8 +52,10 @@ describe('GalleryComponent', () => {
     searchPresetServiceOverrides: Partial<SearchPresetService> = {},
     tagServiceOverrides: Partial<TagService> = {},
   ) {
+    const emptyTimelinePage: PaginatedData<TimelineGroup> = { items: [], pageIndex: 0, totalPages: 0, totalItems: 0 };
     const assetServiceStub: Partial<AssetService> = {
       getAssets: cy.stub().returns(of(emptyPage)),
+      getTimeline: cy.stub().returns(of(emptyTimelinePage)),
       catalogAssets: cy.stub(),
       deleteAssets: cy.stub().returns(of(undefined)),
       moveAssets: cy.stub().returns(of(true)),
@@ -824,6 +827,76 @@ describe('GalleryComponent', () => {
     }).then(({ fixture }) => {
       fixture.detectChanges();
       cy.wrap(fixture.componentInstance).should('have.property', 'currentFolder', '/photos');
+    });
+  });
+
+  // --- View-mode toggle tests ---
+
+  it('setViewType_toTimeline_setsViewTypeAndCallsGetTimeline', () => {
+    const mockTimelinePage: PaginatedData<TimelineGroup> = {
+      items: [{ localDate: '2024-05-10', label: 'May 10, 2024', assets: [mockAssets[0]] }],
+      pageIndex: 0, totalPages: 1, totalItems: 1,
+    };
+    const getTimeline = cy.stub().returns(of(mockTimelinePage));
+
+    mountGallery({ getTimeline }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.setViewType('timeline');
+      expect(component.viewType).to.equal('timeline');
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.wrap(getTimeline).should('have.been.calledWith', '/photos', 0);
+  });
+
+  it('setViewType_toGrid_callsGetAssetsAndShowsThumbnailGrid', () => {
+    const getAssets = cy.stub().returns(of({ items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2 }));
+    const getTimeline = cy.stub().returns(of({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 }));
+
+    mountGallery({ getAssets, getTimeline }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.setViewType('timeline');
+      component.setViewType('grid');
+      expect(component.viewType).to.equal('grid');
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.wrap(getAssets).should('have.been.called');
+  });
+
+  it('setViewType_toTimeline_rendersTimelineViewComponent', () => {
+    const mockTimelinePage: PaginatedData<TimelineGroup> = {
+      items: [{ localDate: '2024-05-10', label: 'May 10, 2024', assets: [mockAssets[0]] }],
+      pageIndex: 0, totalPages: 1, totalItems: 1,
+    };
+    const getTimeline = cy.stub().returns(of(mockTimelinePage));
+
+    mountGallery({ getTimeline }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.setViewType('timeline');
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.get('app-timeline-view').should('exist');
+  });
+
+  it('filterChange_inTimelineMode_resetsTimelineAndReloads', () => {
+    const getTimeline = cy.stub().returns(of({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 }));
+
+    mountGallery({ getTimeline }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.setViewType('timeline');
+      return Promise.resolve().then(() => {
+        component.timelineGroups = [{ localDate: '2024-05-10', label: 'May 10, 2024', assets: [] }];
+        component.searchTerm = 'beach';
+        component.loadAssets();
+        expect(component.timelineGroups).to.deep.equal([]);
+        expect(component.timelinePageIndex).to.equal(0);
+      });
     });
   });
 

@@ -44,8 +44,11 @@ import { DropZoneComponent } from "./drop-zone/drop-zone.component";
 import { AddToAlbumDialogComponent } from "./add-to-album-dialog/add-to-album-dialog.component";
 import { SavePresetDialogComponent } from "./save-preset-dialog/save-preset-dialog.component";
 import { BulkTagDialogComponent } from "./bulk-tag-dialog/bulk-tag-dialog.component";
+import { TimelineViewComponent } from "./timeline-view/timeline-view.component";
+import { TimelineGroup } from "../../core/models/timeline-group.model";
 
 type ViewMode = "thumbnails" | "viewer" | "slideshow";
+type ViewType = "grid" | "timeline";
 
 @Component({
   selector: "app-gallery",
@@ -74,6 +77,7 @@ type ViewMode = "thumbnails" | "viewer" | "slideshow";
     ThumbnailComponent,
     ExifPanelComponent,
     DropZoneComponent,
+    TimelineViewComponent,
   ],
   templateUrl: "./gallery.component.html",
   styleUrl: "./gallery.component.scss",
@@ -88,6 +92,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   currentFolder: string = "";
   viewMode: ViewMode = "thumbnails";
+  viewType: ViewType = "grid";
   sortCriteria: SortCriteria = "FILE_NAME";
 
   searchTerm = "";
@@ -103,6 +108,9 @@ export class GalleryComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   assets: Asset[] = [];
+  timelineGroups: TimelineGroup[] = [];
+  timelinePageIndex = 0;
+  timelineAllLoaded = false;
   selectedAssets: Set<number> = new Set();
   currentViewerIndex = 0;
   viewerZoom = 1;
@@ -255,6 +263,9 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.pageIndex = 0;
     this.isLoading = false;
     this.allLoaded = false;
+    this.timelineGroups = [];
+    this.timelinePageIndex = 0;
+    this.timelineAllLoaded = false;
   }
 
   loadNextPage(): void {
@@ -301,11 +312,64 @@ export class GalleryComponent implements OnInit, OnDestroy {
     if (!this.sentinel?.nativeElement) return;
     this.observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) this.loadNextPage();
+        if (entries[0].isIntersecting) {
+          if (this.viewType === 'timeline') {
+            this.loadTimelinePage();
+          } else {
+            this.loadNextPage();
+          }
+        }
       },
       { threshold: 0.1 },
     );
     this.observer.observe(this.sentinel.nativeElement);
+  }
+
+  loadTimelinePage(): void {
+    if (this.isLoading || this.timelineAllLoaded || !this.currentFolder) return;
+    this.isLoading = true;
+    const search = this.searchTerm.trim() || undefined;
+    const dateFrom = this.dateFrom ? this.dateFrom.toISOString().substring(0, 10) : undefined;
+    const dateTo = this.dateTo ? this.dateTo.toISOString().substring(0, 10) : undefined;
+    const minRating = this.minRating > 0 ? this.minRating : undefined;
+    this.assetService.getTimeline(this.currentFolder, this.timelinePageIndex, { search, dateFrom, dateTo, minRating })
+      .subscribe({
+        next: (data) => {
+          this.timelineGroups = [...this.timelineGroups, ...data.items];
+          this.timelinePageIndex++;
+          this.timelineAllLoaded = this.timelinePageIndex >= data.totalPages;
+          this.isLoading = false;
+        },
+        error: () => {
+          this.isLoading = false;
+          this.snackBar.open('Failed to load timeline', 'Dismiss', { duration: 3000 });
+        },
+      });
+  }
+
+  setViewType(type: ViewType): void {
+    if (this.viewType === type) return;
+    this.viewType = type;
+    this.disconnectObserver();
+    if (type === 'timeline') {
+      this.timelineGroups = [];
+      this.timelinePageIndex = 0;
+      this.timelineAllLoaded = false;
+      this.isLoading = false;
+    } else {
+      this.assets = [];
+      this.pageIndex = 0;
+      this.isLoading = false;
+      this.allLoaded = false;
+    }
+    Promise.resolve().then(() => {
+      this.setupSentinelObserver();
+      if (type === 'timeline') {
+        this.loadTimelinePage();
+      } else {
+        this.loadNextPage();
+      }
+    });
   }
 
   disconnectObserver(): void {
@@ -318,10 +382,17 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.pageIndex = 0;
     this.isLoading = false;
     this.allLoaded = false;
+    this.timelineGroups = [];
+    this.timelinePageIndex = 0;
+    this.timelineAllLoaded = false;
     this.disconnectObserver();
     Promise.resolve().then(() => {
       this.setupSentinelObserver();
-      this.loadNextPage();
+      if (this.viewType === 'timeline') {
+        this.loadTimelinePage();
+      } else {
+        this.loadNextPage();
+      }
     });
   }
 
@@ -342,6 +413,13 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.viewMode = "viewer";
     this.viewerZoom = 1;
     this.showExifPanel = false;
+  }
+
+  openViewerFromTimeline(asset: Asset): void {
+    const flat = this.timelineGroups.flatMap(g => g.assets);
+    const idx = flat.findIndex(a => a.assetId === asset.assetId);
+    this.assets = flat;
+    this.openViewer(idx >= 0 ? idx : 0);
   }
 
   closeViewer(): void {

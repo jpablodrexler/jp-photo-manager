@@ -1,0 +1,46 @@
+.timeline-empty {
+  padding: 48px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.timeline-container {
+  padding: 0 16px 24px;
+}
+
+.timeline-month-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #1e1e1e;
+  padding: 12px 0 8px;
+  font-size: 20px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.87);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  margin-bottom: 8px;
+}
+
+.timeline-day-section {
+  margin-bottom: 24px;
+}
+
+.timeline-day-header {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 8px;
+  padding: 4px 0;
+}
+
+.timeline-thumbnail-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.timeline-thumbnail-cell {
+  width: 200px;
+  cursor: pointer;
+  flex-shrink: 0;
+}

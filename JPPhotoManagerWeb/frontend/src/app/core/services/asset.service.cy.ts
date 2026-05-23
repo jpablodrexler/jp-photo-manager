@@ -146,4 +146,45 @@ describe('AssetService', () => {
     const req = httpMock.expectOne('/api/assets/99/exif');
     req.flush(null);
   });
+
+  it('getTimeline_withFolderAndPage_sendsCorrectParams', () => {
+    const mockPage = { items: [], pageIndex: 0, totalPages: 0, totalItems: 0 };
+
+    service.getTimeline('/photos', 2).subscribe(data => {
+      expect(data).to.deep.equal(mockPage);
+    });
+
+    const req = httpMock.expectOne(r => r.url === '/api/assets/timeline');
+    expect(req.request.method).to.equal('GET');
+    expect(req.request.params.get('folderPath')).to.equal('/photos');
+    expect(req.request.params.get('page')).to.equal('2');
+    req.flush(mockPage);
+  });
+
+  it('getTimeline_withFilters_forwardsAllFilterParams', () => {
+    service.getTimeline('/photos', 0, {
+      search: 'beach',
+      dateFrom: '2024-01-01',
+      dateTo: '2024-12-31',
+      minRating: 3,
+    }).subscribe();
+
+    const req = httpMock.expectOne(r => r.url === '/api/assets/timeline');
+    expect(req.request.params.get('search')).to.equal('beach');
+    expect(req.request.params.get('dateFrom')).to.equal('2024-01-01');
+    expect(req.request.params.get('dateTo')).to.equal('2024-12-31');
+    expect(req.request.params.get('minRating')).to.equal('3');
+    req.flush({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 });
+  });
+
+  it('getTimeline_withNoFilters_omitsOptionalParams', () => {
+    service.getTimeline('/photos').subscribe();
+
+    const req = httpMock.expectOne(r => r.url === '/api/assets/timeline');
+    expect(req.request.params.has('search')).to.be.false;
+    expect(req.request.params.has('dateFrom')).to.be.false;
+    expect(req.request.params.has('dateTo')).to.be.false;
+    expect(req.request.params.has('minRating')).to.be.false;
+    req.flush({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 });
+  });
 });

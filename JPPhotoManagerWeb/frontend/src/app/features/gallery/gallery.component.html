@@ -21,6 +21,14 @@
       <span style="flex: 1"></span>
 
       @if (viewMode === 'thumbnails') {
+        <button mat-icon-button [class.active]="viewType === 'grid'" (click)="setViewType('grid')" title="Grid view">
+          <mat-icon>grid_view</mat-icon>
+        </button>
+        <button mat-icon-button [class.active]="viewType === 'timeline'" (click)="setViewType('timeline')" title="Timeline view">
+          <mat-icon>view_timeline</mat-icon>
+        </button>
+
+        @if (viewType === 'grid') {
         <mat-select [(ngModel)]="sortCriteria" (ngModelChange)="onSortChange()" style="width: 160px;">
           @for (opt of sortOptions; track opt.value) {
             <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
@@ -51,6 +59,7 @@
           <button mat-icon-button (click)="startSlideshow(0)" title="Start slideshow">
             <mat-icon>slideshow</mat-icon>
           </button>
+        }
         }
       }
 
@@ -177,7 +186,7 @@
     }
 
     <!-- Thumbnails View -->
-    @if (viewMode === 'thumbnails') {
+    @if (viewMode === 'thumbnails' && viewType === 'grid') {
       <div class="thumbnail-grid-container flex-1">
         @if (currentFolder) {
           <app-drop-zone [folderPath]="currentFolder" (uploadComplete)="onUploadComplete()" />
@@ -215,8 +224,26 @@
         @if (allLoaded && assets.length > 0) {
           <div class="end-of-list">All photos loaded</div>
         }
-        <div #scrollSentinel class="scroll-sentinel"></div>
       </div>
+    }
+
+    <!-- Timeline View -->
+    @if (viewMode === 'thumbnails' && viewType === 'timeline') {
+      <div class="timeline-view-container flex-1">
+        <app-timeline-view [groups]="timelineGroups" (thumbnailClick)="openViewerFromTimeline($event)" />
+        @if (isLoading) {
+          <div class="loading-row">
+            <mat-progress-bar mode="indeterminate" />
+          </div>
+        }
+        @if (timelineAllLoaded && timelineGroups.length > 0) {
+          <div class="end-of-list">All photos loaded</div>
+        }
+      </div>
+    }
+
+    @if (viewMode === 'thumbnails') {
+      <div #scrollSentinel class="scroll-sentinel"></div>
     }
 
     <!-- Viewer -->

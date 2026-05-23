@@ -7,10 +7,13 @@ import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
 import com.jpablodrexler.photomanager.domain.model.Folder;
+import com.jpablodrexler.photomanager.domain.model.TimelineGroup;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.TimelineGroupDto;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
@@ -24,6 +27,8 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCa
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.MoveAssetsRequest;
+
+import java.time.LocalDate;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +60,8 @@ class AssetControllerTest {
 
     @MockitoBean
     GetAssetsUseCase getAssetsUseCase;
+    @MockitoBean
+    GetAssetsTimelineUseCase getAssetsTimelineUseCase;
     @MockitoBean
     GetAssetImageUseCase getAssetImageUseCase;
     @MockitoBean
@@ -370,6 +377,50 @@ class AssetControllerTest {
                 .andExpect(status().isOk());
 
         verify(getAssetsUseCase).execute(argThat(filter -> filter.minRating() != null && filter.minRating() == 3));
+    }
+
+    // --- GET /api/assets/timeline ---
+
+    @Test
+    void getTimeline_validFolder_returns200WithGroups() throws Exception {
+        Folder folder = buildFolder(1L, "/photos");
+        Asset asset = buildAsset(folder, "photo.jpg", 1L);
+        TimelineGroup group = new TimelineGroup(LocalDate.of(2024, 5, 10), "May 10, 2024", List.of(asset));
+        com.jpablodrexler.photomanager.application.dto.PaginatedResult<TimelineGroup> result =
+                new com.jpablodrexler.photomanager.application.dto.PaginatedResult<>(List.of(group), 1L, 0, 30);
+
+        com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto assetDto = buildAssetDto("photo.jpg", 1L);
+        TimelineGroupDto groupDto = new TimelineGroupDto(LocalDate.of(2024, 5, 10), "May 10, 2024", List.of(assetDto));
+
+        when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
+        when(getAssetsTimelineUseCase.execute(any(AssetFilter.class))).thenReturn(result);
+        when(assetWebMapper.toTimelineGroupDto(group)).thenReturn(groupDto);
+
+        mockMvc.perform(get("/api/assets/timeline")
+                        .param("folderPath", "/photos")
+                        .param("page", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isArray())
+                .andExpect(jsonPath("$.items[0].label").value("May 10, 2024"))
+                .andExpect(jsonPath("$.items[0].assets[0].fileName").value("photo.jpg"))
+                .andExpect(jsonPath("$.totalItems").value(1));
+    }
+
+    @Test
+    void getTimeline_emptyFolder_returns200WithEmptyItems() throws Exception {
+        com.jpablodrexler.photomanager.application.dto.PaginatedResult<TimelineGroup> result =
+                new com.jpablodrexler.photomanager.application.dto.PaginatedResult<>(List.of(), 0L, 0, 30);
+
+        when(folderRepository.findByPath("/empty")).thenReturn(Optional.empty());
+        when(getAssetsTimelineUseCase.execute(any(AssetFilter.class))).thenReturn(result);
+
+        mockMvc.perform(get("/api/assets/timeline")
+                        .param("folderPath", "/empty")
+                        .param("page", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").isEmpty())
+                .andExpect(jsonPath("$.totalItems").value(0))
+                .andExpect(jsonPath("$.totalPages").value(0));
     }
 
     // --- helpers ---

@@ -1,0 +1,82 @@
+import { mount } from 'cypress/angular';
+import { TimelineViewComponent } from './timeline-view.component';
+import { TimelineGroup } from '../../../core/models/timeline-group.model';
+import { Asset } from '../../../core/models/asset.model';
+
+describe('TimelineViewComponent', () => {
+  const mockAsset: Asset = {
+    assetId: 1,
+    folderId: 1,
+    folderPath: '/photos',
+    fileName: 'sunset.jpg',
+    fileSize: 1024000,
+    thumbnailCreationDateTime: '2024-05-10T10:00:00',
+    hash: 'abc123',
+    thumbnailUrl: '/api/assets/1/thumbnail',
+    imageUrl: '/api/assets/1/image',
+    rating: 3,
+    tags: [],
+  };
+
+  const mockGroups: TimelineGroup[] = [
+    {
+      localDate: '2024-05-10',
+      label: 'May 10, 2024',
+      assets: [mockAsset],
+    },
+    {
+      localDate: '2024-04-20',
+      label: 'April 20, 2024',
+      assets: [{ ...mockAsset, assetId: 2, fileName: 'beach.jpg' }],
+    },
+  ];
+
+  it('rendersGroupsWithCorrectHeaders_whenGroupsProvided', () => {
+    cy.mount(TimelineViewComponent, {
+      componentProperties: { groups: mockGroups },
+    });
+
+    cy.get('.timeline-month-header').should('have.length', 2);
+    cy.get('.timeline-month-header').first().should('contain.text', 'May 2024');
+    cy.get('.timeline-month-header').last().should('contain.text', 'April 2024');
+    cy.get('.timeline-day-header').should('have.length', 2);
+    cy.get('.timeline-thumbnail-cell').should('have.length', 2);
+  });
+
+  it('showsEmptyState_whenGroupsIsEmpty', () => {
+    cy.mount(TimelineViewComponent, {
+      componentProperties: { groups: [] },
+    });
+
+    cy.get('.timeline-empty').should('be.visible');
+    cy.get('.timeline-container').should('not.exist');
+  });
+
+  it('emitsThumbnailClick_whenThumbnailIsClicked', () => {
+    const clickSpy = cy.spy().as('clickSpy');
+
+    cy.mount(TimelineViewComponent, {
+      componentProperties: {
+        groups: [mockGroups[0]],
+        thumbnailClick: { emit: clickSpy } as any,
+      },
+    });
+
+    cy.get('.timeline-thumbnail-cell').first().click();
+    cy.get('@clickSpy').should('have.been.calledOnce');
+  });
+
+  it('sameMonthGroupsShareOneMonthHeader', () => {
+    const sameMonthGroups: TimelineGroup[] = [
+      { localDate: '2024-05-10', label: 'May 10, 2024', assets: [mockAsset] },
+      { localDate: '2024-05-09', label: 'May 9, 2024', assets: [{ ...mockAsset, assetId: 2 }] },
+    ];
+
+    cy.mount(TimelineViewComponent, {
+      componentProperties: { groups: sameMonthGroups },
+    });
+
+    cy.get('.timeline-month-header').should('have.length', 1);
+    cy.get('.timeline-day-header').should('have.length', 2);
+  });
+});

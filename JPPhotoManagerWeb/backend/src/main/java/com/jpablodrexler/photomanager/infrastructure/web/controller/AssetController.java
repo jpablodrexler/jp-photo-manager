@@ -14,6 +14,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
@@ -33,6 +34,7 @@ import com.jpablodrexler.photomanager.infrastructure.web.dto.DownloadAssetsReque
 import com.jpablodrexler.photomanager.infrastructure.web.dto.ExifMetadataDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.MoveAssetsRequest;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.RateAssetRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.TimelineGroupDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -63,6 +65,7 @@ import java.util.stream.Collectors;
 public class AssetController {
 
     private final GetAssetsUseCase getAssetsUseCase;
+    private final GetAssetsTimelineUseCase getAssetsTimelineUseCase;
     private final GetAssetImageUseCase getAssetImageUseCase;
     private final GetAssetExifUseCase getAssetExifUseCase;
     private final DownloadAssetsUseCase downloadAssetsUseCase;
@@ -100,6 +103,25 @@ public class AssetController {
         List<AssetDto> dtos = result.items().stream().map(assetWebMapper::toDto).collect(Collectors.toList());
         int totalPages = result.pageSize() > 0 ? (int) Math.ceil((double) result.total() / result.pageSize()) : 0;
         PaginatedData<AssetDto> data = new PaginatedData<>(dtos, page, totalPages, result.total());
+        return ResponseEntity.ok(data);
+    }
+
+    @GetMapping("/timeline")
+    public ResponseEntity<PaginatedData<TimelineGroupDto>> getTimeline(
+            @RequestParam String folderPath,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            @RequestParam(required = false) Integer minRating,
+            @RequestParam(required = false) String tags) {
+        Long folderId = folderRepository.findByPath(folderPath).map(Folder::getFolderId).orElse(null);
+        Set<String> tagSet = parseTags(tags);
+        AssetFilter filter = new AssetFilter(folderId, search, dateFrom, dateTo, minRating, null, page, 0, false, tagSet);
+        PaginatedResult<com.jpablodrexler.photomanager.domain.model.TimelineGroup> result = getAssetsTimelineUseCase.execute(filter);
+        List<TimelineGroupDto> dtos = result.items().stream().map(assetWebMapper::toTimelineGroupDto).collect(Collectors.toList());
+        int totalPages = result.pageSize() > 0 ? (int) Math.ceil((double) result.total() / result.pageSize()) : 0;
+        PaginatedData<TimelineGroupDto> data = new PaginatedData<>(dtos, page, totalPages, result.total());
         return ResponseEntity.ok(data);
     }
 

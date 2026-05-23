@@ -20,6 +20,8 @@ public interface AssetRepository {
 
     PaginatedResult<Asset> findFiltered(AssetFilter filter);
 
+    List<Asset> findAllFilteredSortedByDateDesc(AssetFilter filter);
+
     List<Asset> findByFolder(Folder folder);
 
     List<Asset> findAll();

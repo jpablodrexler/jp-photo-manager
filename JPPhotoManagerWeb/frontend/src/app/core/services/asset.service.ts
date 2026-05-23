@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { Asset, SortCriteria } from '../models/asset.model';
 import { ExifMetadata } from '../models/exif-metadata.model';
 import { PaginatedData } from '../models/paginated-data.model';
+import { TimelineGroup } from '../models/timeline-group.model';
 
 @Injectable({ providedIn: 'root' })
 export class AssetService {
@@ -25,6 +26,19 @@ export class AssetService {
     if (minRating && minRating > 0) params = params.set('minRating', minRating);
     if (tags && tags.length > 0) params = params.set('tags', tags.join(','));
     return this.http.get<PaginatedData<Asset>>(this.baseUrl, { params });
+  }
+
+  getTimeline(folderPath: string, page = 0,
+              filters?: { search?: string; dateFrom?: string; dateTo?: string; minRating?: number }
+  ): Observable<PaginatedData<TimelineGroup>> {
+    let params = new HttpParams()
+      .set('folderPath', folderPath)
+      .set('page', page);
+    if (filters?.search) params = params.set('search', filters.search);
+    if (filters?.dateFrom) params = params.set('dateFrom', filters.dateFrom);
+    if (filters?.dateTo) params = params.set('dateTo', filters.dateTo);
+    if (filters?.minRating && filters.minRating > 0) params = params.set('minRating', filters.minRating);
+    return this.http.get<PaginatedData<TimelineGroup>>(`${this.baseUrl}/timeline`, { params });
   }
 
   rateAsset(assetId: number, rating: number): Observable<void> {
