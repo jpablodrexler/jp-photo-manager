@@ -1,10 +1,13 @@
 package com.jpablodrexler.photomanager.application.usecase.catalog;
 
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
+import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
 import com.jpablodrexler.photomanager.domain.port.out.CatalogStateRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +30,7 @@ public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
     private final StoragePort storagePort;
     private final CatalogStateRepository catalogStateRepository;
     private final String instanceId;
+    private final Counter catalogAssetsCounter;
 
     @Value("${photomanager.root-catalog-folders:${user.home}/Pictures}")
     private String rootCatalogFolders;
@@ -34,11 +38,15 @@ public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
     public CatalogAssetsUseCaseImpl(CatalogFolderPort catalogFolderService,
             StoragePort storagePort,
             CatalogStateRepository catalogStateRepository,
-            @Qualifier("catalogInstanceId") String instanceId) {
+            @Qualifier("catalogInstanceId") String instanceId,
+            MeterRegistry meterRegistry) {
         this.catalogFolderService = catalogFolderService;
         this.storagePort = storagePort;
         this.catalogStateRepository = catalogStateRepository;
         this.instanceId = instanceId;
+        this.catalogAssetsCounter = Counter.builder("photomanager_catalog_assets_total")
+                .description("Total assets cataloged")
+                .register(meterRegistry);
     }
 
     @Async
@@ -48,8 +56,16 @@ public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
             log.debug("Catalog already running, skipping API-triggered run");
             return CompletableFuture.completedFuture(null);
         }
+        Consumer<CatalogChangeNotification> countingListener = notification -> {
+            if (notification.getReason() == ReasonEnum.ASSET_CREATED) {
+                catalogAssetsCounter.increment();
+            }
+            if (listener != null) {
+                listener.accept(notification);
+            }
+        };
         try {
-            doRunCatalog(listener);
+            doRunCatalog(countingListener);
             catalogStateRepository.markCompleted(instanceId, Instant.now());
         } finally {
             catalogStateRepository.release(instanceId);

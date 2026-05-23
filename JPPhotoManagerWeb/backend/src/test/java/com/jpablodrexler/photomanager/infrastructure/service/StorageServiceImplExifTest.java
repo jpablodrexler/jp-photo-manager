@@ -1,11 +1,10 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
 import com.jpablodrexler.photomanager.domain.model.ExifMetadata;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.InjectMocks;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -17,14 +16,17 @@ import java.nio.file.StandardCopyOption;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(MockitoExtension.class)
 class StorageServiceImplExifTest {
 
-    @InjectMocks
     StorageServiceAdapter sut;
 
     @TempDir
     Path tempDir;
+
+    @BeforeEach
+    void setUp() {
+        sut = new StorageServiceAdapter(new SimpleMeterRegistry());
+    }
 
     @Test
     void getExifMetadata_jpegWithExif_returnsCameraMakeAndModel() throws IOException {

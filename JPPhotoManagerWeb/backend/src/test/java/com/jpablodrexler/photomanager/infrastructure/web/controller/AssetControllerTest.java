@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
 import com.jpablodrexler.photomanager.application.dto.AssetFilter;
 import com.jpablodrexler.photomanager.application.dto.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
@@ -33,6 +34,7 @@ import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -42,7 +44,9 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -57,6 +61,8 @@ class AssetControllerTest {
     MockMvc mockMvc;
     @Autowired
     ObjectMapper objectMapper;
+    @Autowired
+    AssetController assetController;
 
     @MockitoBean
     GetAssetsUseCase getAssetsUseCase;
@@ -94,6 +100,8 @@ class AssetControllerTest {
     FolderRepository folderRepository;
     @MockitoBean
     AssetWebMapper assetWebMapper;
+    @MockitoBean
+    MeterRegistry meterRegistry;
 
     // --- GET /api/assets ---
 
@@ -225,6 +233,24 @@ class AssetControllerTest {
 
         mockMvc.perform(asyncDispatch(result))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void catalogAssets_sseGauge_incrementsOnOpenAndDecrementsOnCompletion() throws Exception {
+        when(catalogAssetsUseCase.execute(any())).thenReturn(CompletableFuture.completedFuture(null));
+
+        AtomicInteger count = (AtomicInteger) ReflectionTestUtils.getField(assetController, "sseConnectionCount");
+        assertThat(count).isNotNull();
+        assertThat(count.get()).isEqualTo(0);
+
+        MvcResult result = mockMvc.perform(get("/api/assets/catalog"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        assertThat(count.get()).isGreaterThanOrEqualTo(0);
+
+        mockMvc.perform(asyncDispatch(result))
+                .andExpect(status().isOk());
+        assertThat(count.get()).isEqualTo(0);
     }
 
     // --- POST /api/assets/move ---

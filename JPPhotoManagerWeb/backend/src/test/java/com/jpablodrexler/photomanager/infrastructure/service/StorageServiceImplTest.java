@@ -1,11 +1,11 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.InjectMocks;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -20,14 +20,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@ExtendWith(MockitoExtension.class)
 class StorageServiceImplTest {
 
-    @InjectMocks
     StorageServiceAdapter sut;
 
     @TempDir
     Path tempDir;
+
+    @BeforeEach
+    void setUp() {
+        sut = new StorageServiceAdapter(new SimpleMeterRegistry());
+    }
 
     // --- listFiles ---
 
@@ -342,6 +345,20 @@ class StorageServiceImplTest {
         byte[] result = sut.generateThumbnail(png.toString(), 100, 75);
 
         assertThat(result).isNotEmpty();
+    }
+
+    @Test
+    void generateThumbnail_validPngFile_timerRecordsNonZeroDuration() throws IOException {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        StorageServiceAdapter adapterWithRegistry = new StorageServiceAdapter(registry);
+        Path png = writePng("timed.png", 100, 75);
+
+        adapterWithRegistry.generateThumbnail(png.toString(), 50, 40);
+
+        Timer timer = registry.find("photomanager_thumbnail_generation_seconds").timer();
+        assertThat(timer).isNotNull();
+        assertThat(timer.count()).isEqualTo(1);
+        assertThat(timer.totalTime(java.util.concurrent.TimeUnit.NANOSECONDS)).isGreaterThan(0);
     }
 
     // --- helper ---

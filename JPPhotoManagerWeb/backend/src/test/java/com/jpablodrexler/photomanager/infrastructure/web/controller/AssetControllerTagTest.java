@@ -19,6 +19,7 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCa
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -67,6 +68,7 @@ class AssetControllerTagTest {
     @MockitoBean ThumbnailPort thumbnailPort;
     @MockitoBean FolderRepository folderRepository;
     @MockitoBean AssetWebMapper assetWebMapper;
+    @MockitoBean MeterRegistry meterRegistry;
 
     @Test
     void addTag_validRequest_returns201() throws Exception {

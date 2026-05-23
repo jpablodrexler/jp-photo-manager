@@ -36,6 +36,9 @@ import com.jpablodrexler.photomanager.infrastructure.web.dto.MoveAssetsRequest;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.RateAssetRequest;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.TimelineGroupDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +60,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @RestController
@@ -82,9 +86,19 @@ public class AssetController {
     private final ThumbnailPort thumbnailPort;
     private final FolderRepository folderRepository;
     private final AssetWebMapper assetWebMapper;
+    private final MeterRegistry meterRegistry;
+
+    private final AtomicInteger sseConnectionCount = new AtomicInteger(0);
 
     @Value("${photomanager.max-download-assets:500}")
     private int maxDownloadAssets;
+
+    @PostConstruct
+    private void initMetrics() {
+        Gauge.builder("photomanager_active_sse_connections", sseConnectionCount, AtomicInteger::get)
+                .description("Active SSE connections")
+                .register(meterRegistry);
+    }
 
     @GetMapping
     public ResponseEntity<PaginatedData<AssetDto>> getAssets(
@@ -151,6 +165,10 @@ public class AssetController {
     @GetMapping("/catalog")
     public SseEmitter catalogAssets() {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        sseConnectionCount.incrementAndGet();
+        emitter.onCompletion(sseConnectionCount::decrementAndGet);
+        emitter.onTimeout(sseConnectionCount::decrementAndGet);
+        emitter.onError(t -> sseConnectionCount.decrementAndGet());
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
             try {

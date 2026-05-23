@@ -3,7 +3,8 @@ package com.jpablodrexler.photomanager.infrastructure.service;
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
 import com.jpablodrexler.photomanager.domain.model.ExifMetadata;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
-import lombok.RequiredArgsConstructor;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.imaging.Imaging;
 import org.apache.commons.imaging.common.ImageMetadata;
@@ -34,13 +35,20 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class StorageServiceAdapter implements StoragePort {
 
     private static final int THUMBNAIL_MAX_WIDTH = 200;
     private static final int THUMBNAIL_MAX_HEIGHT = 150;
     private static final int IMAGE_DIMENSION_LIMIT = 20_000;
+
+    private final Timer thumbnailTimer;
+
+    public StorageServiceAdapter(MeterRegistry meterRegistry) {
+        this.thumbnailTimer = Timer.builder("photomanager_thumbnail_generation_seconds")
+                .description("Thumbnail generation latency")
+                .register(meterRegistry);
+    }
 
     @Override
     public List<String> listFiles(String directoryPath) {
@@ -146,9 +154,14 @@ public class StorageServiceAdapter implements StoragePort {
 
     @Override
     public byte[] generateThumbnail(String filePath, int maxWidth, int maxHeight) throws IOException {
-        BufferedImage image = loadImage(filePath);
-        ImageRotation rotation = getImageRotation(filePath);
-        return generateThumbnail(image, maxWidth, maxHeight, rotation);
+        Timer.Sample sample = Timer.start();
+        try {
+            BufferedImage image = loadImage(filePath);
+            ImageRotation rotation = getImageRotation(filePath);
+            return generateThumbnail(image, maxWidth, maxHeight, rotation);
+        } finally {
+            sample.stop(thumbnailTimer);
+        }
     }
 
     public byte[] generateThumbnail(BufferedImage image, int maxWidth, int maxHeight, ImageRotation rotation) throws IOException {
