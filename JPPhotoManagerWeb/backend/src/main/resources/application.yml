@@ -28,6 +28,12 @@ management:
     web:
       exposure:
         include: health,prometheus
+  endpoint:
+    health:
+      show-details: always
+  health:
+    defaults:
+      enabled: true
   metrics:
     export:
       prometheus:
@@ -52,4 +58,5 @@ photomanager:
   cors-allowed-origins: http://localhost:4200
   max-download-assets: 500
   recycle-bin-retention-days: 30
+  geocoding-base-url: ${GEOCODING_BASE_URL:https://nominatim.openstreetmap.org}
 

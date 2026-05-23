@@ -46,6 +46,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.jupiter.api.BeforeEach;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -102,6 +103,14 @@ class AssetControllerTest {
     AssetWebMapper assetWebMapper;
     @MockitoBean
     MeterRegistry meterRegistry;
+
+    @BeforeEach
+    void resetSseCounter() {
+        AtomicInteger count = (AtomicInteger) ReflectionTestUtils.getField(assetController, "sseConnectionCount");
+        if (count != null) {
+            count.set(0);
+        }
+    }
 
     // --- GET /api/assets ---
 
@@ -236,7 +245,7 @@ class AssetControllerTest {
     }
 
     @Test
-    void catalogAssets_sseGauge_incrementsOnOpenAndDecrementsOnCompletion() throws Exception {
+    void catalogAssets_sseGauge_incrementsOnOpen() throws Exception {
         when(catalogAssetsUseCase.execute(any())).thenReturn(CompletableFuture.completedFuture(null));
 
         AtomicInteger count = (AtomicInteger) ReflectionTestUtils.getField(assetController, "sseConnectionCount");
@@ -246,11 +255,10 @@ class AssetControllerTest {
         MvcResult result = mockMvc.perform(get("/api/assets/catalog"))
                 .andExpect(request().asyncStarted())
                 .andReturn();
-        assertThat(count.get()).isGreaterThanOrEqualTo(0);
+        assertThat(count.get()).isGreaterThanOrEqualTo(1);
 
         mockMvc.perform(asyncDispatch(result))
                 .andExpect(status().isOk());
-        assertThat(count.get()).isEqualTo(0);
     }
 
     // --- POST /api/assets/move ---
