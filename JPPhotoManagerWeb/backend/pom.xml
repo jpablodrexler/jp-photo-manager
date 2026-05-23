@@ -77,6 +77,13 @@
             <version>${mapstruct.version}</version>
         </dependency>
 
+        <!-- Audio metadata extraction -->
+        <dependency>
+            <groupId>net.jthink</groupId>
+            <artifactId>jaudiotagger</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+
         <!-- EXIF reading and image manipulation -->
         <dependency>
             <groupId>org.apache.commons</groupId>

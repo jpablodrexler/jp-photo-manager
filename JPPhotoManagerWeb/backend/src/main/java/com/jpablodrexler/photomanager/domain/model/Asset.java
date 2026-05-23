@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.domain.model;
 
+import com.jpablodrexler.photomanager.domain.enums.FileType;
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
 import lombok.Builder;
 import lombok.Data;
@@ -32,6 +33,7 @@ public class Asset {
     private LocalDateTime deletedAt;
     private int rating;
     private Set<String> tags = new HashSet<>();
+    private FileType fileType = FileType.IMAGE;
 
     public String getThumbnailBlobName() {
         return assetId + ".bin";

@@ -1,4 +1,5 @@
 export type ImageRotation = 'ROTATE_0' | 'ROTATE_90' | 'ROTATE_180' | 'ROTATE_270';
+export type FileType = 'IMAGE' | 'AUDIO' | 'VIDEO';
 
 export interface Asset {
   assetId: number;
@@ -19,6 +20,7 @@ export interface Asset {
   imageUrl: string;
   rating: number;
   tags: string[];
+  fileType: FileType;
 }
 
 export type SortCriteria =

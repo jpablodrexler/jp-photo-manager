@@ -1,12 +1,16 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
+import com.jpablodrexler.photomanager.domain.enums.FileType;
 import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.AssetAudio;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
+import com.jpablodrexler.photomanager.domain.model.AudioMetadata;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
 import com.jpablodrexler.photomanager.domain.model.ExifMetadata;
+import com.jpablodrexler.photomanager.domain.port.out.AssetAudioRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
@@ -48,6 +52,9 @@ class CatalogFolderServiceImplTest {
     AssetExifRepository assetExifRepository;
 
     @Mock
+    AssetAudioRepository assetAudioRepository;
+
+    @Mock
     FolderRepository folderRepository;
 
     @Mock
@@ -55,6 +62,9 @@ class CatalogFolderServiceImplTest {
 
     @Mock
     ThumbnailPort thumbnailStorageService;
+
+    @Mock
+    AudioMetadataService audioMetadataService;
 
     @InjectMocks
     CatalogFolderServiceImpl sut;
@@ -326,6 +336,40 @@ class CatalogFolderServiceImplTest {
         when(assetRepository.save(any())).thenAnswer(inv -> {
             Asset a = inv.getArgument(0);
             a.setAssetId(99L);
+            return a;
+        });
+    }
+
+    @Test
+    void catalogFolder_mp3File_routesThroughAudioMetadataService() throws IOException {
+        Folder folder = buildFolder(1L, "/music");
+        when(folderRepository.findByPath("/music")).thenReturn(Optional.of(folder));
+        when(storageService.listFiles("/music")).thenReturn(List.of("/music/song.mp3"));
+        when(assetRepository.findByFolder(folder)).thenReturn(List.of());
+        stubAudioAssetCreationOk(folder, "/music/song.mp3");
+
+        sut.catalogFolder("/music", null, NO_OP_HEARTBEAT, new AtomicInteger(0), 1);
+
+        ArgumentCaptor<Asset> captor = ArgumentCaptor.forClass(Asset.class);
+        verify(assetRepository).save(captor.capture());
+        assertThat(captor.getValue().getFileType()).isEqualTo(FileType.AUDIO);
+        verify(audioMetadataService).extractAlbumArt(any());
+        verify(audioMetadataService).extract(any());
+        verify(assetAudioRepository).save(any(AssetAudio.class));
+    }
+
+    private void stubAudioAssetCreationOk(Folder folder, String filePath) throws IOException {
+        when(storageService.getFileSize(filePath)).thenReturn(4096L);
+        when(storageService.computeHash(filePath)).thenReturn("audiohash");
+        when(storageService.getFileCreationDateTime(filePath)).thenReturn(LocalDateTime.of(2024, 1, 1, 0, 0));
+        when(storageService.getFileModificationDateTime(filePath)).thenReturn(LocalDateTime.of(2024, 1, 2, 0, 0));
+        when(audioMetadataService.extractAlbumArt(any())).thenReturn(java.util.Optional.empty());
+        when(audioMetadataService.extract(any())).thenReturn(
+                new AudioMetadata("Song", "Artist", "Album", 240, 320, 44100));
+        when(assetAudioRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(assetRepository.save(any())).thenAnswer(inv -> {
+            Asset a = inv.getArgument(0);
+            a.setAssetId(42L);
             return a;
         });
     }

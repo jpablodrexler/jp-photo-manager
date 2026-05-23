@@ -1,11 +1,15 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
+import com.jpablodrexler.photomanager.domain.enums.FileType;
 import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.AssetAudio;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
+import com.jpablodrexler.photomanager.domain.model.AudioMetadata;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
 import com.jpablodrexler.photomanager.domain.model.ExifMetadata;
+import com.jpablodrexler.photomanager.domain.port.out.AssetAudioRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
@@ -18,11 +22,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -37,9 +48,11 @@ public class CatalogFolderServiceImpl implements CatalogFolderPort {
 
     private final AssetRepository assetRepository;
     private final AssetExifRepository assetExifRepository;
+    private final AssetAudioRepository assetAudioRepository;
     private final FolderRepository folderRepository;
     private final StoragePort storageService;
     private final ThumbnailPort thumbnailStorageService;
+    private final AudioMetadataService audioMetadataService;
 
     @Value("${photomanager.catalog-batch-size:1000}")
     int batchSize;
@@ -119,6 +132,9 @@ public class CatalogFolderServiceImpl implements CatalogFolderPort {
     private Asset createAsset(Folder folder, String directoryPath, String fileName) {
         String filePath = directoryPath + "/" + fileName;
         try {
+            if (StorageServiceAdapter.isAudioFile(fileName)) {
+                return createAudioAsset(folder, directoryPath, fileName);
+            }
             Asset asset = new Asset();
             asset.setFolder(folder);
             asset.setFileName(fileName);
@@ -128,6 +144,7 @@ public class CatalogFolderServiceImpl implements CatalogFolderPort {
             asset.setFileModificationDateTime(storageService.getFileModificationDateTime(filePath));
             asset.setThumbnailCreationDateTime(LocalDateTime.now());
             asset.setImageRotation(storageService.getImageRotation(filePath));
+            asset.setFileType(FileType.IMAGE);
 
             byte[] thumbnail = storageService.generateThumbnail(filePath, THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT);
             asset = assetRepository.save(asset);
@@ -140,6 +157,36 @@ public class CatalogFolderServiceImpl implements CatalogFolderPort {
             log.error("Failed to create asset for {}", filePath, e);
             throw new RuntimeException("Failed to create asset", e);
         }
+    }
+
+    private Asset createAudioAsset(Folder folder, String directoryPath, String fileName) throws IOException {
+        String filePath = directoryPath + "/" + fileName;
+        java.nio.file.Path path = Paths.get(filePath);
+
+        Asset asset = new Asset();
+        asset.setFolder(folder);
+        asset.setFileName(fileName);
+        asset.setFileSize(storageService.getFileSize(filePath));
+        asset.setHash(storageService.computeHash(filePath));
+        asset.setFileCreationDateTime(storageService.getFileCreationDateTime(filePath));
+        asset.setFileModificationDateTime(storageService.getFileModificationDateTime(filePath));
+        asset.setThumbnailCreationDateTime(LocalDateTime.now());
+        asset.setFileType(FileType.AUDIO);
+
+        asset = assetRepository.save(asset);
+
+        Optional<byte[]> albumArt = audioMetadataService.extractAlbumArt(path);
+        byte[] thumbnail;
+        if (albumArt.isPresent()) {
+            thumbnail = resizeToThumbnail(albumArt.get());
+        } else {
+            thumbnail = generateAudioPlaceholder();
+        }
+        thumbnailStorageService.saveThumbnail(asset.getThumbnailBlobName(), thumbnail);
+
+        saveAudioMetadata(asset, path);
+
+        return asset;
     }
 
     private void saveExifMetadata(Asset asset, String filePath) {
@@ -163,6 +210,50 @@ public class CatalogFolderServiceImpl implements CatalogFolderPort {
         } catch (Exception e) {
             log.warn("Failed to save EXIF metadata for asset {}", asset.getAssetId(), e);
         }
+    }
+
+    private void saveAudioMetadata(Asset asset, java.nio.file.Path filePath) {
+        try {
+            AudioMetadata metadata = audioMetadataService.extract(filePath);
+            AssetAudio assetAudio = AssetAudio.builder()
+                    .assetId(asset.getAssetId())
+                    .title(metadata.title())
+                    .artist(metadata.artist())
+                    .album(metadata.album())
+                    .durationSeconds(metadata.durationSeconds())
+                    .bitrateKbps(metadata.bitrateKbps())
+                    .sampleRateHz(metadata.sampleRateHz())
+                    .build();
+            assetAudioRepository.save(assetAudio);
+        } catch (Exception e) {
+            log.warn("Failed to save audio metadata for asset {}", asset.getAssetId(), e);
+        }
+    }
+
+    private byte[] resizeToThumbnail(byte[] imageData) throws IOException {
+        BufferedImage src = ImageIO.read(new ByteArrayInputStream(imageData));
+        if (src == null) return generateAudioPlaceholder();
+        BufferedImage resized = new BufferedImage(THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = resized.createGraphics();
+        g.drawImage(src, 0, 0, THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT, null);
+        g.dispose();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(resized, "jpg", out);
+        return out.toByteArray();
+    }
+
+    private byte[] generateAudioPlaceholder() throws IOException {
+        BufferedImage image = new BufferedImage(THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = image.createGraphics();
+        g.setColor(new Color(48, 48, 48));
+        g.fillRect(0, 0, THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT);
+        g.setColor(new Color(180, 180, 180));
+        g.setFont(g.getFont().deriveFont(48f));
+        g.drawString("♫", THUMBNAIL_MAX_WIDTH / 2 - 20, THUMBNAIL_MAX_HEIGHT / 2 + 18);
+        g.dispose();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(image, "jpg", out);
+        return out.toByteArray();
     }
 
     private int computePercent(int processed, int total) {

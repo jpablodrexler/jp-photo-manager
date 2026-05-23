@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.persistence.entity;
 
+import com.jpablodrexler.photomanager.domain.enums.FileType;
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -64,6 +65,10 @@ public class AssetEntity {
 
     @Column(name = "rating", nullable = false)
     private int rating = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "file_type", nullable = false)
+    private FileType fileType = FileType.IMAGE;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

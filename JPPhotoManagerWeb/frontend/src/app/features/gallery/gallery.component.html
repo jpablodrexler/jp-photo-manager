@@ -260,11 +260,25 @@
           <button mat-icon-button class="viewer-nav viewer-nav--prev" (click)="viewerPrev()" [disabled]="currentViewerIndex === 0">
             <mat-icon>chevron_left</mat-icon>
           </button>
-          <img
-            [src]="currentViewerAsset.imageUrl"
-            [alt]="currentViewerAsset.fileName"
-            [style.transform]="'scale(' + viewerZoom + ')'"
-          />
+          @if (currentViewerAsset.fileType === 'AUDIO') {
+            <div class="audio-viewer">
+              <img [src]="currentViewerAsset.thumbnailUrl" [alt]="currentViewerAsset.fileName" class="audio-album-art" />
+              <audio controls [src]="'/api/assets/' + currentViewerAsset.assetId + '/stream'" class="audio-player">
+                Your browser does not support the audio element.
+              </audio>
+              <div class="audio-meta">
+                @if (currentViewerAsset.fileName) {
+                  <div class="audio-filename">{{ currentViewerAsset.fileName }}</div>
+                }
+              </div>
+            </div>
+          } @else {
+            <img
+              [src]="currentViewerAsset.imageUrl"
+              [alt]="currentViewerAsset.fileName"
+              [style.transform]="'scale(' + viewerZoom + ')'"
+            />
+          }
           <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="viewerNext()" [disabled]="currentViewerIndex >= assets.length - 1">
             <mat-icon>chevron_right</mat-icon>
           </button>
