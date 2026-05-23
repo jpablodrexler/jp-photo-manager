@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+BACKEND_DIR="$REPO_ROOT/JPPhotoManagerWeb/backend"
+FRONTEND_DIR="$REPO_ROOT/JPPhotoManagerWeb/frontend"
+
+changed_files() {
+    git diff --cached --name-only
+}
+
+run_backend=false
+run_frontend=false
+
+while IFS= read -r file; do
+    case "$file" in
+        JPPhotoManagerWeb/backend/*)
+            run_backend=true ;;
+        JPPhotoManagerWeb/frontend/*)
+            run_frontend=true ;;
+    esac
+done < <(changed_files)
+
+if ! $run_backend && ! $run_frontend; then
+    exit 0
+fi
+
+if $run_backend; then
+    echo ">>> Backend files changed — running mvn test"
+    if ! (cd "$BACKEND_DIR" && mvn test -q); then
+        echo ""
+        echo "✗ Backend tests failed. Commit blocked."
+        echo "  Fix the failures above, then re-stage and retry."
+        exit 1
+    fi
+    echo "✓ Backend tests passed"
+fi
+
+if $run_frontend; then
+    echo ">>> Frontend files changed — running npm test"
+    if ! (cd "$FRONTEND_DIR" && npm test --silent 2>&1); then
+        echo ""
+        echo "✗ Frontend tests failed. Commit blocked."
+        echo "  Fix the failures above, then re-stage and retry."
+        exit 1
+    fi
+    echo "✓ Frontend tests passed"
+fi

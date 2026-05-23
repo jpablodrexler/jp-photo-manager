@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## First-time setup
+
+After cloning, activate the shared git hooks:
+```bash
+git config core.hooksPath .githooks
+```
+
+This installs a pre-commit hook that runs the backend and/or frontend test suite whenever the corresponding files are staged, blocking commits that would break the pipeline.
+
 ## Commands
 
 **Build:**
