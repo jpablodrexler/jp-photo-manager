@@ -67,6 +67,7 @@ export class HomeComponent implements OnInit {
       imageUrl: '',
       rating: 0,
       tags: [],
+      fileType: 'IMAGE',
     };
   }
 }
