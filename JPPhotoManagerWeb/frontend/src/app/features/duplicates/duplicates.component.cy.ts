@@ -19,6 +19,7 @@ describe('DuplicatesComponent', () => {
     imageUrl: `/api/assets/${id}/image`,
     rating: 0,
     tags: [],
+    fileType: 'IMAGE',
   });
 
   const mockDuplicateGroups: Asset[][] = [

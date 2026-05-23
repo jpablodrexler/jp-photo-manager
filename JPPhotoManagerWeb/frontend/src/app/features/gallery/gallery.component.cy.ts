@@ -29,6 +29,7 @@ describe('GalleryComponent', () => {
       imageUrl: '/api/assets/1/image',
       rating: 0,
       tags: [],
+      fileType: 'IMAGE',
     },
     {
       assetId: 2,
@@ -42,6 +43,7 @@ describe('GalleryComponent', () => {
       imageUrl: '/api/assets/2/image',
       rating: 0,
       tags: [],
+      fileType: 'IMAGE',
     },
   ];
 
@@ -403,7 +405,7 @@ describe('GalleryComponent', () => {
         assetId: 3, folderId: 1, folderPath: '/photos', fileName: 'mountain.jpg',
         fileSize: 768000, thumbnailCreationDateTime: '2024-06-03T10:00:00',
         hash: 'ghi789', thumbnailUrl: '/api/assets/3/thumbnail', imageUrl: '/api/assets/3/image',
-        rating: 0, tags: [],
+        rating: 0, tags: [], fileType: 'IMAGE',
       },
     ];
     const getAssets = cy.stub().returns(of({ items: threeAssets, pageIndex: 0, totalPages: 1, totalItems: 3 }));

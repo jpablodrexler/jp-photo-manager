@@ -16,6 +16,7 @@ describe('ThumbnailComponent', () => {
     imageUrl: '/api/assets/1/image',
     rating: 0,
     tags: [],
+    fileType: 'IMAGE',
   };
 
   it('should render the asset file name', () => {

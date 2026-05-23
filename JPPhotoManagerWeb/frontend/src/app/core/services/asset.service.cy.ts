@@ -22,6 +22,7 @@ describe('AssetService', () => {
     imageUrl: '/api/assets/1/image',
     rating: 0,
     tags: [],
+    fileType: 'IMAGE',
   };
 
   beforeEach(() => {

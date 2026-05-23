@@ -12,9 +12,9 @@ describe('AlbumDetailComponent', () => {
   const ALBUM_ID = 5;
 
   const mockAssets: Asset[] = [
-    { assetId: 101, folderId: 1, folderPath: '/photos', fileName: 'a.jpg', fileSize: 1000, thumbnailCreationDateTime: '2024-01-01T00:00:00', hash: 'h1', thumbnailUrl: '/api/assets/101/thumbnail', imageUrl: '/api/assets/101/image', rating: 0, tags: [] },
-    { assetId: 102, folderId: 1, folderPath: '/photos', fileName: 'b.jpg', fileSize: 2000, thumbnailCreationDateTime: '2024-01-01T00:00:00', hash: 'h2', thumbnailUrl: '/api/assets/102/thumbnail', imageUrl: '/api/assets/102/image', rating: 0, tags: [] },
-    { assetId: 103, folderId: 1, folderPath: '/photos', fileName: 'c.jpg', fileSize: 3000, thumbnailCreationDateTime: '2024-01-01T00:00:00', hash: 'h3', thumbnailUrl: '/api/assets/103/thumbnail', imageUrl: '/api/assets/103/image', rating: 0, tags: [] }
+    { assetId: 101, folderId: 1, folderPath: '/photos', fileName: 'a.jpg', fileSize: 1000, thumbnailCreationDateTime: '2024-01-01T00:00:00', hash: 'h1', thumbnailUrl: '/api/assets/101/thumbnail', imageUrl: '/api/assets/101/image', rating: 0, tags: [], fileType: 'IMAGE' },
+    { assetId: 102, folderId: 1, folderPath: '/photos', fileName: 'b.jpg', fileSize: 2000, thumbnailCreationDateTime: '2024-01-01T00:00:00', hash: 'h2', thumbnailUrl: '/api/assets/102/thumbnail', imageUrl: '/api/assets/102/image', rating: 0, tags: [], fileType: 'IMAGE' },
+    { assetId: 103, folderId: 1, folderPath: '/photos', fileName: 'c.jpg', fileSize: 3000, thumbnailCreationDateTime: '2024-01-01T00:00:00', hash: 'h3', thumbnailUrl: '/api/assets/103/thumbnail', imageUrl: '/api/assets/103/image', rating: 0, tags: [], fileType: 'IMAGE' }
   ];
 
   const mockAlbum: Album = {

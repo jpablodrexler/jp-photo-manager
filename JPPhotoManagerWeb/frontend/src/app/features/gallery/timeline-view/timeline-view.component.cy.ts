@@ -16,6 +16,7 @@ describe('TimelineViewComponent', () => {
     imageUrl: '/api/assets/1/image',
     rating: 3,
     tags: [],
+    fileType: 'IMAGE',
   };
 
   const mockGroups: TimelineGroup[] = [
