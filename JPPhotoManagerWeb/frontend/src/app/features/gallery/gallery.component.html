@@ -43,6 +43,12 @@
             <button mat-menu-item (click)="openBulkTagDialog()">
               <mat-icon>label</mat-icon> Tag selected
             </button>
+            <button mat-menu-item (click)="moveSelectedAssets('move')">
+              <mat-icon>drive_file_move</mat-icon> Move to folder…
+            </button>
+            <button mat-menu-item (click)="moveSelectedAssets('copy')">
+              <mat-icon>file_copy</mat-icon> Copy to folder…
+            </button>
             <button mat-menu-item (click)="downloadSelected()">
               <mat-icon>download</mat-icon> Download
             </button>

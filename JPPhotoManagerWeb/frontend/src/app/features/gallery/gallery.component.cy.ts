@@ -900,6 +900,49 @@ describe('GalleryComponent', () => {
     });
   });
 
+  it('moveSelectedAssets_moveConfirmed_showsMovedSnackbarAndClearsSelection', () => {
+    const getAssets = cy.stub().returns(of(emptyPage));
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      cy.stub(component['dialog'], 'open').returns({ afterClosed: () => of({ destinationFolder: '/target' }) } as never);
+      component.currentFolder = '/photos';
+      component.selectedAssets.add(1);
+      component.selectedAssets.add(2);
+      component.moveSelectedAssets('move');
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.contains('Moved 2 asset(s)').should('be.visible');
+    cy.wrap(getAssets).should('have.been.called');
+  });
+
+  it('moveSelectedAssets_copyConfirmed_showsCopiedSnackbar', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      cy.stub(component['dialog'], 'open').returns({ afterClosed: () => of({ destinationFolder: '/target' }) } as never);
+      component.currentFolder = '/photos';
+      component.selectedAssets.add(1);
+      component.moveSelectedAssets('copy');
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.contains('Copied 1 asset(s)').should('be.visible');
+  });
+
+  it('moveSelectedAssets_moveFails_showsErrorSnackbar', () => {
+    const moveAssets = cy.stub().returns(throwError(() => new Error('Network error')));
+    mountGallery({ moveAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      cy.stub(component['dialog'], 'open').returns({ afterClosed: () => of({ destinationFolder: '/target' }) } as never);
+      component.currentFolder = '/photos';
+      component.selectedAssets.add(1);
+      component.moveSelectedAssets('move');
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.contains('Failed to move assets').should('be.visible');
+  });
+
   it('ngOnInit_withoutFolderQueryParam_doesNotPreSelectFolder', () => {
     const getAssets = cy.stub().returns(of({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 }));
 

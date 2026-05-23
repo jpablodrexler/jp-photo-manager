@@ -1,0 +1,9 @@
+::host {
+  display: block;
+}
+
+.dialog-content {
+  max-height: 80vh;
+  overflow-y: auto;
+  min-width: 320px;
+}

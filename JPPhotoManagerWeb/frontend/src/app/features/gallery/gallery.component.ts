@@ -44,6 +44,7 @@ import { DropZoneComponent } from "./drop-zone/drop-zone.component";
 import { AddToAlbumDialogComponent } from "./add-to-album-dialog/add-to-album-dialog.component";
 import { SavePresetDialogComponent } from "./save-preset-dialog/save-preset-dialog.component";
 import { BulkTagDialogComponent } from "./bulk-tag-dialog/bulk-tag-dialog.component";
+import { FolderPickerDialogComponent } from "./folder-picker-dialog/folder-picker-dialog.component";
 import { TimelineViewComponent } from "./timeline-view/timeline-view.component";
 import { TimelineGroup } from "../../core/models/timeline-group.model";
 
@@ -78,6 +79,7 @@ type ViewType = "grid" | "timeline";
     ExifPanelComponent,
     DropZoneComponent,
     TimelineViewComponent,
+    FolderPickerDialogComponent,
   ],
   templateUrl: "./gallery.component.html",
   styleUrl: "./gallery.component.scss",
@@ -776,6 +778,34 @@ export class GalleryComponent implements OnInit, OnDestroy {
       data: { assetIds: ids },
     }).afterClosed().subscribe((changed) => {
       if (changed) this.loadAssets();
+    });
+  }
+
+  moveSelectedAssets(mode: 'move' | 'copy'): void {
+    const ids = Array.from(this.selectedAssets);
+    if (ids.length === 0) return;
+    this.dialog.open(FolderPickerDialogComponent, {
+      width: '480px',
+      data: { mode, assetCount: ids.length, sourceFolder: this.currentFolder },
+    }).afterClosed().subscribe((result) => {
+      if (!result) return;
+      const verb = mode === 'move' ? 'Moving' : 'Copying';
+      const progressRef = this.snackBar.open(`${verb}…`, undefined, { duration: 0 });
+      this.assetService.moveAssets(ids, result.destinationFolder, mode === 'copy').subscribe({
+        next: () => {
+          progressRef.dismiss();
+          const folderName = result.destinationFolder.split('/').filter(Boolean).pop() ?? result.destinationFolder;
+          const doneVerb = mode === 'move' ? 'Moved' : 'Copied';
+          this.snackBar.open(`${doneVerb} ${ids.length} asset(s) to ${folderName}`, 'OK', { duration: 4000 });
+          this.selectedAssets.clear();
+          this.loadAssets();
+        },
+        error: () => {
+          progressRef.dismiss();
+          const errorVerb = mode === 'move' ? 'move' : 'copy';
+          this.snackBar.open(`Failed to ${errorVerb} assets`, 'OK', { duration: 4000 });
+        },
+      });
     });
   }
 

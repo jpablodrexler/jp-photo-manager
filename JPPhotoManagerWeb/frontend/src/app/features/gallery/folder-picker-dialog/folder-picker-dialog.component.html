@@ -1,0 +1,10 @@
+<h2 mat-dialog-title>{{ title }}</h2>
+<mat-dialog-content class="dialog-content">
+  <app-folder-nav (folderSelected)="onFolderSelected($event)" />
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-raised-button color="primary" [disabled]="isConfirmDisabled" (click)="confirm()">
+    {{ confirmLabel }}
+  </button>
+</mat-dialog-actions>
