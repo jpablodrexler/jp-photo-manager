@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.config;
 
+import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,6 +20,11 @@ public class AppConfig {
 
     @Value("${photomanager.cors-allowed-origins}")
     private List<String> corsAllowedOrigins;
+
+    @Bean
+    public ProcessMemoryMetrics processMemoryMetrics() {
+        return new ProcessMemoryMetrics();
+    }
 
     @Bean(name = "taskExecutor")
     public Executor taskExecutor() {
