@@ -1,7 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.CatalogStateRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,10 +12,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CatalogSchedulerTest {
@@ -25,18 +26,14 @@ class CatalogSchedulerTest {
     CatalogAssetsUseCase catalogAssetsUseCase;
 
     @Mock
-    CatalogStateRepository catalogRunStateRepository;
-
-    @Mock
     TaskScheduler catalogTaskScheduler;
 
     CatalogScheduler sut;
 
     @BeforeEach
     void setUp() {
-        sut = new CatalogScheduler(catalogAssetsUseCase, catalogRunStateRepository, catalogTaskScheduler, "test-instance");
+        sut = new CatalogScheduler(catalogAssetsUseCase, catalogTaskScheduler);
         ReflectionTestUtils.setField(sut, "catalogCooldownMinutes", 2);
-        ReflectionTestUtils.setField(sut, "catalogTimeoutMinutes", 60);
     }
 
     @Test
@@ -52,33 +49,15 @@ class CatalogSchedulerTest {
     }
 
     @Test
-    void cleanupStaleCatalogs_ownStaleLock_releasesLock() {
-        when(catalogRunStateRepository.isStaleForInstance(eq("test-instance"), any())).thenReturn(true);
-        when(catalogRunStateRepository.releaseStaleForOtherInstances(eq("test-instance"), any())).thenReturn(0);
+    void onApplicationReady_scheduledRunCallsUseCase() throws Exception {
+        when(catalogAssetsUseCase.execute(null)).thenReturn(CompletableFuture.completedFuture(null));
+        ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
 
-        sut.cleanupStaleCatalogs();
+        sut.onApplicationReady();
 
-        verify(catalogRunStateRepository).release("test-instance");
-    }
+        verify(catalogTaskScheduler).scheduleWithFixedDelay(runnableCaptor.capture(), any(Instant.class), any(Duration.class));
+        runnableCaptor.getValue().run();
 
-    @Test
-    void cleanupStaleCatalogs_remoteStaleLock_releasesWithoutInterrupt() {
-        when(catalogRunStateRepository.isStaleForInstance(eq("test-instance"), any())).thenReturn(false);
-        when(catalogRunStateRepository.releaseStaleForOtherInstances(eq("test-instance"), any())).thenReturn(1);
-
-        sut.cleanupStaleCatalogs();
-
-        verify(catalogRunStateRepository, never()).release(any());
-        verify(catalogRunStateRepository).releaseStaleForOtherInstances(eq("test-instance"), any());
-    }
-
-    @Test
-    void cleanupStaleCatalogs_noStaleLock_doesNothing() {
-        when(catalogRunStateRepository.isStaleForInstance(eq("test-instance"), any())).thenReturn(false);
-        when(catalogRunStateRepository.releaseStaleForOtherInstances(eq("test-instance"), any())).thenReturn(0);
-
-        sut.cleanupStaleCatalogs();
-
-        verify(catalogRunStateRepository, never()).release(any());
+        verify(catalogAssetsUseCase).execute(null);
     }
 }

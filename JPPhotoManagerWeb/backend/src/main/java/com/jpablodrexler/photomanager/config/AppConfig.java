@@ -11,7 +11,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.Executor;
 
 @Configuration
@@ -39,11 +38,6 @@ public class AppConfig {
         scheduler.setThreadNamePrefix("catalog-scheduler-");
         scheduler.initialize();
         return scheduler;
-    }
-
-    @Bean(name = "catalogInstanceId")
-    public String catalogInstanceId() {
-        return UUID.randomUUID().toString();
     }
 
     @Bean

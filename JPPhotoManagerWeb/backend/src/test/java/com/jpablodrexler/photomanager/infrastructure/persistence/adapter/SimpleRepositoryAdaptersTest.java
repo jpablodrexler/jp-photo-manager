@@ -4,6 +4,8 @@ import com.jpablodrexler.photomanager.domain.model.*;
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.*;
 import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.*;
 import com.jpablodrexler.photomanager.infrastructure.persistence.mapper.*;
+
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,7 +13,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -98,82 +99,6 @@ class SimpleRepositoryAdaptersTest {
         void count_delegatesToJpa() {
             when(jpa.count()).thenReturn(10L);
             assertThat(sut.count()).isEqualTo(10L);
-        }
-    }
-
-    @Nested
-    @ExtendWith(MockitoExtension.class)
-    class CatalogStateRepositoryImplTest {
-
-        @Mock JpaCatalogStateRepository jpa;
-        @InjectMocks CatalogStateRepositoryImpl sut;
-
-        @Test
-        void find_present_returnsMappedDomain() {
-            CatalogRunStateEntity entity = new CatalogRunStateEntity();
-            entity.setId(1);
-            entity.setRunning(false);
-            entity.setLastCompletedAt(Instant.now());
-            when(jpa.findById(1)).thenReturn(Optional.of(entity));
-
-            Optional<CatalogRunState> result = sut.find();
-
-            assertThat(result).isPresent();
-            assertThat(result.get().isRunning()).isFalse();
-        }
-
-        @Test
-        void find_absent_returnsEmpty() {
-            when(jpa.findById(1)).thenReturn(Optional.empty());
-            assertThat(sut.find()).isEmpty();
-        }
-
-        @Test
-        void tryAcquire_returnsTrue_whenJpaReturnsPositive() {
-            Instant now = Instant.now();
-            when(jpa.tryAcquire("inst-1", now)).thenReturn(1);
-            assertThat(sut.tryAcquire("inst-1", now)).isTrue();
-        }
-
-        @Test
-        void tryAcquire_returnsFalse_whenJpaReturnsZero() {
-            Instant now = Instant.now();
-            when(jpa.tryAcquire("inst-1", now)).thenReturn(0);
-            assertThat(sut.tryAcquire("inst-1", now)).isFalse();
-        }
-
-        @Test
-        void release_delegatesToJpa() {
-            sut.release("inst-1");
-            verify(jpa).release("inst-1");
-        }
-
-        @Test
-        void refreshHeartbeat_delegatesToJpa() {
-            Instant now = Instant.now();
-            sut.refreshHeartbeat("inst-1", now);
-            verify(jpa).refreshHeartbeat("inst-1", now);
-        }
-
-        @Test
-        void isStaleForInstance_delegatesToJpa() {
-            Instant threshold = Instant.now();
-            when(jpa.isStaleForInstance("inst-1", threshold)).thenReturn(true);
-            assertThat(sut.isStaleForInstance("inst-1", threshold)).isTrue();
-        }
-
-        @Test
-        void releaseStaleForOtherInstances_delegatesToJpa() {
-            Instant threshold = Instant.now();
-            when(jpa.releaseStaleForOtherInstances("inst-1", threshold)).thenReturn(2);
-            assertThat(sut.releaseStaleForOtherInstances("inst-1", threshold)).isEqualTo(2);
-        }
-
-        @Test
-        void markCompleted_delegatesToJpa() {
-            Instant now = Instant.now();
-            sut.markCompleted("inst-1", now);
-            verify(jpa).markCompleted("inst-1", now);
         }
     }
 

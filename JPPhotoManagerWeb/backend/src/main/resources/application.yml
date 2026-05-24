@@ -2,6 +2,12 @@ spring:
   application:
     name: jp-photo-manager
 
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: never
+
   config:
     import: optional:classpath:application-local.yml
 

@@ -3,108 +3,73 @@ package com.jpablodrexler.photomanager.application.usecase.catalog;
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
-import com.jpablodrexler.photomanager.domain.port.out.CatalogStateRepository;
-import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
+import com.jpablodrexler.photomanager.infrastructure.service.SseNotificationRegistry;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 @Service
 @Slf4j
 public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
 
-    private final CatalogFolderPort catalogFolderService;
-    private final StoragePort storagePort;
-    private final CatalogStateRepository catalogStateRepository;
-    private final String instanceId;
+    private final JobLauncher asyncCatalogJobLauncher;
+    private final Job catalogJob;
+    private final SseNotificationRegistry sseNotificationRegistry;
     private final Counter catalogAssetsCounter;
 
-    @Value("${photomanager.root-catalog-folders:${user.home}/Pictures}")
-    private String rootCatalogFolders;
-
-    public CatalogAssetsUseCaseImpl(CatalogFolderPort catalogFolderService,
-            StoragePort storagePort,
-            CatalogStateRepository catalogStateRepository,
-            @Qualifier("catalogInstanceId") String instanceId,
+    public CatalogAssetsUseCaseImpl(
+            @Qualifier("asyncCatalogJobLauncher") JobLauncher asyncCatalogJobLauncher,
+            Job catalogJob,
+            SseNotificationRegistry sseNotificationRegistry,
             MeterRegistry meterRegistry) {
-        this.catalogFolderService = catalogFolderService;
-        this.storagePort = storagePort;
-        this.catalogStateRepository = catalogStateRepository;
-        this.instanceId = instanceId;
+        this.asyncCatalogJobLauncher = asyncCatalogJobLauncher;
+        this.catalogJob = catalogJob;
+        this.sseNotificationRegistry = sseNotificationRegistry;
         this.catalogAssetsCounter = Counter.builder("photomanager_catalog_assets_total")
                 .description("Total assets cataloged")
                 .register(meterRegistry);
     }
 
-    @Async
     @Override
     public CompletableFuture<Void> execute(Consumer<CatalogChangeNotification> listener) {
-        if (!catalogStateRepository.tryAcquire(instanceId, Instant.now())) {
-            log.debug("Catalog already running, skipping API-triggered run");
-            return CompletableFuture.completedFuture(null);
-        }
-        Consumer<CatalogChangeNotification> countingListener = notification -> {
-            if (notification.getReason() == ReasonEnum.ASSET_CREATED) {
-                catalogAssetsCounter.increment();
-            }
-            if (listener != null) {
-                listener.accept(notification);
-            }
-        };
         try {
-            doRunCatalog(countingListener);
-            catalogStateRepository.markCompleted(instanceId, Instant.now());
-        } finally {
-            catalogStateRepository.release(instanceId);
-        }
-        return CompletableFuture.completedFuture(null);
-    }
+            long runId = System.currentTimeMillis();
+            CompletableFuture<Void> completion = new CompletableFuture<>();
 
-    private void doRunCatalog(Consumer<CatalogChangeNotification> callback) {
-        List<String> rootFolders = Arrays.asList(rootCatalogFolders.split(";"));
-        List<String> allFolders = new ArrayList<>();
-        for (String root : rootFolders) {
-            if (storagePort.directoryExists(root)) {
-                allFolders.add(root);
-                collectSubFolders(root, allFolders);
-            }
-        }
+            Consumer<CatalogChangeNotification> countingListener = listener == null ? null : notification -> {
+                if (notification.getReason() == ReasonEnum.ASSET_CREATED) {
+                    catalogAssetsCounter.increment();
+                }
+                listener.accept(notification);
+            };
 
-        AtomicInteger processed = new AtomicInteger(0);
-        int total = allFolders.size();
+            sseNotificationRegistry.register(runId, countingListener, completion);
 
-        for (String folderPath : allFolders) {
-            if (Thread.currentThread().isInterrupted()) {
-                log.info("Catalog interrupted at folder: {}", folderPath);
-                return;
-            }
-            try {
-                Runnable heartbeat = () -> catalogStateRepository.refreshHeartbeat(instanceId, Instant.now());
-                catalogFolderService.catalogFolder(folderPath, callback, heartbeat, processed, total);
-            } catch (Exception e) {
-                log.error("Error cataloging folder: {}", folderPath, e);
-            }
-        }
-    }
+            JobParameters params = new JobParametersBuilder()
+                    .addLong("runId", runId)
+                    .toJobParameters();
 
-    private void collectSubFolders(String parentPath, List<String> result) {
-        List<String> subs = storagePort.listSubDirectories(parentPath);
-        for (String sub : subs) {
-            result.add(sub);
-            collectSubFolders(sub, result);
+            JobExecution execution = asyncCatalogJobLauncher.run(catalogJob, params);
+            log.debug("Started catalog job execution id={} runId={}", execution.getId(), runId);
+
+            return completion;
+        } catch (JobExecutionAlreadyRunningException e) {
+            log.debug("Catalog already running, skipping");
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            log.error("Failed to start catalog job", e);
+            return CompletableFuture.failedFuture(e);
         }
     }
 }

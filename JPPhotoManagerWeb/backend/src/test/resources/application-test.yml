@@ -1,6 +1,12 @@
 spring:
   main:
     banner-mode: "off"
+
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: never
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
