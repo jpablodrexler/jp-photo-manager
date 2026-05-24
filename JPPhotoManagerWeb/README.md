@@ -647,16 +647,13 @@ After `docker compose up`, Grafana is available at **`http://localhost:3000`**.
 | Field | Value |
 |---|---|
 | Username | `admin` |
-| Password | `admin` |
+| Password | value of `GRAFANA_ADMIN_PASSWORD` in your `.env` (default: `admin`) |
 
-Grafana will prompt you to change the password on first login.
+Set `GRAFANA_ADMIN_PASSWORD` in `.env` before the first run. Changing it afterwards has no effect because Grafana stores the password in its persistent volume — update the password via the UI instead, or delete the `grafana_data` volume to reset.
 
-**Add the Prometheus data source:**
+**Persistence:** Grafana stores all configuration (dashboards, data sources, users) in a named Docker volume (`grafana_data`) so nothing is lost across container restarts or `docker compose down` (without `--volumes`).
 
-1. Open **Connections → Data sources** (or go to `http://localhost:3000/connections/datasources`).
-2. Click **Add data source** and choose **Prometheus**.
-3. Set **URL** to `http://prometheus:9090` (containers resolve each other by service name inside the Docker network).
-4. Click **Save & test** — you should see "Successfully queried the Prometheus API".
+**Pre-configured data source and dashboard:** The Prometheus data source (`http://prometheus:9090`) and a starter dashboard ("JP Photo Manager") are provisioned automatically from `grafana/provisioning/` — no manual setup required.
 
 **Explore metrics:**
 
