@@ -653,7 +653,13 @@ Set `GRAFANA_ADMIN_PASSWORD` in `.env` before the first run. Changing it afterwa
 
 **Persistence:** Grafana stores all configuration (dashboards, data sources, users) in a named Docker volume (`grafana_data`) so nothing is lost across container restarts or `docker compose down` (without `--volumes`).
 
-**Pre-configured data source and dashboard:** The Prometheus data source (`http://prometheus:9090`) and a starter dashboard ("JP Photo Manager") are provisioned automatically from `grafana/provisioning/` — no manual setup required.
+**Pre-configured data source and dashboards:** The Prometheus data source (`http://prometheus:9090`) and the following dashboards are provisioned automatically from `grafana/provisioning/` — no manual setup required.
+
+| Dashboard | Grafana ID | What it covers |
+|---|---|---|
+| JP Photo Manager | (custom) | HTTP rate, latency, JVM heap, CPU, Spring Batch catalog job |
+| JVM (Micrometer) | 4701 | GC pauses, memory pools, threads, classloading, buffer pools |
+| Spring Boot 3.x Statistics | 19004 | Basic stats, CPU, load average, JVM memory/GC, HikariCP pool, HTTP server stats, Logback |
 
 **Explore metrics:**
 
