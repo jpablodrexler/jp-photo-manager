@@ -1,3 +1,8 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
 .gallery-layout {
   height: 100%;
 }
@@ -29,7 +34,7 @@
 
 .asset-virtual-viewport {
   flex: 1;
-  height: 100%;
+  min-height: 0;
 }
 
 .asset-list-row {

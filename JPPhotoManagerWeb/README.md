@@ -537,6 +537,34 @@ npm start
 
 The app is available at `http://localhost:4200`. The dev server automatically proxies `/api` requests to the backend.
 
+#### Development proxy
+
+All frontend services use **relative paths** (`/api/assets`, `/api/folders`, …) rather than hardcoded ports. During development, Angular's dev server forwards every `/api` request to the Spring Boot backend via `proxy.conf.json`:
+
+```json
+{
+  "/api": {
+    "target": "http://localhost:8080",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
+```
+
+The browser only ever contacts port **4200**; the proxy rewrites and forwards the request to port **8080** on the server side. This means:
+
+- No CORS headers are needed in development — both the HTML page and the API responses come from the same origin (`localhost:4200`).
+- Image `<img src="/api/assets/1/thumbnail">` tags, `EventSource` SSE connections, and `HttpClient` calls all work automatically because the browser always uses the same origin.
+- Changing the backend port only requires updating `proxy.conf.json` — no source code change.
+
+In production the Angular build produces a static bundle that is served by **nginx** (`nginx.conf`), which applies the identical routing rule:
+
+```nginx
+location /api/ {
+    proxy_pass http://backend:8080/api/;
+}
+```
+
 ### Building for production
 
 ```bash

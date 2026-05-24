@@ -9,7 +9,9 @@
     "watch": "ng build --watch --configuration development",
     "test": "cypress run --component",
     "test:coverage": "cypress run --component --env coverage=true",
+    "test:e2e": "cypress run --e2e",
     "cypress:open": "cypress open --component",
+    "cypress:e2e": "cypress open --e2e",
     "lint": "ng lint"
   },
   "private": true,

@@ -148,6 +148,35 @@ describe('GalleryComponent', () => {
     cy.get('.asset-list-row').should('have.length', 2);
   });
 
+  it('assetListRows_folderSelected_containThumbnailImgElements', () => {
+    const getAssets = cy.stub().returns(of({
+      items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
+    }));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      fixture.componentInstance.onFolderSelected('/photos');
+      fixture.detectChanges();
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.get('.asset-list-row img.list-thumb').should('have.length', 2);
+  });
+
+  it('thumbnailImg_folderSelected_srcMatchesThumbnailUrl', () => {
+    const getAssets = cy.stub().returns(of({
+      items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
+    }));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      fixture.componentInstance.onFolderSelected('/photos');
+      fixture.detectChanges();
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.get('.asset-list-row img.list-thumb').eq(0).should('have.attr', 'src', '/api/assets/1/thumbnail');
+    cy.get('.asset-list-row img.list-thumb').eq(1).should('have.attr', 'src', '/api/assets/2/thumbnail');
+  });
+
   it('should not call getAssets when no folder is selected', () => {
     const getAssets = cy.stub().returns(of(emptyPage));
     mountGallery({ getAssets }).then(({ fixture }) => {
