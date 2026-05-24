@@ -2,6 +2,7 @@ import {
   Component,
   ElementRef,
   HostListener,
+  inject,
   OnDestroy,
   OnInit,
   ViewChild,
@@ -47,6 +48,7 @@ import { BulkTagDialogComponent } from "./bulk-tag-dialog/bulk-tag-dialog.compon
 import { FolderPickerDialogComponent } from "./folder-picker-dialog/folder-picker-dialog.component";
 import { TimelineViewComponent } from "./timeline-view/timeline-view.component";
 import { TimelineGroup } from "../../core/models/timeline-group.model";
+import { AudioPlayerService } from "../../core/services/audio-player.service";
 
 type ViewMode = "thumbnails" | "viewer" | "slideshow";
 type ViewType = "grid" | "timeline";
@@ -87,6 +89,8 @@ type ViewType = "grid" | "timeline";
 export class GalleryComponent implements OnInit, OnDestroy {
   @ViewChild("scrollSentinel") private sentinel!: ElementRef<HTMLDivElement>;
   private observer: IntersectionObserver | null = null;
+
+  readonly audioPlayer = inject(AudioPlayerService);
 
   isMobile = false;
   sidenavOpen = true;
@@ -813,6 +817,21 @@ export class GalleryComponent implements OnInit, OnDestroy {
         },
       });
     });
+  }
+
+  playAsset(asset: Asset, event: Event): void {
+    event.stopPropagation();
+    if (asset.fileType === 'PLAYLIST') {
+      this.audioPlayer.loadPlaylist(asset.assetId);
+    } else {
+      this.audioPlayer.play([asset]);
+    }
+  }
+
+  playAllAudio(): void {
+    if (this.currentFolder) {
+      this.audioPlayer.loadFolder(this.currentFolder);
+    }
   }
 
   get currentViewerAsset(): Asset | undefined {

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,6 +8,8 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Subscription } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
+import { AudioPlayerService } from './core/services/audio-player.service';
+import { AudioPlayerComponent } from './features/audio-player/audio-player.component';
 
 @Component({
   selector: 'app-root',
@@ -20,7 +22,8 @@ import { AuthService } from './core/services/auth.service';
     MatButtonModule,
     MatIconModule,
     MatMenuModule,
-    MatSidenavModule
+    MatSidenavModule,
+    AudioPlayerComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -29,6 +32,8 @@ export class AppComponent implements OnInit, OnDestroy {
   title = 'JP Photo Manager';
   isMobile = false;
   private bpSub!: Subscription;
+
+  readonly audioPlayer = inject(AudioPlayerService);
 
   constructor(
     private authService: AuthService,

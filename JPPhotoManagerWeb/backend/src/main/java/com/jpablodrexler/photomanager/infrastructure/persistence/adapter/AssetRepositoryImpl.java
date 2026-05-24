@@ -66,6 +66,12 @@ public class AssetRepositoryImpl implements AssetRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Asset> findByFileName(String fileName) {
+        return jpa.findByFileNameNotDeleted(fileName).stream().map(assetMapper::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public PaginatedResult<Asset> findFiltered(AssetFilter filter) {
         FolderEntity folderEntity = new FolderEntity();
         folderEntity.setFolderId(filter.folderId());

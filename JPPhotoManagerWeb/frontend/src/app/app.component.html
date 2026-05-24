@@ -54,3 +54,7 @@
 <div class="app-content">
   <router-outlet />
 </div>
+
+@if (audioPlayer.currentTrack()) {
+  <app-audio-player />
+}

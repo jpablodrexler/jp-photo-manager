@@ -89,4 +89,8 @@ export class AssetService {
       observe: 'events',
     });
   }
+
+  getPlaylist(assetId: number): Observable<Asset[]> {
+    return this.http.get<Asset[]>(`/api/audio/playlist/${assetId}`);
+  }
 }

@@ -18,6 +18,8 @@ public interface AssetRepository {
 
     Optional<Asset> findByFolderAndFileName(Folder folder, String fileName);
 
+    List<Asset> findByFileName(String fileName);
+
     PaginatedResult<Asset> findFiltered(AssetFilter filter);
 
     List<Asset> findAllFilteredSortedByDateDesc(AssetFilter filter);

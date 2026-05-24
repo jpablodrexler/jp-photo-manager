@@ -132,6 +132,9 @@ public class CatalogFolderServiceImpl implements CatalogFolderPort {
     private Asset createAsset(Folder folder, String directoryPath, String fileName) {
         String filePath = directoryPath + "/" + fileName;
         try {
+            if (StorageServiceAdapter.isPlaylistFile(fileName)) {
+                return createPlaylistAsset(folder, directoryPath, fileName);
+            }
             if (StorageServiceAdapter.isAudioFile(fileName)) {
                 return createAudioAsset(folder, directoryPath, fileName);
             }
@@ -157,6 +160,24 @@ public class CatalogFolderServiceImpl implements CatalogFolderPort {
             log.error("Failed to create asset for {}", filePath, e);
             throw new RuntimeException("Failed to create asset", e);
         }
+    }
+
+    private Asset createPlaylistAsset(Folder folder, String directoryPath, String fileName) throws IOException {
+        String filePath = directoryPath + "/" + fileName;
+
+        Asset asset = new Asset();
+        asset.setFolder(folder);
+        asset.setFileName(fileName);
+        asset.setFileSize(storageService.getFileSize(filePath));
+        asset.setHash(storageService.computeHash(filePath));
+        asset.setFileCreationDateTime(storageService.getFileCreationDateTime(filePath));
+        asset.setFileModificationDateTime(storageService.getFileModificationDateTime(filePath));
+        asset.setThumbnailCreationDateTime(LocalDateTime.now());
+        asset.setFileType(FileType.PLAYLIST);
+
+        asset = assetRepository.save(asset);
+        thumbnailStorageService.saveThumbnail(asset.getThumbnailBlobName(), generatePlaylistPlaceholder());
+        return asset;
     }
 
     private Asset createAudioAsset(Folder folder, String directoryPath, String fileName) throws IOException {
@@ -250,6 +271,20 @@ public class CatalogFolderServiceImpl implements CatalogFolderPort {
         g.setColor(new Color(180, 180, 180));
         g.setFont(g.getFont().deriveFont(48f));
         g.drawString("♫", THUMBNAIL_MAX_WIDTH / 2 - 20, THUMBNAIL_MAX_HEIGHT / 2 + 18);
+        g.dispose();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(image, "jpg", out);
+        return out.toByteArray();
+    }
+
+    private byte[] generatePlaylistPlaceholder() throws IOException {
+        BufferedImage image = new BufferedImage(THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = image.createGraphics();
+        g.setColor(new Color(30, 30, 60));
+        g.fillRect(0, 0, THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT);
+        g.setColor(new Color(180, 180, 220));
+        g.setFont(g.getFont().deriveFont(40f));
+        g.drawString("≡♫", THUMBNAIL_MAX_WIDTH / 2 - 28, THUMBNAIL_MAX_HEIGHT / 2 + 16);
         g.dispose();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ImageIO.write(image, "jpg", out);

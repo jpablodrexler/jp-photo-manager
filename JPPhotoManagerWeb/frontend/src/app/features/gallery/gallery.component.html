@@ -65,6 +65,9 @@
           <button mat-icon-button (click)="startSlideshow(0)" title="Start slideshow">
             <mat-icon>slideshow</mat-icon>
           </button>
+          <button mat-icon-button (click)="playAllAudio()" title="Play all audio in folder">
+            <mat-icon>library_music</mat-icon>
+          </button>
         }
         }
       }
@@ -221,6 +224,13 @@
                 }
               </span>
             </div>
+            @if (asset.fileType === 'AUDIO' || asset.fileType === 'PLAYLIST') {
+              <button mat-icon-button class="list-play-btn"
+                      (click)="playAsset(asset, $event)"
+                      [title]="asset.fileType === 'AUDIO' ? 'Play' : 'Play playlist'">
+                <mat-icon>{{ asset.fileType === 'AUDIO' ? 'play_arrow' : 'queue_music' }}</mat-icon>
+              </button>
+            }
             <button mat-icon-button class="list-album-btn"
                     (click)="$event.stopPropagation(); addToAlbum(asset)"
                     title="Add to album">

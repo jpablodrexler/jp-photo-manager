@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.web.dto;
 
+import com.jpablodrexler.photomanager.domain.enums.FileType;
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
 import lombok.Data;
 
@@ -27,4 +28,5 @@ public class AssetDto {
     private String imageUrl;
     private int rating;
     private List<String> tags;
+    private FileType fileType;
 }

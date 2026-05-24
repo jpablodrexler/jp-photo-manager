@@ -30,6 +30,9 @@ public interface JpaAssetRepository extends JpaRepository<AssetEntity, Long>, Jp
 
     Optional<AssetEntity> findByFolderAndFileName(FolderEntity folder, String fileName);
 
+    @Query("SELECT a FROM AssetEntity a JOIN FETCH a.folder WHERE a.fileName = :fileName AND a.deletedAt IS NULL")
+    List<AssetEntity> findByFileNameNotDeleted(@Param("fileName") String fileName);
+
     boolean existsByFolderAndFileName(FolderEntity folder, String fileName);
 
     void deleteByFolderAndFileName(FolderEntity folder, String fileName);

@@ -353,7 +353,9 @@ public class StorageServiceAdapter implements StoragePort {
                 || lower.endsWith(".webp")
                 || lower.endsWith(".mp3") || lower.endsWith(".flac")
                 || lower.endsWith(".wav") || lower.endsWith(".aac")
-                || lower.endsWith(".ogg");
+                || lower.endsWith(".ogg")
+                || lower.endsWith(".m3u") || lower.endsWith(".m3u8")
+                || lower.endsWith(".pls");
     }
 
     public static boolean isAudioFile(String fileName) {
@@ -361,6 +363,11 @@ public class StorageServiceAdapter implements StoragePort {
         return lower.endsWith(".mp3") || lower.endsWith(".flac")
                 || lower.endsWith(".wav") || lower.endsWith(".aac")
                 || lower.endsWith(".ogg");
+    }
+
+    public static boolean isPlaylistFile(String fileName) {
+        String lower = fileName.toLowerCase();
+        return lower.endsWith(".m3u") || lower.endsWith(".m3u8") || lower.endsWith(".pls");
     }
 
     private BufferedImage applyRotation(BufferedImage image, ImageRotation rotation) {

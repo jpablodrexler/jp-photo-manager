@@ -1,10 +1,18 @@
 import { mount } from 'cypress/angular';
 import { provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { provideHttpClient } from '@angular/common/http';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { of } from 'rxjs';
+import { signal } from '@angular/core';
 import { AppComponent } from './app.component';
 import { AuthService } from './core/services/auth.service';
+import { AudioPlayerService } from './core/services/audio-player.service';
+
+const audioPlayerStub: Partial<AudioPlayerService> = {
+  currentTrack: signal(null),
+  isPlaying: signal(false),
+};
 
 describe('AppComponent', () => {
   function mountApp() {
@@ -19,8 +27,10 @@ describe('AppComponent', () => {
       providers: [
         provideRouter([]),
         provideNoopAnimations(),
+        provideHttpClient(),
         { provide: AuthService, useValue: authServiceStub },
         { provide: BreakpointObserver, useValue: bpObsStub },
+        { provide: AudioPlayerService, useValue: audioPlayerStub },
       ],
     });
   }
@@ -56,8 +66,10 @@ describe('AppComponent — responsive navigation', () => {
       providers: [
         provideRouter([]),
         provideNoopAnimations(),
+        provideHttpClient(),
         { provide: BreakpointObserver, useValue: bpObs },
         { provide: AuthService, useValue: authServiceStub },
+        { provide: AudioPlayerService, useValue: audioPlayerStub },
       ],
     });
   }
