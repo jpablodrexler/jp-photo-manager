@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.config;
 
 import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
+import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +25,11 @@ public class AppConfig {
     @Bean
     public ProcessMemoryMetrics processMemoryMetrics() {
         return new ProcessMemoryMetrics();
+    }
+
+    @Bean
+    public ProcessThreadMetrics processThreadMetrics() {
+        return new ProcessThreadMetrics();
     }
 
     @Bean(name = "taskExecutor")

@@ -52,6 +52,9 @@ management:
 
 server:
   port: 8080
+  tomcat:
+    mbeanregistry:
+      enabled: true
 
 photomanager:
   initial-directory: ${CATALOG_DIR:${user.home}/Pictures}
