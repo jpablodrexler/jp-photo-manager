@@ -413,6 +413,8 @@ mvn spring-boot:run
 
 The API starts at `http://localhost:8080`.
 
+The interactive API documentation (Swagger UI) is available at `http://localhost:8080/swagger-ui.html`. The raw OpenAPI JSON spec is at `http://localhost:8080/v3/api-docs`. Both endpoints are accessible without authentication.
+
 ### Running backend tests
 
 ```bash
@@ -674,6 +676,7 @@ After `docker compose up`, all services are reachable from the host machine:
 |---|---|---|
 | Frontend (Angular SPA) | `http://localhost` | `admin` / `admin` — change after first login |
 | Backend REST API | `http://localhost:8080/api` | JWT cookie set on login |
+| Swagger UI | `http://localhost:8080/swagger-ui.html` | — |
 | PostgreSQL | `localhost:5433` | see table below |
 | Prometheus | `http://localhost:9090` | — |
 | Grafana | `http://localhost:3000` | `admin` / value of `GRAFANA_ADMIN_PASSWORD` (default: `admin`) |

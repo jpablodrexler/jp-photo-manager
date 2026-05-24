@@ -1,12 +1,12 @@
 ## Context
 
-The backend has the following `@RestController` classes: `AssetController`, `FolderController`, `AuthController`, `UserController`, `AlbumController`, `SyncController`, `ConvertController`, `DuplicatesController`, `RecycleBinController`, `TagController`, and `SearchPresetController`. None have Swagger/OpenAPI annotations. `springdoc-openapi` auto-discovers these controllers and generates a spec; annotations add summaries, descriptions, and explicit response codes.
+The backend has the following `@RestController` classes: `AssetController`, `FolderController`, `AuthController`, `UserAdminController`, `AlbumController`, `SyncController`, `ConvertController`, `RecycleBinController`, `TagController`, `SearchPresetController`, `HomeController`, and `MediaController`. None have Swagger/OpenAPI annotations. Note: there is no standalone `DuplicatesController`; the duplicates endpoint lives in `AssetController`. `springdoc-openapi` auto-discovers these controllers and generates a spec; annotations add summaries, descriptions, and explicit response codes.
 
 ## Goals / Non-Goals
 
 **Goals:**
 - Add `springdoc-openapi-starter-webmvc-ui` to `pom.xml`
-- Annotate all 11 controllers with `@Tag` (controller-level), `@Operation` (method-level summary), and `@ApiResponse` (explicit 200/400/401/404 responses)
+- Annotate all 13 controllers with `@Tag` (controller-level), `@Operation` (method-level summary), and `@ApiResponse` (explicit 200/400/401/404 responses)
 - Exempt Swagger UI and spec endpoints from JWT auth in `SecurityConfig`
 
 **Non-Goals:**

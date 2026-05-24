@@ -181,6 +181,30 @@ path, etc.) to diagnose a production failure.
 
 🟡 Flag `e.printStackTrace()` — use `log.error("...", e)` instead.
 
+### 3.4 OpenAPI controller annotations
+
+Every `@RestController` in this project **must** carry OpenAPI annotations.
+`springdoc-openapi-starter-webmvc-ui` is on the classpath and Swagger UI is
+served at `/swagger-ui.html`.
+
+🟡 Flag any `@RestController` class that is missing a class-level
+`@Tag(name = "...", description = "...")` annotation.
+
+🟡 Flag any `@GetMapping` / `@PostMapping` / `@PutMapping` / `@PatchMapping`
+/ `@DeleteMapping` method that is missing `@Operation(summary = "...")`.
+
+🟡 Flag any endpoint method that is missing `@ApiResponses` with at least one
+`@ApiResponse` per reachable HTTP status code.
+
+Expected import block for every annotated controller:
+
+```java
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+```
+
 ---
 
 ## 4. Backend: Transactions
@@ -416,6 +440,7 @@ These have caused real bugs in this codebase and deserve extra attention:
 | SecurityConfig circular dependency         | `@Bean UserDetailsService` defined in `SecurityConfig` while `SecurityConfig` injects a filter that depends on it — extract to separate config   |
 | JPA delete-then-insert with stale IDs      | `deleteAll()` + `saveAll(incoming)` when incoming entities still have old IDs → Hibernate merges against deleted rows; use `deleteAllInBatch()` + `setId(null)` |
 | CORS missing `PATCH`                       | `AppConfig.corsFilter()` `allowedMethods` omitting `"PATCH"` when `@PatchMapping` endpoints exist → 403 on preflight                            |
+| Missing OpenAPI annotations on controller  | New `@RestController` added without `@Tag` / `@Operation` / `@ApiResponses` — controller appears in Swagger UI under "default" with no documentation |
 
 ---
 

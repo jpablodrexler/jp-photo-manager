@@ -5,6 +5,10 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.GetPlaylistUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.StreamAssetUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.util.List;
 
+@Tag(name = "Media", description = "Byte-range streaming and audio playlist")
 @RestController
 @RequiredArgsConstructor
 public class MediaController {
@@ -33,6 +38,14 @@ public class MediaController {
     private final GetPlaylistUseCase getPlaylistUseCase;
     private final AssetWebMapper assetWebMapper;
 
+    @Operation(summary = "Stream a media asset with byte-range support")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Full asset content"),
+        @ApiResponse(responseCode = "206", description = "Partial content (byte-range response)"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Asset not found"),
+        @ApiResponse(responseCode = "500", description = "Could not determine content length")
+    })
     @GetMapping("/api/assets/{id}/stream")
     public ResponseEntity<ResourceRegion> streamAsset(
             @PathVariable Long id,
@@ -77,6 +90,12 @@ public class MediaController {
         return ResponseEntity.ok().headers(headers).body(region);
     }
 
+    @Operation(summary = "Get the ordered list of assets in an audio playlist")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Playlist asset list"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Playlist not found")
+    })
     @GetMapping("/api/audio/playlist/{id}")
     public ResponseEntity<List<AssetDto>> getPlaylist(@PathVariable Long id) {
         List<Asset> assets = getPlaylistUseCase.execute(id);

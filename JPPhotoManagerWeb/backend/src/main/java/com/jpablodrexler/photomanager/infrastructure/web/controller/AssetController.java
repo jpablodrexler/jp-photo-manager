@@ -38,6 +38,10 @@ import com.jpablodrexler.photomanager.infrastructure.web.dto.TimelineGroupDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -63,6 +67,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+@Tag(name = "Assets", description = "Photo and video asset management")
 @RestController
 @RequestMapping("/api/assets")
 @RequiredArgsConstructor
@@ -100,6 +105,11 @@ public class AssetController {
                 .register(meterRegistry);
     }
 
+    @Operation(summary = "List assets in a folder")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Paginated asset list"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     @GetMapping
     public ResponseEntity<PaginatedData<AssetDto>> getAssets(
             @RequestParam String folderPath,
@@ -120,6 +130,11 @@ public class AssetController {
         return ResponseEntity.ok(data);
     }
 
+    @Operation(summary = "List assets grouped by date (timeline view)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Paginated timeline groups"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     @GetMapping("/timeline")
     public ResponseEntity<PaginatedData<TimelineGroupDto>> getTimeline(
             @RequestParam String folderPath,
@@ -139,6 +154,12 @@ public class AssetController {
         return ResponseEntity.ok(data);
     }
 
+    @Operation(summary = "Get thumbnail image for an asset")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "JPEG thumbnail"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Thumbnail not found")
+    })
     @GetMapping("/{assetId}/thumbnail")
     public ResponseEntity<byte[]> getThumbnail(@PathVariable Long assetId) {
         byte[] data = thumbnailPort.loadThumbnail(assetId + ".bin");
@@ -148,6 +169,13 @@ public class AssetController {
         return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(data);
     }
 
+    @Operation(summary = "Get full-size image for an asset")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Full-size image bytes"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Asset not found"),
+        @ApiResponse(responseCode = "415", description = "Unsupported media type")
+    })
     @GetMapping("/{assetId}/image")
     public ResponseEntity<byte[]> getFullImage(@PathVariable Long assetId) {
         try {
@@ -162,6 +190,11 @@ public class AssetController {
         }
     }
 
+    @Operation(summary = "Catalog assets via SSE stream")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "SSE stream of catalog progress events"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     @GetMapping("/catalog")
     public SseEmitter catalogAssets() {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
@@ -188,6 +221,12 @@ public class AssetController {
         return emitter;
     }
 
+    @Operation(summary = "Move or copy assets to a destination folder")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Operation result"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     @PostMapping("/move")
     public ResponseEntity<Boolean> moveAssets(@Valid @RequestBody MoveAssetsRequest request) {
         boolean result = moveAssetsUseCase.execute(request.getAssetIds(), request.getDestinationFolderPath(),
@@ -195,6 +234,12 @@ public class AssetController {
         return ResponseEntity.ok(result);
     }
 
+    @Operation(summary = "Download selected assets as a ZIP file")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "ZIP archive of selected assets"),
+        @ApiResponse(responseCode = "400", description = "Too many assets requested"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     @PostMapping("/download")
     public void downloadAssets(@Valid @RequestBody DownloadAssetsRequest request, HttpServletResponse response)
             throws IOException {
@@ -207,12 +252,24 @@ public class AssetController {
         downloadAssetsUseCase.execute(request.getAssetIds(), response.getOutputStream());
     }
 
+    @Operation(summary = "Rate an asset")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Rating saved"),
+        @ApiResponse(responseCode = "400", description = "Invalid rating value"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Asset not found")
+    })
     @PatchMapping("/{id}/rating")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void rateAsset(@PathVariable Long id, @Valid @RequestBody RateAssetRequest body) {
         rateAssetUseCase.execute(id, body.rating());
     }
 
+    @Operation(summary = "Remove assets from catalog (optionally delete files)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Assets removed"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     @DeleteMapping
     public ResponseEntity<Void> deleteAssets(@RequestParam Long[] assetIds,
                                               @RequestParam(defaultValue = "false") boolean deleteFiles) {
@@ -220,6 +277,11 @@ public class AssetController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Get groups of duplicated assets")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "List of duplicate asset groups"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     @GetMapping("/duplicates")
     public ResponseEntity<List<List<AssetDto>>> getDuplicatedAssets() {
         List<List<Asset>> duplicates = getDuplicatedAssetsUseCase.execute();
@@ -229,6 +291,13 @@ public class AssetController {
         return ResponseEntity.ok(result);
     }
 
+    @Operation(summary = "Get EXIF metadata for an asset")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "EXIF metadata"),
+        @ApiResponse(responseCode = "204", description = "No EXIF data available"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Asset not found")
+    })
     @GetMapping("/{assetId}/exif")
     public ResponseEntity<ExifMetadataDto> getExifMetadata(@PathVariable Long assetId) {
         try {
@@ -248,6 +317,14 @@ public class AssetController {
     private static final java.util.Set<String> ALLOWED_EXTENSIONS = java.util.Set.of(
             "jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif", "webp");
 
+    @Operation(summary = "Upload a new asset to a folder")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Asset created"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Destination folder not found"),
+        @ApiResponse(responseCode = "415", description = "Unsupported media type")
+    })
     @PostMapping("/upload")
     public ResponseEntity<AssetDto> uploadAsset(@RequestPart("file") MultipartFile file,
                                                  @RequestPart("folderPath") String folderPath) {
@@ -270,12 +347,24 @@ public class AssetController {
         }
     }
 
+    @Operation(summary = "Add a tag to an asset")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Tag added"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Asset not found")
+    })
     @PostMapping("/{id}/tags")
     public ResponseEntity<Void> addTag(@PathVariable Long id, @Valid @RequestBody AddTagRequest body) {
         addTagToAssetUseCase.execute(id, body.name());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
+    @Operation(summary = "Remove a tag from an asset")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Tag removed"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Asset or tag not found")
+    })
     @DeleteMapping("/{id}/tags")
     public ResponseEntity<Void> removeTag(@PathVariable Long id, @RequestParam String name) {
         try {
@@ -286,12 +375,24 @@ public class AssetController {
         }
     }
 
+    @Operation(summary = "Add a tag to multiple assets at once")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Tag added to all assets"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     @PostMapping("/tags/bulk")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void bulkAddTag(@Valid @RequestBody BulkTagRequest body) {
         bulkAddTagUseCase.execute(body.assetIds(), body.name());
     }
 
+    @Operation(summary = "Remove a tag from multiple assets at once")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Tag removed from all assets"),
+        @ApiResponse(responseCode = "400", description = "Invalid request"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     @DeleteMapping("/tags/bulk")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void bulkRemoveTag(@Valid @RequestBody BulkTagRequest body) {

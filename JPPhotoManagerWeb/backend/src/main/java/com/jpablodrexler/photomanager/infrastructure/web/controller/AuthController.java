@@ -6,6 +6,10 @@ import com.jpablodrexler.photomanager.infrastructure.service.UserServiceImpl;
 import com.jpablodrexler.photomanager.infrastructure.web.AuthRequest;
 import com.jpablodrexler.photomanager.infrastructure.web.LoginResponse;
 import com.jpablodrexler.photomanager.infrastructure.web.exception.InvalidRefreshTokenException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,6 +27,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
 
+@Tag(name = "Authentication", description = "Login, logout, and token refresh")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -32,6 +37,11 @@ public class AuthController {
     private final JwtTokenPort jwtTokenService;
     private final RefreshTokenServiceImpl refreshTokenService;
 
+    @Operation(summary = "Authenticate and receive JWT cookie")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Authenticated; JWT set in HttpOnly cookie"),
+        @ApiResponse(responseCode = "401", description = "Invalid credentials")
+    })
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody AuthRequest request,
                                                HttpServletResponse response) {
@@ -62,6 +72,11 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "Rotate refresh token and issue new JWT")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "New JWT issued; refresh token rotated"),
+        @ApiResponse(responseCode = "401", description = "Missing or invalid refresh token")
+    })
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponse> refresh(HttpServletRequest request, HttpServletResponse response) {
         String tokenValue = extractCookieValue(request, "refreshToken").orElse(null);
@@ -97,6 +112,10 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "Logout and clear JWT cookie")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Logged out; JWT cookie cleared")
+    })
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
         String username = resolveUsernameForLogout(request);

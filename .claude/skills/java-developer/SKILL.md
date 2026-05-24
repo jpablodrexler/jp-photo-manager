@@ -161,6 +161,40 @@ public class CatalogFolderServiceImpl implements CatalogFolderService {
 @Valid                  // trigger bean validation on @RequestBody
 ```
 
+### OpenAPI (API layer only)
+
+Every `@RestController` must carry springdoc-openapi annotations.
+`springdoc-openapi-starter-webmvc-ui` is on the classpath; Swagger UI is
+served at `/swagger-ui.html`.
+
+```java
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "Assets", description = "Photo and video asset management")
+@RestController
+@RequestMapping("/api/assets")
+@RequiredArgsConstructor
+public class AssetController {
+
+    @Operation(summary = "List assets in a folder")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Paginated asset list"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping
+    public ResponseEntity<PaginatedData<AssetDto>> getAssets(...) { ... }
+}
+```
+
+Rules:
+- `@Tag` — one per controller class; `name` is the Swagger group label.
+- `@Operation(summary = "...")` — one per endpoint method; one short sentence.
+- `@ApiResponses` — list every HTTP status code the method can return.
+- Do **not** add these annotations to domain interfaces, application use cases, or infrastructure services.
+
 ### Spring (Service / Infrastructure)
 
 ```java

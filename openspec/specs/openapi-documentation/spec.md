@@ -4,7 +4,7 @@ A live Swagger UI is available at `/swagger-ui.html` and a machine-readable Open
 
 ---
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Swagger UI is accessible without authentication
 
@@ -24,7 +24,7 @@ A live Swagger UI is available at `/swagger-ui.html` and a machine-readable Open
 
 ### Requirement: All REST controllers are documented
 
-All 11 `@RestController` classes SHALL have a `@Tag` annotation with a meaningful name and description. Every `@RequestMapping` method SHALL have an `@Operation` annotation with a `summary` and explicit `@ApiResponse` annotations for each possible HTTP status code.
+All 13 `@RestController` classes SHALL have a `@Tag` annotation with a meaningful name and description. Every `@RequestMapping` method SHALL have an `@Operation` annotation with a `summary` and explicit `@ApiResponse` annotations for each possible HTTP status code.
 
 #### Scenario: AssetController operations are documented
 
@@ -35,6 +35,16 @@ All 11 `@RestController` classes SHALL have a `@Tag` annotation with a meaningfu
 
 - **WHEN** a developer expands the `GET /api/assets/{id}/image` endpoint in Swagger UI
 - **THEN** `200 OK`, `401 Unauthorized`, and `404 Not Found` response codes are shown
+
+#### Scenario: HomeController operations are documented
+
+- **WHEN** a developer views the Swagger UI
+- **THEN** the "Home" tag is present with the `GET /api/home/stats` endpoint documented
+
+#### Scenario: MediaController operations are documented
+
+- **WHEN** a developer views the Swagger UI
+- **THEN** the "Media" tag is present with `GET /api/assets/{id}/stream` and `GET /api/audio/playlist/{id}` documented, including `206 Partial Content` for the stream endpoint
 
 ### Requirement: springdoc-openapi-starter-webmvc-ui is present in pom.xml
 
