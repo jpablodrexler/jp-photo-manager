@@ -170,12 +170,12 @@
       "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
       "targets": [
         {
-          "expr": "spring_batch_job_seconds_sum{job=\"photomanager-backend\", name=\"catalogJob\"} / spring_batch_job_seconds_count{job=\"photomanager-backend\", name=\"catalogJob\"}",
+          "expr": "spring_batch_job_seconds_sum{job=\"photomanager-backend\", spring_batch_job_name=\"catalogJob\"} / spring_batch_job_seconds_count{job=\"photomanager-backend\", spring_batch_job_name=\"catalogJob\"}",
           "legendFormat": "avg duration",
           "refId": "A"
         },
         {
-          "expr": "increase(spring_batch_job_seconds_count{job=\"photomanager-backend\", name=\"catalogJob\", status=\"COMPLETED\"}[1h])",
+          "expr": "increase(spring_batch_job_seconds_count{job=\"photomanager-backend\", spring_batch_job_name=\"catalogJob\", spring_batch_job_status=\"COMPLETED\"}[1h])",
           "legendFormat": "completed runs / hour",
           "refId": "B"
         }
