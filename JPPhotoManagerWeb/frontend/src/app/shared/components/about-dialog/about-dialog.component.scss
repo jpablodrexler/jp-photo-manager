@@ -1,0 +1,40 @@
+.about-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.about-icon {
+  color: #2e7d32;
+}
+
+.about-content {
+  min-width: 320px;
+}
+
+.about-version {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.about-description {
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.about-copyright {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.about-link {
+  color: #2e7d32;
+  font-size: 13px;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

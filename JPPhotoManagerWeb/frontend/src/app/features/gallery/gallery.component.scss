@@ -1,10 +1,15 @@
 :host {
   display: block;
-  height: 100%;
 }
 
 .gallery-layout {
-  height: 100%;
+  height: calc(100vh - 64px);
+}
+
+mat-sidenav-content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .folder-sidenav {

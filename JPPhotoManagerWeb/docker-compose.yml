@@ -7,6 +7,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       PGDATA: /var/lib/postgresql/data
+    ports:
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -31,6 +33,8 @@ services:
       CATALOG_DIR: /catalog
       THUMBNAILS_DIR: /thumbnails
       JWT_SECRET: "${JWT_SECRET:?Set JWT_SECRET in .env - run: openssl rand -base64 32}"
+    ports:
+      - "8080:8080"
     volumes:
       - type: bind
         source: ${HOST_IMAGE_DIR:?Set HOST_IMAGE_DIR in .env (e.g. HOST_IMAGE_DIR=/home/user/Pictures)}

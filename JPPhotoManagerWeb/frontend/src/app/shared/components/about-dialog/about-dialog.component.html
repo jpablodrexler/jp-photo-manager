@@ -1,0 +1,26 @@
+<h2 mat-dialog-title class="about-title">
+  <mat-icon class="about-icon">photo_library</mat-icon>
+  JP Photo Manager
+</h2>
+
+<mat-dialog-content class="about-content">
+  <p class="about-version">Version {{ version }}</p>
+  <p class="about-description">
+    JP Photo Manager is a web application that allows the visualization of image
+    galleries, as well as management tasks such as copying / moving images and
+    searching for duplicates.
+  </p>
+  <p class="about-copyright">© 2025 Juan Pablo Drexler</p>
+  <a
+    class="about-link"
+    [href]="githubUrl"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    github.com/jpablodrexler/jp-photo-manager
+  </a>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>

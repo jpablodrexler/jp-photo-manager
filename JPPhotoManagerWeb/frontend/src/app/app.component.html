@@ -17,6 +17,7 @@
         <button mat-menu-item routerLink="/recycle-bin"><mat-icon>delete</mat-icon> Recycle Bin</button>
         <button mat-menu-item routerLink="/admin/users"><mat-icon>manage_accounts</mat-icon> Users</button>
         <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon> Logout</button>
+        <button mat-menu-item (click)="openAbout()"><mat-icon>info</mat-icon> About</button>
       </mat-menu>
     }
     @if (!isMobile) {
@@ -46,6 +47,9 @@
       </a>
       <button mat-button (click)="logout()">
         <mat-icon>logout</mat-icon> Logout
+      </button>
+      <button mat-icon-button (click)="openAbout()" aria-label="About">
+        <mat-icon>info</mat-icon>
       </button>
     }
   }

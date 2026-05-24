@@ -5,11 +5,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatDialog } from '@angular/material/dialog';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Subscription } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
 import { AudioPlayerService } from './core/services/audio-player.service';
 import { AudioPlayerComponent } from './features/audio-player/audio-player.component';
+import { AboutDialogComponent } from './shared/components/about-dialog/about-dialog.component';
 
 @Component({
   selector: 'app-root',
@@ -34,6 +36,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private bpSub!: Subscription;
 
   readonly audioPlayer = inject(AudioPlayerService);
+  private readonly dialog = inject(MatDialog);
 
   constructor(
     private authService: AuthService,
@@ -58,5 +61,9 @@ export class AppComponent implements OnInit, OnDestroy {
   logout(): void {
     this.authService.logout();
     this.router.navigateByUrl('/login');
+  }
+
+  openAbout(): void {
+    this.dialog.open(AboutDialogComponent);
   }
 }
