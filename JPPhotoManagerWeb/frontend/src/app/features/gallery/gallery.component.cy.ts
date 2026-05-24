@@ -980,6 +980,40 @@ describe('GalleryComponent', () => {
     cy.contains('Failed to move assets').should('be.visible');
   });
 
+  it('matSidenavContent_onMount_hasDisplayFlex', () => {
+    mountGallery();
+    cy.get('mat-sidenav-content').should('have.css', 'display', 'flex');
+  });
+
+  it('matSidenavContent_onMount_hasFlexDirectionColumn', () => {
+    mountGallery();
+    cy.get('mat-sidenav-content').should('have.css', 'flex-direction', 'column');
+  });
+
+  it('assetVirtualViewport_folderSelected_hasPositiveHeight', () => {
+    const getAssets = cy.stub().returns(of({
+      items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
+    }));
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      fixture.componentInstance.onFolderSelected('/photos');
+      fixture.detectChanges();
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+    cy.get('cdk-virtual-scroll-viewport').invoke('outerHeight').should('be.gt', 0);
+  });
+
+  it('assetListRows_folderSelected_areVisible', () => {
+    const getAssets = cy.stub().returns(of({
+      items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
+    }));
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      fixture.componentInstance.onFolderSelected('/photos');
+      fixture.detectChanges();
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+    cy.get('.asset-list-row').should('be.visible');
+  });
+
   it('ngOnInit_withoutFolderQueryParam_doesNotPreSelectFolder', () => {
     const getAssets = cy.stub().returns(of({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 }));
 
