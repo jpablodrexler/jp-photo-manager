@@ -937,6 +937,32 @@ describe('GalleryComponent', () => {
     });
   });
 
+  it('onFolderSelected_whileInViewerMode_switchesToThumbnailsMode', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets = [...mockAssets];
+      component.openViewer(0);
+      expect(component.viewMode).to.equal('viewer');
+
+      component.onFolderSelected('/other-folder');
+
+      expect(component.viewMode).to.equal('thumbnails');
+    });
+  });
+
+  it('onFolderSelected_whileInSlideshowMode_switchesToThumbnailsMode', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets = [...mockAssets];
+      component.startSlideshow(0);
+      expect(component.viewMode).to.equal('slideshow');
+
+      component.onFolderSelected('/other-folder');
+
+      expect(component.viewMode).to.equal('thumbnails');
+    });
+  });
+
   it('moveSelectedAssets_moveConfirmed_showsMovedSnackbarAndClearsSelection', () => {
     const getAssets = cy.stub().returns(of(emptyPage));
     mountGallery({ getAssets }).then(({ fixture }) => {

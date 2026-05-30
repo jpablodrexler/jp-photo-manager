@@ -209,6 +209,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   onFolderSelected(folderPath: string): void {
     this.currentFolder = folderPath;
+    this.viewMode = 'thumbnails';
     if (this.isMobile) {
       this.sidenavOpen = false;
     }
