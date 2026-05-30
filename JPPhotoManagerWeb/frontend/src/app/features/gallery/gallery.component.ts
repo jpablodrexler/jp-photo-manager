@@ -578,6 +578,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.viewerZoom = Math.max(this.viewerZoom - 0.25, 0.25);
   }
 
+  resetZoom(): void {
+    this.viewerZoom = 1;
+  }
+
   onUploadComplete(): void {
     this.loadAssets();
   }
