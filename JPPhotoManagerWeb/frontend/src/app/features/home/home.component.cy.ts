@@ -35,7 +35,7 @@ describe('HomeComponent', () => {
       fileName: `photo${i + 1}.jpg`,
       folderPath: '/photos/vacation',
       thumbnailUrl: `/api/assets/${i + 1}/thumbnail`,
-      fileSize: 1_024_000,
+      fileSize: 1_048_576,
     })),
   };
 

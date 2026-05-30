@@ -13,7 +13,7 @@
     "cypress:open": "cypress open --component",
     "cypress:e2e": "cypress open --e2e",
     "lint": "ng lint",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "prepare": "node -e \"const c=require('child_process');try{c.execSync('git rev-parse --git-dir',{stdio:'ignore'});c.execSync('git config core.hooksPath .githooks')}catch(e){}\""
   },
   "private": true,
   "dependencies": {
