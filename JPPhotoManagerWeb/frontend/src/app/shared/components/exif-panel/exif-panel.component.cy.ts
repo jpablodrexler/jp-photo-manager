@@ -20,6 +20,7 @@ const makeAsset = (tags: string[] = []): Asset => ({
   rating: 0,
   tags,
   fileType: 'IMAGE',
+  isVideo: false,
 });
 
 const exifWithData: ExifMetadata = {

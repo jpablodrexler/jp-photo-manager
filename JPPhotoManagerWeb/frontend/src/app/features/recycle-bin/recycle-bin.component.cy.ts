@@ -13,13 +13,13 @@ describe('RecycleBinComponent', () => {
       assetId: 1, folderId: 1, folderPath: '/photos', fileName: 'sunset.jpg',
       fileSize: 1024000, thumbnailCreationDateTime: '2024-06-01T10:00:00',
       hash: 'abc123', thumbnailUrl: '/api/assets/1/thumbnail', imageUrl: '/api/assets/1/image',
-      rating: 0, tags: [], fileType: 'IMAGE',
+      rating: 0, tags: [], fileType: 'IMAGE', isVideo: false,
     },
     {
       assetId: 2, folderId: 1, folderPath: '/photos', fileName: 'beach.jpg',
       fileSize: 512000, thumbnailCreationDateTime: '2024-06-02T10:00:00',
       hash: 'def456', thumbnailUrl: '/api/assets/2/thumbnail', imageUrl: '/api/assets/2/image',
-      rating: 0, tags: [], fileType: 'IMAGE',
+      rating: 0, tags: [], fileType: 'IMAGE', isVideo: false,
     },
   ];
 

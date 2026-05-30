@@ -215,7 +215,12 @@
                [class.asset-list-row--selected]="isSelected(asset)"
                (click)="toggleSelection(asset)"
                (dblclick)="openViewer(i)">
-            <img [src]="asset.thumbnailUrl" [alt]="asset.fileName" class="list-thumb" />
+            <div class="thumb-wrapper">
+              <img [src]="asset.thumbnailUrl" [alt]="asset.fileName" class="list-thumb" />
+              @if (asset.isVideo) {
+                <mat-icon class="video-overlay-icon">play_circle</mat-icon>
+              }
+            </div>
             <div class="list-meta">
               <span class="list-filename" [title]="asset.fileName">{{ asset.fileName }}</span>
               <span class="list-details">
@@ -283,11 +288,14 @@
                 }
               </div>
             </div>
+          } @else if (currentViewerAsset.isVideo) {
+            <video [src]="currentViewerAsset.imageUrl" controls class="viewer-video"></video>
           } @else {
             <img
               [src]="currentViewerAsset.imageUrl"
               [alt]="currentViewerAsset.fileName"
               [style.transform]="'scale(' + viewerZoom + ')'"
+              class="viewer-image"
             />
           }
           <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="viewerNext()" [disabled]="currentViewerIndex >= assets.length - 1">

@@ -40,4 +40,6 @@ public interface StoragePort {
     void convertPngToJpeg(String sourcePath, String destinationPath) throws IOException;
 
     ExifMetadata getExifMetadata(String filePath);
+
+    boolean isVideoFile(String fileName);
 }

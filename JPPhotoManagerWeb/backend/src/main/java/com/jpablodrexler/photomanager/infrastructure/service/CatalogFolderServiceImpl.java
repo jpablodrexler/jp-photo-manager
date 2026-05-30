@@ -147,7 +147,8 @@ public class CatalogFolderServiceImpl implements CatalogFolderPort {
             asset.setFileModificationDateTime(storageService.getFileModificationDateTime(filePath));
             asset.setThumbnailCreationDateTime(LocalDateTime.now());
             asset.setImageRotation(storageService.getImageRotation(filePath));
-            asset.setFileType(FileType.IMAGE);
+            asset.setVideo(storageService.isVideoFile(fileName));
+            asset.setFileType(asset.isVideo() ? FileType.VIDEO : FileType.IMAGE);
 
             byte[] thumbnail = storageService.generateThumbnail(filePath, THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT);
             asset = assetRepository.save(asset);

@@ -23,6 +23,7 @@ describe('AssetService', () => {
     rating: 0,
     tags: [],
     fileType: 'IMAGE',
+    isVideo: false,
   };
 
   beforeEach(() => {

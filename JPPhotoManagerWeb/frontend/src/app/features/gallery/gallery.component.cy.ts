@@ -33,6 +33,7 @@ describe('GalleryComponent', () => {
       rating: 0,
       tags: [],
       fileType: 'IMAGE',
+      isVideo: false,
     },
     {
       assetId: 2,
@@ -47,6 +48,7 @@ describe('GalleryComponent', () => {
       rating: 0,
       tags: [],
       fileType: 'IMAGE',
+      isVideo: false,
     },
   ];
 
@@ -446,7 +448,7 @@ describe('GalleryComponent', () => {
         assetId: 3, folderId: 1, folderPath: '/photos', fileName: 'mountain.jpg',
         fileSize: 768000, thumbnailCreationDateTime: '2024-06-03T10:00:00',
         hash: 'ghi789', thumbnailUrl: '/api/assets/3/thumbnail', imageUrl: '/api/assets/3/image',
-        rating: 0, tags: [], fileType: 'IMAGE',
+        rating: 0, tags: [], fileType: 'IMAGE', isVideo: false,
       },
     ];
     const getAssets = cy.stub().returns(of({ items: threeAssets, pageIndex: 0, totalPages: 1, totalItems: 3 }));
@@ -482,7 +484,7 @@ describe('GalleryComponent', () => {
       component.startSlideshow(0);
       component.pauseSlideshow();
       expect(component.slideshowPlaying).to.be.false;
-      expect(component.slideshowTimer).to.be.null;
+      expect((component as any).slideshowTimer).to.be.null;
       expect(component.currentViewerIndex).to.equal(0);
     });
   });
@@ -1207,5 +1209,75 @@ describe('GalleryComponent', () => {
     });
 
     cy.get('.status-bar').should('contain', '2 of 2 photos');
+  });
+
+  // --- Video asset tests ---
+
+  it('videoAsset_inThumbnailList_showsPlayOverlayIcon', () => {
+    const videoAsset: Asset = {
+      assetId: 10,
+      folderId: 1,
+      folderPath: '/videos',
+      fileName: 'clip.mp4',
+      fileSize: 10_000_000,
+      thumbnailCreationDateTime: '2024-06-01T10:00:00',
+      hash: 'videohash',
+      thumbnailUrl: '/api/assets/10/thumbnail',
+      imageUrl: '/api/assets/10/image',
+      rating: 0,
+      tags: [],
+      fileType: 'VIDEO',
+      isVideo: true,
+    };
+    const page: PaginatedData<Asset> = { items: [videoAsset], pageIndex: 0, totalPages: 1, totalItems: 1 };
+    const getAssets = cy.stub().returns(of(page));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      fixture.componentInstance.onFolderSelected('/videos');
+      fixture.detectChanges();
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.get('.asset-list-row .video-overlay-icon').should('exist');
+  });
+
+  it('openViewer_videoAsset_showsVideoElementNotImg', () => {
+    const videoAsset: Asset = {
+      assetId: 10,
+      folderId: 1,
+      folderPath: '/videos',
+      fileName: 'clip.mp4',
+      fileSize: 10_000_000,
+      thumbnailCreationDateTime: '2024-06-01T10:00:00',
+      hash: 'videohash',
+      thumbnailUrl: '/api/assets/10/thumbnail',
+      imageUrl: '/api/assets/10/image',
+      rating: 0,
+      tags: [],
+      fileType: 'VIDEO',
+      isVideo: true,
+    };
+
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets = [videoAsset];
+      component.openViewer(0);
+      fixture.detectChanges();
+    });
+
+    cy.get('video').should('exist');
+    cy.get('img.viewer-image').should('not.exist');
+  });
+
+  it('openViewer_imageAsset_showsImgElementNotVideo', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets = [...mockAssets];
+      component.openViewer(0);
+      fixture.detectChanges();
+    });
+
+    cy.get('img.viewer-image').should('exist');
+    cy.get('video').should('not.exist');
   });
 });

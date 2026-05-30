@@ -70,6 +70,9 @@ public class AssetEntity {
     @Column(name = "file_type", nullable = false)
     private FileType fileType = FileType.IMAGE;
 
+    @Column(name = "is_video", nullable = false)
+    private boolean isVideo;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "asset_tags",

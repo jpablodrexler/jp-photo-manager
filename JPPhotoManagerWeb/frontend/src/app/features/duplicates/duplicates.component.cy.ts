@@ -20,6 +20,7 @@ describe('DuplicatesComponent', () => {
     rating: 0,
     tags: [],
     fileType: 'IMAGE',
+    isVideo: false,
   });
 
   const mockDuplicateGroups: Asset[][] = [

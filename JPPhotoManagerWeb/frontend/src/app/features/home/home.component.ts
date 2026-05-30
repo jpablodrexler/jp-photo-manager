@@ -68,6 +68,7 @@ export class HomeComponent implements OnInit {
       rating: 0,
       tags: [],
       fileType: 'IMAGE',
+      isVideo: false,
     };
   }
 }

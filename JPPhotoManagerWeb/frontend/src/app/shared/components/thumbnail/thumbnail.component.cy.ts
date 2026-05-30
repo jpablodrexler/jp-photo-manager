@@ -17,6 +17,7 @@ describe('ThumbnailComponent', () => {
     rating: 0,
     tags: [],
     fileType: 'IMAGE',
+    isVideo: false,
   };
 
   it('should render the asset file name', () => {

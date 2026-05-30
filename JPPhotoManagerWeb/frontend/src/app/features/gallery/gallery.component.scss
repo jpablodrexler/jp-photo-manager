@@ -61,13 +61,34 @@ mat-sidenav-content {
   }
 }
 
+.thumb-wrapper {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
 .list-thumb {
   width: 106px;
   height: 64px;
   object-fit: contain;
-  flex-shrink: 0;
   border-radius: 3px;
   background: #1a1a1a;
+}
+
+.video-overlay-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 28px;
+  pointer-events: none;
+}
+
+.viewer-video {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
 .list-meta {

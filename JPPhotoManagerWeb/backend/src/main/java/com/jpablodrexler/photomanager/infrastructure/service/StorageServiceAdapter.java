@@ -28,6 +28,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
+import java.util.Set;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -45,6 +46,7 @@ public class StorageServiceAdapter implements StoragePort {
     private static final int THUMBNAIL_MAX_WIDTH = 200;
     private static final int THUMBNAIL_MAX_HEIGHT = 150;
     private static final int IMAGE_DIMENSION_LIMIT = 20_000;
+    private static final Set<String> VIDEO_EXTENSIONS = Set.of(".mp4", ".mov", ".mkv");
 
     private final Timer thumbnailTimer;
 
@@ -59,7 +61,7 @@ public class StorageServiceAdapter implements StoragePort {
         try (Stream<Path> stream = Files.list(Paths.get(directoryPath))) {
             return stream
                     .filter(Files::isRegularFile)
-                    .filter(p -> isImageFile(p.getFileName().toString()))
+                    .filter(p -> { String name = p.getFileName().toString(); return isImageFile(name) || isVideoFile(name); })
                     .map(Path::toString)
                     .sorted()
                     .collect(Collectors.toList());
@@ -160,11 +162,47 @@ public class StorageServiceAdapter implements StoragePort {
     public byte[] generateThumbnail(String filePath, int maxWidth, int maxHeight) throws IOException {
         Timer.Sample sample = Timer.start();
         try {
+            if (isVideoFile(filePath)) {
+                try {
+                    return generateVideoThumbnail(filePath, maxWidth, maxHeight);
+                } catch (IOException e) {
+                    log.warn("Failed to generate video thumbnail for {}: {}", filePath, e.getMessage());
+                    throw e;
+                }
+            }
             BufferedImage image = loadImage(filePath);
             ImageRotation rotation = getImageRotation(filePath);
             return generateThumbnail(image, maxWidth, maxHeight, rotation);
         } finally {
             sample.stop(thumbnailTimer);
+        }
+    }
+
+    private byte[] generateVideoThumbnail(String filePath, int maxWidth, int maxHeight) throws IOException {
+        Path tempFile = Files.createTempFile("vthumb_", ".jpg");
+        try {
+            ProcessBuilder pb = new ProcessBuilder(
+                    "ffmpeg", "-i", filePath,
+                    "-ss", "00:00:01",
+                    "-vframes", "1",
+                    "-vf", "scale=" + maxWidth + ":" + maxHeight + ":force_original_aspect_ratio=decrease",
+                    "-y", tempFile.toString()
+            );
+            pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+            Process process = pb.start();
+            int exitCode;
+            try {
+                exitCode = process.waitFor();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IOException("Interrupted while waiting for ffmpeg", e);
+            }
+            if (exitCode != 0) {
+                throw new IOException("ffmpeg exited with code " + exitCode + " for file: " + filePath);
+            }
+            return Files.readAllBytes(tempFile);
+        } finally {
+            Files.deleteIfExists(tempFile);
         }
     }
 
@@ -209,6 +247,9 @@ public class StorageServiceAdapter implements StoragePort {
 
     @Override
     public ImageRotation getImageRotation(String filePath) throws IOException {
+        if (isVideoFile(filePath)) {
+            return ImageRotation.ROTATE_0;
+        }
         try {
             ImageMetadata metadata = Imaging.getMetadata(Paths.get(filePath).toFile());
             if (metadata instanceof JpegImageMetadata jpegMetadata) {
@@ -255,6 +296,9 @@ public class StorageServiceAdapter implements StoragePort {
 
     @Override
     public ExifMetadata getExifMetadata(String filePath) {
+        if (isVideoFile(filePath)) {
+            return new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null);
+        }
         String cameraMake = null;
         String cameraModel = null;
         String lensModel = null;
@@ -381,6 +425,15 @@ public class StorageServiceAdapter implements StoragePort {
     public static boolean isPlaylistFile(String fileName) {
         String lower = fileName.toLowerCase();
         return lower.endsWith(".m3u") || lower.endsWith(".m3u8") || lower.endsWith(".pls");
+    }
+
+    @Override
+    public boolean isVideoFile(String fileName) {
+        String lower = fileName.toLowerCase();
+        for (String ext : VIDEO_EXTENSIONS) {
+            if (lower.endsWith(ext)) return true;
+        }
+        return false;
     }
 
     private BufferedImage applyRotation(BufferedImage image, ImageRotation rotation) {

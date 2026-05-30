@@ -17,6 +17,7 @@ describe('TimelineViewComponent', () => {
     rating: 3,
     tags: [],
     fileType: 'IMAGE',
+    isVideo: false,
   };
 
   const mockGroups: TimelineGroup[] = [

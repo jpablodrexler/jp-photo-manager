@@ -34,6 +34,8 @@ public class Asset {
     private int rating;
     private Set<String> tags = new HashSet<>();
     private FileType fileType = FileType.IMAGE;
+    @Builder.Default
+    private boolean isVideo = false;
 
     public String getThumbnailBlobName() {
         return assetId + ".bin";

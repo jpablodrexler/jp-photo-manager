@@ -21,6 +21,7 @@ export interface Asset {
   rating: number;
   tags: string[];
   fileType: FileType;
+  isVideo: boolean;
 }
 
 export type SortCriteria =
