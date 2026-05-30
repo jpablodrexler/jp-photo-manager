@@ -7,8 +7,8 @@ description: >
   Do not wait to be asked: review code proactively after writing it. Also
   triggers when explicitly asked to review a pull request, file, or change.
   Covers both sub-projects (backend and frontend) and all cross-cutting
-  concerns: architecture, naming, transactions, async, testing, and
-  TypeScript/Java style rules.
+  concerns: hexagonal architecture layering, naming, transactions, async,
+  testing, and TypeScript/Java style rules.
 metadata:
   scope: [JPPhotoManagerWeb]
 ---
@@ -42,40 +42,44 @@ Severity levels used throughout:
 
 ### 1.1 Backend dependency flow
 
-Allowed imports:
+The backend uses **hexagonal (ports and adapters)** architecture. Allowed imports:
 
 ```
-api/        → may import application/, domain/
-application/ → may import domain/
-domain/     → must NOT import api/, application/, infrastructure/
-infrastructure/ → may import domain/
+infrastructure/web/      → may import application/usecase/, domain/
+application/usecase/     → may import domain/ only
+domain/                  → must NOT import application/, infrastructure/
+infrastructure/persistence/
+infrastructure/service/  → may import domain/ only
 ```
 
-🔴 Flag any class in `domain/` that imports from `api/`, `application/`, or
-`infrastructure/`.
+🔴 Flag any class in `domain/` that imports from `application/`, `infrastructure/`,
+or any Spring / JPA annotation.
 
 🔴 Flag any controller that contains business logic instead of delegating
-immediately to `PhotoManagerFacade`.
+immediately to a use-case interface from `domain/port/in/`.
 
-🟡 Flag any facade method that contains business logic instead of delegating
-to domain services or repositories.
+🔴 Flag any JPA `@Entity` class placed in `domain/` — entities belong in
+`infrastructure/persistence/entity/`; domain has pure POJOs in `domain/model/`.
 
-### 1.2 Backend service interface / implementation split
+🟡 Flag any use-case implementation that injects a Spring Data JPA interface
+directly — it must go through a `domain/port/out/` repository interface.
 
-Every service **must** exist as two files:
+### 1.2 Backend port / adapter split
 
-| File                  | Package                   | Role                               |
-| --------------------- | ------------------------- | ---------------------------------- |
-| `FooService.java`     | `domain/service/`         | Interface only — no implementation |
-| `FooServiceImpl.java` | `infrastructure/service/` | `@Service implements FooService`   |
+The project has three port/adapter pairs; all must follow the naming rules:
 
-🔴 Flag any `@Service` class in `infrastructure/service/` that does not implement
-a corresponding interface in `domain/service/`.
+| Role | Interface location | Naming | Adapter location | Naming |
+|------|--------------------|--------|-----------------|--------|
+| Use case (driving) | `domain/port/in/<pkg>/` | `FooUseCase` | `application/usecase/<pkg>/` | `FooUseCaseImpl` |
+| Service port (driven) | `domain/port/out/` | `FooPort` | `infrastructure/service/` | `FooServiceAdapter` |
+| Repository port (driven) | `domain/port/out/` | `FooRepository` | `infrastructure/persistence/adapter/` | `FooRepositoryImpl` |
 
-🔴 Flag any caller (facade, controller, other service) that injects
-`FooServiceImpl` instead of the `FooService` interface.
+🔴 Flag any adapter class that is injected directly instead of its port interface.
 
-🟡 Flag any service interface that lives outside `domain/service/`.
+🔴 Flag any use-case implementation that injects another use-case implementation
+directly — use-cases must be composed via port interfaces only.
+
+🟡 Flag any port interface that lives outside `domain/port/in/` or `domain/port/out/`.
 
 ### 1.3 Frontend layer rules
 
@@ -277,18 +281,25 @@ already committed". This must come before all other `requestMatchers` rules.
 
 ## 8. Backend: Naming Conventions
 
-| Element           | Expected                                      | Example                              |
-| ----------------- | --------------------------------------------- | ------------------------------------ |
-| Class             | PascalCase                                    | `CatalogAssetsServiceImpl`           |
-| Method            | camelCase                                     | `catalogAssetsAsync()`               |
-| Field / variable  | camelCase                                     | `folderRepository`                   |
-| Constant          | UPPER_SNAKE_CASE                              | `THUMBNAIL_MAX_WIDTH`                |
-| Enum value        | UPPER_SNAKE_CASE                              | `ASSET_CREATED`                      |
-| Test class        | `{Class}Test` or `{Class}Tests`               | `CatalogFolderServiceImplTest`       |
-| Test method       | `method_condition_expected`                   | `catalogFolder_newFile_createsAsset` |
-| Migration         | `V{n}__{Description}.sql`                     | `V2__Add_hash_column.sql`            |
-| Service interface | `FooService` in `domain/service/`             | `CatalogFolderService`               |
-| Service impl      | `FooServiceImpl` in `infrastructure/service/` | `CatalogFolderServiceImpl`           |
+| Element              | Expected                                                          | Example                              |
+| -------------------- | ----------------------------------------------------------------- | ------------------------------------ |
+| Class                | PascalCase                                                        | `CatalogAssetsUseCaseImpl`           |
+| Method               | camelCase                                                         | `execute()`, `findByFolder()`        |
+| Field / variable     | camelCase                                                         | `folderRepository`, `storagePort`    |
+| Constant             | UPPER_SNAKE_CASE                                                  | `THUMBNAIL_MAX_WIDTH`                |
+| Enum value           | UPPER_SNAKE_CASE                                                  | `ASSET_CREATED`                      |
+| Test class           | `{Class}Test` or `{Class}Tests`                                   | `CatalogAssetsUseCaseImplTest`       |
+| Test method          | `method_condition_expected`                                       | `execute_folderExists_returnsAssets` |
+| Migration            | `V{n}__{Description}.sql`                                         | `V2__Add_hash_column.sql`            |
+| Use-case interface   | `FooUseCase` in `domain/port/in/<pkg>/`                           | `CatalogAssetsUseCase`               |
+| Use-case impl        | `FooUseCaseImpl` in `application/usecase/<pkg>/`                  | `CatalogAssetsUseCaseImpl`           |
+| Service port         | `FooPort` in `domain/port/out/`                                   | `StoragePort`, `ThumbnailPort`       |
+| Service adapter      | `FooServiceAdapter` in `infrastructure/service/`                  | `StorageServiceAdapter`              |
+| Repository port      | `FooRepository` in `domain/port/out/`                             | `AssetRepository`, `FolderRepository`|
+| Repository adapter   | `FooRepositoryImpl` in `infrastructure/persistence/adapter/`      | `AssetRepositoryImpl`                |
+| JPA repository       | `JpaFooRepository` in `infrastructure/persistence/jpa/`           | `JpaAssetRepository`                 |
+| JPA entity           | `FooEntity` in `infrastructure/persistence/entity/`               | `AssetEntity`, `FolderEntity`        |
+| Domain model         | Plain class in `domain/model/`                                    | `Asset`, `Folder`                    |
 
 🟡 Flag any violation of the above.
 
@@ -429,6 +440,9 @@ These have caused real bugs in this codebase and deserve extra attention:
 | Pitfall                                    | What to look for                                                                                                                                 |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `@Transactional` self-invocation           | Method annotated `@Transactional` called from same class without going through proxy                                                             |
+| JPA entity in `domain/`                    | `@Entity` class placed under `domain/model/` or `domain/port/` — entities belong in `infrastructure/persistence/entity/`                        |
+| Adapter injected directly                  | Caller injects `FooRepositoryImpl` or `FooServiceAdapter` instead of the `domain/port/out/` interface                                           |
+| Use case bypassing port interface          | Use-case impl injects another use-case impl directly instead of its `domain/port/in/` interface                                                  |
 | Missing catalog directory                  | `root-catalog-folders` pointing to a directory that may not exist on all machines; should use `application-local.yml` for machine-specific paths |
 | Lazy association outside transaction       | Accessing `asset.getFolder()` or similar after the session is closed                                                                             |
 | SSE emitter not completed                  | `SseEmitter` left open after the async operation finishes                                                                                        |
@@ -441,6 +455,7 @@ These have caused real bugs in this codebase and deserve extra attention:
 | JPA delete-then-insert with stale IDs      | `deleteAll()` + `saveAll(incoming)` when incoming entities still have old IDs → Hibernate merges against deleted rows; use `deleteAllInBatch()` + `setId(null)` |
 | CORS missing `PATCH`                       | `AppConfig.corsFilter()` `allowedMethods` omitting `"PATCH"` when `@PatchMapping` endpoints exist → 403 on preflight                            |
 | Missing OpenAPI annotations on controller  | New `@RestController` added without `@Tag` / `@Operation` / `@ApiResponses` — controller appears in Swagger UI under "default" with no documentation |
+| Hand-written mapper                        | Entity ↔ domain model or HTTP DTO ↔ domain model conversion done manually instead of with a MapStruct `@Mapper(componentModel = "spring")`      |
 
 ---
 

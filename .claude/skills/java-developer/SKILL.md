@@ -3,13 +3,13 @@ name: java-developer
 description: >
   Java developer skill for the JPPhotoManager Spring Boot 3.4 / Java 21
   backend. TRIGGER whenever work touches JPPhotoManagerWeb/backend — including
-  when implementing OpenSpec tasks: adding a new service, controller, entity,
+  when implementing OpenSpec tasks: adding a new use case, controller, entity,
   repository, DTO, or enum; fixing a bug in any Java class; refactoring or
   extracting logic into a new class; wiring up transactions, async operations,
-  or Spring beans. Enforces clean-architecture layering
-  (api → application → domain ← infrastructure), the
-  interface-in-domain / implementation-in-infrastructure split for every
-  service, and all other coding standards. Invoke this skill proactively —
+  or Spring beans. Enforces hexagonal (ports and adapters) architecture
+  (infrastructure/web → application/usecase → domain ← infrastructure/persistence | infrastructure/service),
+  the port-interface / adapter-implementation split for every service and
+  repository, and all other coding standards. Invoke this skill proactively —
   do not wait to be asked.
 metadata:
   scope: [JPPhotoManagerWeb/backend]
@@ -19,7 +19,8 @@ metadata:
 
 Write Java code that follows the conventions and best practices of the
 JPPhotoManager backend project: a Spring Boot 3.4 / Java 21 application with
-clean architecture, Lombok, MapStruct, Spring Data JPA, Flyway, and PostgreSQL.
+hexagonal (ports and adapters) architecture, Lombok, MapStruct, Spring Data
+JPA, Flyway, and PostgreSQL.
 
 ## Workflow
 
@@ -59,26 +60,57 @@ Use **Maven** with the Spring Boot parent POM:
 
 ### Package Root
 
-`com.<company>.<appname>.*`
+`com.jpablodrexler.photomanager.*`
 
 ---
 
 ## 2. Package / Layer Structure
 
 ```
-src/main/java/com/<company>/<app>/
-  api/                      # REST controllers + request/response DTOs
-    dto/
-  application/              # Facade + application-level DTOs
-    dto/
-  config/                   # Spring @Configuration classes
+src/main/java/com/jpablodrexler/photomanager/
   domain/
-    entity/                 # JPA entities
-    enums/                  # Domain enums
-    repository/             # Spring Data JPA interfaces
-    service/                # Service *interfaces* (domain contracts)
+    model/              → Pure POJO domain objects (no framework imports, no JPA)
+    port/
+      in/               → Use-case interfaces (one interface, one method each)
+        asset/          → GetAssetsUseCase, DeleteAssetsUseCase, …
+        catalog/        → CatalogAssetsUseCase, GetDuplicatedAssetsUseCase, …
+        folder/         → GetSubFoldersUseCase, GetDrivesUseCase, …
+        sync/           → SyncAssetsUseCase, GetSyncConfigUseCase, …
+        convert/        → ConvertAssetsUseCase, GetConvertConfigUseCase, …
+        recycle/        → GetDeletedAssetsUseCase, RestoreAssetsUseCase, …
+        home/           → GetHomeStatsUseCase
+        user/           → ListUsersUseCase, CreateUserUseCase, …
+      out/              → Repository and service port interfaces (driven ports)
+    enums/              → ImageRotation, SortCriteria, ReasonEnum, FileType, …
+
+  application/
+    dto/                → Framework-free application DTOs
+                          (CatalogChangeNotification, PaginatedResult, AssetFilter, …)
+    usecase/            → One @Service implementation per use-case interface
+      asset/
+      catalog/
+      folder/
+      sync/
+      convert/
+      recycle/
+      home/
+      user/
+
   infrastructure/
-    service/                # Service *implementations*
+    persistence/
+      entity/           → @Entity JPA classes (NOT in domain/)
+      jpa/              → Spring Data JPA interfaces (JpaXxxRepository extends JpaRepository)
+      adapter/          → Implements domain/port/out/ repository interfaces (XxxRepositoryImpl)
+      mapper/           → MapStruct @Mapper(componentModel="spring") entity ↔ domain model
+    web/
+      controller/       → @RestController classes (HTTP primary adapters)
+      dto/              → HTTP request/response DTOs
+      mapper/           → MapStruct @Mapper(componentModel="spring") domain ↔ HTTP DTO
+      exception/        → GlobalExceptionHandler and HTTP exception types
+    service/            → Service adapters implementing domain/port/out/ service ports
+                          (StorageServiceAdapter, ThumbnailStorageServiceAdapter, …)
+    batch/              → Spring Batch job config, readers, processors, writers, partitioners
+    config/             → AppConfig, SecurityConfig, UserConfig, DataInitializer
 
 src/main/resources/
   application.yml
@@ -92,76 +124,125 @@ src/test/resources/
   application-test.yml      # PostgreSQL dialect, Flyway enabled (datasource from Testcontainers)
 ```
 
-**Dependency flow:** `api` → `application` → `domain` ← `infrastructure`
+**Dependency flow:**
+`infrastructure/web → application/usecase → domain ← infrastructure/persistence | infrastructure/service`
 
-### Service interface / implementation rule
+Domain must not import from any other layer. Use-cases in `application/usecase/`
+may only import from `domain/`. Infrastructure adapters may import from `domain/`
+but never from `application/usecase/` or `infrastructure/web/`.
 
-Every service **must** be split across two files:
+---
 
-| File                  | Package                   | Contents                                      |
-| --------------------- | ------------------------- | --------------------------------------------- |
-| `FooService.java`     | `domain/service/`         | Java interface — the domain contract          |
-| `FooServiceImpl.java` | `infrastructure/service/` | `@Service` class that `implements FooService` |
+## 3. Port / Adapter Split
 
-Callers always depend on the **interface** (`FooService`), never the impl. This applies to every service without exception — even small internal helpers extracted to fix a Spring proxy issue.
+The hexagonal architecture enforces three distinct port/adapter pairs:
+
+### 3.1 Use-Case Ports (driving ports)
+
+Declare a **single-method interface** in `domain/port/in/<subpackage>/`.
+Implement it in `application/usecase/<subpackage>/` with `@Service @Transactional`.
+
+| File | Package | Role |
+|------|---------|------|
+| `FooUseCase.java` | `domain/port/in/<subpackage>/` | Interface — one method |
+| `FooUseCaseImpl.java` | `application/usecase/<subpackage>/` | `@Service implements FooUseCase` |
 
 ```java
-// domain/service/CatalogFolderService.java
-public interface CatalogFolderService {
-    void catalogFolder(String folderPath, Consumer<CatalogChangeNotification> callback,
-                       AtomicInteger processed, int total);
-    Asset createAsset(String directoryPath, String fileName);
+// domain/port/in/catalog/CatalogAssetsUseCase.java
+public interface CatalogAssetsUseCase {
+    CompletableFuture<Void> execute(Consumer<CatalogChangeNotification> listener);
 }
 
-// infrastructure/service/CatalogFolderServiceImpl.java
+// application/usecase/catalog/CatalogAssetsUseCaseImpl.java
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CatalogFolderServiceImpl implements CatalogFolderService {
-    // ...
+public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
+    // injects only domain/port/out/ interfaces
+    private final FolderRepository folderRepository;
+    private final StoragePort storagePort;
+
+    @Override
+    @Transactional
+    public CompletableFuture<Void> execute(Consumer<CatalogChangeNotification> listener) { ... }
 }
 ```
 
+### 3.2 Service Ports (driven ports)
+
+Declare the interface in `domain/port/out/` with a `Port` suffix.
+Implement it in `infrastructure/service/` with a `ServiceAdapter` suffix.
+
+| File | Package | Role |
+|------|---------|------|
+| `StoragePort.java` | `domain/port/out/` | Interface |
+| `StorageServiceAdapter.java` | `infrastructure/service/` | `@Service implements StoragePort` |
+
+### 3.3 Repository Ports (driven ports)
+
+Declare the interface in `domain/port/out/` with a `Repository` suffix.
+Implement it in `infrastructure/persistence/adapter/` with a `RepositoryImpl` suffix.
+The impl delegates to a Spring Data JPA interface in `infrastructure/persistence/jpa/`.
+
+| File | Package | Role |
+|------|---------|------|
+| `AssetRepository.java` | `domain/port/out/` | Interface |
+| `AssetRepositoryImpl.java` | `infrastructure/persistence/adapter/` | `@Repository implements AssetRepository` |
+| `JpaAssetRepository.java` | `infrastructure/persistence/jpa/` | `extends JpaRepository<AssetEntity, Long>` |
+
+**Callers always inject the domain port interface, never the adapter class.**
+
 ---
 
-## 3. Naming Conventions
+## 4. Naming Conventions
 
-| Element            | Convention                              | Example                                       |
-| ------------------ | --------------------------------------- | --------------------------------------------- |
-| Classes            | PascalCase                              | `AssetController`, `CatalogAssetsServiceImpl` |
-| Methods            | camelCase                               | `getAssets()`, `catalogAssetsAsync()`         |
-| Fields             | camelCase                               | `facade`, `assetRepository`                   |
-| Constants          | UPPER_SNAKE_CASE                        | `THUMBNAIL_MAX_WIDTH`, `PAGE_SIZE`            |
-| Enum values        | UPPER_SNAKE_CASE                        | `ASSET_CREATED`, `FILE_NAME`                  |
-| Test classes       | `{ClassName}Test` or `{ClassName}Tests` | `CatalogAssetsServiceImplTest`                |
-| Test methods       | `methodName_condition_expectedResult`   | `getAssets_folderExists_returnsPage`          |
-| DB migration files | `V{n}__{Description}.sql`               | `V1__Create_assets_table.sql`                 |
+| Element            | Convention                                             | Example                                         |
+| ------------------ | ------------------------------------------------------ | ----------------------------------------------- |
+| Classes            | PascalCase                                             | `AssetController`, `CatalogAssetsUseCaseImpl`   |
+| Methods            | camelCase                                              | `getAssets()`, `execute()`                      |
+| Fields             | camelCase                                              | `folderRepository`, `storagePort`               |
+| Constants          | UPPER_SNAKE_CASE                                       | `THUMBNAIL_MAX_WIDTH`, `PAGE_SIZE`              |
+| Enum values        | UPPER_SNAKE_CASE                                       | `ASSET_CREATED`, `FILE_NAME`                    |
+| Use-case interface | `FooUseCase` in `domain/port/in/<pkg>/`                | `CatalogAssetsUseCase`                          |
+| Use-case impl      | `FooUseCaseImpl` in `application/usecase/<pkg>/`       | `CatalogAssetsUseCaseImpl`                      |
+| Service port       | `FooPort` in `domain/port/out/`                        | `StoragePort`, `ThumbnailPort`                  |
+| Service adapter    | `FooServiceAdapter` in `infrastructure/service/`       | `StorageServiceAdapter`                         |
+| Repository port    | `FooRepository` in `domain/port/out/`                  | `AssetRepository`, `FolderRepository`           |
+| Repository adapter | `FooRepositoryImpl` in `infrastructure/persistence/adapter/` | `AssetRepositoryImpl`                     |
+| JPA repository     | `JpaFooRepository` in `infrastructure/persistence/jpa/` | `JpaAssetRepository`                           |
+| JPA entity         | `FooEntity` in `infrastructure/persistence/entity/`    | `AssetEntity`, `FolderEntity`                   |
+| Domain model       | Plain class in `domain/model/`                         | `Asset`, `Folder`                               |
+| Test classes       | `{ClassName}Test` or `{ClassName}Tests`                | `CatalogAssetsUseCaseImplTest`                  |
+| Test methods       | `methodName_condition_expectedResult`                  | `execute_folderExists_returnsAssets`            |
+| DB migration files | `V{n}__{Description}.sql`                              | `V1__initial_schema.sql`                        |
 
 ---
 
-## 4. Annotations & Lombok
+## 5. Annotations & Lombok
 
 ### Lombok
 
 ```java
-@Data                   // entities, DTOs — generates getters, setters, equals, hashCode, toString
-@NoArgsConstructor      // JPA entities (required by Hibernate)
-@RequiredArgsConstructor // services — enables constructor injection
-@Slf4j                  // inject logger: log.info(), log.error(), log.debug()
+@Data                    // domain models, DTOs — generates getters, setters, equals, hashCode, toString
+@Builder                 // domain models — fluent construction in tests
+@NoArgsConstructor       // JPA entities (required by Hibernate)
+@AllArgsConstructor      // JPA entities (used with @Builder)
+@RequiredArgsConstructor // services, adapters — enables constructor injection
+@Slf4j                   // inject logger: log.info(), log.error(), log.debug()
 ```
 
-### Spring (API layer)
+### Spring (Web layer)
 
 ```java
 @RestController
-@RequestMapping("/api/v1/assets")
+@RequestMapping("/api/assets")
 @CrossOrigin(origins = "*")
-@GetMapping / @PostMapping / @PutMapping / @DeleteMapping
+@GetMapping / @PostMapping / @PutMapping / @PatchMapping / @DeleteMapping
 @RequestParam / @PathVariable / @RequestBody
-@Valid                  // trigger bean validation on @RequestBody
+@Valid                   // trigger bean validation on @RequestBody
 ```
 
-### OpenAPI (API layer only)
+### OpenAPI (web layer only)
 
 Every `@RestController` must carry springdoc-openapi annotations.
 `springdoc-openapi-starter-webmvc-ui` is on the classpath; Swagger UI is
@@ -193,15 +274,16 @@ Rules:
 - `@Tag` — one per controller class; `name` is the Swagger group label.
 - `@Operation(summary = "...")` — one per endpoint method; one short sentence.
 - `@ApiResponses` — list every HTTP status code the method can return.
-- Do **not** add these annotations to domain interfaces, application use cases, or infrastructure services.
+- Do **not** add these annotations to domain interfaces, use cases, or infrastructure adapters.
 
-### Spring (Service / Infrastructure)
+### Spring (Application / Infrastructure)
 
 ```java
 @Service
+@Repository             // on persistence adapters in infrastructure/persistence/adapter/
 @Async                  // long-running operations; return CompletableFuture<T>
-@Transactional          // write operations
-@Transactional(readOnly = true)  // read-only queries
+@Transactional          // write operations on use-case methods
+@Transactional(readOnly = true)  // read-only use-case methods
 ```
 
 ### Spring (Configuration)
@@ -212,7 +294,7 @@ Rules:
 @Value("${property.name:default}")
 ```
 
-### JPA / Persistence
+### JPA / Persistence (infrastructure/persistence/entity/ only)
 
 ```java
 @Entity
@@ -223,10 +305,12 @@ Rules:
 @ManyToOne(fetch = FetchType.LAZY)
 @JoinColumn(name = "folder_id", nullable = false)
 @Enumerated(EnumType.STRING)
-@Transient              // computed/helper methods on entities
 ```
 
-### Validation (API DTOs only)
+JPA annotations belong **only** on `*Entity` classes in `infrastructure/persistence/entity/`.
+Domain model classes in `domain/model/` must be pure POJOs — no JPA imports.
+
+### Validation (HTTP DTOs only)
 
 ```java
 @NotBlank
@@ -236,44 +320,43 @@ Rules:
 
 ---
 
-## 5. Layer-by-Layer Patterns
+## 6. Layer-by-Layer Patterns
 
-### 5.1 API Layer — Controllers & DTOs
+### 6.1 Web Layer — Controllers & HTTP DTOs
 
-- **Thin controllers:** delegate immediately to the application facade.
+- **Thin controllers:** inject use-case interfaces and delegate immediately.
 - Return `ResponseEntity<T>` with correct HTTP status codes (200, 201, 204, 404, 500).
-- Map between API DTOs and domain objects in the controller (no business logic).
+- Use MapStruct mappers in `infrastructure/web/mapper/` for HTTP DTO ↔ domain model conversions.
 - Use `SseEmitter` for streaming progress of long-running operations.
 
 ```java
+@Tag(name = "Assets", description = "Photo and video asset management")
 @RestController
-@RequestMapping("/api/v1/assets")
+@RequestMapping("/api/assets")
 @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Slf4j
 public class AssetController {
 
-    private final PhotoManagerFacade facade;
+    private final GetAssetsUseCase getAssetsUseCase;
+    private final AssetWebMapper assetWebMapper;   // MapStruct
 
+    @Operation(summary = "List assets in a folder")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Paginated asset list"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
     @GetMapping
-    public ResponseEntity<PaginatedData<AssetDto>> getAssets(
+    public ResponseEntity<PaginatedResult<AssetDto>> getAssets(
             @RequestParam String folderPath,
-            @RequestParam(defaultValue = "0") int pageIndex,
-            @RequestParam(defaultValue = "FILE_NAME") SortCriteria sortCriteria) {
-        PaginatedData<Asset> page = facade.getAssets(folderPath, pageIndex, sortCriteria);
-        PaginatedData<AssetDto> result = page.map(AssetDto::from);
-        return ResponseEntity.ok(result);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAsset(@PathVariable Long id) {
-        boolean deleted = facade.deleteAsset(id);
-        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+            @RequestParam(defaultValue = "0") int page) {
+        PaginatedResult<Asset> result = getAssetsUseCase.execute(folderPath, page);
+        return ResponseEntity.ok(assetWebMapper.toDto(result));
     }
 }
 ```
 
-**API DTO pattern:**
+**HTTP DTO pattern** (in `infrastructure/web/dto/`):
 
 ```java
 @Data
@@ -281,131 +364,134 @@ public class AssetDto {
     private Long assetId;
     private String fileName;
     private String thumbnailUrl;
-
-    public static AssetDto from(Asset asset) {
-        AssetDto dto = new AssetDto();
-        dto.setAssetId(asset.getAssetId());
-        dto.setFileName(asset.getFileName());
-        return dto;
-    }
 }
 ```
 
-### 5.2 Application Layer — Facade
+### 6.2 Application Layer — Use Cases
 
-- Orchestrates domain services and repositories.
-- Owns `@Transactional` boundaries.
-- Returns application DTOs (`PaginatedData<T>`, `SyncAssetsResult`, etc.).
-- Does NOT contain business logic — delegates to domain services.
+- One implementation class per use-case interface.
+- `@Service @Transactional` owns the transaction boundary.
+- Injects only `domain/port/out/` interfaces — no JPA, no Spring MVC.
+- Does not contain business logic — orchestrates ports.
 
 ```java
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class PhotoManagerFacade {
+public class GetAssetsUseCaseImpl implements GetAssetsUseCase {
 
-    private final AssetRepository assetRepository;
-    private final CatalogAssetsService catalogAssetsService;
+    private final AssetRepository assetRepository;   // domain port
 
+    @Override
     @Transactional(readOnly = true)
-    public PaginatedData<Asset> getAssets(String folderPath, int pageIndex, SortCriteria sortCriteria) {
-        Sort sort = buildSort(sortCriteria);
-        PageRequest pageRequest = PageRequest.of(pageIndex, PAGE_SIZE, sort);
-        Page<Asset> page = assetRepository.findByFolderPath(folderPath, pageRequest);
-        return PaginatedData.from(page);
-    }
-
-    public CompletableFuture<Void> catalogAssetsAsync(Consumer<CatalogChangeNotification> callback) {
-        return catalogAssetsService.catalogAssetsAsync(callback);
+    public PaginatedResult<Asset> execute(String folderPath, int page) {
+        return assetRepository.findFiltered(new AssetFilter(folderPath, page));
     }
 }
 ```
 
-### 5.3 Domain Layer — Entities, Interfaces, Repositories
+### 6.3 Domain Layer — Models & Port Interfaces
 
-**Entity:**
+Domain models are **pure POJOs** — no Spring, no JPA, no Lombok `@Builder` dependencies on other layers.
 
 ```java
-@Entity
-@Table(name = "assets")
+// domain/model/Asset.java
 @Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class Asset {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "asset_id")   // maps to BIGSERIAL in PostgreSQL
     private Long assetId;
-
-    @Column(name = "file_name", nullable = false)
-    private String fileName;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "folder_id", nullable = false)
     private Folder folder;
+    private String fileName;
+    private long fileSize;
+    private String hash;
+    private FileType fileType;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "image_rotation")
-    private ImageRotation imageRotation;
+    public String getThumbnailBlobName() {
+        return assetId + ".bin";
+    }
 
-    @Transient
     public String getFullPath() {
         return folder != null ? folder.getPath() + "/" + fileName : fileName;
     }
 }
 ```
 
-**Service interface (domain contract):**
+Use-case port interface (one method, no default implementations):
 
 ```java
-public interface CatalogAssetsService {
-    CompletableFuture<Void> catalogAssetsAsync(Consumer<CatalogChangeNotification> callback);
+// domain/port/in/asset/GetAssetsUseCase.java
+public interface GetAssetsUseCase {
+    PaginatedResult<Asset> execute(String folderPath, int page);
 }
 ```
 
-**Repository:**
+Repository port interface (domain contract for persistence):
 
 ```java
-public interface AssetRepository extends JpaRepository<Asset, Long> {
+// domain/port/out/AssetRepository.java
+public interface AssetRepository {
+    Optional<Asset> findById(Long id);
+    PaginatedResult<Asset> findFiltered(AssetFilter filter);
     List<Asset> findByFolder(Folder folder);
-    Page<Asset> findByFolderPath(String path, Pageable pageable);
-    boolean existsByFolderAndFileName(Folder folder, String fileName);
-
-    @Query("SELECT a.hash FROM Asset a GROUP BY a.hash HAVING COUNT(a) > 1")
-    List<String> findDuplicateHashes();
+    Asset save(Asset asset);
+    void deleteById(Long id);
 }
 ```
 
-### 5.4 Infrastructure Layer — Service Implementations
+### 6.4 Infrastructure — Persistence Adapter
+
+The persistence adapter implements the domain repository port.
+It delegates to the Spring Data JPA interface and uses a MapStruct mapper.
 
 ```java
-@Service
+// infrastructure/persistence/adapter/AssetRepositoryImpl.java
+@Repository
 @RequiredArgsConstructor
-@Slf4j
-public class CatalogAssetsServiceImpl implements CatalogAssetsService {
+public class AssetRepositoryImpl implements AssetRepository {
 
-    private final CatalogFolderService catalogFolderService; // injected by interface
-    private final StorageService storageService;
+    private final JpaAssetRepository jpaRepository;
+    private final AssetMapper mapper;           // MapStruct
 
-    @Async
     @Override
-    public CompletableFuture<Void> catalogAssetsAsync(Consumer<CatalogChangeNotification> callback) {
-        List<String> folders = discoverFolders();
-        AtomicInteger processed = new AtomicInteger(0);
-        for (String folderPath : folders) {
-            try {
-                // Calls through the Spring proxy → @Transactional on catalogFolder fires correctly
-                catalogFolderService.catalogFolder(folderPath, callback, processed, folders.size());
-            } catch (Exception e) {
-                log.error("Error cataloging folder: {}", folderPath, e);
-            }
-        }
-        return CompletableFuture.completedFuture(null);
+    public Optional<Asset> findById(Long id) {
+        return jpaRepository.findById(id).map(mapper::toDomain);
+    }
+
+    @Override
+    public Asset save(Asset asset) {
+        AssetEntity entity = mapper.toEntity(asset);
+        return mapper.toDomain(jpaRepository.save(entity));
     }
 }
 ```
 
-### 5.5 JPA Delete-Then-Insert Pattern
+### 6.5 Infrastructure — MapStruct Mappers
+
+All entity ↔ domain model and HTTP DTO ↔ domain model conversions use MapStruct.
+Hand-writing mappers is not permitted.
+
+```java
+// infrastructure/persistence/mapper/AssetMapper.java
+@Mapper(componentModel = "spring")
+public interface AssetMapper {
+    Asset toDomain(AssetEntity entity);
+    AssetEntity toEntity(Asset domain);
+}
+
+// infrastructure/web/mapper/AssetWebMapper.java
+@Mapper(componentModel = "spring")
+public interface AssetWebMapper {
+    AssetDto toDto(Asset domain);
+    PaginatedResult<AssetDto> toDto(PaginatedResult<Asset> result);
+}
+```
+
+Use `@Named` qualifiers when a mapper exposes multiple methods returning the same type
+(e.g., `toEntityRef` for FK-only references vs `toEntity` for full mapping).
+
+### 6.6 JPA Delete-Then-Insert Pattern
 
 When replacing a complete set of JPA entities (e.g., saving new sync/convert configuration), use `deleteAllInBatch()` and set `id = null` on each incoming entity before `saveAll()`.
 
@@ -427,76 +513,63 @@ for (int i = 0; i < incomingEntities.size(); i++) {
 repository.saveAll(incomingEntities);
 ```
 
-`deleteAllInBatch()` issues a single `DELETE` statement; `deleteAll()` loads then deletes each entity individually and leaves incoming entity IDs pointing at rows that no longer exist.
+### 6.7 Spring Proxy & `@Transactional` — self-invocation pitfall
 
-### 5.5 Spring Proxy & `@Transactional` — self-invocation pitfall
-
-Spring applies `@Transactional` (and `@Async`) via a proxy that wraps the bean. When a method calls **another method on the same bean** (`this.foo()`), it bypasses the proxy entirely — so `@Transactional` on the called method **has no effect**.
+Spring applies `@Transactional` (and `@Async`) via a proxy. When a method calls
+**another method on the same bean** (`this.foo()`), it bypasses the proxy entirely —
+so `@Transactional` on the called method **has no effect**.
 
 **Wrong — `@Transactional` is silently ignored:**
 
 ```java
 @Service
-public class CatalogAssetsServiceImpl implements CatalogAssetsService {
+public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
 
     @Async
-    public CompletableFuture<Void> catalogAssetsAsync(...) {
+    public CompletableFuture<Void> execute(...) {
         catalogFolder(...);          // self-invocation: proxy bypassed
         return CompletableFuture.completedFuture(null);
     }
 
     @Transactional                   // never fires — called from same bean
-    protected void catalogFolder(...) {
-        createAsset(...);            // also self-invocation
-    }
-
-    @Transactional                   // never fires either
-    public Asset createAsset(...) { ... }
+    protected void catalogFolder(...) { ... }
 }
 ```
 
 **Right — extract the transactional work to a separate bean:**
 
 ```java
-// The @Async bean calls the @Transactional bean through the proxy
 @Service
-public class CatalogAssetsServiceImpl implements CatalogAssetsService {
+public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
 
-    private final CatalogFolderService catalogFolderService; // different bean → proxy active
+    private final CatalogFolderPort catalogFolderPort; // separate bean
 
     @Async
-    public CompletableFuture<Void> catalogAssetsAsync(...) {
-        catalogFolderService.catalogFolder(...); // goes through proxy → @Transactional fires
+    public CompletableFuture<Void> execute(...) {
+        catalogFolderPort.catalogFolder(...); // proxy intercepts → @Transactional fires
         return CompletableFuture.completedFuture(null);
     }
 }
 
-// All work that must share one transaction lives in its own service
 @Service
-public class CatalogFolderServiceImpl implements CatalogFolderService {
+public class CatalogFolderServiceAdapter implements CatalogFolderPort {
 
     @Transactional                   // fires correctly — called from a different bean
     public void catalogFolder(...) {
-        Folder folder = folderRepository.findByPath(...).orElseGet(...); // MANAGED entity
-        // private helpers called here run in the same transaction — no detached-entity issues
-        createAssetInternal(folder, ...);
+        // private helpers run in the same transaction
     }
-
-    private Asset createAssetInternal(Folder folder, ...) { ... }
 }
 ```
 
-The consequence of getting this wrong: repository calls each run in their own micro-transaction, entities become detached between calls, and Hibernate may reject operations that reference those detached entities — causing silent failures where zero records are saved.
-
 ---
 
-## 6. Async & Streaming
+## 7. Async & Streaming
 
 - Annotate long-running methods with `@Async`.
 - Return `CompletableFuture<T>` so the caller is non-blocking.
 - Accept a `Consumer<T>` callback for progress streaming.
 - Stream progress to the client using `SseEmitter` in the controller.
-- Configure the thread pool in `@Configuration`:
+- Configure the thread pool in `AppConfig`:
 
 ```java
 @Bean(name = "taskExecutor")
@@ -513,7 +586,7 @@ public Executor taskExecutor() {
 
 ---
 
-## 7. Error Handling & Logging
+## 8. Error Handling & Logging
 
 - Inject the logger with `@Slf4j`; never use `System.out` or `System.err`.
 - Log levels: `INFO` for normal flow, `ERROR` for failures, `DEBUG` for diagnostic traces.
@@ -534,43 +607,14 @@ try {
 
 ---
 
-## 8. Pagination & Sorting
+## 9. Pagination
 
-- Accept `pageIndex` (0-based) and a `SortCriteria` enum from callers.
-- Use Spring Data `PageRequest.of(pageIndex, PAGE_SIZE, sort)`.
-- Return a generic `PaginatedData<T>` wrapper:
-
-```java
-@Data
-public class PaginatedData<T> {
-    private List<T> items;
-    private int pageIndex;
-    private int totalPages;
-    private long totalItems;
-
-    public static <T> PaginatedData<T> from(Page<T> page) {
-        PaginatedData<T> result = new PaginatedData<>();
-        result.setItems(page.getContent());
-        result.setPageIndex(page.getNumber());
-        result.setTotalPages(page.getTotalPages());
-        result.setTotalItems(page.getTotalElements());
-        return result;
-    }
-
-    public <R> PaginatedData<R> map(java.util.function.Function<T, R> mapper) {
-        PaginatedData<R> result = new PaginatedData<>();
-        result.setItems(items.stream().map(mapper).collect(java.util.stream.Collectors.toList()));
-        result.setPageIndex(pageIndex);
-        result.setTotalPages(totalPages);
-        result.setTotalItems(totalItems);
-        return result;
-    }
-}
-```
+- Accept `page` (0-based) and an optional `SortCriteria` enum from callers via `AssetFilter`.
+- Return a generic `PaginatedResult<T>` wrapper from use cases.
 
 ---
 
-## 9. Configuration
+## 10. Configuration
 
 ### application.yml
 
@@ -600,20 +644,20 @@ photomanager:
 
 logging:
   level:
-    com.<company>: INFO
+    com.jpablodrexler: INFO
 ```
 
-**Local development prerequisite:** PostgreSQL 15+ must be running:
+**Local development prerequisite:** PostgreSQL 18+ must be running:
 ```bash
 docker run -d --name photomanager-db \
   -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=photomanager \
-  -p 5432:5432 postgres:15
+  -p 5432:5432 postgres:18
 ```
 
 ### application-local.yml (local developer override)
 
-To override properties for a specific developer's machine without committing them, add this to `application.yml`:
+Override machine-specific properties without committing them. Add to `application.yml`:
 
 ```yaml
 spring:
@@ -621,18 +665,12 @@ spring:
     import: optional:classpath:application-local.yml
 ```
 
-Then create `src/main/resources/application-local.yml` (gitignored) with only the properties that differ locally:
+Create `src/main/resources/application-local.yml` (gitignored):
 
 ```yaml
 photomanager:
   initial-directory: ${user.home}/Imágenes
   root-catalog-folders: ${user.home}/Imágenes
-```
-
-Add the file to `.gitignore` so it is never committed:
-
-```
-JPPhotoManagerWeb/backend/src/main/resources/application-local.yml
 ```
 
 ### application-test.yml
@@ -649,7 +687,7 @@ spring:
     locations: classpath:db/migration
 ```
 
-No JDBC URL in the test config — Testcontainers injects the datasource URL at runtime via `@ServiceConnection`. Integration tests extend `PostgresIntegrationTest`:
+No JDBC URL — Testcontainers injects it via `@ServiceConnection`. Integration tests extend `PostgresIntegrationTest`:
 
 ```java
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
@@ -659,7 +697,7 @@ public abstract class PostgresIntegrationTest {
 
     @Container
     @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15");
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18");
 }
 ```
 
@@ -672,7 +710,7 @@ private int catalogBatchSize;
 
 ---
 
-## 10. Database Migrations (Flyway)
+## 11. Database Migrations (Flyway)
 
 - Place SQL files in `src/main/resources/db/migration/`.
 - Name them `V{n}__{Description}.sql` (two underscores).
@@ -698,28 +736,28 @@ CREATE TABLE example (
 **Key PostgreSQL DDL conventions:**
 - Auto-increment primary keys: `BIGSERIAL PRIMARY KEY`
 - Boolean columns: `BOOLEAN NOT NULL DEFAULT FALSE` (never `INTEGER DEFAULT 0`)
-- Date/time columns: `TIMESTAMP` (Hibernate maps `LocalDateTime` natively; no custom converter needed)
+- Date/time columns: `TIMESTAMP` (Hibernate maps `LocalDateTime` natively)
 - Do **not** use `IF NOT EXISTS` on `CREATE TABLE` — Flyway manages idempotency
 
 ---
 
-## 11. Testing
+## 12. Testing
 
 ### Unit Tests
 
 ```java
 @ExtendWith(MockitoExtension.class)
-class CatalogAssetsServiceImplTest {
+class CatalogAssetsUseCaseImplTest {
 
-    @Mock StorageService storageService;
+    @Mock StoragePort storagePort;
     @Mock AssetRepository assetRepository;
-    @InjectMocks CatalogAssetsServiceImpl sut;
+    @InjectMocks CatalogAssetsUseCaseImpl sut;
 
     @Test
-    void catalogAssetsAsync_filesFound_createsAssets() throws Exception {
-        when(storageService.listFiles(any())).thenReturn(List.of("/photos/a.jpg"));
+    void execute_filesFound_createsAssets() throws Exception {
+        when(storagePort.listFiles(any())).thenReturn(List.of("/photos/a.jpg"));
 
-        CompletableFuture<Void> future = sut.catalogAssetsAsync(notification -> {});
+        CompletableFuture<Void> future = sut.execute(notification -> {});
         future.get();
 
         verify(assetRepository, times(1)).save(any(Asset.class));
@@ -732,13 +770,13 @@ class CatalogAssetsServiceImplTest {
 Extend `PostgresIntegrationTest` — it starts a PostgreSQL container automatically via Testcontainers:
 
 ```java
-class ApplicationIntegrationTest extends PostgresIntegrationTest {
+class CatalogIntegrationTest extends PostgresIntegrationTest {
 
-    @Autowired PhotoManagerFacade facade;
+    @Autowired CatalogAssetsUseCase catalogAssetsUseCase;
 
     @Test
     void contextLoads() {
-        assertThat(facade).isNotNull();
+        assertThat(catalogAssetsUseCase).isNotNull();
     }
 }
 ```
@@ -754,7 +792,7 @@ class ApplicationIntegrationTest extends PostgresIntegrationTest {
 
 ---
 
-## 12. Java 21 Features
+## 13. Java 21 Features
 
 Prefer modern Java 21 idioms where they simplify the code:
 
@@ -778,25 +816,30 @@ if (result instanceof ErrorResult error) {
 
 ---
 
-## 13. Code Style Rules
+## 14. Code Style Rules
 
-- Every service **must** have an interface in `domain/service/` and an `*Impl` class in `infrastructure/service/`. Never create a `@Service` class without a corresponding interface.
+- **New use cases:** declare a single-method interface in `domain/port/in/<subpackage>/`, implement in `application/usecase/<subpackage>/` with `@Service @Transactional`. Inject only `domain/port/out/` interfaces.
+- **New service ports:** declare interface (suffix `Port`) in `domain/port/out/`, implement (suffix `ServiceAdapter`) in `infrastructure/service/`.
+- **New repository ports:** declare interface (suffix `Repository`) in `domain/port/out/`, implement (suffix `RepositoryImpl`) in `infrastructure/persistence/adapter/`, backed by a Spring Data JPA interface (prefix `Jpa`) in `infrastructure/persistence/jpa/`.
+- **New controllers:** add to `infrastructure/web/controller/`; inject use-case interfaces only; use MapStruct mappers for all HTTP DTO ↔ domain model conversion.
+- **MapStruct only** — never hand-write mappers between layers.
+- **JPA entities** belong only in `infrastructure/persistence/entity/`; domain models in `domain/model/` must be plain POJOs.
 - Never call a `@Transactional` or `@Async` method from within the same bean (`this.foo()`) — use a separate injected bean so the Spring proxy can intercept the call.
 - No `System.out.println` — use `@Slf4j`.
 - No field injection (`@Autowired` on fields) — use constructor injection via `@RequiredArgsConstructor`.
 - No `open-in-view` (keep it `false`) — load associations within transactions.
-- Use `@Transactional(readOnly = true)` for every read-only facade method.
-- Use `FetchType.LAZY` for all `@ManyToOne` and `@OneToMany` relationships.
-- Validation annotations (`@NotBlank`, `@NotEmpty`) belong **only** on API DTOs, not on entities.
-- Keep controllers thin — one method per endpoint, immediate delegation to facade.
+- Use `@Transactional(readOnly = true)` for read-only use-case methods.
+- Use `FetchType.LAZY` for all `@ManyToOne` and `@OneToMany` relationships on JPA entities.
+- Validation annotations (`@NotBlank`, `@NotEmpty`) belong **only** on HTTP DTOs in `infrastructure/web/dto/`, not on entities or domain models.
+- Keep controllers thin — one method per endpoint, immediate delegation to the use case.
 - Prefer streams and method references over imperative loops.
 - Add comments only when the **why** is non-obvious; omit them otherwise.
 
 ---
 
-## 14. Spring Security
+## 15. Spring Security
 
-### 14.1 JWT with HttpOnly Cookies
+### 15.1 JWT with HttpOnly Cookies
 
 For browser-facing APIs, store the JWT in an **HttpOnly cookie** rather than requiring an `Authorization` header. Browsers send cookies automatically with all same-origin requests — including `<img src="...">` and `EventSource` — whereas custom headers are silently dropped by those APIs.
 
@@ -832,7 +875,7 @@ private String resolveToken(HttpServletRequest request) {
 }
 ```
 
-### 14.2 SseEmitter + Spring Security Async Dispatch
+### 15.2 SseEmitter + Spring Security Async Dispatch
 
 When `SseEmitter` writes events, Tomcat creates a secondary async dispatch thread. Spring Security's filter chain re-runs on that thread, but `SecurityContextHolder` is thread-local and empty → `AuthorizationDeniedException` with "response is already committed".
 
@@ -849,49 +892,17 @@ import jakarta.servlet.DispatcherType;
 )
 ```
 
-This applies to every SSE endpoint (`/api/sync/run`, `/api/convert/run`, `/api/assets/catalog`).
+### 15.3 SecurityConfig Circular Dependency
 
-### 14.3 SecurityConfig Circular Dependency
+Extract `UserDetailsService` and `PasswordEncoder` beans into a separate `@Configuration` class (`UserConfig`) to break the cycle between `SecurityConfig` and `JwtAuthenticationFilter`.
 
-A cycle forms when `SecurityConfig` defines `@Bean UserDetailsService`, `SecurityConfig` also injects `JwtAuthenticationFilter`, and `JwtAuthenticationFilter` injects `UserDetailsService` — Spring cannot resolve the construction order.
-
-**Fix:** extract `UserDetailsService` and `PasswordEncoder` beans into a separate `@Configuration` class:
-
-```java
-@Configuration
-@Profile("!test")
-@RequiredArgsConstructor
-public class UserConfig {
-    private final UserRepository userRepository;
-
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
-    }
-
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByUsername(username)
-            .map(u -> User.builder()
-                .username(u.getUsername())
-                .password(u.getPasswordHash())
-                .roles("USER").build())
-            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
-    }
-}
-```
-
-`SecurityConfig` then only injects `JwtAuthenticationFilter`; no cycle exists.
-
-### 14.4 CORS: Include All HTTP Methods in Use
-
-Browsers send an `Origin` header with state-changing requests even for same-origin SPA calls. If `PATCH` (or any other method) is missing from the CORS allowlist, preflight requests return 403.
+### 15.4 CORS: Include All HTTP Methods in Use
 
 ```java
 config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 ```
 
-Always keep this list in sync with the set of HTTP methods actually used by the API.
+Always keep this list in sync with the HTTP methods actually used by the API.
 
 ---
 
@@ -903,6 +914,6 @@ After implementing the requested feature, provide a brief summary covering:
 2. Any new database migration files added
 3. How to run the tests for the new code:
    ```bash
-   ./mvnw test -pl backend -Dtest=YourNewTest
+   cd JPPhotoManagerWeb/backend && mvn test -Dtest=YourNewTest
    ```
 4. Any configuration properties the user should set
