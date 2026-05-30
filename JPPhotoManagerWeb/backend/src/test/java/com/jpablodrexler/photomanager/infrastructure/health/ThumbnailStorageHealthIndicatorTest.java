@@ -1,6 +1,8 @@
 package com.jpablodrexler.photomanager.infrastructure.health;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
@@ -34,6 +36,7 @@ class ThumbnailStorageHealthIndicatorTest {
     }
 
     @Test
+    @EnabledOnOs({OS.LINUX, OS.MAC})
     void health_nonWritableDirectory_returnsDown(@TempDir Path tempDir) throws IOException {
         Set<PosixFilePermission> readOnly = Set.of(
                 PosixFilePermission.OWNER_READ,

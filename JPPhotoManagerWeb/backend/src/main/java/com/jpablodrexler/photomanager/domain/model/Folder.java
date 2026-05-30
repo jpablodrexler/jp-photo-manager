@@ -26,7 +26,7 @@ public class Folder {
     public String getParentPath() {
         if (path == null || path.isBlank()) return null;
         Path p = Paths.get(path);
-        return p.getParent() != null ? p.getParent().toString() : null;
+        return p.getParent() != null ? p.getParent().toString().replace('\\', '/') : null;
     }
 
     public boolean isParentOf(Folder other) {
