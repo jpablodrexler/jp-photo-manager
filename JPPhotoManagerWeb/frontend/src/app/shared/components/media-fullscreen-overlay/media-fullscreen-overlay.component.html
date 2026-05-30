@@ -1,0 +1,40 @@
+<div class="fullscreen-overlay">
+  <button mat-icon-button class="close-btn" (click)="mediaPlayer.isAudioFullscreen.set(false)" title="Close">
+    <mat-icon>close</mat-icon>
+  </button>
+
+  <div class="overlay-content">
+    <img [src]="mediaPlayer.currentTrack()?.thumbnailUrl"
+         [alt]="mediaPlayer.currentTrack()?.fileName"
+         class="album-art" />
+
+    <div class="track-title">{{ mediaPlayer.currentTrack()?.fileName }}</div>
+
+    <div class="overlay-progress">
+      <span class="overlay-time">{{ formatTime(mediaPlayer.currentTime()) }}</span>
+      <input type="range"
+             class="overlay-slider"
+             [min]="0"
+             [max]="mediaPlayer.duration()"
+             [value]="mediaPlayer.currentTime()"
+             step="1"
+             (input)="onSeek($event)" />
+      <span class="overlay-time">{{ formatTime(mediaPlayer.duration()) }}</span>
+    </div>
+
+    <div class="overlay-controls">
+      <button mat-icon-button (click)="mediaPlayer.prev()" title="Previous">
+        <mat-icon>skip_previous</mat-icon>
+      </button>
+      <button mat-icon-button (click)="mediaPlayer.stop()" title="Stop">
+        <mat-icon>stop</mat-icon>
+      </button>
+      <button mat-icon-button class="play-btn" (click)="mediaPlayer.togglePause()" title="Play/Pause">
+        <mat-icon>{{ mediaPlayer.isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
+      </button>
+      <button mat-icon-button (click)="mediaPlayer.next()" title="Next">
+        <mat-icon>skip_next</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>

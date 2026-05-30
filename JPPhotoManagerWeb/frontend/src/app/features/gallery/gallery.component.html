@@ -237,6 +237,13 @@
                 <mat-icon>{{ asset.fileType === 'AUDIO' ? 'play_arrow' : 'queue_music' }}</mat-icon>
               </button>
             }
+            @if (asset.fileType === 'VIDEO') {
+              <button mat-icon-button class="list-play-btn"
+                      (click)="playAsset(asset, $event)"
+                      title="Play video">
+                <mat-icon>play_arrow</mat-icon>
+              </button>
+            }
             <button mat-icon-button class="list-album-btn"
                     (click)="$event.stopPropagation(); addToAlbum(asset)"
                     title="Add to album">

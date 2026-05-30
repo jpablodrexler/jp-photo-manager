@@ -48,7 +48,7 @@ import { BulkTagDialogComponent } from "./bulk-tag-dialog/bulk-tag-dialog.compon
 import { FolderPickerDialogComponent } from "./folder-picker-dialog/folder-picker-dialog.component";
 import { TimelineViewComponent } from "./timeline-view/timeline-view.component";
 import { TimelineGroup } from "../../core/models/timeline-group.model";
-import { AudioPlayerService } from "../../core/services/audio-player.service";
+import { MediaPlayerService } from "../../core/services/media-player.service";
 
 type ViewMode = "thumbnails" | "viewer" | "slideshow";
 type ViewType = "grid" | "timeline";
@@ -90,7 +90,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   @ViewChild("scrollSentinel") private sentinel!: ElementRef<HTMLDivElement>;
   private observer: IntersectionObserver | null = null;
 
-  readonly audioPlayer = inject(AudioPlayerService);
+  readonly audioPlayer = inject(MediaPlayerService);
 
   isMobile = false;
   sidenavOpen = true;

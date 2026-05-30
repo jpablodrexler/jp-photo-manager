@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "Media", description = "Byte-range streaming and audio playlist")
 @RestController
@@ -33,6 +34,14 @@ import java.util.List;
 public class MediaController {
 
     private static final long MAX_RANGE_LENGTH = 1024L * 1024L;
+
+    private static final Map<String, MediaType> VIDEO_MEDIA_TYPES = Map.of(
+            "mp4",  MediaType.parseMediaType("video/mp4"),
+            "mov",  MediaType.parseMediaType("video/quicktime"),
+            "mkv",  MediaType.parseMediaType("video/x-matroska"),
+            "avi",  MediaType.parseMediaType("video/x-msvideo"),
+            "webm", MediaType.parseMediaType("video/webm")
+    );
 
     private final StreamAssetUseCase streamAssetUseCase;
     private final GetPlaylistUseCase getPlaylistUseCase;
@@ -58,8 +67,7 @@ public class MediaController {
             return ResponseEntity.notFound().build();
         }
 
-        MediaType mediaType = MediaTypeFactory.getMediaType(resource)
-                .orElse(MediaType.APPLICATION_OCTET_STREAM);
+        MediaType mediaType = resolveMediaType(asset.getFileName(), resource);
 
         long contentLength;
         try {
@@ -88,6 +96,15 @@ public class MediaController {
 
         ResourceRegion region = new ResourceRegion(resource, 0, contentLength);
         return ResponseEntity.ok().headers(headers).body(region);
+    }
+
+    private MediaType resolveMediaType(String fileName, Resource resource) {
+        int dotIdx = fileName.lastIndexOf('.');
+        if (dotIdx >= 0) {
+            MediaType videoType = VIDEO_MEDIA_TYPES.get(fileName.substring(dotIdx + 1).toLowerCase());
+            if (videoType != null) return videoType;
+        }
+        return MediaTypeFactory.getMediaType(resource).orElse(MediaType.APPLICATION_OCTET_STREAM);
     }
 
     @Operation(summary = "Get the ordered list of assets in an audio playlist")

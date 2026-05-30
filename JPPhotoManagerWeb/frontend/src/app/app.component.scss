@@ -3,9 +3,19 @@
   color: white !important;
 }
 
-.app-content {
+.app-sidenav-container {
   height: calc(100vh - 64px);
+}
+
+.app-content {
+  height: 100%;
   overflow: hidden;
+}
+
+.video-sidenav {
+  width: 420px;
+  background-color: #000;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 app-audio-player {

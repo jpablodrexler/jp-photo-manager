@@ -7,11 +7,24 @@ import { of } from 'rxjs';
 import { signal } from '@angular/core';
 import { AppComponent } from './app.component';
 import { AuthService } from './core/services/auth.service';
-import { AudioPlayerService } from './core/services/audio-player.service';
+import { MediaPlayerService } from './core/services/media-player.service';
 
-const audioPlayerStub: Partial<AudioPlayerService> = {
+const noop = () => {};
+
+const mediaPlayerStub: Partial<MediaPlayerService> = {
   currentTrack: signal(null),
   isPlaying: signal(false),
+  isVideoPlaying: signal(false),
+  isAudioFullscreen: signal(false),
+  videoStreamUrl: signal(null),
+  currentTime: signal(0),
+  duration: signal(0),
+  registerVideoElement: noop as unknown as (el: HTMLVideoElement | null) => void,
+  prev: noop as unknown as MediaPlayerService['prev'],
+  stop: noop as unknown as MediaPlayerService['stop'],
+  togglePause: noop as unknown as MediaPlayerService['togglePause'],
+  next: noop as unknown as MediaPlayerService['next'],
+  seek: noop as unknown as MediaPlayerService['seek'],
 };
 
 describe('AppComponent', () => {
@@ -30,7 +43,7 @@ describe('AppComponent', () => {
         provideHttpClient(),
         { provide: AuthService, useValue: authServiceStub },
         { provide: BreakpointObserver, useValue: bpObsStub },
-        { provide: AudioPlayerService, useValue: audioPlayerStub },
+        { provide: MediaPlayerService, useValue: mediaPlayerStub },
       ],
     });
   }
@@ -69,7 +82,7 @@ describe('AppComponent — responsive navigation', () => {
         provideHttpClient(),
         { provide: BreakpointObserver, useValue: bpObs },
         { provide: AuthService, useValue: authServiceStub },
-        { provide: AudioPlayerService, useValue: audioPlayerStub },
+        { provide: MediaPlayerService, useValue: mediaPlayerStub },
       ],
     });
   }

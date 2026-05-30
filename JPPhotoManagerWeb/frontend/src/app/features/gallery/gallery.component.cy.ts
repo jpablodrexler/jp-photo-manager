@@ -11,7 +11,7 @@ import { TagService } from '../../core/services/tag.service';
 import { AlbumService } from '../../core/services/album.service';
 import { FolderService } from '../../core/services/folder.service';
 import { SearchPresetService } from '../../core/services/search-preset.service';
-import { AudioPlayerService } from '../../core/services/audio-player.service';
+import { MediaPlayerService } from '../../core/services/media-player.service';
 import { Asset } from '../../core/models/asset.model';
 import { PaginatedData } from '../../core/models/paginated-data.model';
 import { SearchPreset } from '../../core/models/search-preset.model';
@@ -91,12 +91,12 @@ describe('GalleryComponent', () => {
       ...searchPresetServiceOverrides,
     };
 
-    const audioPlayerStub: Partial<AudioPlayerService> = {
+    const mediaPlayerStub: Partial<MediaPlayerService> = {
       currentTrack: signal(null),
       isPlaying: signal(false),
-      play: cy.stub() as unknown as AudioPlayerService['play'],
-      loadFolder: cy.stub() as unknown as AudioPlayerService['loadFolder'],
-      loadPlaylist: cy.stub() as unknown as AudioPlayerService['loadPlaylist'],
+      play: cy.stub() as unknown as MediaPlayerService['play'],
+      loadFolder: cy.stub() as unknown as MediaPlayerService['loadFolder'],
+      loadPlaylist: cy.stub() as unknown as MediaPlayerService['loadPlaylist'],
     };
 
     return cy.mount(GalleryComponent, {
@@ -108,7 +108,7 @@ describe('GalleryComponent', () => {
         { provide: FolderService, useValue: folderServiceStub },
         { provide: AlbumService, useValue: albumServiceStub },
         { provide: SearchPresetService, useValue: searchPresetServiceStub },
-        { provide: AudioPlayerService, useValue: audioPlayerStub },
+        { provide: MediaPlayerService, useValue: mediaPlayerStub },
       ],
     }).then(result => ({ ...result, assetServiceStub, searchPresetServiceStub, tagServiceStub }));
   }
@@ -636,7 +636,7 @@ describe('GalleryComponent', () => {
         { provide: BreakpointObserver, useValue: bpObs },
         { provide: SearchPresetService, useValue: { listPresets: cy.stub().returns(of([])), createPreset: cy.stub().returns(of({})), deletePreset: cy.stub().returns(of(undefined)) } },
         { provide: TagService, useValue: { searchTags: cy.stub().returns(of([])) } },
-        { provide: AudioPlayerService, useValue: { currentTrack: signal(null), isPlaying: signal(false), play: cy.stub(), loadFolder: cy.stub(), loadPlaylist: cy.stub() } },
+        { provide: MediaPlayerService, useValue: { currentTrack: signal(null), isPlaying: signal(false), play: cy.stub(), loadFolder: cy.stub(), loadPlaylist: cy.stub() } },
       ],
     });
 
@@ -861,7 +861,7 @@ describe('GalleryComponent', () => {
         { provide: AlbumService, useValue: { getAlbums: cy.stub().returns(of([])) } },
         { provide: SearchPresetService, useValue: { listPresets: cy.stub().returns(of([])), createPreset: cy.stub().returns(of({})), deletePreset: cy.stub().returns(of(undefined)) } },
         { provide: ActivatedRoute, useValue: activatedRouteStub },
-        { provide: AudioPlayerService, useValue: { currentTrack: signal(null), isPlaying: signal(false), play: cy.stub(), loadFolder: cy.stub(), loadPlaylist: cy.stub() } },
+        { provide: MediaPlayerService, useValue: { currentTrack: signal(null), isPlaying: signal(false), play: cy.stub(), loadFolder: cy.stub(), loadPlaylist: cy.stub() } },
       ],
     }).then(({ fixture }) => {
       fixture.detectChanges();
@@ -893,7 +893,7 @@ describe('GalleryComponent', () => {
         { provide: AlbumService, useValue: { getAlbums: cy.stub().returns(of([])) } },
         { provide: SearchPresetService, useValue: { listPresets: cy.stub().returns(of([])), createPreset: cy.stub().returns(of({})), deletePreset: cy.stub().returns(of(undefined)) } },
         { provide: ActivatedRoute, useValue: activatedRouteStub },
-        { provide: AudioPlayerService, useValue: { currentTrack: signal(null), isPlaying: signal(false), play: cy.stub(), loadFolder: cy.stub(), loadPlaylist: cy.stub() } },
+        { provide: MediaPlayerService, useValue: { currentTrack: signal(null), isPlaying: signal(false), play: cy.stub(), loadFolder: cy.stub(), loadPlaylist: cy.stub() } },
       ],
     }).then(({ fixture }) => {
       fixture.detectChanges();
@@ -1098,7 +1098,7 @@ describe('GalleryComponent', () => {
         { provide: AlbumService, useValue: { getAlbums: cy.stub().returns(of([])) } },
         { provide: SearchPresetService, useValue: { listPresets: cy.stub().returns(of([])), createPreset: cy.stub().returns(of({})), deletePreset: cy.stub().returns(of(undefined)) } },
         { provide: ActivatedRoute, useValue: activatedRouteStub },
-        { provide: AudioPlayerService, useValue: { currentTrack: signal(null), isPlaying: signal(false), play: cy.stub(), loadFolder: cy.stub(), loadPlaylist: cy.stub() } },
+        { provide: MediaPlayerService, useValue: { currentTrack: signal(null), isPlaying: signal(false), play: cy.stub(), loadFolder: cy.stub(), loadPlaylist: cy.stub() } },
       ],
     }).then(({ fixture }) => {
       fixture.detectChanges();

@@ -1,0 +1,39 @@
+<div class="video-player">
+  <video #videoEl
+         [attr.src]="mediaPlayer.videoStreamUrl()"
+         width="100%"
+         style="aspect-ratio: 16/9; object-fit: contain">
+  </video>
+
+  <div class="video-title">{{ mediaPlayer.currentTrack()?.fileName }}</div>
+
+  <div class="video-progress">
+    <span class="video-time">{{ formatTime(mediaPlayer.currentTime()) }}</span>
+    <input type="range"
+           class="video-slider"
+           [min]="0"
+           [max]="mediaPlayer.duration()"
+           [value]="mediaPlayer.currentTime()"
+           step="1"
+           (input)="onSeek($event)" />
+    <span class="video-time">{{ formatTime(mediaPlayer.duration()) }}</span>
+  </div>
+
+  <div class="video-controls">
+    <button mat-icon-button (click)="mediaPlayer.prev()" title="Previous">
+      <mat-icon>skip_previous</mat-icon>
+    </button>
+    <button mat-icon-button (click)="mediaPlayer.stop()" title="Stop">
+      <mat-icon>stop</mat-icon>
+    </button>
+    <button mat-icon-button (click)="mediaPlayer.togglePause()" title="Play/Pause">
+      <mat-icon>{{ mediaPlayer.isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
+    </button>
+    <button mat-icon-button (click)="mediaPlayer.next()" title="Next">
+      <mat-icon>skip_next</mat-icon>
+    </button>
+    <button mat-icon-button (click)="requestFullscreen()" title="Fullscreen">
+      <mat-icon>fullscreen</mat-icon>
+    </button>
+  </div>
+</div>

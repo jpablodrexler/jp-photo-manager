@@ -1,17 +1,17 @@
 import { Component, inject } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MediaPlayerService } from '../../core/services/media-player.service';
+import { MediaPlayerService } from '../../../core/services/media-player.service';
 
 @Component({
-  selector: 'app-audio-player',
+  selector: 'app-media-fullscreen-overlay',
   standalone: true,
   imports: [MatButtonModule, MatIconModule],
-  templateUrl: './audio-player.component.html',
-  styleUrl: './audio-player.component.scss',
+  templateUrl: './media-fullscreen-overlay.component.html',
+  styleUrl: './media-fullscreen-overlay.component.scss',
 })
-export class AudioPlayerComponent {
-  readonly audioPlayer = inject(MediaPlayerService);
+export class MediaFullscreenOverlayComponent {
+  readonly mediaPlayer = inject(MediaPlayerService);
 
   formatTime(seconds: number): string {
     if (!isFinite(seconds) || isNaN(seconds)) return '0:00';
@@ -22,6 +22,6 @@ export class AudioPlayerComponent {
 
   onSeek(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.audioPlayer.seek(Number(input.value));
+    this.mediaPlayer.seek(Number(input.value));
   }
 }

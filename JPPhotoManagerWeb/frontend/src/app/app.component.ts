@@ -9,8 +9,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Subscription } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
-import { AudioPlayerService } from './core/services/audio-player.service';
+import { MediaPlayerService } from './core/services/media-player.service';
 import { AudioPlayerComponent } from './features/audio-player/audio-player.component';
+import { VideoPlayerComponent } from './features/gallery/video-player/video-player.component';
+import { MediaFullscreenOverlayComponent } from './shared/components/media-fullscreen-overlay/media-fullscreen-overlay.component';
 import { AboutDialogComponent } from './shared/components/about-dialog/about-dialog.component';
 
 @Component({
@@ -26,6 +28,8 @@ import { AboutDialogComponent } from './shared/components/about-dialog/about-dia
     MatMenuModule,
     MatSidenavModule,
     AudioPlayerComponent,
+    VideoPlayerComponent,
+    MediaFullscreenOverlayComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -35,7 +39,7 @@ export class AppComponent implements OnInit, OnDestroy {
   isMobile = false;
   private bpSub!: Subscription;
 
-  readonly audioPlayer = inject(AudioPlayerService);
+  readonly mediaPlayer = inject(MediaPlayerService);
   private readonly dialog = inject(MatDialog);
 
   constructor(

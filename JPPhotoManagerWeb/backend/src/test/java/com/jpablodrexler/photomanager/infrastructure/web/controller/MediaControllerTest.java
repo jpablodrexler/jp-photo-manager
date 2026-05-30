@@ -70,4 +70,46 @@ class MediaControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
+
+    @Test
+    void streamAsset_mp4File_returnsVideoMp4ContentType() throws Exception {
+        Path videoFile = tempDir.resolve("clip.mp4");
+        Files.write(videoFile, new byte[1_000]);
+
+        Folder folder = new Folder();
+        folder.setPath(tempDir.toString());
+        Asset asset = Asset.builder()
+                .assetId(3L)
+                .folder(folder)
+                .fileName("clip.mp4")
+                .build();
+        when(streamAssetUseCase.execute(3L)).thenReturn(asset);
+
+        ResponseEntity<ResourceRegion> response = sut.streamAsset(3L, null);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().getContentType()).isNotNull();
+        assertThat(response.getHeaders().getContentType().toString()).isEqualTo("video/mp4");
+    }
+
+    @Test
+    void streamAsset_webmFile_returnsVideoWebmContentType() throws Exception {
+        Path videoFile = tempDir.resolve("clip.webm");
+        Files.write(videoFile, new byte[1_000]);
+
+        Folder folder = new Folder();
+        folder.setPath(tempDir.toString());
+        Asset asset = Asset.builder()
+                .assetId(4L)
+                .folder(folder)
+                .fileName("clip.webm")
+                .build();
+        when(streamAssetUseCase.execute(4L)).thenReturn(asset);
+
+        ResponseEntity<ResourceRegion> response = sut.streamAsset(4L, null);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getHeaders().getContentType()).isNotNull();
+        assertThat(response.getHeaders().getContentType().toString()).isEqualTo("video/webm");
+    }
 }

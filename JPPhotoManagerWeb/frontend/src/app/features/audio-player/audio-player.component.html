@@ -21,6 +21,9 @@
     <button mat-icon-button (click)="audioPlayer.next()" title="Next">
       <mat-icon>skip_next</mat-icon>
     </button>
+    <button mat-icon-button (click)="audioPlayer.isAudioFullscreen.set(true)" title="Fullscreen">
+      <mat-icon>fullscreen</mat-icon>
+    </button>
   </div>
 
   <div class="player-progress">

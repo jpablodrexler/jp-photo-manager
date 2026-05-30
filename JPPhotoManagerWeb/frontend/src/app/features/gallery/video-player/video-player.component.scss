@@ -1,0 +1,57 @@
+.video-player {
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  height: 100%;
+  color: #fff;
+
+  video {
+    width: 100%;
+    background: #000;
+  }
+}
+
+.video-title {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.87);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: #121212;
+}
+
+.video-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: #121212;
+}
+
+.video-time {
+  font-size: 12px;
+  white-space: nowrap;
+  min-width: 36px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.video-slider {
+  flex: 1;
+  accent-color: #64b5f6;
+  cursor: pointer;
+}
+
+.video-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #121212;
+
+  button {
+    color: rgba(255, 255, 255, 0.87);
+  }
+}

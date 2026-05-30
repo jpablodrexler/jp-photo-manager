@@ -1,0 +1,81 @@
+.fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 480px;
+  padding: 24px;
+}
+
+.album-art {
+  width: 280px;
+  height: 280px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+.track-title {
+  font-size: 20px;
+  font-weight: 500;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.87);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.overlay-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.overlay-time {
+  font-size: 12px;
+  white-space: nowrap;
+  min-width: 36px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.overlay-slider {
+  flex: 1;
+  accent-color: #64b5f6;
+  cursor: pointer;
+}
+
+.overlay-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  button {
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .play-btn {
+    transform: scale(1.4);
+  }
+}

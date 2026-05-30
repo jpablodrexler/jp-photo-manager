@@ -55,10 +55,21 @@
   }
 </mat-toolbar>
 
-<div class="app-content">
-  <router-outlet />
-</div>
+<mat-sidenav-container class="app-sidenav-container">
+  <mat-sidenav position="end" [opened]="mediaPlayer.isVideoPlaying()" mode="over" class="video-sidenav">
+    <app-video-player />
+  </mat-sidenav>
+  <mat-sidenav-content>
+    <div class="app-content">
+      <router-outlet />
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>
 
-@if (audioPlayer.currentTrack()) {
+@if (mediaPlayer.currentTrack() && !mediaPlayer.isVideoPlaying()) {
   <app-audio-player />
+}
+
+@if (mediaPlayer.isAudioFullscreen()) {
+  <app-media-fullscreen-overlay />
 }
