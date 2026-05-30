@@ -30,7 +30,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-photomanager}
       POSTGRES_USERNAME: ${POSTGRES_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      CATALOG_DIR: /catalog
+      CATALOG_DIR: /catalog;/catalog2
       THUMBNAILS_DIR: /thumbnails
       JWT_SECRET: "${JWT_SECRET:?Set JWT_SECRET in .env - run: openssl rand -base64 32}"
     ports:
@@ -39,6 +39,9 @@ services:
       - type: bind
         source: ${HOST_IMAGE_DIR:?Set HOST_IMAGE_DIR in .env (e.g. HOST_IMAGE_DIR=/home/user/Pictures)}
         target: /catalog
+      - type: bind
+        source: ${HOST_IMAGE_DIR_2:?Set HOST_IMAGE_DIR_2 in .env}
+        target: /catalog2
       - thumbnails:/thumbnails
 
   frontend:

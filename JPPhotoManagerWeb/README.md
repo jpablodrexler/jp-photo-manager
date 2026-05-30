@@ -610,6 +610,7 @@ The fastest way to run the full stack. No local Java, Maven, Node.js, or Postgre
    | Variable | Description |
    |---|---|
    | `HOST_IMAGE_DIR` | **Required.** Absolute path on your machine to the directory containing images to catalogue (e.g. `/home/yourname/Pictures`). Mounted read-write so all write features work on your actual files. |
+   | `HOST_IMAGE_DIR_2` … `HOST_IMAGE_DIR_N` | *Optional.* Additional directories to catalogue. See [Configuring multiple catalog root folders](#configuring-multiple-catalog-root-folders). |
    | `JWT_SECRET` | **Required.** HS256 signing secret. See [Generating JWT_SECRET](#generating-jwt_secret) below. |
    | `POSTGRES_DB` | Database name (default: `photomanager`). |
    | `POSTGRES_USERNAME` | Database user (default: `postgres`). |
@@ -1051,6 +1052,58 @@ $bytes = New-Object byte[] 32
 $secret = [Convert]::ToBase64String($bytes)
 Add-Content -Path JPPhotoManagerWeb\.env -Value "JWT_SECRET=$secret"
 ```
+
+### Configuring multiple catalog root folders
+
+The backend accepts a semicolon-separated list of root directories via the `photomanager.root-catalog-folders` property. Every directory in the list is scanned recursively when the catalog runs.
+
+#### Local development (`application-local.yml`)
+
+Add or extend the `root-catalog-folders` key in `src/main/resources/application-local.yml`:
+
+```yaml
+photomanager:
+  jwt-secret: "…"
+  initial-directory: "C:/Users/yourname/Pictures"
+  root-catalog-folders: "C:/Users/yourname/Pictures;C:/Users/yourname/OneDrive/ExtraFolder"
+```
+
+`initial-directory` controls which folder is shown first when the gallery loads; it can be any one of the roots (or any sub-folder).
+
+#### Docker Compose
+
+Each additional directory must be:
+
+1. Declared in `.env`:
+   ```
+   HOST_IMAGE_DIR=C:/Users/yourname/Pictures
+   HOST_IMAGE_DIR_2=C:/Users/yourname/OneDrive/ExtraFolder
+   ```
+
+2. Added as a second bind mount in `docker-compose.yml` under the `backend` service:
+   ```yaml
+   volumes:
+     - type: bind
+       source: ${HOST_IMAGE_DIR}
+       target: /catalog
+     - type: bind
+       source: ${HOST_IMAGE_DIR_2}
+       target: /catalog2
+   ```
+
+3. Included in `CATALOG_DIR` (also in `docker-compose.yml`):
+   ```yaml
+   environment:
+     CATALOG_DIR: /catalog;/catalog2
+   ```
+
+After editing both files, recreate the backend container and run the catalog:
+
+```bash
+docker compose up -d --force-recreate backend
+```
+
+Then click **Run Catalog** in the UI. Repeat steps 1–3 for any further directories (`HOST_IMAGE_DIR_3` → `/catalog3`, etc.).
 
 ### Default admin user
 
