@@ -1069,4 +1069,72 @@ describe('GalleryComponent', () => {
 
     cy.wrap(getAssets).should('not.have.been.called');
   });
+
+  // --- Status bar tests ---
+
+  it('statusBar_inThumbnailsMode_showsAssetsLoadedOfTotal', () => {
+    const getAssets = cy.stub().returns(of({
+      items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
+    }));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      fixture.componentInstance.onFolderSelected('/photos');
+      fixture.detectChanges();
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.get('.status-bar').should('contain', '2 of 2 photos');
+  });
+
+  it('statusBar_inViewerModeAtFirstAsset_showsPositionOneOfTotal', () => {
+    const getAssets = cy.stub().returns(of({
+      items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
+    }));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.onFolderSelected('/photos');
+      fixture.detectChanges();
+      return Promise.resolve().then(() => {
+        fixture.detectChanges();
+        component.openViewer(0);
+        fixture.detectChanges();
+      });
+    });
+
+    cy.get('.status-bar').should('contain', '1 of 2 photos');
+  });
+
+  it('statusBar_inViewerModeAfterNavigatingToSecondAsset_showsPositionTwoOfTotal', () => {
+    const getAssets = cy.stub().returns(of({
+      items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
+    }));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.onFolderSelected('/photos');
+      fixture.detectChanges();
+      return Promise.resolve().then(() => {
+        fixture.detectChanges();
+        component.openViewer(0);
+        component.viewerNext();
+        fixture.detectChanges();
+      });
+    });
+
+    cy.get('.status-bar').should('contain', '2 of 2 photos');
+  });
+
+  it('statusBar_inSlideshowModeAtSecondAsset_showsPositionTwoOfTotal', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets = [...mockAssets];
+      component.totalItems = 2;
+      component.currentFolder = '/photos';
+      component.startSlideshow(1);
+      fixture.detectChanges();
+    });
+
+    cy.get('.status-bar').should('contain', '2 of 2 photos');
+  });
 });

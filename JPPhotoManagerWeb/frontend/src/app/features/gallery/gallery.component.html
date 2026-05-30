@@ -332,7 +332,11 @@
     <!-- Status Bar -->
     <div class="status-bar">
       @if (currentFolder && totalItems > 0) {
-        <span>{{ assets.length }} of {{ totalItems }} photos</span>
+        @if (viewMode === 'viewer' || viewMode === 'slideshow') {
+          <span>{{ currentViewerIndex + 1 }} of {{ totalItems }} photos</span>
+        } @else {
+          <span>{{ assets.length }} of {{ totalItems }} photos</span>
+        }
       } @else {
         <span>{{ currentFolder }}</span>
       }
