@@ -217,7 +217,7 @@
                (dblclick)="openViewer(i)">
             <div class="thumb-wrapper">
               <img [src]="asset.thumbnailUrl" [alt]="asset.fileName" class="list-thumb" />
-              @if (asset.isVideo) {
+              @if (isVideoFile(asset)) {
                 <mat-icon class="video-overlay-icon">play_circle</mat-icon>
               }
             </div>
@@ -237,7 +237,7 @@
                 <mat-icon>{{ asset.fileType === 'AUDIO' ? 'play_arrow' : 'queue_music' }}</mat-icon>
               </button>
             }
-            @if (asset.fileType === 'VIDEO') {
+            @if (isVideoFile(asset)) {
               <button mat-icon-button class="list-play-btn"
                       (click)="playAsset(asset, $event)"
                       title="Play video">
@@ -295,8 +295,8 @@
                 }
               </div>
             </div>
-          } @else if (currentViewerAsset.isVideo) {
-            <video [src]="currentViewerAsset.imageUrl" controls class="viewer-video"></video>
+          } @else if (isVideoFile(currentViewerAsset)) {
+            <video [src]="'/api/assets/' + currentViewerAsset.assetId + '/stream'" controls class="viewer-video"></video>
           } @else {
             <img
               [src]="currentViewerAsset.imageUrl"

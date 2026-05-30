@@ -851,6 +851,14 @@ export class GalleryComponent implements OnInit, OnDestroy {
     }
   }
 
+  private static readonly VIDEO_EXTENSIONS = new Set(['.mp4', '.mov', '.mkv', '.avi', '.webm']);
+
+  isVideoFile(asset: Asset): boolean {
+    const name = asset.fileName.toLowerCase();
+    const dot = name.lastIndexOf('.');
+    return dot !== -1 && GalleryComponent.VIDEO_EXTENSIONS.has(name.slice(dot));
+  }
+
   get currentViewerAsset(): Asset | undefined {
     return this.assets[this.currentViewerIndex];
   }
