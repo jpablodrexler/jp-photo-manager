@@ -44,8 +44,9 @@ import { FileSizePipe } from '../../pipes/file-size.pipe';
       img {
         width: 100%;
         height: 150px;
-        object-fit: cover;
+        object-fit: contain;
         display: block;
+        background: #1a1a1a;
       }
     }
     .thumbnail-stars {

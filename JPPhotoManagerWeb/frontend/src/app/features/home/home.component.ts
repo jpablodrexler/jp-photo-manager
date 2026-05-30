@@ -51,7 +51,7 @@ export class HomeComponent implements OnInit {
   }
 
   navigateToGalleryFolder(asset: AssetSummary): void {
-    this.router.navigate(['/gallery'], { queryParams: { folder: asset.folderPath } });
+    this.router.navigate(['/gallery'], { queryParams: { folder: asset.folderPath, assetId: asset.assetId } });
   }
 
   assetSummaryToAsset(summary: AssetSummary): Asset {

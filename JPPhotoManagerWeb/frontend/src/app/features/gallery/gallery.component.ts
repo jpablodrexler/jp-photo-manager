@@ -122,6 +122,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   viewerZoom = 1;
   slideshowInterval = 5;
   slideshowPlaying = false;
+  private pendingViewerAssetId: number | null = null;
   private slideshowTimer: ReturnType<typeof setInterval> | null = null;
   slideshowResetTick = false;
   readonly intervalOptions = [3, 5, 10, 15];
@@ -188,6 +189,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
     this.loadPresets();
 
+    const assetIdParam = this.route.snapshot.queryParamMap.get('assetId');
+    if (assetIdParam) {
+      this.pendingViewerAssetId = +assetIdParam;
+    }
     const folderParam = this.route.snapshot.queryParamMap.get('folder');
     if (folderParam) {
       this.onFolderSelected(folderParam);
@@ -309,6 +314,13 @@ export class GalleryComponent implements OnInit, OnDestroy {
           this.pageIndex++;
           this.allLoaded = this.pageIndex >= data.totalPages;
           this.isLoading = false;
+          if (this.pendingViewerAssetId !== null) {
+            const idx = this.assets.findIndex(a => a.assetId === this.pendingViewerAssetId);
+            if (idx >= 0) {
+              this.pendingViewerAssetId = null;
+              this.openViewer(idx);
+            }
+          }
           if (continueLoading && !this.allLoaded) {
             this.loadNextPage(true);
           }

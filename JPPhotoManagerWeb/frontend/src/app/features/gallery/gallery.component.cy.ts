@@ -867,6 +867,42 @@ describe('GalleryComponent', () => {
     });
   });
 
+  it('ngOnInit_withFolderAndAssetIdQueryParams_opensViewerForMatchingAsset', () => {
+    const getAssets = cy.stub().returns(of({ items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2 }));
+
+    const activatedRouteStub = {
+      snapshot: {
+        queryParamMap: {
+          get: (key: string) => {
+            if (key === 'folder') return '/photos';
+            if (key === 'assetId') return '2';
+            return null;
+          },
+        },
+      },
+    };
+
+    cy.mount(GalleryComponent, {
+      providers: [
+        provideNoopAnimations(),
+        { provide: AssetService, useValue: { getAssets, catalogAssets: cy.stub(), deleteAssets: cy.stub().returns(of(undefined)), moveAssets: cy.stub().returns(of(true)) } },
+        { provide: TagService, useValue: { searchTags: cy.stub().returns(of([])) } },
+        { provide: FolderService, useValue: { getFolders: cy.stub().returns(of([])) } },
+        { provide: AlbumService, useValue: { getAlbums: cy.stub().returns(of([])) } },
+        { provide: SearchPresetService, useValue: { listPresets: cy.stub().returns(of([])), createPreset: cy.stub().returns(of({})), deletePreset: cy.stub().returns(of(undefined)) } },
+        { provide: ActivatedRoute, useValue: activatedRouteStub },
+        { provide: AudioPlayerService, useValue: { currentTrack: signal(null), isPlaying: signal(false), play: cy.stub(), loadFolder: cy.stub(), loadPlaylist: cy.stub() } },
+      ],
+    }).then(({ fixture }) => {
+      fixture.detectChanges();
+      return Promise.resolve().then(() => {
+        fixture.detectChanges();
+        expect(fixture.componentInstance.viewMode).to.equal('viewer');
+        expect(fixture.componentInstance.currentViewerIndex).to.equal(1);
+      });
+    });
+  });
+
   // --- View-mode toggle tests ---
 
   it('setViewType_toTimeline_setsViewTypeAndCallsGetTimeline', () => {

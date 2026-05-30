@@ -134,7 +134,7 @@ describe('HomeComponent', () => {
 
   // --- Task 8.3: Click thumbnail navigates to gallery ---
 
-  it('clickRecentPhoto_navigatesToGalleryWithFolderParam', () => {
+  it('clickRecentPhoto_navigatesToGalleryWithFolderAndAssetIdParams', () => {
     const navigateSpy = cy.stub().as('navigate');
 
     const homeServiceStub: Partial<HomeService> = {
@@ -156,7 +156,7 @@ describe('HomeComponent', () => {
     cy.get('.strip-item').first().click();
     cy.get('@routerNavigate').should('have.been.calledWith',
       ['/gallery'],
-      { queryParams: { folder: '/photos/vacation' } }
+      { queryParams: { folder: '/photos/vacation', assetId: 1 } }
     );
   });
 });
