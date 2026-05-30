@@ -1072,7 +1072,7 @@ describe('GalleryComponent', () => {
 
   // --- Status bar tests ---
 
-  it('statusBar_inThumbnailsMode_showsAssetsLoadedOfTotal', () => {
+  it('statusBar_inThumbnailsMode_showsTotalPhotosOnly', () => {
     const getAssets = cy.stub().returns(of({
       items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
     }));
@@ -1083,7 +1083,42 @@ describe('GalleryComponent', () => {
       return Promise.resolve().then(() => fixture.detectChanges());
     });
 
-    cy.get('.status-bar').should('contain', '2 of 2 photos');
+    cy.get('.status-bar').should('contain', '2 photos');
+    cy.get('.status-bar').should('not.contain', 'of 2 photos');
+  });
+
+  it('statusBar_inThumbnailsMode_withSelectedAssets_showsSelectedCount', () => {
+    const getAssets = cy.stub().returns(of({
+      items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
+    }));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.onFolderSelected('/photos');
+      fixture.detectChanges();
+      return Promise.resolve().then(() => {
+        fixture.detectChanges();
+        component.toggleSelection(mockAssets[0]);
+        fixture.detectChanges();
+      });
+    });
+
+    cy.get('.status-bar').should('contain', '2 photos');
+    cy.get('.status-bar').should('contain', '1 selected');
+  });
+
+  it('statusBar_inThumbnailsMode_noSelection_doesNotShowSelectedCount', () => {
+    const getAssets = cy.stub().returns(of({
+      items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
+    }));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      fixture.componentInstance.onFolderSelected('/photos');
+      fixture.detectChanges();
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.get('.status-bar').should('not.contain', 'selected');
   });
 
   it('statusBar_inViewerModeAtFirstAsset_showsPositionOneOfTotal', () => {
