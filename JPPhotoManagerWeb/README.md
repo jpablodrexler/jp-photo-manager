@@ -610,7 +610,7 @@ The fastest way to run the full stack. No local Java, Maven, Node.js, or Postgre
    | Variable | Description |
    |---|---|
    | `HOST_IMAGE_DIR` | **Required.** Absolute path on your machine to the directory containing images to catalogue (e.g. `/home/yourname/Pictures`). Mounted read-write so all write features work on your actual files. |
-   | `JWT_SECRET` | **Required.** HS256 signing secret. Generate with `openssl rand -base64 32`. |
+   | `JWT_SECRET` | **Required.** HS256 signing secret. See [Generating JWT_SECRET](#generating-jwt_secret) below. |
    | `POSTGRES_DB` | Database name (default: `photomanager`). |
    | `POSTGRES_USERNAME` | Database user (default: `postgres`). |
    | `POSTGRES_PASSWORD` | Database password (default: `postgres`). |
@@ -1012,22 +1012,44 @@ sequenceDiagram
 | `photomanager.jwt-secret` | *(empty — must be set)* | HS256 signing secret (≥ 32 bytes) |
 | `photomanager.jwt-expiry-hours` | `24` | Token validity in hours |
 
+### Generating JWT_SECRET
+
+Generate a cryptographically random 32-byte base64 string using the command for your platform:
+
+**Linux / macOS:**
+```bash
+openssl rand -base64 32
+```
+
+**Windows (PowerShell):**
+```powershell
+$bytes = New-Object byte[] 32
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+[Convert]::ToBase64String($bytes)
+```
+
 ### Setup (local development)
 
 1. Copy `src/main/resources/application-local.yml.example` to `src/main/resources/application-local.yml`
-2. Generate a secure secret:
-   ```bash
-   openssl rand -base64 32
-   ```
-3. Paste the output into `photomanager.jwt-secret` in `application-local.yml`
+2. Generate a secure secret using the command for your platform (see [Generating JWT_SECRET](#generating-jwt_secret)) and paste the output into `photomanager.jwt-secret` in `application-local.yml`
 
 > **Important:** The application **will not start** if `photomanager.jwt-secret` is blank. `application-local.yml` is git-ignored and must never be committed.
 
 ### Setup (Docker Compose)
 
-Set `JWT_SECRET` in `JPPhotoManagerWeb/.env`:
+Set `JWT_SECRET` in `JPPhotoManagerWeb/.env` using the command for your platform:
+
+**Linux / macOS:**
 ```bash
 echo "JWT_SECRET=$(openssl rand -base64 32)" >> JPPhotoManagerWeb/.env
+```
+
+**Windows (PowerShell):**
+```powershell
+$bytes = New-Object byte[] 32
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+$secret = [Convert]::ToBase64String($bytes)
+Add-Content -Path JPPhotoManagerWeb\.env -Value "JWT_SECRET=$secret"
 ```
 
 ### Default admin user
