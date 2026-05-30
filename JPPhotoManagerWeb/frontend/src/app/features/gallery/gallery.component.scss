@@ -64,9 +64,10 @@ mat-sidenav-content {
 .list-thumb {
   width: 106px;
   height: 64px;
-  object-fit: cover;
+  object-fit: contain;
   flex-shrink: 0;
   border-radius: 3px;
+  background: #1a1a1a;
 }
 
 .list-meta {
@@ -226,8 +227,9 @@ mat-sidenav-content {
 
 .viewer-layout {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -248,7 +250,20 @@ mat-sidenav-content {
 
 .image-viewer {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
+  background: #000;
+
+  img:not(.audio-album-art) {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    transition: transform 0.2s;
+  }
 
   .viewer-nav {
     position: absolute;
