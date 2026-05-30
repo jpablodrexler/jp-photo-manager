@@ -85,8 +85,8 @@ class HomeControllerTest {
     @Test
     void getStats_returnsRecentAssetsList() throws Exception {
         List<AssetSummaryDto> recent = List.of(
-                new AssetSummaryDto(1L, "sunset.jpg", "/photos/vacation", "/api/assets/1/thumbnail"),
-                new AssetSummaryDto(2L, "beach.jpg", "/photos/summer", "/api/assets/2/thumbnail"));
+                new AssetSummaryDto(1L, "sunset.jpg", "/photos/vacation", "/api/assets/1/thumbnail", 1024L),
+                new AssetSummaryDto(2L, "beach.jpg", "/photos/summer", "/api/assets/2/thumbnail", 2048L));
         HomeStats stats = new HomeStats(1L, 2L, null, 0L, 0L, List.of(), recent);
         when(getHomeStatsUseCase.execute()).thenReturn(stats);
 
@@ -96,6 +96,8 @@ class HomeControllerTest {
                 .andExpect(jsonPath("$.recentAssets[0].assetId").value(1))
                 .andExpect(jsonPath("$.recentAssets[0].fileName").value("sunset.jpg"))
                 .andExpect(jsonPath("$.recentAssets[0].folderPath").value("/photos/vacation"))
-                .andExpect(jsonPath("$.recentAssets[0].thumbnailUrl").value("/api/assets/1/thumbnail"));
+                .andExpect(jsonPath("$.recentAssets[0].thumbnailUrl").value("/api/assets/1/thumbnail"))
+                .andExpect(jsonPath("$.recentAssets[0].fileSize").value(1024))
+                .andExpect(jsonPath("$.recentAssets[1].fileSize").value(2048));
     }
 }

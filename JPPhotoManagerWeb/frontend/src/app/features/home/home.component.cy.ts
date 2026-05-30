@@ -35,6 +35,7 @@ describe('HomeComponent', () => {
       fileName: `photo${i + 1}.jpg`,
       folderPath: '/photos/vacation',
       thumbnailUrl: `/api/assets/${i + 1}/thumbnail`,
+      fileSize: 1_024_000,
     })),
   };
 
@@ -84,6 +85,13 @@ describe('HomeComponent', () => {
   it('richStats_recentPhotosStrip_hasTwelveThumbnails', () => {
     mountHome(richStats);
     cy.get('.strip-item app-thumbnail').should('have.length', 12);
+  });
+
+  it('richStats_recentPhotosStrip_displaysFileSize', () => {
+    mountHome(richStats);
+    cy.get('.strip-item app-thumbnail').first().within(() => {
+      cy.get('.thumbnail-size').should('contain', 'MB');
+    });
   });
 
   it('richStats_topFoldersList_hasFiveRows', () => {

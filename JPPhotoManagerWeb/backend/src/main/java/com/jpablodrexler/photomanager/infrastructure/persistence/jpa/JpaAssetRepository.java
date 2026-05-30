@@ -79,7 +79,7 @@ public interface JpaAssetRepository extends JpaRepository<AssetEntity, Long>, Jp
     @Query("SELECT f.path as folderPath, COUNT(a) as assetCount FROM AssetEntity a JOIN a.folder f WHERE a.deletedAt IS NULL GROUP BY f.path ORDER BY COUNT(a) DESC")
     List<FolderAssetCount> findTopFoldersByAssetCount(Pageable pageable);
 
-    @Query("SELECT a.assetId as assetId, a.fileName as fileName, f.path as folderPath FROM AssetEntity a JOIN a.folder f WHERE a.deletedAt IS NULL ORDER BY a.thumbnailCreationDateTime DESC")
+    @Query("SELECT a.assetId as assetId, a.fileName as fileName, f.path as folderPath, a.fileSize as fileSize FROM AssetEntity a JOIN a.folder f WHERE a.deletedAt IS NULL ORDER BY a.thumbnailCreationDateTime DESC")
     List<AssetSummary> findRecentAssets(Pageable pageable);
 
     default Page<AssetEntity> findWithFilters(FolderEntity folder, String search, LocalDateTime dateFrom,

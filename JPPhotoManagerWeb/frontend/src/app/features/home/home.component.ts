@@ -60,7 +60,7 @@ export class HomeComponent implements OnInit {
       folderId: 0,
       folderPath: summary.folderPath,
       fileName: summary.fileName,
-      fileSize: 0,
+      fileSize: summary.fileSize,
       thumbnailCreationDateTime: '',
       hash: '',
       thumbnailUrl: summary.thumbnailUrl,

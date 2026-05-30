@@ -237,6 +237,7 @@ public class AssetRepositoryImpl implements AssetRepository {
                         .assetId(s.getAssetId())
                         .fileName(s.getFileName())
                         .folder(Folder.builder().path(s.getFolderPath()).build())
+                        .fileSize(s.getFileSize())
                         .build())
                 .toList();
     }

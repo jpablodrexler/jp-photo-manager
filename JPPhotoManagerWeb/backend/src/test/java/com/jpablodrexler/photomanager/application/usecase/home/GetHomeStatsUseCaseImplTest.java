@@ -113,7 +113,7 @@ class GetHomeStatsUseCaseImplTest {
     void execute_withRecentAssets_returnsAssetSummaryDtos() {
         when(jobExplorer.getJobInstances("catalogJob", 0, 20)).thenReturn(List.of());
         Folder folder = Folder.builder().path("/photos").build();
-        Asset asset = Asset.builder().assetId(1L).fileName("sunset.jpg").folder(folder).build();
+        Asset asset = Asset.builder().assetId(1L).fileName("sunset.jpg").folder(folder).fileSize(512_000L).build();
         when(folderRepository.count()).thenReturn(1L);
         when(assetRepository.count()).thenReturn(1L);
         when(assetRepository.sumFileSize()).thenReturn(0L);
@@ -129,6 +129,7 @@ class GetHomeStatsUseCaseImplTest {
         assertThat(dto.fileName()).isEqualTo("sunset.jpg");
         assertThat(dto.folderPath()).isEqualTo("/photos");
         assertThat(dto.thumbnailUrl()).isEqualTo("/api/assets/1/thumbnail");
+        assertThat(dto.fileSize()).isEqualTo(512_000L);
     }
 
     @Test

@@ -3,4 +3,5 @@ export interface AssetSummary {
   fileName: string;
   folderPath: string;
   thumbnailUrl: string;
+  fileSize: number;
 }

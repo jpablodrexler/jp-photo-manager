@@ -39,7 +39,8 @@ public class GetHomeStatsUseCaseImpl implements GetHomeStatsUseCase {
                         a.getAssetId(),
                         a.getFileName(),
                         a.getFolder().getPath(),
-                        "/api/assets/" + a.getAssetId() + "/thumbnail"))
+                        "/api/assets/" + a.getAssetId() + "/thumbnail",
+                        a.getFileSize()))
                 .toList();
         Instant lastCatalogCompletedAt = findLastCatalogCompletedAt();
         return new HomeStats(folderCount, assetCount, lastCatalogCompletedAt, totalFileSize, duplicateCount, topFolders, recentAssets);
