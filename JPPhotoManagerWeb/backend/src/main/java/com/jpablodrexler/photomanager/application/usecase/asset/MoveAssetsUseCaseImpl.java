@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -58,6 +60,9 @@ public class MoveAssetsUseCaseImpl implements MoveAssetsUseCase {
                 assetRepository.save(asset);
             } catch (IOException e) {
                 log.error("Failed to move asset {} to {}", sourcePath, destFilePath, e);
+                if (TransactionSynchronizationManager.isActualTransactionActive()) {
+                    TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+                }
                 return false;
             }
         }

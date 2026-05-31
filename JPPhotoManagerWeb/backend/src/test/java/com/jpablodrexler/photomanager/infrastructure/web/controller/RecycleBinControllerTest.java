@@ -111,13 +111,11 @@ class RecycleBinControllerTest {
     }
 
     @Test
-    void purge_withoutBody_returns204AndPassesNull() throws Exception {
-        doNothing().when(purgeAssetsUseCase).execute(isNull());
-
+    void purge_withoutBody_returns400() throws Exception {
         mockMvc.perform(delete("/api/recycle-bin"))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isBadRequest());
 
-        verify(purgeAssetsUseCase).execute(null);
+        verify(purgeAssetsUseCase, never()).execute(any());
     }
 
     // --- helpers ---

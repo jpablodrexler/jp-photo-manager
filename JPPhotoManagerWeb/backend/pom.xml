@@ -205,15 +205,14 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.12</version>
+                <version>0.8.13</version>
                 <executions>
                     <execution>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                         <configuration>
-                            <!-- Only instrument our own classes; skip JDK/Mockito/ByteBuddy classes
-                                 which target Java 25 bytecode that JaCoCo 0.8.12 cannot read -->
+                            <!-- Only instrument our own classes; skip Mockito/ByteBuddy proxies -->
                             <includes>
                                 <include>com/jpablodrexler/**</include>
                             </includes>
@@ -272,7 +271,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.12</version>
+                <version>0.8.13</version>
                 <reportSets>
                     <reportSet>
                         <reports>

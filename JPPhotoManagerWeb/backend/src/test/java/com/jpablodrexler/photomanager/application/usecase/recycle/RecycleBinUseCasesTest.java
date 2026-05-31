@@ -66,11 +66,11 @@ class RecycleBinUseCasesTest {
         }
 
         @Test
-        void execute_nullIds_purgesAllDeleted() throws IOException {
+        void execute_emptyIds_purgesAllDeleted() throws IOException {
             Asset asset = buildAsset(2L);
             when(assetRepository.findAllDeleted()).thenReturn(List.of(asset));
 
-            sut.execute(null);
+            sut.execute(List.of());
 
             verify(assetRepository).deleteById(2L);
         }

@@ -25,7 +25,7 @@ public class PurgeAssetsUseCaseImpl implements PurgeAssetsUseCase {
     @Override
     @Transactional
     public void execute(List<Long> assetIds) {
-        List<Asset> targets = (assetIds == null)
+        List<Asset> targets = assetIds.isEmpty()
                 ? assetRepository.findAllDeleted()
                 : assetRepository.findAllById(assetIds);
 

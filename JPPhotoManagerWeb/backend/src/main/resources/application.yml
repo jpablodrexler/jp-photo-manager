@@ -71,6 +71,9 @@ photomanager:
   refresh-token-expiry-days: 30
   cors-allowed-origins: http://localhost:4200
   max-download-assets: 500
+  # Comma-separated list of reverse-proxy IPs whose X-Forwarded-For header is trusted for rate limiting.
+  # Leave empty (the default) when the app is not behind a proxy; set to your proxy's IP otherwise.
+  trusted-proxy-ips: ${TRUSTED_PROXY_IPS:}
   recycle-bin-retention-days: 30
   geocoding-base-url: ${GEOCODING_BASE_URL:https://nominatim.openstreetmap.org}
 

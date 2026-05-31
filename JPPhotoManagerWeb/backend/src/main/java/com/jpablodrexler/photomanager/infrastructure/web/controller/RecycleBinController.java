@@ -19,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Tag(name = "Recycle Bin", description = "Soft-deleted asset management")
@@ -66,9 +65,8 @@ public class RecycleBinController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @DeleteMapping
-    public ResponseEntity<Void> purge(@RequestBody(required = false) RecycleBinPurgeRequest body) {
-        List<Long> ids = (body != null) ? body.assetIds() : null;
-        purgeAssetsUseCase.execute(ids);
+    public ResponseEntity<Void> purge(@Valid @RequestBody RecycleBinPurgeRequest body) {
+        purgeAssetsUseCase.execute(body.assetIds());
         return ResponseEntity.noContent().build();
     }
 }

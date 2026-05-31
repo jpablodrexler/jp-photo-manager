@@ -27,6 +27,7 @@ class RateLimitFilterTest {
     @BeforeEach
     void setUp() {
         sut = new RateLimitFilter(new ObjectMapper());
+        sut.init();
     }
 
     @Test

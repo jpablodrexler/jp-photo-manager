@@ -39,14 +39,22 @@ export class AuthService {
   }
 
   scheduleProactiveRefresh(): void {
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
+    }
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return;
     try {
       const session: Session = JSON.parse(raw);
       const delay = session.expiresAt - Date.now() - 5 * 60 * 1000;
       if (delay > 0) {
-        if (this.refreshTimer) clearTimeout(this.refreshTimer);
-        this.refreshTimer = setTimeout(() => this.refresh().subscribe(), delay);
+        this.refreshTimer = setTimeout(
+          () => this.refresh().subscribe({ error: () => {} }),
+          delay
+        );
+      } else {
+        this.refresh().subscribe({ error: () => {} });
       }
     } catch {
       // ignore
@@ -71,8 +79,13 @@ export class AuthService {
     if (!raw) return false;
     try {
       const session: Session = JSON.parse(raw);
-      return session.expiresAt > Date.now();
+      if (session.expiresAt > Date.now()) {
+        return true;
+      }
+      this.clearSession();
+      return false;
     } catch {
+      this.clearSession();
       return false;
     }
   }

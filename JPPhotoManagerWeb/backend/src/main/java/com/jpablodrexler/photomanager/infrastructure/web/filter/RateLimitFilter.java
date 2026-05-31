@@ -6,6 +6,7 @@ import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
 import io.github.bucket4j.Refill;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -15,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -22,8 +24,11 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -35,6 +40,23 @@ public class RateLimitFilter implements Filter {
 
     private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper;
+
+    @Value("${photomanager.trusted-proxy-ips:}")
+    private String trustedProxyIpsRaw;
+
+    private Set<String> trustedProxyIps;
+
+    @PostConstruct
+    public void init() {
+        if (trustedProxyIpsRaw == null || trustedProxyIpsRaw.isBlank()) {
+            trustedProxyIps = Set.of();
+            return;
+        }
+        trustedProxyIps = Arrays.stream(trustedProxyIpsRaw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .collect(Collectors.toUnmodifiableSet());
+    }
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -97,10 +119,13 @@ public class RateLimitFilter implements Filter {
     }
 
     private String resolveClientIp(HttpServletRequest req) {
-        String forwarded = req.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
+        String remoteAddr = req.getRemoteAddr();
+        if (trustedProxyIps.contains(remoteAddr)) {
+            String forwarded = req.getHeader("X-Forwarded-For");
+            if (forwarded != null && !forwarded.isBlank()) {
+                return forwarded.split(",")[0].trim();
+            }
         }
-        return req.getRemoteAddr();
+        return remoteAddr;
     }
 }

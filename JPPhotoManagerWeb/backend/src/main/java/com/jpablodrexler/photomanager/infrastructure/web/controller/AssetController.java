@@ -57,6 +57,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
@@ -330,15 +331,25 @@ public class AssetController {
                                                  @RequestPart("folderPath") String folderPath) {
         String contentType = file.getContentType();
         String originalFilename = file.getOriginalFilename();
-        String extension = originalFilename != null && originalFilename.contains(".")
-                ? originalFilename.substring(originalFilename.lastIndexOf('.') + 1).toLowerCase()
+        // Strip any directory prefix the client may have embedded in the filename (path traversal defence).
+        // Paths.get().getFileName() returns only the last component; replacing '\' first handles Windows paths
+        // sent by any client regardless of the server's OS.
+        java.nio.file.Path filenamePath = originalFilename != null
+                ? Paths.get(originalFilename.replace('\\', '/')).getFileName()
+                : null;
+        String safeFilename = (filenamePath != null) ? filenamePath.toString() : null;
+        if (safeFilename == null || safeFilename.isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+        String extension = safeFilename.contains(".")
+                ? safeFilename.substring(safeFilename.lastIndexOf('.') + 1).toLowerCase()
                 : "";
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)
                 || !ALLOWED_EXTENSIONS.contains(extension)) {
             return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
         }
         try {
-            Asset asset = uploadAssetUseCase.execute(folderPath, originalFilename, file.getBytes());
+            Asset asset = uploadAssetUseCase.execute(folderPath, safeFilename, file.getBytes());
             return ResponseEntity.status(HttpStatus.CREATED).body(assetWebMapper.toDto(asset));
         } catch (FolderNotFoundException e) {
             return ResponseEntity.notFound().build();

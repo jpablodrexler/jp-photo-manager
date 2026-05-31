@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -43,15 +44,15 @@ class DeleteAssetsUseCaseImplTest {
     }
 
     @Test
-    void execute_permanently_fileDeleteThrows_continuesAndDeletesRecord() throws IOException {
+    void execute_permanently_fileDeleteThrows_skipsRecordDeletion() throws IOException {
         Asset asset = buildAsset(2L, "/photos", "img.jpg");
         when(assetRepository.findAllById(List.of(2L))).thenReturn(List.of(asset));
         doThrow(new IOException("disk error")).when(storagePort).deleteFile(any());
 
         sut.execute(new Long[]{2L}, true);
 
-        verify(thumbnailPort).deleteThumbnail("2.bin");
-        verify(assetRepository).deleteById(2L);
+        verify(thumbnailPort, never()).deleteThumbnail(any());
+        verify(assetRepository, never()).deleteById(2L);
     }
 
     @Test

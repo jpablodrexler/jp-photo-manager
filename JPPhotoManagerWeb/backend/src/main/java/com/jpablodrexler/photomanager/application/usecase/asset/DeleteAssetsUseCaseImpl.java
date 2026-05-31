@@ -35,6 +35,7 @@ public class DeleteAssetsUseCaseImpl implements DeleteAssetsUseCase {
                     storagePort.deleteFile(filePath);
                 } catch (IOException e) {
                     log.error("Failed to delete file {}", filePath, e);
+                    continue;
                 }
                 thumbnailPort.deleteThumbnail(asset.getThumbnailBlobName());
                 assetRepository.deleteById(asset.getAssetId());

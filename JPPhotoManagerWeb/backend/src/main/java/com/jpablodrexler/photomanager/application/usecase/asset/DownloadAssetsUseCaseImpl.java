@@ -43,17 +43,20 @@ public class DownloadAssetsUseCaseImpl implements DownloadAssetsUseCase {
         }
 
         ZipOutputStream zipOut = new ZipOutputStream(out);
-        for (Asset asset : assets) {
-            String entryName = entryNameByAssetId.get(asset.getAssetId());
-            try {
-                byte[] bytes = storagePort.readFileBytes(asset.getFullPath());
-                zipOut.putNextEntry(new ZipEntry(entryName));
-                zipOut.write(bytes);
-                zipOut.closeEntry();
-            } catch (IOException e) {
-                log.warn("Skipping unreadable asset {}: {}", asset.getAssetId(), e.getMessage());
+        try {
+            for (Asset asset : assets) {
+                String entryName = entryNameByAssetId.get(asset.getAssetId());
+                try {
+                    byte[] bytes = storagePort.readFileBytes(asset.getFullPath());
+                    zipOut.putNextEntry(new ZipEntry(entryName));
+                    zipOut.write(bytes);
+                    zipOut.closeEntry();
+                } catch (IOException e) {
+                    log.warn("Skipping unreadable asset {}: {}", asset.getAssetId(), e.getMessage());
+                }
             }
+        } finally {
+            zipOut.finish();
         }
-        zipOut.finish();
     }
 }
