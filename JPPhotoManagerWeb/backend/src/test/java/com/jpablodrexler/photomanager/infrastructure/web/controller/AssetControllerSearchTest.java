@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.application.dto.AssetFilter;
 import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
@@ -49,6 +50,8 @@ class AssetControllerSearchTest {
     @Autowired
     MockMvc mockMvc;
 
+    @MockitoBean
+    CropAssetUseCase cropAssetUseCase;
     @MockitoBean
     GetAssetsTimelineUseCase getAssetsTimelineUseCase;
     @MockitoBean

@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 import com.jpablodrexler.photomanager.application.exception.FolderNotFoundException;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
+import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
@@ -46,6 +47,8 @@ class AssetControllerUploadTest {
     @Autowired
     MockMvc mockMvc;
 
+    @MockitoBean
+    CropAssetUseCase cropAssetUseCase;
     @MockitoBean
     GetAssetsTimelineUseCase getAssetsTimelineUseCase;
     @MockitoBean

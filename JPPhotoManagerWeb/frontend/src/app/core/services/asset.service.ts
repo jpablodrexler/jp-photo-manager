@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpEvent, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Asset, SortCriteria } from '../models/asset.model';
+import { Asset, CropAssetRequest, SortCriteria } from '../models/asset.model';
 import { ExifMetadata } from '../models/exif-metadata.model';
 import { PaginatedData } from '../models/paginated-data.model';
 import { TimelineGroup } from '../models/timeline-group.model';
@@ -88,6 +88,10 @@ export class AssetService {
       reportProgress: true,
       observe: 'events',
     });
+  }
+
+  cropAsset(assetId: number, request: CropAssetRequest): Observable<Asset> {
+    return this.http.post<Asset>(`${this.baseUrl}/${assetId}/crop`, request);
   }
 
   getPlaylist(assetId: number): Observable<Asset[]> {

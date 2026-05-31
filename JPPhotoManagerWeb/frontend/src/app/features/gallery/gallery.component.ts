@@ -49,6 +49,7 @@ import { FolderPickerDialogComponent } from "./folder-picker-dialog/folder-picke
 import { TimelineViewComponent } from "./timeline-view/timeline-view.component";
 import { TimelineGroup } from "../../core/models/timeline-group.model";
 import { MediaPlayerService } from "../../core/services/media-player.service";
+import { SocialMediaCropComponent } from "./social-media-crop/social-media-crop.component";
 
 type ViewMode = "thumbnails" | "viewer" | "slideshow";
 type ViewType = "grid" | "timeline";
@@ -82,6 +83,7 @@ type ViewType = "grid" | "timeline";
     DropZoneComponent,
     TimelineViewComponent,
     FolderPickerDialogComponent,
+    SocialMediaCropComponent,
   ],
   templateUrl: "./gallery.component.html",
   styleUrl: "./gallery.component.scss",
@@ -137,6 +139,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   statusMessage = "";
   showExifPanel = false;
+  showCropOverlay = false;
 
   readonly sortOptions: { value: SortCriteria; label: string }[] = [
     { value: "FILE_NAME", label: "File Name" },
@@ -451,6 +454,11 @@ export class GalleryComponent implements OnInit, OnDestroy {
   closeViewer(): void {
     this.viewMode = "thumbnails";
     this.showExifPanel = false;
+    this.showCropOverlay = false;
+  }
+
+  toggleCropOverlay(): void {
+    this.showCropOverlay = !this.showCropOverlay;
   }
 
   @HostListener("keydown", ["$event"])

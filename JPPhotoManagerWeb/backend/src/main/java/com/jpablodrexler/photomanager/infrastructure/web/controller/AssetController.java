@@ -10,6 +10,8 @@ import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
 import com.jpablodrexler.photomanager.domain.model.Folder;
+import com.jpablodrexler.photomanager.domain.model.CropAssetRequest;
+import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
@@ -83,6 +85,7 @@ public class AssetController {
     private final MoveAssetsUseCase moveAssetsUseCase;
     private final UploadAssetUseCase uploadAssetUseCase;
     private final DeleteAssetsUseCase deleteAssetsUseCase;
+    private final CropAssetUseCase cropAssetUseCase;
     private final CatalogAssetsUseCase catalogAssetsUseCase;
     private final GetDuplicatedAssetsUseCase getDuplicatedAssetsUseCase;
     private final AddTagToAssetUseCase addTagToAssetUseCase;
@@ -352,6 +355,26 @@ public class AssetController {
             Asset asset = uploadAssetUseCase.execute(folderPath, safeFilename, file.getBytes());
             return ResponseEntity.status(HttpStatus.CREATED).body(assetWebMapper.toDto(asset));
         } catch (FolderNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @Operation(summary = "Crop an asset to a social media format and save as a new asset")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Cropped asset created"),
+        @ApiResponse(responseCode = "400", description = "Invalid crop coordinates or format"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Asset not found"),
+        @ApiResponse(responseCode = "500", description = "Image processing error")
+    })
+    @PostMapping("/{id}/crop")
+    public ResponseEntity<AssetDto> cropAsset(@PathVariable Long id, @RequestBody CropAssetRequest request) {
+        try {
+            Asset asset = cropAssetUseCase.execute(id, request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(assetWebMapper.toDto(asset));
+        } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

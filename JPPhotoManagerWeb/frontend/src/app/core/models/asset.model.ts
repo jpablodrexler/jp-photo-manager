@@ -24,6 +24,14 @@ export interface Asset {
   isVideo: boolean;
 }
 
+export interface CropAssetRequest {
+  formatKey: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export type SortCriteria =
   | 'FILE_NAME'
   | 'FILE_SIZE'

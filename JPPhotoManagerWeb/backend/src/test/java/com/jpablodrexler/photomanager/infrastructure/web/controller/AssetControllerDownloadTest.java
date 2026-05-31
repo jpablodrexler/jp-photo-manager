@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
@@ -51,6 +52,8 @@ class AssetControllerDownloadTest {
     @Autowired
     ObjectMapper objectMapper;
 
+    @MockitoBean
+    CropAssetUseCase cropAssetUseCase;
     @MockitoBean
     GetAssetsTimelineUseCase getAssetsTimelineUseCase;
     @MockitoBean

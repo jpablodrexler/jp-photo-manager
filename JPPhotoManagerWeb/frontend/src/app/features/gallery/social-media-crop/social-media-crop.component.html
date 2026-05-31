@@ -1,0 +1,33 @@
+<div class="crop-overlay">
+
+  <div class="crop-controls">
+    <mat-select [(ngModel)]="selectedFormat"
+                (ngModelChange)="onFormatChange()"
+                class="crop-format-select"
+                panelClass="crop-format-panel"
+                aria-label="Social media format">
+      @for (format of formats; track format.key) {
+        <mat-option [value]="format">{{ format.label }}</mat-option>
+      }
+    </mat-select>
+
+    <button mat-raised-button
+            color="primary"
+            [disabled]="isSaving"
+            (click)="saveAndDownload()">
+      {{ isSaving ? 'Saving…' : 'Save & Download' }}
+    </button>
+
+    <button mat-button (click)="cancelled.emit()">Cancel</button>
+  </div>
+
+  <canvas #cropCanvas
+    (mousedown)="onMouseDown($event)"
+    (mousemove)="onMouseMove($event)"
+    (mouseup)="onMouseUp()"
+    (mouseleave)="onMouseUp()">
+  </canvas>
+
+  <p class="crop-hint">Drag to move · Drag corner to resize</p>
+
+</div>

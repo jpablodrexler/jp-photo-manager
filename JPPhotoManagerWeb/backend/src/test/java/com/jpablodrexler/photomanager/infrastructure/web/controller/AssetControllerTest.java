@@ -10,6 +10,8 @@ import com.jpablodrexler.photomanager.domain.model.AssetExif;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.model.TimelineGroup;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.TimelineGroupDto;
+import com.jpablodrexler.photomanager.domain.model.CropAssetRequest;
+import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
@@ -42,6 +44,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -65,6 +68,8 @@ class AssetControllerTest {
     @Autowired
     AssetController assetController;
 
+    @MockitoBean
+    CropAssetUseCase cropAssetUseCase;
     @MockitoBean
     GetAssetsUseCase getAssetsUseCase;
     @MockitoBean
@@ -455,6 +460,46 @@ class AssetControllerTest {
                 .andExpect(jsonPath("$.items").isEmpty())
                 .andExpect(jsonPath("$.totalItems").value(0))
                 .andExpect(jsonPath("$.totalPages").value(0));
+    }
+
+    // --- POST /api/assets/{id}/crop ---
+
+    @Test
+    void cropAsset_validRequest_returns201WithCreatedAsset() throws Exception {
+        Folder folder = buildFolder(1L, "/photos");
+        Asset saved = buildAsset(folder, "photo_INSTAGRAM_POST.jpg", 2L);
+        com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto savedDto = buildAssetDto("photo_INSTAGRAM_POST.jpg", 2L);
+
+        when(cropAssetUseCase.execute(eq(1L), any(CropAssetRequest.class))).thenReturn(saved);
+        when(assetWebMapper.toDto(saved)).thenReturn(savedDto);
+
+        mockMvc.perform(post("/api/assets/1/crop")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"formatKey\":\"INSTAGRAM_POST\",\"x\":0,\"y\":0,\"width\":100,\"height\":100}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.fileName").value("photo_INSTAGRAM_POST.jpg"));
+    }
+
+    @Test
+    void cropAsset_assetNotFound_returns404() throws Exception {
+        when(cropAssetUseCase.execute(eq(99L), any(CropAssetRequest.class)))
+                .thenThrow(new NoSuchElementException("Asset not found: 99"));
+
+        mockMvc.perform(post("/api/assets/99/crop")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"formatKey\":\"INSTAGRAM_POST\",\"x\":0,\"y\":0,\"width\":100,\"height\":100}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void cropAsset_outOfBoundsCoordinates_returns400() throws Exception {
+        when(cropAssetUseCase.execute(eq(1L), any(CropAssetRequest.class)))
+                .thenThrow(new IllegalArgumentException("Crop coordinates out of bounds"));
+
+        mockMvc.perform(post("/api/assets/1/crop")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"formatKey\":\"INSTAGRAM_POST\",\"x\":9999,\"y\":9999,\"width\":100,\"height\":100}"))
+                .andExpect(status().isBadRequest());
     }
 
     // --- helpers ---

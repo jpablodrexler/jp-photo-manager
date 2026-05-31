@@ -81,6 +81,11 @@
             <mat-icon>{{ (currentViewerAsset?.rating ?? 0) >= star ? 'star' : 'star_border' }}</mat-icon>
           </button>
         }
+        @if (currentViewerAsset?.fileType === 'IMAGE') {
+          <button mat-icon-button (click)="toggleCropOverlay()" [class.active]="showCropOverlay" title="Crop for social media">
+            <mat-icon>content_cut</mat-icon>
+          </button>
+        }
         <button mat-icon-button (click)="toggleExifPanel()" [class.active]="showExifPanel" title="EXIF info">
           <mat-icon>info</mat-icon>
         </button>
@@ -315,6 +320,13 @@
           (closed)="showExifPanel = false"
         />
       </div>
+    }
+
+    <!-- Social Media Crop Overlay -->
+    @if (showCropOverlay && currentViewerAsset) {
+      <app-social-media-crop
+        [asset]="currentViewerAsset"
+        (cancelled)="showCropOverlay = false" />
     }
 
     <!-- Slideshow -->
