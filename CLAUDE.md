@@ -126,10 +126,16 @@ mvn spring-boot:run
 ```
 The API starts on `http://localhost:8080`.
 
-**Run all tests:**
+**Run unit tests** (no Docker required — what the pre-commit hook runs):
 ```bash
 cd JPPhotoManagerWeb/backend
 mvn test
+```
+
+**Run unit + integration tests** (requires Docker for Testcontainers):
+```bash
+cd JPPhotoManagerWeb/backend
+mvn verify
 ```
 
 **Run a single test class:**

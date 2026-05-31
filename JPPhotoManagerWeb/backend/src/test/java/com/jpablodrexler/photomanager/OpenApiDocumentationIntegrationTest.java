@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Testcontainers
 @EnabledIfDockerAvailable
-class OpenApiDocumentationTest {
+class OpenApiDocumentationIntegrationTest {
 
     @Container
     @ServiceConnection
