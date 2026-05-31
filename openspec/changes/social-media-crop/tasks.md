@@ -37,6 +37,6 @@
 
 ## 6. Testing and Commit
 
-- [ ] 6.1 Run backend test suite: `cd JPPhotoManagerWeb/backend && mvn test`
-- [ ] 6.2 Run frontend test suite: `cd JPPhotoManagerWeb/frontend && npm test`
-- [ ] 6.3 Commit all changes (only after both test suites pass)
+- [x] 6.1 Run backend test suite: `cd JPPhotoManagerWeb/backend && mvn test`
+- [x] 6.2 Run frontend test suite: `cd JPPhotoManagerWeb/frontend && npm test`
+- [x] 6.3 Commit all changes (only after both test suites pass)
