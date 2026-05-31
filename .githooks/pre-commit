@@ -24,7 +24,7 @@ function run(label, cmd, args, cwd) {
 }
 
 if (runBackend) {
-  run('Backend tests', 'mvn', ['test', '-q'], path.join(repoRoot, 'JPPhotoManagerWeb/backend'));
+  run('Backend tests', 'mvn', ['verify', '-q'], path.join(repoRoot, 'JPPhotoManagerWeb/backend'));
 }
 
 if (runFrontend) {
