@@ -28,7 +28,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -87,6 +89,22 @@ class CropAssetUseCaseImplTest {
 
         verify(storagePort).copyFile(any(), destCaptor.capture());
         assertThat(destCaptor.getValue()).endsWith("_TWITTER_HEADER.jpg");
+    }
+
+    @Test
+    void execute_outputAssetAlreadyExists_returnsExistingAssetWithoutCreatingDuplicate() throws Exception {
+        byte[] imageBytes = createTestJpeg(200, 200);
+        Asset existing = Asset.builder().assetId(99L).folder(folder).fileName("photo_INSTAGRAM_POST.jpg").build();
+
+        when(assetRepository.findById(1L)).thenReturn(Optional.of(asset));
+        when(storagePort.readFileBytes(any())).thenReturn(imageBytes);
+        when(assetRepository.findByFolderAndFileName(eq(folder), eq("photo_INSTAGRAM_POST.jpg")))
+                .thenReturn(Optional.of(existing));
+
+        Asset result = sut.execute(1L, new CropAssetRequest("INSTAGRAM_POST", 0, 0, 200, 200));
+
+        assertThat(result.getAssetId()).isEqualTo(99L);
+        verify(catalogFolderPort, never()).createAsset(any(), any());
     }
 
     @Test

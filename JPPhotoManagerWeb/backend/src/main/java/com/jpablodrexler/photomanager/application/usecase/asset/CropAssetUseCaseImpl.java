@@ -80,8 +80,11 @@ public class CropAssetUseCaseImpl implements CropAssetUseCase {
             Files.deleteIfExists(tempFile);
         }
 
-        log.info("Cropped asset {} as {} → {}", assetId, request.formatKey(), outputFileName);
-        return catalogFolderPort.createAsset(folderPath, outputFileName);
+        return assetRepository.findByFolderAndFileName(asset.getFolder(), outputFileName)
+                .orElseGet(() -> {
+                    log.info("Cropped asset {} as {} → {}", assetId, request.formatKey(), outputFileName);
+                    return catalogFolderPort.createAsset(folderPath, outputFileName);
+                });
     }
 
     private void validateCropBounds(CropAssetRequest request, int imgWidth, int imgHeight) {

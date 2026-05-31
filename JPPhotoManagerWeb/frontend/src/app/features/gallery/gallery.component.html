@@ -302,6 +302,10 @@
             </div>
           } @else if (isVideoFile(currentViewerAsset)) {
             <video [src]="'/api/assets/' + currentViewerAsset.assetId + '/stream'" controls class="viewer-video"></video>
+          } @else if (showCropOverlay) {
+            <app-social-media-crop
+              [asset]="currentViewerAsset"
+              (cancelled)="showCropOverlay = false" />
           } @else {
             <img
               [src]="currentViewerAsset.imageUrl"
@@ -320,13 +324,6 @@
           (closed)="showExifPanel = false"
         />
       </div>
-    }
-
-    <!-- Social Media Crop Overlay -->
-    @if (showCropOverlay && currentViewerAsset) {
-      <app-social-media-crop
-        [asset]="currentViewerAsset"
-        (cancelled)="showCropOverlay = false" />
     }
 
     <!-- Slideshow -->

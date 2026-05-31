@@ -1,13 +1,20 @@
+:host {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .crop-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: rgba(0, 0, 0, 0.88);
+  background: #000;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 16px;
+  flex: 1;
+  min-height: 0;
+  padding: 16px;
 }
 
 .crop-controls {
@@ -28,7 +35,7 @@
 
 canvas {
   display: block;
-  max-width: 95vw;
+  max-width: 95%;
   max-height: 70vh;
   cursor: crosshair;
   user-select: none;
