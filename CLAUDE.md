@@ -135,7 +135,7 @@ mvn test
 **Run unit + integration tests** (requires Docker for Testcontainers):
 ```bash
 cd JPPhotoManagerWeb/backend
-mvn verify
+mvn verify -Pintegration-tests
 ```
 
 **Run a single test class:**
