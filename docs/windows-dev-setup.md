@@ -161,7 +161,7 @@ Node.js is required to build and run the Angular 19 frontend. The project requir
 choco install nodejs-lts -y
 ```
 
-> This always installs the current LTS release. As of 2025, that is Node.js 22.
+> This always installs the current LTS release. As of 2026, that is Node.js 24.
 
 ### Option B – Download manually
 
