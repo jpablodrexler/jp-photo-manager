@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager;
 import com.jpablodrexler.photomanager.application.dto.AlbumData;
 import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
 import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.SmartAlbumMembershipException;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.model.User;
@@ -85,7 +86,7 @@ class AlbumServiceIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void createAlbum_andAddAssets_getAlbumAssetsReturnsCorrectPage() {
-        AlbumData album = createAlbumUseCase.execute(testUserId, "My Album", "desc");
+        AlbumData album = createAlbumUseCase.execute(testUserId, "My Album", "desc", null);
         assertThat(album.albumId()).isNotNull();
 
         addAssetsToAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId(), asset2.getAssetId()));
@@ -98,7 +99,7 @@ class AlbumServiceIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void addAssets_duplicate_isIdempotent() {
-        AlbumData album = createAlbumUseCase.execute(testUserId, "Album", null);
+        AlbumData album = createAlbumUseCase.execute(testUserId, "Album", null, null);
         addAssetsToAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId()));
         addAssetsToAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId()));
 
@@ -108,7 +109,7 @@ class AlbumServiceIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void removeAsset_decrementCount() {
-        AlbumData album = createAlbumUseCase.execute(testUserId, "Album", null);
+        AlbumData album = createAlbumUseCase.execute(testUserId, "Album", null, null);
         addAssetsToAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId(), asset2.getAssetId()));
 
         removeAssetsFromAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId()));
@@ -120,7 +121,7 @@ class AlbumServiceIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void deleteAlbum_albumNoLongerFound() {
-        AlbumData album = createAlbumUseCase.execute(testUserId, "Temp Album", null);
+        AlbumData album = createAlbumUseCase.execute(testUserId, "Temp Album", null, null);
         Long albumId = album.albumId();
 
         deleteAlbumUseCase.execute(albumId, testUserId);
@@ -132,5 +133,30 @@ class AlbumServiceIntegrationTest extends PostgresIntegrationTest {
     void getAlbumAssets_unknownAlbum_throwsAlbumNotFoundException() {
         assertThatThrownBy(() -> getAlbumUseCase.executeAssets(99999L, testUserId, 0))
                 .isInstanceOf(AlbumNotFoundException.class);
+    }
+
+    @Test
+    void smartAlbum_returnsFilteredAssets() {
+        asset1.setRating(4);
+        asset1 = assetRepository.save(asset1);
+        asset2.setRating(3);
+        asset2 = assetRepository.save(asset2);
+
+        AlbumData album = createAlbumUseCase.execute(testUserId, "High Rated", null, "{\"minRating\":4}");
+        assertThat(album.filterJson()).isNotNull();
+
+        PaginatedResult<Asset> page = getAlbumUseCase.executeAssets(album.albumId(), testUserId, 0);
+        assertThat(page.total()).isEqualTo(1);
+        assertThat(page.items().get(0).getAssetId()).isEqualTo(asset1.getAssetId());
+        assertThat(albumRepository.countAssets(album.albumId())).isZero();
+    }
+
+    @Test
+    void addAssets_toSmartAlbum_throwsSmartAlbumMembershipException() {
+        AlbumData album = createAlbumUseCase.execute(testUserId, "Smart", null, "{\"minRating\":4}");
+
+        assertThatThrownBy(() -> addAssetsToAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId())))
+                .isInstanceOf(SmartAlbumMembershipException.class);
+        assertThat(albumRepository.countAssets(album.albumId())).isZero();
     }
 }

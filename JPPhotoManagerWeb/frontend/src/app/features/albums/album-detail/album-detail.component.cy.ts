@@ -5,7 +5,7 @@ import { provideRouter } from '@angular/router';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlbumDetailComponent } from './album-detail.component';
 import { AlbumService } from '../../../core/services/album.service';
-import { Album } from '../../../core/models/album.model';
+import { Album, AlbumFilterJson } from '../../../core/models/album.model';
 import { Asset } from '../../../core/models/asset.model';
 
 describe('AlbumDetailComponent', () => {
@@ -25,10 +25,20 @@ describe('AlbumDetailComponent', () => {
     assets: { items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 3 }
   };
 
-  function mountDetail(albumServiceOverrides: Partial<AlbumService> = {}) {
+  const smartAlbum: Album = {
+    albumId: ALBUM_ID,
+    name: 'Smart Album',
+    description: null,
+    createdAt: '2024-01-01T00:00:00Z',
+    assets: { items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 3 },
+    filterJson: { minRating: 4 }
+  };
+
+  function mountDetail(album: Album = mockAlbum, albumServiceOverrides: Partial<AlbumService> = {}) {
     const serviceStub: Partial<AlbumService> = {
-      getAlbum: cy.stub().returns(of(mockAlbum)),
+      getAlbum: cy.stub().returns(of(album)),
       removeAssets: cy.stub().returns(of(undefined)),
+      updateAlbum: cy.stub().returns(of({ albumId: ALBUM_ID, name: album.name, description: null, assetCount: 3, createdAt: '2024-01-01T00:00:00Z' })),
       ...albumServiceOverrides
     };
     return mount(AlbumDetailComponent, {
@@ -55,6 +65,34 @@ describe('AlbumDetailComponent', () => {
       component.albumId = ALBUM_ID;
       component.removeAsset(mockAssets[0].assetId);
       cy.wrap(serviceStub.removeAssets).should('have.been.calledWith', ALBUM_ID, [mockAssets[0].assetId]);
+    });
+  });
+
+  it('smartAlbumDetail_showsBannerAndHidesRemoveButton', () => {
+    mountDetail(smartAlbum);
+    cy.get('.smart-album-banner').should('exist').and('contain.text', 'Smart album');
+    cy.get('.remove-btn').should('not.exist');
+  });
+
+  it('staticAlbumDetail_showsRemoveButtonAndNoBanner', () => {
+    mountDetail(mockAlbum);
+    cy.get('.smart-album-banner').should('not.exist');
+    cy.get('.remove-btn').should('exist');
+  });
+
+  it('smartAlbumDetail_editFilter_callsUpdateAlbum', () => {
+    const updatedFilter: AlbumFilterJson = { minRating: 4 };
+    const dialogRef = { afterClosed: () => of(updatedFilter) };
+    mountDetail(smartAlbum).then(({ component, serviceStub }) => {
+      component.albumId = ALBUM_ID;
+      component.album = smartAlbum;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (component as any).dialog = { open: () => dialogRef };
+      component.openEditFilterDialog();
+      cy.wrap(serviceStub.updateAlbum).should('have.been.calledWith', ALBUM_ID, {
+        name: 'Smart Album',
+        filterJson: updatedFilter
+      });
     });
   });
 });

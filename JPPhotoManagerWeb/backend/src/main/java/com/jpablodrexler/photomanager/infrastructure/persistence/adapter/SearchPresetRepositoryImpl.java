@@ -34,7 +34,7 @@ public class SearchPresetRepositoryImpl implements SearchPresetRepository {
     @Override
     @Transactional
     public SearchPreset save(SearchPreset preset) {
-        throw new UnsupportedOperationException("SearchPreset save not yet implemented");
+        return mapper.toDomain(jpa.save(mapper.toEntity(preset)));
     }
 
     @Override

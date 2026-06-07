@@ -21,7 +21,7 @@ public class CreateAlbumUseCaseImpl implements CreateAlbumUseCase {
 
     @Override
     @Transactional
-    public AlbumData execute(UUID userId, String name, String description) {
+    public AlbumData execute(UUID userId, String name, String description, String filterJson) {
         userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
         Album album = new Album();
@@ -29,7 +29,8 @@ public class CreateAlbumUseCaseImpl implements CreateAlbumUseCase {
         album.setName(name);
         album.setDescription(description);
         album.setCreatedAt(Instant.now());
+        album.setFilterJson(filterJson);
         Album saved = albumRepository.save(album);
-        return new AlbumData(saved.getAlbumId(), saved.getName(), saved.getDescription(), saved.getCreatedAt(), 0L);
+        return new AlbumData(saved.getAlbumId(), saved.getName(), saved.getDescription(), saved.getCreatedAt(), 0L, saved.getFilterJson());
     }
 }

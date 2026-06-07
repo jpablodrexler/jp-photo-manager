@@ -21,6 +21,7 @@ public class Album {
     private String name;
     private String description;
     private Instant createdAt;
+    private String filterJson;
     @Builder.Default
     private List<Asset> assets = new ArrayList<>();
 }

@@ -1,6 +1,9 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpablodrexler.photomanager.application.dto.AlbumData;
+import com.jpablodrexler.photomanager.application.dto.AlbumFilterJson;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
 import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
@@ -53,6 +56,7 @@ public class AlbumController {
     private final UserRepository userRepository;
     private final AlbumWebMapper albumWebMapper;
     private final AssetWebMapper assetWebMapper;
+    private final ObjectMapper objectMapper;
 
     @Operation(summary = "List albums for the authenticated user")
     @ApiResponses({
@@ -73,7 +77,7 @@ public class AlbumController {
     })
     @PostMapping
     public ResponseEntity<AlbumSummaryDto> createAlbum(@Valid @RequestBody CreateAlbumRequest request) {
-        AlbumData album = createAlbumUseCase.execute(resolveUserId(), request.name(), request.description());
+        AlbumData album = createAlbumUseCase.execute(resolveUserId(), request.name(), request.description(), serializeFilterJson(request.filterJson()));
         return ResponseEntity.status(HttpStatus.CREATED).body(albumWebMapper.toSummaryDto(album));
     }
 
@@ -101,6 +105,7 @@ public class AlbumController {
             dto.setDescription(summary.description());
             dto.setCreatedAt(summary.createdAt());
             dto.setAssets(assetDtos);
+            dto.setFilterJson(deserializeFilterJson(summary.filterJson()));
             return ResponseEntity.ok(dto);
         } catch (AlbumNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -118,7 +123,7 @@ public class AlbumController {
     public ResponseEntity<AlbumSummaryDto> updateAlbum(@PathVariable Long id,
                                                         @Valid @RequestBody UpdateAlbumRequest request) {
         try {
-            AlbumData updated = updateAlbumUseCase.execute(id, resolveUserId(), request.name(), request.description());
+            AlbumData updated = updateAlbumUseCase.execute(id, resolveUserId(), request.name(), request.description(), serializeFilterJson(request.filterJson()));
             return ResponseEntity.ok(albumWebMapper.toSummaryDto(updated));
         } catch (AlbumNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -145,7 +150,8 @@ public class AlbumController {
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Assets added"),
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
-        @ApiResponse(responseCode = "404", description = "Album not found")
+        @ApiResponse(responseCode = "404", description = "Album not found"),
+        @ApiResponse(responseCode = "422", description = "Smart album — manual membership forbidden")
     })
     @PostMapping("/{id}/assets")
     public ResponseEntity<Void> addAssets(@PathVariable Long id,
@@ -162,7 +168,8 @@ public class AlbumController {
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Assets removed"),
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
-        @ApiResponse(responseCode = "404", description = "Album not found")
+        @ApiResponse(responseCode = "404", description = "Album not found"),
+        @ApiResponse(responseCode = "422", description = "Smart album — manual membership forbidden")
     })
     @DeleteMapping("/{id}/assets")
     public ResponseEntity<Void> removeAssets(@PathVariable Long id,
@@ -180,5 +187,23 @@ public class AlbumController {
         return userRepository.findByUsername(username)
                 .map(User::getId)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + username));
+    }
+
+    private String serializeFilterJson(AlbumFilterJson filterJson) {
+        if (filterJson == null) return null;
+        try {
+            return objectMapper.writeValueAsString(filterJson);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize filterJson", e);
+        }
+    }
+
+    private AlbumFilterJson deserializeFilterJson(String filterJson) {
+        if (filterJson == null) return null;
+        try {
+            return objectMapper.readValue(filterJson, AlbumFilterJson.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to deserialize filterJson", e);
+        }
     }
 }

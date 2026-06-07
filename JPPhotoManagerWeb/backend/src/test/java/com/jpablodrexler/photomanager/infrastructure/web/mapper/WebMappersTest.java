@@ -83,7 +83,7 @@ class WebMappersTest {
     @Test
     void albumWebMapper_toSummaryDto_mapsAllFields() {
         Instant now = Instant.now();
-        AlbumData data = new AlbumData(10L, "Vacation", "Summer 2024", now, 42L);
+        AlbumData data = new AlbumData(10L, "Vacation", "Summer 2024", now, 42L, null);
 
         AlbumSummaryDto dto = albumWebMapper.toSummaryDto(data);
 

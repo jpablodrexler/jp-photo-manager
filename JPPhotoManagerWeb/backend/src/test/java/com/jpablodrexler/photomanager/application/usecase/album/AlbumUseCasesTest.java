@@ -1,8 +1,11 @@
 package com.jpablodrexler.photomanager.application.usecase.album;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpablodrexler.photomanager.application.dto.AlbumData;
+import com.jpablodrexler.photomanager.application.dto.AssetFilter;
 import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
 import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.SmartAlbumMembershipException;
 import com.jpablodrexler.photomanager.domain.model.Album;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.User;
@@ -11,8 +14,10 @@ import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -60,6 +65,18 @@ class AlbumUseCasesTest {
                     .isInstanceOf(AlbumNotFoundException.class);
             verify(albumRepository, never()).addAssets(any(), any());
         }
+
+        @Test
+        void addAssetsToSmartAlbum_throws422() {
+            Long albumId = 7L;
+            UUID userId = UUID.randomUUID();
+            Album album = Album.builder().albumId(albumId).userId(userId).filterJson("{\"minRating\":3}").build();
+            when(albumRepository.findByIdAndUserId(albumId, userId)).thenReturn(Optional.of(album));
+
+            assertThatThrownBy(() -> sut.execute(albumId, userId, List.of(101L, 102L)))
+                    .isInstanceOf(SmartAlbumMembershipException.class);
+            verify(albumRepository, never()).addAssets(any(), any());
+        }
     }
 
     @Nested
@@ -79,7 +96,7 @@ class AlbumUseCasesTest {
             when(userRepository.findById(userId)).thenReturn(Optional.of(user));
             when(albumRepository.save(any())).thenReturn(saved);
 
-            AlbumData result = sut.execute(userId, "Vacation", "desc");
+            AlbumData result = sut.execute(userId, "Vacation", "desc", null);
 
             assertThat(result.albumId()).isEqualTo(5L);
             assertThat(result.name()).isEqualTo("Vacation");
@@ -92,9 +109,26 @@ class AlbumUseCasesTest {
             UUID userId = UUID.randomUUID();
             when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> sut.execute(userId, "Album", null))
+            assertThatThrownBy(() -> sut.execute(userId, "Album", null, null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining(userId.toString());
+        }
+
+        @Test
+        void createAlbum_withFilterJson_storesSerializedJson() {
+            UUID userId = UUID.randomUUID();
+            User user = User.builder().id(userId).username("alice").build();
+            String filterJsonStr = "{\"minRating\":4}";
+            Instant now = Instant.now();
+            Album saved = Album.builder().albumId(10L).userId(userId).name("Top Picks").createdAt(now).filterJson(filterJsonStr).build();
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            ArgumentCaptor<Album> captor = ArgumentCaptor.forClass(Album.class);
+            when(albumRepository.save(captor.capture())).thenReturn(saved);
+
+            AlbumData result = sut.execute(userId, "Top Picks", null, filterJsonStr);
+
+            assertThat(captor.getValue().getFilterJson()).isEqualTo(filterJsonStr);
+            assertThat(result.filterJson()).isEqualTo(filterJsonStr);
         }
     }
 
@@ -134,6 +168,7 @@ class AlbumUseCasesTest {
     class GetAlbumsUseCaseImplTest {
 
         @Mock AlbumRepository albumRepository;
+        @Spy ObjectMapper objectMapper = new ObjectMapper();
         @InjectMocks GetAlbumsUseCaseImpl sut;
 
         @Test
@@ -161,6 +196,7 @@ class AlbumUseCasesTest {
     class GetAlbumUseCaseImplTest {
 
         @Mock AlbumRepository albumRepository;
+        @Spy ObjectMapper objectMapper = new ObjectMapper();
         @InjectMocks GetAlbumUseCaseImpl sut;
 
         @Test
@@ -188,7 +224,7 @@ class AlbumUseCasesTest {
         }
 
         @Test
-        void executeAssets_albumFound_returnsPaginatedResult() {
+        void executeAssets_staticAlbum_callsJoinTable() {
             Long albumId = 1L;
             UUID userId = UUID.randomUUID();
             Album album = Album.builder().albumId(albumId).build();
@@ -199,6 +235,24 @@ class AlbumUseCasesTest {
             PaginatedResult<Asset> result = sut.executeAssets(albumId, userId, 0);
 
             assertThat(result).isEqualTo(paginated);
+            verify(albumRepository).findAssetsByAlbumId(eq(albumId), eq(0), eq(50));
+            verify(albumRepository, never()).findSmartAlbumAssets(any(), eq(0), eq(50));
+        }
+
+        @Test
+        void getAlbumAssets_smartAlbum_callsSmartAlbumAssets() {
+            Long albumId = 2L;
+            UUID userId = UUID.randomUUID();
+            Album album = Album.builder().albumId(albumId).filterJson("{\"minRating\":4}").build();
+            PaginatedResult<Asset> paginated = new PaginatedResult<>(List.of(), 0L, 0, 50);
+            when(albumRepository.findByIdAndUserId(albumId, userId)).thenReturn(Optional.of(album));
+            when(albumRepository.findSmartAlbumAssets(any(AssetFilter.class), eq(0), eq(50))).thenReturn(paginated);
+
+            PaginatedResult<Asset> result = sut.executeAssets(albumId, userId, 0);
+
+            assertThat(result).isEqualTo(paginated);
+            verify(albumRepository).findSmartAlbumAssets(any(AssetFilter.class), eq(0), eq(50));
+            verify(albumRepository, never()).findAssetsByAlbumId(any(), eq(0), eq(50));
         }
     }
 
@@ -207,6 +261,7 @@ class AlbumUseCasesTest {
     class UpdateAlbumUseCaseImplTest {
 
         @Mock AlbumRepository albumRepository;
+        @Spy ObjectMapper objectMapper = new ObjectMapper();
         @InjectMocks UpdateAlbumUseCaseImpl sut;
 
         @Test
@@ -219,7 +274,7 @@ class AlbumUseCasesTest {
             when(albumRepository.save(album)).thenReturn(saved);
             when(albumRepository.countAssets(albumId)).thenReturn(5L);
 
-            AlbumData result = sut.execute(albumId, userId, "New", "d");
+            AlbumData result = sut.execute(albumId, userId, "New", "d", null);
 
             assertThat(result.name()).isEqualTo("New");
             assertThat(result.assetCount()).isEqualTo(5L);
@@ -230,7 +285,7 @@ class AlbumUseCasesTest {
             UUID userId = UUID.randomUUID();
             when(albumRepository.findByIdAndUserId(99L, userId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> sut.execute(99L, userId, "Name", null))
+            assertThatThrownBy(() -> sut.execute(99L, userId, "Name", null, null))
                     .isInstanceOf(AlbumNotFoundException.class);
         }
     }
@@ -262,6 +317,18 @@ class AlbumUseCasesTest {
 
             assertThatThrownBy(() -> sut.execute(99L, userId, List.of(1L)))
                     .isInstanceOf(AlbumNotFoundException.class);
+            verify(albumRepository, never()).removeAssets(any(), any());
+        }
+
+        @Test
+        void removeAssetsFromSmartAlbum_throws422() {
+            Long albumId = 7L;
+            UUID userId = UUID.randomUUID();
+            Album album = Album.builder().albumId(albumId).userId(userId).filterJson("{\"minRating\":3}").build();
+            when(albumRepository.findByIdAndUserId(albumId, userId)).thenReturn(Optional.of(album));
+
+            assertThatThrownBy(() -> sut.execute(albumId, userId, List.of(101L)))
+                    .isInstanceOf(SmartAlbumMembershipException.class);
             verify(albumRepository, never()).removeAssets(any(), any());
         }
     }

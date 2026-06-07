@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.application.usecase.album;
 
 import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.SmartAlbumMembershipException;
 import com.jpablodrexler.photomanager.domain.port.in.album.RemoveAssetsFromAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AlbumRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +20,11 @@ public class RemoveAssetsFromAlbumUseCaseImpl implements RemoveAssetsFromAlbumUs
     @Override
     @Transactional
     public void execute(Long albumId, UUID userId, List<Long> assetIds) {
-        albumRepository.findByIdAndUserId(albumId, userId)
+        var album = albumRepository.findByIdAndUserId(albumId, userId)
                 .orElseThrow(() -> new AlbumNotFoundException(albumId));
+        if (album.getFilterJson() != null) {
+            throw new SmartAlbumMembershipException("remove");
+        }
         albumRepository.removeAssets(albumId, assetIds);
     }
 }

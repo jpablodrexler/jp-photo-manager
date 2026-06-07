@@ -3,6 +3,8 @@ package com.jpablodrexler.photomanager.infrastructure.persistence.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -30,6 +32,10 @@ public class AlbumEntity {
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
+
+    @Column(name = "filter_json", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String filterJson;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

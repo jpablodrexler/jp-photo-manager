@@ -7,5 +7,6 @@ public record AlbumData(
         String name,
         String description,
         Instant createdAt,
-        long assetCount
+        long assetCount,
+        String filterJson
 ) {}

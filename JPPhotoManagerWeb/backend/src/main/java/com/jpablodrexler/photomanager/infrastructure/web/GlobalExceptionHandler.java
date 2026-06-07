@@ -2,6 +2,7 @@ package com.jpablodrexler.photomanager.infrastructure.web;
 
 import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.SearchPresetNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.SmartAlbumMembershipException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -12,11 +13,19 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(SmartAlbumMembershipException.class)
+    public ResponseEntity<Map<String, String>> handleSmartAlbumMembership(SmartAlbumMembershipException ex) {
+        log.warn("Smart album membership error: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                .body(Map.of("code", "SMART_ALBUM_MEMBERSHIP_FORBIDDEN", "message", ex.getMessage()));
+    }
 
     @ExceptionHandler(SearchPresetNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleSearchPresetNotFound(SearchPresetNotFoundException ex) {

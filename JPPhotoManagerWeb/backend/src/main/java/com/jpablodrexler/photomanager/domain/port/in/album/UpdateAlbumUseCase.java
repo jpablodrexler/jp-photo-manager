@@ -4,5 +4,5 @@ import com.jpablodrexler.photomanager.application.dto.AlbumData;
 import java.util.UUID;
 
 public interface UpdateAlbumUseCase {
-    AlbumData execute(Long albumId, UUID userId, String name, String description);
+    AlbumData execute(Long albumId, UUID userId, String name, String description, String filterJson);
 }

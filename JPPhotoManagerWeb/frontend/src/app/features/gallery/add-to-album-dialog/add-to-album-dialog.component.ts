@@ -7,6 +7,7 @@ import { MatRadioModule } from '@angular/material/radio';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatListModule } from '@angular/material/list';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { AlbumSummary } from '../../../core/models/album.model';
 
 export interface AddToAlbumDialogData {
@@ -29,7 +30,8 @@ export interface AddToAlbumDialogResult {
     MatRadioModule,
     MatInputModule,
     MatFormFieldModule,
-    MatListModule
+    MatListModule,
+    MatTooltipModule
   ],
   template: `
     <h2 mat-dialog-title>Add to Album</h2>
@@ -38,7 +40,11 @@ export interface AddToAlbumDialogResult {
         <p>Select an existing album:</p>
         <mat-radio-group [(ngModel)]="selectedAlbumId" class="album-radio-group">
           @for (album of data.albums; track album.albumId) {
-            <mat-radio-button [value]="album.albumId">
+            <mat-radio-button
+              [value]="album.albumId"
+              [disabled]="isSmartAlbum(album)"
+              [matTooltip]="isSmartAlbum(album) ? 'Smart album — managed automatically' : ''"
+            >
               {{ album.name }} ({{ album.assetCount }} photos)
             </mat-radio-button>
           }
@@ -69,6 +75,10 @@ export class AddToAlbumDialogComponent {
     public dialogRef: MatDialogRef<AddToAlbumDialogComponent, AddToAlbumDialogResult>,
     @Inject(MAT_DIALOG_DATA) public data: AddToAlbumDialogData
   ) {}
+
+  isSmartAlbum(album: AlbumSummary): boolean {
+    return album.filterJson != null;
+  }
 
   confirm(): void {
     if (this.newAlbumName.trim()) {

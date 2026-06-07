@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.web.dto;
 
+import com.jpablodrexler.photomanager.application.dto.AlbumFilterJson;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import lombok.Data;
 
@@ -12,4 +13,5 @@ public class AlbumDto {
     private String description;
     private Instant createdAt;
     private PaginatedData<AssetDto> assets;
+    private AlbumFilterJson filterJson;
 }

@@ -43,4 +43,49 @@ describe('AlbumsComponent', () => {
       cy.wrap(serviceStub.deleteAlbum).should('have.been.calledWith', mockAlbums[0].albumId);
     });
   });
+
+  it('smartAlbum_showsSmartBadge', () => {
+    const albumsWithSmart: AlbumSummary[] = [
+      { albumId: 1, name: 'Static Album', description: null, assetCount: 5, createdAt: '2024-01-01T00:00:00Z', filterJson: null },
+      { albumId: 2, name: 'Smart Album', description: null, assetCount: 10, createdAt: '2024-01-01T00:00:00Z', filterJson: { minRating: 4 } }
+    ];
+    const serviceStub: Partial<AlbumService> = {
+      getAlbums: cy.stub().returns(of(albumsWithSmart)),
+      createAlbum: cy.stub().returns(of(albumsWithSmart[0])),
+      deleteAlbum: cy.stub().returns(of(undefined))
+    };
+    mount(AlbumsComponent, {
+      providers: [
+        { provide: AlbumService, useValue: serviceStub },
+        provideNoopAnimations(),
+        provideRouter([])
+      ]
+    });
+    cy.get('mat-chip').should('have.length', 1).and('contain.text', 'Smart');
+    cy.contains('Static Album').closest('mat-card').find('mat-chip').should('not.exist');
+    cy.contains('Smart Album').closest('mat-card').find('mat-chip').should('contain.text', 'Smart');
+  });
+
+  it('createAlbumForm_smartToggle_showsFilterFields', () => {
+    const smartAlbum: AlbumSummary = { albumId: 3, name: 'Top Picks', description: null, assetCount: 0, createdAt: '2024-01-01T00:00:00Z', filterJson: { minRating: 4 } };
+    const createStub = cy.stub().returns(of(smartAlbum));
+    const serviceStub: Partial<AlbumService> = {
+      getAlbums: cy.stub().returns(of([])),
+      createAlbum: createStub,
+      deleteAlbum: cy.stub().returns(of(undefined))
+    };
+    mount(AlbumsComponent, {
+      providers: [
+        { provide: AlbumService, useValue: serviceStub },
+        provideNoopAnimations(),
+        provideRouter([])
+      ]
+    });
+    cy.get('button[title="New album"]').click();
+    cy.get('mat-slide-toggle button').click();
+    cy.get('.smart-filter-fields').should('exist');
+    cy.get('.create-form input').first().type('Top Picks');
+    cy.get('button').contains('Create').click();
+    cy.wrap(createStub).should('have.been.called');
+  });
 });

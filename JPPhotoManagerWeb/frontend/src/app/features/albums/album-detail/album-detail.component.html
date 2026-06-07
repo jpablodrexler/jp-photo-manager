@@ -6,18 +6,28 @@
     <span>{{ album.name }}</span>
   </mat-toolbar>
 
+  @if (isSmartAlbum()) {
+    <mat-card class="smart-album-banner">
+      <mat-icon>auto_awesome</mat-icon>
+      Smart album — contents are populated automatically based on: {{ filterSummary() }}
+      <button mat-button (click)="openEditFilterDialog()">Edit filter</button>
+    </mat-card>
+  }
+
   <div class="thumbnail-grid">
     @for (asset of album.assets.items; track asset.assetId) {
       <div class="asset-wrapper">
         <app-thumbnail [asset]="asset" />
-        <button
-          mat-icon-button
-          class="remove-btn"
-          (click)="removeAsset(asset.assetId)"
-          title="Remove from album"
-        >
-          <mat-icon>remove_circle</mat-icon>
-        </button>
+        @if (!isSmartAlbum()) {
+          <button
+            mat-icon-button
+            class="remove-btn"
+            (click)="removeAsset(asset.assetId)"
+            title="Remove from album"
+          >
+            <mat-icon>remove_circle</mat-icon>
+          </button>
+        }
       </div>
     }
     @if (album.assets.items.length === 0) {

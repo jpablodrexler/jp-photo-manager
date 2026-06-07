@@ -1,12 +1,50 @@
 .create-form {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
   padding: 16px;
 
   mat-form-field {
     flex: 1;
     max-width: 400px;
+  }
+}
+
+.create-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.smart-filter-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding-left: 8px;
+
+  mat-form-field {
+    max-width: 200px;
+  }
+}
+
+.filter-rating {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+
+  .filter-star {
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.4);
+
+    &.active {
+      color: #f5a623;
+    }
+  }
+
+  .filter-rating-label {
+    margin-left: 8px;
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.6);
   }
 }
 

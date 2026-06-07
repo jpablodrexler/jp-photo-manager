@@ -90,7 +90,9 @@ public interface JpaAssetRepository extends JpaRepository<AssetEntity, Long>, Jp
                 root.fetch("folder", JoinType.INNER);
             }
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("folder"), folder));
+            if (folder != null) {
+                predicates.add(cb.equal(root.get("folder"), folder));
+            }
             predicates.add(cb.isNull(root.get("deletedAt")));
             if (search != null) {
                 predicates.add(cb.like(cb.lower(root.get("fileName")), search));

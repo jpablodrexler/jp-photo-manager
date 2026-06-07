@@ -1,18 +1,23 @@
 package com.jpablodrexler.photomanager.infrastructure.persistence.adapter;
 
+import com.jpablodrexler.photomanager.application.dto.AssetFilter;
 import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Album;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.out.AlbumRepository;
 import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.JpaAlbumRepository;
+import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.JpaAssetRepository;
 import com.jpablodrexler.photomanager.infrastructure.persistence.mapper.AlbumEntityMapper;
 import com.jpablodrexler.photomanager.infrastructure.persistence.mapper.AssetEntityMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,6 +29,7 @@ public class AlbumRepositoryImpl implements AlbumRepository {
     private static final int PAGE_SIZE = 100;
 
     private final JpaAlbumRepository jpa;
+    private final JpaAssetRepository jpaAssetRepository;
     private final AlbumEntityMapper albumMapper;
     private final AssetEntityMapper assetMapper;
 
@@ -83,5 +89,21 @@ public class AlbumRepositoryImpl implements AlbumRepository {
         for (Long assetId : assetIds) {
             jpa.removeAsset(albumId, assetId);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginatedResult<Asset> findSmartAlbumAssets(AssetFilter filter, int page, int pageSize) {
+        int size = pageSize > 0 ? pageSize : PAGE_SIZE;
+        String search = (filter.search() != null && !filter.search().isBlank())
+                ? "%" + filter.search().trim().toLowerCase() + "%" : null;
+        LocalDateTime dateFrom = filter.dateFrom() != null ? filter.dateFrom().atStartOfDay() : null;
+        LocalDateTime dateTo = filter.dateTo() != null ? filter.dateTo().atTime(LocalTime.MAX) : null;
+        Integer minRating = (filter.minRating() != null && filter.minRating() > 0) ? filter.minRating() : null;
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("fileName").ascending());
+        Page<com.jpablodrexler.photomanager.infrastructure.persistence.entity.AssetEntity> entityPage =
+                jpaAssetRepository.findWithFilters(null, search, dateFrom, dateTo, minRating, filter.tags(), pageRequest);
+        List<Asset> items = entityPage.getContent().stream().map(assetMapper::toDomain).toList();
+        return new PaginatedResult<>(items, entityPage.getTotalElements(), page, size);
     }
 }

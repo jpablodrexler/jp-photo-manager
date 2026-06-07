@@ -14,10 +14,12 @@ public interface AlbumEntityMapper {
 
     @Mapping(source = "user.id", target = "userId")
     @Mapping(target = "assets", expression = "java(java.util.Collections.emptyList())")
+    @Mapping(source = "filterJson", target = "filterJson")
     Album toDomain(AlbumEntity entity);
 
     @Mapping(target = "user", source = "userId", qualifiedByName = "userIdToUserEntityRef")
     @Mapping(target = "assets", ignore = true)
+    @Mapping(source = "filterJson", target = "filterJson")
     AlbumEntity toEntity(Album domain);
 
     @Named("userIdToUserEntityRef")

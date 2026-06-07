@@ -1,3 +1,13 @@
+.smart-album-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin: 8px 16px;
+  background-color: rgba(103, 80, 164, 0.15);
+  border-left: 3px solid #7c4dff;
+}
+
 .thumbnail-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

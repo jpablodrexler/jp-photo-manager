@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.domain.port.out;
 
+import com.jpablodrexler.photomanager.application.dto.AssetFilter;
 import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Album;
 import com.jpablodrexler.photomanager.domain.model.Asset;
@@ -25,4 +26,6 @@ public interface AlbumRepository {
     void addAssets(Long albumId, List<Long> assetIds);
 
     void removeAssets(Long albumId, List<Long> assetIds);
+
+    PaginatedResult<Asset> findSmartAlbumAssets(AssetFilter filter, int page, int pageSize);
 }

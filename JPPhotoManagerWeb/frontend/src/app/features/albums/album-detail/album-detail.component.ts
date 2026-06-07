@@ -5,9 +5,12 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatCardModule } from '@angular/material/card';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ThumbnailComponent } from '../../../shared/components/thumbnail/thumbnail.component';
 import { AlbumService } from '../../../core/services/album.service';
-import { Album } from '../../../core/models/album.model';
+import { Album, AlbumFilterJson } from '../../../core/models/album.model';
+import { EditAlbumFilterDialogComponent } from './edit-album-filter-dialog.component';
 
 @Component({
   selector: 'app-album-detail',
@@ -19,6 +22,8 @@ import { Album } from '../../../core/models/album.model';
     MatButtonModule,
     MatIconModule,
     MatSnackBarModule,
+    MatCardModule,
+    MatDialogModule,
     ThumbnailComponent
   ],
   templateUrl: './album-detail.component.html',
@@ -34,7 +39,8 @@ export class AlbumDetailComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private albumService: AlbumService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -49,6 +55,38 @@ export class AlbumDetailComponent implements OnInit {
       error: () => {
         this.snackBar.open('Failed to load album', 'Dismiss', { duration: 3000 });
         this.router.navigate(['/albums']);
+      }
+    });
+  }
+
+  isSmartAlbum(): boolean {
+    return this.album?.filterJson != null;
+  }
+
+  filterSummary(): string {
+    const filter = this.album?.filterJson;
+    if (!filter) return '';
+    const parts: string[] = [];
+    if (filter.search) parts.push(`Search: ${filter.search}`);
+    if (filter.dateFrom) parts.push(`From: ${filter.dateFrom}`);
+    if (filter.dateTo) parts.push(`To: ${filter.dateTo}`);
+    if (filter.minRating) parts.push(`Min rating: ${filter.minRating}`);
+    return parts.join(', ') || 'No criteria';
+  }
+
+  openEditFilterDialog(): void {
+    const ref = this.dialog.open(EditAlbumFilterDialogComponent, {
+      data: { filterJson: this.album!.filterJson ?? {} }
+    });
+    ref.afterClosed().subscribe((result: AlbumFilterJson | null | undefined) => {
+      if (result !== null && result !== undefined) {
+        this.albumService.updateAlbum(this.albumId, {
+          name: this.album!.name,
+          filterJson: result
+        }).subscribe({
+          next: () => this.loadPage(0),
+          error: () => this.snackBar.open('Failed to update filter', 'Dismiss', { duration: 3000 })
+        });
       }
     });
   }
