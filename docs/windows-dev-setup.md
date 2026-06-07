@@ -59,8 +59,8 @@ iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocola
 
 ### Option B – Download the MSI installer
 
-An MSI installer for Chocolatey GUI (a graphical front-end) is available at:
-https://community.chocolatey.org/packages/ChocolateyGUI
+An MSI installer for Chocolatey is available at:
+https://github.com/chocolatey/choco/releases
 
 Verify Chocolatey is installed:
 
@@ -70,6 +70,11 @@ choco --version
 ```
 
 > **Tip:** After any `choco install` command, either restart your terminal or run `refreshenv` so the newly added paths are visible.
+
+### Chocolatey GUI MSI installer
+
+An MSI installer for Chocolatey GUI (a graphical front-end) is available at:
+https://community.chocolatey.org/packages/ChocolateyGUI
 
 ---
 
