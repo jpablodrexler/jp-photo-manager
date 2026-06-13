@@ -171,6 +171,17 @@ class AssetControllerTest {
     }
 
     @Test
+    void getThumbnail_thumbnailExists_returnsCacheControlImmutable() throws Exception {
+        when(thumbnailPort.loadThumbnail("42.bin"))
+                .thenReturn(new byte[]{(byte) 0xFF, (byte) 0xD8});
+
+        mockMvc.perform(get("/api/assets/42/thumbnail"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(org.springframework.http.HttpHeaders.CACHE_CONTROL,
+                        "public, max-age=31536000, immutable"));
+    }
+
+    @Test
     void getThumbnail_thumbnailMissing_returns404() throws Exception {
         when(thumbnailPort.loadThumbnail("99.bin")).thenReturn(null);
 
