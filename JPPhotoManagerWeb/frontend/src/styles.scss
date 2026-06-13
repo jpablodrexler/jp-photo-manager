@@ -28,12 +28,72 @@ html.theme-dark {
   @include mat.all-component-themes($dark-green-theme);
   background-color: #121212;
   color: rgba(255, 255, 255, 0.87);
+  --surface-sidebar: #1a1a1a;
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-faint: rgba(255, 255, 255, 0.06);
+  --text-primary: rgba(255, 255, 255, 0.87);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --text-disabled: rgba(255, 255, 255, 0.38);
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --hover-overlay: rgba(255, 255, 255, 0.06);
+  --thumbnail-bg: #1a1a1a;
+  --chip-text: #fff;
+  --chip-bg: rgba(255, 255, 255, 0.15);
+  --chip-icon: rgba(255, 255, 255, 0.7);
+  --input-text: #fff;
+  --input-placeholder: rgba(255, 255, 255, 0.4);
+
+  .folder-tree {
+    border-right: 1px solid var(--border-subtle);
+    background-color: var(--surface-sidebar);
+  }
+
+  .status-bar {
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    background: var(--surface-sidebar);
+  }
+
+  .thumbnail-card img {
+    background: var(--thumbnail-bg);
+  }
 }
 
 html.theme-light {
   @include mat.all-component-themes($light-green-theme);
   background-color: #fafafa;
   color: rgba(0, 0, 0, 0.87);
+  --surface-sidebar: #f5f5f5;
+  --border-subtle: rgba(0, 0, 0, 0.12);
+  --border-faint: rgba(0, 0, 0, 0.08);
+  --text-primary: rgba(0, 0, 0, 0.87);
+  --text-secondary: rgba(0, 0, 0, 0.6);
+  --text-muted: rgba(0, 0, 0, 0.54);
+  --text-disabled: rgba(0, 0, 0, 0.38);
+  --hover-bg: rgba(0, 0, 0, 0.04);
+  --hover-overlay: rgba(0, 0, 0, 0.06);
+  --thumbnail-bg: #e8e8e8;
+  --chip-text: rgba(0, 0, 0, 0.87);
+  --chip-bg: rgba(0, 0, 0, 0.08);
+  --chip-icon: rgba(0, 0, 0, 0.6);
+  --input-text: rgba(0, 0, 0, 0.87);
+  --input-placeholder: rgba(0, 0, 0, 0.4);
+
+  .folder-tree {
+    border-right: 1px solid var(--border-subtle);
+    background-color: var(--surface-sidebar);
+  }
+
+  .status-bar {
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    background: var(--surface-sidebar);
+  }
+
+  .thumbnail-card img {
+    background: var(--thumbnail-bg);
+  }
 }
 
 html, body {
@@ -95,7 +155,6 @@ html, body {
     width: 100%;
     height: 150px;
     object-fit: contain;
-    background: #1a1a1a;
   }
 }
 
@@ -103,9 +162,7 @@ html, body {
 .folder-tree {
   width: 280px;
   min-width: 280px;
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
   overflow-y: auto;
-  background-color: #1a1a1a;
 }
 
 /* Status bar */
@@ -115,10 +172,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-  background: #1a1a1a;
 }
 
 /* Viewer */
