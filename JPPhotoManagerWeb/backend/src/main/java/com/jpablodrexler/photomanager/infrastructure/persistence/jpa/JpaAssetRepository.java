@@ -82,6 +82,18 @@ public interface JpaAssetRepository extends JpaRepository<AssetEntity, Long>, Jp
     @Query("SELECT a.assetId as assetId, a.fileName as fileName, f.path as folderPath, a.fileSize as fileSize FROM AssetEntity a JOIN a.folder f WHERE a.deletedAt IS NULL ORDER BY a.thumbnailCreationDateTime DESC")
     List<AssetSummary> findRecentAssets(Pageable pageable);
 
+    @Query("SELECT f.path as folderPath, SUM(a.fileSize) as bytes FROM AssetEntity a JOIN a.folder f WHERE a.deletedAt IS NULL GROUP BY f.path ORDER BY SUM(a.fileSize) DESC")
+    List<FolderStorageProjection> sumFileSizeByFolder();
+
+    @Query("SELECT LOWER(SUBSTRING(a.fileName, LOCATE('.', a.fileName) + 1)) as extension, COUNT(a) as cnt FROM AssetEntity a WHERE a.deletedAt IS NULL AND LOCATE('.', a.fileName) > 0 GROUP BY LOWER(SUBSTRING(a.fileName, LOCATE('.', a.fileName) + 1)) ORDER BY COUNT(a) DESC")
+    List<FormatProjection> countByExtension();
+
+    @Query("SELECT FUNCTION('to_char', a.fileCreationDateTime, 'YYYY-MM') as month, COUNT(a) as cnt FROM AssetEntity a WHERE a.deletedAt IS NULL AND a.fileCreationDateTime IS NOT NULL GROUP BY FUNCTION('to_char', a.fileCreationDateTime, 'YYYY-MM') ORDER BY FUNCTION('to_char', a.fileCreationDateTime, 'YYYY-MM') ASC")
+    List<MonthlyCountProjection> countByCreationMonth();
+
+    @Query("SELECT a.rating as rating, COUNT(a) as cnt FROM AssetEntity a WHERE a.deletedAt IS NULL GROUP BY a.rating ORDER BY a.rating ASC")
+    List<RatingProjection> countByRating();
+
     default Page<AssetEntity> findWithFilters(FolderEntity folder, String search, LocalDateTime dateFrom,
                                               LocalDateTime dateTo, Integer minRating, Set<String> tags,
                                               Pageable pageable) {

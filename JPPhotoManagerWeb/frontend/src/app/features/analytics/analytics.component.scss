@@ -1,0 +1,27 @@
+.analytics-container {
+  padding: 24px;
+}
+
+.analytics-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.analytics-error {
+  max-width: 480px;
+  margin: 0 auto;
+
+  mat-card-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+  gap: 24px;
+}

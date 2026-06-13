@@ -5,6 +5,10 @@ import com.jpablodrexler.photomanager.application.dto.FolderStat;
 import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
+import com.jpablodrexler.photomanager.domain.model.FolderStorageEntry;
+import com.jpablodrexler.photomanager.domain.model.FormatEntry;
+import com.jpablodrexler.photomanager.domain.model.MonthlyCountEntry;
+import com.jpablodrexler.photomanager.domain.model.RatingEntry;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -61,4 +65,12 @@ public interface AssetRepository {
     List<FolderStat> findTopFoldersByAssetCount(int limit);
 
     List<Asset> findRecentAssets(int limit);
+
+    List<FolderStorageEntry> sumFileSizeByFolder();
+
+    List<FormatEntry> countByExtension();
+
+    List<MonthlyCountEntry> countByCreationMonth();
+
+    List<RatingEntry> countByRating();
 }

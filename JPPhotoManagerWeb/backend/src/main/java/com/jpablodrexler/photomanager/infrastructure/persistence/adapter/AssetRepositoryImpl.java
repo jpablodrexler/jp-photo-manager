@@ -5,6 +5,10 @@ import com.jpablodrexler.photomanager.application.dto.FolderStat;
 import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
+import com.jpablodrexler.photomanager.domain.model.FolderStorageEntry;
+import com.jpablodrexler.photomanager.domain.model.FormatEntry;
+import com.jpablodrexler.photomanager.domain.model.MonthlyCountEntry;
+import com.jpablodrexler.photomanager.domain.model.RatingEntry;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.AssetEntity;
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.FolderEntity;
@@ -239,6 +243,38 @@ public class AssetRepositoryImpl implements AssetRepository {
                         .folder(Folder.builder().path(s.getFolderPath()).build())
                         .fileSize(s.getFileSize())
                         .build())
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FolderStorageEntry> sumFileSizeByFolder() {
+        return jpa.sumFileSizeByFolder().stream()
+                .map(p -> new FolderStorageEntry(p.getFolderPath(), p.getBytes()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FormatEntry> countByExtension() {
+        return jpa.countByExtension().stream()
+                .map(p -> new FormatEntry(p.getExtension(), p.getCnt()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MonthlyCountEntry> countByCreationMonth() {
+        return jpa.countByCreationMonth().stream()
+                .map(p -> new MonthlyCountEntry(p.getMonth(), p.getCnt()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RatingEntry> countByRating() {
+        return jpa.countByRating().stream()
+                .map(p -> new RatingEntry(p.getRating(), p.getCnt()))
                 .toList();
     }
 }

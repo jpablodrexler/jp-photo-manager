@@ -65,5 +65,11 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/recycle-bin/recycle-bin.component').then(m => m.RecycleBinComponent),
     canActivate: [authGuard]
+  },
+  {
+    path: 'analytics',
+    loadComponent: () =>
+      import('./features/analytics/analytics.component').then(m => m.AnalyticsComponent),
+    canActivate: [authGuard]
   }
 ];

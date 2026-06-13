@@ -15,6 +15,7 @@
         <button mat-menu-item routerLink="/duplicates"><mat-icon>content_copy</mat-icon> Duplicates</button>
         <button mat-menu-item routerLink="/albums"><mat-icon>photo_album</mat-icon> Albums</button>
         <button mat-menu-item routerLink="/recycle-bin"><mat-icon>delete</mat-icon> Recycle Bin</button>
+        <button mat-menu-item routerLink="/analytics"><mat-icon>bar_chart</mat-icon> Analytics</button>
         <button mat-menu-item routerLink="/admin/users"><mat-icon>manage_accounts</mat-icon> Users</button>
         <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon> Logout</button>
         <button mat-menu-item (click)="openAbout()"><mat-icon>info</mat-icon> About</button>
@@ -41,6 +42,9 @@
       </a>
       <a mat-button routerLink="/recycle-bin" routerLinkActive="active">
         <mat-icon>delete</mat-icon> Recycle Bin
+      </a>
+      <a mat-button routerLink="/analytics" routerLinkActive="active">
+        <mat-icon>bar_chart</mat-icon> Analytics
       </a>
       <a mat-button routerLink="/admin/users" routerLinkActive="active">
         <mat-icon>manage_accounts</mat-icon> Users
