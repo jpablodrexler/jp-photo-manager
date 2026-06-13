@@ -74,6 +74,36 @@ class StorageServiceImplExifTest {
         }
     }
 
+    @Test
+    void getExifMetadata_jpegWithExif_populatesRawExif() throws IOException {
+        Path fixture = copyFixture("fixtures/test-with-exif.jpg", "test-with-exif.jpg");
+
+        ExifMetadata result = sut.getExifMetadata(fixture.toString());
+
+        assertThat(result.rawExif()).isNotNull();
+        assertThat(result.rawExif()).isNotEmpty();
+    }
+
+    @Test
+    void getExifMetadata_jpegWithExif_rawExifValuesDoNotExceed1000Chars() throws IOException {
+        Path fixture = copyFixture("fixtures/test-with-exif.jpg", "test-with-exif.jpg");
+
+        ExifMetadata result = sut.getExifMetadata(fixture.toString());
+
+        assertThat(result.rawExif()).isNotNull();
+        result.rawExif().values().forEach(value ->
+                assertThat(value.length()).as("rawExif value exceeds 1000 chars").isLessThanOrEqualTo(1000));
+    }
+
+    @Test
+    void getExifMetadata_pngFile_rawExifIsNull() throws IOException {
+        Path pngFile = createPngFile();
+
+        ExifMetadata result = sut.getExifMetadata(pngFile.toString());
+
+        assertThat(result.rawExif()).isNull();
+    }
+
     private Path createPngFile() throws IOException {
         BufferedImage img = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
         Path pngPath = tempDir.resolve("test.png");

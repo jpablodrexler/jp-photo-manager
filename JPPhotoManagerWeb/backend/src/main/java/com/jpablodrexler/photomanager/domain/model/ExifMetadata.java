@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.domain.model;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 public record ExifMetadata(
         String cameraMake,
@@ -14,5 +15,6 @@ public record ExifMetadata(
         Integer widthPixels,
         Integer heightPixels,
         Double gpsLatitude,
-        Double gpsLongitude
+        Double gpsLongitude,
+        Map<String, String> rawExif
 ) {}

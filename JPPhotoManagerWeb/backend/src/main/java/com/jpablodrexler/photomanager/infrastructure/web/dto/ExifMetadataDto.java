@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager.infrastructure.web.dto;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 public record ExifMetadataDto(
         String cameraMake,
@@ -16,7 +17,8 @@ public record ExifMetadataDto(
         Integer widthPixels,
         Integer heightPixels,
         Double gpsLatitude,
-        Double gpsLongitude
+        Double gpsLongitude,
+        Map<String, String> rawExif
 ) {
     public static ExifMetadataDto from(AssetExif exif) {
         if (exif == null) return null;
@@ -32,7 +34,8 @@ public record ExifMetadataDto(
                 exif.getWidthPixels(),
                 exif.getHeightPixels(),
                 exif.getGpsLatitude(),
-                exif.getGpsLongitude()
+                exif.getGpsLongitude(),
+                exif.getRawExif()
         );
     }
 }

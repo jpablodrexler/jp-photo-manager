@@ -108,4 +108,23 @@
   } @else {
     <div class="exif-empty">No EXIF data available</div>
   }
+
+  @if (exif?.rawExif) {
+    <mat-expansion-panel class="exif-raw-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title>All EXIF data</mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-form-field class="exif-filter-field" appearance="outline">
+        <input matInput placeholder="Search fields..." [(ngModel)]="filterText" />
+      </mat-form-field>
+      <div class="exif-raw-list">
+        @for (entry of filteredRawExif(); track entry.key) {
+          <div class="exif-raw-row">
+            <span class="exif-raw-key">{{ entry.key }}</span>
+            <span class="exif-raw-value">{{ entry.value }}</span>
+          </div>
+        }
+      </div>
+    </mat-expansion-panel>
+  }
 </div>

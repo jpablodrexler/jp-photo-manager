@@ -118,6 +118,78 @@
   }
 }
 
+.exif-raw-panel {
+  margin: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+
+  ::ng-deep .mat-expansion-panel-header-title {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  ::ng-deep .mat-expansion-indicator::after {
+    color: rgba(255, 255, 255, 0.6);
+  }
+}
+
+.exif-filter-field {
+  width: 100%;
+  font-size: 12px;
+
+  ::ng-deep .mat-mdc-text-field-wrapper {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  ::ng-deep input {
+    color: #fff;
+  }
+
+  ::ng-deep .mat-mdc-form-field-label,
+  ::ng-deep .mdc-floating-label {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  ::ng-deep .mdc-notched-outline__leading,
+  ::ng-deep .mdc-notched-outline__notch,
+  ::ng-deep .mdc-notched-outline__trailing {
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.exif-raw-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.exif-raw-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 11px;
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.exif-raw-key {
+  color: rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exif-raw-value {
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 768px) {
   :host {
     width: 100%;

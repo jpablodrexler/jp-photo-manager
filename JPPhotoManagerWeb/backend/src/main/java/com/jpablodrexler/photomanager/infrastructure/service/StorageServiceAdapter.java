@@ -35,7 +35,9 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -297,7 +299,7 @@ public class StorageServiceAdapter implements StoragePort {
     @Override
     public ExifMetadata getExifMetadata(String filePath) {
         if (isVideoFile(filePath)) {
-            return new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null);
+            return new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
         String cameraMake = null;
         String cameraModel = null;
@@ -311,15 +313,16 @@ public class StorageServiceAdapter implements StoragePort {
         Integer heightPixels = null;
         Double gpsLatitude = null;
         Double gpsLongitude = null;
+        Map<String, String> rawExif = null;
 
         try {
             ImageMetadata metadata = Imaging.getMetadata(Paths.get(filePath).toFile());
             if (!(metadata instanceof JpegImageMetadata jpegMetadata)) {
-                return new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null);
+                return new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null, null);
             }
             TiffImageMetadata exif = jpegMetadata.getExif();
             if (exif == null) {
-                return new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null);
+                return new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null, null);
             }
 
             try {
@@ -383,13 +386,24 @@ public class StorageServiceAdapter implements StoragePort {
                 }
             } catch (Exception e) { log.debug("EXIF GPS read failed for {}", filePath); }
 
+            try {
+                Map<String, String> raw = new HashMap<>();
+                for (TiffField field : exif.getAllFields()) {
+                    String value = field.getValueDescription();
+                    if (value != null && value.length() <= 1000) {
+                        raw.put(field.getTagInfo().name, value);
+                    }
+                }
+                if (!raw.isEmpty()) rawExif = raw;
+            } catch (Exception e) { log.debug("Raw EXIF collection failed for {}", filePath); }
+
         } catch (Exception e) {
             log.debug("Could not read EXIF metadata for {}", filePath);
         }
 
         return new ExifMetadata(cameraMake, cameraModel, lensModel, exposureTime,
                 fNumber, isoSpeed, focalLength, dateTaken, widthPixels, heightPixels,
-                gpsLatitude, gpsLongitude);
+                gpsLatitude, gpsLongitude, rawExif);
     }
 
     @Override

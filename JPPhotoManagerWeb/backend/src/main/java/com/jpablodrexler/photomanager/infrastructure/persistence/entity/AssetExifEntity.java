@@ -2,8 +2,11 @@ package com.jpablodrexler.photomanager.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Entity
 @Table(name = "asset_exif")
@@ -54,4 +57,8 @@ public class AssetExifEntity {
 
     @Column(name = "gps_longitude")
     private Double gpsLongitude;
+
+    @Column(name = "raw_exif", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, String> rawExif;
 }

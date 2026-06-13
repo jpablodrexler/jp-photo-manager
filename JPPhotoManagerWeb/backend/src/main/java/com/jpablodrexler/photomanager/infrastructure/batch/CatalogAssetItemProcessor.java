@@ -126,6 +126,7 @@ public class CatalogAssetItemProcessor implements ItemProcessor<Path, CatalogBat
             assetExif.setHeightPixels(exif.heightPixels());
             assetExif.setGpsLatitude(exif.gpsLatitude());
             assetExif.setGpsLongitude(exif.gpsLongitude());
+            assetExif.setRawExif(exif.rawExif());
             return assetExif;
         } catch (Exception e) {
             log.warn("Failed to read EXIF metadata from {}", filePathStr, e);

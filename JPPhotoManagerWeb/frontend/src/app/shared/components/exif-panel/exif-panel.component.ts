@@ -1,7 +1,8 @@
 import { Component, EventEmitter, HostBinding, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormControl } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -22,8 +23,10 @@ import { ExifMetadata } from '../../../core/models/exif-metadata.model';
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     ReactiveFormsModule,
     MatButtonModule,
+    MatExpansionModule,
     MatIconModule,
     MatListModule,
     MatProgressSpinnerModule,
@@ -47,6 +50,7 @@ export class ExifPanelComponent implements OnChanges, OnInit, OnDestroy {
 
   exif: ExifMetadata | null = null;
   loading = false;
+  filterText = '';
   tagSuggestions: string[] = [];
   tagInputControl = new FormControl<string>('', { nonNullable: true });
   readonly separatorKeysCodes = [ENTER, COMMA] as const;
@@ -143,6 +147,12 @@ export class ExifPanelComponent implements OnChanges, OnInit, OnDestroy {
         this.asset.tags = previousTags;
       }
     });
+  }
+
+  filteredRawExif(): { key: string; value: string }[] {
+    return Object.entries(this.exif?.rawExif ?? {})
+      .filter(([k]) => k.toLowerCase().includes(this.filterText.toLowerCase()))
+      .map(([key, value]) => ({ key, value }));
   }
 
   close(): void {

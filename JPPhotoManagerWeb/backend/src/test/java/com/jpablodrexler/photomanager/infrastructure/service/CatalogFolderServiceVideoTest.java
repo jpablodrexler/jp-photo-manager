@@ -94,7 +94,7 @@ class CatalogFolderServiceVideoTest {
         when(storageService.getImageRotation(filePath)).thenReturn(ImageRotation.ROTATE_0);
         when(storageService.generateThumbnail(eq(filePath), anyInt(), anyInt())).thenReturn(new byte[]{1, 2, 3});
         when(storageService.getExifMetadata(filePath)).thenReturn(
-                new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null));
+                new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null, null));
         when(assetExifRepository.findByAssetId(anyLong())).thenReturn(Optional.empty());
         when(assetExifRepository.save(any(AssetExif.class))).thenAnswer(inv -> inv.getArgument(0));
         when(assetRepository.save(any())).thenAnswer(inv -> {
@@ -112,7 +112,7 @@ class CatalogFolderServiceVideoTest {
         when(storageService.getImageRotation(filePath)).thenReturn(ImageRotation.ROTATE_0);
         when(storageService.generateThumbnail(eq(filePath), anyInt(), anyInt())).thenReturn(new byte[]{1, 2, 3});
         when(storageService.getExifMetadata(filePath)).thenReturn(
-                new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null));
+                new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null, null));
         when(assetExifRepository.findByAssetId(anyLong())).thenReturn(Optional.empty());
         when(assetExifRepository.save(any(AssetExif.class))).thenAnswer(inv -> inv.getArgument(0));
         when(assetRepository.save(any())).thenAnswer(inv -> {

@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Data
 @Builder
@@ -26,4 +27,5 @@ public class AssetExif {
     private Integer heightPixels;
     private Double gpsLatitude;
     private Double gpsLongitude;
+    private Map<String, String> rawExif;
 }

@@ -11,4 +11,5 @@ export interface ExifMetadata {
   heightPixels: number | null;
   gpsLatitude: number | null;
   gpsLongitude: number | null;
+  rawExif: Record<string, string> | null;
 }
