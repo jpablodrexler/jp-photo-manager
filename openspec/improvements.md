@@ -9,11 +9,9 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 | #   | Change name                 | Brief description                                                                                                                                                                       | Artifacts  | Implementation |
 | --- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------- |
 | 13  | `gps-map-view`              | Add a Leaflet.js map panel to the EXIF viewer and a `/map` route showing clustered photo pins for the current folder or album; clicking a pin navigates to that asset in the gallery   | ✅ Created | ⬜ Pending      |
-| 15  | `dark-mode`                 | Angular Material dark palette toggle stored in `localStorage` with `prefers-color-scheme` fallback; preference persisted per user on the backend; toolbar toggle button                 | ✅ Created | ⬜ Pending      |
 | 16  | `keyboard-shortcuts`        | Global `KeyboardService` mapping shortcuts (`G` gallery, `A` albums, `D` duplicates, `1–5` rating, `Del` soft-delete, `/` search focus); `?` overlay listing all bindings               | ✅ Created | ⬜ Pending      |
 | 17  | `batch-rename`              | Pattern-based rename (e.g. `{date:yyyy-MM-dd}_{index:03d}_{original}`) for multi-selected assets; live preview table before applying; new `POST /api/assets/rename` endpoint             | ✅ Created | ⬜ Pending      |
 | 19  | `shareable-album-links`     | `POST /api/albums/{id}/share` generates a signed UUID token stored in a `shared_albums` table with optional `expires_at`; public `/s/:token` route renders the album without authentication | ✅ Created | ⬜ Pending |
-| 20  | `storage-analytics`         | `/analytics` route with `ngx-charts` visualizations: storage-per-folder treemap, file-format pie, photos-per-month histogram, rating distribution bar; backed by aggregate JPQL queries  | ✅ Created | ⬜ Pending      |
 | 22  | `duplicate-auto-resolve`    | "Clean up automatically" dialog on the duplicates page with policies (keep oldest, keep newest, keep highest resolution, keep preferred folder); delegates to existing soft-delete path   | ✅ Created | ⬜ Pending      |
 | 23  | `progressive-web-app`       | `ng add @angular/pwa` with a cache-first strategy for thumbnails; background sync queue for offline rating/tag edits replayed on reconnect; HttpOnly cookie auth remains intact          | ✅ Created | ⬜ Pending      |
 | 24  | `wallpaper-suggestion`      | Add `aspect_ratio` float column to `assets` (populated during cataloging from the existing `pixel_width`/`pixel_height` columns); `GET /api/assets/wallpaper-suggestion?screenWidth=W&screenHeight=H` returns a random non-deleted asset where `pixel_width >= W`, `pixel_height >= H`, and `aspect_ratio` is within ±0.02 of the desktop ratio; frontend reads `window.screen.width`/`height`, calls the endpoint, and shows the suggested image with a download button | ✅ Created | ⬜ Pending |
@@ -92,7 +90,7 @@ For the pending dependent clusters:
 63 (raw-exif-jsonb)        — prerequisite #1  already implemented; extend CatalogAssetItemProcessor (#64 already done)
 ```
 
-Improvements 15 (dark-mode), 17 (batch-rename), 20 (storage-analytics), 24 (wallpaper-suggestion), 26 (thumbnail-http-cache), 27 (image-etag-cache), 28 (server-side-spring-cache), 29 (exif-cache-service), 30 (image-rotation-viewer), 32 (folder-watch-service), 33 (role-based-access-control), 35 (thumbnail-regeneration), 36 (global-error-handler), 38 (folder-stats-in-tree), 40 (circuit-breaker), 43 (request-correlation-mdc), 50 (image-comparison-viewer), 53 (password-strength-policy), 56 (asset-image-editor), 57 (viewer-pan-drag) have no hard dependencies and can be delivered in any order.
+Improvements 17 (batch-rename), 24 (wallpaper-suggestion), 26 (thumbnail-http-cache), 27 (image-etag-cache), 28 (server-side-spring-cache), 29 (exif-cache-service), 30 (image-rotation-viewer), 32 (folder-watch-service), 33 (role-based-access-control), 35 (thumbnail-regeneration), 36 (global-error-handler), 38 (folder-stats-in-tree), 40 (circuit-breaker), 43 (request-correlation-mdc), 50 (image-comparison-viewer), 53 (password-strength-policy), 56 (asset-image-editor), 57 (viewer-pan-drag) have no hard dependencies and can be delivered in any order.
 
 Within dependent clusters:
 
@@ -240,10 +238,6 @@ The 10 single-use recovery codes are BCrypt-hashed before insertion into `totp_b
 **Improvement 49 → Improvement 1** (prerequisite already implemented)
 
 `auto-tagging` reads `dateTaken` and camera make from EXIF data stored by `exif-metadata-panel` (#1, already implemented). The GPS city/country auto-tag additionally depends on `gps-map-view` (#13) for reverse geocoding.
-
-**Improvement 52 → Improvement 15**
-
-`multi-language-i18n` and `dark-mode` (#15) both store per-user UI preferences. Implementing them together — or implementing #15 first with a `user_preferences` JSON column that #52 can extend — avoids two separate schema changes and two separate backend endpoints for preference persistence.
 
 **Improvements 46, 50, 53 — no schema changes**
 
