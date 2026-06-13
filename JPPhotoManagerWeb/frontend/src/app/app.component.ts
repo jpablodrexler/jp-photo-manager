@@ -1,3 +1,4 @@
+import { AsyncPipe } from '@angular/common';
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -10,6 +11,8 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Subscription } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
 import { MediaPlayerService } from './core/services/media-player.service';
+import { ThemeService } from './core/services/theme.service';
+import { PreferenceService } from './core/services/preference.service';
 import { AudioPlayerComponent } from './features/audio-player/audio-player.component';
 import { VideoPlayerComponent } from './features/gallery/video-player/video-player.component';
 import { MediaFullscreenOverlayComponent } from './shared/components/media-fullscreen-overlay/media-fullscreen-overlay.component';
@@ -19,6 +22,7 @@ import { AboutDialogComponent } from './shared/components/about-dialog/about-dia
   selector: 'app-root',
   standalone: true,
   imports: [
+    AsyncPipe,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
@@ -42,13 +46,18 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly mediaPlayer = inject(MediaPlayerService);
   private readonly dialog = inject(MatDialog);
 
+  readonly isDark$ = this.themeService.isDark$;
+
   constructor(
     private authService: AuthService,
     private router: Router,
-    private breakpointObserver: BreakpointObserver
+    private breakpointObserver: BreakpointObserver,
+    private themeService: ThemeService,
+    private preferenceService: PreferenceService
   ) {}
 
   ngOnInit(): void {
+    this.themeService.init();
     this.bpSub = this.breakpointObserver.observe([Breakpoints.Handset]).subscribe(result => {
       this.isMobile = result.matches;
     });
@@ -60,6 +69,13 @@ export class AppComponent implements OnInit, OnDestroy {
 
   get isLoggedIn(): boolean {
     return this.authService.isLoggedIn();
+  }
+
+  toggleTheme(): void {
+    const newMode = this.themeService.toggle();
+    if (this.authService.isLoggedIn()) {
+      this.preferenceService.save(newMode);
+    }
   }
 
   logout(): void {

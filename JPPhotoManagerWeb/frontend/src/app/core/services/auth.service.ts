@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, tap } from 'rxjs';
+import { PreferenceService } from './preference.service';
 
 const SESSION_KEY = 'photomanager_session';
 
@@ -18,12 +19,16 @@ interface Session {
 export class AuthService {
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private preferenceService: PreferenceService
+  ) {}
 
   login(username: string, password: string): Observable<void> {
     return this.http.post<LoginResponse>('/api/auth/login', { username, password }).pipe(
       tap(res => this.storeSession(res.username, res.expiresAt)),
       tap(() => this.scheduleProactiveRefresh()),
+      tap(() => this.preferenceService.load().subscribe()),
       map(() => undefined)
     );
   }

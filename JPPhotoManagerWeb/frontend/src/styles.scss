@@ -13,16 +13,33 @@ $dark-green-theme: mat.define-theme((
   ),
 ));
 
-html {
+$light-green-theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$green-palette,
+  ),
+  typography: (
+    brand-family: 'Roboto',
+    plain-family: 'Roboto',
+  ),
+));
+
+html.theme-dark {
   @include mat.all-component-themes($dark-green-theme);
+  background-color: #121212;
+  color: rgba(255, 255, 255, 0.87);
+}
+
+html.theme-light {
+  @include mat.all-component-themes($light-green-theme);
+  background-color: #fafafa;
+  color: rgba(0, 0, 0, 0.87);
 }
 
 html, body {
   height: 100%;
   margin: 0;
   font-family: Roboto, "Helvetica Neue", sans-serif;
-  background-color: #121212;
-  color: rgba(255, 255, 255, 0.87);
 }
 
 .full-height {

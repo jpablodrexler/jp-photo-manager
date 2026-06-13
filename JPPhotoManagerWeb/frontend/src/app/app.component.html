@@ -17,6 +17,10 @@
         <button mat-menu-item routerLink="/recycle-bin"><mat-icon>delete</mat-icon> Recycle Bin</button>
         <button mat-menu-item routerLink="/analytics"><mat-icon>bar_chart</mat-icon> Analytics</button>
         <button mat-menu-item routerLink="/admin/users"><mat-icon>manage_accounts</mat-icon> Users</button>
+        <button mat-menu-item (click)="toggleTheme()">
+          <mat-icon>{{ (isDark$ | async) ? 'light_mode' : 'dark_mode' }}</mat-icon>
+          {{ (isDark$ | async) ? 'Switch to light' : 'Switch to dark' }}
+        </button>
         <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon> Logout</button>
         <button mat-menu-item (click)="openAbout()"><mat-icon>info</mat-icon> About</button>
       </mat-menu>
@@ -49,6 +53,9 @@
       <a mat-button routerLink="/admin/users" routerLinkActive="active">
         <mat-icon>manage_accounts</mat-icon> Users
       </a>
+      <button mat-icon-button (click)="toggleTheme()" [attr.aria-label]="(isDark$ | async) ? 'Switch to light mode' : 'Switch to dark mode'">
+        <mat-icon>{{ (isDark$ | async) ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
       <button mat-button (click)="logout()">
         <mat-icon>logout</mat-icon> Logout
       </button>
