@@ -12,7 +12,11 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USERNAME:-postgres} -d ${POSTGRES_DB:-photomanager}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USERNAME:-postgres} -d ${POSTGRES_DB:-photomanager}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,7 +34,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-photomanager}
       POSTGRES_USERNAME: ${POSTGRES_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      CATALOG_DIR: /catalog;/catalog2
+      CATALOG_DIR: /catalog;/catalog2;/catalog3
       THUMBNAILS_DIR: /thumbnails
       JWT_SECRET: "${JWT_SECRET:?Set JWT_SECRET in .env - run: openssl rand -base64 32}"
     ports:
@@ -42,6 +46,9 @@ services:
       - type: bind
         source: ${HOST_IMAGE_DIR_2:?Set HOST_IMAGE_DIR_2 in .env}
         target: /catalog2
+      - type: bind
+        source: ${HOST_IMAGE_DIR_3:?Set HOST_IMAGE_DIR_3 in .env}
+        target: /catalog3
       - thumbnails:/thumbnails
 
   frontend:
