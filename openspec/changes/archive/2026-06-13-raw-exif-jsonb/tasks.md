@@ -34,4 +34,4 @@
 
 - [x] 7.1 Run backend test suite: `cd JPPhotoManagerWeb/backend && mvn test`
 - [x] 7.2 Run frontend test suite: `cd JPPhotoManagerWeb/frontend && npm test`
-- [ ] 7.3 Commit all changes (only after both test suites pass)
+- [x] 7.3 Commit all changes (only after both test suites pass)
