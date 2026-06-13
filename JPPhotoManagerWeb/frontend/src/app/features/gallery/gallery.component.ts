@@ -45,6 +45,7 @@ import { DropZoneComponent } from "./drop-zone/drop-zone.component";
 import { AddToAlbumDialogComponent } from "./add-to-album-dialog/add-to-album-dialog.component";
 import { SavePresetDialogComponent } from "./save-preset-dialog/save-preset-dialog.component";
 import { BulkTagDialogComponent } from "./bulk-tag-dialog/bulk-tag-dialog.component";
+import { BatchRenameDialogComponent } from "./batch-rename-dialog/batch-rename-dialog.component";
 import { FolderPickerDialogComponent } from "./folder-picker-dialog/folder-picker-dialog.component";
 import { TimelineViewComponent } from "./timeline-view/timeline-view.component";
 import { TimelineGroup } from "../../core/models/timeline-group.model";
@@ -84,6 +85,7 @@ type ViewType = "grid" | "timeline";
     TimelineViewComponent,
     FolderPickerDialogComponent,
     SocialMediaCropComponent,
+    BatchRenameDialogComponent,
   ],
   templateUrl: "./gallery.component.html",
   styleUrl: "./gallery.component.scss",
@@ -813,6 +815,23 @@ export class GalleryComponent implements OnInit, OnDestroy {
       data: { assetIds: ids },
     }).afterClosed().subscribe((changed) => {
       if (changed) this.loadAssets();
+    });
+  }
+
+  renameSelectedAssets(): void {
+    const ids = Array.from(this.selectedAssets);
+    if (ids.length === 0) return;
+    this.dialog.open(BatchRenameDialogComponent, {
+      data: { assetIds: ids, assetCount: ids.length },
+    }).afterClosed().subscribe((result: { success: boolean; count?: number; error?: string } | null) => {
+      if (!result) return;
+      if (result.success) {
+        this.selectedAssets.clear();
+        this.loadAssets();
+        this.snackBar.open(`Renamed ${result.count} asset(s)`, undefined, { duration: 2000 });
+      } else {
+        this.snackBar.open(`Rename failed: ${result.error}`, 'Dismiss', { duration: 4000 });
+      }
     });
   }
 

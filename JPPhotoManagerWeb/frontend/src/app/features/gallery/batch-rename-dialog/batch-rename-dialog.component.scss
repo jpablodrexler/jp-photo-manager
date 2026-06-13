@@ -1,0 +1,36 @@
+:host {
+  min-width: 520px;
+  display: block;
+}
+
+.pattern-field {
+  width: 100%;
+}
+
+.token-hint {
+  font-size: 12px;
+  color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+  margin: 0 0 12px;
+
+  code {
+    background: var(--mat-sys-surface-variant, rgba(0, 0, 0, 0.06));
+    border-radius: 3px;
+    padding: 1px 4px;
+    font-size: 11px;
+  }
+}
+
+.preview-error {
+  color: var(--mat-sys-error, #b00020);
+  font-size: 13px;
+  margin: 0 0 8px;
+}
+
+.preview-table-wrapper {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.preview-table {
+  width: 100%;
+}

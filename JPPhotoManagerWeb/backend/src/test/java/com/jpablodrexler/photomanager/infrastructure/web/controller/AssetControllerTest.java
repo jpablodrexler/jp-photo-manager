@@ -20,6 +20,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseC
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.RenameAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
@@ -29,6 +30,8 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
+import com.jpablodrexler.photomanager.application.dto.RenameAssetsResult;
+import com.jpablodrexler.photomanager.application.dto.RenamePreview;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.MoveAssetsRequest;
 
 import java.time.LocalDate;
@@ -84,6 +87,8 @@ class AssetControllerTest {
     RateAssetUseCase rateAssetUseCase;
     @MockitoBean
     MoveAssetsUseCase moveAssetsUseCase;
+    @MockitoBean
+    RenameAssetsUseCase renameAssetsUseCase;
     @MockitoBean
     UploadAssetUseCase uploadAssetUseCase;
     @MockitoBean
@@ -499,6 +504,68 @@ class AssetControllerTest {
         mockMvc.perform(post("/api/assets/1/crop")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"formatKey\":\"INSTAGRAM_POST\",\"x\":9999,\"y\":9999,\"width\":100,\"height\":100}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // --- POST /api/assets/rename ---
+
+    @Test
+    void renameAssets_previewOnly_returns200WithPreviews() throws Exception {
+        RenameAssetsResult result = new RenameAssetsResult(
+                        List.of(new RenamePreview(1L, "old.jpg", "new.jpg")),
+                        false);
+        when(renameAssetsUseCase.execute(any(), eq("{original}.{ext}"), eq(false))).thenReturn(result);
+
+        mockMvc.perform(post("/api/assets/rename")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"assetIds\":[1],\"pattern\":\"{original}.{ext}\",\"applied\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.applied").value(false))
+                .andExpect(jsonPath("$.previews[0].oldName").value("old.jpg"))
+                .andExpect(jsonPath("$.previews[0].newName").value("new.jpg"));
+    }
+
+    @Test
+    void renameAssets_applied_returns200WithAppliedTrue() throws Exception {
+        RenameAssetsResult result = new RenameAssetsResult(
+                        List.of(new RenamePreview(1L, "old.jpg", "new.jpg")),
+                        true);
+        when(renameAssetsUseCase.execute(any(), eq("new.{ext}"), eq(true))).thenReturn(result);
+
+        mockMvc.perform(post("/api/assets/rename")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"assetIds\":[1],\"pattern\":\"new.{ext}\",\"applied\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.applied").value(true));
+    }
+
+    @Test
+    void renameAssets_collision_returns400() throws Exception {
+        when(renameAssetsUseCase.execute(any(), any(), anyBoolean()))
+                .thenThrow(new IllegalArgumentException("ASSET_NAME_COLLISION"));
+
+        mockMvc.perform(post("/api/assets/rename")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"assetIds\":[1,2],\"pattern\":\"{date:yyyy-MM-dd}.{ext}\",\"applied\":false}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void renameAssets_emptyAssetList_returns400() throws Exception {
+        mockMvc.perform(post("/api/assets/rename")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"assetIds\":[],\"pattern\":\"test.{ext}\",\"applied\":false}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void renameAssets_invalidDateFormat_returns400() throws Exception {
+        when(renameAssetsUseCase.execute(any(), any(), anyBoolean()))
+                .thenThrow(new IllegalArgumentException("INVALID_DATE_FORMAT"));
+
+        mockMvc.perform(post("/api/assets/rename")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"assetIds\":[1],\"pattern\":\"{date:INVALID!!!}\",\"applied\":false}"))
                 .andExpect(status().isBadRequest());
     }
 

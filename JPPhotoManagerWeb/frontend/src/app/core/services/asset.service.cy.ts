@@ -4,7 +4,7 @@ import { provideHttpClientTesting, HttpTestingController } from '@angular/common
 import { AssetService } from './asset.service';
 import { ExifMetadata } from '../models/exif-metadata.model';
 import { PaginatedData } from '../models/paginated-data.model';
-import { Asset } from '../models/asset.model';
+import { Asset, RenameAssetsResponse } from '../models/asset.model';
 
 describe('AssetService', () => {
   let service: AssetService;
@@ -177,6 +177,30 @@ describe('AssetService', () => {
     expect(req.request.params.get('dateTo')).to.equal('2024-12-31');
     expect(req.request.params.get('minRating')).to.equal('3');
     req.flush({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 });
+  });
+
+  it('renameAssets_previewMode_postsCorrectBodyAndReturnsResponse', () => {
+    const mockResponse: RenameAssetsResponse = {
+      previews: [{ assetId: 1, oldName: 'old.jpg', newName: 'new.jpg' }],
+      applied: false,
+    };
+
+    service.renameAssets([1], '{original}.{ext}', false).subscribe(data => {
+      expect(data).to.deep.equal(mockResponse);
+    });
+
+    const req = httpMock.expectOne('/api/assets/rename');
+    expect(req.request.method).to.equal('POST');
+    expect(req.request.body).to.deep.equal({ assetIds: [1], pattern: '{original}.{ext}', applied: false });
+    req.flush(mockResponse);
+  });
+
+  it('renameAssets_applyMode_setsAppliedTrueInRequestBody', () => {
+    service.renameAssets([1, 2], 'photo_{index:02d}.{ext}', true).subscribe();
+
+    const req = httpMock.expectOne('/api/assets/rename');
+    expect(req.request.body).to.deep.equal({ assetIds: [1, 2], pattern: 'photo_{index:02d}.{ext}', applied: true });
+    req.flush({ previews: [], applied: true });
   });
 
   it('getTimeline_withNoFilters_omitsOptionalParams', () => {

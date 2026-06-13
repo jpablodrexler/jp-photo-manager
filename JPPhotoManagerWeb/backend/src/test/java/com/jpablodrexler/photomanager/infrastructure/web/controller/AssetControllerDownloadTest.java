@@ -9,6 +9,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.RenameAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
@@ -68,6 +69,8 @@ class AssetControllerDownloadTest {
     RateAssetUseCase rateAssetUseCase;
     @MockitoBean
     MoveAssetsUseCase moveAssetsUseCase;
+    @MockitoBean
+    RenameAssetsUseCase renameAssetsUseCase;
     @MockitoBean
     UploadAssetUseCase uploadAssetUseCase;
     @MockitoBean

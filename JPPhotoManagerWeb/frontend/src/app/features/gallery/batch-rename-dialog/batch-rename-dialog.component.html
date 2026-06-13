@@ -1,0 +1,49 @@
+<h2 mat-dialog-title>Rename {{ data.assetCount }} asset(s)</h2>
+
+<mat-dialog-content>
+  <mat-form-field appearance="outline" class="pattern-field">
+    <mat-label>Pattern</mat-label>
+    <input
+      matInput
+      [(ngModel)]="pattern"
+      (ngModelChange)="onPatternChange($event)"
+      placeholder="e.g. {date:yyyy-MM-dd}_{index:03d}.{ext}"
+      autocomplete="off"
+    />
+  </mat-form-field>
+
+  <p class="token-hint">
+    Tokens: <code>&#123;date:yyyy-MM-dd&#125;</code> · <code>&#123;index:03d&#125;</code> · <code>&#123;original&#125;</code> · <code>&#123;ext&#125;</code>
+  </p>
+
+  @if (previewError) {
+    <p class="preview-error">{{ previewError }}</p>
+  }
+
+  @if (previews.length > 0) {
+    <div class="preview-table-wrapper">
+      <table mat-table [dataSource]="previews" class="preview-table">
+        <ng-container matColumnDef="oldName">
+          <th mat-header-cell *matHeaderCellDef>Old name</th>
+          <td mat-cell *matCellDef="let row">{{ row.oldName }}</td>
+        </ng-container>
+        <ng-container matColumnDef="newName">
+          <th mat-header-cell *matHeaderCellDef>New name</th>
+          <td mat-cell *matCellDef="let row">{{ row.newName }}</td>
+        </ng-container>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  @if (isApplying) {
+    <mat-spinner diameter="24" style="margin-right: 12px;"></mat-spinner>
+  }
+  <button mat-button (click)="cancel()" [disabled]="isApplying">Cancel</button>
+  <button mat-flat-button color="primary" (click)="applyRename()" [disabled]="!canApply">
+    Apply
+  </button>
+</mat-dialog-actions>

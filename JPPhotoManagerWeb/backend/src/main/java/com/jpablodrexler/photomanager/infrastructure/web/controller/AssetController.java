@@ -20,6 +20,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseC
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.RenameAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
@@ -36,6 +37,10 @@ import com.jpablodrexler.photomanager.infrastructure.web.dto.DownloadAssetsReque
 import com.jpablodrexler.photomanager.infrastructure.web.dto.ExifMetadataDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.MoveAssetsRequest;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.RateAssetRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.RenameAssetsRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.RenameAssetsResponse;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.RenamePreviewDto;
+import com.jpablodrexler.photomanager.application.dto.RenameAssetsResult;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.TimelineGroupDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.micrometer.core.instrument.Gauge;
@@ -83,6 +88,7 @@ public class AssetController {
     private final DownloadAssetsUseCase downloadAssetsUseCase;
     private final RateAssetUseCase rateAssetUseCase;
     private final MoveAssetsUseCase moveAssetsUseCase;
+    private final RenameAssetsUseCase renameAssetsUseCase;
     private final UploadAssetUseCase uploadAssetUseCase;
     private final DeleteAssetsUseCase deleteAssetsUseCase;
     private final CropAssetUseCase cropAssetUseCase;
@@ -236,6 +242,26 @@ public class AssetController {
         boolean result = moveAssetsUseCase.execute(request.getAssetIds(), request.getDestinationFolderPath(),
                 request.isPreserveOriginal());
         return ResponseEntity.ok(result);
+    }
+
+    @Operation(summary = "Preview or apply a pattern-based batch rename for selected assets")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Preview or apply result"),
+        @ApiResponse(responseCode = "400", description = "Validation error or name collision"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @PostMapping("/rename")
+    public ResponseEntity<RenameAssetsResponse> renameAssets(@Valid @RequestBody RenameAssetsRequest request) {
+        try {
+            RenameAssetsResult result = renameAssetsUseCase.execute(
+                    request.assetIds(), request.pattern(), request.applied());
+            List<RenamePreviewDto> previews = result.previews().stream()
+                    .map(p -> new RenamePreviewDto(p.assetId(), p.oldName(), p.newName()))
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(new RenameAssetsResponse(previews, result.applied()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @Operation(summary = "Download selected assets as a ZIP file")

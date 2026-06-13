@@ -43,6 +43,11 @@
             <button mat-menu-item (click)="openBulkTagDialog()">
               <mat-icon>label</mat-icon> Tag selected
             </button>
+            @if (viewMode === 'thumbnails') {
+              <button mat-menu-item (click)="renameSelectedAssets()">
+                <mat-icon>drive_file_rename_outline</mat-icon> Rename selected…
+              </button>
+            }
             <button mat-menu-item (click)="moveSelectedAssets('move')">
               <mat-icon>drive_file_move</mat-icon> Move to folder…
             </button>

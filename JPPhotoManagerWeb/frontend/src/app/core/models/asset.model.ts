@@ -24,6 +24,23 @@ export interface Asset {
   isVideo: boolean;
 }
 
+export interface RenamePreview {
+  assetId: number;
+  oldName: string;
+  newName: string;
+}
+
+export interface RenameAssetsRequest {
+  assetIds: number[];
+  pattern: string;
+  applied: boolean;
+}
+
+export interface RenameAssetsResponse {
+  previews: RenamePreview[];
+  applied: boolean;
+}
+
 export interface CropAssetRequest {
   formatKey: string;
   x: number;

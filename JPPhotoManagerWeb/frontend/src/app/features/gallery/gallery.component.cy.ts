@@ -1,5 +1,6 @@
 import { mount } from 'cypress/angular';
 import { of, throwError } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
@@ -1279,5 +1280,42 @@ describe('GalleryComponent', () => {
 
     cy.get('img.viewer-image').should('exist');
     cy.get('video').should('not.exist');
+  });
+
+  // --- rename flow ---
+
+  it('renameSelectedAssets_success_showsSnackbarAndReloadsGallery', () => {
+    const mockDialogRef = { afterClosed: cy.stub().returns(of({ success: true, count: 2 })) };
+    const mockDialog: Partial<MatDialog> = { open: cy.stub().returns(mockDialogRef) as unknown as MatDialog['open'] };
+
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.selectedAssets = new Set([1, 2]);
+      // Replace the injected dialog with the mock after mount
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (component as unknown as { dialog: MatDialog }).dialog = mockDialog as MatDialog;
+      component.renameSelectedAssets();
+      fixture.detectChanges();
+    });
+
+    cy.get('.mat-mdc-snack-bar-label').should('contain', 'Renamed 2 asset(s)');
+  });
+
+  it('renameSelectedAssets_failure_showsErrorSnackbar', () => {
+    const mockDialogRef = { afterClosed: cy.stub().returns(of({ success: false, error: 'ASSET_NAME_COLLISION' })) };
+    const mockDialog: Partial<MatDialog> = { open: cy.stub().returns(mockDialogRef) as unknown as MatDialog['open'] };
+
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.selectedAssets = new Set([1]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (component as unknown as { dialog: MatDialog }).dialog = mockDialog as MatDialog;
+      component.renameSelectedAssets();
+      fixture.detectChanges();
+    });
+
+    cy.get('.mat-mdc-snack-bar-label').should('contain', 'Rename failed: ASSET_NAME_COLLISION');
   });
 });
