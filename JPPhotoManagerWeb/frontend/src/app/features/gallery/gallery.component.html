@@ -29,7 +29,7 @@
         </button>
 
         @if (viewType === 'grid') {
-        <mat-select [(ngModel)]="sortCriteria" (ngModelChange)="onSortChange()" style="width: 160px;">
+        <mat-select [(ngModel)]="sortCriteria" (ngModelChange)="onSortChange()" class="sort-select">
           @for (opt of sortOptions; track opt.value) {
             <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
           }
@@ -78,25 +78,59 @@
       }
 
       @if (viewMode === 'viewer') {
-        <button mat-icon-button (click)="zoomOut()" title="Zoom out"><mat-icon>zoom_out</mat-icon></button>
-        <button mat-icon-button (click)="resetZoom()" [disabled]="viewerZoom === 1" title="Reset zoom"><mat-icon>zoom_out_map</mat-icon></button>
-        <button mat-icon-button (click)="zoomIn()" title="Zoom in"><mat-icon>zoom_in</mat-icon></button>
-        @for (star of [1,2,3,4,5]; track star) {
-          <button mat-icon-button (click)="rateCurrentAsset(star)">
-            <mat-icon>{{ (currentViewerAsset?.rating ?? 0) >= star ? 'star' : 'star_border' }}</mat-icon>
+        @if (!isMobile) {
+          <button mat-icon-button (click)="zoomOut()" title="Zoom out"><mat-icon>zoom_out</mat-icon></button>
+          <button mat-icon-button (click)="resetZoom()" [disabled]="viewerZoom === 1" title="Reset zoom"><mat-icon>zoom_out_map</mat-icon></button>
+          <button mat-icon-button (click)="zoomIn()" title="Zoom in"><mat-icon>zoom_in</mat-icon></button>
+          @for (star of [1,2,3,4,5]; track star) {
+            <button mat-icon-button (click)="rateCurrentAsset(star)">
+              <mat-icon>{{ (currentViewerAsset?.rating ?? 0) >= star ? 'star' : 'star_border' }}</mat-icon>
+            </button>
+          }
+          @if (currentViewerAsset?.fileType === 'IMAGE') {
+            <button mat-icon-button (click)="toggleCropOverlay()" [class.active]="showCropOverlay" title="Crop for social media">
+              <mat-icon>content_cut</mat-icon>
+            </button>
+          }
+          <button mat-icon-button (click)="toggleExifPanel()" [class.active]="showExifPanel" title="EXIF info">
+            <mat-icon>info</mat-icon>
           </button>
-        }
-        @if (currentViewerAsset?.fileType === 'IMAGE') {
-          <button mat-icon-button (click)="toggleCropOverlay()" [class.active]="showCropOverlay" title="Crop for social media">
-            <mat-icon>content_cut</mat-icon>
+          <button mat-icon-button (click)="startSlideshow(currentViewerIndex)" title="Slideshow">
+            <mat-icon>slideshow</mat-icon>
           </button>
+        } @else {
+          <button mat-icon-button [matMenuTriggerFor]="viewerMenu" title="More actions">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #viewerMenu="matMenu">
+            <button mat-menu-item (click)="zoomOut()">
+              <mat-icon>zoom_out</mat-icon> Zoom out
+            </button>
+            <button mat-menu-item (click)="resetZoom()" [disabled]="viewerZoom === 1">
+              <mat-icon>zoom_out_map</mat-icon> Reset zoom
+            </button>
+            <button mat-menu-item (click)="zoomIn()">
+              <mat-icon>zoom_in</mat-icon> Zoom in
+            </button>
+            @for (star of [1,2,3,4,5]; track star) {
+              <button mat-menu-item (click)="rateCurrentAsset(star)">
+                <mat-icon>{{ (currentViewerAsset?.rating ?? 0) >= star ? 'star' : 'star_border' }}</mat-icon>
+                Rate {{ star }}★
+              </button>
+            }
+            @if (currentViewerAsset?.fileType === 'IMAGE') {
+              <button mat-menu-item (click)="toggleCropOverlay()">
+                <mat-icon>content_cut</mat-icon> Crop for social media
+              </button>
+            }
+            <button mat-menu-item (click)="toggleExifPanel()">
+              <mat-icon>info</mat-icon> EXIF info
+            </button>
+            <button mat-menu-item (click)="startSlideshow(currentViewerIndex)">
+              <mat-icon>slideshow</mat-icon> Slideshow
+            </button>
+          </mat-menu>
         }
-        <button mat-icon-button (click)="toggleExifPanel()" [class.active]="showExifPanel" title="EXIF info">
-          <mat-icon>info</mat-icon>
-        </button>
-        <button mat-icon-button (click)="startSlideshow(currentViewerIndex)" title="Slideshow">
-          <mat-icon>slideshow</mat-icon>
-        </button>
         <button mat-icon-button (click)="closeViewer()"><mat-icon>grid_view</mat-icon></button>
       }
 
@@ -104,7 +138,7 @@
         <button mat-icon-button (click)="toggleSlideshowPlay()" [title]="slideshowPlaying ? 'Pause' : 'Play'">
           <mat-icon>{{ slideshowPlaying ? 'pause' : 'play_arrow' }}</mat-icon>
         </button>
-        <mat-select [(ngModel)]="slideshowInterval" (ngModelChange)="onIntervalChange()" style="width: 80px;" title="Interval">
+        <mat-select [(ngModel)]="slideshowInterval" (ngModelChange)="onIntervalChange()" class="interval-select" title="Interval">
           @for (opt of intervalOptions; track opt) {
             <mat-option [value]="opt">{{ opt }}s</mat-option>
           }

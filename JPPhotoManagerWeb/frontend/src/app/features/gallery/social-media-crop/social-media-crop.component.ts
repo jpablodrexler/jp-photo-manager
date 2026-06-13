@@ -126,7 +126,7 @@ export class SocialMediaCropComponent implements AfterViewInit, OnDestroy {
         height: h,
       };
     } else if (this.activeCorner) {
-      this.resizeFromCorner(mouseX, mouseY);
+      this.resizeFromCorner(mouseX);
     }
 
     this.redraw();
@@ -206,7 +206,7 @@ export class SocialMediaCropComponent implements AfterViewInit, OnDestroy {
     };
   }
 
-  private resizeFromCorner(mouseX: number, mouseY: number): void {
+  private resizeFromCorner(mouseX: number): void {
     const canvas = this.canvasRef.nativeElement;
     const cw = canvas.width;
     const ch = canvas.height;
