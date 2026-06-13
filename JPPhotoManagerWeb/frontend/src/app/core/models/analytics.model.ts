@@ -24,3 +24,13 @@ export interface AnalyticsData {
   photosPerMonth: MonthlyCountEntry[];
   ratingDistribution: RatingEntry[];
 }
+
+export interface ChartEntry {
+  name: string;
+  value: number;
+}
+
+export interface ChartSeries {
+  name: string;
+  series: ChartEntry[];
+}

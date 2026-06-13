@@ -19,7 +19,6 @@
         <mat-card-content>
           <ngx-charts-tree-map
             [results]="folderStorageSeries"
-            [view]="view"
           />
         </mat-card-content>
       </mat-card>
@@ -31,7 +30,6 @@
         <mat-card-content>
           <ngx-charts-pie-chart
             [results]="formatSeries"
-            [view]="view"
             [legend]="true"
           />
         </mat-card-content>
@@ -43,8 +41,7 @@
         </mat-card-header>
         <mat-card-content>
           <ngx-charts-bar-vertical
-            [results]="photosPerMonthSeries[0]?.series ?? []"
-            [view]="view"
+            [results]="photosPerMonthSeries"
             [xAxisLabel]="'Month'"
             [yAxisLabel]="'Count'"
             [showXAxisLabel]="true"
@@ -62,7 +59,6 @@
         <mat-card-content>
           <ngx-charts-bar-vertical
             [results]="ratingSeriesBarData"
-            [view]="view"
             [xAxisLabel]="'Stars'"
             [yAxisLabel]="'Count'"
             [showXAxisLabel]="true"

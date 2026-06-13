@@ -5,17 +5,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { TreeMapModule, PieChartModule, BarChartModule } from '@swimlane/ngx-charts';
 import { AnalyticsService } from '../../core/services/analytics.service';
-import { AnalyticsData } from '../../core/models/analytics.model';
-
-interface ChartEntry {
-  name: string;
-  value: number;
-}
-
-interface ChartSeries {
-  name: string;
-  series: ChartEntry[];
-}
+import { AnalyticsData, ChartEntry } from '../../core/models/analytics.model';
 
 @Component({
   selector: 'app-analytics',
@@ -39,10 +29,8 @@ export class AnalyticsComponent implements OnInit {
 
   folderStorageSeries: ChartEntry[] = [];
   formatSeries: ChartEntry[] = [];
-  photosPerMonthSeries: ChartSeries[] = [];
+  photosPerMonthSeries: ChartEntry[] = [];
   ratingSeriesBarData: ChartEntry[] = [];
-
-  readonly view: [number, number] = [500, 300];
 
   constructor(private readonly analyticsService: AnalyticsService) {}
 
@@ -58,10 +46,7 @@ export class AnalyticsComponent implements OnInit {
           name: e.extension,
           value: e.count,
         }));
-        this.photosPerMonthSeries = [{
-          name: 'Photos',
-          series: d.photosPerMonth.map(e => ({ name: e.month, value: e.count })),
-        }];
+        this.photosPerMonthSeries = d.photosPerMonth.map(e => ({ name: e.month, value: e.count }));
         this.ratingSeriesBarData = d.ratingDistribution.map(e => ({
           name: String(e.rating),
           value: e.count,
