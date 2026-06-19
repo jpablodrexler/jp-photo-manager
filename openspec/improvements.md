@@ -52,6 +52,17 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 | 69  | `iptc-xmp-metadata-editing` | Read and write IPTC/XMP fields (caption, copyright notice, creator, keywords, city, country) directly in the viewer panel alongside the existing EXIF display; Apache Commons Imaging (already a dependency) supports IPTC segment read and write in JPEG files via `JpegIptcRewriter`; a new `PATCH /api/assets/{id}/iptc` endpoint writes the updated IPTC segment back to the file on disk and refreshes the `assets` row; caption and copyright are stored in two new VARCHAR columns on `assets` (Flyway migration) so they are queryable without re-reading the file; keywords are mapped to the existing `asset_tags` table, making them immediately available in tag-based filters; the viewer panel shows caption and copyright as editable `MatFormField` inputs below the EXIF panel with auto-save on blur | ✅ Created | ⬜ Pending |
 | 70  | `dominant-color-palette`    | During cataloging, extract the top 5 dominant colors from each photo's thumbnail using k-means clustering (k=5, 10 iterations) over the 200×150 px thumbnail pixels; no second file read from the original is required; store the five RGB centroids as a `color_palette JSONB` column on `assets` (Flyway migration); each centroid is snapped to the nearest of 12 color families (red, orange, yellow, green, teal, blue, purple, pink, brown, grey, black, white) using Euclidean distance in HSL space; frontend additions: a color swatch row in the search/filter toolbar (one or more families can be selected, adding a `colorFamily[]` query parameter to `GET /api/assets`), an optional 5-segment color stripe at the bottom of each `ThumbnailComponent` card (toggleable, off by default), and a "Color distribution" donut chart on the `/analytics` dashboard reusing the existing `ngx-charts` dependency; `GET /api/assets/color-families` returns the 12 families with asset counts for the current folder to populate the swatch picker; no external Maven dependency — k-means runs over `BufferedImage` pixel access using the standard library | ✅ Created | ⬜ Pending |
 | 71  | `webdav-server`             | Expose the catalog over WebDAV (`PROPFIND`, `GET`, `PUT`, `DELETE`, `MKCOL`) at `/webdav/` so users can mount the catalog as a network drive on Windows (Map Network Drive), macOS (Finder → Connect to Server), and Linux (`davfs2`); the virtual folder tree mirrors the `assets.folder_path` hierarchy; `GET` on an asset path streams the original file via the existing `StoragePort`; `PUT` to any folder path triggers the same catalog pipeline as drag-and-drop upload (#3); `DELETE` routes through the soft-delete path from `soft-delete-recycle-bin` (#9); implemented with `milton-server-ce` (pure Java WebDAV server, no servlet dependency conflicts) or a custom Spring MVC `WebdavController` handling raw `PROPFIND` XML via JAXB; authentication uses HTTP Basic over the existing `UserDetailsService` — JWT cookies are not compatible with native OS WebDAV clients; no schema change | ✅ Created | ⬜ Pending |
+| 72  | `mongodb-exif-store`              | Replace the `asset_exif` PostgreSQL table (including the JSONB `raw_exif` column planned in #63) with a MongoDB `asset_exif` collection; the native document model stores all 80–300 EXIF fields per image without column sprawl or JSONB workarounds; MongoDB `$near`/`$geoWithin` operators turn the already-stored GPS coordinates into geospatial "photos within radius" queries that are impossible to express efficiently in SQL; only `AssetExifRepositoryImpl` changes — the `AssetExifRepository` port interface and `AssetExif` domain model are untouched; **mutually exclusive with `raw-exif-jsonb` (#63)**: choose this improvement if geospatial queries or deep EXIF document nesting are priorities; choose #63 if keeping a single PostgreSQL dependency is preferred | ⬜ Pending | ⬜ Pending |
+| 73  | `mongodb-audit-log`               | Append-only MongoDB collection `asset_audit_log` recording every user action — view, download, tag, rate, delete, sync-run, convert-run, catalog-run — as a flexible document `{ userId, action, entityType, entityId, timestamp, metadata: { … } }`; each event type carries its own `metadata` shape (e.g. tag events include `tagName`; delete events include `folderId` and `permanent` flag) without schema migrations; time-range queries and per-user activity feeds are native aggregation pipeline operations; a new `AuditLogRepository` port interface (domain) with a `MongoAuditLogRepositoryImpl` adapter (infrastructure) keeps MongoDB out of the use-case layer; pairs with `kafka-catalog-pipeline` (#75) as the natural durable consumer of `asset.cataloged` and `asset.deleted` Kafka events | ⬜ Pending | ⬜ Pending |
+| 74  | `mongodb-user-preferences`        | Move `user_preferences` and `search_presets` from rigid PostgreSQL tables to a single MongoDB `user_configs` collection keyed by `userId`; adding a new UI preference (theme, gallery layout, notification toggle) requires no Flyway migration; search preset payloads grow naturally as new filter fields are added without altering existing rows; only the two persistence adapters (`UserPreferenceRepositoryImpl`, `SearchPresetRepositoryImpl`) change — use cases, domain models, and REST controllers are untouched; the existing PostgreSQL tables are dropped after a one-time data migration | ⬜ Pending | ⬜ Pending |
+| 75  | `kafka-catalog-pipeline`          | Replace the in-memory `SseNotificationRegistry` (a `ConcurrentHashMap` in a single JVM) with Kafka topics so catalog, sync, and convert progress events are broadcast across all running app instances; topics: `asset.cataloged` (writer: `CatalogAssetItemWriter`), `asset.deleted` (writer: `DeleteAssetsUseCaseImpl`), `job.catalog.progress` (writer: `CatalogItemWriteListener`), `job.sync.progress` (writer: `SyncAssetsUseCaseImpl`), `job.convert.progress` (writer: `ConvertAssetsUseCaseImpl`); SSE controllers on each instance subscribe via a Kafka consumer and fan-out progress events to connected `SseEmitter` clients; the `SseNotificationRegistry` class is deleted; eliminates the single-JVM constraint that currently prevents horizontal scaling; **prerequisite for `kafka-async-upload` (#76), `kafka-catalog-coordination` (#77), `redis-sse-pubsub` (#80), and `mongodb-audit-log` (#73)** | ⬜ Pending | ⬜ Pending |
+| 76  | `kafka-async-upload`              | Decouple the `POST /api/assets/upload` HTTP thread from SHA-256 hashing, EXIF extraction, and thumbnail generation; the controller saves the file to disk, publishes an `AssetUploadedEvent { filePath, assetId, userId }` to the `asset.uploaded` Kafka topic, and returns HTTP 202; three independent consumer groups process hash computation, EXIF extraction, and thumbnail generation in parallel; eliminates multi-second blocking for large files (RAW 40–80 MB, video) and allows each processing stage to scale independently; requires the Kafka infrastructure introduced by `kafka-catalog-pipeline` (#75) | ⬜ Pending | ⬜ Pending |
+| 77  | `kafka-catalog-coordination`      | Prevent duplicate concurrent catalog scans when multiple app instances are deployed; `CatalogScheduler` currently uses `@Scheduled(fixedDelay)` on every JVM — two instances each trigger a full directory traversal simultaneously, doubling disk I/O and risking duplicate database writes; a single-partition `catalog.requests` Kafka topic provides natural leader election via Kafka consumer groups: only one member processes a `CatalogJobRequested` event while others skip; replace the `@Scheduled` trigger in `CatalogScheduler` with a Kafka producer that publishes to `catalog.requests` on the same interval; requires the Kafka infrastructure introduced by `kafka-catalog-pipeline` (#75) | ⬜ Pending | ⬜ Pending |
+| 78  | `redis-distributed-rate-limiting` | Upgrade `RateLimitFilter` from in-memory Bucket4j (backed by `ConcurrentHashMap<String, Bucket>`) to a Redis-backed store using the `bucket4j-redis` / `bucket4j-lettuce` extension; the current implementation is per-JVM: two running instances each allow the full configured rate (10 login attempts/min per IP, 5 catalog triggers/hour per IP) independently, giving attackers proportionally more headroom; the Redis upgrade shares token-bucket counters across all instances with zero business-logic change — only `RateLimitFilter.createBucket()` switches from `Bucket.builder()...build()` to `proxyManager.builder().build(bucketKey, configSupplier)`; **fills the multi-instance production-safety gap left by `api-rate-limiting` (#39)**, which is already implemented but only protects single-instance deployments | ⬜ Pending | ⬜ Pending |
+| 79  | `redis-refresh-tokens`            | Move JWT refresh token storage from the `refresh_tokens` PostgreSQL table to Redis keys with native TTL (`SET refresh_token:{tokenId} {userId} EX 2592000`); PostgreSQL is being used as a TTL key-value store — a pattern Redis is purpose-built for; token lookup drops from a SQL `SELECT` (~5 ms) to a Redis `GET` (~0.1 ms); Redis auto-expires tokens after 30 days eliminating the background cleanup job implied by the `expires_at` column; revocation is an atomic `DEL`; a `RedisRefreshTokenRepositoryImpl` adapter implements the existing `RefreshTokenRepository` port; the `refresh_tokens` PostgreSQL table is dropped after a dual-write migration window; the `user_agent` column planned by `session-management` (#46) must instead be stored as a Redis hash field (`HSET refresh_token:{tokenId} userId {u} userAgent {ua}`) — implement #46 and #79 together to avoid PostgreSQL column churn | ⬜ Pending | ⬜ Pending |
+| 80  | `redis-sse-pubsub`                | Complement `kafka-catalog-pipeline` (#75) with Redis Pub/Sub for sub-millisecond SSE fan-out; Kafka provides durable, replayable event storage; Redis delivers progress events in real time across all instances; catalog, sync, and convert workers `PUBLISH` to `job:progress:{jobId}:{type}` channels; all app instances `SUBSCRIBE` and relay messages to their connected `SseEmitter` clients; Kafka and Redis are complementary — Kafka for durability and consumer-group semantics, Redis for the lowest-latency delivery path to the browser; requires the Kafka producers from `kafka-catalog-pipeline` (#75); replaces `SseNotificationRegistry` alongside #75 | ⬜ Pending | ⬜ Pending |
+| 81  | `redis-thumbnail-cache`           | Add Redis as a shared L2 thumbnail cache in front of the disk-backed `ThumbnailStorageServiceAdapter`; on a cache hit `GET asset:thumbnail:{assetId}` returns the thumbnail bytes with no disk I/O; on a miss the adapter reads from disk, stores with a 24-hour TTL via `SETEX`, and returns; Redis `allkeys-lru` eviction retains popular thumbnails and evicts cold ones automatically; complements `thumbnail-http-cache` (#26) (browser-level `Cache-Control: immutable`, already implemented) and `server-side-spring-cache` (#28) (per-JVM Caffeine for home stats and EXIF lookups, pending); Redis adds the shared server-side tier that survives instance restarts and eliminates dependency on co-located disk access in load-balanced deployments where the requested thumbnail may reside on a different node's filesystem | ⬜ Pending | ⬜ Pending |
+| 82  | `redis-search-tag-cache`          | Cache the two highest-frequency gallery read paths in Redis: (1) paginated asset search results (`GET /api/assets`) keyed by `assets:{sha256(folderPath+page+sort+filters)}` with a 5-minute TTL, invalidated on `asset.cataloged` and `asset.deleted` Kafka events from #75; (2) the tag list with counts (`GET /api/tags`) keyed `tags:all` with a 5-minute TTL, invalidated on `AddTagToAssetUseCase` and `RemoveTagFromAssetUseCase`; extends `server-side-spring-cache` (#28) which targets home stats, folder tree, and EXIF lookups with per-JVM Caffeine — this improvement covers the two hottest gallery endpoints and uses Redis for distributed invalidation that works correctly across multiple instances; the `@Cacheable`/`@CacheEvict` annotations from #28 can be reused by switching the Spring cache manager from `CaffeineCacheManager` to a Lettuce-backed `RedisCacheManager` | ⬜ Pending | ⬜ Pending |
 
 ---
 
@@ -71,6 +82,14 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 
 `duplicate-auto-resolve` routes deleted assets through the soft-delete path introduced by `soft-delete-recycle-bin`.
 
+**Improvement 75 → Improvements 73, 76, 77, 80** (Kafka infrastructure prerequisite)
+
+`kafka-catalog-pipeline` introduces the Kafka cluster, Spring Kafka bootstrap configuration, and the core topic producers. `mongodb-audit-log` (#73), `kafka-async-upload` (#76), `kafka-catalog-coordination` (#77), and `redis-sse-pubsub` (#80) all depend on this infrastructure being in place. Deliver #75 first; the remaining four can follow in any order.
+
+**Improvement 72 ↔ Improvement 63** (mutually exclusive — same problem, different technology)
+
+`mongodb-exif-store` (#72) and `raw-exif-jsonb` (#63) both address the need for flexible EXIF storage but via incompatible approaches. #63 adds a `raw_exif JSONB` column to the existing `asset_exif` PostgreSQL table; #72 moves the entire `asset_exif` entity to a MongoDB collection. Only one can be in effect at a time. If #63 is implemented first, #72 becomes a data-migration task (move JSONB data to MongoDB documents) rather than a greenfield design choice. Teams should decide upfront based on whether geospatial querying (`$near`/`$geoWithin` on GPS coordinates) or single-database simplicity is the priority.
+
 ### Soft implementation dependencies (order affects cleanliness)
 
 **Improvement 16 → Improvement 8** (prerequisite already implemented)
@@ -80,6 +99,18 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 **Improvement 23 → Improvement 10** (prerequisite already implemented)
 
 `progressive-web-app` is significantly more valuable once `mobile-responsive-layout` is in place, since PWA installs are most common on mobile.
+
+**Improvement 46 → Improvement 79** (token field design coordination)
+
+`session-management` (#46) adds a `user_agent` column to `refresh_tokens` in PostgreSQL. `redis-refresh-tokens` (#79) moves the entire token store to Redis, making that column moot. Implementing both together avoids adding a PostgreSQL column that is immediately discarded. If #46 ships first, the `user_agent` data must be migrated to a Redis hash field (`HSET refresh_token:{tokenId} userAgent {ua}`) during the #79 cutover.
+
+**Improvements 26, 28 → Improvement 81** (complementary caching layers)
+
+`redis-thumbnail-cache` (#81) is most impactful when `thumbnail-http-cache` (#26, already implemented) is already in place for browser-level caching and `server-side-spring-cache` (#28) provides per-JVM Caffeine for hot reads. Implementing the three layers in order — browser cache (#26) → JVM Caffeine (#28) → shared Redis (#81) — delivers each tier with clear boundaries and avoids redundant work.
+
+**Improvement 28 → Improvement 82** (extend Caffeine to Redis)
+
+`redis-search-tag-cache` (#82) adds the gallery pagination and tag-list endpoints to the caching scope established by #28 and upgrades the Spring cache manager from Caffeine to Redis. Implementing #28 first with Caffeine provides a lower-risk on-ramp; #82 then switches the `CacheManager` bean to `RedisCacheManager` and the `@Cacheable` annotations continue to work without modification.
 
 ### Recommended implementation order
 
@@ -108,6 +139,36 @@ Within dependent clusters:
 54 (notification-center) → 48 (email-notifications)
 60 (archive-support) → 61 (asset-backup)
 26 (thumbnail-http-cache) → 23 (progressive-web-app)
+75 (kafka-catalog-pipeline) → 76 (kafka-async-upload), 77 (kafka-catalog-coordination), 80 (redis-sse-pubsub)
+75 (kafka-catalog-pipeline) → 73 (mongodb-audit-log) [Kafka consumer]
+46 (session-management) + 79 (redis-refresh-tokens) — deliver together to avoid PostgreSQL column churn
+26, 28 → 81 (redis-thumbnail-cache) [browser cache and JVM cache first, then Redis L2]
+28 → 82 (redis-search-tag-cache) [extend Caffeine scope to Redis]
+```
+
+Improvements 74 (mongodb-user-preferences), 78 (redis-distributed-rate-limiting) have no hard dependencies and can be delivered in any order. Improvement 72 (mongodb-exif-store) has no hard dependency but is mutually exclusive with #63 (raw-exif-jsonb) — choose one.
+
+Priority ordering for the MongoDB, Kafka, and Redis improvements:
+
+```
+P0 — production-safety gaps (any multi-instance deployment is currently broken without these):
+  78 (redis-distributed-rate-limiting) — in-memory rate limits are per-JVM; attackers get N× the limit with N instances
+  75 (kafka-catalog-pipeline)          — SseNotificationRegistry is per-JVM; SSE progress does not cross instance boundaries
+
+P1 — high-impact, build on P0 infrastructure:
+  80 (redis-sse-pubsub)               — completes multi-instance SSE delivery alongside #75
+  79 (redis-refresh-tokens)           — implement before or with #46 (session-management) to avoid schema churn
+  72 or 63                            — choose one EXIF approach; #63 is lower-risk (stays in PostgreSQL)
+
+P2 — scalability and performance wins:
+  76 (kafka-async-upload)             — requires #75; eliminates blocking upload for large files
+  81 (redis-thumbnail-cache)          — implement after #26 (done) and #28 for best layering
+  73 (mongodb-audit-log)              — requires #75 for Kafka consumers
+  82 (redis-search-tag-cache)         — implement after #28 (Caffeine) for a smooth upgrade path
+
+P3 — operational convenience:
+  74 (mongodb-user-preferences)       — standalone; most useful once MongoDB is already provisioned for #72 or #73
+  77 (kafka-catalog-coordination)     — requires #75; lower urgency when running a single instance
 ```
 
 ### Deployment (migration) dependencies
@@ -136,6 +197,57 @@ Flyway migration versions must be applied in ascending order. Migrations V7–V1
 Note: `pixel_width` and `pixel_height` are already present on `assets`; only the derived `aspect_ratio` column is new. The backfill (`aspect_ratio = pixel_width / pixel_height`) must be included in the V15 migration to populate existing rows. Assets where either dimension is zero are left as `NULL` and excluded from wallpaper queries.
 
 The V17 migration must run after V16 because the `search_vector` generated column combines `file_name`, `description`, and tag data; the `description` column must exist before the generated column can reference it.
+
+Note on V22 (`session-management`): if `redis-refresh-tokens` (#79) is implemented, V22 becomes moot — the `user_agent` field is instead stored as a Redis hash field for each token. Coordinate the delivery of #46 and #79 to avoid applying V22 and then immediately discarding the column.
+
+### MongoDB, Kafka, and Redis infrastructure provisioning
+
+Improvements #72–#82 require no Flyway migrations — they do not modify the PostgreSQL schema. However, they do require provisioning new infrastructure components alongside the existing PostgreSQL container:
+
+| Infrastructure | Required by improvements | Notes |
+| -------------- | ------------------------ | ----- |
+| MongoDB 7+     | #72, #73, #74 | Add `mongo` service to `docker-compose.yml` |
+| Apache Kafka 3.7+ (KRaft mode) | #75, #76, #77, #80 | Add `kafka` service; no ZooKeeper required in KRaft mode |
+| Redis 7+       | #78, #79, #80, #81, #82 | Add `redis` service with `allkeys-lru` eviction and a memory cap |
+
+Recommended additions to `docker-compose.yml`:
+
+```yaml
+mongo:
+  image: mongo:8
+  ports: ["27017:27017"]
+
+kafka:
+  image: apache/kafka:3.9.0
+  ports: ["9092:9092"]
+  environment:
+    KAFKA_NODE_ID: 1
+    KAFKA_PROCESS_ROLES: broker,controller
+    KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+    KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+    KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+redis:
+  image: redis:7-alpine
+  ports: ["6379:6379"]
+  command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+```
+
+Corresponding `application.yml` additions:
+
+```yaml
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/photomanager   # improvements #72, #73, #74
+    redis:
+      host: ${REDIS_HOST:localhost}                 # improvements #78, #79, #80, #81, #82
+      port: ${REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}  # improvements #75, #76, #77
+```
+
+Exception: `redis-refresh-tokens` (#79) will eventually drop the `refresh_tokens` PostgreSQL table. This requires a Flyway migration (numbered V32 or later, after V31) applied after a dual-write window to ensure no active tokens are lost during the cutover.
 
 ### Implementation notes
 
@@ -424,3 +536,77 @@ The WebDAV virtual filesystem is a read/write projection over the existing `asse
 **Improvement 71 — authentication note**
 
 JWT cookies cannot be forwarded by OS-level WebDAV mounts. The WebDAV endpoint at `/webdav/**` is exempted from the JWT cookie filter in `SecurityConfig` and instead uses `HttpBasicAuthenticationFilter` backed by the existing `UserDetailsService`. Credentials are sent over HTTPS only; `application.yml` must enforce `server.ssl.enabled=true` or a reverse proxy must terminate TLS before the WebDAV mount is used in production.
+
+**Improvement 72 — technology choice rationale vs #63**
+
+`mongodb-exif-store` (#72) and `raw-exif-jsonb` (#63) are mutually exclusive solutions to the same problem. #63 stores raw EXIF as a `JSONB` column on the existing `asset_exif` PostgreSQL table — simpler, keeps the single-database stack, immediately queryable with PostgreSQL operators (`->`, `@>`, GIN indexing). #72 moves EXIF to a MongoDB collection — adds operational complexity (a second database) but unlocks the native document model, `$near`/`$geoWithin` geospatial operators on the GPS coordinates already stored in `AssetExif`, and rich aggregation pipeline queries across 80–300 nested EXIF fields per image. The hexagonal architecture makes the swap transparent to use cases and controllers: only `AssetExifRepositoryImpl` (infrastructure) changes, implementing the same `AssetExifRepository` domain port. Decision rule: choose #63 if keeping a single PostgreSQL dependency is preferred and geospatial querying is not a current requirement; choose #72 if `gps-map-view` (#13) and geospatial search are key roadmap items. If #63 is implemented first, #72 becomes a data-migration task (copy JSONB data to MongoDB documents, drop the PostgreSQL table).
+
+**Improvement 73 — MongoDB document design**
+
+The audit log collection name is `asset_audit_log`. Every action produces a document with required fields `{ userId, action, entityType, entityId, timestamp }` and an optional `metadata` sub-document whose shape varies by action:
+
+```
+AssetTagged:   metadata: { tagName, tagId }
+AssetDeleted:  metadata: { folderId, permanent: false }
+CatalogRun:    metadata: { foldersScanned, assetsAdded, durationMs }
+SyncRun:       metadata: { sourceDir, targetDir, filesCopied, filesDeleted }
+ConvertRun:    metadata: { sourceDir, targetDir, filesConverted }
+```
+
+A compound index on `{ userId: 1, timestamp: -1 }` supports per-user history queries. A TTL index on `timestamp` (e.g. 365 days) automatically purges old entries. When `kafka-catalog-pipeline` (#75) is in place, audit log writes are handled by a dedicated Kafka consumer group (`audit-log-writer`) subscribed to `asset.cataloged`, `asset.deleted`, and `job.*.progress` topics; without #75, a direct port call from each use case serves as the fallback. The `AuditLogRepository` port interface in `domain/port/out/` declares a single `void log(AuditEvent event)` method; the `MongoAuditLogRepositoryImpl` adapter implements it — no framework type leaks into the domain.
+
+**Improvement 74 — data migration strategy**
+
+`user_preferences` and `search_presets` are small tables (one row per user for preferences, a few rows per user for presets). The one-time data migration exports all rows to MongoDB documents then drops the PostgreSQL tables. Because both tables are user-specific and low-volume, the migration can run online: (1) export to MongoDB, (2) switch the Spring beans from JPA adapters to MongoDB adapters, (3) drop the PostgreSQL tables in subsequent Flyway migrations (V32 for `user_preferences`, V33 for `search_presets`). The `UserPreferenceRepositoryImpl` and `SearchPresetRepositoryImpl` adapters are the only classes that change.
+
+**Improvement 75 — replacing SseNotificationRegistry**
+
+The current `SseNotificationRegistry` stores `Map<Long, Consumer<CatalogChangeNotification>>` in a single JVM. SSE connections on instance A never receive events from a catalog job running on instance B. The Kafka replacement removes this constraint: each app instance runs a `@KafkaListener` subscribed to all progress topics, and maintains its own local `Map<Long, SseEmitter>` for browsers connected to that instance. On receiving a Kafka event, the listener looks up the `runId` in its local map and writes to the `SseEmitter` if present; if the browser is connected to a different instance, that instance's listener handles delivery independently. The `SseNotificationRegistry` class is deleted entirely; the `CatalogItemWriteListener` writes to a `KafkaTemplate` instead of calling `registry.get(runId)`. Spring Kafka is included via `spring-boot-starter` auto-configuration; no new Maven dependency is required.
+
+**Improvement 75 — topic retention policy**
+
+`job.*.progress` topics are ephemeral — events older than 1 hour have no value. Set `retention.ms=3600000` on these topics. `asset.cataloged` and `asset.deleted` events are more valuable for audit and search indexing; retain them for 7 days (`retention.ms=604800000`). Consumer groups: `sse-broadcaster` (one consumer per instance, reads all progress topics in round-robin), `audit-log-writer` (#73, reads `asset.cataloged` and `asset.deleted`), `search-indexer` (future, reads `asset.cataloged`).
+
+**Improvement 76 — 202 Accepted flow and partial-failure handling**
+
+The `POST /api/assets/upload` response changes from `201 Created` (with the full `AssetResponse` body) to `202 Accepted` (with a `{ jobId, status: "PROCESSING" }` body). The frontend subscribes to an SSE channel `job:upload:progress:{jobId}` (same pattern as catalog SSE). When all three consumers (hash, EXIF, thumbnail) signal completion, the job transitions to `COMPLETED` and the frontend reloads the asset. Each consumer writes its results to the `AssetRepository` or `AssetExifRepository` in a separate transaction, so partial failures — e.g. EXIF extraction fails but hash and thumbnail succeed — leave the asset in a partially-populated state that can be resolved by re-triggering the failed consumer without re-running the others.
+
+**Improvement 77 — single-partition leader election detail**
+
+Kafka's consumer group protocol guarantees that a single-partition topic has exactly one active consumer per group at any time. `catalog.requests` is configured with `partitions=1`. All app instances join the consumer group `catalog-coordinator`. Kafka's group coordinator assigns the single partition to one member; the others idle. When the active member receives a `CatalogJobRequested` event, it checks `CatalogScheduler.isRunning()` before launching — this guards against duplicate triggers if the scheduling interval fires before the previous job completes. The `@Scheduled` timer in `CatalogScheduler` becomes a `kafkaTemplate.send("catalog.requests", ...)` call rather than a direct `JobLauncher.run()` invocation.
+
+**Improvement 78 — Bucket4j Redis migration steps**
+
+The `bucket4j-redis` module (`com.bucket4j:bucket4j-redis`) provides `LettuceBasedProxyManager` as a drop-in replacement for the in-memory bucket factory. Migration: (1) add `spring-boot-starter-data-redis` and `com.bucket4j:bucket4j-redis` to `pom.xml`; (2) inject a `LettuceBasedProxyManager<String>` bean into `RateLimitFilter`; (3) replace `buckets.computeIfAbsent(bucketKey, k -> createBucket(endpointKey))` with `proxyManager.builder().build(bucketKey, () -> BucketConfiguration.builder().addLimit(createLimit(endpointKey)).build())`; (4) remove the `ConcurrentHashMap<String, Bucket> buckets` field. Zero change to rate-limit business logic, endpoint selection, or IP resolution. The `RateLimitFilterTest` unit tests continue to work because `LettuceBasedProxyManager` accepts an in-memory `LocalBucketBuilder` in test context.
+
+**Improvement 79 — dual-write migration window**
+
+To avoid losing active sessions during the PostgreSQL → Redis cutover: (1) deploy a version that writes tokens to both PostgreSQL and Redis simultaneously; (2) run for one full refresh-token lifetime (30 days) to ensure all active tokens exist in Redis; (3) switch reads to Redis-only; (4) deploy a version that writes to Redis only and apply the Flyway migration that drops the `refresh_tokens` table (V32 or later). This gradual approach is safe because the token population is small — one active token per logged-in user — and the 30-day window comfortably covers all active sessions.
+
+Note on `session-management` (#46): #46 plans to add `user_agent VARCHAR` to `refresh_tokens`. If #79 is implemented first, store `userAgent` as a Redis hash field: `HSET refresh_token:{tokenId} userId {userId} userAgent {ua} expiresAt {epoch}`. If #46 is implemented first, the `user_agent` PostgreSQL column is later migrated to the Redis hash structure during the #79 cutover — no data is lost.
+
+**Improvement 80 — Kafka vs Redis Pub/Sub trade-offs for SSE**
+
+Kafka and Redis Pub/Sub serve different purposes and are not interchangeable for SSE delivery. Kafka stores events persistently with consumer-group replay semantics — a consumer can replay missed events from the committed offset. Redis Pub/Sub is fire-and-forget: subscribers receive only events published while they are connected. For SSE (where the browser connection is live and transient), Redis Pub/Sub is the better real-time delivery fit: lower latency (~0.1 ms publish-to-receive), no consumer-group coordination overhead, and no offset management. Kafka remains essential for `asset.cataloged`/`asset.deleted` events consumed by audit log writers and search indexers that need durability. Recommended architecture: catalog/sync/convert workers publish to both the Kafka topic (durable consumers) and the Redis Pub/Sub channel (SSE fan-out) in a single step. Spring Data Redis's `RedisMessageListenerContainer` handles the subscription on each app instance.
+
+**Improvement 81 — cache key stability and eviction**
+
+The cache key `asset:thumbnail:{assetId}` is stable because thumbnails are content-addressed: generated once during cataloging and never mutated (the existing `thumbnail-http-cache` improvement adds `Cache-Control: immutable` for this reason). Invalidation is therefore narrowly scoped: only `PurgeAssetsUseCaseImpl` and `ThumbnailStorageServiceAdapter.deleteThumbnail()` need to call `DEL asset:thumbnail:{assetId}`. The `allkeys-lru` Redis eviction policy retains recently accessed thumbnails automatically. To prevent thumbnail caching from starving other Redis uses (rate-limit buckets, refresh tokens, SSE channels), either use a dedicated Redis instance or a separate key namespace with `maxmemory` configured per keyspace using Redis 7's `redis.conf` keyspace limits.
+
+**Improvement 82 — cache invalidation strategy**
+
+Asset search result cache invalidation is driven by Kafka events from `kafka-catalog-pipeline` (#75): a `@KafkaListener` subscribed to `asset.cataloged` and `asset.deleted` calls `redisTemplate.delete(pattern)` using the folder path as a key prefix (`assets:{folderPath}:*`). Without #75 in place, invalidation falls back to direct calls in `CatalogAssetItemWriter.write()` and `DeleteAssetsUseCaseImpl.execute()`. Tag cache invalidation is simpler: `AddTagToAssetUseCaseImpl` and `RemoveTagFromAssetUseCaseImpl` each call `redisTemplate.delete("tags:all")`. If `server-side-spring-cache` (#28) is implemented first with `CaffeineCacheManager`, upgrading to Redis requires only switching the `CacheManager` bean to `RedisCacheManager` backed by a Lettuce `RedisConnectionFactory` — the `@Cacheable` and `@CacheEvict` annotations on the use cases require no change.
+
+**MongoDB, Kafka, and Redis — overlap with existing improvements (summary)**
+
+The following table lists every new improvement that directly overlaps with or fills a gap in an existing planned improvement:
+
+| New improvement | Overlaps / conflicts with | Relationship |
+| --- | --- | --- |
+| `mongodb-exif-store` (#72) | `raw-exif-jsonb` (#63) | **Mutually exclusive** — same problem, different technology; choose one |
+| `redis-distributed-rate-limiting` (#78) | `api-rate-limiting` (#39, done) | **Gap fix** — #39 is in-memory only; #78 makes it multi-instance safe |
+| `redis-refresh-tokens` (#79) | `session-management` (#46) | **Coordinate** — #46 adds `user_agent` to PostgreSQL; #79 moves to Redis; deliver together |
+| `redis-thumbnail-cache` (#81) | `thumbnail-http-cache` (#26, done) | **Complementary** — #26 is browser-level L1; #81 adds shared server-side L2 |
+| `redis-thumbnail-cache` (#81) | `server-side-spring-cache` (#28) | **Complementary** — #28 is per-JVM Caffeine; #81 adds distributed Redis |
+| `redis-search-tag-cache` (#82) | `server-side-spring-cache` (#28) | **Extension** — #82 covers gallery endpoints #28 omits; upgrades Caffeine to Redis |
+| `kafka-catalog-pipeline` (#75) | `notification-center` (#54) | **Complementary** — #54 persists notifications to PostgreSQL; #75 replaces the in-memory SSE delivery mechanism; both can coexist |
