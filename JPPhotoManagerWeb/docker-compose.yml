@@ -44,10 +44,10 @@ services:
         source: ${HOST_IMAGE_DIR:?Set HOST_IMAGE_DIR in .env (e.g. HOST_IMAGE_DIR=/home/user/Pictures)}
         target: /catalog
       - type: bind
-        source: ${HOST_IMAGE_DIR_2:?Set HOST_IMAGE_DIR_2 in .env}
+        source: ${HOST_IMAGE_DIR_2:-/tmp/catalog2-unused}
         target: /catalog2
       - type: bind
-        source: ${HOST_IMAGE_DIR_3:?Set HOST_IMAGE_DIR_3 in .env}
+        source: ${HOST_IMAGE_DIR_3:-/tmp/catalog3-unused}
         target: /catalog3
       - thumbnails:/thumbnails
 
