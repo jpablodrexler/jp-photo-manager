@@ -7,9 +7,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Subscription } from 'rxjs';
 import { AuthService } from './core/services/auth.service';
+import { BackgroundSyncService } from './core/services/background-sync.service';
 import { MediaPlayerService } from './core/services/media-player.service';
 import { ThemeService } from './core/services/theme.service';
 import { PreferenceService } from './core/services/preference.service';
@@ -34,6 +36,7 @@ import { AboutDialogComponent } from './shared/components/about-dialog/about-dia
     AudioPlayerComponent,
     VideoPlayerComponent,
     MediaFullscreenOverlayComponent,
+    MatSnackBarModule,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
@@ -42,6 +45,7 @@ export class AppComponent implements OnInit, OnDestroy {
   title = 'JP Photo Manager';
   isMobile = false;
   private bpSub!: Subscription;
+  private onlineListener = () => this.replayPendingMutations();
 
   readonly mediaPlayer = inject(MediaPlayerService);
   private readonly dialog = inject(MatDialog);
@@ -53,7 +57,9 @@ export class AppComponent implements OnInit, OnDestroy {
     private router: Router,
     private breakpointObserver: BreakpointObserver,
     private themeService: ThemeService,
-    private preferenceService: PreferenceService
+    private preferenceService: PreferenceService,
+    private backgroundSyncService: BackgroundSyncService,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -61,10 +67,24 @@ export class AppComponent implements OnInit, OnDestroy {
     this.bpSub = this.breakpointObserver.observe([Breakpoints.Handset]).subscribe(result => {
       this.isMobile = result.matches;
     });
+    window.addEventListener('online', this.onlineListener);
+    if (navigator.onLine) {
+      this.replayPendingMutations();
+    }
   }
 
   ngOnDestroy(): void {
     this.bpSub.unsubscribe();
+    window.removeEventListener('online', this.onlineListener);
+  }
+
+  private replayPendingMutations(): void {
+    this.backgroundSyncService.getPendingCount().then(count => {
+      if (count > 0) {
+        this.snackBar.open(`Syncing ${count} pending changes…`, undefined, { duration: 4000 });
+        this.backgroundSyncService.replayQueue();
+      }
+    });
   }
 
   get isLoggedIn(): boolean {

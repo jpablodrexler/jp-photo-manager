@@ -1,17 +1,21 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpEvent, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpErrorResponse, HttpEvent, HttpParams } from '@angular/common/http';
+import { Observable, catchError, throwError } from 'rxjs';
 import { Asset, CropAssetRequest, RenameAssetsResponse, SortCriteria } from '../models/asset.model';
 import { ExifMetadata } from '../models/exif-metadata.model';
 import { PaginatedData } from '../models/paginated-data.model';
 import { TimelineGroup } from '../models/timeline-group.model';
+import { BackgroundSyncService } from './background-sync.service';
 
 @Injectable({ providedIn: 'root' })
 export class AssetService {
 
   private readonly baseUrl = '/api/assets';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private backgroundSyncService: BackgroundSyncService
+  ) {}
 
   getAssets(folderPath: string, page = 0, sort: SortCriteria = 'FILE_NAME',
             search?: string, dateFrom?: string, dateTo?: string, minRating?: number,
@@ -42,7 +46,17 @@ export class AssetService {
   }
 
   rateAsset(assetId: number, rating: number): Observable<void> {
-    return this.http.patch<void>(`${this.baseUrl}/${assetId}/rating`, { rating });
+    const url = `${this.baseUrl}/${assetId}/rating`;
+    const body = { rating };
+    return this.http.patch<void>(url, body).pipe(
+      catchError((error: HttpErrorResponse) => {
+        if (error.status === 0) {
+          this.backgroundSyncService.queueMutation(url, 'PATCH', body);
+          return throwError(() => error);
+        }
+        return throwError(() => error);
+      })
+    );
   }
 
   getThumbnailUrl(assetId: number): string {
