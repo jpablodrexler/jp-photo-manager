@@ -35,6 +35,8 @@ Archive of improvements to the JPPhotoManagerWeb application that have been full
 | 66  | `video-player`              | Right-side video player pane and fullscreen support for both video and audio; `VideoPlayerComponent` occupies a `MatSidenav` with `position="end"`; unified `MediaPlayerService` (`providedIn: 'root'`) replaces `AudioPlayerService` and manages both media types via an internal `HTMLAudioElement` for audio and a reference to `VideoPlayerComponent`'s `HTMLVideoElement` registered via `registerVideoElement()`; `isVideoAsset()` routes `play()` calls by file extension; video fullscreen uses `HTMLVideoElement.requestFullscreen()`; audio fullscreen uses a custom `MediaFullscreenOverlayComponent`; unified streaming endpoint `GET /api/assets/{id}/stream` replaces the audio-only `/audio` endpoint; `AudioController` renamed `MediaController` | ✅ Created | ✅ Implemented |
 | 15  | `dark-mode`                 | Angular Material dark palette toggle stored in `localStorage` with `prefers-color-scheme` fallback; preference persisted per user on the backend; toolbar toggle button                 | ✅ Created | ✅ Implemented |
 | 20  | `storage-analytics`         | `/analytics` route with `ngx-charts` visualizations: storage-per-folder treemap, file-format pie, photos-per-month histogram, rating distribution bar; backed by aggregate JPQL queries  | ✅ Created | ✅ Implemented |
+| 23  | `progressive-web-app`       | `ng add @angular/pwa` with a cache-first strategy for thumbnails; background sync queue for offline rating/tag edits replayed on reconnect; HttpOnly cookie auth remains intact          | ✅ Created | ✅ Implemented |
+| 26  | `thumbnail-http-cache`      | Add `Cache-Control: public, max-age=31536000, immutable` to the `GET /api/assets/{id}/thumbnail` response; thumbnails are content-addressed by asset ID and never mutated once written, making them safe for permanent browser and CDN caching; currently every gallery load re-fetches every thumbnail from disk with no cache headers set | ✅ Created | ✅ Implemented |
 
 ---
 
@@ -286,3 +288,15 @@ Three entry points: (1) video asset card → clicking the `play_circle` overlay 
 **Improvement 52 → Improvement 15 (soft dependency — prerequisite implemented)**
 
 `multi-language-i18n` and `dark-mode` (#15) both store per-user UI preferences. Implementing them together — or implementing #15 first with a `user_preferences` JSON column that #52 can extend — avoids two separate schema changes and two separate backend endpoints for preference persistence.
+
+**Improvement 23 → Improvement 10** (prerequisite already implemented)
+
+`progressive-web-app` is significantly more valuable once `mobile-responsive-layout` is in place, since PWA installs are most common on mobile.
+
+**Improvements 26, 28 → Improvement 81** (complementary caching layers)
+
+`redis-thumbnail-cache` (#81) is most impactful when `thumbnail-http-cache` (#26, already implemented) is already in place for browser-level caching and `server-side-spring-cache` (#28) provides per-JVM Caffeine for hot reads. Implementing the three layers in order — browser cache (#26) → JVM Caffeine (#28) → shared Redis (#81) — delivers each tier with clear boundaries and avoids redundant work.
+
+**Improvement 26 and 27 → Improvement 23**
+
+`thumbnail-http-cache` sets browser-level `Cache-Control` headers on the thumbnail endpoint. `progressive-web-app` (#23) adds a service-worker cache-first strategy for the same endpoint. Implementing #26 first means the service worker inherits already-correct cache semantics and does not need to re-define them. Implementing them in reverse order still works but creates redundancy.

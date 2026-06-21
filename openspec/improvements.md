@@ -13,10 +13,8 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 | 17  | `batch-rename`              | Pattern-based rename (e.g. `{date:yyyy-MM-dd}_{index:03d}_{original}`) for multi-selected assets; live preview table before applying; new `POST /api/assets/rename` endpoint             | ✅ Created | ⬜ Pending      |
 | 19  | `shareable-album-links`     | `POST /api/albums/{id}/share` generates a signed UUID token stored in a `shared_albums` table with optional `expires_at`; public `/s/:token` route renders the album without authentication | ✅ Created | ⬜ Pending |
 | 22  | `duplicate-auto-resolve`    | "Clean up automatically" dialog on the duplicates page with policies (keep oldest, keep newest, keep highest resolution, keep preferred folder); delegates to existing soft-delete path   | ✅ Created | ⬜ Pending      |
-| 23  | `progressive-web-app`       | `ng add @angular/pwa` with a cache-first strategy for thumbnails; background sync queue for offline rating/tag edits replayed on reconnect; HttpOnly cookie auth remains intact          | ✅ Created | ⬜ Pending      |
 | 24  | `wallpaper-suggestion`      | Add `aspect_ratio` float column to `assets` (populated during cataloging from the existing `pixel_width`/`pixel_height` columns); `GET /api/assets/wallpaper-suggestion?screenWidth=W&screenHeight=H` returns a random non-deleted asset where `pixel_width >= W`, `pixel_height >= H`, and `aspect_ratio` is within ±0.02 of the desktop ratio; frontend reads `window.screen.width`/`height`, calls the endpoint, and shows the suggested image with a download button | ✅ Created | ⬜ Pending |
 | 25  | `on-push-change-detection`  | Apply `ChangeDetectionStrategy.OnPush` to all 18 components; replace mutable state mutations with immutable assignments so Angular's OnPush check can detect changes; prioritise `ThumbnailComponent` (one instance per visible image) and `GalleryComponent` (the most complex); inject `ChangeDetectorRef` where manual `markForCheck()` calls are needed (e.g. after SSE events or async callbacks outside the Angular zone) | ✅ Created | ⬜ Pending |
-| 26  | `thumbnail-http-cache`      | Add `Cache-Control: public, max-age=31536000, immutable` to the `GET /api/assets/{id}/thumbnail` response; thumbnails are content-addressed by asset ID and never mutated once written, making them safe for permanent browser and CDN caching; currently every gallery load re-fetches every thumbnail from disk with no cache headers set | ✅ Created | ⬜ Pending |
 | 27  | `image-etag-cache`          | Add `ETag` (derived from the SHA-256 `hash` already stored on the `Asset` entity) and `Cache-Control: private, max-age=3600` to the `GET /api/assets/{id}/image` response; enables conditional `If-None-Match` requests so the browser receives a `304 Not Modified` instead of re-downloading the full image on repeat views; currently no cache headers are set on this endpoint | ✅ Created | ⬜ Pending |
 | 28  | `server-side-spring-cache`  | Enable `@EnableCaching` with a Caffeine in-memory cache; annotate `GetHomeStatsUseCase`, `GetSubFoldersUseCase`, and EXIF lookup use cases with `@Cacheable`; add `@CacheEvict` on the corresponding write use cases; avoids repeated database aggregation queries for data that changes infrequently; no new Flyway migration required | ✅ Created | ⬜ Pending |
 | 29  | `exif-cache-service`        | Move the `Map<number, ExifMetadata \| null>` from `ExifPanelComponent` (destroyed on every navigation) to a singleton `ExifCacheService`; the cache currently lives only for the lifetime of the component instance, so navigating away and back to the viewer discards all fetched EXIF data and triggers redundant API calls; a service-level cache persists for the entire session | ✅ Created | ⬜ Pending |
@@ -96,17 +94,9 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 
 `keyboard-shortcuts` extends the viewer shortcuts already present in `slideshow-mode`. Implementing 8 first avoids re-doing viewer key handling.
 
-**Improvement 23 → Improvement 10** (prerequisite already implemented)
-
-`progressive-web-app` is significantly more valuable once `mobile-responsive-layout` is in place, since PWA installs are most common on mobile.
-
 **Improvement 46 → Improvement 79** (token field design coordination)
 
 `session-management` (#46) adds a `user_agent` column to `refresh_tokens` in PostgreSQL. `redis-refresh-tokens` (#79) moves the entire token store to Redis, making that column moot. Implementing both together avoids adding a PostgreSQL column that is immediately discarded. If #46 ships first, the `user_agent` data must be migrated to a Redis hash field (`HSET refresh_token:{tokenId} userAgent {ua}`) during the #79 cutover.
-
-**Improvements 26, 28 → Improvement 81** (complementary caching layers)
-
-`redis-thumbnail-cache` (#81) is most impactful when `thumbnail-http-cache` (#26, already implemented) is already in place for browser-level caching and `server-side-spring-cache` (#28) provides per-JVM Caffeine for hot reads. Implementing the three layers in order — browser cache (#26) → JVM Caffeine (#28) → shared Redis (#81) — delivers each tier with clear boundaries and avoids redundant work.
 
 **Improvement 28 → Improvement 82** (extend Caffeine to Redis)
 
@@ -121,12 +111,11 @@ For the pending dependent clusters:
 19 (shareable-album-links) — prerequisite #4  already implemented
 22 (duplicate-auto-resolve)— prerequisite #9  already implemented
 16 (keyboard-shortcuts)    — prerequisite #8  already implemented
-23 (progressive-web-app)   — prerequisite #10 already implemented
 58 (video-from-images)     — prerequisite #21 already implemented; #59 also already implemented
 63 (raw-exif-jsonb)        — prerequisite #1  already implemented; extend CatalogAssetItemProcessor (#64 already done)
 ```
 
-Improvements 17 (batch-rename), 24 (wallpaper-suggestion), 26 (thumbnail-http-cache), 27 (image-etag-cache), 28 (server-side-spring-cache), 29 (exif-cache-service), 30 (image-rotation-viewer), 32 (folder-watch-service), 33 (role-based-access-control), 35 (thumbnail-regeneration), 36 (global-error-handler), 38 (folder-stats-in-tree), 40 (circuit-breaker), 43 (request-correlation-mdc), 50 (image-comparison-viewer), 53 (password-strength-policy), 56 (asset-image-editor), 57 (viewer-pan-drag), 67 (event-auto-grouping), 68 (photo-quality-scoring), 69 (iptc-xmp-metadata-editing), 70 (dominant-color-palette), 71 (webdav-server) have no hard dependencies and can be delivered in any order.
+Improvements 17 (batch-rename), 24 (wallpaper-suggestion), 27 (image-etag-cache), 28 (server-side-spring-cache), 29 (exif-cache-service), 30 (image-rotation-viewer), 32 (folder-watch-service), 33 (role-based-access-control), 35 (thumbnail-regeneration), 36 (global-error-handler), 38 (folder-stats-in-tree), 40 (circuit-breaker), 43 (request-correlation-mdc), 50 (image-comparison-viewer), 53 (password-strength-policy), 56 (asset-image-editor), 57 (viewer-pan-drag), 67 (event-auto-grouping), 68 (photo-quality-scoring), 69 (iptc-xmp-metadata-editing), 70 (dominant-color-palette), 71 (webdav-server) have no hard dependencies and can be delivered in any order.
 
 Within dependent clusters:
 
@@ -138,11 +127,10 @@ Within dependent clusters:
 46 (session-management) → 47 (two-factor-authentication)
 54 (notification-center) → 48 (email-notifications)
 60 (archive-support) → 61 (asset-backup)
-26 (thumbnail-http-cache) → 23 (progressive-web-app)
 75 (kafka-catalog-pipeline) → 76 (kafka-async-upload), 77 (kafka-catalog-coordination), 80 (redis-sse-pubsub)
 75 (kafka-catalog-pipeline) → 73 (mongodb-audit-log) [Kafka consumer]
 46 (session-management) + 79 (redis-refresh-tokens) — deliver together to avoid PostgreSQL column churn
-26, 28 → 81 (redis-thumbnail-cache) [browser cache and JVM cache first, then Redis L2]
+28 → 81 (redis-thumbnail-cache) [JVM cache first, then Redis L2]
 28 → 82 (redis-search-tag-cache) [extend Caffeine scope to Redis]
 ```
 
@@ -162,7 +150,7 @@ P1 — high-impact, build on P0 infrastructure:
 
 P2 — scalability and performance wins:
   76 (kafka-async-upload)             — requires #75; eliminates blocking upload for large files
-  81 (redis-thumbnail-cache)          — implement after #26 (done) and #28 for best layering
+  81 (redis-thumbnail-cache)          — implement after #28 for best layering (#26 thumbnail-http-cache already done)
   73 (mongodb-audit-log)              — requires #75 for Kafka consumers
   82 (redis-search-tag-cache)         — implement after #28 (Caffeine) for a smooth upgrade path
 
@@ -254,10 +242,6 @@ Exception: `redis-refresh-tokens` (#79) will eventually drop the `refresh_tokens
 **Improvement 25 → Improvement 2** (prerequisite already implemented)
 
 `on-push-change-detection` should be applied after `virtual-scrolling-gallery` is completed. The list layout introduced by #2 uses fixed-height items with immutable `*cdkVirtualFor` bindings; applying OnPush before that layout is in place risks masking change-detection bugs while the old grid and IntersectionObserver are still present.
-
-**Improvement 26 and 27 → Improvement 23**
-
-`thumbnail-http-cache` sets browser-level `Cache-Control` headers on the thumbnail endpoint. `progressive-web-app` (#23) adds a service-worker cache-first strategy for the same endpoint. Implementing #26 first means the service worker inherits already-correct cache semantics and does not need to re-define them. Implementing them in reverse order still works but creates redundancy.
 
 **Improvement 27 → no schema change**
 
@@ -606,7 +590,6 @@ The following table lists every new improvement that directly overlaps with or f
 | `mongodb-exif-store` (#72) | `raw-exif-jsonb` (#63) | **Mutually exclusive** — same problem, different technology; choose one |
 | `redis-distributed-rate-limiting` (#78) | `api-rate-limiting` (#39, done) | **Gap fix** — #39 is in-memory only; #78 makes it multi-instance safe |
 | `redis-refresh-tokens` (#79) | `session-management` (#46) | **Coordinate** — #46 adds `user_agent` to PostgreSQL; #79 moves to Redis; deliver together |
-| `redis-thumbnail-cache` (#81) | `thumbnail-http-cache` (#26, done) | **Complementary** — #26 is browser-level L1; #81 adds shared server-side L2 |
 | `redis-thumbnail-cache` (#81) | `server-side-spring-cache` (#28) | **Complementary** — #28 is per-JVM Caffeine; #81 adds distributed Redis |
 | `redis-search-tag-cache` (#82) | `server-side-spring-cache` (#28) | **Extension** — #82 covers gallery endpoints #28 omits; upgrades Caffeine to Redis |
 | `kafka-catalog-pipeline` (#75) | `notification-center` (#54) | **Complementary** — #54 persists notifications to PostgreSQL; #75 replaces the in-memory SSE delivery mechanism; both can coexist |
