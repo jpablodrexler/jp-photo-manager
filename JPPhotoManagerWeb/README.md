@@ -881,6 +881,48 @@ UID=$(id -u) GID=$(id -g) docker compose up
 
 ---
 
+## Installing as a Progressive Web App (PWA)
+
+JP Photo Manager ships as a PWA: it can be installed as a standalone desktop or mobile app directly from the browser, with offline thumbnail caching and background sync for rating changes.
+
+> **Important:** The PWA service worker only activates in a **production build**. Install prompts will not appear when running the Angular dev server (`npm start`). Use the Docker Compose setup or a production build served by nginx.
+
+### Prerequisites
+
+The app must be running via Docker Compose (see [Running with Docker Compose](#running-with-docker-compose)):
+
+```bash
+cd JPPhotoManagerWeb
+cp .env.example .env
+# Edit .env: set HOST_IMAGE_DIR and JWT_SECRET at minimum
+docker compose up --build
+```
+
+Then open `http://localhost` in a supported browser.
+
+### Installing from the browser
+
+| Browser | How to install |
+|---|---|
+| **Chrome / Edge** | An install icon (⊕) appears in the address bar — click it, then **Install** |
+| **Chrome (menu)** | ⋮ menu → **Save and share** → **Install JP Photo Manager** |
+| **Edge (menu)** | ··· menu → **Apps** → **Install this site as an app** |
+| **Safari (macOS)** | **File** → **Add to Dock** (requires macOS Sonoma or later) |
+| **Safari (iOS)** | Share sheet → **Add to Home Screen** |
+| **Firefox** | Not supported — Firefox does not implement PWA installation |
+
+Once installed the app opens in its own window (no browser chrome) under the name **JP Photo Manager** (short name: **PhotoMgr**).
+
+### PWA capabilities
+
+| Capability | Detail |
+|---|---|
+| **Offline thumbnail cache** | Previously viewed thumbnails are served from the service-worker cache when the network is unavailable (cache-first strategy configured in `ngsw-config.json`) |
+| **Background sync for ratings** | Star-rating changes made while offline are queued in IndexedDB via `BackgroundSyncService` and replayed automatically when connectivity is restored; a snackbar notification confirms the replay |
+| **App icons** | Full icon set from 72×72 to 512×512 pixels, suitable for home screens and taskbars |
+
+---
+
 ## CI/CD
 
 Two GitHub Actions workflows are defined in `.github/workflows/`:
