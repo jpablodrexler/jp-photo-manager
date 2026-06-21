@@ -26,8 +26,8 @@
   gap: 8px;
 
   &.keep {
-    border-color: #4caf50;
-    background: rgba(76, 175, 80, 0.12);
+    border-color: var(--accent-color);
+    background: color-mix(in srgb, var(--accent-color) 12%, transparent);
   }
 
   img {

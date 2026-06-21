@@ -11,7 +11,7 @@
   padding: 8px;
   border-radius: 4px;
   margin-bottom: 8px;
-  background: rgba(76, 175, 80, 0.12);
+  background: color-mix(in srgb, var(--accent-color) 12%, transparent);
   display: flex;
   flex-direction: column;
   gap: 4px;

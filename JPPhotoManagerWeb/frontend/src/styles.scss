@@ -43,6 +43,50 @@ html.theme-dark {
   --chip-icon: rgba(255, 255, 255, 0.7);
   --input-text: #fff;
   --input-placeholder: rgba(255, 255, 255, 0.4);
+  --accent-color: #2e7d32;
+
+  // Override Material primary-colour components to follow --accent-color.
+  // These rules share the same specificity as the @include above and appear
+  // later in the cascade, so they always win.
+  .mat-mdc-raised-button.mat-primary {
+    --mdc-protected-button-container-color: var(--accent-color);
+    --mdc-protected-button-label-text-color: white;
+  }
+
+  // All uncolored text buttons use the accent colour. The .mat-primary rule
+  // repeats at higher specificity to beat the theme's .mat-primary override.
+  .mat-mdc-button {
+    --mdc-text-button-label-text-color: var(--accent-color);
+  }
+
+  .mat-mdc-button.mat-primary {
+    --mdc-text-button-label-text-color: var(--accent-color);
+  }
+
+  .mat-mdc-outlined-button {
+    --mdc-outlined-button-label-text-color: var(--accent-color);
+  }
+
+  mat-progress-bar {
+    --mdc-linear-progress-active-indicator-color: var(--accent-color);
+  }
+
+  mat-spinner, mat-progress-spinner {
+    --mdc-circular-progress-active-indicator-color: var(--accent-color);
+  }
+
+  // Toolbar buttons live on the accent-colour background → use white for text,
+  // state-layer, and ripple so interactions stay visible.
+  .app-toolbar .mat-mdc-button {
+    --mdc-text-button-label-text-color: white;
+    --mat-text-button-state-layer-color: white;
+    --mat-text-button-ripple-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .app-toolbar .mat-mdc-icon-button {
+    --mat-icon-button-state-layer-color: white;
+    --mat-icon-button-ripple-color: rgba(255, 255, 255, 0.2);
+  }
 
   .folder-tree {
     border-right: 1px solid var(--border-subtle);
@@ -79,6 +123,44 @@ html.theme-light {
   --chip-icon: rgba(0, 0, 0, 0.6);
   --input-text: rgba(0, 0, 0, 0.87);
   --input-placeholder: rgba(0, 0, 0, 0.4);
+  --accent-color: #2e7d32;
+
+  // Mirror the same overrides for the light theme.
+  .mat-mdc-raised-button.mat-primary {
+    --mdc-protected-button-container-color: var(--accent-color);
+    --mdc-protected-button-label-text-color: white;
+  }
+
+  .mat-mdc-button {
+    --mdc-text-button-label-text-color: var(--accent-color);
+  }
+
+  .mat-mdc-button.mat-primary {
+    --mdc-text-button-label-text-color: var(--accent-color);
+  }
+
+  .mat-mdc-outlined-button {
+    --mdc-outlined-button-label-text-color: var(--accent-color);
+  }
+
+  mat-progress-bar {
+    --mdc-linear-progress-active-indicator-color: var(--accent-color);
+  }
+
+  mat-spinner, mat-progress-spinner {
+    --mdc-circular-progress-active-indicator-color: var(--accent-color);
+  }
+
+  .app-toolbar .mat-mdc-button {
+    --mdc-text-button-label-text-color: white;
+    --mat-text-button-state-layer-color: white;
+    --mat-text-button-ripple-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .app-toolbar .mat-mdc-icon-button {
+    --mat-icon-button-state-layer-color: white;
+    --mat-icon-button-ripple-color: rgba(255, 255, 255, 0.2);
+  }
 
   .folder-tree {
     border-right: 1px solid var(--border-subtle);
@@ -148,7 +230,7 @@ html, body {
   }
 
   &.selected {
-    outline: 3px solid #4caf50;
+    outline: 3px solid var(--accent-color);
   }
 
   img {

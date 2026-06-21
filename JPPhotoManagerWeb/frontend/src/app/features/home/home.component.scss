@@ -9,7 +9,7 @@
   font-size: 2rem;
   font-weight: 600;
   margin-bottom: 32px;
-  color: var(--mat-sys-primary, #4caf50);
+  color: var(--accent-color);
 }
 
 // Quick Actions
@@ -22,6 +22,11 @@
 
   button {
     min-width: 140px;
+    color: var(--accent-color);
+
+    mat-icon {
+      color: var(--accent-color);
+    }
   }
 }
 
@@ -49,7 +54,7 @@
   font-size: 48px;
   width: 48px;
   height: 48px;
-  color: var(--mat-sys-primary, #4caf50);
+  color: var(--accent-color);
 }
 
 .stat-value {
@@ -151,7 +156,7 @@
 
 .folder-bar {
   height: 100%;
-  background: var(--mat-sys-primary, #4caf50);
+  background: var(--accent-color);
   border-radius: 4px;
   transition: width 0.3s ease;
 }

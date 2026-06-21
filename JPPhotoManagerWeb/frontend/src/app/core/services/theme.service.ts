@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 const STORAGE_KEY = 'photomanager_theme';
+const ACCENT_STORAGE_KEY = 'photomanager_accent_color';
+const DEFAULT_ACCENT = '#2e7d32';
 
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
@@ -11,8 +13,22 @@ export class ThemeService {
 
   readonly isDark$: Observable<boolean> = this._isDark$.asObservable();
 
+  private readonly _accentColor$ = new BehaviorSubject<string>(DEFAULT_ACCENT);
+  readonly accentColor$: Observable<string> = this._accentColor$.asObservable();
+
   init(): void {
     this.applyTheme(this.resolveInitialMode());
+    const storedAccent = localStorage.getItem(ACCENT_STORAGE_KEY);
+    if (storedAccent) {
+      this.setAccentColor(storedAccent);
+    }
+  }
+
+  setAccentColor(color: string): void {
+    document.documentElement.style.setProperty('--accent-color', color);
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute('content', color);
+    localStorage.setItem(ACCENT_STORAGE_KEY, color);
+    this._accentColor$.next(color);
   }
 
   applyTheme(mode: 'dark' | 'light'): void {

@@ -1,0 +1,35 @@
+.swatch-row {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+}
+
+.swatch {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+
+  &.active {
+    border-color: white;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.check-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: white;
+  display: none;
+}
+
+.swatch.active .check-icon {
+  display: block;
+}

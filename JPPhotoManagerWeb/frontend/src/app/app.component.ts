@@ -19,6 +19,7 @@ import { AudioPlayerComponent } from './features/audio-player/audio-player.compo
 import { VideoPlayerComponent } from './features/gallery/video-player/video-player.component';
 import { MediaFullscreenOverlayComponent } from './shared/components/media-fullscreen-overlay/media-fullscreen-overlay.component';
 import { AboutDialogComponent } from './shared/components/about-dialog/about-dialog.component';
+import { AccentColorPickerComponent } from './shared/components/accent-color-picker/accent-color-picker.component';
 
 @Component({
   selector: 'app-root',
@@ -37,6 +38,7 @@ import { AboutDialogComponent } from './shared/components/about-dialog/about-dia
     VideoPlayerComponent,
     MediaFullscreenOverlayComponent,
     MatSnackBarModule,
+    AccentColorPickerComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
