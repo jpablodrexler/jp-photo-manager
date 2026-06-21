@@ -4,12 +4,12 @@ description: Mark improvements as implemented in openspec/improvements.md and mo
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "1.1"
 ---
 
 Archive one or more implemented improvements from `openspec/improvements.md` into `openspec/improvements-implemented.md`.
 
-**Input**: One or more improvement numbers (e.g. `30 57`) or names (e.g. `image-rotation-viewer`). If omitted, prompt the user to select.
+**Input**: One or more improvement numbers (e.g. `30 57`) or names (e.g. `image-rotation-viewer`). If omitted, auto-detect from archived SDD changes and prompt the user to confirm.
 
 ---
 
@@ -17,9 +17,26 @@ Archive one or more implemented improvements from `openspec/improvements.md` int
 
 ### 1. Resolve which improvements to archive
 
-If the user provided numbers or names, use them directly.
+**If the user provided numbers or names**, use them directly — skip to step 2.
 
-Otherwise read `openspec/improvements.md` and display the list of all improvements currently showing `⬜ Pending` in the Implementation column. Use the **AskUserQuestion tool** to let the user pick one or more.
+**Otherwise, auto-detect from the archived SDD changes:**
+
+This project follows a workflow where each improvement in `improvements.md` is implemented via a corresponding OpenSpec (SDD) change. The full lifecycle is:
+1. Improvement added to `improvements.md` with `⬜ Pending`
+2. SDD change created under `openspec/changes/<change-name>/` with proposal, specs, design, and tasks artifacts
+3. SDD change applied (code implemented and committed)
+4. SDD change archived to `openspec/changes/archive/YYYY-MM-DD-<change-name>/` via `/opsx:archive`
+5. This skill archives the matching improvement in `improvements.md`
+
+To detect candidates at step 5:
+
+a. **List archived SDD changes**: read all directory names under `openspec/changes/archive/`. Strip the leading `YYYY-MM-DD-` date prefix from each directory name to get the raw change names (e.g. `2026-06-21-accent-color-customization` → `accent-color-customization`).
+
+b. **Cross-reference with improvements.md**: read `openspec/improvements.md`. For each archived change name, look for a row in the `## Improvement List` table whose `Change name` column (the backtick-wrapped value, e.g. `` `accent-color-customization` ``) matches. Collect only the rows still showing `⬜ Pending` in the Implementation column — rows already showing `✅ Implemented` are excluded.
+
+c. **Present candidates to the user**: if one or more matches are found, use the **AskUserQuestion tool** to show them and ask which to archive (multi-select). Pre-select all detected matches as the default recommendation.
+
+d. **Fallback**: if no matches are found (all archived SDD changes either have no corresponding improvement row or are already marked `✅ Implemented`), fall back to reading `openspec/improvements.md` and displaying all `⬜ Pending` improvements via **AskUserQuestion tool** so the user can pick manually.
 
 ### 2. Read both files
 
@@ -107,3 +124,4 @@ Migration rows moved: <count>
 - Preserve the exact Markdown table formatting (column widths, pipe characters) in both files.
 - Keep the section headers and structure of both files intact — only add/remove rows and note blocks, never rewrite entire sections.
 - If the **Dependencies** section becomes empty after removals, leave the section header in place rather than deleting it.
+- The auto-detection in step 1 is a convenience heuristic — the user always has the final say on which improvements to archive.
