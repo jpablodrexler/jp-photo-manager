@@ -12,7 +12,6 @@ describe('BackgroundSyncService', () => {
   let service: BackgroundSyncService;
 
   beforeEach(() => {
-    // Clear the sync queue without closing any existing connections (avoids deleteDatabase deadlock)
     cy.wrap(
       openDB<SyncQueueSchema>('photomanager-db', 1, {
         upgrade(db) {
@@ -20,9 +19,12 @@ describe('BackgroundSyncService', () => {
             db.createObjectStore('photomanager-sync-queue', { autoIncrement: true });
           }
         },
-      }).then(db => db.clear('photomanager-sync-queue').then(() => { db.close(); }))
+      }).then(db => db.clear('photomanager-sync-queue').then(() => db.close()))
     ).then(() => {
       service = new BackgroundSyncService();
+      // Return the promise so Cypress waits for the DB connection to open
+      // before running the test body (avoids queueMutation hanging on dbPromise)
+      return service.getPendingCount();
     });
   });
 
