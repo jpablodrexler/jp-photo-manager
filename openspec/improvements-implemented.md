@@ -37,6 +37,9 @@ Archive of improvements to the JPPhotoManagerWeb application that have been full
 | 20  | `storage-analytics`         | `/analytics` route with `ngx-charts` visualizations: storage-per-folder treemap, file-format pie, photos-per-month histogram, rating distribution bar; backed by aggregate JPQL queries  | ✅ Created | ✅ Implemented |
 | 23  | `progressive-web-app`       | `ng add @angular/pwa` with a cache-first strategy for thumbnails; background sync queue for offline rating/tag edits replayed on reconnect; HttpOnly cookie auth remains intact          | ✅ Created | ✅ Implemented |
 | 26  | `thumbnail-http-cache`      | Add `Cache-Control: public, max-age=31536000, immutable` to the `GET /api/assets/{id}/thumbnail` response; thumbnails are content-addressed by asset ID and never mutated once written, making them safe for permanent browser and CDN caching; currently every gallery load re-fetches every thumbnail from disk with no cache headers set | ✅ Created | ✅ Implemented |
+| 17  | `batch-rename`              | Pattern-based rename (e.g. `{date:yyyy-MM-dd}_{index:03d}_{original}`) for multi-selected assets; live preview table before applying; new `POST /api/assets/rename` endpoint             | ✅ Created | ✅ Implemented |
+| 63  | `raw-exif-jsonb`            | Add a `raw_exif JSONB` column to the existing `asset_exif` table (new Flyway migration); during cataloging, after extracting the 13 known fields, iterate all EXIF directories returned by Apache Commons Imaging (`JpegImageMetadata.getExif().getDirectories()` → `dir.getAllFields()`) and collect every `TiffField` into a `Map<String, String>` keyed by `field.getTagInfo().name` with value `field.getValueDescription()`; the map is serialized to JSONB using Hibernate 6's `@JdbcTypeCode(SqlTypes.JSON)` on a `Map<String, String> rawExif` field in `AssetExifEntity` (no new Maven dependency — Hibernate 6 handles JSON natively via Jackson, already present); `AssetExif` domain model and `AssetExifEntityMapper` (MapStruct) gain the `rawExif` field; `ExifMetadataDto` exposes it as `Map<String, String> rawExif`; `ExifMetadata` TypeScript interface adds `rawExif: Record<string, string> \| null`; in `ExifPanelComponent`, below the existing 13 structured fields, a collapsible `MatExpansionPanel` labeled "All EXIF data" renders every key-value pair from `rawExif` as a compact two-column list; a `MatFormField` search input above the list filters entries by key name in real time using a component-level computed signal so the full raw map is never re-fetched; a single image from a modern DSLR or mirrorless camera typically carries 80–300 EXIF fields across the IFD0, ExifIFD, GPS IFD, and MakerNote directories; the search filter is essential because MakerNote alone can add 100+ manufacturer-specific fields (Nikon colour modes, Canon lens correction data, Sony face detection coordinates, etc.); existing assets cataloged before this migration have `raw_exif = NULL` and the panel section is hidden when `rawExif` is null; re-cataloging any folder populates the column for all assets in that folder; new Flyway migration | ✅ Created | ✅ Implemented |
+| 83  | `accent-color-customization`      | Allow users to pick one of eight predefined accent colours for the top bar; replaces the hardcoded `#2e7d32` in `app.component.scss` with `var(--accent-color)`; `ThemeService` gains `setAccentColor()` and `accentColor$`; choice is persisted to `localStorage` and applied instantly including updating the PWA `<meta name="theme-color">` tag; a new `AccentColorPickerComponent` (swatch row) is embedded in the desktop toolbar as a `MatMenu` behind a palette icon button, and inline in the mobile hamburger menu; predefined palette: Forest Green, Ocean Blue, Deep Purple, Teal, Rust Orange, Slate Grey, Crimson Red, Indigo; no backend changes, no schema migration | ✅ Created | ✅ Implemented |
 
 ---
 
@@ -68,6 +71,7 @@ Migrations V7–V13, V24, and V27 have been applied. The following table documen
 | V12       | `saved-search-presets` — `search_presets` table             |
 | V13       | `smart-albums` — `filter_json` column on `albums`           |
 | V24       | `audio-asset-support` — `asset_audio` table                 |
+| V26       | `raw-exif-jsonb` — `raw_exif` JSONB column on `asset_exif`  |
 | V27       | `catalog-spring-batch` — 9 Spring Batch schema tables; drop `catalog_run_state` |
 
 ### Implementation notes
@@ -300,3 +304,92 @@ Three entry points: (1) video asset card → clicking the `play_circle` overlay 
 **Improvement 26 and 27 → Improvement 23**
 
 `thumbnail-http-cache` sets browser-level `Cache-Control` headers on the thumbnail endpoint. `progressive-web-app` (#23) adds a service-worker cache-first strategy for the same endpoint. Implementing #26 first means the service worker inherits already-correct cache semantics and does not need to re-define them. Implementing them in reverse order still works but creates redundancy.
+
+**Improvement 72 ↔ Improvement 63** (mutually exclusive — same problem, different technology)
+
+`mongodb-exif-store` (#72) and `raw-exif-jsonb` (#63) both address the need for flexible EXIF storage but via incompatible approaches. #63 adds a `raw_exif JSONB` column to the existing `asset_exif` PostgreSQL table; #72 moves the entire `asset_exif` entity to a MongoDB collection. Only one can be in effect at a time. If #63 is implemented first, #72 becomes a data-migration task (move JSONB data to MongoDB documents) rather than a greenfield design choice. Teams should decide upfront based on whether geospatial querying (`$near`/`$geoWithin` on GPS coordinates) or single-database simplicity is the priority.
+
+**Improvement 63 → Improvement 1 (hard)** (prerequisite already implemented)
+
+`raw-exif-jsonb` adds a column to the `asset_exif` table introduced by `exif-metadata-panel` (#1, already implemented). The table must exist before the V26 migration can run.
+
+**Improvement 63 — no new Maven or npm dependency**
+
+Apache Commons Imaging is already a dependency in `pom.xml` and is already used in `StorageServiceAdapter` for EXIF rotation correction. The full tag-iteration API (`getDirectories()` → `getAllFields()`) is part of the same library — no new artifact is needed. Hibernate 6 (shipped with Spring Boot 3.x) maps `jsonb` natively via `@JdbcTypeCode(SqlTypes.JSON)` using the Jackson `ObjectMapper` already on the classpath. No new npm package is needed on the frontend — the raw EXIF data arrives as a plain `Record<string, string>` and is rendered with `@for` and a component-level filter signal.
+
+**Improvement 63 — EXIF directory structure and field volume**
+
+Commons Imaging exposes EXIF data through a directory hierarchy. Each directory is iterated in order and its fields merged into the single `Map<String, String>`:
+
+```
+EXIF DIRECTORY HIERARCHY (Commons Imaging)
+
+  JpegImageMetadata
+  └── TiffImageMetadata (from getExif())
+      ├── IFD0            Image width, height, make, model, software,
+      │                   copyright, date modified, resolution (~10–20 fields)
+      ├── ExifIFD         Exposure time, f-number, ISO, focal length,
+      │                   shutter speed, aperture, date original, flash,
+      │                   colour space, subject distance (~40–60 fields)
+      ├── GPS IFD         Latitude, longitude, altitude, speed, direction,
+      │                   timestamp, map datum (~15 fields)
+      ├── MakerNote       Manufacturer-specific; varies widely by brand:
+      │   ├── Nikon       Colour modes, noise reduction, active D-Lighting,
+      │   │               lens serial number, flash compensation (~80 fields)
+      │   ├── Canon       Lens info, AF point, white balance, picture style,
+      │   │               owner name, serial number (~100 fields)
+      │   └── Sony        Face detection, creative style, lens compensation,
+      │                   HDR mode, multi-frame noise reduction (~60 fields)
+      ├── Interop IFD     Interoperability index, version (~2 fields)
+      └── IFD1            Thumbnail offset and length (~5 fields)
+
+  Typical total field count per image: 80–300
+```
+
+If two directories contain a field with the same tag name (uncommon but possible), the later directory's value overwrites the earlier one. The map key is `field.getTagInfo().name` (the human-readable TIFF tag name such as `"ExposureTime"`, `"Make"`, `"GPS GPSLatitude"`); the value is `field.getValueDescription()` (always a string representation).
+
+**Improvement 63 — frontend panel layout**
+
+The raw EXIF section is appended below the 13 structured fields as a collapsible `MatExpansionPanel`. It is hidden entirely when `rawExif` is `null` (assets cataloged before the migration). The search input filters by key name only — values are not searched to avoid partial matches on numeric strings like `"0"` matching hundreds of entries.
+
+```
+EXIF PANEL LAYOUT — AFTER raw-exif-jsonb
+
+  ┌─────────────────────────────────┐
+  │  EXIF INFO                 [×]  │
+  ├─────────────────────────────────┤
+  │  Camera    Sony α7 IV           │  ← existing 13 structured fields
+  │  Lens       85mm f/1.4          │
+  │  Exposure  1/500 s · f/1.8      │
+  │  ISO        400                 │
+  │  Date       2024-06-15 10:32    │
+  │  GPS        40.7128°N 74.006°W  │
+  │  …                              │
+  ├─────────────────────────────────┤
+  │  ▼ All EXIF data  (214 fields)  │  ← MatExpansionPanel (collapsed by default)
+  │  ┌─────────────────────────┐    │
+  │  │ Filter tags…            │    │  ← MatFormField search input
+  │  └─────────────────────────┘    │
+  │  ExposureTime          1/500    │
+  │  FNumber               1.8      │  ← @for over filteredRawExif()
+  │  ISOSpeedRatings       400      │
+  │  LensModel    FE 85mm F1.4 GM   │
+  │  …                              │
+  └─────────────────────────────────┘
+```
+
+**Improvement 63 → Improvement 31 (soft)**
+
+The `raw_exif` JSONB column is queryable with PostgreSQL's `->` and `@>` operators and GIN-indexable. Once `full-text-search` (#31) is implemented, the search vector trigger could include selected raw EXIF fields — for example, `raw_exif->>'LensModel'` or `raw_exif->>'Model'` — giving users the ability to search by equipment not captured in the 13 fixed columns. This extension requires no schema change beyond what #31 already defines; it is a trigger function update only.
+
+**Improvement 63 — backfill strategy**
+
+The V26 migration adds the column as `ALTER TABLE asset_exif ADD COLUMN raw_exif JSONB`. Existing rows have `raw_exif = NULL`. Backfilling requires re-cataloging the affected folders: `POST /api/assets/catalog` triggers the full extraction pipeline, which now includes the raw EXIF pass. No SQL-level backfill is possible because EXIF extraction reads the image file from disk, not from database data. The `ExifPanelComponent` handles `NULL` gracefully by hiding the "All EXIF data" section for assets not yet re-cataloged.
+
+**Improvement 64 — ordering note** (64 already implemented)
+
+`catalog-spring-batch` (#64) is now implemented. When implementing `raw-exif-jsonb` (#63), extend `CatalogAssetItemProcessor` with the additional raw EXIF extraction pass (iterate `getDirectories()` → `getAllFields()` after the existing 13-field extraction).
+
+**Improvement 83 — no dependencies**
+
+`accent-color-customization` is a pure frontend change. It has no hard or soft dependencies on any other pending improvement. It can be delivered at any point independently.

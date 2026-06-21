@@ -10,7 +10,6 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 | --- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------- |
 | 13  | `gps-map-view`              | Add a Leaflet.js map panel to the EXIF viewer and a `/map` route showing clustered photo pins for the current folder or album; clicking a pin navigates to that asset in the gallery   | ✅ Created | ⬜ Pending      |
 | 16  | `keyboard-shortcuts`        | Global `KeyboardService` mapping shortcuts (`G` gallery, `A` albums, `D` duplicates, `1–5` rating, `Del` soft-delete, `/` search focus); `?` overlay listing all bindings               | ✅ Created | ⬜ Pending      |
-| 17  | `batch-rename`              | Pattern-based rename (e.g. `{date:yyyy-MM-dd}_{index:03d}_{original}`) for multi-selected assets; live preview table before applying; new `POST /api/assets/rename` endpoint             | ✅ Created | ⬜ Pending      |
 | 19  | `shareable-album-links`     | `POST /api/albums/{id}/share` generates a signed UUID token stored in a `shared_albums` table with optional `expires_at`; public `/s/:token` route renders the album without authentication | ✅ Created | ⬜ Pending |
 | 22  | `duplicate-auto-resolve`    | "Clean up automatically" dialog on the duplicates page with policies (keep oldest, keep newest, keep highest resolution, keep preferred folder); delegates to existing soft-delete path   | ✅ Created | ⬜ Pending      |
 | 24  | `wallpaper-suggestion`      | Add `aspect_ratio` float column to `assets` (populated during cataloging from the existing `pixel_width`/`pixel_height` columns); `GET /api/assets/wallpaper-suggestion?screenWidth=W&screenHeight=H` returns a random non-deleted asset where `pixel_width >= W`, `pixel_height >= H`, and `aspect_ratio` is within ±0.02 of the desktop ratio; frontend reads `window.screen.width`/`height`, calls the endpoint, and shows the suggested image with a download button | ✅ Created | ⬜ Pending |
@@ -44,7 +43,6 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 | 58  | `video-from-images`         | New wizard component lets the user select an ordered list of images, set a per-slide duration, choose a background music file (uploaded on the spot or selected from a cataloged audio asset once `audio-asset-support` #59 is in place), and trigger video generation; the backend invokes FFmpeg via `ProcessBuilder` (`ffmpeg -framerate 1/{duration} -i frame%04d.jpg -i music.mp3 -c:v libx264 -c:a aac -shortest -pix_fmt yuv420p output.mp4`), streams progress via SSE (same pattern as catalog/sync/convert), and saves the output to a user-chosen folder where it is auto-cataloged as a video asset; hard dependency on `video-file-support` (#21) for FFmpeg presence in the container | ✅ Created | ⬜ Pending |
 | 60  | `archive-support`           | Two related capabilities sharing the same archive-reading infrastructure (`org.apache.commons:commons-compress` for tar.gz; `java.util.zip` built-in for zip): (1) **virtual folders** — zip and tar.gz files appear as expandable nodes in the folder navigation tree using a `!` path separator convention (e.g. `/photos/album.zip!/summer/`); the catalog service extracts images to a temp location, generates thumbnails, and stores assets with the virtual path; (2) **download formats** — the bulk-download endpoint (`GET /api/assets/download`) gains a `format` query parameter (`zip` / `tar.gz`) so users can choose the archive type; the existing `ZipOutputStream` path is joined by a `TarArchiveOutputStream` wrapped in `GzipCompressorOutputStream`; no Flyway migration required for either capability | ✅ Created | ⬜ Pending |
 | 61  | `asset-backup`              | Backup a configurable scope of assets (folder, album, saved search result, or entire catalog) to one or more sequentially numbered archive files (e.g. `backup_photos_001.zip`, `backup_photos_002.zip`) split at a configurable volume size; format is zip or tar.gz (reuses `archive-support` #60 writing infrastructure); trigger is manual (`POST /api/backup/{id}/run`) or a per-definition cron expression scheduled dynamically via Spring `TaskScheduler` + `CronTrigger` (cancelled and rescheduled on definition update); new `/backup` frontend route mirrors the convert page structure (definitions list → configure → run → results with SSE progress and per-file logging); backend stores definitions in `backup_definitions` and run history in `backup_run_log` (timestamps, status, files written, bytes, errors); new Flyway migration | ✅ Created | ⬜ Pending |
-| 63  | `raw-exif-jsonb`            | Add a `raw_exif JSONB` column to the existing `asset_exif` table (new Flyway migration); during cataloging, after extracting the 13 known fields, iterate all EXIF directories returned by Apache Commons Imaging (`JpegImageMetadata.getExif().getDirectories()` → `dir.getAllFields()`) and collect every `TiffField` into a `Map<String, String>` keyed by `field.getTagInfo().name` with value `field.getValueDescription()`; the map is serialized to JSONB using Hibernate 6's `@JdbcTypeCode(SqlTypes.JSON)` on a `Map<String, String> rawExif` field in `AssetExifEntity` (no new Maven dependency — Hibernate 6 handles JSON natively via Jackson, already present); `AssetExif` domain model and `AssetExifEntityMapper` (MapStruct) gain the `rawExif` field; `ExifMetadataDto` exposes it as `Map<String, String> rawExif`; `ExifMetadata` TypeScript interface adds `rawExif: Record<string, string> \| null`; in `ExifPanelComponent`, below the existing 13 structured fields, a collapsible `MatExpansionPanel` labeled "All EXIF data" renders every key-value pair from `rawExif` as a compact two-column list; a `MatFormField` search input above the list filters entries by key name in real time using a component-level computed signal so the full raw map is never re-fetched; a single image from a modern DSLR or mirrorless camera typically carries 80–300 EXIF fields across the IFD0, ExifIFD, GPS IFD, and MakerNote directories; the search filter is essential because MakerNote alone can add 100+ manufacturer-specific fields (Nikon colour modes, Canon lens correction data, Sony face detection coordinates, etc.); existing assets cataloged before this migration have `raw_exif = NULL` and the panel section is hidden when `rawExif` is null; re-cataloging any folder populates the column for all assets in that folder; new Flyway migration | ✅ Created | ⬜ Pending |
 | 67  | `event-auto-grouping`       | Automatically cluster photos into events based on configurable time gaps between consecutive shots (default threshold: 2 hours); a new `/events` route lists events as date-range cards showing a cover photo and asset count; users can rename events, set a custom cover photo, and merge or split events manually; ungrouped assets infer their event from `dateTaken` at query time — the `user_events` table (`id`, `userId`, `name`, `startAt`, `endAt`, `coverAssetId`) stores only user overrides, keeping the migration small; `GET /api/events` returns computed events for the authenticated user with asset counts; integrates with `timeline-view` (#18) as an alternate grouping mode selectable from the view toolbar | ✅ Created | ⬜ Pending |
 | 68  | `photo-quality-scoring`     | Compute a perceptual quality score (0–100) for each image during cataloging using signals already available in the thumbnail and EXIF: a fast Laplacian variance pass over the 200×150 px thumbnail pixels estimates sharpness (high variance = sharp), combined with EXIF signals (ISO penalty for values above 1600, exposure time penalty for values above 1/60 s without image stabilisation, bonus for wider aperture); store the result in a new `quality_score` SMALLINT column on `assets` (Flyway migration); expose as a gallery sort option ("Best quality first") and a minimum quality threshold slider in the search/filter toolbar alongside the existing star-rating filter; pairs with `duplicate-auto-resolve` (#22) to automatically prefer the highest-scoring copy when resolving duplicates; no external Maven dependency — Laplacian variance is computed with `BufferedImage` pixel access using the standard library | ✅ Created | ⬜ Pending |
 | 69  | `iptc-xmp-metadata-editing` | Read and write IPTC/XMP fields (caption, copyright notice, creator, keywords, city, country) directly in the viewer panel alongside the existing EXIF display; Apache Commons Imaging (already a dependency) supports IPTC segment read and write in JPEG files via `JpegIptcRewriter`; a new `PATCH /api/assets/{id}/iptc` endpoint writes the updated IPTC segment back to the file on disk and refreshes the `assets` row; caption and copyright are stored in two new VARCHAR columns on `assets` (Flyway migration) so they are queryable without re-reading the file; keywords are mapped to the existing `asset_tags` table, making them immediately available in tag-based filters; the viewer panel shows caption and copyright as editable `MatFormField` inputs below the EXIF panel with auto-save on blur | ✅ Created | ⬜ Pending |
@@ -61,7 +59,6 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 | 80  | `redis-sse-pubsub`                | Complement `kafka-catalog-pipeline` (#75) with Redis Pub/Sub for sub-millisecond SSE fan-out; Kafka provides durable, replayable event storage; Redis delivers progress events in real time across all instances; catalog, sync, and convert workers `PUBLISH` to `job:progress:{jobId}:{type}` channels; all app instances `SUBSCRIBE` and relay messages to their connected `SseEmitter` clients; Kafka and Redis are complementary — Kafka for durability and consumer-group semantics, Redis for the lowest-latency delivery path to the browser; requires the Kafka producers from `kafka-catalog-pipeline` (#75); replaces `SseNotificationRegistry` alongside #75 | ⬜ Pending | ⬜ Pending |
 | 81  | `redis-thumbnail-cache`           | Add Redis as a shared L2 thumbnail cache in front of the disk-backed `ThumbnailStorageServiceAdapter`; on a cache hit `GET asset:thumbnail:{assetId}` returns the thumbnail bytes with no disk I/O; on a miss the adapter reads from disk, stores with a 24-hour TTL via `SETEX`, and returns; Redis `allkeys-lru` eviction retains popular thumbnails and evicts cold ones automatically; complements `thumbnail-http-cache` (#26) (browser-level `Cache-Control: immutable`, already implemented) and `server-side-spring-cache` (#28) (per-JVM Caffeine for home stats and EXIF lookups, pending); Redis adds the shared server-side tier that survives instance restarts and eliminates dependency on co-located disk access in load-balanced deployments where the requested thumbnail may reside on a different node's filesystem | ⬜ Pending | ⬜ Pending |
 | 82  | `redis-search-tag-cache`          | Cache the two highest-frequency gallery read paths in Redis: (1) paginated asset search results (`GET /api/assets`) keyed by `assets:{sha256(folderPath+page+sort+filters)}` with a 5-minute TTL, invalidated on `asset.cataloged` and `asset.deleted` Kafka events from #75; (2) the tag list with counts (`GET /api/tags`) keyed `tags:all` with a 5-minute TTL, invalidated on `AddTagToAssetUseCase` and `RemoveTagFromAssetUseCase`; extends `server-side-spring-cache` (#28) which targets home stats, folder tree, and EXIF lookups with per-JVM Caffeine — this improvement covers the two hottest gallery endpoints and uses Redis for distributed invalidation that works correctly across multiple instances; the `@Cacheable`/`@CacheEvict` annotations from #28 can be reused by switching the Spring cache manager from `CaffeineCacheManager` to a Lettuce-backed `RedisCacheManager` | ⬜ Pending | ⬜ Pending |
-| 83  | `accent-color-customization`      | Allow users to pick one of eight predefined accent colours for the top bar; replaces the hardcoded `#2e7d32` in `app.component.scss` with `var(--accent-color)`; `ThemeService` gains `setAccentColor()` and `accentColor$`; choice is persisted to `localStorage` and applied instantly including updating the PWA `<meta name="theme-color">` tag; a new `AccentColorPickerComponent` (swatch row) is embedded in the desktop toolbar as a `MatMenu` behind a palette icon button, and inline in the mobile hamburger menu; predefined palette: Forest Green, Ocean Blue, Deep Purple, Teal, Rust Orange, Slate Grey, Crimson Red, Indigo; no backend changes, no schema migration | ✅ Created | ⬜ Pending |
 
 ---
 
@@ -84,10 +81,6 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 **Improvement 75 → Improvements 73, 76, 77, 80** (Kafka infrastructure prerequisite)
 
 `kafka-catalog-pipeline` introduces the Kafka cluster, Spring Kafka bootstrap configuration, and the core topic producers. `mongodb-audit-log` (#73), `kafka-async-upload` (#76), `kafka-catalog-coordination` (#77), and `redis-sse-pubsub` (#80) all depend on this infrastructure being in place. Deliver #75 first; the remaining four can follow in any order.
-
-**Improvement 72 ↔ Improvement 63** (mutually exclusive — same problem, different technology)
-
-`mongodb-exif-store` (#72) and `raw-exif-jsonb` (#63) both address the need for flexible EXIF storage but via incompatible approaches. #63 adds a `raw_exif JSONB` column to the existing `asset_exif` PostgreSQL table; #72 moves the entire `asset_exif` entity to a MongoDB collection. Only one can be in effect at a time. If #63 is implemented first, #72 becomes a data-migration task (move JSONB data to MongoDB documents) rather than a greenfield design choice. Teams should decide upfront based on whether geospatial querying (`$near`/`$geoWithin` on GPS coordinates) or single-database simplicity is the priority.
 
 ### Soft implementation dependencies (order affects cleanliness)
 
@@ -113,10 +106,9 @@ For the pending dependent clusters:
 22 (duplicate-auto-resolve)— prerequisite #9  already implemented
 16 (keyboard-shortcuts)    — prerequisite #8  already implemented
 58 (video-from-images)     — prerequisite #21 already implemented; #59 also already implemented
-63 (raw-exif-jsonb)        — prerequisite #1  already implemented; extend CatalogAssetItemProcessor (#64 already done)
 ```
 
-Improvements 17 (batch-rename), 24 (wallpaper-suggestion), 27 (image-etag-cache), 28 (server-side-spring-cache), 29 (exif-cache-service), 30 (image-rotation-viewer), 32 (folder-watch-service), 33 (role-based-access-control), 35 (thumbnail-regeneration), 36 (global-error-handler), 38 (folder-stats-in-tree), 40 (circuit-breaker), 43 (request-correlation-mdc), 50 (image-comparison-viewer), 53 (password-strength-policy), 56 (asset-image-editor), 57 (viewer-pan-drag), 67 (event-auto-grouping), 68 (photo-quality-scoring), 69 (iptc-xmp-metadata-editing), 70 (dominant-color-palette), 71 (webdav-server), 83 (accent-color-customization) have no hard dependencies and can be delivered in any order.
+Improvements 24 (wallpaper-suggestion), 27 (image-etag-cache), 28 (server-side-spring-cache), 29 (exif-cache-service), 30 (image-rotation-viewer), 32 (folder-watch-service), 33 (role-based-access-control), 35 (thumbnail-regeneration), 36 (global-error-handler), 38 (folder-stats-in-tree), 40 (circuit-breaker), 43 (request-correlation-mdc), 50 (image-comparison-viewer), 53 (password-strength-policy), 56 (asset-image-editor), 57 (viewer-pan-drag), 67 (event-auto-grouping), 68 (photo-quality-scoring), 69 (iptc-xmp-metadata-editing), 70 (dominant-color-palette), 71 (webdav-server) have no hard dependencies and can be delivered in any order.
 
 Within dependent clusters:
 
@@ -135,7 +127,7 @@ Within dependent clusters:
 28 → 82 (redis-search-tag-cache) [extend Caffeine scope to Redis]
 ```
 
-Improvements 74 (mongodb-user-preferences), 78 (redis-distributed-rate-limiting) have no hard dependencies and can be delivered in any order. Improvement 72 (mongodb-exif-store) has no hard dependency but is mutually exclusive with #63 (raw-exif-jsonb) — choose one.
+Improvements 74 (mongodb-user-preferences), 78 (redis-distributed-rate-limiting) have no hard dependencies and can be delivered in any order. Improvement 72 (mongodb-exif-store) has no hard dependency; `raw-exif-jsonb` (#63) is now implemented, so #72 becomes a data-migration task (move JSONB data from PostgreSQL to a MongoDB collection) rather than a greenfield design choice.
 
 Priority ordering for the MongoDB, Kafka, and Redis improvements:
 
@@ -147,7 +139,7 @@ P0 — production-safety gaps (any multi-instance deployment is currently broken
 P1 — high-impact, build on P0 infrastructure:
   80 (redis-sse-pubsub)               — completes multi-instance SSE delivery alongside #75
   79 (redis-refresh-tokens)           — implement before or with #46 (session-management) to avoid schema churn
-  72 or 63                            — choose one EXIF approach; #63 is lower-risk (stays in PostgreSQL)
+  72                                  — EXIF upgrade from PostgreSQL JSONB to MongoDB; #63 (raw-exif-jsonb) is already implemented
 
 P2 — scalability and performance wins:
   76 (kafka-async-upload)             — requires #75; eliminates blocking upload for large files
@@ -177,7 +169,6 @@ Flyway migration versions must be applied in ascending order. Migrations V7–V1
 | V22       | `session-management` — `user_agent` column on `refresh_tokens`                     |
 | V23       | `webp-avif-conversion` — `target_format` column on `convert_assets_directories_definitions` |
 | V25       | `asset-backup` — `backup_definitions` and `backup_run_log` tables                   |
-| V26       | `raw-exif-jsonb` — `raw_exif` JSONB column on `asset_exif`                          |
 | V28       | `photo-quality-scoring` — `quality_score` SMALLINT column on `assets`               |
 | V29       | `iptc-xmp-metadata-editing` — `caption`, `copyright` VARCHAR columns on `assets`    |
 | V30       | `dominant-color-palette` — `color_palette` JSONB column on `assets`                 |
@@ -393,87 +384,6 @@ The four backup scopes map to existing query paths: folder scope reuses `GetAsse
 
 `social-media-crop` (#62, already implemented) and `asset-image-editor` (#56) share the same backend pattern: send transformation parameters → Java2D processes the original image → result saved as a new `Asset` in the same folder → thumbnail generated → new `AssetResponse` returned. When implementing #56, extract the "save as new asset" logic into a shared utility method (e.g. `AssetSavePort.saveProcessedAsset(...)`) that #56 and #62 can both use, eliminating the duplication already present in #62's implementation.
 
-**Improvement 63 → Improvement 1 (hard)** (prerequisite already implemented)
-
-`raw-exif-jsonb` adds a column to the `asset_exif` table introduced by `exif-metadata-panel` (#1, already implemented). The table must exist before the V26 migration can run.
-
-**Improvement 63 — no new Maven or npm dependency**
-
-Apache Commons Imaging is already a dependency in `pom.xml` and is already used in `StorageServiceAdapter` for EXIF rotation correction. The full tag-iteration API (`getDirectories()` → `getAllFields()`) is part of the same library — no new artifact is needed. Hibernate 6 (shipped with Spring Boot 3.x) maps `jsonb` natively via `@JdbcTypeCode(SqlTypes.JSON)` using the Jackson `ObjectMapper` already on the classpath. No new npm package is needed on the frontend — the raw EXIF data arrives as a plain `Record<string, string>` and is rendered with `@for` and a component-level filter signal.
-
-**Improvement 63 — EXIF directory structure and field volume**
-
-Commons Imaging exposes EXIF data through a directory hierarchy. Each directory is iterated in order and its fields merged into the single `Map<String, String>`:
-
-```
-EXIF DIRECTORY HIERARCHY (Commons Imaging)
-
-  JpegImageMetadata
-  └── TiffImageMetadata (from getExif())
-      ├── IFD0            Image width, height, make, model, software,
-      │                   copyright, date modified, resolution (~10–20 fields)
-      ├── ExifIFD         Exposure time, f-number, ISO, focal length,
-      │                   shutter speed, aperture, date original, flash,
-      │                   colour space, subject distance (~40–60 fields)
-      ├── GPS IFD         Latitude, longitude, altitude, speed, direction,
-      │                   timestamp, map datum (~15 fields)
-      ├── MakerNote       Manufacturer-specific; varies widely by brand:
-      │   ├── Nikon       Colour modes, noise reduction, active D-Lighting,
-      │   │               lens serial number, flash compensation (~80 fields)
-      │   ├── Canon       Lens info, AF point, white balance, picture style,
-      │   │               owner name, serial number (~100 fields)
-      │   └── Sony        Face detection, creative style, lens compensation,
-      │                   HDR mode, multi-frame noise reduction (~60 fields)
-      ├── Interop IFD     Interoperability index, version (~2 fields)
-      └── IFD1            Thumbnail offset and length (~5 fields)
-
-  Typical total field count per image: 80–300
-```
-
-If two directories contain a field with the same tag name (uncommon but possible), the later directory's value overwrites the earlier one. The map key is `field.getTagInfo().name` (the human-readable TIFF tag name such as `"ExposureTime"`, `"Make"`, `"GPS GPSLatitude"`); the value is `field.getValueDescription()` (always a string representation).
-
-**Improvement 63 — frontend panel layout**
-
-The raw EXIF section is appended below the 13 structured fields as a collapsible `MatExpansionPanel`. It is hidden entirely when `rawExif` is `null` (assets cataloged before the migration). The search input filters by key name only — values are not searched to avoid partial matches on numeric strings like `"0"` matching hundreds of entries.
-
-```
-EXIF PANEL LAYOUT — AFTER raw-exif-jsonb
-
-  ┌─────────────────────────────────┐
-  │  EXIF INFO                 [×]  │
-  ├─────────────────────────────────┤
-  │  Camera    Sony α7 IV           │  ← existing 13 structured fields
-  │  Lens       85mm f/1.4          │
-  │  Exposure  1/500 s · f/1.8      │
-  │  ISO        400                 │
-  │  Date       2024-06-15 10:32    │
-  │  GPS        40.7128°N 74.006°W  │
-  │  …                              │
-  ├─────────────────────────────────┤
-  │  ▼ All EXIF data  (214 fields)  │  ← MatExpansionPanel (collapsed by default)
-  │  ┌─────────────────────────┐    │
-  │  │ Filter tags…            │    │  ← MatFormField search input
-  │  └─────────────────────────┘    │
-  │  ExposureTime          1/500    │
-  │  FNumber               1.8      │  ← @for over filteredRawExif()
-  │  ISOSpeedRatings       400      │
-  │  LensModel    FE 85mm F1.4 GM   │
-  │  …                              │
-  └─────────────────────────────────┘
-```
-
-**Improvement 63 → Improvement 31 (soft)**
-
-The `raw_exif` JSONB column is queryable with PostgreSQL's `->` and `@>` operators and GIN-indexable. Once `full-text-search` (#31) is implemented, the search vector trigger could include selected raw EXIF fields — for example, `raw_exif->>'LensModel'` or `raw_exif->>'Model'` — giving users the ability to search by equipment not captured in the 13 fixed columns. This extension requires no schema change beyond what #31 already defines; it is a trigger function update only.
-
-**Improvement 63 — backfill strategy**
-
-The V26 migration adds the column as `ALTER TABLE asset_exif ADD COLUMN raw_exif JSONB`. Existing rows have `raw_exif = NULL`. Backfilling requires re-cataloging the affected folders: `POST /api/assets/catalog` triggers the full extraction pipeline, which now includes the raw EXIF pass. No SQL-level backfill is possible because EXIF extraction reads the image file from disk, not from database data. The `ExifPanelComponent` handles `NULL` gracefully by hiding the "All EXIF data" section for assets not yet re-cataloged.
-
-**Improvement 64 — ordering note** (64 already implemented)
-
-`catalog-spring-batch` (#64) is now implemented. When implementing `raw-exif-jsonb` (#63), extend `CatalogAssetItemProcessor` with the additional raw EXIF extraction pass (iterate `getDirectories()` → `getAllFields()` after the existing 13-field extraction).
-
 **Improvement 67 — event boundary algorithm**
 
 Events are computed on demand rather than persisted. `GET /api/events` sorts all non-deleted assets for the authenticated user by `dateTaken` ascending, then walks the list inserting an event boundary wherever the gap between consecutive shots exceeds the configured threshold (default 2 hours, configurable per user in `user_events` or globally in `application.yml`). Each resulting contiguous run becomes an event. The cover photo defaults to the asset with the highest `rating` in the run, falling back to the first asset chronologically. User overrides in the `user_events` table (custom name, cover, merged or split boundaries) are applied as post-processing on top of the computed runs. Assets with no `dateTaken` value are grouped into a separate "Unknown date" event at the end.
@@ -582,17 +492,12 @@ The cache key `asset:thumbnail:{assetId}` is stable because thumbnails are conte
 
 Asset search result cache invalidation is driven by Kafka events from `kafka-catalog-pipeline` (#75): a `@KafkaListener` subscribed to `asset.cataloged` and `asset.deleted` calls `redisTemplate.delete(pattern)` using the folder path as a key prefix (`assets:{folderPath}:*`). Without #75 in place, invalidation falls back to direct calls in `CatalogAssetItemWriter.write()` and `DeleteAssetsUseCaseImpl.execute()`. Tag cache invalidation is simpler: `AddTagToAssetUseCaseImpl` and `RemoveTagFromAssetUseCaseImpl` each call `redisTemplate.delete("tags:all")`. If `server-side-spring-cache` (#28) is implemented first with `CaffeineCacheManager`, upgrading to Redis requires only switching the `CacheManager` bean to `RedisCacheManager` backed by a Lettuce `RedisConnectionFactory` — the `@Cacheable` and `@CacheEvict` annotations on the use cases require no change.
 
-**Improvement 83 — no dependencies**
-
-`accent-color-customization` is a pure frontend change. It has no hard or soft dependencies on any other pending improvement. It can be delivered at any point independently.
-
 **MongoDB, Kafka, and Redis — overlap with existing improvements (summary)**
 
 The following table lists every new improvement that directly overlaps with or fills a gap in an existing planned improvement:
 
 | New improvement | Overlaps / conflicts with | Relationship |
 | --- | --- | --- |
-| `mongodb-exif-store` (#72) | `raw-exif-jsonb` (#63) | **Mutually exclusive** — same problem, different technology; choose one |
 | `redis-distributed-rate-limiting` (#78) | `api-rate-limiting` (#39, done) | **Gap fix** — #39 is in-memory only; #78 makes it multi-instance safe |
 | `redis-refresh-tokens` (#79) | `session-management` (#46) | **Coordinate** — #46 adds `user_agent` to PostgreSQL; #79 moves to Redis; deliver together |
 | `redis-thumbnail-cache` (#81) | `server-side-spring-cache` (#28) | **Complementary** — #28 is per-JVM Caffeine; #81 adds distributed Redis |
