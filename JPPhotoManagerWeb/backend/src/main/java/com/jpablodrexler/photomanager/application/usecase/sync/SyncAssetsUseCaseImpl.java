@@ -1,12 +1,14 @@
 package com.jpablodrexler.photomanager.application.usecase.sync;
 
 import com.jpablodrexler.photomanager.application.dto.SyncAssetsResult;
+import com.jpablodrexler.photomanager.application.dto.SyncProgressMessage;
 import com.jpablodrexler.photomanager.domain.model.SyncDirectoriesDefinition;
 import com.jpablodrexler.photomanager.domain.port.in.sync.SyncAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.port.out.SyncConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -16,8 +18,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
@@ -26,21 +26,23 @@ public class SyncAssetsUseCaseImpl implements SyncAssetsUseCase {
 
     private final SyncConfigRepository syncConfigRepository;
     private final StoragePort storagePort;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Async
     @Override
-    public CompletableFuture<List<SyncAssetsResult>> execute(Consumer<String> listener) {
+    public void execute(long runId) {
         List<SyncDirectoriesDefinition> definitions = syncConfigRepository.findAllOrderByOrder();
         List<SyncAssetsResult> results = new ArrayList<>();
 
         for (SyncDirectoriesDefinition def : definitions) {
-            results.add(syncDirectories(def, listener));
+            results.add(syncDirectories(def, runId));
         }
 
-        return CompletableFuture.completedFuture(results);
+        kafkaTemplate.send("job.sync.progress", String.valueOf(runId),
+                SyncProgressMessage.done(runId, results));
     }
 
-    private SyncAssetsResult syncDirectories(SyncDirectoriesDefinition def, Consumer<String> statusCallback) {
+    private SyncAssetsResult syncDirectories(SyncDirectoriesDefinition def, long runId) {
         SyncAssetsResult result = new SyncAssetsResult(def.getSourceDirectory(), def.getDestinationDirectory());
 
         if (!storagePort.directoryExists(def.getSourceDirectory())) {
@@ -55,7 +57,7 @@ public class SyncAssetsUseCaseImpl implements SyncAssetsUseCase {
 
         try {
             syncFolder(def.getSourceDirectory(), def.getDestinationDirectory(),
-                    def.isIncludeSubFolders(), def.isDeleteAssetsNotInSource(), result, statusCallback);
+                    def.isIncludeSubFolders(), def.isDeleteAssetsNotInSource(), result, runId);
             result.setSuccess(true);
         } catch (Exception e) {
             log.error("Sync failed from {} to {}", def.getSourceDirectory(), def.getDestinationDirectory(), e);
@@ -67,8 +69,7 @@ public class SyncAssetsUseCaseImpl implements SyncAssetsUseCase {
     }
 
     private void syncFolder(String sourceDir, String destDir, boolean includeSubFolders,
-            boolean deleteNotInSource, SyncAssetsResult result,
-            Consumer<String> statusCallback) throws IOException {
+            boolean deleteNotInSource, SyncAssetsResult result, long runId) throws IOException {
         List<String> sourceFiles = storagePort.listFiles(sourceDir);
         List<String> destFiles = storagePort.listFiles(destDir);
 
@@ -85,7 +86,8 @@ public class SyncAssetsUseCaseImpl implements SyncAssetsUseCase {
                 String destPath = destDir + "/" + fileName;
                 storagePort.copyFile(f, destPath);
                 result.setSyncedCount(result.getSyncedCount() + 1);
-                if (statusCallback != null) statusCallback.accept("Copied: " + fileName);
+                kafkaTemplate.send("job.sync.progress", String.valueOf(runId),
+                        SyncProgressMessage.progress(runId, "Copied: " + fileName));
             }
         }
 
@@ -95,7 +97,8 @@ public class SyncAssetsUseCaseImpl implements SyncAssetsUseCase {
                 if (!sourceFileNames.contains(fileName)) {
                     storagePort.deleteFile(f);
                     result.setDeletedCount(result.getDeletedCount() + 1);
-                    if (statusCallback != null) statusCallback.accept("Deleted: " + fileName);
+                    kafkaTemplate.send("job.sync.progress", String.valueOf(runId),
+                            SyncProgressMessage.progress(runId, "Deleted: " + fileName));
                 }
             }
         }
@@ -103,7 +106,7 @@ public class SyncAssetsUseCaseImpl implements SyncAssetsUseCase {
         if (includeSubFolders) {
             for (String subDir : storagePort.listSubDirectories(sourceDir)) {
                 String subDirName = Paths.get(subDir).getFileName().toString();
-                syncFolder(subDir, destDir + "/" + subDirName, true, deleteNotInSource, result, statusCallback);
+                syncFolder(subDir, destDir + "/" + subDirName, true, deleteNotInSource, result, runId);
             }
         }
     }

@@ -39,7 +39,7 @@ public class CatalogScheduler {
 
     private void executeCatalogRun() {
         try {
-            catalogAssetsUseCase.execute(null).get();
+            catalogAssetsUseCase.execute(System.currentTimeMillis()).get();
         } catch (Exception e) {
             log.error("Scheduled catalog run failed", e);
         }

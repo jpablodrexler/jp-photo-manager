@@ -15,9 +15,8 @@ import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CatalogSchedulerTest {
@@ -50,7 +49,7 @@ class CatalogSchedulerTest {
 
     @Test
     void onApplicationReady_scheduledRunCallsUseCase() throws Exception {
-        when(catalogAssetsUseCase.execute(null)).thenReturn(CompletableFuture.completedFuture(null));
+        when(catalogAssetsUseCase.execute(anyLong())).thenReturn(CompletableFuture.completedFuture(null));
         ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
 
         sut.onApplicationReady();
@@ -58,6 +57,6 @@ class CatalogSchedulerTest {
         verify(catalogTaskScheduler).scheduleWithFixedDelay(runnableCaptor.capture(), any(Instant.class), any(Duration.class));
         runnableCaptor.getValue().run();
 
-        verify(catalogAssetsUseCase).execute(null);
+        verify(catalogAssetsUseCase).execute(anyLong());
     }
 }

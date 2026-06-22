@@ -21,6 +21,7 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCa
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.DownloadAssetsRequest;
+import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -95,6 +96,8 @@ class AssetControllerDownloadTest {
     AssetWebMapper assetWebMapper;
     @MockitoBean
     MeterRegistry meterRegistry;
+    @MockitoBean
+    KafkaProgressRegistry kafkaProgressRegistry;
 
     @Test
     void downloadAssets_validRequest_returns200WithZipHeaders() throws Exception {

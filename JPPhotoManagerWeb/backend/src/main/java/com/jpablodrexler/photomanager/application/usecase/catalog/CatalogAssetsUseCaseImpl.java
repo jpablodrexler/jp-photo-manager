@@ -1,9 +1,7 @@
 package com.jpablodrexler.photomanager.application.usecase.catalog;
 
-import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
-import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
-import com.jpablodrexler.photomanager.infrastructure.service.SseNotificationRegistry;
+import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +15,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 @Service
 @Slf4j
@@ -25,36 +22,27 @@ public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
 
     private final JobLauncher asyncCatalogJobLauncher;
     private final Job catalogJob;
-    private final SseNotificationRegistry sseNotificationRegistry;
+    private final KafkaProgressRegistry kafkaProgressRegistry;
     private final Counter catalogAssetsCounter;
 
     public CatalogAssetsUseCaseImpl(
             @Qualifier("asyncCatalogJobLauncher") JobLauncher asyncCatalogJobLauncher,
             Job catalogJob,
-            SseNotificationRegistry sseNotificationRegistry,
+            KafkaProgressRegistry kafkaProgressRegistry,
             MeterRegistry meterRegistry) {
         this.asyncCatalogJobLauncher = asyncCatalogJobLauncher;
         this.catalogJob = catalogJob;
-        this.sseNotificationRegistry = sseNotificationRegistry;
+        this.kafkaProgressRegistry = kafkaProgressRegistry;
         this.catalogAssetsCounter = Counter.builder("photomanager_catalog_assets_total")
                 .description("Total assets cataloged")
                 .register(meterRegistry);
     }
 
     @Override
-    public CompletableFuture<Void> execute(Consumer<CatalogChangeNotification> listener) {
+    public CompletableFuture<Void> execute(long runId) {
         try {
-            long runId = System.currentTimeMillis();
             CompletableFuture<Void> completion = new CompletableFuture<>();
-
-            Consumer<CatalogChangeNotification> countingListener = listener == null ? null : notification -> {
-                if (notification.getReason() == ReasonEnum.ASSET_CREATED) {
-                    catalogAssetsCounter.increment();
-                }
-                listener.accept(notification);
-            };
-
-            sseNotificationRegistry.register(runId, countingListener, completion);
+            kafkaProgressRegistry.registerCompletion(runId, completion);
 
             JobParameters params = new JobParametersBuilder()
                     .addLong("runId", runId)
@@ -71,5 +59,9 @@ public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
             log.error("Failed to start catalog job", e);
             return CompletableFuture.failedFuture(e);
         }
+    }
+
+    public void incrementCatalogCounter() {
+        catalogAssetsCounter.increment();
     }
 }

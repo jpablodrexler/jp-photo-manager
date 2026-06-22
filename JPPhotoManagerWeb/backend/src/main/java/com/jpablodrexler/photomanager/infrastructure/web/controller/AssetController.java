@@ -2,8 +2,8 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.jpablodrexler.photomanager.application.dto.AssetFilter;
 import com.jpablodrexler.photomanager.application.dto.AssetImage;
-import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
+import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
 import com.jpablodrexler.photomanager.application.exception.FolderNotFoundException;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
@@ -70,8 +70,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -102,6 +100,7 @@ public class AssetController {
     private final FolderRepository folderRepository;
     private final AssetWebMapper assetWebMapper;
     private final MeterRegistry meterRegistry;
+    private final KafkaProgressRegistry kafkaProgressRegistry;
 
     private final AtomicInteger sseConnectionCount = new AtomicInteger(0);
 
@@ -215,22 +214,9 @@ public class AssetController {
         emitter.onCompletion(sseConnectionCount::decrementAndGet);
         emitter.onTimeout(sseConnectionCount::decrementAndGet);
         emitter.onError(t -> sseConnectionCount.decrementAndGet());
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
-            try {
-                catalogAssetsUseCase.execute(notification -> {
-                    try {
-                        emitter.send(SseEmitter.event().name("catalog").data(notification));
-                    } catch (IOException e) {
-                        emitter.completeWithError(e);
-                    }
-                }).get();
-                emitter.complete();
-            } catch (Exception e) {
-                emitter.completeWithError(e);
-            }
-        });
-        executor.shutdown();
+        long runId = System.currentTimeMillis();
+        kafkaProgressRegistry.registerEmitter(runId, emitter);
+        catalogAssetsUseCase.execute(runId);
         return emitter;
     }
 
