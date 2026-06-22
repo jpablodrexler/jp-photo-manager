@@ -24,6 +24,7 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCa
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
+import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -69,6 +70,7 @@ class AssetControllerVideoTest {
     @MockitoBean FolderRepository folderRepository;
     @MockitoBean AssetWebMapper assetWebMapper;
     @MockitoBean MeterRegistry meterRegistry;
+    @MockitoBean KafkaProgressRegistry kafkaProgressRegistry;
 
     @Test
     void getAssets_videoAsset_responseContainsIsVideoTrue() throws Exception {

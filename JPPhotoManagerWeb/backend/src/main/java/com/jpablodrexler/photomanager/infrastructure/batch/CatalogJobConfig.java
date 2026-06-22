@@ -7,7 +7,7 @@ import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import com.jpablodrexler.photomanager.infrastructure.service.AudioMetadataService;
-import com.jpablodrexler.photomanager.infrastructure.service.SseNotificationRegistry;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -15,15 +15,15 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.TaskExecutorJobLauncher;
 import org.springframework.batch.core.partition.support.TaskExecutorPartitionHandler;
 import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.scope.context.StepContext;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -112,9 +112,10 @@ public class CatalogJobConfig {
             FolderRepository folderRepository,
             StoragePort storagePort,
             ThumbnailPort thumbnailPort,
-            SseNotificationRegistry sseNotificationRegistry) {
+            KafkaTemplate<String, Object> kafkaTemplate,
+            MeterRegistry meterRegistry) {
         return new CatalogAssetItemWriter(runId, folderPath, assetRepository, assetExifRepository,
-                assetAudioRepository, folderRepository, storagePort, thumbnailPort, sseNotificationRegistry);
+                assetAudioRepository, folderRepository, storagePort, thumbnailPort, kafkaTemplate, meterRegistry);
     }
 
     @Bean(name = "asyncCatalogJobLauncher")

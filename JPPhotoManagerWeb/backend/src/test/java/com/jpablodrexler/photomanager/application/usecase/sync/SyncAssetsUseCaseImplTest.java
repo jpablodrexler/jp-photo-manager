@@ -1,53 +1,57 @@
 package com.jpablodrexler.photomanager.application.usecase.sync;
 
-import com.jpablodrexler.photomanager.application.dto.SyncAssetsResult;
+import com.jpablodrexler.photomanager.application.dto.SyncProgressMessage;
 import com.jpablodrexler.photomanager.domain.model.SyncDirectoriesDefinition;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.port.out.SyncConfigRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.kafka.core.KafkaTemplate;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SyncAssetsUseCaseImplTest {
 
     @Mock SyncConfigRepository syncConfigRepository;
     @Mock StoragePort storagePort;
+    @Mock KafkaTemplate<String, Object> kafkaTemplate;
     @InjectMocks SyncAssetsUseCaseImpl sut;
 
     @Test
-    void execute_noDefinitions_returnsEmptyList() throws Exception {
+    void execute_noDefinitions_publishesDoneWithEmptyResults() {
         when(syncConfigRepository.findAllOrderByOrder()).thenReturn(List.of());
 
-        List<SyncAssetsResult> result = sut.execute(null).get();
+        sut.execute(0L);
 
-        assertThat(result).isEmpty();
+        ArgumentCaptor<SyncProgressMessage> captor = ArgumentCaptor.forClass(SyncProgressMessage.class);
+        verify(kafkaTemplate).send(eq("job.sync.progress"), eq("0"), captor.capture());
+        assertThat(captor.getValue().done()).isTrue();
+        assertThat(captor.getValue().results()).isEmpty();
     }
 
     @Test
-    void execute_sourceDirectoryNotExist_returnsFailureResult() throws Exception {
+    void execute_sourceDirectoryNotExist_publishesFailureResult() {
         SyncDirectoriesDefinition def = buildDef("/src", "/dest", false, false);
         when(syncConfigRepository.findAllOrderByOrder()).thenReturn(List.of(def));
         when(storagePort.directoryExists("/src")).thenReturn(false);
 
-        List<SyncAssetsResult> result = sut.execute(null).get();
+        sut.execute(0L);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).isSuccess()).isFalse();
-        assertThat(result.get(0).getMessage()).contains("does not exist");
+        ArgumentCaptor<SyncProgressMessage> captor = ArgumentCaptor.forClass(SyncProgressMessage.class);
+        verify(kafkaTemplate).send(eq("job.sync.progress"), eq("0"), captor.capture());
+        SyncProgressMessage done = captor.getValue();
+        assertThat(done.done()).isTrue();
+        assertThat(done.results().get(0).isSuccess()).isFalse();
+        assertThat(done.results().get(0).getMessage()).contains("does not exist");
     }
 
     @Test
@@ -59,10 +63,14 @@ class SyncAssetsUseCaseImplTest {
         when(storagePort.listFiles("/src")).thenReturn(List.of("/src/a.jpg"));
         when(storagePort.listFiles("/dest")).thenReturn(List.of());
 
-        List<SyncAssetsResult> result = sut.execute(null).get();
+        sut.execute(0L);
 
-        assertThat(result.get(0).getSyncedCount()).isEqualTo(1);
         verify(storagePort).copyFile("/src/a.jpg", "/dest/a.jpg");
+        ArgumentCaptor<SyncProgressMessage> captor = ArgumentCaptor.forClass(SyncProgressMessage.class);
+        verify(kafkaTemplate, atLeastOnce()).send(eq("job.sync.progress"), eq("0"), captor.capture());
+        SyncProgressMessage done = captor.getAllValues().stream()
+                .filter(SyncProgressMessage::done).findFirst().orElseThrow();
+        assertThat(done.results().get(0).getSyncedCount()).isEqualTo(1);
     }
 
     @Test
@@ -73,9 +81,8 @@ class SyncAssetsUseCaseImplTest {
         when(storagePort.listFiles("/src")).thenReturn(List.of("/src/a.jpg"));
         when(storagePort.listFiles("/dest")).thenReturn(List.of("/dest/a.jpg"));
 
-        List<SyncAssetsResult> result = sut.execute(null).get();
+        sut.execute(0L);
 
-        assertThat(result.get(0).getSyncedCount()).isZero();
         verify(storagePort, never()).copyFile(any(), any());
     }
 
@@ -87,10 +94,14 @@ class SyncAssetsUseCaseImplTest {
         when(storagePort.listFiles("/src")).thenReturn(List.of());
         when(storagePort.listFiles("/dest")).thenReturn(List.of("/dest/extra.jpg"));
 
-        List<SyncAssetsResult> result = sut.execute(null).get();
+        sut.execute(0L);
 
-        assertThat(result.get(0).getDeletedCount()).isEqualTo(1);
         verify(storagePort).deleteFile("/dest/extra.jpg");
+        ArgumentCaptor<SyncProgressMessage> captor = ArgumentCaptor.forClass(SyncProgressMessage.class);
+        verify(kafkaTemplate, atLeastOnce()).send(eq("job.sync.progress"), eq("0"), captor.capture());
+        SyncProgressMessage done = captor.getAllValues().stream()
+                .filter(SyncProgressMessage::done).findFirst().orElseThrow();
+        assertThat(done.results().get(0).getDeletedCount()).isEqualTo(1);
     }
 
     @Test
@@ -105,21 +116,24 @@ class SyncAssetsUseCaseImplTest {
         when(storagePort.listFiles("/dest/sub")).thenReturn(List.of());
         when(storagePort.listSubDirectories("/src/sub")).thenReturn(List.of());
 
-        sut.execute(null).get();
+        sut.execute(0L);
 
         verify(storagePort).listFiles("/src/sub");
     }
 
     @Test
-    void execute_syncThrows_returnsFailureResult() throws Exception {
+    void execute_syncThrows_publishesFailureResult() throws Exception {
         SyncDirectoriesDefinition def = buildDef("/src", "/dest", false, false);
         when(syncConfigRepository.findAllOrderByOrder()).thenReturn(List.of(def));
         when(storagePort.directoryExists(anyString())).thenReturn(true);
         when(storagePort.listFiles(anyString())).thenThrow(new RuntimeException("IO error"));
 
-        List<SyncAssetsResult> result = sut.execute(null).get();
+        sut.execute(0L);
 
-        assertThat(result.get(0).isSuccess()).isFalse();
+        ArgumentCaptor<SyncProgressMessage> captor = ArgumentCaptor.forClass(SyncProgressMessage.class);
+        verify(kafkaTemplate).send(eq("job.sync.progress"), eq("0"), captor.capture());
+        assertThat(captor.getValue().done()).isTrue();
+        assertThat(captor.getValue().results().get(0).isSuccess()).isFalse();
     }
 
     private static SyncDirectoriesDefinition buildDef(String src, String dest, boolean subs, boolean delete) {

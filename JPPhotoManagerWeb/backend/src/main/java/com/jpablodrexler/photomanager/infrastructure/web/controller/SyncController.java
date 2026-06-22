@@ -1,10 +1,10 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.application.dto.SyncAssetsResult;
 import com.jpablodrexler.photomanager.domain.model.SyncDirectoriesDefinition;
 import com.jpablodrexler.photomanager.domain.port.in.sync.GetSyncConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.sync.SaveSyncConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.sync.SyncAssetsUseCase;
+import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -15,10 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Tag(name = "Sync", description = "Directory synchronisation configuration and execution")
 @RestController
@@ -29,6 +26,7 @@ public class SyncController {
     private final GetSyncConfigUseCase getSyncConfigUseCase;
     private final SaveSyncConfigUseCase saveSyncConfigUseCase;
     private final SyncAssetsUseCase syncAssetsUseCase;
+    private final KafkaProgressRegistry kafkaProgressRegistry;
 
     @Operation(summary = "Get sync directory pair configuration")
     @ApiResponses({
@@ -60,23 +58,9 @@ public class SyncController {
     @GetMapping("/run")
     public SseEmitter run() {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.execute(() -> {
-            try {
-                List<SyncAssetsResult> results = syncAssetsUseCase.execute(status -> {
-                    try {
-                        emitter.send(SseEmitter.event().name("status").data(status));
-                    } catch (IOException e) {
-                        emitter.completeWithError(e);
-                    }
-                }).get();
-                emitter.send(SseEmitter.event().name("results").data(results));
-                emitter.complete();
-            } catch (Exception e) {
-                emitter.completeWithError(e);
-            }
-        });
-        executor.shutdown();
+        long runId = System.currentTimeMillis();
+        kafkaProgressRegistry.registerEmitter(runId, emitter);
+        syncAssetsUseCase.execute(runId);
         return emitter;
     }
 }

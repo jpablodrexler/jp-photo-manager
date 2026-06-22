@@ -1,12 +1,14 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jpablodrexler.photomanager.application.dto.ConvertAssetsResult;
 import com.jpablodrexler.photomanager.domain.model.ConvertDirectoriesDefinition;
 import com.jpablodrexler.photomanager.domain.port.in.convert.ConvertAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.convert.GetConvertConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.convert.SaveConvertConfigUseCase;
+import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import org.junit.jupiter.api.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -16,7 +18,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -39,6 +40,8 @@ class ConvertControllerTest {
     SaveConvertConfigUseCase saveConvertConfigUseCase;
     @MockitoBean
     ConvertAssetsUseCase convertAssetsUseCase;
+    @MockitoBean
+    KafkaProgressRegistry kafkaProgressRegistry;
 
     // --- GET /api/convert/configuration ---
 
@@ -81,10 +84,8 @@ class ConvertControllerTest {
 
     @Test
     void run_initiatesAsyncConversion_returns200() throws Exception {
-        ConvertAssetsResult result = new ConvertAssetsResult();
-        result.setSuccess(true);
-        when(convertAssetsUseCase.execute(any()))
-                .thenReturn(CompletableFuture.completedFuture(List.of(result)));
+        doAnswer((InvocationOnMock inv) -> { inv.<SseEmitter>getArgument(1).complete(); return null; })
+                .when(kafkaProgressRegistry).registerEmitter(anyLong(), any(SseEmitter.class));
 
         MvcResult mvcResult = mockMvc.perform(get("/api/convert/run"))
                 .andExpect(request().asyncStarted())

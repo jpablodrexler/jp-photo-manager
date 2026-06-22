@@ -1,9 +1,6 @@
 package com.jpablodrexler.photomanager.application.usecase.catalog;
 
-import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
-import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
-import com.jpablodrexler.photomanager.domain.model.Asset;
-import com.jpablodrexler.photomanager.infrastructure.service.SseNotificationRegistry;
+import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,22 +16,20 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CatalogAssetsUseCaseImplTest {
 
     @Mock JobLauncher asyncCatalogJobLauncher;
     @Mock Job catalogJob;
-    @Mock SseNotificationRegistry sseNotificationRegistry;
+    @Mock KafkaProgressRegistry kafkaProgressRegistry;
     @Mock JobExecution jobExecution;
 
     SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -42,31 +37,32 @@ class CatalogAssetsUseCaseImplTest {
 
     @BeforeEach
     void setUp() {
-        sut = new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob, sseNotificationRegistry, meterRegistry);
+        sut = new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob, kafkaProgressRegistry, meterRegistry);
     }
 
     @Test
-    void execute_startsJobAndRegistersConsumer() throws Exception {
+    void execute_startsJobAndRegistersCompletion() throws Exception {
         when(asyncCatalogJobLauncher.run(eq(catalogJob), any(JobParameters.class))).thenReturn(jobExecution);
 
-        sut.execute(notification -> {});
+        sut.execute(42L);
 
-        verify(sseNotificationRegistry).register(any(Long.class), any(), any());
+        verify(kafkaProgressRegistry).registerCompletion(eq(42L), any(CompletableFuture.class));
         verify(asyncCatalogJobLauncher).run(eq(catalogJob), any(JobParameters.class));
     }
 
     @Test
-    void execute_registersConsumerBeforeStartingJob() throws Exception {
-        AtomicReference<Long> registeredRunId = new AtomicReference<>();
-        org.mockito.Mockito.doAnswer(inv -> {
-            registeredRunId.set(inv.getArgument(0));
-            return null;
-        }).when(sseNotificationRegistry).register(any(Long.class), any(), any());
-        when(asyncCatalogJobLauncher.run(any(), any())).thenReturn(jobExecution);
+    void execute_registersCompletionBeforeStartingJob() throws Exception {
+        AtomicBoolean completionRegistered = new AtomicBoolean(false);
+        doAnswer(inv -> { completionRegistered.set(true); return null; })
+                .when(kafkaProgressRegistry).registerCompletion(anyLong(), any());
+        when(asyncCatalogJobLauncher.run(any(), any())).thenAnswer(inv -> {
+            assertThat(completionRegistered.get()).isTrue();
+            return jobExecution;
+        });
 
-        sut.execute(null);
+        sut.execute(42L);
 
-        assertThat(registeredRunId.get()).isNotNull();
+        assertThat(completionRegistered.get()).isTrue();
     }
 
     @Test
@@ -74,37 +70,29 @@ class CatalogAssetsUseCaseImplTest {
         when(asyncCatalogJobLauncher.run(any(), any()))
                 .thenThrow(new JobExecutionAlreadyRunningException("already running"));
 
-        CompletableFuture<Void> result = sut.execute(notification -> {});
+        CompletableFuture<Void> result = sut.execute(42L);
 
         assertThat(result.isDone()).isTrue();
         assertThat(result.isCompletedExceptionally()).isFalse();
     }
 
     @Test
-    void execute_assetCreatedNotification_incrementsCounter() throws Exception {
+    void execute_returnsCompletableFutureRegisteredInRegistry() throws Exception {
         when(asyncCatalogJobLauncher.run(any(), any())).thenReturn(jobExecution);
+        ArgumentCaptor<CompletableFuture<Void>> futureCaptor = ArgumentCaptor.forClass(CompletableFuture.class);
+        doNothing().when(kafkaProgressRegistry).registerCompletion(anyLong(), futureCaptor.capture());
 
-        ArgumentCaptor<Consumer<CatalogChangeNotification>> consumerCaptor =
-                ArgumentCaptor.forClass(Consumer.class);
-        org.mockito.Mockito.doAnswer(inv -> null)
-                .when(sseNotificationRegistry).register(any(Long.class), consumerCaptor.capture(), any());
+        CompletableFuture<Void> result = sut.execute(42L);
 
-        sut.execute(notification -> {});
+        assertThat(result).isSameAs(futureCaptor.getValue());
+    }
 
-        Asset asset = new Asset();
-        consumerCaptor.getValue().accept(new CatalogChangeNotification(ReasonEnum.ASSET_CREATED, asset, 50));
+    @Test
+    void incrementCatalogCounter_incrementsMetricsCounter() {
+        sut.incrementCatalogCounter();
 
         Counter counter = meterRegistry.find("photomanager_catalog_assets_total").counter();
         assertThat(counter).isNotNull();
         assertThat(counter.count()).isEqualTo(1.0);
-    }
-
-    @Test
-    void execute_nullListener_doesNotRegisterConsumer() throws Exception {
-        when(asyncCatalogJobLauncher.run(any(), any())).thenReturn(jobExecution);
-
-        sut.execute(null);
-
-        verify(sseNotificationRegistry).register(any(Long.class), eq(null), any());
     }
 }

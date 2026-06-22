@@ -32,6 +32,7 @@ import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import com.jpablodrexler.photomanager.application.dto.RenameAssetsResult;
 import com.jpablodrexler.photomanager.application.dto.RenamePreview;
+import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.MoveAssetsRequest;
 
 import java.time.LocalDate;
@@ -53,6 +54,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.invocation.InvocationOnMock;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -113,6 +116,8 @@ class AssetControllerTest {
     AssetWebMapper assetWebMapper;
     @MockitoBean
     MeterRegistry meterRegistry;
+    @MockitoBean
+    KafkaProgressRegistry kafkaProgressRegistry;
 
     @BeforeEach
     void resetSseCounter() {
@@ -255,7 +260,9 @@ class AssetControllerTest {
 
     @Test
     void catalogAssets_initiatesAsyncProcessing_returns200() throws Exception {
-        when(catalogAssetsUseCase.execute(any())).thenReturn(CompletableFuture.completedFuture(null));
+        when(catalogAssetsUseCase.execute(anyLong())).thenReturn(CompletableFuture.completedFuture(null));
+        doAnswer((InvocationOnMock inv) -> { inv.<SseEmitter>getArgument(1).complete(); return null; })
+                .when(kafkaProgressRegistry).registerEmitter(anyLong(), any(SseEmitter.class));
 
         MvcResult result = mockMvc.perform(get("/api/assets/catalog"))
                 .andExpect(request().asyncStarted())
@@ -267,19 +274,16 @@ class AssetControllerTest {
 
     @Test
     void catalogAssets_sseGauge_incrementsOnOpen() throws Exception {
-        when(catalogAssetsUseCase.execute(any())).thenReturn(CompletableFuture.completedFuture(null));
+        when(catalogAssetsUseCase.execute(anyLong())).thenReturn(CompletableFuture.completedFuture(null));
 
         AtomicInteger count = (AtomicInteger) ReflectionTestUtils.getField(assetController, "sseConnectionCount");
         assertThat(count).isNotNull();
         assertThat(count.get()).isEqualTo(0);
 
-        MvcResult result = mockMvc.perform(get("/api/assets/catalog"))
+        mockMvc.perform(get("/api/assets/catalog"))
                 .andExpect(request().asyncStarted())
                 .andReturn();
         assertThat(count.get()).isGreaterThanOrEqualTo(1);
-
-        mockMvc.perform(asyncDispatch(result))
-                .andExpect(status().isOk());
     }
 
     // --- POST /api/assets/move ---

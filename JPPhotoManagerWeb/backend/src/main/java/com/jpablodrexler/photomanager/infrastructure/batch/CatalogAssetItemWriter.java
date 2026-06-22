@@ -1,6 +1,9 @@
 package com.jpablodrexler.photomanager.infrastructure.batch;
 
+import com.jpablodrexler.photomanager.application.dto.AssetCatalogedEvent;
+import com.jpablodrexler.photomanager.application.dto.AssetDeletedEvent;
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
+import com.jpablodrexler.photomanager.application.dto.CatalogProgressMessage;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
@@ -11,18 +14,20 @@ import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
-import com.jpablodrexler.photomanager.infrastructure.service.SseNotificationRegistry;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -36,7 +41,8 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
     private final FolderRepository folderRepository;
     private final StoragePort storagePort;
     private final ThumbnailPort thumbnailPort;
-    private final SseNotificationRegistry sseNotificationRegistry;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final Counter catalogAssetsCounter;
 
     private Folder cachedFolder;
 
@@ -47,7 +53,8 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
                                    FolderRepository folderRepository,
                                    StoragePort storagePort,
                                    ThumbnailPort thumbnailPort,
-                                   SseNotificationRegistry sseNotificationRegistry) {
+                                   KafkaTemplate<String, Object> kafkaTemplate,
+                                   MeterRegistry meterRegistry) {
         this.runId = runId;
         this.folderPath = folderPath;
         this.assetRepository = assetRepository;
@@ -56,13 +63,15 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
         this.folderRepository = folderRepository;
         this.storagePort = storagePort;
         this.thumbnailPort = thumbnailPort;
-        this.sseNotificationRegistry = sseNotificationRegistry;
+        this.kafkaTemplate = kafkaTemplate;
+        this.catalogAssetsCounter = Counter.builder("photomanager_catalog_assets_total")
+                .description("Total assets cataloged")
+                .register(meterRegistry);
     }
 
     @Override
     public void write(Chunk<? extends CatalogBatchItem> chunk) throws Exception {
         ensureFolderExists();
-        Consumer<CatalogChangeNotification> consumer = sseNotificationRegistry.get(runId);
 
         for (CatalogBatchItem item : chunk) {
             Asset asset = item.asset();
@@ -82,9 +91,14 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
                 assetAudioRepository.save(item.assetAudio());
             }
 
-            if (consumer != null) {
-                consumer.accept(new CatalogChangeNotification(ReasonEnum.ASSET_CREATED, saved, 0));
-            }
+            catalogAssetsCounter.increment();
+
+            CatalogChangeNotification notification =
+                    new CatalogChangeNotification(ReasonEnum.ASSET_CREATED, saved, 0);
+            kafkaTemplate.send("job.catalog.progress", String.valueOf(runId),
+                    CatalogProgressMessage.progress(runId, notification));
+            kafkaTemplate.send("asset.cataloged", String.valueOf(saved.getAssetId()),
+                    new AssetCatalogedEvent(saved.getAssetId(), folderPath, Instant.now()));
         }
     }
 
@@ -102,15 +116,18 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
                     .collect(Collectors.toSet());
 
             List<Asset> cataloguedAssets = assetRepository.findByFolder(folder);
-            Consumer<CatalogChangeNotification> consumer = sseNotificationRegistry.get(runId);
 
             for (Asset asset : cataloguedAssets) {
                 if (!filesOnDisk.contains(asset.getFileName())) {
                     assetRepository.deleteById(asset.getAssetId());
                     thumbnailPort.deleteThumbnail(asset.getThumbnailBlobName());
-                    if (consumer != null) {
-                        consumer.accept(new CatalogChangeNotification(ReasonEnum.ASSET_DELETED, asset, 0));
-                    }
+
+                    CatalogChangeNotification notification =
+                            new CatalogChangeNotification(ReasonEnum.ASSET_DELETED, asset, 0);
+                    kafkaTemplate.send("job.catalog.progress", String.valueOf(runId),
+                            CatalogProgressMessage.progress(runId, notification));
+                    kafkaTemplate.send("asset.deleted", String.valueOf(asset.getAssetId()),
+                            new AssetDeletedEvent(asset.getAssetId(), folderPath, Instant.now(), false));
                 }
             }
         } catch (Exception e) {
@@ -125,10 +142,10 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
                 Folder f = new Folder();
                 f.setPath(folderPath);
                 Folder saved = folderRepository.save(f);
-                Consumer<CatalogChangeNotification> consumer = sseNotificationRegistry.get(runId);
-                if (consumer != null) {
-                    consumer.accept(new CatalogChangeNotification(ReasonEnum.FOLDER_CREATED, folderPath, 0));
-                }
+                CatalogChangeNotification notification =
+                        new CatalogChangeNotification(ReasonEnum.FOLDER_CREATED, folderPath, 0);
+                kafkaTemplate.send("job.catalog.progress", String.valueOf(runId),
+                        CatalogProgressMessage.progress(runId, notification));
                 return saved;
             });
         }
