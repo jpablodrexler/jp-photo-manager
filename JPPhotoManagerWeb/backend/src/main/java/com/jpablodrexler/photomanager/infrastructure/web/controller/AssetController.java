@@ -220,6 +220,26 @@ public class AssetController {
         return emitter;
     }
 
+    @Operation(summary = "Observe catalog progress without triggering a new run")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Long-lived SSE stream; receives catalog/catalog-done events"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/catalog/observe")
+    public SseEmitter observeCatalog() {
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        sseConnectionCount.incrementAndGet();
+        Runnable cleanup = () -> {
+            kafkaProgressRegistry.removeCatalogObserver(emitter);
+            sseConnectionCount.decrementAndGet();
+        };
+        emitter.onCompletion(cleanup);
+        emitter.onTimeout(cleanup);
+        emitter.onError(t -> cleanup.run());
+        kafkaProgressRegistry.addCatalogObserver(emitter);
+        return emitter;
+    }
+
     @Operation(summary = "Move or copy assets to a destination folder")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Operation result"),
