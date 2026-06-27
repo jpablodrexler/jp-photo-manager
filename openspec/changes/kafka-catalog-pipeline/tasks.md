@@ -69,4 +69,4 @@
 - [x] 10.4 Update `ConvertAssetsUseCaseImplTest`: same as sync
 - [x] 10.5 Update `AssetController` tests (if any): remove `CompletableFuture` blocking assumption; verify `catalogAssetsUseCase.execute(runId)` called with a valid runId
 - [x] 10.6 Run full unit test suite (`mvn test`) and confirm all tests pass
-- [ ] 10.7 Run integration tests (`mvn verify -Pintegration-tests`) with Docker running and confirm all tests pass
+- [x] 10.7 Run integration tests (`mvn verify -Pintegration-tests`) with Docker running and confirm all tests pass

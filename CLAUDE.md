@@ -197,37 +197,62 @@ Clean architecture mirroring the desktop app's layer separation across two sub-p
 
 ```
 api/                  → REST controllers + request/response DTOs
-application/          → PhotoManagerFacade (orchestration) + application DTOs
+application/          → Use-case orchestration + application DTOs (progress messages, results)
 domain/
   entity/             → JPA entities (Asset, Folder, …)
   enums/              → ImageRotation, SortCriteria, WallpaperStyle, ReasonEnum
   repository/         → Spring Data JPA interfaces
   service/            → Domain service interfaces
 infrastructure/
-  service/            → Service implementations, StorageServiceImpl, ThumbnailStorageService
-config/               → AppConfig (CORS, async executor)
+  service/            → Service implementations, StorageServiceImpl, ThumbnailStorageService,
+                        KafkaProgressRegistry (runId → SseEmitter + CompletableFuture map)
+  kafka/              → KafkaProgressListener (@KafkaListener for catalog/sync/convert topics)
+  batch/              → Spring Batch job config and item writers/listeners for catalog pipeline
+  config/             → AppConfig (CORS, async executor), KafkaTopicConfig (topic declarations)
 ```
 
 **Dependency flow:** `api` → `application` → `domain` ← `infrastructure`
 
 **Startup:** `PhotoManagerApplication.java` bootstraps Spring Boot; all beans are auto-detected via `@Service` / `@RestController`. The async thread pool and CORS policy are configured in `AppConfig`.
 
-**Key domain services** (interfaces in `domain/service/`, implementations in `infrastructure/service/`):
-- `CatalogAssetsService` — recursively scans folders, generates thumbnails (200×150 px), computes SHA-256 hashes, persists to DB; runs asynchronously and streams progress via `Consumer<CatalogChangeNotification>`
-- `SyncAssetsService` — copies new files between directory pairs, optionally deletes files missing from the source
-- `ConvertAssetsService` — converts PNG images to JPEG
-- `FindDuplicatedAssetsService` — groups assets by hash, filters out stale entries
-- `MoveAssetsService` — copies or moves files on disk and updates the DB record
+**Key use cases** (interfaces in `domain/port/in/`, implementations in `application/usecase/`):
+- `CatalogAssetsUseCase.execute(long runId) → CompletableFuture<Void>` — registers a completion future in `KafkaProgressRegistry`, then launches a Spring Batch job. The Batch item writer publishes `CatalogProgressMessage` events to the `job.catalog.progress` Kafka topic; `KafkaProgressListener` forwards each event to the waiting `SseEmitter` and completes the future on `done=true`.
+- `SyncAssetsUseCase.execute(long runId)` — `@Async void`; publishes `SyncProgressMessage` events to `job.sync.progress` and a final `done=true` when finished.
+- `ConvertAssetsUseCase.execute(long runId)` — `@Async void`; same pattern, publishes to `job.convert.progress`.
+
+**Key infrastructure services:**
+- `KafkaProgressRegistry` — thread-safe `ConcurrentHashMap` holding `SseEmitter` and `CompletableFuture<Void>` keyed by `runId`; used to bridge Kafka consumer callbacks back to waiting HTTP connections.
+- `KafkaProgressListener` — `@KafkaListener` on `job.catalog.progress`, `job.sync.progress`, and `job.convert.progress`; routes messages to the registered emitter and calls `registry.complete(runId)` on `done=true`.
 - `StorageService` — file I/O, thumbnail generation, EXIF rotation (Apache Commons Imaging), SHA-256
 
 **Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by Flyway; migrations in `src/main/resources/db/migration/`. Connect using environment variables `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USERNAME`, `POSTGRES_PASSWORD` (defaults: `localhost`, `5432`, `photomanager`, `postgres`, `postgres`).
 
-**Local development prerequisite:** PostgreSQL 15+ must be running locally. Quickstart:
+**Local development prerequisites:** PostgreSQL 15+ and Kafka must be running locally. Quickstart:
 ```bash
 docker run -d --name photomanager-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=photomanager -p 5432:5432 postgres:15
+docker run -d --name photomanager-kafka -p 9092:9092 -p 9094:9094 \
+  -e KAFKA_NODE_ID=1 -e KAFKA_PROCESS_ROLES=broker,controller \
+  -e KAFKA_LISTENERS=PLAINTEXT://:9092,EXTERNAL://:9094,CONTROLLER://:9093 \
+  -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092,EXTERNAL://localhost:9094 \
+  -e KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093 \
+  -e KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER \
+  -e KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT \
+  -e KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT \
+  -e KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
+  apache/kafka:3.9.0
 ```
 
-**Real-time progress:** long-running operations (catalog, sync, convert) use Spring's `SseEmitter` to stream status events to the frontend.
+**Real-time progress:** long-running operations (catalog, sync, convert) publish progress messages to Kafka topics. `KafkaProgressListener` consumes those messages and forwards them to the appropriate `SseEmitter`, streaming events to the frontend without any direct coupling between the use case and the HTTP layer.
+
+**Kafka topics:**
+
+| Topic | Partitions | Retention | Description |
+|---|---|---|---|
+| `job.catalog.progress` | 3 | 1 h | Per-asset catalog progress + done signal |
+| `job.sync.progress` | 1 | 1 h | Per-pair sync status + done signal with results |
+| `job.convert.progress` | 1 | 1 h | Per-pair convert status + done signal with results |
+| `asset.cataloged` | 3 | 7 d | Emitted for each newly indexed asset |
+| `asset.deleted` | 3 | 7 d | Emitted for each asset removed from catalog |
 
 **Configuration:** `src/main/resources/application.yml`. Key properties:
 
@@ -242,6 +267,7 @@ docker run -d --name photomanager-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_D
 | `POSTGRES_DB` | `photomanager` | Database name |
 | `POSTGRES_USERNAME` | `postgres` | Database user |
 | `POSTGRES_PASSWORD` | `postgres` | Database password |
+| `KAFKA_BOOTSTRAP` | `localhost:9092` | Kafka bootstrap server address |
 
 ### Frontend
 
