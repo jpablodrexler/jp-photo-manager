@@ -17,6 +17,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -36,6 +37,7 @@ class KafkaProgressListenerTest {
     @BeforeEach
     void setUp() {
         lenient().when(registry.getEmitter(42L)).thenReturn(emitter);
+        lenient().when(registry.getCatalogObservers()).thenReturn(Set.of());
     }
 
     @Test

@@ -1,0 +1,59 @@
+.catalog-footer {
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-sidebar);
+}
+
+.catalog-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+
+  &.spinning {
+    color: var(--accent-color);
+    animation: catalog-spin 1.5s linear infinite;
+  }
+}
+
+.catalog-status-text {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+  flex-shrink: 1;
+}
+
+.catalog-progress-bar {
+  flex: 1;
+  min-width: 60px;
+}
+
+.catalog-percent {
+  color: var(--text-secondary);
+  min-width: 32px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.catalog-refresh-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  --mdc-icon-button-state-layer-size: 28px;
+  width: 28px;
+  height: 28px;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+  }
+}
+
+@keyframes catalog-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

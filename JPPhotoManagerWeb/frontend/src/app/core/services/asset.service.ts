@@ -86,6 +86,10 @@ export class AssetService {
     return new EventSource(`${this.baseUrl}/catalog`);
   }
 
+  observeCatalog(): EventSource {
+    return new EventSource(`${this.baseUrl}/catalog/observe`);
+  }
+
   getExifMetadata(assetId: number): Observable<ExifMetadata | null> {
     return this.http.get<ExifMetadata | null>(`${this.baseUrl}/${assetId}/exif`);
   }

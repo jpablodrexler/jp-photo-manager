@@ -31,17 +31,40 @@ public class KafkaProgressListener {
             }
             registry.complete(runId);
             registry.remove(runId);
+            broadcastCatalogDone();
             return;
         }
 
-        if (emitter == null) {
-            return;
+        if (emitter != null) {
+            try {
+                emitter.send(SseEmitter.event().name("catalog").data(message.notification()));
+            } catch (IOException e) {
+                log.warn("Failed to send catalog SSE event for runId={}: {}", runId, e.getMessage());
+            }
         }
 
-        try {
-            emitter.send(SseEmitter.event().name("catalog").data(message.notification()));
-        } catch (IOException e) {
-            log.warn("Failed to send catalog SSE event for runId={}: {}", runId, e.getMessage());
+        broadcastCatalogProgress(message);
+    }
+
+    private void broadcastCatalogProgress(CatalogProgressMessage message) {
+        for (SseEmitter observer : registry.getCatalogObservers()) {
+            try {
+                observer.send(SseEmitter.event().name("catalog").data(message.notification()));
+            } catch (IOException e) {
+                log.warn("Failed to broadcast catalog progress to observer: {}", e.getMessage());
+                registry.removeCatalogObserver(observer);
+            }
+        }
+    }
+
+    private void broadcastCatalogDone() {
+        for (SseEmitter observer : registry.getCatalogObservers()) {
+            try {
+                observer.send(SseEmitter.event().name("catalog-done").data("done"));
+            } catch (IOException e) {
+                log.warn("Failed to broadcast catalog-done to observer: {}", e.getMessage());
+                registry.removeCatalogObserver(observer);
+            }
         }
     }
 

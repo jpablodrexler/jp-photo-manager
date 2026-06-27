@@ -12,8 +12,7 @@
     "test:e2e": "cypress run --e2e",
     "cypress:open": "cypress open --component",
     "cypress:e2e": "cypress open --e2e",
-    "lint": "ng lint",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "lint": "ng lint"
   },
   "private": true,
   "dependencies": {

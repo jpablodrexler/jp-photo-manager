@@ -86,6 +86,10 @@
   </mat-sidenav-content>
 </mat-sidenav-container>
 
+@if (isLoggedIn) {
+  <app-catalog-progress-footer />
+}
+
 @if (mediaPlayer.currentTrack() && !mediaPlayer.isVideoPlaying()) {
   <app-audio-player />
 }

@@ -2,16 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## First-time setup
-
-The shared git hooks are activated automatically when you run `npm install` inside `JPPhotoManagerWeb/frontend`. If you are working on the backend only and do not run `npm install`, activate them manually:
-
-```bash
-git config core.hooksPath .githooks
-```
-
-The pre-commit hook runs the backend and/or frontend test suite whenever the corresponding files are staged, blocking commits that would break the pipeline. It is written in Node.js and works on Linux, macOS, and Windows.
-
 ## Commands
 
 **Build:**

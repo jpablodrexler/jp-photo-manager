@@ -20,6 +20,7 @@ import { VideoPlayerComponent } from './features/gallery/video-player/video-play
 import { MediaFullscreenOverlayComponent } from './shared/components/media-fullscreen-overlay/media-fullscreen-overlay.component';
 import { AboutDialogComponent } from './shared/components/about-dialog/about-dialog.component';
 import { AccentColorPickerComponent } from './shared/components/accent-color-picker/accent-color-picker.component';
+import { CatalogProgressFooterComponent } from './shared/components/catalog-progress-footer/catalog-progress-footer.component';
 
 @Component({
   selector: 'app-root',
@@ -39,6 +40,7 @@ import { AccentColorPickerComponent } from './shared/components/accent-color-pic
     MediaFullscreenOverlayComponent,
     MatSnackBarModule,
     AccentColorPickerComponent,
+    CatalogProgressFooterComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
