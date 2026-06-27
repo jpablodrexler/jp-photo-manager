@@ -86,8 +86,13 @@ graph TB
         Angular["Angular 19 SPA\nGallery · Albums · Sync · Convert · Duplicates · Recycle Bin"]
     end
 
-    subgraph api["Backend — port 8080"]
+    subgraph backend["Backend — port 8080"]
         SpringBoot["Spring Boot 3 REST API\n(Java 21)"]
+        KPL["KafkaProgressListener\n(sse-broadcaster group)"]
+    end
+
+    subgraph messaging["Messaging — port 9092"]
+        Kafka["Apache Kafka\n(KRaft, apache/kafka:3.9.0)\njob.catalog.progress · job.sync.progress\njob.convert.progress · asset.cataloged · asset.deleted"]
     end
 
     subgraph persistence["Persistence"]
@@ -99,6 +104,9 @@ graph TB
     Angular -->|"SSE (EventSource)"| SpringBoot
     SpringBoot -->|"JDBC / JPA (Hibernate)"| PG
     SpringBoot -->|"File I/O"| FS
+    SpringBoot -->|"publish progress events"| Kafka
+    Kafka -->|"consume progress events"| KPL
+    KPL -->|"SseEmitter.send()"| SpringBoot
 ```
 
 ### Backend Hexagonal Architecture
@@ -295,17 +303,21 @@ JPPhotoManagerWeb/
 | Spring Boot | 3.4.4 |
 | Spring Web (REST + SSE) | managed by Spring Boot |
 | Spring Data JPA | managed by Spring Boot |
+| Spring Batch | managed by Spring Boot |
+| Spring Kafka | managed by Spring Boot |
 | Spring Validation | managed by Spring Boot |
 | Spring Actuator | managed by Spring Boot |
 | Hibernate (PostgreSQL dialect) | managed by Spring Boot |
 | PostgreSQL JDBC | managed by Spring Boot |
 | Flyway + Flyway PostgreSQL extension | managed by Spring Boot |
+| Apache Kafka (KRaft) | 3.9.0 (via Docker) |
 | Lombok | 1.18.46 |
 | MapStruct | 1.6.3 |
 | Apache Commons Imaging | 1.0-alpha3 |
 | GitHub API client | 1.321 |
 | JUnit 5 + Mockito + AssertJ | managed by Spring Boot |
 | Testcontainers (PostgreSQL) | managed by Spring Boot |
+| Spring Kafka Test (`@EmbeddedKafka`) | managed by Spring Boot |
 
 ### Internal architecture
 
@@ -313,30 +325,40 @@ The backend follows a clean architecture with strict layering:
 
 ```
 api/                     → REST controllers and request/response DTOs
-application/             → PhotoManagerFacade — central orchestration facade
+application/usecase/     → Use-case implementations (one class per port/in interface)
+application/dto/         → Application DTOs: progress messages (CatalogProgressMessage,
+                           SyncProgressMessage, ConvertProgressMessage) and result types
 domain/
-  entity/                → JPA entities (Asset, Folder, …)
+  model/                 → Pure domain POJOs (Asset, Folder, …)
   enums/                 → ImageRotation, SortCriteria, WallpaperStyle, ReasonEnum
-  repository/            → Spring Data JPA repository interfaces
-  service/               → Domain service interfaces
+  port/in/               → Use-case interfaces
+  port/out/              → Repository and service port interfaces
 infrastructure/
-  service/               → Service implementations, StorageServiceImpl, ThumbnailStorageService
-config/                  → AppConfig (CORS, async thread pool)
+  web/                   → REST controllers, HTTP DTOs, MapStruct mappers
+  persistence/           → Spring Data JPA adapters (XxxRepositoryImpl, @Entity classes)
+  service/               → Service adapters: StorageServiceAdapter, ThumbnailStorageService,
+                           KafkaProgressRegistry (runId → SseEmitter + CompletableFuture map)
+  kafka/                 → KafkaProgressListener — @KafkaListener on all three progress topics;
+                           routes messages to SseEmitter via KafkaProgressRegistry
+  batch/                 → Spring Batch job config and item writers/listeners (catalog pipeline)
+  config/                → AppConfig (CORS, async executor), KafkaTopicConfig (topic declarations)
 ```
 
 **Dependency flow:** `api` → `application` → `domain` ← `infrastructure`
 
-Controllers are thin: they delegate immediately to `PhotoManagerFacade`, which orchestrates all domain services.
+Controllers are thin: they delegate immediately to use-case interfaces and never touch repositories or service adapters directly.
 
 ### Key services
 
-| Service | Description |
+| Service / Use Case | Description |
 |---|---|
-| `CatalogAssetsService` | Recursively scans folders, generates 200×150 thumbnails, computes SHA-256 hashes, persists to DB. Runs asynchronously and streams progress via SSE. |
-| `SyncAssetsService` | Copies new files between configured directory pairs; optionally removes files missing from the source. |
-| `ConvertAssetsService` | Converts PNG images to JPEG across configured directory pairs. |
-| `FindDuplicatedAssetsService` | Groups assets by hash and filters out stale catalog entries. |
-| `MoveAssetsService` | Copies or moves files on disk and updates the corresponding DB record. |
+| `CatalogAssetsUseCase` | Registers a `CompletableFuture<Void>` in `KafkaProgressRegistry`, then launches a Spring Batch job. The Batch item writer publishes `CatalogProgressMessage` events to `job.catalog.progress`; `KafkaProgressListener` forwards each event to the waiting `SseEmitter` and completes the future on `done=true`. |
+| `SyncAssetsUseCase` | `@Async void`; publishes `SyncProgressMessage` status events to `job.sync.progress` while syncing, then a final `done=true` message with results when complete. |
+| `ConvertAssetsUseCase` | `@Async void`; same pattern — publishes `ConvertProgressMessage` events to `job.convert.progress`. |
+| `FindDuplicatedAssetsUseCase` | Groups assets by hash and filters out stale catalog entries. |
+| `MoveAssetsUseCase` | Copies or moves files on disk and updates the corresponding DB record. |
+| `KafkaProgressRegistry` | Thread-safe `ConcurrentHashMap` keyed by `runId`; holds the `SseEmitter` registered by the controller and the `CompletableFuture<Void>` registered by the catalog use case. Bridges Kafka consumer callbacks back to waiting HTTP connections. |
+| `KafkaProgressListener` | `@KafkaListener` on `job.catalog.progress`, `job.sync.progress`, and `job.convert.progress` (consumer group `sse-broadcaster`). Routes each message to the `SseEmitter` for its `runId`; calls `registry.complete(runId)` on `done=true`. |
 | `StorageService` | File I/O, thumbnail generation, EXIF rotation reading (Apache Commons Imaging), SHA-256 hashing. |
 | `ThumbnailStorageService` | Stores and retrieves thumbnails as `{assetId}.bin` files under the configured thumbnails directory. |
 
@@ -388,17 +410,31 @@ All settings live in `src/main/resources/application.yml`:
 | `POSTGRES_PASSWORD` | `postgres` | Database password |
 | `CATALOG_DIR` | *(unset — falls back to `~/Pictures`)* | Overrides `initial-directory` and `root-catalog-folders` |
 | `THUMBNAILS_DIR` | *(unset — falls back to `~/.photomanager/thumbnails`)* | Overrides `thumbnails-directory` |
+| `KAFKA_BOOTSTRAP` | `localhost:9092` | Kafka bootstrap server address; set to `kafka:9092` in Docker Compose |
 
 ### Running the backend
 
-**Prerequisites:** Java 21, Maven 3.9+, PostgreSQL 18 (or Docker)
+**Prerequisites:** Java 21, Maven 3.9+, PostgreSQL 18 + Apache Kafka (or Docker)
 
-Start a local PostgreSQL instance if you don't have one:
+Start a local PostgreSQL instance and Kafka broker if you don't have them:
 ```bash
 docker run -d --name photomanager-db \
   -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=photomanager \
   -p 5432:5432 postgres:18
+
+docker run -d --name photomanager-kafka \
+  -p 9092:9092 -p 9094:9094 \
+  -e KAFKA_NODE_ID=1 \
+  -e KAFKA_PROCESS_ROLES=broker,controller \
+  -e KAFKA_LISTENERS=PLAINTEXT://:9092,EXTERNAL://:9094,CONTROLLER://:9093 \
+  -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092,EXTERNAL://localhost:9094 \
+  -e KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093 \
+  -e KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER \
+  -e KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT \
+  -e KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT \
+  -e KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
+  apache/kafka:3.9.0
 ```
 
 ```bash
@@ -430,7 +466,7 @@ mvn test -Dtest=CatalogAssetsServiceImplTest
 mvn test -Dtest=CatalogAssetsServiceImplTest#methodName
 ```
 
-Tests use the `test` Spring profile (`src/test/resources/application-test.yml`). Unit tests (`@ExtendWith(MockitoExtension.class)`, `@WebMvcTest`) need no database. Integration tests (`@SpringBootTest`) use Testcontainers to spin up a real PostgreSQL container automatically — Docker must be running.
+Tests use the `test` Spring profile (`src/test/resources/application-test.yml`). Unit tests (`@ExtendWith(MockitoExtension.class)`, `@WebMvcTest`) need no database or broker. Integration tests (`@SpringBootTest` with `@EmbeddedKafka`) use Testcontainers for PostgreSQL and Spring's embedded Kafka broker — Docker must be running for the PostgreSQL container.
 
 > **Linux tip:** If integration tests are skipped with a Testcontainers "no valid configuration" error, your user may not have permission to reach the Docker socket. Add yourself to the `docker` group and apply it immediately:
 > ```bash
@@ -497,30 +533,38 @@ Long-running operations (catalog, sync, convert) use the browser's native `Event
 
 **SSE (Server-Sent Events)** is a web standard where the server pushes a stream of text events to the client over a single long-lived HTTP connection. It is one-way (server → client only), HTTP-based — the client makes a regular `GET` request and the response stays open while the server writes `data: ...` lines as events occur — and browsers handle reconnection automatically if the connection drops.
 
+**Kafka-mediated SSE pipeline:** progress events are not sent directly from the use case to the HTTP response. Instead, the catalog/sync/convert code publishes messages to a Kafka topic, and a dedicated `KafkaProgressListener` (consumer group `sse-broadcaster`) looks up the registered `SseEmitter` for the run and forwards each message to the client. This decouples the long-running work from the HTTP layer and makes the pipeline observable by any downstream consumer.
+
 ```mermaid
 sequenceDiagram
     participant Angular
-    participant API as Spring Boot API
-    participant FS as File System
+    participant Controller as Spring Boot Controller
+    participant Registry as KafkaProgressRegistry
+    participant UseCase as Catalog Use Case / Spring Batch
+    participant Kafka as Apache Kafka
+    participant Listener as KafkaProgressListener
     participant DB as PostgreSQL
 
-    Angular->>API: GET /api/assets/catalog (EventSource)
-    API->>DB: Acquire catalog_run_state lock (atomic UPDATE WHERE is_running=false)
+    Angular->>Controller: GET /api/assets/catalog (EventSource)
+    Controller->>Registry: registerEmitter(runId, SseEmitter)
+    Controller->>UseCase: execute(runId) [async]
+    UseCase->>Registry: registerCompletion(runId, CompletableFuture)
+    UseCase->>DB: Acquire catalog_run_state lock
 
-    loop Per configured root folder
-        API->>FS: Scan folder recursively
-        loop Per file batch (catalog-batch-size assets)
-            API->>API: Compute SHA-256 hash
-            API->>API: Generate 200×150 thumbnail
-            API->>DB: Upsert Asset records
-            API->>DB: Update last_heartbeat_at (REQUIRES_NEW transaction)
-            API-->>Angular: SSE event {processed, total, currentFolder}
-            Angular-->>Angular: Update progress bar / status text
-        end
+    loop Per file batch (catalog-batch-size assets)
+        UseCase->>DB: Upsert Asset records + heartbeat
+        UseCase->>Kafka: publish CatalogProgressMessage to job.catalog.progress
+        Kafka->>Listener: onCatalogProgress(message)
+        Listener->>Registry: getEmitter(runId)
+        Listener-->>Angular: SseEmitter.send("catalog" event)
+        Angular-->>Angular: Update progress bar
     end
 
-    API->>DB: Release catalog_run_state lock
-    API-->>Angular: SSE stream closed
+    UseCase->>DB: Release catalog_run_state lock
+    UseCase->>Kafka: publish CatalogProgressMessage{done=true}
+    Kafka->>Listener: onCatalogProgress(done message)
+    Listener->>Registry: complete(runId) → CompletableFuture.complete()
+    Listener-->>Angular: SseEmitter.complete() — stream closed
 ```
 
 ### Running the frontend
@@ -664,7 +708,8 @@ If you have an existing catalog in a **host PostgreSQL instance** and want to mo
 | Service | Container | Host port | Description |
 |---|---|---|---|
 | `db` | `postgres:18` | `5433` | PostgreSQL 18; data persisted in the `pgdata` named volume |
-| `backend` | JRE 21 Alpine | `8080` | Spring Boot REST API; `HOST_IMAGE_DIR` bind-mounted at `/catalog` |
+| `kafka` | `apache/kafka:3.9.0` | `9092` (internal) `9094` (host) | Apache Kafka in KRaft mode (no ZooKeeper); pub/sub backbone for catalog/sync/convert progress events. Port 9092 is for inter-container traffic; port 9094 exposes the broker to the host machine. |
+| `backend` | JRE 21 Alpine | `8080` | Spring Boot REST API; `HOST_IMAGE_DIR` bind-mounted at `/catalog`; connects to Kafka via `kafka:9092` |
 | `frontend` | Nginx Alpine | `80` | Angular SPA; reverse-proxies `/api` to the backend |
 | `prometheus` | `prom/prometheus` | `9090` | Scrapes backend metrics from `/actuator/prometheus` every 15 s |
 | `grafana` | `grafana/grafana` | `3000` | Dashboard UI backed by Prometheus |

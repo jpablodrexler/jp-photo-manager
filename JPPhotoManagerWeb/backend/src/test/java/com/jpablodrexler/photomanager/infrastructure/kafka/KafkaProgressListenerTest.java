@@ -2,6 +2,8 @@ package com.jpablodrexler.photomanager.infrastructure.kafka;
 
 import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.application.dto.CatalogProgressMessage;
+import com.jpablodrexler.photomanager.application.dto.ConvertProgressMessage;
+import com.jpablodrexler.photomanager.application.dto.SyncProgressMessage;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
@@ -14,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -76,6 +79,96 @@ class KafkaProgressListenerTest {
         CatalogProgressMessage message = CatalogProgressMessage.done(99L);
 
         sut.onCatalogProgress(message);
+
+        verify(registry).complete(99L);
+        verify(registry).remove(99L);
+    }
+
+    // --- onSyncProgress ---
+
+    @Test
+    void onSyncProgress_progressMessage_sendsStatusEventToEmitter() throws IOException {
+        SyncProgressMessage message = SyncProgressMessage.progress(42L, "Syncing files...");
+
+        sut.onSyncProgress(message);
+
+        verify(emitter).send(any(SseEmitter.SseEventBuilder.class));
+        verify(emitter, never()).complete();
+    }
+
+    @Test
+    void onSyncProgress_doneMessage_sendsResultsEventAndCompletesEmitter() throws IOException {
+        SyncProgressMessage message = SyncProgressMessage.done(42L, List.of());
+
+        sut.onSyncProgress(message);
+
+        verify(emitter).send(any(SseEmitter.SseEventBuilder.class));
+        verify(emitter).complete();
+        verify(registry).complete(42L);
+        verify(registry).remove(42L);
+    }
+
+    @Test
+    void onSyncProgress_unknownRunId_progressMessage_silentlySkips() throws IOException {
+        when(registry.getEmitter(99L)).thenReturn(null);
+        SyncProgressMessage message = SyncProgressMessage.progress(99L, "Syncing...");
+
+        sut.onSyncProgress(message);
+
+        verify(emitter, never()).send(any(SseEmitter.SseEventBuilder.class));
+    }
+
+    @Test
+    void onSyncProgress_doneMessage_unknownRunId_stillCompletesRegistry() {
+        when(registry.getEmitter(99L)).thenReturn(null);
+        SyncProgressMessage message = SyncProgressMessage.done(99L, List.of());
+
+        sut.onSyncProgress(message);
+
+        verify(registry).complete(99L);
+        verify(registry).remove(99L);
+    }
+
+    // --- onConvertProgress ---
+
+    @Test
+    void onConvertProgress_progressMessage_sendsStatusEventToEmitter() throws IOException {
+        ConvertProgressMessage message = ConvertProgressMessage.progress(42L, "Converting files...");
+
+        sut.onConvertProgress(message);
+
+        verify(emitter).send(any(SseEmitter.SseEventBuilder.class));
+        verify(emitter, never()).complete();
+    }
+
+    @Test
+    void onConvertProgress_doneMessage_sendsResultsEventAndCompletesEmitter() throws IOException {
+        ConvertProgressMessage message = ConvertProgressMessage.done(42L, List.of());
+
+        sut.onConvertProgress(message);
+
+        verify(emitter).send(any(SseEmitter.SseEventBuilder.class));
+        verify(emitter).complete();
+        verify(registry).complete(42L);
+        verify(registry).remove(42L);
+    }
+
+    @Test
+    void onConvertProgress_unknownRunId_progressMessage_silentlySkips() throws IOException {
+        when(registry.getEmitter(99L)).thenReturn(null);
+        ConvertProgressMessage message = ConvertProgressMessage.progress(99L, "Converting...");
+
+        sut.onConvertProgress(message);
+
+        verify(emitter, never()).send(any(SseEmitter.SseEventBuilder.class));
+    }
+
+    @Test
+    void onConvertProgress_doneMessage_unknownRunId_stillCompletesRegistry() {
+        when(registry.getEmitter(99L)).thenReturn(null);
+        ConvertProgressMessage message = ConvertProgressMessage.done(99L, List.of());
+
+        sut.onConvertProgress(message);
 
         verify(registry).complete(99L);
         verify(registry).remove(99L);
