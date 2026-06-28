@@ -1318,4 +1318,29 @@ describe('GalleryComponent', () => {
 
     cy.get('.mat-mdc-snack-bar-label').should('contain', 'Rename failed: ASSET_NAME_COLLISION');
   });
+
+  // --- Pan drag tests ---
+
+  it('onViewerMouseMove_whileIsDragging_updatesPanXAndPanY', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.isDragging = true;
+      component.viewerZoom = 1;
+      component.onViewerMouseMove(new MouseEvent('mousemove', { movementX: 30, movementY: 20 }));
+      expect(component.panX).to.equal(30);
+      expect(component.panY).to.equal(20);
+    });
+  });
+
+  it('resetZoom_whenCalledWithNonZeroPan_resetsPanXAndPanYToZero', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.panX = 50;
+      component.panY = 30;
+      component.viewerZoom = 2;
+      component.resetZoom();
+      expect(component.panX).to.equal(0);
+      expect(component.panY).to.equal(0);
+    });
+  });
 });

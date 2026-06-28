@@ -287,6 +287,12 @@ mat-sidenav-content {
   justify-content: center;
   overflow: hidden;
   background: #000;
+  cursor: grab;
+  user-select: none;
+
+  &.dragging {
+    cursor: grabbing;
+  }
 
   img:not(.audio-album-art) {
     max-width: 100%;

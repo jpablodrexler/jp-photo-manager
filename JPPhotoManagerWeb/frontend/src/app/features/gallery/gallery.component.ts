@@ -92,6 +92,7 @@ type ViewType = "grid" | "timeline";
 })
 export class GalleryComponent implements OnInit, OnDestroy {
   @ViewChild("scrollSentinel") private sentinel!: ElementRef<HTMLDivElement>;
+  @ViewChild("imageViewerContainer") private imageViewerContainer?: ElementRef<HTMLDivElement>;
   private observer: IntersectionObserver | null = null;
 
   readonly audioPlayer = inject(MediaPlayerService);
@@ -142,6 +143,12 @@ export class GalleryComponent implements OnInit, OnDestroy {
   statusMessage = "";
   showExifPanel = false;
   showCropOverlay = false;
+
+  panX = 0;
+  panY = 0;
+  isDragging = false;
+  lastTouchX = 0;
+  lastTouchY = 0;
 
   readonly sortOptions: { value: SortCriteria; label: string }[] = [
     { value: "FILE_NAME", label: "File Name" },
@@ -443,6 +450,8 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.currentViewerIndex = index;
     this.viewMode = "viewer";
     this.viewerZoom = 1;
+    this.panX = 0;
+    this.panY = 0;
     this.showExifPanel = false;
   }
 
@@ -583,6 +592,8 @@ export class GalleryComponent implements OnInit, OnDestroy {
     if (this.currentViewerIndex > 0) {
       this.currentViewerIndex--;
       this.viewerZoom = 1;
+      this.panX = 0;
+      this.panY = 0;
     }
   }
 
@@ -590,6 +601,8 @@ export class GalleryComponent implements OnInit, OnDestroy {
     if (this.currentViewerIndex < this.assets.length - 1) {
       this.currentViewerIndex++;
       this.viewerZoom = 1;
+      this.panX = 0;
+      this.panY = 0;
     }
   }
 
@@ -599,10 +612,16 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   zoomOut(): void {
     this.viewerZoom = Math.max(this.viewerZoom - 0.25, 0.25);
+    if (this.viewerZoom === 1) {
+      this.panX = 0;
+      this.panY = 0;
+    }
   }
 
   resetZoom(): void {
     this.viewerZoom = 1;
+    this.panX = 0;
+    this.panY = 0;
   }
 
   onUploadComplete(): void {
@@ -861,6 +880,45 @@ export class GalleryComponent implements OnInit, OnDestroy {
         },
       });
     });
+  }
+
+  onViewerMouseDown(event: MouseEvent): void {
+    this.isDragging = true;
+    event.preventDefault();
+  }
+
+  onViewerMouseMove(event: MouseEvent): void {
+    if (!this.isDragging) return;
+    this.panX += event.movementX / this.viewerZoom;
+    this.panY += event.movementY / this.viewerZoom;
+  }
+
+  onViewerMouseUp(): void {
+    this.isDragging = false;
+  }
+
+  onViewerMouseLeave(): void {
+    this.isDragging = false;
+  }
+
+  onViewerTouchStart(event: TouchEvent): void {
+    this.lastTouchX = event.touches[0].clientX;
+    this.lastTouchY = event.touches[0].clientY;
+    this.isDragging = true;
+  }
+
+  onViewerTouchMove(event: TouchEvent): void {
+    const dx = event.touches[0].clientX - this.lastTouchX;
+    const dy = event.touches[0].clientY - this.lastTouchY;
+    this.panX += dx / this.viewerZoom;
+    this.panY += dy / this.viewerZoom;
+    this.lastTouchX = event.touches[0].clientX;
+    this.lastTouchY = event.touches[0].clientY;
+    event.preventDefault();
+  }
+
+  onViewerTouchEnd(): void {
+    this.isDragging = false;
   }
 
   playAsset(asset: Asset, event: Event): void {

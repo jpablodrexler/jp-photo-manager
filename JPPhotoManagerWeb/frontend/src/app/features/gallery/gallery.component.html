@@ -323,7 +323,16 @@
     <!-- Viewer -->
     @if (viewMode === 'viewer' && currentViewerAsset) {
       <div class="viewer-layout">
-        <div class="image-viewer flex-1">
+        <div class="image-viewer flex-1"
+           #imageViewerContainer
+           [class.dragging]="isDragging"
+           (mousedown)="onViewerMouseDown($event)"
+           (mousemove)="onViewerMouseMove($event)"
+           (mouseup)="onViewerMouseUp()"
+           (mouseleave)="onViewerMouseLeave()"
+           (touchstart)="onViewerTouchStart($event)"
+           (touchmove)="onViewerTouchMove($event)"
+           (touchend)="onViewerTouchEnd()">
           <button mat-icon-button class="viewer-nav viewer-nav--prev" (click)="viewerPrev()" [disabled]="currentViewerIndex === 0">
             <mat-icon>chevron_left</mat-icon>
           </button>
@@ -349,8 +358,9 @@
             <img
               [src]="currentViewerAsset.imageUrl"
               [alt]="currentViewerAsset.fileName"
-              [style.transform]="'scale(' + viewerZoom + ')'"
+              [style.transform]="'scale(' + viewerZoom + ') translate(' + panX + 'px, ' + panY + 'px)'"
               class="viewer-image"
+              draggable="false"
             />
           }
           <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="viewerNext()" [disabled]="currentViewerIndex >= assets.length - 1">
