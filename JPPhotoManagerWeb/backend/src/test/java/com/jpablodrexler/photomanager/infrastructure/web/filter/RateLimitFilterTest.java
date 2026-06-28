@@ -1,9 +1,12 @@
 package com.jpablodrexler.photomanager.infrastructure.web.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.BucketConfiguration;
+import io.github.bucket4j.distributed.BucketProxy;
+import io.github.bucket4j.distributed.proxy.ProxyManager;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,10 +15,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class RateLimitFilterTest {
@@ -26,8 +38,7 @@ class RateLimitFilterTest {
 
     @BeforeEach
     void setUp() {
-        sut = new RateLimitFilter(new ObjectMapper());
-        sut.init();
+        sut = new RateLimitFilter(inMemoryProxyManager(), new ObjectMapper(), "");
     }
 
     @Test
@@ -87,6 +98,53 @@ class RateLimitFilterTest {
         sut.doFilter(loginRequest("192.168.1.2"), respOtherIp, chain);
 
         assertThat(respOtherIp.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void redisUnavailable_requestIsAllowedThrough() throws Exception {
+        sut = new RateLimitFilter(failingProxyManager(), new ObjectMapper(), "");
+
+        MockHttpServletRequest  req  = loginRequest("10.0.0.99");
+        MockHttpServletResponse resp = new MockHttpServletResponse();
+        sut.doFilter(req, resp, chain);
+
+        assertThat(resp.getStatus()).isEqualTo(200);
+        verify(chain).doFilter(any(), any());
+    }
+
+    // --- helpers ---
+
+    @SuppressWarnings("unchecked")
+    private ProxyManager<String> inMemoryProxyManager() {
+        ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
+        ProxyManager<String> pm = mock(ProxyManager.class, RETURNS_DEEP_STUBS);
+        // Disambiguate the Supplier overload from the BucketConfiguration overload
+        when(pm.builder().build(anyString(), any(Supplier.class))).thenAnswer(inv -> {
+            String key = inv.getArgument(0);
+            @SuppressWarnings("unchecked")
+            Supplier<BucketConfiguration> configSupplier = inv.getArgument(1);
+            Bucket underlying = buckets.computeIfAbsent(key, k -> {
+                BucketConfiguration cfg = configSupplier.get();
+                var builder = Bucket.builder();
+                for (Bandwidth bw : cfg.getBandwidths()) {
+                    builder.addLimit(bw);
+                }
+                return builder.build();
+            });
+            BucketProxy proxy = mock(BucketProxy.class);
+            lenient().when(proxy.tryConsumeAndReturnRemaining(anyLong()))
+                .thenAnswer(i -> underlying.tryConsumeAndReturnRemaining(i.getArgument(0)));
+            return proxy;
+        });
+        return pm;
+    }
+
+    @SuppressWarnings("unchecked")
+    private ProxyManager<String> failingProxyManager() {
+        ProxyManager<String> pm = mock(ProxyManager.class, RETURNS_DEEP_STUBS);
+        when(pm.builder().build(anyString(), any(Supplier.class)))
+            .thenThrow(new RuntimeException("Redis unavailable"));
+        return pm;
     }
 
     private MockHttpServletRequest loginRequest(String ip) {

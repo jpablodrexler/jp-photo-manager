@@ -39,6 +39,13 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+
   backend:
     build:
       context: ./backend
@@ -47,6 +54,8 @@ services:
       db:
         condition: service_healthy
       kafka:
+        condition: service_started
+      redis:
         condition: service_started
     environment:
       POSTGRES_HOST: db
@@ -58,6 +67,8 @@ services:
       THUMBNAILS_DIR: /thumbnails
       JWT_SECRET: "${JWT_SECRET:?Set JWT_SECRET in .env - run: openssl rand -base64 32}"
       KAFKA_BOOTSTRAP: kafka:9092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     ports:
       - "8080:8080"
     volumes:

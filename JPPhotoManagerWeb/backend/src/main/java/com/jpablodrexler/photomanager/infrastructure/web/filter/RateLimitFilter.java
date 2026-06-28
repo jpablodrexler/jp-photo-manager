@@ -4,9 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpablodrexler.photomanager.infrastructure.web.ErrorResponse;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
+import io.github.bucket4j.BucketConfiguration;
 import io.github.bucket4j.ConsumptionProbe;
 import io.github.bucket4j.Refill;
-import jakarta.annotation.PostConstruct;
+import io.github.bucket4j.distributed.proxy.ProxyManager;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -14,45 +15,38 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-@Component
-@RequiredArgsConstructor
 @Slf4j
 public class RateLimitFilter implements Filter {
 
     private static final String LOGIN_ENDPOINT   = "/api/auth/login";
     private static final String CATALOG_ENDPOINT = "/api/assets/catalog";
 
-    private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final ProxyManager<String> rateLimitProxyManager;
     private final ObjectMapper objectMapper;
+    private final Set<String> trustedProxyIps;
 
-    @Value("${photomanager.trusted-proxy-ips:}")
-    private String trustedProxyIpsRaw;
+    public RateLimitFilter(ProxyManager<String> rateLimitProxyManager, ObjectMapper objectMapper,
+                           String trustedProxyIpsRaw) {
+        this.rateLimitProxyManager = rateLimitProxyManager;
+        this.objectMapper = objectMapper;
+        this.trustedProxyIps = parseTrustedIps(trustedProxyIpsRaw);
+    }
 
-    private Set<String> trustedProxyIps;
-
-    @PostConstruct
-    public void init() {
-        if (trustedProxyIpsRaw == null || trustedProxyIpsRaw.isBlank()) {
-            trustedProxyIps = Set.of();
-            return;
-        }
-        trustedProxyIps = Arrays.stream(trustedProxyIpsRaw.split(","))
+    private static Set<String> parseTrustedIps(String raw) {
+        if (raw == null || raw.isBlank()) return Set.of();
+        return Arrays.stream(raw.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isBlank())
                 .collect(Collectors.toUnmodifiableSet());
@@ -74,9 +68,20 @@ public class RateLimitFilter implements Filter {
             return;
         }
 
-        String  clientIp  = resolveClientIp(req);
-        String  bucketKey = clientIp + ":" + endpointKey;
-        Bucket  bucket    = buckets.computeIfAbsent(bucketKey, k -> createBucket(endpointKey));
+        String clientIp  = resolveClientIp(req);
+        String bucketKey = clientIp + ":" + endpointKey;
+
+        Bucket bucket;
+        try {
+            bucket = rateLimitProxyManager.builder()
+                .build(bucketKey, () -> BucketConfiguration.builder()
+                    .addLimit(createLimit(endpointKey))
+                    .build());
+        } catch (Exception e) {
+            log.warn("Redis unavailable for rate limiting, allowing request through: {}", e.getMessage());
+            chain.doFilter(request, response);
+            return;
+        }
 
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
         if (probe.isConsumed()) {
@@ -109,13 +114,12 @@ public class RateLimitFilter implements Filter {
         return null;
     }
 
-    private Bucket createBucket(String endpointKey) {
-        Bandwidth limit = switch (endpointKey) {
+    private Bandwidth createLimit(String endpointKey) {
+        return switch (endpointKey) {
             case "login"   -> Bandwidth.classic(10, Refill.intervally(10, Duration.ofSeconds(60)));
             case "catalog" -> Bandwidth.classic(5,  Refill.intervally(5,  Duration.ofSeconds(3600)));
             default        -> throw new IllegalArgumentException("Unknown endpoint key: " + endpointKey);
         };
-        return Bucket.builder().addLimit(limit).build();
     }
 
     private String resolveClientIp(HttpServletRequest req) {
