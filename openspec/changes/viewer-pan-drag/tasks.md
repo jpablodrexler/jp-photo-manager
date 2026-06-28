@@ -38,6 +38,6 @@
 
 ## 8. Testing and Commit
 
-- [ ] 8.1 Run backend test suite: `cd JPPhotoManagerWeb/backend && mvn test`
-- [ ] 8.2 Run frontend test suite: `cd JPPhotoManagerWeb/frontend && npm test`
-- [ ] 8.3 Commit all changes (only after both test suites pass)
+- [x] 8.1 Run backend test suite: `cd JPPhotoManagerWeb/backend && mvn test`
+- [x] 8.2 Run frontend test suite: `cd JPPhotoManagerWeb/frontend && npm test`
+- [x] 8.3 Commit all changes (only after both test suites pass)
