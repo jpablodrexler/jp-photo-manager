@@ -12,10 +12,8 @@ import io.lettuce.core.codec.ByteArrayCodec;
 import io.lettuce.core.codec.RedisCodec;
 import io.lettuce.core.codec.StringCodec;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.Ordered;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -55,13 +53,9 @@ public class AppConfig {
     }
 
     @Bean
-    public FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(
-            LettuceBasedProxyManager<String> rateLimitProxyManager, ObjectMapper objectMapper) {
-        FilterRegistrationBean<RateLimitFilter> reg = new FilterRegistrationBean<>();
-        reg.setFilter(new RateLimitFilter(rateLimitProxyManager, objectMapper, trustedProxyIpsRaw));
-        reg.addUrlPatterns("/*");
-        reg.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
-        return reg;
+    public RateLimitFilter rateLimitFilter(LettuceBasedProxyManager<String> rateLimitProxyManager,
+                                           ObjectMapper objectMapper) {
+        return new RateLimitFilter(rateLimitProxyManager, objectMapper, trustedProxyIpsRaw);
     }
 
     @Bean
