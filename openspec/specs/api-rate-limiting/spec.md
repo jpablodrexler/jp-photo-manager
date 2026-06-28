@@ -1,6 +1,6 @@
 # api-rate-limiting
 
-The login and catalog endpoints enforce per-IP rate limits. Clients exceeding the limit receive a `429 Too Many Requests` response with a `Retry-After` header indicating when they may retry.
+The login and catalog endpoints enforce per-IP rate limits. Clients exceeding the limit receive a `429 Too Many Requests` response with a `Retry-After` header indicating when they may retry. Limits are enforced globally across all running instances — the token-bucket state is shared, not per-JVM.
 
 ---
 
@@ -8,27 +8,27 @@ The login and catalog endpoints enforce per-IP rate limits. Clients exceeding th
 
 ### Requirement: Login endpoint is rate-limited to 10 requests per minute per IP
 
-`POST /api/auth/login` SHALL reject requests from a client IP that has exceeded 10 requests within the current 60-second window with `429 Too Many Requests`.
+`POST /api/auth/login` SHALL reject requests from a client IP that has exceeded 10 requests within the current 60-second window with `429 Too Many Requests`. This limit is enforced globally across all running instances — the 10-request window is shared, not per-JVM.
 
 #### Scenario: Login succeeds within the rate limit
 
-- **GIVEN** a client IP that has made 9 login attempts in the current minute
+- **GIVEN** a client IP that has made 9 login attempts in the current minute (across all instances combined)
 - **WHEN** the client makes a 10th login attempt
 - **THEN** the request is processed normally (success or 401 depending on credentials)
 
 #### Scenario: Login is rejected when rate limit is exceeded
 
-- **GIVEN** a client IP that has made 10 login attempts in the current minute
+- **GIVEN** a client IP that has made 10 login attempts in the current minute (across all instances combined)
 - **WHEN** the client makes an 11th login attempt
 - **THEN** the response is `429 Too Many Requests` with a `Retry-After` header and body `{ "status": 429, "message": "Too many requests. Please try again later.", "timestamp": "..." }`
 
 ### Requirement: Catalog endpoint is rate-limited to 5 requests per hour per IP
 
-`POST /api/assets/catalog` SHALL reject requests from a client IP that has exceeded 5 requests within the current hour with `429 Too Many Requests`.
+`GET /api/assets/catalog` SHALL reject requests from a client IP that has exceeded 5 requests within the current hour with `429 Too Many Requests`. This limit is enforced globally across all running instances.
 
 #### Scenario: Catalog is rejected when rate limit is exceeded
 
-- **GIVEN** a client IP that has triggered catalog 5 times in the current hour
+- **GIVEN** a client IP that has triggered catalog 5 times in the current hour (across all instances combined)
 - **WHEN** the client triggers catalog a 6th time
 - **THEN** the response is `429 Too Many Requests` with a `Retry-After` header indicating seconds until the next refill
 
