@@ -3,6 +3,7 @@ import { of, throwError } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { SyncComponent } from './sync.component';
 import { SyncService } from '../../core/services/sync.service';
+import { AuthService } from '../../core/services/auth.service';
 import { SyncAssetsDirectoriesDefinition, SyncAssetsResult } from '../../core/models/sync-config.model';
 import { MockEventSource } from '../../../../cypress/support/mock-event-source';
 
@@ -26,10 +27,16 @@ describe('SyncComponent', () => {
       ...syncServiceOverrides,
     };
 
+    const authServiceStub: Partial<AuthService> = {
+      isAdmin: cy.stub().returns(true),
+      isLoggedIn: cy.stub().returns(true),
+    };
+
     return cy.mount(SyncComponent, {
       providers: [
         provideNoopAnimations(),
         { provide: SyncService, useValue: syncServiceStub },
+        { provide: AuthService, useValue: authServiceStub },
       ],
     }).then(result => ({ ...result, syncServiceStub }));
   }

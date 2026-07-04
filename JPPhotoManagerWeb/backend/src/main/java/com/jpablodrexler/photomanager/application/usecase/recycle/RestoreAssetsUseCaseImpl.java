@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager.application.usecase.recycle;
 import com.jpablodrexler.photomanager.domain.port.in.recycle.RestoreAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ public class RestoreAssetsUseCaseImpl implements RestoreAssetsUseCase {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public void execute(List<Long> assetIds) {
         var assets = assetRepository.findAllById(assetIds);
         for (var asset : assets) {

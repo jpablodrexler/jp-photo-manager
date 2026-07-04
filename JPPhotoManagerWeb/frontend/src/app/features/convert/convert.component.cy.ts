@@ -3,6 +3,7 @@ import { of, throwError } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ConvertComponent } from './convert.component';
 import { ConvertService } from '../../core/services/convert.service';
+import { AuthService } from '../../core/services/auth.service';
 import { ConvertAssetsDirectoriesDefinition, ConvertAssetsResult } from '../../core/models/convert-config.model';
 import { MockEventSource } from '../../../../cypress/support/mock-event-source';
 
@@ -26,10 +27,16 @@ describe('ConvertComponent', () => {
       ...convertServiceOverrides,
     };
 
+    const authServiceStub: Partial<AuthService> = {
+      isAdmin: cy.stub().returns(true),
+      isLoggedIn: cy.stub().returns(true),
+    };
+
     return cy.mount(ConvertComponent, {
       providers: [
         provideNoopAnimations(),
         { provide: ConvertService, useValue: convertServiceStub },
+        { provide: AuthService, useValue: authServiceStub },
       ],
     }).then(result => ({ ...result, convertServiceStub }));
   }

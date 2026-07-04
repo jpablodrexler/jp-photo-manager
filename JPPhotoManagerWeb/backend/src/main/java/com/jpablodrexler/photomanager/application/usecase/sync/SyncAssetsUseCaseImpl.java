@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -30,6 +31,7 @@ public class SyncAssetsUseCaseImpl implements SyncAssetsUseCase {
 
     @Async
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public void execute(long runId) {
         List<SyncDirectoriesDefinition> definitions = syncConfigRepository.findAllOrderByOrder();
         List<SyncAssetsResult> results = new ArrayList<>();

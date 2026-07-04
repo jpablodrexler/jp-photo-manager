@@ -8,6 +8,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { signal } from '@angular/core';
 import { GalleryComponent } from './gallery.component';
 import { AssetService } from '../../core/services/asset.service';
+import { AuthService } from '../../core/services/auth.service';
 import { TagService } from '../../core/services/tag.service';
 import { AlbumService } from '../../core/services/album.service';
 import { FolderService } from '../../core/services/folder.service';
@@ -59,6 +60,7 @@ describe('GalleryComponent', () => {
     assetServiceOverrides: Partial<AssetService> = {},
     searchPresetServiceOverrides: Partial<SearchPresetService> = {},
     tagServiceOverrides: Partial<TagService> = {},
+    authServiceOverrides: Partial<AuthService> = {},
   ) {
     const emptyTimelinePage: PaginatedData<TimelineGroup> = { items: [], pageIndex: 0, totalPages: 0, totalItems: 0 };
     const assetServiceStub: Partial<AssetService> = {
@@ -100,6 +102,12 @@ describe('GalleryComponent', () => {
       loadPlaylist: cy.stub() as unknown as MediaPlayerService['loadPlaylist'],
     };
 
+    const authServiceStub: Partial<AuthService> = {
+      isAdmin: cy.stub().returns(false),
+      isLoggedIn: cy.stub().returns(true),
+      ...authServiceOverrides,
+    };
+
     return cy.mount(GalleryComponent, {
       providers: [
         provideNoopAnimations(),
@@ -110,6 +118,7 @@ describe('GalleryComponent', () => {
         { provide: AlbumService, useValue: albumServiceStub },
         { provide: SearchPresetService, useValue: searchPresetServiceStub },
         { provide: MediaPlayerService, useValue: mediaPlayerStub },
+        { provide: AuthService, useValue: authServiceStub },
       ],
     }).then(result => ({ ...result, assetServiceStub, searchPresetServiceStub, tagServiceStub }));
   }
@@ -1342,5 +1351,17 @@ describe('GalleryComponent', () => {
       expect(component.panX).to.equal(0);
       expect(component.panY).to.equal(0);
     });
+  });
+
+  // --- Role-based access control tests ---
+
+  it('catalogButton_viewerRole_notRendered', () => {
+    mountGallery({}, {}, {}, { isAdmin: cy.stub().returns(false) });
+    cy.get('button[title="Run catalog"]').should('not.exist');
+  });
+
+  it('catalogButton_adminRole_rendered', () => {
+    mountGallery({}, {}, {}, { isAdmin: cy.stub().returns(true) });
+    cy.get('button[title="Run catalog"]').should('exist');
   });
 });

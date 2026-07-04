@@ -51,6 +51,7 @@ import { TimelineViewComponent } from "./timeline-view/timeline-view.component";
 import { TimelineGroup } from "../../core/models/timeline-group.model";
 import { MediaPlayerService } from "../../core/services/media-player.service";
 import { SocialMediaCropComponent } from "./social-media-crop/social-media-crop.component";
+import { AuthService } from "../../core/services/auth.service";
 
 type ViewMode = "thumbnails" | "viewer" | "slideshow";
 type ViewType = "grid" | "timeline";
@@ -96,6 +97,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   private observer: IntersectionObserver | null = null;
 
   readonly audioPlayer = inject(MediaPlayerService);
+  readonly authService = inject(AuthService);
 
   isMobile = false;
   sidenavOpen = true;
@@ -626,6 +628,12 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   onUploadComplete(): void {
     this.loadAssets();
+  }
+
+  startCatalog(): void {
+    const es = this.assetService.catalogAssets();
+    es.addEventListener('done', () => es.close());
+    es.addEventListener('error', () => es.close());
   }
 
   onSortChange(): void {

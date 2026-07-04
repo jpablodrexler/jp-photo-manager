@@ -46,7 +46,7 @@
 
       <mat-card-actions>
         <button mat-button (click)="addDefinition()"><mat-icon>add</mat-icon> Add</button>
-        <button mat-raised-button color="primary" (click)="saveAndRun()" [disabled]="definitions.length === 0">
+        <button mat-raised-button color="primary" (click)="saveAndRun()" [disabled]="definitions.length === 0 || !authService.isAdmin()">
           <mat-icon>play_arrow</mat-icon> Save & Run
         </button>
       </mat-card-actions>

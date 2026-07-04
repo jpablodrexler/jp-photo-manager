@@ -12,6 +12,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ConvertService } from '../../core/services/convert.service';
 import { ConvertAssetsDirectoriesDefinition, ConvertAssetsResult } from '../../core/models/convert-config.model';
+import { AuthService } from '../../core/services/auth.service';
 
 type ProcessStep = 'configure' | 'running' | 'results';
 
@@ -46,7 +47,8 @@ export class ConvertComponent implements OnInit {
 
   constructor(
     private convertService: ConvertService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    public authService: AuthService
   ) {}
 
   ngOnInit(): void {

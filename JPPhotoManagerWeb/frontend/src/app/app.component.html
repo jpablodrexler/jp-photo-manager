@@ -10,13 +10,17 @@
       <mat-menu #navMenu="matMenu">
         <button mat-menu-item routerLink="/home"><mat-icon>home</mat-icon> Home</button>
         <button mat-menu-item routerLink="/gallery"><mat-icon>photo</mat-icon> Gallery</button>
-        <button mat-menu-item routerLink="/sync"><mat-icon>sync</mat-icon> Sync</button>
-        <button mat-menu-item routerLink="/convert"><mat-icon>transform</mat-icon> Convert</button>
+        @if (isAdmin) {
+          <button mat-menu-item routerLink="/sync"><mat-icon>sync</mat-icon> Sync</button>
+          <button mat-menu-item routerLink="/convert"><mat-icon>transform</mat-icon> Convert</button>
+        }
         <button mat-menu-item routerLink="/duplicates"><mat-icon>content_copy</mat-icon> Duplicates</button>
         <button mat-menu-item routerLink="/albums"><mat-icon>photo_album</mat-icon> Albums</button>
         <button mat-menu-item routerLink="/recycle-bin"><mat-icon>delete</mat-icon> Recycle Bin</button>
         <button mat-menu-item routerLink="/analytics"><mat-icon>bar_chart</mat-icon> Analytics</button>
-        <button mat-menu-item routerLink="/admin/users"><mat-icon>manage_accounts</mat-icon> Users</button>
+        @if (isAdmin) {
+          <button mat-menu-item routerLink="/admin/users"><mat-icon>manage_accounts</mat-icon> Users</button>
+        }
         <button mat-menu-item (click)="toggleTheme()">
           <mat-icon>{{ (isDark$ | async) ? 'light_mode' : 'dark_mode' }}</mat-icon>
           {{ (isDark$ | async) ? 'Switch to light' : 'Switch to dark' }}
@@ -35,12 +39,14 @@
       <a mat-button routerLink="/gallery" routerLinkActive="active">
         <mat-icon>photo</mat-icon> Gallery
       </a>
-      <a mat-button routerLink="/sync" routerLinkActive="active">
-        <mat-icon>sync</mat-icon> Sync
-      </a>
-      <a mat-button routerLink="/convert" routerLinkActive="active">
-        <mat-icon>transform</mat-icon> Convert
-      </a>
+      @if (isAdmin) {
+        <a mat-button routerLink="/sync" routerLinkActive="active">
+          <mat-icon>sync</mat-icon> Sync
+        </a>
+        <a mat-button routerLink="/convert" routerLinkActive="active">
+          <mat-icon>transform</mat-icon> Convert
+        </a>
+      }
       <a mat-button routerLink="/duplicates" routerLinkActive="active">
         <mat-icon>content_copy</mat-icon> Duplicates
       </a>
@@ -53,9 +59,11 @@
       <a mat-button routerLink="/analytics" routerLinkActive="active">
         <mat-icon>bar_chart</mat-icon> Analytics
       </a>
-      <a mat-button routerLink="/admin/users" routerLinkActive="active">
-        <mat-icon>manage_accounts</mat-icon> Users
-      </a>
+      @if (isAdmin) {
+        <a mat-button routerLink="/admin/users" routerLinkActive="active">
+          <mat-icon>manage_accounts</mat-icon> Users
+        </a>
+      }
       <button mat-icon-button [matMenuTriggerFor]="colorMenu" aria-label="Change accent color">
         <mat-icon>palette</mat-icon>
       </button>

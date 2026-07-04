@@ -11,6 +11,7 @@ import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,7 @@ public class MoveAssetsUseCaseImpl implements MoveAssetsUseCase {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public boolean execute(Long[] assetIds, String destinationPath, boolean preserveOriginal) {
         validateDestinationPath(destinationPath);
         List<Asset> assets = assetRepository.findAllById(Arrays.asList(assetIds));

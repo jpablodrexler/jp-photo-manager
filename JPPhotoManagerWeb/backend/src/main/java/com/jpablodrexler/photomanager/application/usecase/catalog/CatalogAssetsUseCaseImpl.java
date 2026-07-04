@@ -12,6 +12,7 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.CompletableFuture;
@@ -39,6 +40,7 @@ public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
     public CompletableFuture<Void> execute(long runId) {
         try {
             CompletableFuture<Void> completion = new CompletableFuture<>();

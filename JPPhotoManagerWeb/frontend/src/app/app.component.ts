@@ -95,6 +95,10 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.authService.isLoggedIn();
   }
 
+  get isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
   toggleTheme(): void {
     const newMode = this.themeService.toggle();
     if (this.authService.isLoggedIn()) {

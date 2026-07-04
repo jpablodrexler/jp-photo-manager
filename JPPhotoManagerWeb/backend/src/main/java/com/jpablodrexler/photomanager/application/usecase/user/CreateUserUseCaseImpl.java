@@ -5,6 +5,7 @@ import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.in.user.CreateUserUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ public class CreateUserUseCaseImpl implements CreateUserUseCase {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public UserSummary execute(String username, String password, String role) {
         String normalized = username.toLowerCase();
         if (userRepository.findByUsername(normalized).isPresent()) {

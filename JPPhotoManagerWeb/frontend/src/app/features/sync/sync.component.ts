@@ -12,6 +12,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SyncService } from '../../core/services/sync.service';
 import { SyncAssetsDirectoriesDefinition, SyncAssetsResult } from '../../core/models/sync-config.model';
+import { AuthService } from '../../core/services/auth.service';
 
 type ProcessStep = 'configure' | 'running' | 'results';
 
@@ -46,7 +47,8 @@ export class SyncComponent implements OnInit {
 
   constructor(
     private syncService: SyncService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    public authService: AuthService
   ) {}
 
   ngOnInit(): void {

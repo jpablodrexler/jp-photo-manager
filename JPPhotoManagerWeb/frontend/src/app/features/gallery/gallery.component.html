@@ -28,6 +28,12 @@
           <mat-icon>view_timeline</mat-icon>
         </button>
 
+        @if (authService.isAdmin()) {
+          <button mat-icon-button (click)="startCatalog()" title="Run catalog">
+            <mat-icon>manage_search</mat-icon>
+          </button>
+        }
+
         @if (viewType === 'grid') {
         <mat-select [(ngModel)]="sortCriteria" (ngModelChange)="onSortChange()" class="sort-select">
           @for (opt of sortOptions; track opt.value) {
@@ -48,21 +54,25 @@
                 <mat-icon>drive_file_rename_outline</mat-icon> Rename selected…
               </button>
             }
-            <button mat-menu-item (click)="moveSelectedAssets('move')">
-              <mat-icon>drive_file_move</mat-icon> Move to folder…
-            </button>
-            <button mat-menu-item (click)="moveSelectedAssets('copy')">
-              <mat-icon>file_copy</mat-icon> Copy to folder…
-            </button>
+            @if (authService.isAdmin()) {
+              <button mat-menu-item (click)="moveSelectedAssets('move')">
+                <mat-icon>drive_file_move</mat-icon> Move to folder…
+              </button>
+              <button mat-menu-item (click)="moveSelectedAssets('copy')">
+                <mat-icon>file_copy</mat-icon> Copy to folder…
+              </button>
+            }
             <button mat-menu-item (click)="downloadSelected()">
               <mat-icon>download</mat-icon> Download
             </button>
-            <button mat-menu-item (click)="deleteSelected(false)">
-              <mat-icon>delete_outline</mat-icon> Remove from catalog
-            </button>
-            <button mat-menu-item (click)="deleteSelected(true)">
-              <mat-icon>delete_forever</mat-icon> Delete files
-            </button>
+            @if (authService.isAdmin()) {
+              <button mat-menu-item (click)="deleteSelected(false)">
+                <mat-icon>delete_outline</mat-icon> Remove from catalog
+              </button>
+              <button mat-menu-item (click)="deleteSelected(true)">
+                <mat-icon>delete_forever</mat-icon> Delete files
+              </button>
+            }
           </mat-menu>
         }
 
@@ -242,7 +252,7 @@
     <!-- Thumbnails View -->
     @if (viewMode === 'thumbnails' && viewType === 'grid') {
       <div class="thumbnail-list-container flex-1">
-        @if (currentFolder) {
+        @if (currentFolder && authService.isAdmin()) {
           <app-drop-zone [folderPath]="currentFolder" (uploadComplete)="onUploadComplete()" />
         }
         @if (isLoading) {

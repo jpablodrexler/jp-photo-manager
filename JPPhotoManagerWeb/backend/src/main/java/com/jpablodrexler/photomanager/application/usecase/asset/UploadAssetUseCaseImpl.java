@@ -7,6 +7,7 @@ import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ public class UploadAssetUseCaseImpl implements UploadAssetUseCase {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public Asset execute(String folderPath, String fileName, byte[] content) throws IOException {
         if (!folderRepository.existsByPath(folderPath)) {
             throw new FolderNotFoundException(folderPath);

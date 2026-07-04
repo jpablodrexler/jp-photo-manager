@@ -59,6 +59,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -208,6 +209,7 @@ public class AssetController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping("/catalog")
+    @PreAuthorize("hasRole('ADMIN')")
     public SseEmitter catalogAssets() {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
         sseConnectionCount.incrementAndGet();
@@ -310,6 +312,7 @@ public class AssetController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @DeleteMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteAssets(@RequestParam Long[] assetIds,
                                               @RequestParam(defaultValue = "false") boolean deleteFiles) {
         deleteAssetsUseCase.execute(assetIds, deleteFiles);

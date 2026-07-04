@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.domain.port.in.user.DeleteUserUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ public class DeleteUserUseCaseImpl implements DeleteUserUseCase {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public void execute(UUID userId) {
         if (userRepository.findById(userId).isEmpty()) {
             throw new EntityNotFoundException("User not found: " + userId);

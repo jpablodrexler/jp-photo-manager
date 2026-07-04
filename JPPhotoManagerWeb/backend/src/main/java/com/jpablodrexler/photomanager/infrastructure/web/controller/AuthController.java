@@ -5,6 +5,7 @@ import com.jpablodrexler.photomanager.infrastructure.service.RefreshTokenService
 import com.jpablodrexler.photomanager.infrastructure.service.UserServiceImpl;
 import com.jpablodrexler.photomanager.infrastructure.web.AuthRequest;
 import com.jpablodrexler.photomanager.infrastructure.web.LoginResponse;
+import com.jpablodrexler.photomanager.infrastructure.web.MeResponse;
 import com.jpablodrexler.photomanager.infrastructure.web.exception.InvalidRefreshTokenException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -20,6 +21,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -36,6 +39,24 @@ public class AuthController {
     private final UserServiceImpl userService;
     private final JwtTokenPort jwtTokenService;
     private final RefreshTokenServiceImpl refreshTokenService;
+
+    @Operation(summary = "Get the current authenticated user's username and role")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Current user info"),
+        @ApiResponse(responseCode = "401", description = "Not authenticated")
+    })
+    @GetMapping("/me")
+    public ResponseEntity<MeResponse> me() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        String role = auth.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .filter(a -> a.startsWith("ROLE_"))
+                .map(a -> a.substring(5))
+                .findFirst()
+                .orElse("VIEWER");
+        return ResponseEntity.ok(new MeResponse(username, role));
+    }
 
     @Operation(summary = "Authenticate and receive JWT cookie")
     @ApiResponses({

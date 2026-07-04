@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.domain.port.in.user.UpdatePasswordUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ public class UpdatePasswordUseCaseImpl implements UpdatePasswordUseCase {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
     public void execute(UUID userId, String newPassword) {
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found: " + userId));

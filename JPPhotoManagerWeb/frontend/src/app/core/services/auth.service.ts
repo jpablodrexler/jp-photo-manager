@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, tap } from 'rxjs';
+import { Observable, map, switchMap, tap } from 'rxjs';
 import { PreferenceService } from './preference.service';
 
 const SESSION_KEY = 'photomanager_session';
@@ -10,9 +10,15 @@ interface LoginResponse {
   expiresAt: string;
 }
 
+interface MeResponse {
+  username: string;
+  role: string;
+}
+
 interface Session {
   username: string;
   expiresAt: number;
+  role: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -26,7 +32,11 @@ export class AuthService {
 
   login(username: string, password: string): Observable<void> {
     return this.http.post<LoginResponse>('/api/auth/login', { username, password }).pipe(
-      tap(res => this.storeSession(res.username, res.expiresAt)),
+      switchMap(loginRes =>
+        this.http.get<MeResponse>('/api/auth/me').pipe(
+          tap(me => this.storeSession(loginRes.username, loginRes.expiresAt, me.role))
+        )
+      ),
       tap(() => this.scheduleProactiveRefresh()),
       tap(() => this.preferenceService.load().subscribe()),
       map(() => undefined)
@@ -36,7 +46,7 @@ export class AuthService {
   refresh(): Observable<void> {
     return this.http.post<LoginResponse>('/api/auth/refresh', {}).pipe(
       tap(res => {
-        this.storeSession(res.username, res.expiresAt);
+        this.storeSession(res.username, res.expiresAt, this.getStoredRole());
         this.scheduleProactiveRefresh();
       }),
       map(() => undefined)
@@ -95,8 +105,30 @@ export class AuthService {
     }
   }
 
-  private storeSession(username: string, expiresAt: string): void {
-    const session: Session = { username, expiresAt: new Date(expiresAt).getTime() };
+  isAdmin(): boolean {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return false;
+    try {
+      const session: Session = JSON.parse(raw);
+      return session.role === 'ADMIN';
+    } catch {
+      return false;
+    }
+  }
+
+  private getStoredRole(): string {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return 'VIEWER';
+    try {
+      const session: Session = JSON.parse(raw);
+      return session.role ?? 'VIEWER';
+    } catch {
+      return 'VIEWER';
+    }
+  }
+
+  private storeSession(username: string, expiresAt: string, role: string): void {
+    const session: Session = { username, expiresAt: new Date(expiresAt).getTime(), role };
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   }
 }
