@@ -2,6 +2,7 @@ package com.jpablodrexler.photomanager.infrastructure.persistence.entity;
 
 import com.jpablodrexler.photomanager.domain.enums.FileType;
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
+import com.jpablodrexler.photomanager.domain.enums.ProcessingStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,7 +13,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "assets", indexes = @Index(name = "ix_assets_folder_id", columnList = "folder_id"))
+@Table(name = "assets", indexes = {
+        @Index(name = "ix_assets_folder_id", columnList = "folder_id"),
+        @Index(name = "ix_assets_processing_status", columnList = "processing_status")
+})
 @Data
 @NoArgsConstructor
 public class AssetEntity {
@@ -48,10 +52,10 @@ public class AssetEntity {
     @Column(name = "image_rotation")
     private ImageRotation imageRotation;
 
-    @Column(name = "thumbnail_creation_date_time", nullable = false)
+    @Column(name = "thumbnail_creation_date_time")
     private LocalDateTime thumbnailCreationDateTime;
 
-    @Column(name = "hash", nullable = false)
+    @Column(name = "hash")
     private String hash;
 
     @Column(name = "file_creation_date_time")
@@ -72,6 +76,19 @@ public class AssetEntity {
 
     @Column(name = "is_video", nullable = false)
     private boolean isVideo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "processing_status", nullable = false)
+    private ProcessingStatus processingStatus = ProcessingStatus.COMPLETED;
+
+    @Column(name = "hash_completed_at")
+    private LocalDateTime hashCompletedAt;
+
+    @Column(name = "exif_completed_at")
+    private LocalDateTime exifCompletedAt;
+
+    @Column(name = "thumbnail_completed_at")
+    private LocalDateTime thumbnailCompletedAt;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

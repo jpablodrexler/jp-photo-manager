@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager.domain.port.out;
 import com.jpablodrexler.photomanager.application.dto.AssetFilter;
 import com.jpablodrexler.photomanager.application.dto.FolderStat;
 import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.enums.ProcessingStatus;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.model.FolderStorageEntry;
@@ -73,4 +74,27 @@ public interface AssetRepository {
     List<MonthlyCountEntry> countByCreationMonth();
 
     List<RatingEntry> countByRating();
+
+    /**
+     * Idempotently flips {@code processing_status} to {@code COMPLETED} for the given asset if and
+     * only if all three completion timestamps (hash/exif/thumbnail) are already non-null and the
+     * asset is not already {@code COMPLETED}. Returns {@code true} for at most one caller across any
+     * number of concurrently racing invocations (see {@code JpaAssetRepository.completeIfAllStagesFinished}).
+     */
+    boolean completeIfAllStagesFinished(Long assetId);
+
+    /**
+     * Targeted single-column(s) update used by the kafka-async-upload stage processors instead of a
+     * find-then-save round trip: {@code AssetHashProcessor}, {@code AssetExifProcessor}, and
+     * {@code AssetThumbnailProcessor} run concurrently against the same row, and a full-entity
+     * {@link #save(Asset)} based on a stale in-memory snapshot would silently overwrite whichever of
+     * the other two stages had already committed. These methods update only their own column(s).
+     */
+    void updateHash(Long assetId, String hash, LocalDateTime hashCompletedAt);
+
+    void updateExifCompletedAt(Long assetId, LocalDateTime exifCompletedAt);
+
+    void updateThumbnail(Long assetId, LocalDateTime thumbnailCreationDateTime, LocalDateTime thumbnailCompletedAt);
+
+    void updateProcessingStatus(Long assetId, ProcessingStatus status);
 }

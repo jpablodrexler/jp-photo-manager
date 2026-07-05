@@ -64,7 +64,7 @@ class UploadAssetIntegrationTest {
     }
 
     @Test
-    void uploadAsset_validJpeg_returns201AndAppearsInGetAssets() throws Exception {
+    void uploadAsset_validJpeg_returns202AndAppearsInGetAssets() throws Exception {
         Folder folder = new Folder();
         folder.setPath(catalogFolder.toString());
         folderRepository.save(folder);
@@ -82,12 +82,15 @@ class UploadAssetIntegrationTest {
                 "folderPath", "", MediaType.TEXT_PLAIN_VALUE,
                 catalogFolder.toString().getBytes());
 
+        // Placeholder asset is persisted and visible immediately; hashing/EXIF/thumbnail generation
+        // complete asynchronously via the asset-hash-processor / asset-exif-processor /
+        // asset-thumbnail-processor Kafka consumer groups (kafka-async-upload), not synchronously here.
         mockMvc.perform(multipart("/api/assets/upload")
                 .file(file)
                 .file(folderPathPart))
-                .andExpect(status().isCreated())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.assetId").isNumber())
-                .andExpect(jsonPath("$.fileName").value("uploaded.jpg"));
+                .andExpect(jsonPath("$.status").value("PENDING"));
 
         mockMvc.perform(get("/api/assets")
                 .param("folderPath", catalogFolder.toString())

@@ -23,6 +23,9 @@
         @if (item.status === 'uploading' || item.status === 'pending') {
           <mat-progress-bar mode="determinate" [value]="item.progress" />
         }
+        @if (item.status === 'processing') {
+          <span class="status-processing">Processing…</span>
+        }
         @if (item.status === 'done') {
           <mat-icon class="status-icon status-done">check_circle</mat-icon>
         }

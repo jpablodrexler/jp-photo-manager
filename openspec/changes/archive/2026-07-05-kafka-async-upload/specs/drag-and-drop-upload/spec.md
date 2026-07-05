@@ -1,8 +1,4 @@
-# drag-and-drop-upload
-
-Specifies how the application accepts image files uploaded from the browser, saves them to a catalog folder, and indexes them as new assets.
-
----
+## MODIFIED Requirements
 
 ### Requirement: Uploaded image files are saved to the target folder and indexed asynchronously
 
@@ -17,33 +13,6 @@ The system SHALL provide a `POST /api/assets/upload` endpoint accepting `multipa
 - **GIVEN** the user drops three JPEG files onto the gallery
 - **WHEN** the frontend uploads them one at a time
 - **THEN** three separate `POST /api/assets/upload` requests are issued; each returns `202 Accepted`; after each file's asynchronous processing completes (observed via SSE) the gallery grid is refreshed to show that file's finished thumbnail
-
----
-
-### Requirement: The upload endpoint rejects non-image files
-
-The endpoint SHALL validate both the MIME content-type and the filename extension of the uploaded file. If either is not in the accepted image allowlist (`image/jpeg`, `image/png`, `image/gif`, `image/bmp`, `image/tiff`, `image/webp` / `.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, `.tiff`, `.tif`, `.webp`), the endpoint SHALL return `415 Unsupported Media Type` and SHALL NOT write any data to the filesystem.
-
-#### Scenario: Non-image file dropped
-- **GIVEN** the user drops a `.pdf` file onto the gallery
-- **WHEN** the frontend attempts to upload it
-- **THEN** the file is filtered out client-side before a request is sent, and no `POST /api/assets/upload` request is issued
-
-#### Scenario: Spoofed content-type
-- **GIVEN** a request is crafted with content-type `image/jpeg` but a `.exe` filename extension
-- **WHEN** the backend receives the request
-- **THEN** the response is `415 Unsupported Media Type` and no file is written to disk
-
----
-
-### Requirement: The upload endpoint returns 404 for unknown folder paths
-
-If the `folderPath` in the upload request does not correspond to a folder already present in the catalog, the endpoint SHALL return `404 Not Found` and SHALL NOT write any data to the filesystem.
-
-#### Scenario: Upload to an uncataloged folder
-- **GIVEN** a folder path that has not been cataloged and has no row in the `folders` table
-- **WHEN** an authenticated user calls `POST /api/assets/upload` with that `folderPath`
-- **THEN** the response is `404 Not Found`
 
 ---
 
@@ -73,22 +42,6 @@ The `DropZoneComponent` SHALL display an individual progress bar for each file d
 
 ---
 
-### Requirement: The drag-over state is visually indicated
-
-When the user drags files over the gallery thumbnail grid, the `DropZoneComponent` SHALL show a full-overlay drop target with a dashed border and a "Drop images here" label. The overlay SHALL be hidden when the drag leaves or a drop occurs.
-
-#### Scenario: Drag enters the gallery
-- **GIVEN** the user drags one or more files over the `.thumbnail-grid-container`
-- **WHEN** the `dragover` event fires
-- **THEN** the drop overlay with dashed border and "Drop images here" label is visible
-
-#### Scenario: Drag leaves the gallery
-- **GIVEN** the drag overlay is visible
-- **WHEN** the `dragleave` event fires
-- **THEN** the drop overlay is hidden
-
----
-
 ### Requirement: The gallery grid refreshes after a completed upload batch
 
 After all files in a drag-drop or file-picker batch have finished asynchronous processing (successfully, with a processing failure, or with an upload-time error), the `GalleryComponent` SHALL call `loadAssets()` to reload the current folder's asset list so newly uploaded images appear in the grid with their finished thumbnails.
@@ -97,14 +50,3 @@ After all files in a drag-drop or file-picker batch have finished asynchronous p
 - **GIVEN** the user has dropped two files, both received `202 Accepted`, and both files' SSE observe streams have since emitted `done=true`
 - **WHEN** `DropZoneComponent` emits `uploadComplete`
 - **THEN** `GalleryComponent` calls `loadAssets()` with `pageIndex = 0`; the two new thumbnails appear in the grid, fully populated
-
----
-
-### Requirement: Unauthenticated uploads are rejected
-
-The upload endpoint SHALL require a valid JWT cookie. Requests without a valid session SHALL receive `401 Unauthorized`.
-
-#### Scenario: Unauthenticated upload attempt
-- **GIVEN** no valid JWT cookie is present
-- **WHEN** a client calls `POST /api/assets/upload`
-- **THEN** the response is `401 Unauthorized` and no file is written to disk

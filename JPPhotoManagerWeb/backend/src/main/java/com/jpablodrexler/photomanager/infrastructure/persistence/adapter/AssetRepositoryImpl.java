@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.jpablodrexler.photomanager.domain.enums.ProcessingStatus;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 
 @Service
@@ -276,5 +277,35 @@ public class AssetRepositoryImpl implements AssetRepository {
         return jpa.countByRating().stream()
                 .map(p -> new RatingEntry(p.getRating(), p.getCnt()))
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public boolean completeIfAllStagesFinished(Long assetId) {
+        return jpa.completeIfAllStagesFinished(assetId) > 0;
+    }
+
+    @Override
+    @Transactional
+    public void updateHash(Long assetId, String hash, LocalDateTime hashCompletedAt) {
+        jpa.updateHash(assetId, hash, hashCompletedAt);
+    }
+
+    @Override
+    @Transactional
+    public void updateExifCompletedAt(Long assetId, LocalDateTime exifCompletedAt) {
+        jpa.updateExifCompletedAt(assetId, exifCompletedAt);
+    }
+
+    @Override
+    @Transactional
+    public void updateThumbnail(Long assetId, LocalDateTime thumbnailCreationDateTime, LocalDateTime thumbnailCompletedAt) {
+        jpa.updateThumbnail(assetId, thumbnailCreationDateTime, thumbnailCompletedAt);
+    }
+
+    @Override
+    @Transactional
+    public void updateProcessingStatus(Long assetId, ProcessingStatus status) {
+        jpa.updateProcessingStatus(assetId, status);
     }
 }

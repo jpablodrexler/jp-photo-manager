@@ -4,7 +4,8 @@ import { provideHttpClientTesting, HttpTestingController } from '@angular/common
 import { AssetService } from './asset.service';
 import { ExifMetadata } from '../models/exif-metadata.model';
 import { PaginatedData } from '../models/paginated-data.model';
-import { Asset, RenameAssetsResponse } from '../models/asset.model';
+import { HttpEventType, HttpResponse } from '@angular/common/http';
+import { Asset, RenameAssetsResponse, UploadAssetResponse } from '../models/asset.model';
 
 describe('AssetService', () => {
   let service: AssetService;
@@ -201,6 +202,31 @@ describe('AssetService', () => {
     const req = httpMock.expectOne('/api/assets/rename');
     expect(req.request.body).to.deep.equal({ assetIds: [1, 2], pattern: 'photo_{index:02d}.{ext}', applied: true });
     req.flush({ previews: [], applied: true });
+  });
+
+  it('uploadAsset_202Response_parsesAssetIdAndProcessingStatus', () => {
+    const mockResponse: UploadAssetResponse = { assetId: 42, status: 'PENDING' };
+    const file = new File([new Uint8Array([0xff, 0xd8])], 'photo.jpg', { type: 'image/jpeg' });
+
+    service.uploadAsset('/photos', file).subscribe(event => {
+      if (event.type === HttpEventType.Response) {
+        const response = event as HttpResponse<UploadAssetResponse>;
+        expect(response.status).to.equal(202);
+        expect(response.body).to.deep.equal(mockResponse);
+      }
+    });
+
+    const req = httpMock.expectOne('/api/assets/upload');
+    expect(req.request.method).to.equal('POST');
+    expect(req.request.body instanceof FormData).to.be.true;
+    req.flush(mockResponse, { status: 202, statusText: 'Accepted' });
+  });
+
+  it('observeUpload_validAssetId_returnsEventSourceForObserveEndpoint', () => {
+    const source = service.observeUpload(42);
+    expect(source).to.be.instanceOf(EventSource);
+    expect(source.url).to.contain('/api/assets/upload/42/observe');
+    source.close();
   });
 
   it('getTimeline_withNoFilters_omitsOptionalParams', () => {

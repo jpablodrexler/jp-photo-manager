@@ -22,6 +22,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.RenameAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.ReprocessAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
@@ -44,6 +45,7 @@ import com.jpablodrexler.photomanager.infrastructure.web.dto.RenameAssetsRespons
 import com.jpablodrexler.photomanager.infrastructure.web.dto.RenamePreviewDto;
 import com.jpablodrexler.photomanager.application.dto.RenameAssetsResult;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.TimelineGroupDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.UploadAssetResponse;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -96,6 +98,7 @@ public class AssetController {
     private final MoveAssetsUseCase moveAssetsUseCase;
     private final RenameAssetsUseCase renameAssetsUseCase;
     private final UploadAssetUseCase uploadAssetUseCase;
+    private final ReprocessAssetUseCase reprocessAssetUseCase;
     private final DeleteAssetsUseCase deleteAssetsUseCase;
     private final CropAssetUseCase cropAssetUseCase;
     private final CatalogAssetsUseCase catalogAssetsUseCase;
@@ -369,15 +372,15 @@ public class AssetController {
 
     @Operation(summary = "Upload a new asset to a folder")
     @ApiResponses({
-        @ApiResponse(responseCode = "201", description = "Asset created"),
+        @ApiResponse(responseCode = "202", description = "Asset accepted; hashing/EXIF/thumbnail processing continues asynchronously"),
         @ApiResponse(responseCode = "400", description = "Invalid request"),
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
         @ApiResponse(responseCode = "404", description = "Destination folder not found"),
         @ApiResponse(responseCode = "415", description = "Unsupported media type")
     })
     @PostMapping("/upload")
-    public ResponseEntity<AssetDto> uploadAsset(@RequestPart("file") MultipartFile file,
-                                                 @RequestPart("folderPath") String folderPath) {
+    public ResponseEntity<UploadAssetResponse> uploadAsset(@RequestPart("file") MultipartFile file,
+                                                            @RequestPart("folderPath") String folderPath) {
         String contentType = file.getContentType();
         String originalFilename = file.getOriginalFilename();
         // Strip any directory prefix the client may have embedded in the filename (path traversal defence).
@@ -399,11 +402,53 @@ public class AssetController {
         }
         try {
             Asset asset = uploadAssetUseCase.execute(folderPath, safeFilename, file.getBytes());
-            return ResponseEntity.status(HttpStatus.CREATED).body(assetWebMapper.toDto(asset));
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                    .body(new UploadAssetResponse(asset.getAssetId(), asset.getProcessingStatus().name()));
         } catch (FolderNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @Operation(summary = "Observe an in-flight upload's hash/EXIF/thumbnail processing progress via SSE")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "SSE stream of upload progress events"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    @GetMapping("/upload/{assetId}/observe")
+    public SseEmitter observeUpload(@PathVariable Long assetId) {
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
+        sseConnectionCount.incrementAndGet();
+        // Removes the registry entry on early client disconnect (tab closed, network drop, etc.)
+        // before job.upload.progress ever reports done=true — otherwise the emitter would be
+        // orphaned in KafkaProgressRegistry forever, since only the done=true path in
+        // KafkaProgressListener.onUploadProgress removes it.
+        Runnable cleanup = () -> {
+            kafkaProgressRegistry.remove(assetId);
+            sseConnectionCount.decrementAndGet();
+        };
+        emitter.onCompletion(cleanup);
+        emitter.onTimeout(cleanup);
+        emitter.onError(t -> cleanup.run());
+        kafkaProgressRegistry.registerEmitter(assetId, emitter);
+        return emitter;
+    }
+
+    @Operation(summary = "Re-trigger hash/EXIF/thumbnail processing for an asset (e.g. after a partial failure)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "202", description = "Reprocessing re-triggered"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "404", description = "Asset not found")
+    })
+    @PostMapping("/{id}/reprocess")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> reprocessAsset(@PathVariable Long id) {
+        try {
+            reprocessAssetUseCase.execute(id);
+            return ResponseEntity.accepted().build();
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 

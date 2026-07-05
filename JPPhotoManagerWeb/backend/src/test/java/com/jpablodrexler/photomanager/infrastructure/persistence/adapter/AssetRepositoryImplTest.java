@@ -331,4 +331,50 @@ class AssetRepositoryImplTest {
         when(jpa.hasTag(1L, 10L)).thenReturn(true);
         assertThat(sut.hasTag(1L, 10L)).isTrue();
     }
+
+    // --- kafka-async-upload: completeIfAllStagesFinished (idempotent COMPLETED transition) ---
+
+    @Test
+    void completeIfAllStagesFinished_rowUpdated_returnsTrue() {
+        when(jpa.completeIfAllStagesFinished(1L)).thenReturn(1);
+
+        assertThat(sut.completeIfAllStagesFinished(1L)).isTrue();
+    }
+
+    @Test
+    void completeIfAllStagesFinished_alreadyCompletedOrNotAllStagesDone_returnsFalse() {
+        // Simulates the race described in design.md risk #3: a second concurrent caller's guarded
+        // UPDATE (WHERE processing_status <> 'COMPLETED') affects zero rows once the first caller's
+        // UPDATE has already committed, so at most one caller ever observes true for a given asset.
+        when(jpa.completeIfAllStagesFinished(1L)).thenReturn(0);
+
+        assertThat(sut.completeIfAllStagesFinished(1L)).isFalse();
+    }
+
+    @Test
+    void updateHash_delegatesToJpaWithTargetedColumnUpdate() {
+        LocalDateTime now = LocalDateTime.now();
+        sut.updateHash(1L, "abc123", now);
+        verify(jpa).updateHash(1L, "abc123", now);
+    }
+
+    @Test
+    void updateExifCompletedAt_delegatesToJpa() {
+        LocalDateTime now = LocalDateTime.now();
+        sut.updateExifCompletedAt(1L, now);
+        verify(jpa).updateExifCompletedAt(1L, now);
+    }
+
+    @Test
+    void updateThumbnail_delegatesToJpa() {
+        LocalDateTime now = LocalDateTime.now();
+        sut.updateThumbnail(1L, now, now);
+        verify(jpa).updateThumbnail(1L, now, now);
+    }
+
+    @Test
+    void updateProcessingStatus_delegatesToJpa() {
+        sut.updateProcessingStatus(1L, com.jpablodrexler.photomanager.domain.enums.ProcessingStatus.FAILED);
+        verify(jpa).updateProcessingStatus(1L, com.jpablodrexler.photomanager.domain.enums.ProcessingStatus.FAILED);
+    }
 }

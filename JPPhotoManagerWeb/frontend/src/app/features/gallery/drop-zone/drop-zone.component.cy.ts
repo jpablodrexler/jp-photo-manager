@@ -1,9 +1,11 @@
 import { mount } from 'cypress/angular';
-import { of, Subject } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { HttpEventType, HttpResponse, HttpUploadProgressEvent } from '@angular/common/http';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { DropZoneComponent } from './drop-zone.component';
 import { AssetService } from '../../../core/services/asset.service';
+import { UploadAssetResponse } from '../../../core/models/asset.model';
+import { MockEventSource } from '../../../../../cypress/support/mock-event-source';
 
 function makeFile(name: string, type = 'image/jpeg'): File {
   return new File([new Uint8Array([0xff, 0xd8])], name, { type });
@@ -17,8 +19,13 @@ function makeFileList(files: File[]): FileList {
 
 describe('DropZoneComponent', () => {
   function mountDropZone(assetServiceOverrides: Partial<AssetService> = {}) {
+    const uploadResponse: HttpResponse<UploadAssetResponse> = new HttpResponse({
+      status: 202,
+      body: { assetId: 42, status: 'PENDING' },
+    });
     const assetServiceStub: Partial<AssetService> = {
-      uploadAsset: cy.stub().returns(of({ type: HttpEventType.Response, body: {} } as HttpResponse<unknown>)),
+      uploadAsset: cy.stub().returns(of(uploadResponse)),
+      observeUpload: cy.stub().returns(new MockEventSource()),
       ...assetServiceOverrides,
     };
 
@@ -81,17 +88,67 @@ describe('DropZoneComponent', () => {
     cy.get('mat-progress-bar').should('exist');
   });
 
-  it('uploadComplete_onSuccess_emitsUploadComplete', () => {
-    const uploadComplete = cy.stub();
+  it('uploadResponse_202Accepted_showsProcessingIndicatorAndOpensObserveStream', () => {
+    const observeUpload = cy.stub().returns(new MockEventSource());
 
-    mountDropZone().then(({ fixture }) => {
+    mountDropZone({ observeUpload } as Partial<AssetService>).then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.uploadComplete.subscribe(uploadComplete);
       component.onFilesSelected(makeFileList([makeFile('photo.jpg')]));
       fixture.detectChanges();
     });
 
-    cy.wrap(uploadComplete).should('have.been.called');
+    cy.wrap(observeUpload).should('have.been.calledWith', 42);
+    cy.get('.status-processing').should('contain.text', 'Processing');
+  });
+
+  it('uploadComplete_sseDoneEvent_showsSuccessIconAndEmitsUploadComplete', () => {
+    const uploadComplete = cy.stub();
+    const mockEventSource = new MockEventSource();
+    const observeUpload = cy.stub().returns(mockEventSource);
+
+    mountDropZone({ observeUpload } as Partial<AssetService>).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.uploadComplete.subscribe(uploadComplete);
+      component.onFilesSelected(makeFileList([makeFile('photo.jpg')]));
+      fixture.detectChanges();
+
+      mockEventSource.dispatchEvent(new MessageEvent('done', { data: '{}' }));
+      fixture.detectChanges();
+    });
+
+    cy.wrap(uploadComplete).should('have.been.calledOnce');
     cy.get('.status-done').should('exist');
+  });
+
+  it('uploadFailure_sseFailedEvent_showsErrorIconAndEmitsUploadComplete', () => {
+    const uploadComplete = cy.stub();
+    const mockEventSource = new MockEventSource();
+    const observeUpload = cy.stub().returns(mockEventSource);
+
+    mountDropZone({ observeUpload } as Partial<AssetService>).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.uploadComplete.subscribe(uploadComplete);
+      component.onFilesSelected(makeFileList([makeFile('photo.jpg')]));
+      fixture.detectChanges();
+
+      mockEventSource.dispatchEvent(new MessageEvent('failed', { data: '{}' }));
+      fixture.detectChanges();
+    });
+
+    cy.wrap(uploadComplete).should('have.been.calledOnce');
+    cy.get('.status-error').should('exist');
+  });
+
+  it('uploadTimeError_415Response_showsErrorIconAndNoFurtherUploadAttempted', () => {
+    const uploadAsset = cy.stub().returns(throwError(() => new Error('415 Unsupported Media Type')));
+
+    mountDropZone({ uploadAsset } as Partial<AssetService>).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.onFilesSelected(makeFileList([makeFile('photo.jpg')]));
+      fixture.detectChanges();
+    });
+
+    cy.wrap(uploadAsset).should('have.been.calledOnce');
+    cy.get('.status-error').should('exist');
   });
 });

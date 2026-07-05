@@ -27,6 +27,11 @@ public class GetDuplicatedAssetsUseCaseImpl implements GetDuplicatedAssetsUseCas
 
         List<Asset> validAssets = allAssets.stream()
                 .filter(a -> {
+                    // Excludes in-flight kafka-async-upload placeholders (hash not yet computed) so a
+                    // batch of concurrently-uploading assets is never mistaken for duplicates of each other.
+                    if (a.getHash() == null) {
+                        return false;
+                    }
                     String path = a.getFolder().getPath() + "/" + a.getFileName();
                     return storagePort.directoryExists(a.getFolder().getPath())
                             && storagePort.getFileSize(path) > 0;

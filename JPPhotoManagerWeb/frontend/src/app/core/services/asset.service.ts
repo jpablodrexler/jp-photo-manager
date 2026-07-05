@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpEvent, HttpParams } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
-import { Asset, CropAssetRequest, RenameAssetsResponse, SortCriteria } from '../models/asset.model';
+import { Asset, CropAssetRequest, RenameAssetsResponse, SortCriteria, UploadAssetResponse } from '../models/asset.model';
 import { ExifMetadata } from '../models/exif-metadata.model';
 import { PaginatedData } from '../models/paginated-data.model';
 import { TimelineGroup } from '../models/timeline-group.model';
@@ -98,14 +98,18 @@ export class AssetService {
     return this.http.post(`${this.baseUrl}/download`, { assetIds }, { responseType: 'blob' as 'json' }) as Observable<Blob>;
   }
 
-  uploadAsset(folderPath: string, file: File): Observable<HttpEvent<Asset>> {
+  uploadAsset(folderPath: string, file: File): Observable<HttpEvent<UploadAssetResponse>> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('folderPath', folderPath);
-    return this.http.post<Asset>(`${this.baseUrl}/upload`, formData, {
+    return this.http.post<UploadAssetResponse>(`${this.baseUrl}/upload`, formData, {
       reportProgress: true,
       observe: 'events',
     });
+  }
+
+  observeUpload(assetId: number): EventSource {
+    return new EventSource(`${this.baseUrl}/upload/${assetId}/observe`);
   }
 
   renameAssets(assetIds: number[], pattern: string, applied: boolean): Observable<RenameAssetsResponse> {

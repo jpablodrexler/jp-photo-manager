@@ -24,6 +24,13 @@ export interface Asset {
   isVideo: boolean;
 }
 
+export type ProcessingStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+
+export interface UploadAssetResponse {
+  assetId: number;
+  status: ProcessingStatus;
+}
+
 export interface RenamePreview {
   assetId: number;
   oldName: string;

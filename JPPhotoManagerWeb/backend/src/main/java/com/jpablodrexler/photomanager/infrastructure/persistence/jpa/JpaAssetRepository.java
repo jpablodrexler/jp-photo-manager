@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.persistence.jpa;
 
+import com.jpablodrexler.photomanager.domain.enums.ProcessingStatus;
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.AssetEntity;
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.FolderEntity;
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.TagEntity;
@@ -46,7 +47,7 @@ public interface JpaAssetRepository extends JpaRepository<AssetEntity, Long>, Jp
     @Query("SELECT a FROM AssetEntity a JOIN FETCH a.folder WHERE a.hash = :hash AND a.deletedAt IS NULL")
     List<AssetEntity> findByHashNotDeleted(String hash);
 
-    @Query("SELECT a.hash FROM AssetEntity a GROUP BY a.hash HAVING COUNT(a) > 1")
+    @Query("SELECT a.hash FROM AssetEntity a WHERE a.hash IS NOT NULL GROUP BY a.hash HAVING COUNT(a) > 1")
     List<String> findDuplicateHashes();
 
     @Query("SELECT aa FROM AlbumEntity a JOIN a.assets aa JOIN FETCH aa.folder WHERE a.albumId = :albumId")
@@ -73,7 +74,7 @@ public interface JpaAssetRepository extends JpaRepository<AssetEntity, Long>, Jp
     @Query("SELECT COALESCE(SUM(a.fileSize), 0) FROM AssetEntity a WHERE a.deletedAt IS NULL")
     long sumFileSize();
 
-    @Query("SELECT COUNT(a) FROM AssetEntity a WHERE a.deletedAt IS NULL AND a.hash IN (SELECT a2.hash FROM AssetEntity a2 WHERE a2.deletedAt IS NULL GROUP BY a2.hash HAVING COUNT(a2) > 1)")
+    @Query("SELECT COUNT(a) FROM AssetEntity a WHERE a.deletedAt IS NULL AND a.hash IS NOT NULL AND a.hash IN (SELECT a2.hash FROM AssetEntity a2 WHERE a2.deletedAt IS NULL AND a2.hash IS NOT NULL GROUP BY a2.hash HAVING COUNT(a2) > 1)")
     long countDuplicates();
 
     @Query("SELECT f.path as folderPath, COUNT(a) as assetCount FROM AssetEntity a JOIN a.folder f WHERE a.deletedAt IS NULL GROUP BY f.path ORDER BY COUNT(a) DESC")
@@ -93,6 +94,39 @@ public interface JpaAssetRepository extends JpaRepository<AssetEntity, Long>, Jp
 
     @Query("SELECT a.rating as rating, COUNT(a) as cnt FROM AssetEntity a WHERE a.deletedAt IS NULL GROUP BY a.rating ORDER BY a.rating ASC")
     List<RatingProjection> countByRating();
+
+    // Row-level locking on the UPDATE guarantees exactly one caller observes affected row count 1
+    // when two upload-processing stages race to be the one that flips processing_status to COMPLETED
+    // (PostgreSQL serializes concurrent UPDATEs to the same row; the second re-evaluates this WHERE
+    // clause against the first's already-committed change).
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE AssetEntity a SET a.processingStatus = com.jpablodrexler.photomanager.domain.enums.ProcessingStatus.COMPLETED "
+            + "WHERE a.assetId = :assetId AND a.processingStatus <> com.jpablodrexler.photomanager.domain.enums.ProcessingStatus.COMPLETED "
+            + "AND a.hashCompletedAt IS NOT NULL AND a.exifCompletedAt IS NOT NULL AND a.thumbnailCompletedAt IS NOT NULL")
+    int completeIfAllStagesFinished(@Param("assetId") Long assetId);
+
+    // Targeted single-column update: the three kafka-async-upload stage processors run concurrently
+    // against the same row, so each must update only its own column(s) rather than round-tripping the
+    // full entity through save() (which would overwrite whichever other stage had already committed).
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE AssetEntity a SET a.hash = :hash, a.hashCompletedAt = :hashCompletedAt WHERE a.assetId = :assetId")
+    void updateHash(@Param("assetId") Long assetId, @Param("hash") String hash,
+                     @Param("hashCompletedAt") LocalDateTime hashCompletedAt);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE AssetEntity a SET a.exifCompletedAt = :exifCompletedAt WHERE a.assetId = :assetId")
+    void updateExifCompletedAt(@Param("assetId") Long assetId, @Param("exifCompletedAt") LocalDateTime exifCompletedAt);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE AssetEntity a SET a.thumbnailCreationDateTime = :thumbnailCreationDateTime, "
+            + "a.thumbnailCompletedAt = :thumbnailCompletedAt WHERE a.assetId = :assetId")
+    void updateThumbnail(@Param("assetId") Long assetId,
+                         @Param("thumbnailCreationDateTime") LocalDateTime thumbnailCreationDateTime,
+                         @Param("thumbnailCompletedAt") LocalDateTime thumbnailCompletedAt);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE AssetEntity a SET a.processingStatus = :status WHERE a.assetId = :assetId")
+    void updateProcessingStatus(@Param("assetId") Long assetId, @Param("status") ProcessingStatus status);
 
     default Page<AssetEntity> findWithFilters(FolderEntity folder, String search, LocalDateTime dateFrom,
                                               LocalDateTime dateTo, Integer minRating, Set<String> tags,

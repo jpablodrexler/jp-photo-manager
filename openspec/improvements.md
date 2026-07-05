@@ -46,7 +46,6 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 | 70  | `dominant-color-palette`    | During cataloging, extract the top 5 dominant colors from each photo's thumbnail using k-means clustering (k=5, 10 iterations) over the 200×150 px thumbnail pixels; no second file read from the original is required; store the five RGB centroids as a `color_palette JSONB` column on `assets` (Flyway migration); each centroid is snapped to the nearest of 12 color families (red, orange, yellow, green, teal, blue, purple, pink, brown, grey, black, white) using Euclidean distance in HSL space; frontend additions: a color swatch row in the search/filter toolbar (one or more families can be selected, adding a `colorFamily[]` query parameter to `GET /api/assets`), an optional 5-segment color stripe at the bottom of each `ThumbnailComponent` card (toggleable, off by default), and a "Color distribution" donut chart on the `/analytics` dashboard reusing the existing `ngx-charts` dependency; `GET /api/assets/color-families` returns the 12 families with asset counts for the current folder to populate the swatch picker; no external Maven dependency — k-means runs over `BufferedImage` pixel access using the standard library | ✅ Created | ⬜ Pending |
 | 71  | `webdav-server`             | Expose the catalog over WebDAV (`PROPFIND`, `GET`, `PUT`, `DELETE`, `MKCOL`) at `/webdav/` so users can mount the catalog as a network drive on Windows (Map Network Drive), macOS (Finder → Connect to Server), and Linux (`davfs2`); the virtual folder tree mirrors the `assets.folder_path` hierarchy; `GET` on an asset path streams the original file via the existing `StoragePort`; `PUT` to any folder path triggers the same catalog pipeline as drag-and-drop upload (#3); `DELETE` routes through the soft-delete path from `soft-delete-recycle-bin` (#9); implemented with `milton-server-ce` (pure Java WebDAV server, no servlet dependency conflicts) or a custom Spring MVC `WebdavController` handling raw `PROPFIND` XML via JAXB; authentication uses HTTP Basic over the existing `UserDetailsService` — JWT cookies are not compatible with native OS WebDAV clients; no schema change | ✅ Created | ⬜ Pending |
 | 74  | `mongodb-user-preferences`        | Move `user_preferences` and `search_presets` from rigid PostgreSQL tables to a single MongoDB `user_configs` collection keyed by `userId`; adding a new UI preference (theme, gallery layout, notification toggle) requires no Flyway migration; search preset payloads grow naturally as new filter fields are added without altering existing rows; only the two persistence adapters (`UserPreferenceRepositoryImpl`, `SearchPresetRepositoryImpl`) change — use cases, domain models, and REST controllers are untouched; the existing PostgreSQL tables are dropped after a one-time data migration | ⬜ Pending | ⬜ Pending |
-| 76  | `kafka-async-upload`              | Decouple the `POST /api/assets/upload` HTTP thread from SHA-256 hashing, EXIF extraction, and thumbnail generation; the controller saves the file to disk, publishes an `AssetUploadedEvent { filePath, assetId, userId }` to the `asset.uploaded` Kafka topic, and returns HTTP 202; three independent consumer groups process hash computation, EXIF extraction, and thumbnail generation in parallel; eliminates multi-second blocking for large files (RAW 40–80 MB, video) and allows each processing stage to scale independently; requires the Kafka infrastructure introduced by `kafka-catalog-pipeline` (#75) | ⬜ Pending | ⬜ Pending |
 | 77  | `kafka-catalog-coordination`      | Prevent duplicate concurrent catalog scans when multiple app instances are deployed; `CatalogScheduler` currently uses `@Scheduled(fixedDelay)` on every JVM — two instances each trigger a full directory traversal simultaneously, doubling disk I/O and risking duplicate database writes; a single-partition `catalog.requests` Kafka topic provides natural leader election via Kafka consumer groups: only one member processes a `CatalogJobRequested` event while others skip; replace the `@Scheduled` trigger in `CatalogScheduler` with a Kafka producer that publishes to `catalog.requests` on the same interval; requires the Kafka infrastructure introduced by `kafka-catalog-pipeline` (#75) | ⬜ Pending | ⬜ Pending |
 | 81  | `redis-thumbnail-cache`           | Add Redis as a shared L2 thumbnail cache in front of the disk-backed `ThumbnailStorageServiceAdapter`; on a cache hit `GET asset:thumbnail:{assetId}` returns the thumbnail bytes with no disk I/O; on a miss the adapter reads from disk, stores with a 24-hour TTL via `SETEX`, and returns; Redis `allkeys-lru` eviction retains popular thumbnails and evicts cold ones automatically; complements `thumbnail-http-cache` (#26) (browser-level `Cache-Control: immutable`, already implemented) and `server-side-spring-cache` (#28) (per-JVM Caffeine for home stats and EXIF lookups, already implemented); Redis adds the shared server-side tier that survives instance restarts and eliminates dependency on co-located disk access in load-balanced deployments where the requested thumbnail may reside on a different node's filesystem | ⬜ Pending | ⬜ Pending |
 | 82  | `redis-search-tag-cache`          | Cache the two highest-frequency gallery read paths in Redis: (1) paginated asset search results (`GET /api/assets`) keyed by `assets:{sha256(folderPath+page+sort+filters)}` with a 5-minute TTL, invalidated on `asset.cataloged` and `asset.deleted` Kafka events from #75; (2) the tag list with counts (`GET /api/tags`) keyed `tags:all` with a 5-minute TTL, invalidated on `AddTagToAssetUseCase` and `RemoveTagFromAssetUseCase`; extends `server-side-spring-cache` (#28) which targets home stats, folder tree, and EXIF lookups with per-JVM Caffeine — this improvement covers the two hottest gallery endpoints and uses Redis for distributed invalidation that works correctly across multiple instances; the `@Cacheable`/`@CacheEvict` annotations from #28 can be reused by switching the Spring cache manager from `CaffeineCacheManager` to a Lettuce-backed `RedisCacheManager` | ⬜ Pending | ⬜ Pending |
@@ -69,9 +68,9 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 
 `duplicate-auto-resolve` routes deleted assets through the soft-delete path introduced by `soft-delete-recycle-bin`.
 
-**Improvement 75 → Improvements 76, 77** (prerequisite already implemented)
+**Improvement 75 → Improvement 77** (prerequisite already implemented)
 
-`kafka-catalog-pipeline` (#75) is now implemented. `kafka-async-upload` (#76) and `kafka-catalog-coordination` (#77) are unblocked and can be delivered in any order. `mongodb-audit-log` (#73) and `kafka-sse-broadcast` (#80), also unblocked by #75, have since been implemented — see `improvements-implemented.md`.
+`kafka-catalog-pipeline` (#75) is now implemented. `kafka-catalog-coordination` (#77) is unblocked. `mongodb-audit-log` (#73), `kafka-sse-broadcast` (#80), and `kafka-async-upload` (#76), also unblocked by #75, have since been implemented — see `improvements-implemented.md`.
 
 ### Soft implementation dependencies (order affects cleanliness)
 
@@ -111,7 +110,7 @@ Within dependent clusters:
 46 (session-management) → 47 (two-factor-authentication)
 54 (notification-center) → 48 (email-notifications)
 60 (archive-support) → 61 (asset-backup)
-75 (kafka-catalog-pipeline, already done) → 76 (kafka-async-upload), 77 (kafka-catalog-coordination)
+75 (kafka-catalog-pipeline, already done) → 77 (kafka-catalog-coordination)
 28 (server-side-spring-cache, already done) → 81 (redis-thumbnail-cache) [JVM cache first, then Redis L2]
 28 (server-side-spring-cache, already done) → 82 (redis-search-tag-cache) [extend Caffeine scope to Redis]
 ```
@@ -122,7 +121,6 @@ Priority ordering for the MongoDB, Kafka, and Redis improvements:
 
 ```
 P2 — scalability and performance wins:
-  76 (kafka-async-upload)             — requires #75 (already implemented); eliminates blocking upload for large files
   81 (redis-thumbnail-cache)          — implement after #28 (already implemented) for best layering (#26 thumbnail-http-cache already done)
   82 (redis-search-tag-cache)         — implement after #28 (already implemented, Caffeine) for a smooth upgrade path
 
@@ -166,7 +164,7 @@ Improvements #73–#82 require no Flyway migrations — they do not modify the P
 | Infrastructure | Required by improvements | Notes |
 | -------------- | ------------------------ | ----- |
 | MongoDB 7+     | #74 | Add `mongo` service to `docker-compose.yml` (already provisioned by `mongodb-exif-store`, #72, and `mongodb-audit-log`, #73, both now implemented) |
-| Apache Kafka 3.7+ (KRaft mode) | #76, #77 | Add `kafka` service; no ZooKeeper required in KRaft mode |
+| Apache Kafka 3.7+ (KRaft mode) | #77 | Add `kafka` service; no ZooKeeper required in KRaft mode |
 | Redis 7+       | #81, #82 | Add `redis` service with `allkeys-lru` eviction and a memory cap (already provisioned by `redis-distributed-rate-limiting`, #78, and reused by `redis-refresh-tokens`, #79, both now implemented) |
 
 Recommended additions to `docker-compose.yml`:
@@ -203,7 +201,7 @@ spring:
       host: ${REDIS_HOST:localhost}                 # improvements #81, #82 (Redis already provisioned by #78, #79)
       port: ${REDIS_PORT:6379}
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}  # improvements #76, #77 (Kafka already provisioned by #75)
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}  # improvement #77 (Kafka already provisioned by #75)
 ```
 
 ### Implementation notes
@@ -400,10 +398,6 @@ JWT cookies cannot be forwarded by OS-level WebDAV mounts. The WebDAV endpoint a
 **Improvement 74 — data migration strategy**
 
 `user_preferences` and `search_presets` are small tables (one row per user for preferences, a few rows per user for presets). The one-time data migration exports all rows to MongoDB documents then drops the PostgreSQL tables. Because both tables are user-specific and low-volume, the migration can run online: (1) export to MongoDB, (2) switch the Spring beans from JPA adapters to MongoDB adapters, (3) drop the PostgreSQL tables in subsequent Flyway migrations (V32 for `user_preferences`, V33 for `search_presets`). The `UserPreferenceRepositoryImpl` and `SearchPresetRepositoryImpl` adapters are the only classes that change.
-
-**Improvement 76 — 202 Accepted flow and partial-failure handling**
-
-The `POST /api/assets/upload` response changes from `201 Created` (with the full `AssetResponse` body) to `202 Accepted` (with a `{ jobId, status: "PROCESSING" }` body). The frontend subscribes to an SSE channel `job:upload:progress:{jobId}` (same pattern as catalog SSE). When all three consumers (hash, EXIF, thumbnail) signal completion, the job transitions to `COMPLETED` and the frontend reloads the asset. Each consumer writes its results to the `AssetRepository` or `AssetExifRepository` in a separate transaction, so partial failures — e.g. EXIF extraction fails but hash and thumbnail succeed — leave the asset in a partially-populated state that can be resolved by re-triggering the failed consumer without re-running the others.
 
 **Improvement 77 — single-partition leader election detail**
 

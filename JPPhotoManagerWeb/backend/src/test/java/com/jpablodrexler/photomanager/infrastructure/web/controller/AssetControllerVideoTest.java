@@ -14,6 +14,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.RenameAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.ReprocessAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
@@ -60,6 +61,7 @@ class AssetControllerVideoTest {
     @MockitoBean MoveAssetsUseCase moveAssetsUseCase;
     @MockitoBean RenameAssetsUseCase renameAssetsUseCase;
     @MockitoBean UploadAssetUseCase uploadAssetUseCase;
+    @MockitoBean ReprocessAssetUseCase reprocessAssetUseCase;
     @MockitoBean DeleteAssetsUseCase deleteAssetsUseCase;
     @MockitoBean CatalogAssetsUseCase catalogAssetsUseCase;
     @MockitoBean GetDuplicatedAssetsUseCase getDuplicatedAssetsUseCase;

@@ -12,6 +12,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.RenameAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.ReprocessAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
@@ -41,6 +42,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AssetController.class)
@@ -71,6 +73,8 @@ class RoleBasedAccessControlTest {
     RenameAssetsUseCase renameAssetsUseCase;
     @MockitoBean
     UploadAssetUseCase uploadAssetUseCase;
+    @MockitoBean
+    ReprocessAssetUseCase reprocessAssetUseCase;
     @MockitoBean
     DeleteAssetsUseCase deleteAssetsUseCase;
     @MockitoBean
@@ -121,5 +125,12 @@ class RoleBasedAccessControlTest {
 
         mockMvc.perform(get("/api/assets").param("folderPath", "/photos"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    void reprocessAsset_viewerRole_returns403() throws Exception {
+        mockMvc.perform(post("/api/assets/42/reprocess"))
+                .andExpect(status().isForbidden());
     }
 }

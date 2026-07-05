@@ -52,4 +52,22 @@ public class KafkaTopicConfig {
                 .config("retention.ms", String.valueOf(7L * 24 * 60 * 60 * 1000))
                 .build();
     }
+
+    @Bean
+    public NewTopic assetUploadedTopic() {
+        return TopicBuilder.name("asset.uploaded")
+                .partitions(3)
+                .replicas(1)
+                .config("retention.ms", String.valueOf(7L * 24 * 60 * 60 * 1000))
+                .build();
+    }
+
+    @Bean
+    public NewTopic uploadProgressTopic() {
+        return TopicBuilder.name("job.upload.progress")
+                .partitions(1)
+                .replicas(1)
+                .config("retention.ms", String.valueOf(60 * 60 * 1000L))
+                .build();
+    }
 }

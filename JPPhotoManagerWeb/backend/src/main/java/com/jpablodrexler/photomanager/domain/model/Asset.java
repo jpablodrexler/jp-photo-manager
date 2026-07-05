@@ -2,6 +2,7 @@ package com.jpablodrexler.photomanager.domain.model;
 
 import com.jpablodrexler.photomanager.domain.enums.FileType;
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
+import com.jpablodrexler.photomanager.domain.enums.ProcessingStatus;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -36,6 +37,11 @@ public class Asset {
     private FileType fileType = FileType.IMAGE;
     @Builder.Default
     private boolean isVideo = false;
+    @Builder.Default
+    private ProcessingStatus processingStatus = ProcessingStatus.COMPLETED;
+    private LocalDateTime hashCompletedAt;
+    private LocalDateTime exifCompletedAt;
+    private LocalDateTime thumbnailCompletedAt;
 
     public String getThumbnailBlobName() {
         return assetId + ".bin";

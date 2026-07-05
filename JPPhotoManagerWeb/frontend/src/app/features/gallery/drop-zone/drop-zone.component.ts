@@ -4,6 +4,7 @@ import {
   EventEmitter,
   HostListener,
   Input,
+  OnDestroy,
   Output,
   ViewChild,
 } from '@angular/core';
@@ -13,13 +14,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { HttpEventType } from '@angular/common/http';
 import { AssetService } from '../../../core/services/asset.service';
+import { UploadAssetResponse } from '../../../core/models/asset.model';
 
 const ACCEPTED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp']);
 
 interface UploadItem {
   file: File;
   progress: number;
-  status: 'pending' | 'uploading' | 'done' | 'error';
+  status: 'pending' | 'uploading' | 'processing' | 'done' | 'error';
+  eventSource?: EventSource;
 }
 
 @Component({
@@ -29,7 +32,7 @@ interface UploadItem {
   templateUrl: './drop-zone.component.html',
   styleUrl: './drop-zone.component.scss',
 })
-export class DropZoneComponent {
+export class DropZoneComponent implements OnDestroy {
   @Input() folderPath!: string;
   @Output() uploadComplete = new EventEmitter<void>();
 
@@ -39,6 +42,15 @@ export class DropZoneComponent {
   uploadQueue: UploadItem[] = [];
 
   constructor(private assetService: AssetService) {}
+
+  ngOnDestroy(): void {
+    // Close any still-open observe streams (files whose processing hadn't finished when the
+    // component was destroyed, e.g. the user navigated away from the gallery mid-upload) so the
+    // browser connection and the server-side KafkaProgressRegistry emitter entry aren't leaked.
+    for (const item of this.uploadQueue) {
+      item.eventSource?.close();
+    }
+  }
 
   @HostListener('dragover', ['$event'])
   onDragOver(event: DragEvent): void {
@@ -83,7 +95,10 @@ export class DropZoneComponent {
   processQueue(): void {
     const pending = this.uploadQueue.filter(item => item.status === 'pending');
     if (pending.length === 0) {
-      this.uploadComplete.emit();
+      // The multipart POST queue is drained, but files still being processed asynchronously
+      // (kafka-async-upload) may not have reached a terminal state yet; checkAllComplete()
+      // only emits uploadComplete once every item is done/error.
+      this.checkAllComplete();
       return;
     }
     const item = pending[0];
@@ -94,7 +109,16 @@ export class DropZoneComponent {
           item.progress = Math.round((event.loaded / event.total) * 100);
         } else if (event.type === HttpEventType.Response) {
           item.progress = 100;
-          item.status = 'done';
+          const body = event.body as UploadAssetResponse | null;
+          if (body?.assetId != null) {
+            item.status = 'processing';
+            this.observeProcessing(item, body.assetId);
+          } else {
+            // Defensive fallback: the backend always returns an assetId on 202, but if it
+            // somehow didn't, don't leave the row stuck forever waiting on an SSE stream we
+            // have no assetId to open.
+            item.status = 'done';
+          }
           this.processQueue();
         }
       },
@@ -103,6 +127,41 @@ export class DropZoneComponent {
         this.processQueue();
       },
     });
+  }
+
+  private observeProcessing(item: UploadItem, assetId: number): void {
+    const eventSource = this.assetService.observeUpload(assetId);
+    item.eventSource = eventSource;
+
+    eventSource.addEventListener('done', () => {
+      item.status = 'done';
+      eventSource.close();
+      this.checkAllComplete();
+    });
+
+    eventSource.addEventListener('failed', () => {
+      item.status = 'error';
+      eventSource.close();
+      this.checkAllComplete();
+    });
+
+    eventSource.onerror = () => {
+      // A dropped SSE connection is a UX-only concern (design.md risk #1): the placeholder asset
+      // row is the durable source of truth and a subsequent gallery refresh reflects the true
+      // state regardless, so don't leave the row stuck on "Processing..." forever.
+      item.status = 'done';
+      eventSource.close();
+      this.checkAllComplete();
+    };
+  }
+
+  private checkAllComplete(): void {
+    const stillActive = this.uploadQueue.some(
+      item => item.status === 'pending' || item.status === 'uploading' || item.status === 'processing'
+    );
+    if (!stillActive) {
+      this.uploadComplete.emit();
+    }
   }
 
   triggerFileInput(): void {
