@@ -50,7 +50,6 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 | 74  | `mongodb-user-preferences`        | Move `user_preferences` and `search_presets` from rigid PostgreSQL tables to a single MongoDB `user_configs` collection keyed by `userId`; adding a new UI preference (theme, gallery layout, notification toggle) requires no Flyway migration; search preset payloads grow naturally as new filter fields are added without altering existing rows; only the two persistence adapters (`UserPreferenceRepositoryImpl`, `SearchPresetRepositoryImpl`) change — use cases, domain models, and REST controllers are untouched; the existing PostgreSQL tables are dropped after a one-time data migration | ⬜ Pending | ⬜ Pending |
 | 76  | `kafka-async-upload`              | Decouple the `POST /api/assets/upload` HTTP thread from SHA-256 hashing, EXIF extraction, and thumbnail generation; the controller saves the file to disk, publishes an `AssetUploadedEvent { filePath, assetId, userId }` to the `asset.uploaded` Kafka topic, and returns HTTP 202; three independent consumer groups process hash computation, EXIF extraction, and thumbnail generation in parallel; eliminates multi-second blocking for large files (RAW 40–80 MB, video) and allows each processing stage to scale independently; requires the Kafka infrastructure introduced by `kafka-catalog-pipeline` (#75) | ⬜ Pending | ⬜ Pending |
 | 77  | `kafka-catalog-coordination`      | Prevent duplicate concurrent catalog scans when multiple app instances are deployed; `CatalogScheduler` currently uses `@Scheduled(fixedDelay)` on every JVM — two instances each trigger a full directory traversal simultaneously, doubling disk I/O and risking duplicate database writes; a single-partition `catalog.requests` Kafka topic provides natural leader election via Kafka consumer groups: only one member processes a `CatalogJobRequested` event while others skip; replace the `@Scheduled` trigger in `CatalogScheduler` with a Kafka producer that publishes to `catalog.requests` on the same interval; requires the Kafka infrastructure introduced by `kafka-catalog-pipeline` (#75) | ⬜ Pending | ⬜ Pending |
-| 79  | `redis-refresh-tokens`            | Move JWT refresh token storage from the `refresh_tokens` PostgreSQL table to Redis keys with native TTL (`SET refresh_token:{tokenId} {userId} EX 2592000`); PostgreSQL is being used as a TTL key-value store — a pattern Redis is purpose-built for; token lookup drops from a SQL `SELECT` (~5 ms) to a Redis `GET` (~0.1 ms); Redis auto-expires tokens after 30 days eliminating the background cleanup job implied by the `expires_at` column; revocation is an atomic `DEL`; a `RedisRefreshTokenRepositoryImpl` adapter implements the existing `RefreshTokenRepository` port; the `refresh_tokens` PostgreSQL table is dropped after a dual-write migration window; the `user_agent` column planned by `session-management` (#46) must instead be stored as a Redis hash field (`HSET refresh_token:{tokenId} userId {u} userAgent {ua}`) — implement #46 and #79 together to avoid PostgreSQL column churn | ⬜ Pending | ⬜ Pending |
 | 81  | `redis-thumbnail-cache`           | Add Redis as a shared L2 thumbnail cache in front of the disk-backed `ThumbnailStorageServiceAdapter`; on a cache hit `GET asset:thumbnail:{assetId}` returns the thumbnail bytes with no disk I/O; on a miss the adapter reads from disk, stores with a 24-hour TTL via `SETEX`, and returns; Redis `allkeys-lru` eviction retains popular thumbnails and evicts cold ones automatically; complements `thumbnail-http-cache` (#26) (browser-level `Cache-Control: immutable`, already implemented) and `server-side-spring-cache` (#28) (per-JVM Caffeine for home stats and EXIF lookups, pending); Redis adds the shared server-side tier that survives instance restarts and eliminates dependency on co-located disk access in load-balanced deployments where the requested thumbnail may reside on a different node's filesystem | ⬜ Pending | ⬜ Pending |
 | 82  | `redis-search-tag-cache`          | Cache the two highest-frequency gallery read paths in Redis: (1) paginated asset search results (`GET /api/assets`) keyed by `assets:{sha256(folderPath+page+sort+filters)}` with a 5-minute TTL, invalidated on `asset.cataloged` and `asset.deleted` Kafka events from #75; (2) the tag list with counts (`GET /api/tags`) keyed `tags:all` with a 5-minute TTL, invalidated on `AddTagToAssetUseCase` and `RemoveTagFromAssetUseCase`; extends `server-side-spring-cache` (#28) which targets home stats, folder tree, and EXIF lookups with per-JVM Caffeine — this improvement covers the two hottest gallery endpoints and uses Redis for distributed invalidation that works correctly across multiple instances; the `@Cacheable`/`@CacheEvict` annotations from #28 can be reused by switching the Spring cache manager from `CaffeineCacheManager` to a Lettuce-backed `RedisCacheManager` | ⬜ Pending | ⬜ Pending |
 
@@ -82,9 +81,9 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 
 `keyboard-shortcuts` extends the viewer shortcuts already present in `slideshow-mode`. Implementing 8 first avoids re-doing viewer key handling.
 
-**Improvement 46 → Improvement 79** (token field design coordination)
+**Improvement 79 → Improvement 46** (prerequisite already implemented)
 
-`session-management` (#46) adds a `user_agent` column to `refresh_tokens` in PostgreSQL. `redis-refresh-tokens` (#79) moves the entire token store to Redis, making that column moot. Implementing both together avoids adding a PostgreSQL column that is immediately discarded. If #46 ships first, the `user_agent` data must be migrated to a Redis hash field (`HSET refresh_token:{tokenId} userAgent {ua}`) during the #79 cutover.
+`redis-refresh-tokens` (#79) is now implemented — every refresh token is mirrored into Redis via a hash at `refresh_token:{token}` with `userId`, `tokenId`, and `issuedAt` fields (dual-write phase; PostgreSQL remains the read source of truth). When implementing `session-management` (#46), store `userAgent` as an additional field on that same Redis hash (`HSET refresh_token:{token} userAgent {ua}`) instead of adding a `user_agent` column to the PostgreSQL `refresh_tokens` table — this makes the V22 migration unnecessary.
 
 **Improvement 28 → Improvement 82** (extend Caffeine to Redis)
 
@@ -116,7 +115,6 @@ Within dependent clusters:
 60 (archive-support) → 61 (asset-backup)
 75 (kafka-catalog-pipeline, already done) → 76 (kafka-async-upload), 77 (kafka-catalog-coordination)
 75 (kafka-catalog-pipeline, already done) → 73 (mongodb-audit-log) [Kafka consumer]
-46 (session-management) + 79 (redis-refresh-tokens) — deliver together to avoid PostgreSQL column churn
 28 → 81 (redis-thumbnail-cache) [JVM cache first, then Redis L2]
 28 → 82 (redis-search-tag-cache) [extend Caffeine scope to Redis]
 ```
@@ -126,9 +124,6 @@ Improvement 74 (mongodb-user-preferences) has no hard dependencies and can be de
 Priority ordering for the MongoDB, Kafka, and Redis improvements:
 
 ```
-P1 — high-impact, build on P0 infrastructure:
-  79 (redis-refresh-tokens)           — implement before or with #46 (session-management) to avoid schema churn
-
 P2 — scalability and performance wins:
   76 (kafka-async-upload)             — requires #75 (already implemented); eliminates blocking upload for large files
   81 (redis-thumbnail-cache)          — implement after #28 for best layering (#26 thumbnail-http-cache already done)
@@ -166,7 +161,7 @@ Note: `pixel_width` and `pixel_height` are already present on `assets`; only the
 
 The V17 migration must run after V16 because the `search_vector` generated column combines `file_name`, `description`, and tag data; the `description` column must exist before the generated column can reference it.
 
-Note on V22 (`session-management`): if `redis-refresh-tokens` (#79) is implemented, V22 becomes moot — the `user_agent` field is instead stored as a Redis hash field for each token. Coordinate the delivery of #46 and #79 to avoid applying V22 and then immediately discarding the column.
+Note on V22 (`session-management`): `redis-refresh-tokens` (#79) has been implemented, so V22 is moot — store the `user_agent` field as a Redis hash field on the existing `refresh_token:{token}` hash instead of adding this PostgreSQL column.
 
 ### MongoDB, Kafka, and Redis infrastructure provisioning
 
@@ -176,7 +171,7 @@ Improvements #73–#82 require no Flyway migrations — they do not modify the P
 | -------------- | ------------------------ | ----- |
 | MongoDB 7+     | #73, #74 | Add `mongo` service to `docker-compose.yml` (already provisioned by `mongodb-exif-store`, #72, now implemented) |
 | Apache Kafka 3.7+ (KRaft mode) | #76, #77 | Add `kafka` service; no ZooKeeper required in KRaft mode |
-| Redis 7+       | #79, #81, #82 | Add `redis` service with `allkeys-lru` eviction and a memory cap |
+| Redis 7+       | #81, #82 | Add `redis` service with `allkeys-lru` eviction and a memory cap (already provisioned by `redis-distributed-rate-limiting`, #78, and reused by `redis-refresh-tokens`, #79, both now implemented) |
 
 Recommended additions to `docker-compose.yml`:
 
@@ -209,13 +204,11 @@ spring:
     mongodb:
       uri: mongodb://localhost:27017/photomanager   # improvements #73, #74 (MongoDB already provisioned by #72)
     redis:
-      host: ${REDIS_HOST:localhost}                 # improvements #78, #79, #81, #82
+      host: ${REDIS_HOST:localhost}                 # improvements #81, #82 (Redis already provisioned by #78, #79)
       port: ${REDIS_PORT:6379}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}  # improvements #76, #77 (Kafka already provisioned by #75)
 ```
-
-Exception: `redis-refresh-tokens` (#79) will eventually drop the `refresh_tokens` PostgreSQL table. This requires a Flyway migration (numbered V32 or later, after V31) applied after a dual-write window to ensure no active tokens are lost during the cutover.
 
 ### Implementation notes
 
@@ -438,12 +431,6 @@ The `POST /api/assets/upload` response changes from `201 Created` (with the full
 
 Kafka's consumer group protocol guarantees that a single-partition topic has exactly one active consumer per group at any time. `catalog.requests` is configured with `partitions=1`. All app instances join the consumer group `catalog-coordinator`. Kafka's group coordinator assigns the single partition to one member; the others idle. When the active member receives a `CatalogJobRequested` event, it checks `CatalogScheduler.isRunning()` before launching — this guards against duplicate triggers if the scheduling interval fires before the previous job completes. The `@Scheduled` timer in `CatalogScheduler` becomes a `kafkaTemplate.send("catalog.requests", ...)` call rather than a direct `JobLauncher.run()` invocation.
 
-**Improvement 79 — dual-write migration window**
-
-To avoid losing active sessions during the PostgreSQL → Redis cutover: (1) deploy a version that writes tokens to both PostgreSQL and Redis simultaneously; (2) run for one full refresh-token lifetime (30 days) to ensure all active tokens exist in Redis; (3) switch reads to Redis-only; (4) deploy a version that writes to Redis only and apply the Flyway migration that drops the `refresh_tokens` table (V32 or later). This gradual approach is safe because the token population is small — one active token per logged-in user — and the 30-day window comfortably covers all active sessions.
-
-Note on `session-management` (#46): #46 plans to add `user_agent VARCHAR` to `refresh_tokens`. If #79 is implemented first, store `userAgent` as a Redis hash field: `HSET refresh_token:{tokenId} userId {userId} userAgent {ua} expiresAt {epoch}`. If #46 is implemented first, the `user_agent` PostgreSQL column is later migrated to the Redis hash structure during the #79 cutover — no data is lost.
-
 **Improvement 81 — cache key stability and eviction**
 
 The cache key `asset:thumbnail:{assetId}` is stable because thumbnails are content-addressed: generated once during cataloging and never mutated (the existing `thumbnail-http-cache` improvement adds `Cache-Control: immutable` for this reason). Invalidation is therefore narrowly scoped: only `PurgeAssetsUseCaseImpl` and `ThumbnailStorageServiceAdapter.deleteThumbnail()` need to call `DEL asset:thumbnail:{assetId}`. The `allkeys-lru` Redis eviction policy retains recently accessed thumbnails automatically. To prevent thumbnail caching from starving other Redis uses (rate-limit buckets, refresh tokens, SSE channels), either use a dedicated Redis instance or a separate key namespace with `maxmemory` configured per keyspace using Redis 7's `redis.conf` keyspace limits.
@@ -458,6 +445,5 @@ The following table lists every new improvement that directly overlaps with or f
 
 | New improvement | Overlaps / conflicts with | Relationship |
 | --- | --- | --- |
-| `redis-refresh-tokens` (#79) | `session-management` (#46) | **Coordinate** — #46 adds `user_agent` to PostgreSQL; #79 moves to Redis; deliver together |
 | `redis-thumbnail-cache` (#81) | `server-side-spring-cache` (#28) | **Complementary** — #28 is per-JVM Caffeine; #81 adds distributed Redis |
 | `redis-search-tag-cache` (#82) | `server-side-spring-cache` (#28) | **Extension** — #82 covers gallery endpoints #28 omits; upgrades Caffeine to Redis |

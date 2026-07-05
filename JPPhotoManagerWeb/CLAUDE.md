@@ -108,7 +108,7 @@ infrastructure/
 - `HashCalculatorPort` / `AssetHashCalculatorAdapter` — SHA-256 hash computation
 - `JwtTokenPort` / `JwtTokenAdapter` — JWT generation and validation (delegates to `JwtUtil`)
 
-**Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by **Flyway**; migrations live in `src/main/resources/db/migration/`. Connection is configured via environment variables (see table below). `asset_exif` lives in **MongoDB** instead (via `AssetExifRepositoryImpl` / `MongoAssetExifRepository`) — all other tables remain in PostgreSQL.
+**Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by **Flyway**; migrations live in `src/main/resources/db/migration/`. Connection is configured via environment variables (see table below). `asset_exif` lives in **MongoDB** instead (via `AssetExifRepositoryImpl` / `MongoAssetExifRepository`) — all other tables remain in PostgreSQL. Refresh tokens (`refresh_tokens` table) are dual-written to PostgreSQL and Redis: `RefreshTokenRepositoryImpl` mirrors every `save()` into `RedisRefreshTokenStore` (`refresh_token:{token}` hash, `refresh_tokens:user:{userId}` set, `refresh_token:id:{tokenId}` index) alongside the existing JPA write. This is Phase 1 of the `redis-refresh-tokens` migration — PostgreSQL remains authoritative for reads (`findByToken`/`deleteByUserId`/`deleteById`); a follow-up change will cut reads over to Redis-only and drop the PostgreSQL table.
 
 **Local development prerequisite:** PostgreSQL 18+ and MongoDB must be running. Quickstart:
 ```bash
