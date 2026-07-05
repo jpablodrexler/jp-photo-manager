@@ -108,11 +108,12 @@ infrastructure/
 - `HashCalculatorPort` / `AssetHashCalculatorAdapter` — SHA-256 hash computation
 - `JwtTokenPort` / `JwtTokenAdapter` — JWT generation and validation (delegates to `JwtUtil`)
 
-**Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by **Flyway**; migrations live in `src/main/resources/db/migration/`. Connection is configured via environment variables (see table below).
+**Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by **Flyway**; migrations live in `src/main/resources/db/migration/`. Connection is configured via environment variables (see table below). The `asset_exif` collection lives in **MongoDB** instead (via `AssetExifRepositoryImpl` / `MongoAssetExifRepository`) — all other tables remain in PostgreSQL.
 
-**Local development prerequisite:** PostgreSQL 18+ must be running. Quickstart:
+**Local development prerequisite:** PostgreSQL 18+ and MongoDB must be running. Quickstart:
 ```bash
 docker run -d --name photomanager-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=photomanager -p 5432:5432 postgres:18
+docker run -d --name photomanager-mongo -p 27017:27017 mongo:8
 ```
 
 **Thumbnails:** stored as `{assetId}.bin` files under `~/.photomanager/thumbnails/` managed by `ThumbnailStorageServiceAdapter`.
@@ -132,6 +133,7 @@ docker run -d --name photomanager-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_D
 | `POSTGRES_DB` | `photomanager` | Database name |
 | `POSTGRES_USERNAME` | `postgres` | Database user |
 | `POSTGRES_PASSWORD` | `postgres` | Database password |
+| `MONGO_URI` | `mongodb://localhost:27017/photomanager` | MongoDB connection URI (`asset_exif` collection) |
 
 ### REST API
 

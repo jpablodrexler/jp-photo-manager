@@ -2,6 +2,7 @@ package com.jpablodrexler.photomanager.application.usecase.recycle;
 
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.in.recycle.PurgeAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
@@ -19,6 +20,7 @@ import java.util.List;
 public class PurgeAssetsUseCaseImpl implements PurgeAssetsUseCase {
 
     private final AssetRepository assetRepository;
+    private final AssetExifRepository assetExifRepository;
     private final StoragePort storagePort;
     private final ThumbnailPort thumbnailPort;
 
@@ -36,6 +38,7 @@ public class PurgeAssetsUseCaseImpl implements PurgeAssetsUseCase {
                 log.warn("Could not delete file for asset {}: {}", asset.getAssetId(), e.getMessage());
             }
             thumbnailPort.deleteThumbnail(asset.getThumbnailBlobName());
+            assetExifRepository.deleteByAssetId(asset.getAssetId());
             assetRepository.deleteById(asset.getAssetId());
         }
     }

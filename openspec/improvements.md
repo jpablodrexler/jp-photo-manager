@@ -46,7 +46,6 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 | 69  | `iptc-xmp-metadata-editing` | Read and write IPTC/XMP fields (caption, copyright notice, creator, keywords, city, country) directly in the viewer panel alongside the existing EXIF display; Apache Commons Imaging (already a dependency) supports IPTC segment read and write in JPEG files via `JpegIptcRewriter`; a new `PATCH /api/assets/{id}/iptc` endpoint writes the updated IPTC segment back to the file on disk and refreshes the `assets` row; caption and copyright are stored in two new VARCHAR columns on `assets` (Flyway migration) so they are queryable without re-reading the file; keywords are mapped to the existing `asset_tags` table, making them immediately available in tag-based filters; the viewer panel shows caption and copyright as editable `MatFormField` inputs below the EXIF panel with auto-save on blur | ✅ Created | ⬜ Pending |
 | 70  | `dominant-color-palette`    | During cataloging, extract the top 5 dominant colors from each photo's thumbnail using k-means clustering (k=5, 10 iterations) over the 200×150 px thumbnail pixels; no second file read from the original is required; store the five RGB centroids as a `color_palette JSONB` column on `assets` (Flyway migration); each centroid is snapped to the nearest of 12 color families (red, orange, yellow, green, teal, blue, purple, pink, brown, grey, black, white) using Euclidean distance in HSL space; frontend additions: a color swatch row in the search/filter toolbar (one or more families can be selected, adding a `colorFamily[]` query parameter to `GET /api/assets`), an optional 5-segment color stripe at the bottom of each `ThumbnailComponent` card (toggleable, off by default), and a "Color distribution" donut chart on the `/analytics` dashboard reusing the existing `ngx-charts` dependency; `GET /api/assets/color-families` returns the 12 families with asset counts for the current folder to populate the swatch picker; no external Maven dependency — k-means runs over `BufferedImage` pixel access using the standard library | ✅ Created | ⬜ Pending |
 | 71  | `webdav-server`             | Expose the catalog over WebDAV (`PROPFIND`, `GET`, `PUT`, `DELETE`, `MKCOL`) at `/webdav/` so users can mount the catalog as a network drive on Windows (Map Network Drive), macOS (Finder → Connect to Server), and Linux (`davfs2`); the virtual folder tree mirrors the `assets.folder_path` hierarchy; `GET` on an asset path streams the original file via the existing `StoragePort`; `PUT` to any folder path triggers the same catalog pipeline as drag-and-drop upload (#3); `DELETE` routes through the soft-delete path from `soft-delete-recycle-bin` (#9); implemented with `milton-server-ce` (pure Java WebDAV server, no servlet dependency conflicts) or a custom Spring MVC `WebdavController` handling raw `PROPFIND` XML via JAXB; authentication uses HTTP Basic over the existing `UserDetailsService` — JWT cookies are not compatible with native OS WebDAV clients; no schema change | ✅ Created | ⬜ Pending |
-| 72  | `mongodb-exif-store`              | Replace the `asset_exif` PostgreSQL table (including the JSONB `raw_exif` column planned in #63) with a MongoDB `asset_exif` collection; the native document model stores all 80–300 EXIF fields per image without column sprawl or JSONB workarounds; MongoDB `$near`/`$geoWithin` operators turn the already-stored GPS coordinates into geospatial "photos within radius" queries that are impossible to express efficiently in SQL; only `AssetExifRepositoryImpl` changes — the `AssetExifRepository` port interface and `AssetExif` domain model are untouched; **mutually exclusive with `raw-exif-jsonb` (#63)**: choose this improvement if geospatial queries or deep EXIF document nesting are priorities; choose #63 if keeping a single PostgreSQL dependency is preferred | ⬜ Pending | ⬜ Pending |
 | 73  | `mongodb-audit-log`               | Append-only MongoDB collection `asset_audit_log` recording every user action — view, download, tag, rate, delete, sync-run, convert-run, catalog-run — as a flexible document `{ userId, action, entityType, entityId, timestamp, metadata: { … } }`; each event type carries its own `metadata` shape (e.g. tag events include `tagName`; delete events include `folderId` and `permanent` flag) without schema migrations; time-range queries and per-user activity feeds are native aggregation pipeline operations; a new `AuditLogRepository` port interface (domain) with a `MongoAuditLogRepositoryImpl` adapter (infrastructure) keeps MongoDB out of the use-case layer; pairs with `kafka-catalog-pipeline` (#75) as the natural durable consumer of `asset.cataloged` and `asset.deleted` Kafka events | ⬜ Pending | ⬜ Pending |
 | 74  | `mongodb-user-preferences`        | Move `user_preferences` and `search_presets` from rigid PostgreSQL tables to a single MongoDB `user_configs` collection keyed by `userId`; adding a new UI preference (theme, gallery layout, notification toggle) requires no Flyway migration; search preset payloads grow naturally as new filter fields are added without altering existing rows; only the two persistence adapters (`UserPreferenceRepositoryImpl`, `SearchPresetRepositoryImpl`) change — use cases, domain models, and REST controllers are untouched; the existing PostgreSQL tables are dropped after a one-time data migration | ⬜ Pending | ⬜ Pending |
 | 76  | `kafka-async-upload`              | Decouple the `POST /api/assets/upload` HTTP thread from SHA-256 hashing, EXIF extraction, and thumbnail generation; the controller saves the file to disk, publishes an `AssetUploadedEvent { filePath, assetId, userId }` to the `asset.uploaded` Kafka topic, and returns HTTP 202; three independent consumer groups process hash computation, EXIF extraction, and thumbnail generation in parallel; eliminates multi-second blocking for large files (RAW 40–80 MB, video) and allows each processing stage to scale independently; requires the Kafka infrastructure introduced by `kafka-catalog-pipeline` (#75) | ⬜ Pending | ⬜ Pending |
@@ -122,14 +121,13 @@ Within dependent clusters:
 28 → 82 (redis-search-tag-cache) [extend Caffeine scope to Redis]
 ```
 
-Improvement 74 (mongodb-user-preferences) has no hard dependencies and can be delivered in any order. Improvement 72 (mongodb-exif-store) has no hard dependency; `raw-exif-jsonb` (#63) is now implemented, so #72 becomes a data-migration task (move JSONB data from PostgreSQL to a MongoDB collection) rather than a greenfield design choice.
+Improvement 74 (mongodb-user-preferences) has no hard dependencies and can be delivered in any order.
 
 Priority ordering for the MongoDB, Kafka, and Redis improvements:
 
 ```
 P1 — high-impact, build on P0 infrastructure:
   79 (redis-refresh-tokens)           — implement before or with #46 (session-management) to avoid schema churn
-  72                                  — EXIF upgrade from PostgreSQL JSONB to MongoDB; #63 (raw-exif-jsonb) is already implemented
 
 P2 — scalability and performance wins:
   76 (kafka-async-upload)             — requires #75 (already implemented); eliminates blocking upload for large files
@@ -138,7 +136,7 @@ P2 — scalability and performance wins:
   82 (redis-search-tag-cache)         — implement after #28 (Caffeine) for a smooth upgrade path
 
 P3 — operational convenience:
-  74 (mongodb-user-preferences)       — standalone; most useful once MongoDB is already provisioned for #72 or #73
+  74 (mongodb-user-preferences)       — standalone; most useful now that MongoDB is already provisioned by #72 (already implemented) or #73
   77 (kafka-catalog-coordination)     — requires #75 (already implemented); lower urgency when running a single instance
 ```
 
@@ -172,11 +170,11 @@ Note on V22 (`session-management`): if `redis-refresh-tokens` (#79) is implement
 
 ### MongoDB, Kafka, and Redis infrastructure provisioning
 
-Improvements #72–#82 require no Flyway migrations — they do not modify the PostgreSQL schema. However, they do require provisioning new infrastructure components alongside the existing PostgreSQL container:
+Improvements #73–#82 require no Flyway migrations — they do not modify the PostgreSQL schema. However, they do require provisioning new infrastructure components alongside the existing PostgreSQL container:
 
 | Infrastructure | Required by improvements | Notes |
 | -------------- | ------------------------ | ----- |
-| MongoDB 7+     | #72, #73, #74 | Add `mongo` service to `docker-compose.yml` |
+| MongoDB 7+     | #73, #74 | Add `mongo` service to `docker-compose.yml` (already provisioned by `mongodb-exif-store`, #72, now implemented) |
 | Apache Kafka 3.7+ (KRaft mode) | #76, #77 | Add `kafka` service; no ZooKeeper required in KRaft mode |
 | Redis 7+       | #79, #81, #82 | Add `redis` service with `allkeys-lru` eviction and a memory cap |
 
@@ -209,7 +207,7 @@ Corresponding `application.yml` additions:
 spring:
   data:
     mongodb:
-      uri: mongodb://localhost:27017/photomanager   # improvements #72, #73, #74
+      uri: mongodb://localhost:27017/photomanager   # improvements #73, #74 (MongoDB already provisioned by #72)
     redis:
       host: ${REDIS_HOST:localhost}                 # improvements #78, #79, #81, #82
       port: ${REDIS_PORT:6379}
@@ -413,10 +411,6 @@ The WebDAV virtual filesystem is a read/write projection over the existing `asse
 **Improvement 71 — authentication note**
 
 JWT cookies cannot be forwarded by OS-level WebDAV mounts. The WebDAV endpoint at `/webdav/**` is exempted from the JWT cookie filter in `SecurityConfig` and instead uses `HttpBasicAuthenticationFilter` backed by the existing `UserDetailsService`. Credentials are sent over HTTPS only; `application.yml` must enforce `server.ssl.enabled=true` or a reverse proxy must terminate TLS before the WebDAV mount is used in production.
-
-**Improvement 72 — technology choice rationale vs #63**
-
-`mongodb-exif-store` (#72) and `raw-exif-jsonb` (#63) are mutually exclusive solutions to the same problem. #63 stores raw EXIF as a `JSONB` column on the existing `asset_exif` PostgreSQL table — simpler, keeps the single-database stack, immediately queryable with PostgreSQL operators (`->`, `@>`, GIN indexing). #72 moves EXIF to a MongoDB collection — adds operational complexity (a second database) but unlocks the native document model, `$near`/`$geoWithin` geospatial operators on the GPS coordinates already stored in `AssetExif`, and rich aggregation pipeline queries across 80–300 nested EXIF fields per image. The hexagonal architecture makes the swap transparent to use cases and controllers: only `AssetExifRepositoryImpl` (infrastructure) changes, implementing the same `AssetExifRepository` domain port. Decision rule: choose #63 if keeping a single PostgreSQL dependency is preferred and geospatial querying is not a current requirement; choose #72 if `gps-map-view` (#13) and geospatial search are key roadmap items. If #63 is implemented first, #72 becomes a data-migration task (copy JSONB data to MongoDB documents, drop the PostgreSQL table).
 
 **Improvement 73 — MongoDB document design**
 

@@ -46,6 +46,14 @@ services:
       - "6379:6379"
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
 
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+
   backend:
     build:
       context: ./backend
@@ -56,6 +64,8 @@ services:
       kafka:
         condition: service_started
       redis:
+        condition: service_started
+      mongo:
         condition: service_started
     environment:
       POSTGRES_HOST: db
@@ -69,6 +79,7 @@ services:
       KAFKA_BOOTSTRAP: kafka:9092
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      MONGO_URI: mongodb://mongo:27017/photomanager
     ports:
       - "8080:8080"
     volumes:
@@ -119,3 +130,4 @@ volumes:
   pgdata:
   thumbnails:
   grafana_data:
+  mongodata:

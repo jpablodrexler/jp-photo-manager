@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager.application.usecase.recycle;
 import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
+import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
@@ -49,6 +50,7 @@ class RecycleBinUseCasesTest {
     class PurgeAssetsUseCaseImplTest {
 
         @Mock AssetRepository assetRepository;
+        @Mock AssetExifRepository assetExifRepository;
         @Mock StoragePort storagePort;
         @Mock ThumbnailPort thumbnailPort;
         @InjectMocks PurgeAssetsUseCaseImpl sut;
@@ -62,6 +64,7 @@ class RecycleBinUseCasesTest {
 
             verify(storagePort).deleteFile("/photos/photo1.jpg");
             verify(thumbnailPort).deleteThumbnail("1.bin");
+            verify(assetExifRepository).deleteByAssetId(1L);
             verify(assetRepository).deleteById(1L);
         }
 
@@ -72,6 +75,7 @@ class RecycleBinUseCasesTest {
 
             sut.execute(List.of());
 
+            verify(assetExifRepository).deleteByAssetId(2L);
             verify(assetRepository).deleteById(2L);
         }
 
@@ -84,6 +88,7 @@ class RecycleBinUseCasesTest {
             sut.execute(List.of(3L));
 
             verify(thumbnailPort).deleteThumbnail("3.bin");
+            verify(assetExifRepository).deleteByAssetId(3L);
             verify(assetRepository).deleteById(3L);
         }
 

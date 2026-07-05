@@ -1,6 +1,8 @@
 package com.jpablodrexler.photomanager;
 
 import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
 import org.junit.jupiter.api.BeforeAll;
@@ -10,8 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -41,6 +45,10 @@ class ExifMetadataIntegrationTest {
     @ServiceConnection
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18");
 
+    @Container
+    @ServiceConnection
+    static MongoDBContainer mongo = new MongoDBContainer("mongo:8");
+
     @TempDir
     static Path tempDir;
 
@@ -54,6 +62,12 @@ class ExifMetadataIntegrationTest {
 
     @Autowired
     AssetRepository assetRepository;
+
+    @Autowired
+    AssetExifRepository assetExifRepository;
+
+    @Autowired
+    DeleteAssetsUseCase deleteAssetsUseCase;
 
     @BeforeAll
     static void copyFixture() throws Exception {
@@ -88,5 +102,48 @@ class ExifMetadataIntegrationTest {
     void getExifEndpoint_unknownAsset_returns404() throws Exception {
         mockMvc.perform(get("/api/assets/999999/exif"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void purgeAsset_removesMongoExifDocument() throws Exception {
+        Asset asset = catalogFreshAsset("purge", "purge-target.jpg");
+        assertThat(assetExifRepository.findByAssetId(asset.getAssetId())).isPresent();
+
+        deleteAssetsUseCase.execute(new Long[]{asset.getAssetId()}, true);
+
+        assertThat(assetExifRepository.findByAssetId(asset.getAssetId())).isEmpty();
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void softDeleteAsset_keepsMongoExifDocument() throws Exception {
+        Asset asset = catalogFreshAsset("soft-delete", "soft-delete-target.jpg");
+        assertThat(assetExifRepository.findByAssetId(asset.getAssetId())).isPresent();
+
+        deleteAssetsUseCase.execute(new Long[]{asset.getAssetId()}, false);
+
+        assertThat(assetExifRepository.findByAssetId(asset.getAssetId())).isPresent();
+    }
+
+    /**
+     * Catalogs a fresh copy of the EXIF fixture in its own isolated subfolder (named after
+     * {@code testId}), avoiding interference from other tests cataloging/deleting assets in this
+     * shared Spring context.
+     */
+    private Asset catalogFreshAsset(String testId, String fileName) throws Exception {
+        Path folder = tempDir.resolve("photos-" + testId);
+        Files.createDirectories(folder);
+        try (InputStream in = ExifMetadataIntegrationTest.class.getClassLoader()
+                .getResourceAsStream("fixtures/test-with-exif.jpg")) {
+            Files.copy(in, folder.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+        }
+
+        catalogFolderService.catalogFolder(folder.toString(), null, () -> {}, new AtomicInteger(0), 1);
+
+        return assetRepository.findAll().stream()
+                .filter(a -> fileName.equals(a.getFileName()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Asset not found after cataloging: " + fileName));
     }
 }

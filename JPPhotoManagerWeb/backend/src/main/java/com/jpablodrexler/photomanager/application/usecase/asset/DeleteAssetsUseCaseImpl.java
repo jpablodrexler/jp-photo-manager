@@ -2,6 +2,7 @@ package com.jpablodrexler.photomanager.application.usecase.asset;
 
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
@@ -22,6 +23,7 @@ import java.util.List;
 public class DeleteAssetsUseCaseImpl implements DeleteAssetsUseCase {
 
     private final AssetRepository assetRepository;
+    private final AssetExifRepository assetExifRepository;
     private final StoragePort storagePort;
     private final ThumbnailPort thumbnailPort;
 
@@ -40,6 +42,7 @@ public class DeleteAssetsUseCaseImpl implements DeleteAssetsUseCase {
                     continue;
                 }
                 thumbnailPort.deleteThumbnail(asset.getThumbnailBlobName());
+                assetExifRepository.deleteByAssetId(asset.getAssetId());
                 assetRepository.deleteById(asset.getAssetId());
             } else {
                 asset.setDeletedAt(LocalDateTime.now());

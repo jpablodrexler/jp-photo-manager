@@ -25,6 +25,8 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+    mongodb:
+      uri: ${MONGO_URI:mongodb://localhost:27017/photomanager}
 
   config:
     import: optional:classpath:application-local.yml

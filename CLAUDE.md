@@ -215,9 +215,11 @@ infrastructure/
 - `KafkaProgressListener` — `@KafkaListener` on `job.catalog.progress`, `job.sync.progress`, and `job.convert.progress`; routes messages to the registered emitter and calls `registry.complete(runId)` on `done=true`.
 - `StorageService` — file I/O, thumbnail generation, EXIF rotation (Apache Commons Imaging), SHA-256
 
-**Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by Flyway; migrations in `src/main/resources/db/migration/`. Connect using environment variables `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USERNAME`, `POSTGRES_PASSWORD` (defaults: `localhost`, `5432`, `photomanager`, `postgres`, `postgres`).
+**Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by Flyway; migrations in `src/main/resources/db/migration/`. Connect using environment variables `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USERNAME`, `POSTGRES_PASSWORD` (defaults: `localhost`, `5432`, `photomanager`, `postgres`, `postgres`). The `asset_exif` table's data now lives in MongoDB instead (see below) — all other tables remain in PostgreSQL.
 
-**Local development prerequisites:** PostgreSQL 15+ and Kafka must be running locally. Quickstart:
+**`AssetExif` persistence (MongoDB):** the `asset_exif` collection is stored in MongoDB, not PostgreSQL — `AssetExifRepositoryImpl` is a Spring Data MongoDB adapter (`MongoAssetExifRepository`) behind the unchanged `AssetExifRepository` domain port. A unique index on `assetId` and a `2dsphere` index on the derived `location` GeoJSON field (unlocking future `$near`/`$geoWithin` proximity queries) are ensured at startup by `MongoIndexInitializer`. Connect using `MONGO_URI` (default `mongodb://localhost:27017/photomanager`). Deleting an asset explicitly calls `assetExifRepository.deleteByAssetId(assetId)` from the permanent-delete/purge use cases (MongoDB has no `ON DELETE CASCADE`); soft-deleting an asset does not, so EXIF data survives a soft-delete/restore cycle.
+
+**Local development prerequisites:** PostgreSQL 15+, Kafka, and MongoDB must be running locally. Quickstart:
 ```bash
 docker run -d --name photomanager-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=photomanager -p 5432:5432 postgres:15
 docker run -d --name photomanager-kafka -p 9092:9092 -p 9094:9094 \
@@ -230,6 +232,7 @@ docker run -d --name photomanager-kafka -p 9092:9092 -p 9094:9094 \
   -e KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT \
   -e KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
   apache/kafka:3.9.0
+docker run -d --name photomanager-mongo -p 27017:27017 mongo:8
 ```
 
 **Real-time progress:** long-running operations (catalog, sync, convert) publish progress messages to Kafka topics. `KafkaProgressListener` consumes those messages and forwards them to the appropriate `SseEmitter`, streaming events to the frontend without any direct coupling between the use case and the HTTP layer.
@@ -258,6 +261,7 @@ docker run -d --name photomanager-kafka -p 9092:9092 -p 9094:9094 \
 | `POSTGRES_USERNAME` | `postgres` | Database user |
 | `POSTGRES_PASSWORD` | `postgres` | Database password |
 | `KAFKA_BOOTSTRAP` | `localhost:9092` | Kafka bootstrap server address |
+| `MONGO_URI` | `mongodb://localhost:27017/photomanager` | MongoDB connection URI (`asset_exif` collection) |
 
 ### Frontend
 
