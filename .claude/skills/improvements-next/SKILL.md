@@ -1,13 +1,13 @@
 ---
 name: improvements-next
-description: Recommends which improvement to implement next based on openspec/improvements.md priorities and dependencies, then invokes /opsx:propose or /opsx:apply after user confirmation. TRIGGER when the user asks which improvement to implement next, what to work on next, or which improvement to suggest — including phrases like "recommend the next improvement", "suggest the next improvement", "what improvement should we do next", or any similar request for a next-step recommendation from the improvements list.
+description: Recommends which improvement to implement next based on openspec/improvements.md priorities and dependencies, then asks for user confirmation. Returns the confirmed change name to the caller — does NOT invoke opsx:propose or opsx:apply. TRIGGER when the user asks which improvement to implement next, what to work on next, or which improvement to suggest — including phrases like "recommend the next improvement", "suggest the next improvement", "what improvement should we do next", or any similar request for a next-step recommendation from the improvements list.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "1.1"
 ---
 
-Recommend the next improvement to implement, then proceed with either `/opsx:propose` or `/opsx:apply` after user confirmation.
+Recommend the next improvement to implement and return the confirmed change name to the caller.
 
 **Input**: Optional improvement number or name to skip the recommendation step and jump straight to confirmation.
 
@@ -78,9 +78,7 @@ Display:
 - <dependency status, e.g. "all prerequisites implemented">
 - <any relevant note from implementation notes>
 
-**Next action:**
-- Artifacts: <✅ Created / ⬜ Not yet created>
-- Will invoke: `/opsx:apply <name>` (artifacts exist) OR `/opsx:propose <name>` (artifacts not yet created)
+**Artifacts:** <✅ Created / ⬜ Not yet created>
 ```
 
 Also show the next 2–3 runners-up with a one-line reason each so the user can override.
@@ -91,31 +89,29 @@ Use the **AskUserQuestion tool** with a single question:
 
 - **Question**: "Proceed with implementing `<name>`?"
 - **Options**:
-  1. "Yes, proceed" — invoke the skill for the recommended improvement
+  1. "Yes, proceed" — confirm the recommended improvement
   2. "Choose a different improvement" — show the full ranked list and let the user pick
   3. "Cancel" — stop here
 
 If the user selects option 2, use **AskUserQuestion** again to present the full ranked unblocked list (show number, name, and one-line brief for each) and let the user select one.
 
-### 7. Invoke the appropriate skill
+If the user selects "Cancel", stop and return without a change name.
 
-Based on the confirmed improvement:
+### 7. Return the confirmed change name
 
-- **If `artifacts_ready` is `true`** (Artifacts column = `✅ Created`):
-  Invoke the **`opsx:apply`** skill with the improvement name as the argument.
+After the user confirms, output the confirmed improvement's change name as the final line of the response in this exact format so the caller can extract it:
 
-- **If `artifacts_ready` is `false`** (Artifacts column = `⬜ Pending`):
-  Invoke the **`opsx:propose`** skill with the improvement name as the argument.
-
-Never invoke either skill without explicit user confirmation (step 6).
+```
+CHANGE_NAME: <change-name>
+```
 
 ---
 
 ## Guardrails
 
 - Always read the full `improvements.md` before scoring — never guess which improvement is next from memory.
-- Do not invoke `/opsx:apply` or `/opsx:propose` without user confirmation.
+- Do not invoke `opsx:apply`, `opsx:propose`, or any other skill. This skill's sole responsibility is recommendation, confirmation, and returning the change name. The caller decides what to do next.
 - If the user provided a specific improvement number or name as input, skip steps 2–5 and go directly to step 6 with that improvement pre-selected (but still confirm).
 - An improvement already showing `✅ Implemented` in the Implementation column must never be recommended.
-- If ALL unblocked improvements have `artifacts_ready = false`, the recommendation will invoke `/opsx:propose` — this is expected and correct.
+- If ALL unblocked improvements have `artifacts_ready = false`, the recommendation will still be returned — the caller handles artifact creation.
 - If ALL pending improvements are blocked, inform the user which blocking prerequisites need to be implemented first, and surface those prerequisites as the recommendation instead.
