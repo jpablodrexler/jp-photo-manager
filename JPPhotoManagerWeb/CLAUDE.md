@@ -108,7 +108,7 @@ infrastructure/
 - `HashCalculatorPort` / `AssetHashCalculatorAdapter` — SHA-256 hash computation
 - `JwtTokenPort` / `JwtTokenAdapter` — JWT generation and validation (delegates to `JwtUtil`)
 
-**Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by **Flyway**; migrations live in `src/main/resources/db/migration/`. Connection is configured via environment variables (see table below). The `asset_exif` collection lives in **MongoDB** instead (via `AssetExifRepositoryImpl` / `MongoAssetExifRepository`) — all other tables remain in PostgreSQL.
+**Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by **Flyway**; migrations live in `src/main/resources/db/migration/`. Connection is configured via environment variables (see table below). `asset_exif` lives in **MongoDB** instead (via `AssetExifRepositoryImpl` / `MongoAssetExifRepository`) — all other tables remain in PostgreSQL.
 
 **Local development prerequisite:** PostgreSQL 18+ and MongoDB must be running. Quickstart:
 ```bash

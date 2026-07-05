@@ -140,48 +140,6 @@ class SimpleEntityMappersTest {
     }
 
     @Nested
-    class AssetExifEntityMapperImplTest {
-
-        private final AssetExifEntityMapper sut = new AssetExifEntityMapperImpl();
-
-        @Test
-        void toDomain_mapsFields() {
-            AssetExifEntity entity = new AssetExifEntity();
-            entity.setAssetId(5L);
-            entity.setCameraMake("Canon");
-            entity.setCameraModel("EOS R5");
-            entity.setLensModel("RF 85mm");
-            entity.setExposureTime("1/500");
-            entity.setIsoSpeed(400);
-            entity.setFocalLength(85.0);
-            entity.setDateTaken(LocalDateTime.of(2024, 6, 15, 10, 30));
-            entity.setWidthPixels(4500);
-            entity.setHeightPixels(3000);
-            entity.setGpsLatitude(-34.6);
-            entity.setGpsLongitude(-58.4);
-
-            AssetExif result = sut.toDomain(entity);
-
-            assertThat(result.getAssetId()).isEqualTo(5L);
-            assertThat(result.getCameraMake()).isEqualTo("Canon");
-            assertThat(result.getCameraModel()).isEqualTo("EOS R5");
-            assertThat(result.getLensModel()).isEqualTo("RF 85mm");
-            assertThat(result.getExposureTime()).isEqualTo("1/500");
-            assertThat(result.getIsoSpeed()).isEqualTo(400);
-            assertThat(result.getFocalLength()).isEqualTo(85.0);
-            assertThat(result.getWidthPixels()).isEqualTo(4500);
-            assertThat(result.getHeightPixels()).isEqualTo(3000);
-            assertThat(result.getGpsLatitude()).isEqualTo(-34.6);
-            assertThat(result.getGpsLongitude()).isEqualTo(-58.4);
-        }
-
-        @Test
-        void toDomain_nullEntity_returnsNull() {
-            assertThat(sut.toDomain(null)).isNull();
-        }
-    }
-
-    @Nested
     class UserEntityMapperImplTest {
 
         private final UserEntityMapper sut = new UserEntityMapperImpl();

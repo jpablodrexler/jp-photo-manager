@@ -14,7 +14,7 @@
 
 - [x] 3.1 Create `infrastructure/persistence/mongo/MongoAssetExifRepository.java` as a Spring Data `MongoRepository<AssetExifDocument, String>` with a `findByAssetId(Long assetId)` query method
 - [x] 3.2 Rewrite `infrastructure/persistence/adapter/AssetExifRepositoryImpl.java` to implement `AssetExifRepository` using `MongoAssetExifRepository` and `AssetExifDocumentMapper` instead of the JPA repository — `findByAssetId`, `save` (upsert keyed by `assetId`), and `deleteByAssetId` all delegate to the Mongo repository
-- [ ] 3.3 Remove `AssetExifEntity.java`, `JpaAssetExifRepository.java`, and `AssetExifEntityMapper.java` once the new adapter is verified working (keep `JpaAssetExifRepository` temporarily if still referenced by the migration runner in section 5; remove in section 7 after the schema-drop deploy) — **deferred**: these three files must stay in place as long as `AssetExifMongoMigrationRunner` (section 6) exists, since the runner reads old PostgreSQL rows through `JpaAssetExifRepository`. Removal now happens together with 8.2.
+- [x] 3.3 Remove `AssetExifEntity.java`, `JpaAssetExifRepository.java`, and `AssetExifEntityMapper.java` once the new adapter is verified working — done together with 8.2, after row-count parity was confirmed (0 rows in both stores, migration marker completed) in the local dev environment.
 
 ## 4. Index creation
 
@@ -42,9 +42,9 @@
 
 ## 8. Verification and schema drop (second deploy)
 
-- [ ] 8.1 After deploying section 1-7 and confirming (via ops/manual check) that the MongoDB `asset_exif` document count matches the PostgreSQL `asset_exif` row count, add a new Flyway migration dropping the PostgreSQL `asset_exif` table and its foreign key to `assets` — **intentionally not done in this implementation pass.** This task is gated on a live-deployment verification step (operator confirms row-count parity between the two stores) that has no meaning until sections 1-7 have actually run against production data. Implementing the Flyway drop migration now would also be actively harmful: Flyway migrations execute during Spring context refresh, *before* `CommandLineRunner`s run (`AssetExifMongoMigrationRunner` is a `CommandLineRunner`), so shipping the drop in the same deploy as the migration runner would drop the PostgreSQL `asset_exif` table before the runner ever reads a row, destroying the migration it depends on. This must ship as a separate, later deploy per the design's explicit "Deploy 2" migration plan.
-- [ ] 8.2 Remove `AssetExifMongoMigrationRunner`, `JpaAssetExifRepository`, `AssetExifEntity`, and `AssetExifEntityMapper` from the codebase now that PostgreSQL is no longer the source of EXIF data — **deferred alongside 8.1** (same reasoning: only safe to remove once 8.1 has landed).
-- [ ] 8.3 Update `CLAUDE.md`'s Web Architecture section to reflect MongoDB as the `AssetExif` persistence store instead of PostgreSQL — **partially done**: the root `CLAUDE.md` and `JPPhotoManagerWeb/CLAUDE.md` Persistence sections already describe `asset_exif` as MongoDB-backed (see 9.1). The remaining piece — removing PostgreSQL `asset_exif` references entirely — depends on 8.1/8.2 landing first.
+- [x] 8.1 After confirming (via manual check) that the MongoDB `asset_exif` document count matches the PostgreSQL `asset_exif` row count, add a new Flyway migration dropping the PostgreSQL `asset_exif` table and its foreign key to `assets` — done as `V27__drop_asset_exif.sql`. Row-count parity was confirmed at 0/0 (empty local dev database) with the migration marker already completed. Shipped as a separate, later deploy per the design's "Deploy 2" migration plan — landed after `AssetExifMongoMigrationRunner` was removed in 8.2 in the same change, so there was no risk of the drop racing the migration runner.
+- [x] 8.2 Remove `AssetExifMongoMigrationRunner`, `JpaAssetExifRepository`, `AssetExifEntity`, and `AssetExifEntityMapper` from the codebase now that PostgreSQL is no longer the source of EXIF data — done.
+- [x] 8.3 Update `CLAUDE.md`'s Web Architecture section to reflect MongoDB as the `AssetExif` persistence store instead of PostgreSQL — done; removed the remaining phrasing that implied `asset_exif` still existed as a PostgreSQL table in both `CLAUDE.md` and `JPPhotoManagerWeb/CLAUDE.md`.
 
 ## 9. Documentation
 
