@@ -5,6 +5,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ public class GetAssetExifUseCaseImpl implements GetAssetExifUseCase {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "asset-exif", key = "#assetId")
     public AssetExif execute(Long assetId) {
         assetRepository.findById(assetId)
                 .orElseThrow(() -> new NoSuchElementException("Asset not found: " + assetId));

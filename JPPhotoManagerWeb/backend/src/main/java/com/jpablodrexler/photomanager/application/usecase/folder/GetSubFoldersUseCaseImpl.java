@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.in.folder.GetSubFoldersUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ public class GetSubFoldersUseCaseImpl implements GetSubFoldersUseCase {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "sub-folders", key = "#parentPath ?: ''")
     public List<Folder> execute(String parentPath) {
         if (parentPath == null || parentPath.isBlank()) {
             return folderRepository.findAll();

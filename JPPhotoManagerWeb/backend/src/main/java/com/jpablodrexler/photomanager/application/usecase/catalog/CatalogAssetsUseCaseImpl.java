@@ -12,6 +12,7 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +42,7 @@ public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
+    @CacheEvict(value = {"home-stats", "sub-folders", "asset-exif"}, allEntries = true)
     public CompletableFuture<Void> execute(long runId) {
         try {
             CompletableFuture<Void> completion = new CompletableFuture<>();

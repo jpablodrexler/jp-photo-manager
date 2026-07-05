@@ -9,6 +9,7 @@ import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.explore.JobExplorer;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ public class GetHomeStatsUseCaseImpl implements GetHomeStatsUseCase {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable("home-stats")
     public HomeStats execute() {
         long folderCount = folderRepository.count();
         long assetCount = assetRepository.count();

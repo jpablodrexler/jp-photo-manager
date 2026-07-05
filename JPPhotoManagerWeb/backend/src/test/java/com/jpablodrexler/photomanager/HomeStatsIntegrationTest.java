@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.MongoDBContainer;
@@ -48,9 +49,17 @@ class HomeStatsIntegrationTest {
     @Autowired
     FolderRepository folderRepository;
 
+    @Autowired
+    CacheManager cacheManager;
+
     @BeforeEach
     void setUp() {
         assetRepository.findAll().forEach(a -> assetRepository.deleteById(a.getAssetId()));
+        // GetHomeStatsUseCase now caches its result under "home-stats" (maximumSize=1), and the
+        // Spring test context is reused across test methods in this class, so a value cached by
+        // an earlier test would otherwise leak into later tests since this setup mutates data
+        // directly through the repository rather than through a cache-evicting use case.
+        cacheManager.getCache("home-stats").clear();
     }
 
     @Test

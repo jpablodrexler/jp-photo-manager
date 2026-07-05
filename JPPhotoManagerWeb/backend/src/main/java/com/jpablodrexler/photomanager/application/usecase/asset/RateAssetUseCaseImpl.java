@@ -8,6 +8,7 @@ import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ public class RateAssetUseCaseImpl implements RateAssetUseCase {
 
     @Override
     @Transactional
+    @CacheEvict("home-stats")
     public void execute(Long assetId, int rating, UUID userId) {
         var asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new NoSuchElementException("Asset not found: " + assetId));

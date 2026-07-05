@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jpablodrexler.photomanager.infrastructure.web.filter.RateLimitFilter;
 import io.github.bucket4j.redis.lettuce.cas.LettuceBasedProxyManager;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
@@ -12,6 +13,9 @@ import io.lettuce.core.codec.ByteArrayCodec;
 import io.lettuce.core.codec.RedisCodec;
 import io.lettuce.core.codec.StringCodec;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -23,9 +27,11 @@ import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 @EnableScheduling
+@EnableCaching
 public class AppConfig {
 
     @Value("${photomanager.cors-allowed-origins}")
@@ -86,6 +92,27 @@ public class AppConfig {
         scheduler.setThreadNamePrefix("catalog-scheduler-");
         scheduler.initialize();
         return scheduler;
+    }
+
+    @Bean
+    public CacheManager cacheManager() {
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+        cacheManager.registerCustomCache("home-stats",
+                Caffeine.newBuilder()
+                        .maximumSize(1)
+                        .expireAfterWrite(10, TimeUnit.MINUTES)
+                        .build());
+        cacheManager.registerCustomCache("sub-folders",
+                Caffeine.newBuilder()
+                        .maximumSize(500)
+                        .expireAfterWrite(5, TimeUnit.MINUTES)
+                        .build());
+        cacheManager.registerCustomCache("asset-exif",
+                Caffeine.newBuilder()
+                        .maximumSize(2000)
+                        .expireAfterWrite(30, TimeUnit.MINUTES)
+                        .build());
+        return cacheManager;
     }
 
     @Bean

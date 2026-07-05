@@ -15,7 +15,6 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 | 24  | `wallpaper-suggestion`      | Add `aspect_ratio` float column to `assets` (populated during cataloging from the existing `pixel_width`/`pixel_height` columns); `GET /api/assets/wallpaper-suggestion?screenWidth=W&screenHeight=H` returns a random non-deleted asset where `pixel_width >= W`, `pixel_height >= H`, and `aspect_ratio` is within ±0.02 of the desktop ratio; frontend reads `window.screen.width`/`height`, calls the endpoint, and shows the suggested image with a download button | ✅ Created | ⬜ Pending |
 | 25  | `on-push-change-detection`  | Apply `ChangeDetectionStrategy.OnPush` to all 18 components; replace mutable state mutations with immutable assignments so Angular's OnPush check can detect changes; prioritise `ThumbnailComponent` (one instance per visible image) and `GalleryComponent` (the most complex); inject `ChangeDetectorRef` where manual `markForCheck()` calls are needed (e.g. after SSE events or async callbacks outside the Angular zone) | ✅ Created | ⬜ Pending |
 | 27  | `image-etag-cache`          | Add `ETag` (derived from the SHA-256 `hash` already stored on the `Asset` entity) and `Cache-Control: private, max-age=3600` to the `GET /api/assets/{id}/image` response; enables conditional `If-None-Match` requests so the browser receives a `304 Not Modified` instead of re-downloading the full image on repeat views; currently no cache headers are set on this endpoint | ✅ Created | ⬜ Pending |
-| 28  | `server-side-spring-cache`  | Enable `@EnableCaching` with a Caffeine in-memory cache; annotate `GetHomeStatsUseCase`, `GetSubFoldersUseCase`, and EXIF lookup use cases with `@Cacheable`; add `@CacheEvict` on the corresponding write use cases; avoids repeated database aggregation queries for data that changes infrequently; no new Flyway migration required | ✅ Created | ⬜ Pending |
 | 29  | `exif-cache-service`        | Move the `Map<number, ExifMetadata \| null>` from `ExifPanelComponent` (destroyed on every navigation) to a singleton `ExifCacheService`; the cache currently lives only for the lifetime of the component instance, so navigating away and back to the viewer discards all fetched EXIF data and triggers redundant API calls; a service-level cache persists for the entire session | ✅ Created | ⬜ Pending |
 | 30  | `image-rotation-viewer`     | Apply the `imageRotation` field already stored on `Asset` as a CSS `transform: rotate()` in `ThumbnailComponent` and the full-size viewer `<img>`; photos taken in portrait orientation are currently displayed sideways because the raw file is served without orientation correction; no backend change and no new API call are required | ✅ Created | ⬜ Pending |
 | 31  | `full-text-search`          | Extend search beyond filename-only `LIKE` matching to cover tags, EXIF camera model, and the `description` field (#37) using PostgreSQL native `tsvector`/`tsquery` with a `GIN` index; a generated `search_vector` column is maintained automatically by a trigger; the existing `findByFolderWithFilters` JPQL method gains a `search_vector @@ to_tsquery(...)` predicate; ranked results via `ts_rank` | ✅ Created | ⬜ Pending |
@@ -49,7 +48,7 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 | 74  | `mongodb-user-preferences`        | Move `user_preferences` and `search_presets` from rigid PostgreSQL tables to a single MongoDB `user_configs` collection keyed by `userId`; adding a new UI preference (theme, gallery layout, notification toggle) requires no Flyway migration; search preset payloads grow naturally as new filter fields are added without altering existing rows; only the two persistence adapters (`UserPreferenceRepositoryImpl`, `SearchPresetRepositoryImpl`) change — use cases, domain models, and REST controllers are untouched; the existing PostgreSQL tables are dropped after a one-time data migration | ⬜ Pending | ⬜ Pending |
 | 76  | `kafka-async-upload`              | Decouple the `POST /api/assets/upload` HTTP thread from SHA-256 hashing, EXIF extraction, and thumbnail generation; the controller saves the file to disk, publishes an `AssetUploadedEvent { filePath, assetId, userId }` to the `asset.uploaded` Kafka topic, and returns HTTP 202; three independent consumer groups process hash computation, EXIF extraction, and thumbnail generation in parallel; eliminates multi-second blocking for large files (RAW 40–80 MB, video) and allows each processing stage to scale independently; requires the Kafka infrastructure introduced by `kafka-catalog-pipeline` (#75) | ⬜ Pending | ⬜ Pending |
 | 77  | `kafka-catalog-coordination`      | Prevent duplicate concurrent catalog scans when multiple app instances are deployed; `CatalogScheduler` currently uses `@Scheduled(fixedDelay)` on every JVM — two instances each trigger a full directory traversal simultaneously, doubling disk I/O and risking duplicate database writes; a single-partition `catalog.requests` Kafka topic provides natural leader election via Kafka consumer groups: only one member processes a `CatalogJobRequested` event while others skip; replace the `@Scheduled` trigger in `CatalogScheduler` with a Kafka producer that publishes to `catalog.requests` on the same interval; requires the Kafka infrastructure introduced by `kafka-catalog-pipeline` (#75) | ⬜ Pending | ⬜ Pending |
-| 81  | `redis-thumbnail-cache`           | Add Redis as a shared L2 thumbnail cache in front of the disk-backed `ThumbnailStorageServiceAdapter`; on a cache hit `GET asset:thumbnail:{assetId}` returns the thumbnail bytes with no disk I/O; on a miss the adapter reads from disk, stores with a 24-hour TTL via `SETEX`, and returns; Redis `allkeys-lru` eviction retains popular thumbnails and evicts cold ones automatically; complements `thumbnail-http-cache` (#26) (browser-level `Cache-Control: immutable`, already implemented) and `server-side-spring-cache` (#28) (per-JVM Caffeine for home stats and EXIF lookups, pending); Redis adds the shared server-side tier that survives instance restarts and eliminates dependency on co-located disk access in load-balanced deployments where the requested thumbnail may reside on a different node's filesystem | ⬜ Pending | ⬜ Pending |
+| 81  | `redis-thumbnail-cache`           | Add Redis as a shared L2 thumbnail cache in front of the disk-backed `ThumbnailStorageServiceAdapter`; on a cache hit `GET asset:thumbnail:{assetId}` returns the thumbnail bytes with no disk I/O; on a miss the adapter reads from disk, stores with a 24-hour TTL via `SETEX`, and returns; Redis `allkeys-lru` eviction retains popular thumbnails and evicts cold ones automatically; complements `thumbnail-http-cache` (#26) (browser-level `Cache-Control: immutable`, already implemented) and `server-side-spring-cache` (#28) (per-JVM Caffeine for home stats and EXIF lookups, already implemented); Redis adds the shared server-side tier that survives instance restarts and eliminates dependency on co-located disk access in load-balanced deployments where the requested thumbnail may reside on a different node's filesystem | ⬜ Pending | ⬜ Pending |
 | 82  | `redis-search-tag-cache`          | Cache the two highest-frequency gallery read paths in Redis: (1) paginated asset search results (`GET /api/assets`) keyed by `assets:{sha256(folderPath+page+sort+filters)}` with a 5-minute TTL, invalidated on `asset.cataloged` and `asset.deleted` Kafka events from #75; (2) the tag list with counts (`GET /api/tags`) keyed `tags:all` with a 5-minute TTL, invalidated on `AddTagToAssetUseCase` and `RemoveTagFromAssetUseCase`; extends `server-side-spring-cache` (#28) which targets home stats, folder tree, and EXIF lookups with per-JVM Caffeine — this improvement covers the two hottest gallery endpoints and uses Redis for distributed invalidation that works correctly across multiple instances; the `@Cacheable`/`@CacheEvict` annotations from #28 can be reused by switching the Spring cache manager from `CaffeineCacheManager` to a Lettuce-backed `RedisCacheManager` | ⬜ Pending | ⬜ Pending |
 
 ---
@@ -84,9 +83,9 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 
 `redis-refresh-tokens` (#79) is now implemented — every refresh token is mirrored into Redis via a hash at `refresh_token:{token}` with `userId`, `tokenId`, and `issuedAt` fields (dual-write phase; PostgreSQL remains the read source of truth). When implementing `session-management` (#46), store `userAgent` as an additional field on that same Redis hash (`HSET refresh_token:{token} userAgent {ua}`) instead of adding a `user_agent` column to the PostgreSQL `refresh_tokens` table — this makes the V22 migration unnecessary.
 
-**Improvement 28 → Improvement 82** (extend Caffeine to Redis)
+**Improvement 28 → Improvement 82** (prerequisite already implemented)
 
-`redis-search-tag-cache` (#82) adds the gallery pagination and tag-list endpoints to the caching scope established by #28 and upgrades the Spring cache manager from Caffeine to Redis. Implementing #28 first with Caffeine provides a lower-risk on-ramp; #82 then switches the `CacheManager` bean to `RedisCacheManager` and the `@Cacheable` annotations continue to work without modification.
+`server-side-spring-cache` (#28) is now implemented with `CaffeineCacheManager`. `redis-search-tag-cache` (#82) adds the gallery pagination and tag-list endpoints to the caching scope established by #28 and upgrades the Spring cache manager from Caffeine to Redis; the existing `@Cacheable`/`@CacheEvict` annotations continue to work without modification when the `CacheManager` bean is switched to `RedisCacheManager`.
 
 ### Recommended implementation order
 
@@ -100,7 +99,7 @@ For the pending dependent clusters:
 58 (video-from-images)     — prerequisite #21 already implemented; #59 also already implemented
 ```
 
-Improvements 24 (wallpaper-suggestion), 27 (image-etag-cache), 28 (server-side-spring-cache), 29 (exif-cache-service), 30 (image-rotation-viewer), 32 (folder-watch-service), 35 (thumbnail-regeneration), 36 (global-error-handler), 38 (folder-stats-in-tree), 40 (circuit-breaker), 43 (request-correlation-mdc), 50 (image-comparison-viewer), 53 (password-strength-policy), 56 (asset-image-editor), 67 (event-auto-grouping), 68 (photo-quality-scoring), 69 (iptc-xmp-metadata-editing), 70 (dominant-color-palette), 71 (webdav-server) have no hard dependencies and can be delivered in any order.
+Improvements 24 (wallpaper-suggestion), 27 (image-etag-cache), 29 (exif-cache-service), 30 (image-rotation-viewer), 32 (folder-watch-service), 35 (thumbnail-regeneration), 36 (global-error-handler), 38 (folder-stats-in-tree), 40 (circuit-breaker), 43 (request-correlation-mdc), 50 (image-comparison-viewer), 53 (password-strength-policy), 56 (asset-image-editor), 67 (event-auto-grouping), 68 (photo-quality-scoring), 69 (iptc-xmp-metadata-editing), 70 (dominant-color-palette), 71 (webdav-server) have no hard dependencies and can be delivered in any order.
 
 Within dependent clusters:
 
@@ -113,8 +112,8 @@ Within dependent clusters:
 54 (notification-center) → 48 (email-notifications)
 60 (archive-support) → 61 (asset-backup)
 75 (kafka-catalog-pipeline, already done) → 76 (kafka-async-upload), 77 (kafka-catalog-coordination)
-28 → 81 (redis-thumbnail-cache) [JVM cache first, then Redis L2]
-28 → 82 (redis-search-tag-cache) [extend Caffeine scope to Redis]
+28 (server-side-spring-cache, already done) → 81 (redis-thumbnail-cache) [JVM cache first, then Redis L2]
+28 (server-side-spring-cache, already done) → 82 (redis-search-tag-cache) [extend Caffeine scope to Redis]
 ```
 
 Improvement 74 (mongodb-user-preferences) has no hard dependencies and can be delivered in any order.
@@ -124,8 +123,8 @@ Priority ordering for the MongoDB, Kafka, and Redis improvements:
 ```
 P2 — scalability and performance wins:
   76 (kafka-async-upload)             — requires #75 (already implemented); eliminates blocking upload for large files
-  81 (redis-thumbnail-cache)          — implement after #28 for best layering (#26 thumbnail-http-cache already done)
-  82 (redis-search-tag-cache)         — implement after #28 (Caffeine) for a smooth upgrade path
+  81 (redis-thumbnail-cache)          — implement after #28 (already implemented) for best layering (#26 thumbnail-http-cache already done)
+  82 (redis-search-tag-cache)         — implement after #28 (already implemented, Caffeine) for a smooth upgrade path
 
 P3 — operational convenience:
   74 (mongodb-user-preferences)       — standalone; most useful now that MongoDB is already provisioned by #72 or #73 (both already implemented)
@@ -216,10 +215,6 @@ spring:
 **Improvement 27 → no schema change**
 
 The `ETag` value is derived from the SHA-256 `hash` column already present on the `Asset` entity; no Flyway migration is needed.
-
-**Improvement 28 — cache eviction boundary**
-
-`@CacheEvict` must be applied to every write path that invalidates a cached result: cataloging (evicts folder and stats caches), rating (evicts stats), tagging (evicts stats), and soft-delete (evicts folder, stats, and EXIF caches). Failing to wire eviction on any write path will serve stale data silently.
 
 **Improvement 30 — no dependencies**
 
@@ -420,7 +415,7 @@ The cache key `asset:thumbnail:{assetId}` is stable because thumbnails are conte
 
 **Improvement 82 — cache invalidation strategy**
 
-Asset search result cache invalidation is driven by Kafka events from `kafka-catalog-pipeline` (#75): a `@KafkaListener` subscribed to `asset.cataloged` and `asset.deleted` calls `redisTemplate.delete(pattern)` using the folder path as a key prefix (`assets:{folderPath}:*`). Without #75 in place, invalidation falls back to direct calls in `CatalogAssetItemWriter.write()` and `DeleteAssetsUseCaseImpl.execute()`. Tag cache invalidation is simpler: `AddTagToAssetUseCaseImpl` and `RemoveTagFromAssetUseCaseImpl` each call `redisTemplate.delete("tags:all")`. If `server-side-spring-cache` (#28) is implemented first with `CaffeineCacheManager`, upgrading to Redis requires only switching the `CacheManager` bean to `RedisCacheManager` backed by a Lettuce `RedisConnectionFactory` — the `@Cacheable` and `@CacheEvict` annotations on the use cases require no change.
+Asset search result cache invalidation is driven by Kafka events from `kafka-catalog-pipeline` (#75): a `@KafkaListener` subscribed to `asset.cataloged` and `asset.deleted` calls `redisTemplate.delete(pattern)` using the folder path as a key prefix (`assets:{folderPath}:*`). Without #75 in place, invalidation falls back to direct calls in `CatalogAssetItemWriter.write()` and `DeleteAssetsUseCaseImpl.execute()`. Tag cache invalidation is simpler: `AddTagToAssetUseCaseImpl` and `RemoveTagFromAssetUseCaseImpl` each call `redisTemplate.delete("tags:all")`. Since `server-side-spring-cache` (#28) is already implemented with `CaffeineCacheManager`, upgrading to Redis requires only switching the `CacheManager` bean to `RedisCacheManager` backed by a Lettuce `RedisConnectionFactory` — the `@Cacheable` and `@CacheEvict` annotations on the use cases require no change.
 
 **MongoDB, Kafka, and Redis — overlap with existing improvements (summary)**
 
