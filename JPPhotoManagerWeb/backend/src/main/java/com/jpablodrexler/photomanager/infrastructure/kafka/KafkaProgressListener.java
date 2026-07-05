@@ -19,7 +19,7 @@ public class KafkaProgressListener {
 
     private final KafkaProgressRegistry registry;
 
-    @KafkaListener(topics = "job.catalog.progress", groupId = "sse-broadcaster",
+    @KafkaListener(topics = "job.catalog.progress",
             containerFactory = "kafkaListenerContainerFactory")
     public void onCatalogProgress(CatalogProgressMessage message) {
         long runId = message.runId();
@@ -68,7 +68,7 @@ public class KafkaProgressListener {
         }
     }
 
-    @KafkaListener(topics = "job.sync.progress", groupId = "sse-broadcaster",
+    @KafkaListener(topics = "job.sync.progress",
             containerFactory = "kafkaListenerContainerFactory")
     public void onSyncProgress(SyncProgressMessage message) {
         long runId = message.runId();
@@ -99,7 +99,7 @@ public class KafkaProgressListener {
         }
     }
 
-    @KafkaListener(topics = "job.convert.progress", groupId = "sse-broadcaster",
+    @KafkaListener(topics = "job.convert.progress",
             containerFactory = "kafkaListenerContainerFactory")
     public void onConvertProgress(ConvertProgressMessage message) {
         long runId = message.runId();

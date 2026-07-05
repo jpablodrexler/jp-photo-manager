@@ -32,6 +32,7 @@ const mediaPlayerStub: Partial<MediaPlayerService> = {
 function buildProviders(isLoggedIn: boolean, isDark: Observable<boolean>) {
   const authServiceStub: Partial<AuthService> = {
     isLoggedIn: () => isLoggedIn,
+    isAdmin: cy.stub().returns(false),
     logout: (() => {}) as unknown as () => void,
   };
   const bpObsStub: Partial<BreakpointObserver> = {
@@ -88,6 +89,7 @@ describe('AppComponent — responsive navigation', () => {
   function mountApp(isMobileMatches: boolean) {
     const authServiceStub: Partial<AuthService> = {
       isLoggedIn: () => true,
+      isAdmin: cy.stub().returns(false),
       logout: cy.stub() as unknown as () => void,
     };
     const bpObs: Partial<BreakpointObserver> = {
@@ -147,7 +149,7 @@ describe('AppComponent — theme toggle', () => {
   });
 
   it('toggleButton_notLoggedIn_isAbsent', () => {
-    const authServiceStub: Partial<AuthService> = { isLoggedIn: () => false };
+    const authServiceStub: Partial<AuthService> = { isLoggedIn: () => false, isAdmin: cy.stub().returns(false) };
     const themeServiceStub: Partial<ThemeService> = {
       isDark$: of(true),
       init: cy.stub() as unknown as ThemeService['init'],
@@ -188,7 +190,7 @@ describe('AppComponent — theme toggle', () => {
         provideRouter([]),
         provideNoopAnimations(),
         provideHttpClient(),
-        { provide: AuthService, useValue: { isLoggedIn: () => true, logout: cy.stub() } },
+        { provide: AuthService, useValue: { isLoggedIn: () => true, isAdmin: cy.stub().returns(false), logout: cy.stub() } },
         { provide: BreakpointObserver, useValue: { observe: cy.stub().returns(of({ matches: false, breakpoints: {} })) } },
         { provide: MediaPlayerService, useValue: mediaPlayerStub },
         { provide: ThemeService, useValue: themeServiceStub },

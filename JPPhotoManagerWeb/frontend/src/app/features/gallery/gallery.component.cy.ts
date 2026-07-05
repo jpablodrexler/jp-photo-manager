@@ -647,6 +647,7 @@ describe('GalleryComponent', () => {
         { provide: SearchPresetService, useValue: { listPresets: cy.stub().returns(of([])), createPreset: cy.stub().returns(of({})), deletePreset: cy.stub().returns(of(undefined)) } },
         { provide: TagService, useValue: { searchTags: cy.stub().returns(of([])) } },
         { provide: MediaPlayerService, useValue: { currentTrack: signal(null), isPlaying: signal(false), play: cy.stub(), loadFolder: cy.stub(), loadPlaylist: cy.stub() } },
+        { provide: AuthService, useValue: { isAdmin: cy.stub().returns(false), isLoggedIn: cy.stub().returns(true) } },
       ],
     });
 
@@ -872,6 +873,7 @@ describe('GalleryComponent', () => {
         { provide: SearchPresetService, useValue: { listPresets: cy.stub().returns(of([])), createPreset: cy.stub().returns(of({})), deletePreset: cy.stub().returns(of(undefined)) } },
         { provide: ActivatedRoute, useValue: activatedRouteStub },
         { provide: MediaPlayerService, useValue: { currentTrack: signal(null), isPlaying: signal(false), play: cy.stub(), loadFolder: cy.stub(), loadPlaylist: cy.stub() } },
+        { provide: AuthService, useValue: { isAdmin: cy.stub().returns(false), isLoggedIn: cy.stub().returns(true) } },
       ],
     }).then(({ fixture }) => {
       fixture.detectChanges();
@@ -904,6 +906,7 @@ describe('GalleryComponent', () => {
         { provide: SearchPresetService, useValue: { listPresets: cy.stub().returns(of([])), createPreset: cy.stub().returns(of({})), deletePreset: cy.stub().returns(of(undefined)) } },
         { provide: ActivatedRoute, useValue: activatedRouteStub },
         { provide: MediaPlayerService, useValue: { currentTrack: signal(null), isPlaying: signal(false), play: cy.stub(), loadFolder: cy.stub(), loadPlaylist: cy.stub() } },
+        { provide: AuthService, useValue: { isAdmin: cy.stub().returns(false), isLoggedIn: cy.stub().returns(true) } },
       ],
     }).then(({ fixture }) => {
       fixture.detectChanges();
@@ -1109,6 +1112,7 @@ describe('GalleryComponent', () => {
         { provide: SearchPresetService, useValue: { listPresets: cy.stub().returns(of([])), createPreset: cy.stub().returns(of({})), deletePreset: cy.stub().returns(of(undefined)) } },
         { provide: ActivatedRoute, useValue: activatedRouteStub },
         { provide: MediaPlayerService, useValue: { currentTrack: signal(null), isPlaying: signal(false), play: cy.stub(), loadFolder: cy.stub(), loadPlaylist: cy.stub() } },
+        { provide: AuthService, useValue: { isAdmin: cy.stub().returns(false), isLoggedIn: cy.stub().returns(true) } },
       ],
     }).then(({ fixture }) => {
       fixture.detectChanges();
