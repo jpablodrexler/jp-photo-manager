@@ -43,6 +43,7 @@ Archive of improvements to the JPPhotoManagerWeb application that have been full
 | 75  | `kafka-catalog-pipeline`          | Replace the in-memory `SseNotificationRegistry` (a `ConcurrentHashMap` in a single JVM) with Kafka topics so catalog, sync, and convert progress events are broadcast across all running app instances; topics: `asset.cataloged` (writer: `CatalogAssetItemWriter`), `asset.deleted` (writer: `DeleteAssetsUseCaseImpl`), `job.catalog.progress` (writer: `CatalogItemWriteListener`), `job.sync.progress` (writer: `SyncAssetsUseCaseImpl`), `job.convert.progress` (writer: `ConvertAssetsUseCaseImpl`); SSE controllers on each instance subscribe via a Kafka consumer and fan-out progress events to connected `SseEmitter` clients; the `SseNotificationRegistry` class is deleted; eliminates the single-JVM constraint that currently prevents horizontal scaling; **prerequisite for `kafka-async-upload` (#76), `kafka-catalog-coordination` (#77), `redis-sse-pubsub` (#80), and `mongodb-audit-log` (#73)** | ⬜ Pending | ✅ Implemented |
 | 57  | `viewer-pan-drag`           | Add mouse and touch drag-to-pan to the zoomed image viewer; the existing `transform: scale(viewerZoom)` is extended to `scale(zoom) translate(panX, panY)`; `mousedown` sets a dragging flag and captures the starting cursor position, `mousemove` updates `panX`/`panY` while dragging, `mouseup` clears the flag; `touchstart`/`touchmove`/`touchend` mirror the same logic for mobile; `panX` and `panY` reset to zero whenever zoom returns to 1× or the displayed asset changes; pure frontend change — no backend endpoint, no schema change, no external dependency | ✅ Created | ✅ Implemented |
 | 78  | `redis-distributed-rate-limiting` | Upgrade `RateLimitFilter` from in-memory Bucket4j (backed by `ConcurrentHashMap<String, Bucket>`) to a Redis-backed store using the `bucket4j-redis` / `bucket4j-lettuce` extension; the current implementation is per-JVM: two running instances each allow the full configured rate (10 login attempts/min per IP, 5 catalog triggers/hour per IP) independently, giving attackers proportionally more headroom; the Redis upgrade shares token-bucket counters across all instances with zero business-logic change — only `RateLimitFilter.createBucket()` switches from `Bucket.builder()...build()` to `proxyManager.builder().build(bucketKey, configSupplier)`; **fills the multi-instance production-safety gap left by `api-rate-limiting` (#39)**, which is already implemented but only protects single-instance deployments | ✅ Created | ✅ Implemented |
+| 33  | `role-based-access-control` | Enforce the existing `role` column on `User` by adding a `VIEWER` role that can browse, view, and download but cannot delete, move, catalog, upload, or administer users; implement with `@PreAuthorize` annotations on write-path use cases and controller methods; `SecurityConfig` already provides the filter chain foundation; no schema migration needed beyond seeding the new role value | ✅ Created | ✅ Implemented |
 
 ---
 
@@ -416,6 +417,10 @@ The current `SseNotificationRegistry` stores `Map<Long, Consumer<CatalogChangeNo
 **Improvement 57 — no dependencies**
 
 `viewer-pan-drag` is a pure frontend change with no backend, schema, or external library involvement. It can be delivered at any point independently of all other improvements.
+
+**Improvement 33 — enforcement boundary**
+
+`role-based-access-control` must apply `@PreAuthorize` to every write-path use case method, not just controller endpoints, to prevent bypasses if new controllers are added later. The `VIEWER` role must be blocked at the use-case layer.
 
 **Improvement 78 — Bucket4j Redis migration steps**
 

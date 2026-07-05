@@ -20,7 +20,6 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 | 30  | `image-rotation-viewer`     | Apply the `imageRotation` field already stored on `Asset` as a CSS `transform: rotate()` in `ThumbnailComponent` and the full-size viewer `<img>`; photos taken in portrait orientation are currently displayed sideways because the raw file is served without orientation correction; no backend change and no new API call are required | ✅ Created | ⬜ Pending |
 | 31  | `full-text-search`          | Extend search beyond filename-only `LIKE` matching to cover tags, EXIF camera model, and the `description` field (#37) using PostgreSQL native `tsvector`/`tsquery` with a `GIN` index; a generated `search_vector` column is maintained automatically by a trigger; the existing `findByFolderWithFilters` JPQL method gains a `search_vector @@ to_tsquery(...)` predicate; ranked results via `ts_rank` | ✅ Created | ⬜ Pending |
 | 32  | `folder-watch-service`      | Add a Java NIO `WatchService` that monitors all configured root catalog folders for `ENTRY_CREATE`, `ENTRY_MODIFY`, and `ENTRY_DELETE` events and triggers incremental catalog updates automatically; reuses the existing `CatalogAssetsUseCase` and Spring Batch `JobLauncher` as the execution path; keeps the catalog in sync without any manual user action | ✅ Created | ⬜ Pending |
-| 33  | `role-based-access-control` | Enforce the existing `role` column on `User` by adding a `VIEWER` role that can browse, view, and download but cannot delete, move, catalog, upload, or administer users; implement with `@PreAuthorize` annotations on write-path use cases and controller methods; `SecurityConfig` already provides the filter chain foundation; no schema migration needed beyond seeding the new role value | ✅ Created | ⬜ Pending |
 | 35  | `thumbnail-regeneration`    | Add `POST /api/assets/regenerate-thumbnails` (optionally scoped by `folderPath` query param) that deletes existing `.bin` thumbnail files via `ThumbnailPort` and re-generates them through `StoragePort`; covers corrupted thumbnails, thumbnail size changes, and retroactive EXIF-rotation correction; reuses existing infrastructure adapters with no schema change | ✅ Created | ⬜ Pending |
 | 36  | `global-error-handler`      | Override Angular's `ErrorHandler` to display a `MatSnackBar` notification for all unhandled component errors; extend the existing backend `GlobalExceptionHandler` to return a consistent `{ status, message, timestamp }` JSON body for every 4xx and 5xx response so the frontend interceptor can surface a human-readable message rather than showing a raw HTTP status | ✅ Created | ⬜ Pending |
 | 37  | `asset-description`         | Add a `description` VARCHAR column to `assets` (new Flyway migration); expose `PATCH /api/assets/{id}/description`; display an editable text field in the EXIF panel in the viewer; the description field feeds directly into the `full-text-search` (#31) index once both are in place | ✅ Created | ⬜ Pending |
@@ -105,14 +104,14 @@ For the pending dependent clusters:
 58 (video-from-images)     — prerequisite #21 already implemented; #59 also already implemented
 ```
 
-Improvements 24 (wallpaper-suggestion), 27 (image-etag-cache), 28 (server-side-spring-cache), 29 (exif-cache-service), 30 (image-rotation-viewer), 32 (folder-watch-service), 33 (role-based-access-control), 35 (thumbnail-regeneration), 36 (global-error-handler), 38 (folder-stats-in-tree), 40 (circuit-breaker), 43 (request-correlation-mdc), 50 (image-comparison-viewer), 53 (password-strength-policy), 56 (asset-image-editor), 67 (event-auto-grouping), 68 (photo-quality-scoring), 69 (iptc-xmp-metadata-editing), 70 (dominant-color-palette), 71 (webdav-server) have no hard dependencies and can be delivered in any order.
+Improvements 24 (wallpaper-suggestion), 27 (image-etag-cache), 28 (server-side-spring-cache), 29 (exif-cache-service), 30 (image-rotation-viewer), 32 (folder-watch-service), 35 (thumbnail-regeneration), 36 (global-error-handler), 38 (folder-stats-in-tree), 40 (circuit-breaker), 43 (request-correlation-mdc), 50 (image-comparison-viewer), 53 (password-strength-policy), 56 (asset-image-editor), 67 (event-auto-grouping), 68 (photo-quality-scoring), 69 (iptc-xmp-metadata-editing), 70 (dominant-color-palette), 71 (webdav-server) have no hard dependencies and can be delivered in any order.
 
 Within dependent clusters:
 
 ```
 37 (asset-description) → 31 (full-text-search)
 36 (global-error-handler) → 43 (request-correlation-mdc)
-33 (role-based-access-control) → 44 (database-backup), 61 (asset-backup)
+33 (role-based-access-control, already done) → 44 (database-backup), 61 (asset-backup)
 39 (api-rate-limiting, already done) → 47 (two-factor-authentication)
 46 (session-management) → 47 (two-factor-authentication)
 54 (notification-center) → 48 (email-notifications)
@@ -252,17 +251,13 @@ A full-text search that can only index filename and tags is still useful, but th
 
 `asset-description` can be delivered standalone and provides immediate value in the EXIF panel before full-text search is wired up.
 
-**Improvement 33 — enforcement boundary**
-
-`role-based-access-control` must apply `@PreAuthorize` to every write-path use case method, not just controller endpoints, to prevent bypasses if new controllers are added later. The `VIEWER` role must be blocked at the use-case layer.
-
 **Improvement 35 — ordering note**
 
 `thumbnail-regeneration` is most useful after `image-rotation-viewer` (#30) is in place, since one motivation for re-generation is applying orientation correction to existing thumbnails. The two can be delivered independently but pair naturally.
 
-**Improvements 32, 33, 36, 38 — no dependencies**
+**Improvements 32, 36, 38 — no dependencies**
 
-`folder-watch-service`, `role-based-access-control`, `global-error-handler`, and `folder-stats-in-tree` have no hard dependencies on other pending improvements and can be delivered in any order.
+`folder-watch-service`, `global-error-handler`, and `folder-stats-in-tree` have no hard dependencies on other pending improvements and can be delivered in any order.
 
 **Improvement 40 → Improvement 13**
 
@@ -276,9 +271,9 @@ A full-text search that can only index filename and tags is still useful, but th
 
 All three observability improvements are purely operational: no Flyway migrations, no domain model changes, and no new API endpoints visible to end users.
 
-**Improvement 44 → Improvement 33**
+**Improvement 44 → Improvement 33** (prerequisite already implemented)
 
-`database-backup` exposes admin-only endpoints (`POST /api/admin/backup`, `GET /api/admin/backups`). Once `role-based-access-control` (#33) is in place these endpoints should be restricted to the `ADMIN` role. They can be delivered before #33 with a simple `@PreAuthorize("hasRole('ADMIN')")` placeholder, but the RBAC enforcement is only meaningful after #33 is complete.
+`database-backup` exposes admin-only endpoints (`POST /api/admin/backup`, `GET /api/admin/backups`). Now that `role-based-access-control` (#33) is implemented, these endpoints should be restricted to the `ADMIN` role with `@PreAuthorize("hasRole('ADMIN')")`.
 
 **Improvement 44 — no schema change**
 
@@ -357,9 +352,9 @@ The 10 single-use recovery codes are BCrypt-hashed before insertion into `totp_b
 
 `asset-backup` has a hard dependency on `archive-support` (#60): it reuses the zip and tar.gz writing infrastructure (`ZipOutputStream` and `TarArchiveOutputStream`) introduced there, and inherits the `commons-compress` Maven dependency without re-adding it. Delivering #60 first also means the volume-splitting logic can be built on top of already-tested archive streams.
 
-**Improvement 61 → Improvement 33 (soft)**
+**Improvement 61 → Improvement 33 (soft, prerequisite already implemented)**
 
-`asset-backup` admin endpoints (`POST /api/backup/{id}/run`, `GET /api/backup/definitions`, etc.) should be restricted to the `ADMIN` role once `role-based-access-control` (#33) is in place, following the same pattern as `database-backup` (#44).
+`asset-backup` admin endpoints (`POST /api/backup/{id}/run`, `GET /api/backup/definitions`, etc.) should be restricted to the `ADMIN` role now that `role-based-access-control` (#33) is implemented, following the same pattern as `database-backup` (#44).
 
 **Improvement 61 — dynamic scheduling note**
 
