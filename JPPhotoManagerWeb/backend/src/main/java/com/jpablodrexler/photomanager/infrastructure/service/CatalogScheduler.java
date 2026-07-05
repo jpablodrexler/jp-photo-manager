@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -38,10 +41,15 @@ public class CatalogScheduler {
     }
 
     private void executeCatalogRun() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        "system-scheduler", null, AuthorityUtils.createAuthorityList("ROLE_ADMIN")));
         try {
             catalogAssetsUseCase.execute(System.currentTimeMillis()).get();
         } catch (Exception e) {
             log.error("Scheduled catalog run failed", e);
+        } finally {
+            SecurityContextHolder.clearContext();
         }
     }
 }
