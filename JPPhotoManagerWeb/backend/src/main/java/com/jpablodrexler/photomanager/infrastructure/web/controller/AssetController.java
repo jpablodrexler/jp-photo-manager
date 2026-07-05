@@ -10,6 +10,7 @@ import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
 import com.jpablodrexler.photomanager.domain.model.Folder;
+import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.model.CropAssetRequest;
 import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
@@ -30,6 +31,7 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
+import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.AddTagRequest;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.BulkTagRequest;
@@ -53,6 +55,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -60,6 +63,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -71,6 +76,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -78,6 +84,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/assets")
 @RequiredArgsConstructor
+@Slf4j
 public class AssetController {
 
     private final GetAssetsUseCase getAssetsUseCase;
@@ -102,6 +109,7 @@ public class AssetController {
     private final AssetWebMapper assetWebMapper;
     private final MeterRegistry meterRegistry;
     private final KafkaProgressRegistry kafkaProgressRegistry;
+    private final UserRepository userRepository;
 
     private final AtomicInteger sseConnectionCount = new AtomicInteger(0);
 
@@ -192,7 +200,7 @@ public class AssetController {
     @GetMapping("/{assetId}/image")
     public ResponseEntity<byte[]> getFullImage(@PathVariable Long assetId) {
         try {
-            AssetImage image = getAssetImageUseCase.execute(assetId);
+            AssetImage image = getAssetImageUseCase.execute(assetId, resolveUserId());
             MediaType mediaType = detectMediaType(image.bytes());
             if (mediaType == null) {
                 return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
@@ -290,7 +298,7 @@ public class AssetController {
         }
         response.setContentType("application/zip");
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"photos.zip\"");
-        downloadAssetsUseCase.execute(request.getAssetIds(), response.getOutputStream());
+        downloadAssetsUseCase.execute(request.getAssetIds(), response.getOutputStream(), resolveUserId());
     }
 
     @Operation(summary = "Rate an asset")
@@ -303,7 +311,7 @@ public class AssetController {
     @PatchMapping("/{id}/rating")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void rateAsset(@PathVariable Long id, @Valid @RequestBody RateAssetRequest body) {
-        rateAssetUseCase.execute(id, body.rating());
+        rateAssetUseCase.execute(id, body.rating(), resolveUserId());
     }
 
     @Operation(summary = "Remove assets from catalog (optionally delete files)")
@@ -427,7 +435,7 @@ public class AssetController {
     })
     @PostMapping("/{id}/tags")
     public ResponseEntity<Void> addTag(@PathVariable Long id, @Valid @RequestBody AddTagRequest body) {
-        addTagToAssetUseCase.execute(id, body.name());
+        addTagToAssetUseCase.execute(id, body.name(), resolveUserId());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
@@ -440,7 +448,7 @@ public class AssetController {
     @DeleteMapping("/{id}/tags")
     public ResponseEntity<Void> removeTag(@PathVariable Long id, @RequestParam String name) {
         try {
-            removeTagFromAssetUseCase.execute(id, name);
+            removeTagFromAssetUseCase.execute(id, name, resolveUserId());
             return ResponseEntity.noContent().build();
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
@@ -469,6 +477,25 @@ public class AssetController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void bulkRemoveTag(@Valid @RequestBody BulkTagRequest body) {
         bulkRemoveTagUseCase.execute(body.assetIds(), body.name());
+    }
+
+    /**
+     * Resolves the authenticated user's id for audit-logging purposes only. Never throws: returns
+     * {@code null} when unauthenticated or the user cannot be resolved, so that an inability to
+     * identify the caller never blocks the primary request (audit-write failures are likewise
+     * caught and logged, never propagated, inside the use cases that consume this value).
+     */
+    private UUID resolveUserId() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null) {
+                return null;
+            }
+            return userRepository.findByUsername(auth.getName()).map(User::getId).orElse(null);
+        } catch (Exception e) {
+            log.warn("Failed to resolve current user id for audit logging: {}", e.getMessage());
+            return null;
+        }
     }
 
     private Set<String> parseTags(String tags) {

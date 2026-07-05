@@ -68,14 +68,14 @@ class TagIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void addTag_filterByTag_removeTag_fullLifecycle() {
-        addTagToAssetUseCase.execute(asset1.getAssetId(), "vacation");
+        addTagToAssetUseCase.execute(asset1.getAssetId(), "vacation", null);
 
         AssetFilter filterWithTag = new AssetFilter(folderId, null, null, null, null, null, 0, 50, false, Set.of("vacation"));
         PaginatedResult<Asset> filtered = getAssetsUseCase.execute(filterWithTag);
         assertThat(filtered.total()).isEqualTo(1);
         assertThat(filtered.items().getFirst().getAssetId()).isEqualTo(asset1.getAssetId());
 
-        removeTagFromAssetUseCase.execute(asset1.getAssetId(), "vacation");
+        removeTagFromAssetUseCase.execute(asset1.getAssetId(), "vacation", null);
 
         AssetFilter filterAfterRemove = new AssetFilter(folderId, null, null, null, null, null, 0, 50, false, Set.of("vacation"));
         PaginatedResult<Asset> afterRemove = getAssetsUseCase.execute(filterAfterRemove);
@@ -86,7 +86,7 @@ class TagIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void addTag_uppercaseName_normalizesToLowercase() {
-        addTagToAssetUseCase.execute(asset1.getAssetId(), "FAMILY");
+        addTagToAssetUseCase.execute(asset1.getAssetId(), "FAMILY", null);
 
         List<com.jpablodrexler.photomanager.domain.model.Tag> tags = listTagsUseCase.execute("family");
         assertThat(tags).anyMatch(t -> "family".equals(t.getName()));
@@ -94,8 +94,8 @@ class TagIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void addTag_duplicateAssignment_isIdempotent() {
-        addTagToAssetUseCase.execute(asset1.getAssetId(), "vacation");
-        addTagToAssetUseCase.execute(asset1.getAssetId(), "vacation");
+        addTagToAssetUseCase.execute(asset1.getAssetId(), "vacation", null);
+        addTagToAssetUseCase.execute(asset1.getAssetId(), "vacation", null);
 
         List<com.jpablodrexler.photomanager.domain.model.Tag> tags = listTagsUseCase.execute("vacation");
         assertThat(tags).hasSize(1);
@@ -103,25 +103,25 @@ class TagIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void removeTag_tagStillUsedByOtherAsset_doesNotDeleteTag() {
-        addTagToAssetUseCase.execute(asset1.getAssetId(), "vacation");
-        addTagToAssetUseCase.execute(asset2.getAssetId(), "vacation");
+        addTagToAssetUseCase.execute(asset1.getAssetId(), "vacation", null);
+        addTagToAssetUseCase.execute(asset2.getAssetId(), "vacation", null);
 
-        removeTagFromAssetUseCase.execute(asset1.getAssetId(), "vacation");
+        removeTagFromAssetUseCase.execute(asset1.getAssetId(), "vacation", null);
 
         assertThat(tagRepository.findByName("vacation")).isPresent();
     }
 
     @Test
     void removeTag_notAssigned_throws() {
-        assertThatThrownBy(() -> removeTagFromAssetUseCase.execute(asset1.getAssetId(), "nonexistent"))
+        assertThatThrownBy(() -> removeTagFromAssetUseCase.execute(asset1.getAssetId(), "nonexistent", null))
                 .isInstanceOf(NoSuchElementException.class);
     }
 
     @Test
     void filterByMultipleTags_andSemantics_returnsOnlyAssetsWithAllTags() {
-        addTagToAssetUseCase.execute(asset1.getAssetId(), "vacation");
-        addTagToAssetUseCase.execute(asset1.getAssetId(), "family");
-        addTagToAssetUseCase.execute(asset2.getAssetId(), "vacation");
+        addTagToAssetUseCase.execute(asset1.getAssetId(), "vacation", null);
+        addTagToAssetUseCase.execute(asset1.getAssetId(), "family", null);
+        addTagToAssetUseCase.execute(asset2.getAssetId(), "vacation", null);
 
         AssetFilter filter = new AssetFilter(folderId, null, null, null, null, null, 0, 50, false, Set.of("vacation", "family"));
         PaginatedResult<Asset> result = getAssetsUseCase.execute(filter);
@@ -142,8 +142,8 @@ class TagIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void listTags_withQuery_returnsMatchingTags() {
-        addTagToAssetUseCase.execute(asset1.getAssetId(), "vacation");
-        addTagToAssetUseCase.execute(asset2.getAssetId(), "vaccinated");
+        addTagToAssetUseCase.execute(asset1.getAssetId(), "vacation", null);
+        addTagToAssetUseCase.execute(asset2.getAssetId(), "vaccinated", null);
 
         List<com.jpablodrexler.photomanager.domain.model.Tag> tags = listTagsUseCase.execute("vac");
 

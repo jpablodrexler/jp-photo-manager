@@ -20,6 +20,7 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
+import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -75,17 +76,18 @@ class AssetControllerTagTest {
     @MockitoBean AssetWebMapper assetWebMapper;
     @MockitoBean MeterRegistry meterRegistry;
     @MockitoBean KafkaProgressRegistry kafkaProgressRegistry;
+    @MockitoBean UserRepository userRepository;
 
     @Test
     void addTag_validRequest_returns201() throws Exception {
-        doNothing().when(addTagToAssetUseCase).execute(anyLong(), anyString());
+        doNothing().when(addTagToAssetUseCase).execute(anyLong(), anyString(), any());
 
         mockMvc.perform(post("/api/assets/1/tags")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"vacation\"}"))
                 .andExpect(status().isCreated());
 
-        verify(addTagToAssetUseCase).execute(eq(1L), eq("vacation"));
+        verify(addTagToAssetUseCase).execute(eq(1L), eq("vacation"), any());
     }
 
     @Test
@@ -98,19 +100,19 @@ class AssetControllerTagTest {
 
     @Test
     void removeTag_tagAssigned_returns204() throws Exception {
-        doNothing().when(removeTagFromAssetUseCase).execute(1L, "vacation");
+        doNothing().when(removeTagFromAssetUseCase).execute(1L, "vacation", null);
 
         mockMvc.perform(delete("/api/assets/1/tags")
                         .param("name", "vacation"))
                 .andExpect(status().isNoContent());
 
-        verify(removeTagFromAssetUseCase).execute(1L, "vacation");
+        verify(removeTagFromAssetUseCase).execute(1L, "vacation", null);
     }
 
     @Test
     void removeTag_tagNotAssigned_returns404() throws Exception {
         doThrow(new NoSuchElementException("not found"))
-                .when(removeTagFromAssetUseCase).execute(anyLong(), anyString());
+                .when(removeTagFromAssetUseCase).execute(anyLong(), anyString(), any());
 
         mockMvc.perform(delete("/api/assets/1/tags")
                         .param("name", "nonexistent"))

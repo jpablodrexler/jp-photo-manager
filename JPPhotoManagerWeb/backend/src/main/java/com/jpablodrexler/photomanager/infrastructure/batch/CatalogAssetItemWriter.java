@@ -127,7 +127,7 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
                     kafkaTemplate.send("job.catalog.progress", String.valueOf(runId),
                             CatalogProgressMessage.progress(runId, notification));
                     kafkaTemplate.send("asset.deleted", String.valueOf(asset.getAssetId()),
-                            new AssetDeletedEvent(asset.getAssetId(), folderPath, Instant.now(), false));
+                            new AssetDeletedEvent(asset.getAssetId(), folder.getFolderId(), folderPath, Instant.now(), false));
                 }
             }
         } catch (Exception e) {

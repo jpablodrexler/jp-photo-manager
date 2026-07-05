@@ -8,6 +8,7 @@ import com.jpablodrexler.photomanager.domain.model.AssetExif;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AuditLogRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,8 +23,10 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -96,6 +99,7 @@ class SimpleAssetUseCasesTest {
 
         @Mock AssetRepository assetRepository;
         @Mock StoragePort storagePort;
+        @Mock AuditLogRepository auditLogRepository;
         @InjectMocks GetAssetImageUseCaseImpl sut;
 
         @Test
@@ -107,17 +111,42 @@ class SimpleAssetUseCasesTest {
             when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
             when(storagePort.readFileBytes("/photos/img.jpg")).thenReturn(bytes);
 
-            AssetImage result = sut.execute(assetId);
+            AssetImage result = sut.execute(assetId, null);
 
             assertThat(result.bytes()).isEqualTo(bytes);
             assertThat(result.fileName()).isEqualTo("img.jpg");
         }
 
         @Test
+        void execute_assetFound_logsAssetViewedAuditEvent() throws IOException {
+            Long assetId = 1L;
+            Folder folder = Folder.builder().path("/photos").build();
+            Asset asset = Asset.builder().assetId(assetId).folder(folder).fileName("img.jpg").build();
+            when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+            when(storagePort.readFileBytes("/photos/img.jpg")).thenReturn(new byte[]{1});
+
+            sut.execute(assetId, null);
+
+            verify(auditLogRepository).log(any());
+        }
+
+        @Test
+        void execute_auditLogThrows_doesNotPropagate() throws IOException {
+            Long assetId = 1L;
+            Folder folder = Folder.builder().path("/photos").build();
+            Asset asset = Asset.builder().assetId(assetId).folder(folder).fileName("img.jpg").build();
+            when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+            when(storagePort.readFileBytes("/photos/img.jpg")).thenReturn(new byte[]{1});
+            doThrow(new RuntimeException("mongo down")).when(auditLogRepository).log(any());
+
+            assertThatCode(() -> sut.execute(assetId, null)).doesNotThrowAnyException();
+        }
+
+        @Test
         void execute_assetNotFound_throwsNoSuchElementException() {
             when(assetRepository.findById(99L)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> sut.execute(99L))
+            assertThatThrownBy(() -> sut.execute(99L, null))
                     .isInstanceOf(NoSuchElementException.class);
         }
     }
@@ -127,6 +156,7 @@ class SimpleAssetUseCasesTest {
     class RateAssetUseCaseImplTest {
 
         @Mock AssetRepository assetRepository;
+        @Mock AuditLogRepository auditLogRepository;
         @InjectMocks RateAssetUseCaseImpl sut;
 
         @Test
@@ -136,17 +166,40 @@ class SimpleAssetUseCasesTest {
             when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
             when(assetRepository.save(any())).thenReturn(asset);
 
-            sut.execute(assetId, 4);
+            sut.execute(assetId, 4, null);
 
             assertThat(asset.getRating()).isEqualTo(4);
             verify(assetRepository).save(asset);
         }
 
         @Test
+        void execute_assetFound_logsAssetRatedAuditEvent() {
+            Long assetId = 1L;
+            Asset asset = buildAsset(assetId);
+            when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+            when(assetRepository.save(any())).thenReturn(asset);
+
+            sut.execute(assetId, 4, null);
+
+            verify(auditLogRepository).log(any());
+        }
+
+        @Test
+        void execute_auditLogThrows_doesNotPropagate() {
+            Long assetId = 1L;
+            Asset asset = buildAsset(assetId);
+            when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+            when(assetRepository.save(any())).thenReturn(asset);
+            doThrow(new RuntimeException("mongo down")).when(auditLogRepository).log(any());
+
+            assertThatCode(() -> sut.execute(assetId, 4, null)).doesNotThrowAnyException();
+        }
+
+        @Test
         void execute_assetNotFound_throwsNoSuchElementException() {
             when(assetRepository.findById(99L)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> sut.execute(99L, 3))
+            assertThatThrownBy(() -> sut.execute(99L, 3, null))
                     .isInstanceOf(NoSuchElementException.class);
         }
     }

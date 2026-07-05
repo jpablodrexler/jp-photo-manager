@@ -21,6 +21,7 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
+import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -94,6 +95,8 @@ class RoleBasedAccessControlTest {
     MeterRegistry meterRegistry;
     @MockitoBean
     KafkaProgressRegistry kafkaProgressRegistry;
+    @MockitoBean
+    UserRepository userRepository;
 
     @Test
     @WithMockUser(roles = "VIEWER")

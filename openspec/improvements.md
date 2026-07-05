@@ -46,7 +46,6 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 | 69  | `iptc-xmp-metadata-editing` | Read and write IPTC/XMP fields (caption, copyright notice, creator, keywords, city, country) directly in the viewer panel alongside the existing EXIF display; Apache Commons Imaging (already a dependency) supports IPTC segment read and write in JPEG files via `JpegIptcRewriter`; a new `PATCH /api/assets/{id}/iptc` endpoint writes the updated IPTC segment back to the file on disk and refreshes the `assets` row; caption and copyright are stored in two new VARCHAR columns on `assets` (Flyway migration) so they are queryable without re-reading the file; keywords are mapped to the existing `asset_tags` table, making them immediately available in tag-based filters; the viewer panel shows caption and copyright as editable `MatFormField` inputs below the EXIF panel with auto-save on blur | ✅ Created | ⬜ Pending |
 | 70  | `dominant-color-palette`    | During cataloging, extract the top 5 dominant colors from each photo's thumbnail using k-means clustering (k=5, 10 iterations) over the 200×150 px thumbnail pixels; no second file read from the original is required; store the five RGB centroids as a `color_palette JSONB` column on `assets` (Flyway migration); each centroid is snapped to the nearest of 12 color families (red, orange, yellow, green, teal, blue, purple, pink, brown, grey, black, white) using Euclidean distance in HSL space; frontend additions: a color swatch row in the search/filter toolbar (one or more families can be selected, adding a `colorFamily[]` query parameter to `GET /api/assets`), an optional 5-segment color stripe at the bottom of each `ThumbnailComponent` card (toggleable, off by default), and a "Color distribution" donut chart on the `/analytics` dashboard reusing the existing `ngx-charts` dependency; `GET /api/assets/color-families` returns the 12 families with asset counts for the current folder to populate the swatch picker; no external Maven dependency — k-means runs over `BufferedImage` pixel access using the standard library | ✅ Created | ⬜ Pending |
 | 71  | `webdav-server`             | Expose the catalog over WebDAV (`PROPFIND`, `GET`, `PUT`, `DELETE`, `MKCOL`) at `/webdav/` so users can mount the catalog as a network drive on Windows (Map Network Drive), macOS (Finder → Connect to Server), and Linux (`davfs2`); the virtual folder tree mirrors the `assets.folder_path` hierarchy; `GET` on an asset path streams the original file via the existing `StoragePort`; `PUT` to any folder path triggers the same catalog pipeline as drag-and-drop upload (#3); `DELETE` routes through the soft-delete path from `soft-delete-recycle-bin` (#9); implemented with `milton-server-ce` (pure Java WebDAV server, no servlet dependency conflicts) or a custom Spring MVC `WebdavController` handling raw `PROPFIND` XML via JAXB; authentication uses HTTP Basic over the existing `UserDetailsService` — JWT cookies are not compatible with native OS WebDAV clients; no schema change | ✅ Created | ⬜ Pending |
-| 73  | `mongodb-audit-log`               | Append-only MongoDB collection `asset_audit_log` recording every user action — view, download, tag, rate, delete, sync-run, convert-run, catalog-run — as a flexible document `{ userId, action, entityType, entityId, timestamp, metadata: { … } }`; each event type carries its own `metadata` shape (e.g. tag events include `tagName`; delete events include `folderId` and `permanent` flag) without schema migrations; time-range queries and per-user activity feeds are native aggregation pipeline operations; a new `AuditLogRepository` port interface (domain) with a `MongoAuditLogRepositoryImpl` adapter (infrastructure) keeps MongoDB out of the use-case layer; pairs with `kafka-catalog-pipeline` (#75) as the natural durable consumer of `asset.cataloged` and `asset.deleted` Kafka events | ⬜ Pending | ⬜ Pending |
 | 74  | `mongodb-user-preferences`        | Move `user_preferences` and `search_presets` from rigid PostgreSQL tables to a single MongoDB `user_configs` collection keyed by `userId`; adding a new UI preference (theme, gallery layout, notification toggle) requires no Flyway migration; search preset payloads grow naturally as new filter fields are added without altering existing rows; only the two persistence adapters (`UserPreferenceRepositoryImpl`, `SearchPresetRepositoryImpl`) change — use cases, domain models, and REST controllers are untouched; the existing PostgreSQL tables are dropped after a one-time data migration | ⬜ Pending | ⬜ Pending |
 | 76  | `kafka-async-upload`              | Decouple the `POST /api/assets/upload` HTTP thread from SHA-256 hashing, EXIF extraction, and thumbnail generation; the controller saves the file to disk, publishes an `AssetUploadedEvent { filePath, assetId, userId }` to the `asset.uploaded` Kafka topic, and returns HTTP 202; three independent consumer groups process hash computation, EXIF extraction, and thumbnail generation in parallel; eliminates multi-second blocking for large files (RAW 40–80 MB, video) and allows each processing stage to scale independently; requires the Kafka infrastructure introduced by `kafka-catalog-pipeline` (#75) | ⬜ Pending | ⬜ Pending |
 | 77  | `kafka-catalog-coordination`      | Prevent duplicate concurrent catalog scans when multiple app instances are deployed; `CatalogScheduler` currently uses `@Scheduled(fixedDelay)` on every JVM — two instances each trigger a full directory traversal simultaneously, doubling disk I/O and risking duplicate database writes; a single-partition `catalog.requests` Kafka topic provides natural leader election via Kafka consumer groups: only one member processes a `CatalogJobRequested` event while others skip; replace the `@Scheduled` trigger in `CatalogScheduler` with a Kafka producer that publishes to `catalog.requests` on the same interval; requires the Kafka infrastructure introduced by `kafka-catalog-pipeline` (#75) | ⬜ Pending | ⬜ Pending |
@@ -71,9 +70,9 @@ This document records all **pending** improvements to the JPPhotoManagerWeb appl
 
 `duplicate-auto-resolve` routes deleted assets through the soft-delete path introduced by `soft-delete-recycle-bin`.
 
-**Improvement 75 → Improvements 73, 76, 77** (prerequisite already implemented)
+**Improvement 75 → Improvements 76, 77** (prerequisite already implemented)
 
-`kafka-catalog-pipeline` (#75) is now implemented. `mongodb-audit-log` (#73), `kafka-async-upload` (#76), and `kafka-catalog-coordination` (#77) are all unblocked and can be delivered in any order. `kafka-sse-broadcast` (#80), also unblocked by #75, has since been implemented — see `improvements-implemented.md`.
+`kafka-catalog-pipeline` (#75) is now implemented. `kafka-async-upload` (#76) and `kafka-catalog-coordination` (#77) are unblocked and can be delivered in any order. `mongodb-audit-log` (#73) and `kafka-sse-broadcast` (#80), also unblocked by #75, have since been implemented — see `improvements-implemented.md`.
 
 ### Soft implementation dependencies (order affects cleanliness)
 
@@ -114,7 +113,6 @@ Within dependent clusters:
 54 (notification-center) → 48 (email-notifications)
 60 (archive-support) → 61 (asset-backup)
 75 (kafka-catalog-pipeline, already done) → 76 (kafka-async-upload), 77 (kafka-catalog-coordination)
-75 (kafka-catalog-pipeline, already done) → 73 (mongodb-audit-log) [Kafka consumer]
 28 → 81 (redis-thumbnail-cache) [JVM cache first, then Redis L2]
 28 → 82 (redis-search-tag-cache) [extend Caffeine scope to Redis]
 ```
@@ -127,11 +125,10 @@ Priority ordering for the MongoDB, Kafka, and Redis improvements:
 P2 — scalability and performance wins:
   76 (kafka-async-upload)             — requires #75 (already implemented); eliminates blocking upload for large files
   81 (redis-thumbnail-cache)          — implement after #28 for best layering (#26 thumbnail-http-cache already done)
-  73 (mongodb-audit-log)              — requires #75 (already implemented) for Kafka consumers
   82 (redis-search-tag-cache)         — implement after #28 (Caffeine) for a smooth upgrade path
 
 P3 — operational convenience:
-  74 (mongodb-user-preferences)       — standalone; most useful now that MongoDB is already provisioned by #72 (already implemented) or #73
+  74 (mongodb-user-preferences)       — standalone; most useful now that MongoDB is already provisioned by #72 or #73 (both already implemented)
   77 (kafka-catalog-coordination)     — requires #75 (already implemented); lower urgency when running a single instance
 ```
 
@@ -169,7 +166,7 @@ Improvements #73–#82 require no Flyway migrations — they do not modify the P
 
 | Infrastructure | Required by improvements | Notes |
 | -------------- | ------------------------ | ----- |
-| MongoDB 7+     | #73, #74 | Add `mongo` service to `docker-compose.yml` (already provisioned by `mongodb-exif-store`, #72, now implemented) |
+| MongoDB 7+     | #74 | Add `mongo` service to `docker-compose.yml` (already provisioned by `mongodb-exif-store`, #72, and `mongodb-audit-log`, #73, both now implemented) |
 | Apache Kafka 3.7+ (KRaft mode) | #76, #77 | Add `kafka` service; no ZooKeeper required in KRaft mode |
 | Redis 7+       | #81, #82 | Add `redis` service with `allkeys-lru` eviction and a memory cap (already provisioned by `redis-distributed-rate-limiting`, #78, and reused by `redis-refresh-tokens`, #79, both now implemented) |
 
@@ -202,7 +199,7 @@ Corresponding `application.yml` additions:
 spring:
   data:
     mongodb:
-      uri: mongodb://localhost:27017/photomanager   # improvements #73, #74 (MongoDB already provisioned by #72)
+      uri: mongodb://localhost:27017/photomanager   # improvement #74 (MongoDB already provisioned by #72, #73)
     redis:
       host: ${REDIS_HOST:localhost}                 # improvements #81, #82 (Redis already provisioned by #78, #79)
       port: ${REDIS_PORT:6379}
@@ -404,20 +401,6 @@ The WebDAV virtual filesystem is a read/write projection over the existing `asse
 **Improvement 71 — authentication note**
 
 JWT cookies cannot be forwarded by OS-level WebDAV mounts. The WebDAV endpoint at `/webdav/**` is exempted from the JWT cookie filter in `SecurityConfig` and instead uses `HttpBasicAuthenticationFilter` backed by the existing `UserDetailsService`. Credentials are sent over HTTPS only; `application.yml` must enforce `server.ssl.enabled=true` or a reverse proxy must terminate TLS before the WebDAV mount is used in production.
-
-**Improvement 73 — MongoDB document design**
-
-The audit log collection name is `asset_audit_log`. Every action produces a document with required fields `{ userId, action, entityType, entityId, timestamp }` and an optional `metadata` sub-document whose shape varies by action:
-
-```
-AssetTagged:   metadata: { tagName, tagId }
-AssetDeleted:  metadata: { folderId, permanent: false }
-CatalogRun:    metadata: { foldersScanned, assetsAdded, durationMs }
-SyncRun:       metadata: { sourceDir, targetDir, filesCopied, filesDeleted }
-ConvertRun:    metadata: { sourceDir, targetDir, filesConverted }
-```
-
-A compound index on `{ userId: 1, timestamp: -1 }` supports per-user history queries. A TTL index on `timestamp` (e.g. 365 days) automatically purges old entries. When `kafka-catalog-pipeline` (#75) is in place, audit log writes are handled by a dedicated Kafka consumer group (`audit-log-writer`) subscribed to `asset.cataloged`, `asset.deleted`, and `job.*.progress` topics; without #75, a direct port call from each use case serves as the fallback. The `AuditLogRepository` port interface in `domain/port/out/` declares a single `void log(AuditEvent event)` method; the `MongoAuditLogRepositoryImpl` adapter implements it — no framework type leaks into the domain.
 
 **Improvement 74 — data migration strategy**
 

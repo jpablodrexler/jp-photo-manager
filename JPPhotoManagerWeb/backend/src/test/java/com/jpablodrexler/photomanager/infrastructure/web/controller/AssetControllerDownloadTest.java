@@ -20,6 +20,7 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
+import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.DownloadAssetsRequest;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
@@ -98,13 +99,15 @@ class AssetControllerDownloadTest {
     MeterRegistry meterRegistry;
     @MockitoBean
     KafkaProgressRegistry kafkaProgressRegistry;
+    @MockitoBean
+    UserRepository userRepository;
 
     @Test
     void downloadAssets_validRequest_returns200WithZipHeaders() throws Exception {
         DownloadAssetsRequest request = new DownloadAssetsRequest();
         request.setAssetIds(List.of(10L, 20L, 30L));
 
-        doNothing().when(downloadAssetsUseCase).execute(eq(List.of(10L, 20L, 30L)), any());
+        doNothing().when(downloadAssetsUseCase).execute(eq(List.of(10L, 20L, 30L)), any(), any());
 
         mockMvc.perform(post("/api/assets/download")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -113,7 +116,7 @@ class AssetControllerDownloadTest {
                 .andExpect(header().string("Content-Type", "application/zip"))
                 .andExpect(header().string("Content-Disposition", "attachment; filename=\"photos.zip\""));
 
-        verify(downloadAssetsUseCase).execute(eq(List.of(10L, 20L, 30L)), any());
+        verify(downloadAssetsUseCase).execute(eq(List.of(10L, 20L, 30L)), any(), any());
     }
 
     @Test

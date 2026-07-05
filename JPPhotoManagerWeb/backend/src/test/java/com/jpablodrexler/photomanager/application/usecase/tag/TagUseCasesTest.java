@@ -2,6 +2,7 @@ package com.jpablodrexler.photomanager.application.usecase.tag;
 
 import com.jpablodrexler.photomanager.domain.model.Tag;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AuditLogRepository;
 import com.jpablodrexler.photomanager.domain.port.out.TagRepository;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -30,6 +32,8 @@ class TagUseCasesTest {
         AssetRepository assetRepository;
         @Mock
         TagRepository tagRepository;
+        @Mock
+        AuditLogRepository auditLogRepository;
         @InjectMocks
         AddTagToAssetUseCaseImpl sut;
 
@@ -40,7 +44,7 @@ class TagUseCasesTest {
             Tag savedTag = Tag.builder().tagId(10L).name("vacation").build();
             when(tagRepository.save(any(Tag.class))).thenReturn(savedTag);
 
-            sut.execute(1L, "vacation");
+            sut.execute(1L, "vacation", null);
 
             verify(tagRepository).save(argThat(t -> "vacation".equals(t.getName())));
             verify(assetRepository).addTagToAsset(1L, 10L);
@@ -52,7 +56,7 @@ class TagUseCasesTest {
             when(assetRepository.existsById(2L)).thenReturn(true);
             when(tagRepository.findByName("family")).thenReturn(Optional.of(existing));
 
-            sut.execute(2L, "family");
+            sut.execute(2L, "family", null);
 
             verify(tagRepository, never()).save(any());
             verify(assetRepository).addTagToAsset(2L, 5L);
@@ -65,7 +69,7 @@ class TagUseCasesTest {
             Tag savedTag = Tag.builder().tagId(10L).name("vacation").build();
             when(tagRepository.save(any(Tag.class))).thenReturn(savedTag);
 
-            sut.execute(1L, "VACATION");
+            sut.execute(1L, "VACATION", null);
 
             verify(tagRepository).findByName("vacation");
         }
@@ -74,7 +78,7 @@ class TagUseCasesTest {
         void execute_assetNotFound_throwsNoSuchElementException() {
             when(assetRepository.existsById(99L)).thenReturn(false);
 
-            assertThatThrownBy(() -> sut.execute(99L, "vacation"))
+            assertThatThrownBy(() -> sut.execute(99L, "vacation", null))
                     .isInstanceOf(NoSuchElementException.class);
 
             verify(assetRepository, never()).addTagToAsset(anyLong(), anyLong());
@@ -86,7 +90,30 @@ class TagUseCasesTest {
             Tag existing = Tag.builder().tagId(5L).name("vacation").build();
             when(tagRepository.findByName("vacation")).thenReturn(Optional.of(existing));
 
-            sut.execute(1L, "vacation");
+            sut.execute(1L, "vacation", null);
+
+            verify(assetRepository).addTagToAsset(1L, 5L);
+        }
+
+        @Test
+        void execute_tagAdded_logsAssetTaggedAuditEvent() {
+            when(assetRepository.existsById(1L)).thenReturn(true);
+            Tag existing = Tag.builder().tagId(5L).name("vacation").build();
+            when(tagRepository.findByName("vacation")).thenReturn(Optional.of(existing));
+
+            sut.execute(1L, "vacation", null);
+
+            verify(auditLogRepository).log(any());
+        }
+
+        @Test
+        void execute_auditLogThrows_doesNotPropagate() {
+            when(assetRepository.existsById(1L)).thenReturn(true);
+            Tag existing = Tag.builder().tagId(5L).name("vacation").build();
+            when(tagRepository.findByName("vacation")).thenReturn(Optional.of(existing));
+            doThrow(new RuntimeException("mongo down")).when(auditLogRepository).log(any());
+
+            assertThatCode(() -> sut.execute(1L, "vacation", null)).doesNotThrowAnyException();
 
             verify(assetRepository).addTagToAsset(1L, 5L);
         }
@@ -100,6 +127,8 @@ class TagUseCasesTest {
         AssetRepository assetRepository;
         @Mock
         TagRepository tagRepository;
+        @Mock
+        AuditLogRepository auditLogRepository;
         @InjectMocks
         RemoveTagFromAssetUseCaseImpl sut;
 
@@ -110,7 +139,7 @@ class TagUseCasesTest {
             when(assetRepository.removeTagFromAsset(1L, 10L)).thenReturn(1);
             when(tagRepository.isUsedByOtherAssets(10L, 1L)).thenReturn(true);
 
-            sut.execute(1L, "vacation");
+            sut.execute(1L, "vacation", null);
 
             verify(assetRepository).removeTagFromAsset(1L, 10L);
             verify(tagRepository, never()).deleteById(anyLong());
@@ -123,7 +152,7 @@ class TagUseCasesTest {
             when(assetRepository.removeTagFromAsset(1L, 10L)).thenReturn(1);
             when(tagRepository.isUsedByOtherAssets(10L, 1L)).thenReturn(false);
 
-            sut.execute(1L, "rare-tag");
+            sut.execute(1L, "rare-tag", null);
 
             verify(tagRepository).deleteById(10L);
         }
@@ -134,7 +163,7 @@ class TagUseCasesTest {
             when(tagRepository.findByName("vacation")).thenReturn(Optional.of(tag));
             when(assetRepository.removeTagFromAsset(1L, 10L)).thenReturn(0);
 
-            assertThatThrownBy(() -> sut.execute(1L, "vacation"))
+            assertThatThrownBy(() -> sut.execute(1L, "vacation", null))
                     .isInstanceOf(NoSuchElementException.class);
         }
 
@@ -142,7 +171,7 @@ class TagUseCasesTest {
         void execute_tagNotFound_throwsNoSuchElementException() {
             when(tagRepository.findByName("nonexistent")).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> sut.execute(1L, "nonexistent"))
+            assertThatThrownBy(() -> sut.execute(1L, "nonexistent", null))
                     .isInstanceOf(NoSuchElementException.class);
 
             verify(assetRepository, never()).removeTagFromAsset(anyLong(), anyLong());
@@ -152,10 +181,33 @@ class TagUseCasesTest {
         void execute_uppercaseName_normalizesToLowercase() {
             when(tagRepository.findByName("vacation")).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> sut.execute(1L, "VACATION"))
+            assertThatThrownBy(() -> sut.execute(1L, "VACATION", null))
                     .isInstanceOf(NoSuchElementException.class);
 
             verify(tagRepository).findByName("vacation");
+        }
+
+        @Test
+        void execute_tagRemoved_logsAssetUntaggedAuditEvent() {
+            Tag tag = Tag.builder().tagId(10L).name("vacation").build();
+            when(tagRepository.findByName("vacation")).thenReturn(Optional.of(tag));
+            when(assetRepository.removeTagFromAsset(1L, 10L)).thenReturn(1);
+            when(tagRepository.isUsedByOtherAssets(10L, 1L)).thenReturn(true);
+
+            sut.execute(1L, "vacation", null);
+
+            verify(auditLogRepository).log(any());
+        }
+
+        @Test
+        void execute_auditLogThrows_doesNotPropagate() {
+            Tag tag = Tag.builder().tagId(10L).name("vacation").build();
+            when(tagRepository.findByName("vacation")).thenReturn(Optional.of(tag));
+            when(assetRepository.removeTagFromAsset(1L, 10L)).thenReturn(1);
+            when(tagRepository.isUsedByOtherAssets(10L, 1L)).thenReturn(true);
+            doThrow(new RuntimeException("mongo down")).when(auditLogRepository).log(any());
+
+            assertThatCode(() -> sut.execute(1L, "vacation", null)).doesNotThrowAnyException();
         }
     }
 

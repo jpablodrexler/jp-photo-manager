@@ -108,7 +108,7 @@ infrastructure/
 - `HashCalculatorPort` / `AssetHashCalculatorAdapter` — SHA-256 hash computation
 - `JwtTokenPort` / `JwtTokenAdapter` — JWT generation and validation (delegates to `JwtUtil`)
 
-**Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by **Flyway**; migrations live in `src/main/resources/db/migration/`. Connection is configured via environment variables (see table below). `asset_exif` lives in **MongoDB** instead (via `AssetExifRepositoryImpl` / `MongoAssetExifRepository`) — all other tables remain in PostgreSQL. Refresh tokens (`refresh_tokens` table) are dual-written to PostgreSQL and Redis: `RefreshTokenRepositoryImpl` mirrors every `save()` into `RedisRefreshTokenStore` (`refresh_token:{token}` hash, `refresh_tokens:user:{userId}` set, `refresh_token:id:{tokenId}` index) alongside the existing JPA write. This is Phase 1 of the `redis-refresh-tokens` migration — PostgreSQL remains authoritative for reads (`findByToken`/`deleteByUserId`/`deleteById`); a follow-up change will cut reads over to Redis-only and drop the PostgreSQL table.
+**Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by **Flyway**; migrations live in `src/main/resources/db/migration/`. Connection is configured via environment variables (see table below). `asset_exif` lives in **MongoDB** instead (via `AssetExifRepositoryImpl` / `MongoAssetExifRepository`) — all other tables remain in PostgreSQL. Refresh tokens (`refresh_tokens` table) are dual-written to PostgreSQL and Redis: `RefreshTokenRepositoryImpl` mirrors every `save()` into `RedisRefreshTokenStore` (`refresh_token:{token}` hash, `refresh_tokens:user:{userId}` set, `refresh_token:id:{tokenId}` index) alongside the existing JPA write. This is Phase 1 of the `redis-refresh-tokens` migration — PostgreSQL remains authoritative for reads (`findByToken`/`deleteByUserId`/`deleteById`); a follow-up change will cut reads over to Redis-only and drop the PostgreSQL table. User-action history is stored append-only in a MongoDB `asset_audit_log` collection (via `AuditLogRepositoryImpl` / `MongoAuditLogRepository`), populated by `AuditLogKafkaListener` (a dedicated `audit-log-writer` Kafka consumer group) for already-published `asset.cataloged`/`asset.deleted`/`job.*.progress` events, and by direct `AuditLogRepository.log(...)` calls from the tag, rating, view, and download use cases for actions with no existing topic; a compound `userId`/`timestamp` index and a 365-day TTL index are ensured at startup by `MongoIndexInitializer`.
 
 **Local development prerequisite:** PostgreSQL 18+ and MongoDB must be running. Quickstart:
 ```bash
@@ -133,7 +133,7 @@ docker run -d --name photomanager-mongo -p 27017:27017 mongo:8
 | `POSTGRES_DB` | `photomanager` | Database name |
 | `POSTGRES_USERNAME` | `postgres` | Database user |
 | `POSTGRES_PASSWORD` | `postgres` | Database password |
-| `MONGO_URI` | `mongodb://localhost:27017/photomanager` | MongoDB connection URI (`asset_exif` collection) |
+| `MONGO_URI` | `mongodb://localhost:27017/photomanager` | MongoDB connection URI (`asset_exif`, `asset_audit_log` collections) |
 
 ### REST API
 
@@ -152,6 +152,7 @@ docker run -d --name photomanager-mongo -p 27017:27017 mongo:8
 | `GET` | `/api/assets/duplicates` | Yes | Grouped duplicate assets |
 | `POST` | `/api/assets/move` | Yes | Move/copy assets to a destination folder |
 | `DELETE` | `/api/assets` | Yes | Remove assets from catalog (optionally delete files) |
+| `GET` | `/api/audit-log` | Yes | Paginated audit trail (`userId`, `entityId`, `from`, `to`, `page`, `size`); non-admins are scoped to their own `userId` |
 | `GET` | `/api/folders` | Yes | Catalogued folders (optionally filtered by `parentPath`) |
 | `GET` | `/api/folders/drives` | Yes | Available filesystem roots |
 | `GET` | `/api/folders/initial` | Yes | Configured initial folder |

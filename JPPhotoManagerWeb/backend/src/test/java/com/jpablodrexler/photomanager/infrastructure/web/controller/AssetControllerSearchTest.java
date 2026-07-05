@@ -23,6 +23,7 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
+import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -96,6 +97,8 @@ class AssetControllerSearchTest {
     MeterRegistry meterRegistry;
     @MockitoBean
     KafkaProgressRegistry kafkaProgressRegistry;
+    @MockitoBean
+    UserRepository userRepository;
 
     private PaginatedResult<Asset> emptyPage() {
         return new PaginatedResult<>(List.of(), 0L, 0, 50);

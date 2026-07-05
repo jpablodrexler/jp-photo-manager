@@ -30,6 +30,7 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
+import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import com.jpablodrexler.photomanager.application.dto.RenameAssetsResult;
 import com.jpablodrexler.photomanager.application.dto.RenamePreview;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
@@ -118,6 +119,8 @@ class AssetControllerTest {
     MeterRegistry meterRegistry;
     @MockitoBean
     KafkaProgressRegistry kafkaProgressRegistry;
+    @MockitoBean
+    UserRepository userRepository;
 
     @BeforeEach
     void resetSseCounter() {
@@ -198,7 +201,7 @@ class AssetControllerTest {
 
     @Test
     void getFullImage_jpegMagicBytes_returns200WithJpegContentType() throws Exception {
-        when(getAssetImageUseCase.execute(1L))
+        when(getAssetImageUseCase.execute(1L, null))
                 .thenReturn(new AssetImage(new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF}, "photo.jpg"));
 
         mockMvc.perform(get("/api/assets/1/image"))
@@ -208,7 +211,7 @@ class AssetControllerTest {
 
     @Test
     void getFullImage_assetNotFound_returns404() throws Exception {
-        when(getAssetImageUseCase.execute(99L)).thenThrow(new RuntimeException("not found"));
+        when(getAssetImageUseCase.execute(99L, null)).thenThrow(new RuntimeException("not found"));
 
         mockMvc.perform(get("/api/assets/99/image"))
                 .andExpect(status().isNotFound());
@@ -217,7 +220,7 @@ class AssetControllerTest {
     @Test
     void getFullImage_pngMagicBytes_returns200WithPngContentType() throws Exception {
         byte[] pngBytes = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', (byte) 0x1A, '\n'};
-        when(getAssetImageUseCase.execute(2L))
+        when(getAssetImageUseCase.execute(2L, null))
                 .thenReturn(new AssetImage(pngBytes, "image.png"));
 
         mockMvc.perform(get("/api/assets/2/image"))
@@ -228,7 +231,7 @@ class AssetControllerTest {
     @Test
     void getFullImage_gifMagicBytes_returns200WithGifContentType() throws Exception {
         byte[] gifBytes = {'G', 'I', 'F', '8', '9', 'a'};
-        when(getAssetImageUseCase.execute(3L))
+        when(getAssetImageUseCase.execute(3L, null))
                 .thenReturn(new AssetImage(gifBytes, "anim.gif"));
 
         mockMvc.perform(get("/api/assets/3/image"))
@@ -238,7 +241,7 @@ class AssetControllerTest {
 
     @Test
     void getFullImage_unknownMagicBytes_returns415() throws Exception {
-        when(getAssetImageUseCase.execute(4L))
+        when(getAssetImageUseCase.execute(4L, null))
                 .thenReturn(new AssetImage(new byte[]{1, 2, 3}, "disguised.jpg"));
 
         mockMvc.perform(get("/api/assets/4/image"))
@@ -248,7 +251,7 @@ class AssetControllerTest {
     @Test
     void getFullImage_pngMagicBytesWithJpgExtension_returns200WithPngContentType() throws Exception {
         byte[] pngBytes = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', (byte) 0x1A, '\n'};
-        when(getAssetImageUseCase.execute(5L))
+        when(getAssetImageUseCase.execute(5L, null))
                 .thenReturn(new AssetImage(pngBytes, "misleading.jpg"));
 
         mockMvc.perform(get("/api/assets/5/image"))
@@ -397,14 +400,14 @@ class AssetControllerTest {
 
     @Test
     void rateAsset_validRating_returns204AndCallsUseCase() throws Exception {
-        doNothing().when(rateAssetUseCase).execute(42L, 4);
+        doNothing().when(rateAssetUseCase).execute(42L, 4, null);
 
         mockMvc.perform(patch("/api/assets/42/rating")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"rating\":4}"))
                 .andExpect(status().isNoContent());
 
-        verify(rateAssetUseCase).execute(42L, 4);
+        verify(rateAssetUseCase).execute(42L, 4, null);
     }
 
     @Test

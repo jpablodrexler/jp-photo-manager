@@ -23,6 +23,7 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
+import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
@@ -71,6 +72,7 @@ class AssetControllerVideoTest {
     @MockitoBean AssetWebMapper assetWebMapper;
     @MockitoBean MeterRegistry meterRegistry;
     @MockitoBean KafkaProgressRegistry kafkaProgressRegistry;
+    @MockitoBean UserRepository userRepository;
 
     @Test
     void getAssets_videoAsset_responseContainsIsVideoTrue() throws Exception {
