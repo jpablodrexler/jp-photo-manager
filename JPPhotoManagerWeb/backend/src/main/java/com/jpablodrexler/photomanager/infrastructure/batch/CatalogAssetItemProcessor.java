@@ -60,7 +60,8 @@ public class CatalogAssetItemProcessor implements ItemProcessor<Path, CatalogBat
         asset.setFileModificationDateTime(storagePort.getFileModificationDateTime(filePathStr));
         asset.setThumbnailCreationDateTime(LocalDateTime.now());
         asset.setImageRotation(storagePort.getImageRotation(filePathStr));
-        asset.setFileType(FileType.IMAGE);
+        asset.setVideo(storagePort.isVideoFile(fileName));
+        asset.setFileType(asset.isVideo() ? FileType.VIDEO : FileType.IMAGE);
 
         byte[] thumbnailData = storagePort.generateThumbnail(filePathStr, THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT);
         AssetExif assetExif = buildExif(filePathStr);
