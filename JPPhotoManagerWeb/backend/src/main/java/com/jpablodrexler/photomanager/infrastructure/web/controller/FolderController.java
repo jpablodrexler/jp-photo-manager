@@ -5,7 +5,7 @@ import com.jpablodrexler.photomanager.domain.port.in.folder.GetDrivesUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.folder.GetInitialFolderUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.folder.GetRecentTargetPathsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.folder.GetSubFoldersUseCase;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.FolderDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.FolderResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.FolderWebMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -36,7 +36,7 @@ public class FolderController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping
-    public ResponseEntity<List<FolderDto>> getFolders(@RequestParam(required = false) String parentPath) {
+    public ResponseEntity<List<FolderResponseDto>> getFolders(@RequestParam(required = false) String parentPath) {
         List<Folder> folders = getSubFoldersUseCase.execute(parentPath);
         return ResponseEntity.ok(folders.stream().map(folderWebMapper::toDto).collect(Collectors.toList()));
     }

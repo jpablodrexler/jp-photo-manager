@@ -1,11 +1,11 @@
-package com.jpablodrexler.photomanager.infrastructure.web.dto;
+package com.jpablodrexler.photomanager.infrastructure.web.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
 @Data
-public class MoveAssetsRequest {
+public class MoveAssetsRequestDto {
 
     @NotEmpty
     private Long[] assetIds;

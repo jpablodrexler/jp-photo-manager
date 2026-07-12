@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.infrastructure.web.dto;
+package com.jpablodrexler.photomanager.infrastructure.web.dto.request;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class DownloadAssetsRequest {
+public class DownloadAssetsRequestDto {
 
     @NotEmpty
     @Size(max = 500)

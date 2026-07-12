@@ -429,14 +429,16 @@ public class StorageServiceAdapter implements StoragePort {
                 || lower.endsWith(".pls");
     }
 
-    public static boolean isAudioFile(String fileName) {
+    @Override
+    public boolean isAudioFile(String fileName) {
         String lower = fileName.toLowerCase();
         return lower.endsWith(".mp3") || lower.endsWith(".flac")
                 || lower.endsWith(".wav") || lower.endsWith(".aac")
                 || lower.endsWith(".ogg");
     }
 
-    public static boolean isPlaylistFile(String fileName) {
+    @Override
+    public boolean isPlaylistFile(String fileName) {
         String lower = fileName.toLowerCase();
         return lower.endsWith(".m3u") || lower.endsWith(".m3u8") || lower.endsWith(".pls");
     }

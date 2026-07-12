@@ -1,8 +1,8 @@
-package com.jpablodrexler.photomanager.infrastructure.web.dto;
+package com.jpablodrexler.photomanager.infrastructure.web.dto.response;
 
 import java.time.Instant;
 
-public record SearchPresetDto(
+public record SearchPresetResponseDto(
         Long presetId,
         String name,
         Instant createdAt,

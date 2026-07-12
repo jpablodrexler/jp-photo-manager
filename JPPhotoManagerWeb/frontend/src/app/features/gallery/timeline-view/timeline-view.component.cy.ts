@@ -1,4 +1,5 @@
 import { mount } from 'cypress/angular';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { TimelineViewComponent } from './timeline-view.component';
 import { TimelineGroup } from '../../../core/models/timeline-group.model';
 import { Asset } from '../../../core/models/asset.model';
@@ -36,6 +37,7 @@ describe('TimelineViewComponent', () => {
   it('rendersGroupsWithCorrectHeaders_whenGroupsProvided', () => {
     cy.mount(TimelineViewComponent, {
       componentProperties: { groups: mockGroups },
+      providers: [provideNoopAnimations()],
     });
 
     cy.get('.timeline-month-header').should('have.length', 2);
@@ -48,6 +50,7 @@ describe('TimelineViewComponent', () => {
   it('showsEmptyState_whenGroupsIsEmpty', () => {
     cy.mount(TimelineViewComponent, {
       componentProperties: { groups: [] },
+      providers: [provideNoopAnimations()],
     });
 
     cy.get('.timeline-empty').should('be.visible');
@@ -62,6 +65,7 @@ describe('TimelineViewComponent', () => {
         groups: [mockGroups[0]],
         thumbnailClick: { emit: clickSpy } as any,
       },
+      providers: [provideNoopAnimations()],
     });
 
     cy.get('.timeline-thumbnail-cell').first().click();
@@ -76,6 +80,7 @@ describe('TimelineViewComponent', () => {
 
     cy.mount(TimelineViewComponent, {
       componentProperties: { groups: sameMonthGroups },
+      providers: [provideNoopAnimations()],
     });
 
     cy.get('.timeline-month-header').should('have.length', 1);

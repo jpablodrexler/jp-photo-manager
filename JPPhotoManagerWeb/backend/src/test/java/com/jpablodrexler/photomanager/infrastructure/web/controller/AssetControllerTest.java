@@ -9,7 +9,9 @@ import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.model.TimelineGroup;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.TimelineGroupDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.TimelineGroupResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.ExifMetadataResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.RenamePreviewResponseDto;
 import com.jpablodrexler.photomanager.domain.model.CropAssetRequest;
 import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
@@ -35,7 +37,7 @@ import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import com.jpablodrexler.photomanager.domain.model.RenameAssetsResult;
 import com.jpablodrexler.photomanager.domain.model.RenamePreview;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.MoveAssetsRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.MoveAssetsRequestDto;
 
 import java.time.LocalDate;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
@@ -298,7 +300,7 @@ class AssetControllerTest {
     void moveAssets_validRequest_returns200WithTrue() throws Exception {
         when(moveAssetsUseCase.execute(any(), eq("/dest"), eq(false))).thenReturn(true);
 
-        MoveAssetsRequest request = new MoveAssetsRequest();
+        MoveAssetsRequestDto request = new MoveAssetsRequestDto();
         request.setAssetIds(new Long[]{1L, 2L});
         request.setDestinationFolderPath("/dest");
         request.setPreserveOriginal(false);
@@ -314,7 +316,7 @@ class AssetControllerTest {
     void moveAssets_moveFails_returns200WithFalse() throws Exception {
         when(moveAssetsUseCase.execute(any(), eq("/dest"), eq(false))).thenReturn(false);
 
-        MoveAssetsRequest request = new MoveAssetsRequest();
+        MoveAssetsRequestDto request = new MoveAssetsRequestDto();
         request.setAssetIds(new Long[]{1L});
         request.setDestinationFolderPath("/dest");
         request.setPreserveOriginal(false);
@@ -375,6 +377,8 @@ class AssetControllerTest {
         exif.setIsoSpeed(400);
 
         when(getAssetExifUseCase.execute(42L)).thenReturn(exif);
+        when(assetWebMapper.toDto(exif)).thenReturn(new ExifMetadataResponseDto(
+                "Canon", "EOS 90D", null, null, null, 400, null, null, null, null, null, null, null));
 
         mockMvc.perform(get("/api/assets/42/exif"))
                 .andExpect(status().isOk())
@@ -454,8 +458,8 @@ class AssetControllerTest {
         com.jpablodrexler.photomanager.domain.model.PaginatedResult<TimelineGroup> result =
                 new com.jpablodrexler.photomanager.domain.model.PaginatedResult<>(List.of(group), 1L, 0, 30);
 
-        com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto assetDto = buildAssetDto("photo.jpg", 1L);
-        TimelineGroupDto groupDto = new TimelineGroupDto(LocalDate.of(2024, 5, 10), "May 10, 2024", List.of(assetDto));
+        com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto assetDto = buildAssetDto("photo.jpg", 1L);
+        TimelineGroupResponseDto groupDto = new TimelineGroupResponseDto(LocalDate.of(2024, 5, 10), "May 10, 2024", List.of(assetDto));
 
         when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
         when(getAssetsTimelineUseCase.execute(any(AssetFilter.class))).thenReturn(result);
@@ -494,7 +498,7 @@ class AssetControllerTest {
     void cropAsset_validRequest_returns201WithCreatedAsset() throws Exception {
         Folder folder = buildFolder(1L, "/photos");
         Asset saved = buildAsset(folder, "photo_INSTAGRAM_POST.jpg", 2L);
-        com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto savedDto = buildAssetDto("photo_INSTAGRAM_POST.jpg", 2L);
+        com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto savedDto = buildAssetDto("photo_INSTAGRAM_POST.jpg", 2L);
 
         when(cropAssetUseCase.execute(eq(1L), any(CropAssetRequest.class))).thenReturn(saved);
         when(assetWebMapper.toDto(saved)).thenReturn(savedDto);
@@ -532,10 +536,10 @@ class AssetControllerTest {
 
     @Test
     void renameAssets_previewOnly_returns200WithPreviews() throws Exception {
-        RenameAssetsResult result = new RenameAssetsResult(
-                        List.of(new RenamePreview(1L, "old.jpg", "new.jpg")),
-                        false);
+        RenamePreview preview = new RenamePreview(1L, "old.jpg", "new.jpg");
+        RenameAssetsResult result = new RenameAssetsResult(List.of(preview), false);
         when(renameAssetsUseCase.execute(any(), eq("{original}.{ext}"), eq(false))).thenReturn(result);
+        when(assetWebMapper.toDto(preview)).thenReturn(new RenamePreviewResponseDto(1L, "old.jpg", "new.jpg"));
 
         mockMvc.perform(post("/api/assets/rename")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -548,10 +552,10 @@ class AssetControllerTest {
 
     @Test
     void renameAssets_applied_returns200WithAppliedTrue() throws Exception {
-        RenameAssetsResult result = new RenameAssetsResult(
-                        List.of(new RenamePreview(1L, "old.jpg", "new.jpg")),
-                        true);
+        RenamePreview preview = new RenamePreview(1L, "old.jpg", "new.jpg");
+        RenameAssetsResult result = new RenameAssetsResult(List.of(preview), true);
         when(renameAssetsUseCase.execute(any(), eq("new.{ext}"), eq(true))).thenReturn(result);
+        when(assetWebMapper.toDto(preview)).thenReturn(new RenamePreviewResponseDto(1L, "old.jpg", "new.jpg"));
 
         mockMvc.perform(post("/api/assets/rename")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -607,9 +611,9 @@ class AssetControllerTest {
         return asset;
     }
 
-    private com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto buildAssetDto(String fileName, Long id) {
-        com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto dto =
-                new com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto();
+    private com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto buildAssetDto(String fileName, Long id) {
+        com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto dto =
+                new com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto();
         dto.setAssetId(id);
         dto.setFileName(fileName);
         return dto;

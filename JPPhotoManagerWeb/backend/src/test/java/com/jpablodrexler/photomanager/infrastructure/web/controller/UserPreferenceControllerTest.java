@@ -5,8 +5,8 @@ import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.model.UserPreference;
 import com.jpablodrexler.photomanager.domain.port.in.preference.GetUserPreferenceUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.preference.SaveUserPreferenceUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.UserPreferenceDto;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.shared.UserPreferenceDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +17,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -38,7 +37,7 @@ class UserPreferenceControllerTest {
 
     @MockitoBean GetUserPreferenceUseCase getPreference;
     @MockitoBean SaveUserPreferenceUseCase savePreference;
-    @MockitoBean UserRepository userRepository;
+    @MockitoBean GetCurrentUserUseCase getCurrentUserUseCase;
 
     private UUID userId;
     private User user;
@@ -47,7 +46,7 @@ class UserPreferenceControllerTest {
     void setUp() {
         userId = UUID.randomUUID();
         user = User.builder().id(userId).username("admin").build();
-        when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
+        when(getCurrentUserUseCase.execute()).thenReturn(user);
     }
 
     @Test

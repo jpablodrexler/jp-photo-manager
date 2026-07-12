@@ -6,9 +6,9 @@ import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.in.recycle.GetDeletedAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.recycle.PurgeAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.recycle.RestoreAssetsUseCase;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.RecycleBinPurgeRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.RecycleBinRestoreRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.RecycleBinPurgeRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.RecycleBinRestoreRequestDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -38,10 +38,10 @@ public class RecycleBinController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping
-    public ResponseEntity<PaginatedData<AssetDto>> listDeleted(@RequestParam(defaultValue = "0") int page) {
+    public ResponseEntity<PaginatedData<AssetResponseDto>> listDeleted(@RequestParam(defaultValue = "0") int page) {
         PaginatedResult<Asset> result = getDeletedAssetsUseCase.execute(page);
         int totalPages = result.pageSize() > 0 ? (int) Math.ceil((double) result.total() / result.pageSize()) : 0;
-        PaginatedData<AssetDto> data = new PaginatedData<>(
+        PaginatedData<AssetResponseDto> data = new PaginatedData<>(
                 result.items().stream().map(assetWebMapper::toDto).collect(Collectors.toList()),
                 page, totalPages, result.total());
         return ResponseEntity.ok(data);
@@ -54,7 +54,7 @@ public class RecycleBinController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @PostMapping("/restore")
-    public ResponseEntity<Void> restore(@Valid @RequestBody RecycleBinRestoreRequest body) {
+    public ResponseEntity<Void> restore(@Valid @RequestBody RecycleBinRestoreRequestDto body) {
         restoreAssetsUseCase.execute(body.assetIds());
         return ResponseEntity.noContent().build();
     }
@@ -65,7 +65,7 @@ public class RecycleBinController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @DeleteMapping
-    public ResponseEntity<Void> purge(@Valid @RequestBody RecycleBinPurgeRequest body) {
+    public ResponseEntity<Void> purge(@Valid @RequestBody RecycleBinPurgeRequestDto body) {
         purgeAssetsUseCase.execute(body.assetIds());
         return ResponseEntity.noContent().build();
     }

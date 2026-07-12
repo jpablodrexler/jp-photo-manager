@@ -3,7 +3,7 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetPlaylistUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.StreamAssetUseCase;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -114,9 +114,9 @@ public class MediaController {
         @ApiResponse(responseCode = "404", description = "Playlist not found")
     })
     @GetMapping("/api/audio/playlist/{id}")
-    public ResponseEntity<List<AssetDto>> getPlaylist(@PathVariable Long id) {
+    public ResponseEntity<List<AssetResponseDto>> getPlaylist(@PathVariable Long id) {
         List<Asset> assets = getPlaylistUseCase.execute(id);
-        List<AssetDto> dtos = assets.stream().map(assetWebMapper::toDto).toList();
+        List<AssetResponseDto> dtos = assets.stream().map(assetWebMapper::toDto).toList();
         return ResponseEntity.ok(dtos);
     }
 }

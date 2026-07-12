@@ -104,7 +104,12 @@ src/main/java/com/jpablodrexler/photomanager/
       mapper/           → MapStruct @Mapper(componentModel="spring") entity ↔ domain model
     web/
       controller/       → @RestController classes (HTTP primary adapters)
-      dto/              → HTTP request/response DTOs
+      dto/              → HTTP request/response DTOs, split by direction:
+        request/        → {BaseName}RequestDto — incoming @RequestBody/@RequestParam payloads only
+        response/       → {BaseName}ResponseDto — outgoing ResponseEntity<...>/return-type payloads only
+        shared/         → DTOs genuinely used as both request AND response payloads (rare —
+                          verify every usage site before placing a class here instead of
+                          request/ or response/); keep the existing name, no forced suffix
       mapper/           → MapStruct @Mapper(componentModel="spring") domain ↔ HTTP DTO
       exception/        → GlobalExceptionHandler and HTTP exception types
     service/            → Service adapters implementing domain/port/out/ service ports
@@ -212,6 +217,9 @@ The impl delegates to a Spring Data JPA interface in `infrastructure/persistence
 | JPA repository     | `JpaFooRepository` in `infrastructure/persistence/jpa/` | `JpaAssetRepository`                           |
 | JPA entity         | `FooEntity` in `infrastructure/persistence/entity/`    | `AssetEntity`, `FolderEntity`                   |
 | Domain model       | Plain class in `domain/model/`                         | `Asset`, `Folder`                               |
+| HTTP request DTO   | `{BaseName}RequestDto` in `infrastructure/web/dto/request/` | `CreateAlbumRequestDto`, `RateAssetRequestDto` |
+| HTTP response DTO  | `{BaseName}ResponseDto` in `infrastructure/web/dto/response/` | `AssetResponseDto`, `AlbumSummaryResponseDto` |
+| HTTP shared DTO    | Unchanged name in `infrastructure/web/dto/shared/`     | `UserPreferenceDto` (used as both request and response body) |
 | Test classes       | `{ClassName}Test` or `{ClassName}Tests`                | `CatalogAssetsUseCaseImplTest`                  |
 | Test methods       | `methodName_condition_expectedResult`                  | `execute_folderExists_returnsAssets`            |
 | DB migration files | `V{n}__{Description}.sql`                              | `V1__initial_schema.sql`                        |
@@ -328,6 +336,13 @@ Domain model classes in `domain/model/` must be pure POJOs — no JPA imports.
 - Return `ResponseEntity<T>` with correct HTTP status codes (200, 201, 204, 404, 500).
 - Use MapStruct mappers in `infrastructure/web/mapper/` for HTTP DTO ↔ domain model conversions.
 - Use `SseEmitter` for streaming progress of long-running operations.
+- **DTO placement:** every class in `infrastructure/web/dto/` lives in exactly one of
+  `request/`, `response/`, or `shared/` — never directly in `web/dto/`. Classify by usage,
+  not by guessing from the name: a class is `request/` only if it is exclusively an incoming
+  `@RequestBody`/`@RequestParam` payload; `response/` only if it is exclusively an outgoing
+  `ResponseEntity<...>`/return-type payload (including when nested inside another response
+  DTO); `shared/` only if the *exact same class* is verified to appear as both, across every
+  controller method that references it.
 
 ```java
 @Tag(name = "Assets", description = "Photo and video asset management")
@@ -347,7 +362,7 @@ public class AssetController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping
-    public ResponseEntity<PaginatedResult<AssetDto>> getAssets(
+    public ResponseEntity<PaginatedResult<AssetResponseDto>> getAssets(
             @RequestParam String folderPath,
             @RequestParam(defaultValue = "0") int page) {
         PaginatedResult<Asset> result = getAssetsUseCase.execute(folderPath, page);
@@ -356,15 +371,21 @@ public class AssetController {
 }
 ```
 
-**HTTP DTO pattern** (in `infrastructure/web/dto/`):
+**HTTP response DTO pattern** (in `infrastructure/web/dto/response/`):
 
 ```java
 @Data
-public class AssetDto {
+public class AssetResponseDto {
     private Long assetId;
     private String fileName;
     private String thumbnailUrl;
 }
+```
+
+**HTTP request DTO pattern** (in `infrastructure/web/dto/request/`):
+
+```java
+public record RateAssetRequestDto(@Min(0) @Max(5) int rating) {}
 ```
 
 ### 6.2 Application Layer — Use Cases
@@ -483,8 +504,8 @@ public interface AssetMapper {
 // infrastructure/web/mapper/AssetWebMapper.java
 @Mapper(componentModel = "spring")
 public interface AssetWebMapper {
-    AssetDto toDto(Asset domain);
-    PaginatedResult<AssetDto> toDto(PaginatedResult<Asset> result);
+    AssetResponseDto toDto(Asset domain);
+    PaginatedResult<AssetResponseDto> toDto(PaginatedResult<Asset> result);
 }
 ```
 
@@ -822,6 +843,7 @@ if (result instanceof ErrorResult error) {
 - **New service ports:** declare interface (suffix `Port`) in `domain/port/out/`, implement (suffix `ServiceAdapter`) in `infrastructure/service/`.
 - **New repository ports:** declare interface (suffix `Repository`) in `domain/port/out/`, implement (suffix `RepositoryImpl`) in `infrastructure/persistence/adapter/`, backed by a Spring Data JPA interface (prefix `Jpa`) in `infrastructure/persistence/jpa/`.
 - **New controllers:** add to `infrastructure/web/controller/`; inject use-case interfaces only; use MapStruct mappers for all HTTP DTO ↔ domain model conversion.
+- **New HTTP DTOs:** place in `infrastructure/web/dto/request/`, `infrastructure/web/dto/response/`, or `infrastructure/web/dto/shared/` based on verified usage — never directly in `infrastructure/web/dto/`. Name request DTOs `{BaseName}RequestDto` and response DTOs `{BaseName}ResponseDto`; `shared/` DTOs keep their existing name (no forced suffix) since they don't have a single direction.
 - **MapStruct only** — never hand-write mappers between layers.
 - **JPA entities** belong only in `infrastructure/persistence/entity/`; domain models in `domain/model/` must be plain POJOs.
 - Never call a `@Transactional` or `@Async` method from within the same bean (`this.foo()`) — use a separate injected bean so the Spring proxy can intercept the call.
@@ -830,7 +852,7 @@ if (result instanceof ErrorResult error) {
 - No `open-in-view` (keep it `false`) — load associations within transactions.
 - Use `@Transactional(readOnly = true)` for read-only use-case methods.
 - Use `FetchType.LAZY` for all `@ManyToOne` and `@OneToMany` relationships on JPA entities.
-- Validation annotations (`@NotBlank`, `@NotEmpty`) belong **only** on HTTP DTOs in `infrastructure/web/dto/`, not on entities or domain models.
+- Validation annotations (`@NotBlank`, `@NotEmpty`) belong **only** on HTTP DTOs in `infrastructure/web/dto/request/` (or `shared/`), not on entities or domain models.
 - Keep controllers thin — one method per endpoint, immediate delegation to the use case.
 - Prefer streams and method references over imperative loops.
 - Add comments only when the **why** is non-obvious; omit them otherwise.

@@ -2,24 +2,9 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, switchMap, tap } from 'rxjs';
 import { PreferenceService } from './preference.service';
+import { LoginResponse, MeResponse, Session } from '../models/auth.model';
 
 const SESSION_KEY = 'photomanager_session';
-
-interface LoginResponse {
-  username: string;
-  expiresAt: string;
-}
-
-interface MeResponse {
-  username: string;
-  role: string;
-}
-
-interface Session {
-  username: string;
-  expiresAt: number;
-  role: string;
-}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {

@@ -3,19 +3,19 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.in.audit.GetAuditLogUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AuditLogWebMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -33,7 +33,7 @@ class AuditLogControllerTest {
     @Autowired MockMvc mockMvc;
 
     @MockitoBean GetAuditLogUseCase getAuditLogUseCase;
-    @MockitoBean UserRepository userRepository;
+    @MockitoBean GetCurrentUserUseCase getCurrentUserUseCase;
     @MockitoBean AuditLogWebMapper auditLogWebMapper;
 
     private UUID userId;
@@ -49,22 +49,22 @@ class AuditLogControllerTest {
     @WithMockUser(username = "user", roles = "VIEWER")
     void getAuditLog_nonAdminNoUserIdParam_defaultsToOwnUserIdAndReturns200() throws Exception {
         User user = User.builder().id(userId).username("user").role("VIEWER").build();
-        when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
-        when(getAuditLogUseCase.execute(any())).thenReturn(new PaginatedResult<>(List.of(), 0L, 0, 50));
+        when(getCurrentUserUseCase.execute()).thenReturn(user);
+        when(getAuditLogUseCase.execute(any(), any())).thenReturn(new PaginatedResult<>(List.of(), 0L, 0, 50));
 
         mockMvc.perform(get("/api/audit-log"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalItems").value(0));
 
-        verify(getAuditLogUseCase).execute(argThat(filter -> userId.equals(filter.userId())));
+        verify(getAuditLogUseCase).execute(any(), argThat(u -> userId.equals(u.getId())));
     }
 
     @Test
     @WithMockUser(username = "user", roles = "VIEWER")
     void getAuditLog_nonAdminRequestsOwnUserIdExplicitly_returns200() throws Exception {
         User user = User.builder().id(userId).username("user").role("VIEWER").build();
-        when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
-        when(getAuditLogUseCase.execute(any())).thenReturn(new PaginatedResult<>(List.of(), 0L, 0, 50));
+        when(getCurrentUserUseCase.execute()).thenReturn(user);
+        when(getAuditLogUseCase.execute(any(), any())).thenReturn(new PaginatedResult<>(List.of(), 0L, 0, 50));
 
         mockMvc.perform(get("/api/audit-log").param("userId", userId.toString()))
                 .andExpect(status().isOk());
@@ -74,7 +74,9 @@ class AuditLogControllerTest {
     @WithMockUser(username = "user", roles = "VIEWER")
     void getAuditLog_nonAdminRequestsAnotherUserId_returns403() throws Exception {
         User user = User.builder().id(userId).username("user").role("VIEWER").build();
-        when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
+        when(getCurrentUserUseCase.execute()).thenReturn(user);
+        when(getAuditLogUseCase.execute(any(), any()))
+                .thenThrow(new AccessDeniedException("Cannot view another user's audit history"));
 
         mockMvc.perform(get("/api/audit-log").param("userId", otherUserId.toString()))
                 .andExpect(status().isForbidden());
@@ -84,34 +86,34 @@ class AuditLogControllerTest {
     @WithMockUser(username = "admin", roles = "ADMIN")
     void getAuditLog_adminRequestsAnotherUserId_returns200() throws Exception {
         User admin = User.builder().id(UUID.randomUUID()).username("admin").role("ADMIN").build();
-        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
-        when(getAuditLogUseCase.execute(any())).thenReturn(new PaginatedResult<>(List.of(), 0L, 0, 50));
+        when(getCurrentUserUseCase.execute()).thenReturn(admin);
+        when(getAuditLogUseCase.execute(any(), any())).thenReturn(new PaginatedResult<>(List.of(), 0L, 0, 50));
 
         mockMvc.perform(get("/api/audit-log").param("userId", otherUserId.toString()))
                 .andExpect(status().isOk());
 
-        verify(getAuditLogUseCase).execute(argThat(filter -> otherUserId.equals(filter.userId())));
+        verify(getAuditLogUseCase).execute(argThat(filter -> otherUserId.equals(filter.userId())), any());
     }
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
     void getAuditLog_adminOmitsUserId_queriesAcrossAllUsers() throws Exception {
         User admin = User.builder().id(UUID.randomUUID()).username("admin").role("ADMIN").build();
-        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
-        when(getAuditLogUseCase.execute(any())).thenReturn(new PaginatedResult<>(List.of(), 0L, 0, 50));
+        when(getCurrentUserUseCase.execute()).thenReturn(admin);
+        when(getAuditLogUseCase.execute(any(), any())).thenReturn(new PaginatedResult<>(List.of(), 0L, 0, 50));
 
         mockMvc.perform(get("/api/audit-log"))
                 .andExpect(status().isOk());
 
-        verify(getAuditLogUseCase).execute(argThat(filter -> filter.userId() == null));
+        verify(getAuditLogUseCase).execute(argThat(filter -> filter.userId() == null), any());
     }
 
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
     void getAuditLog_entityIdAndTimeRangeFilters_passedThroughToUseCase() throws Exception {
         User admin = User.builder().id(UUID.randomUUID()).username("admin").role("ADMIN").build();
-        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
-        when(getAuditLogUseCase.execute(any())).thenReturn(new PaginatedResult<>(List.of(), 0L, 0, 50));
+        when(getCurrentUserUseCase.execute()).thenReturn(admin);
+        when(getAuditLogUseCase.execute(any(), any())).thenReturn(new PaginatedResult<>(List.of(), 0L, 0, 50));
 
         mockMvc.perform(get("/api/audit-log")
                         .param("entityId", "15")
@@ -120,6 +122,6 @@ class AuditLogControllerTest {
                 .andExpect(status().isOk());
 
         verify(getAuditLogUseCase).execute(argThat(filter ->
-                "15".equals(filter.entityId()) && filter.from() != null && filter.to() != null));
+                "15".equals(filter.entityId()) && filter.from() != null && filter.to() != null), any());
     }
 }

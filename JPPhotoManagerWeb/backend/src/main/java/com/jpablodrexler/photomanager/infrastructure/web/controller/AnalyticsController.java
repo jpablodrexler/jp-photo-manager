@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.jpablodrexler.photomanager.domain.port.in.analytics.GetAnalyticsUseCase;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AnalyticsResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AnalyticsResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AnalyticsMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

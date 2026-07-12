@@ -78,8 +78,7 @@ public class AssetRepositoryImpl implements AssetRepository {
     @Override
     @Transactional(readOnly = true)
     public PaginatedResult<Asset> findFiltered(AssetFilter filter) {
-        FolderEntity folderEntity = new FolderEntity();
-        folderEntity.setFolderId(filter.folderId());
+        FolderEntity folderEntity = toFolderEntityOrNull(filter.folderId());
 
         Sort sort = filter.sortCriteria() != null
                 ? SORT_MAP.getOrDefault(filter.sortCriteria(), DEFAULT_SORT)
@@ -101,8 +100,7 @@ public class AssetRepositoryImpl implements AssetRepository {
     @Override
     @Transactional(readOnly = true)
     public List<Asset> findAllFilteredSortedByDateDesc(AssetFilter filter) {
-        FolderEntity folderEntity = new FolderEntity();
-        folderEntity.setFolderId(filter.folderId());
+        FolderEntity folderEntity = toFolderEntityOrNull(filter.folderId());
 
         String search = (filter.search() != null && !filter.search().isBlank())
                 ? "%" + filter.search().trim().toLowerCase() + "%" : null;
@@ -307,5 +305,14 @@ public class AssetRepositoryImpl implements AssetRepository {
     @Transactional
     public void updateProcessingStatus(Long assetId, ProcessingStatus status) {
         jpa.updateProcessingStatus(assetId, status);
+    }
+
+    private static FolderEntity toFolderEntityOrNull(Long folderId) {
+        if (folderId == null) {
+            return null;
+        }
+        FolderEntity folderEntity = new FolderEntity();
+        folderEntity.setFolderId(folderId);
+        return folderEntity;
     }
 }

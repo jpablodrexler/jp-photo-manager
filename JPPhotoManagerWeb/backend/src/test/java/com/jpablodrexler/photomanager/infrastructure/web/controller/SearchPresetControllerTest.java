@@ -7,8 +7,10 @@ import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.in.search.CreateSearchPresetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.search.DeleteSearchPresetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.search.GetSearchPresetsUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.CreatePresetRequest;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.CreatePresetRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.SearchPresetResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.SearchPresetWebMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +23,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -46,7 +47,9 @@ class SearchPresetControllerTest {
     @MockitoBean
     DeleteSearchPresetUseCase deleteSearchPresetUseCase;
     @MockitoBean
-    UserRepository userRepository;
+    GetCurrentUserUseCase getCurrentUserUseCase;
+    @MockitoBean
+    SearchPresetWebMapper searchPresetWebMapper;
 
     private UUID userId;
 
@@ -56,7 +59,7 @@ class SearchPresetControllerTest {
         User user = new User();
         user.setId(userId);
         user.setUsername("user");
-        when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
+        when(getCurrentUserUseCase.execute()).thenReturn(user);
     }
 
     // --- GET /api/search-presets ---
@@ -74,6 +77,8 @@ class SearchPresetControllerTest {
                 .build();
 
         when(getSearchPresetsUseCase.execute(userId)).thenReturn(List.of(preset));
+        when(searchPresetWebMapper.toDto(preset)).thenReturn(
+                new SearchPresetResponseDto(1L, "Beach Photos", preset.getCreatedAt(), "beach", null, null, null));
 
         mockMvc.perform(get("/api/search-presets"))
                 .andExpect(status().isOk())
@@ -104,6 +109,8 @@ class SearchPresetControllerTest {
                 .build();
 
         when(getSearchPresetsUseCase.execute(userId)).thenReturn(List.of(preset));
+        when(searchPresetWebMapper.toDto(preset)).thenReturn(
+                new SearchPresetResponseDto(2L, "Broken", preset.getCreatedAt(), null, null, null, null));
 
         mockMvc.perform(get("/api/search-presets"))
                 .andExpect(status().isOk())
@@ -127,8 +134,10 @@ class SearchPresetControllerTest {
 
         when(createSearchPresetUseCase.execute(eq(userId), eq("Sunsets"), any(FilterPreset.class)))
                 .thenReturn(created);
+        when(searchPresetWebMapper.toDto(created)).thenReturn(
+                new SearchPresetResponseDto(3L, "Sunsets", created.getCreatedAt(), "sunset", null, null, 4));
 
-        CreatePresetRequest request = new CreatePresetRequest("Sunsets", "sunset", null, null, 4);
+        CreatePresetRequestDto request = new CreatePresetRequestDto("Sunsets", "sunset", null, null, 4);
         mockMvc.perform(post("/api/search-presets")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

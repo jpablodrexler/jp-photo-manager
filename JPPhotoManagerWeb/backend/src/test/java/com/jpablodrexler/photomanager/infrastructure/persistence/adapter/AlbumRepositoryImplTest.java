@@ -1,8 +1,10 @@
 package com.jpablodrexler.photomanager.infrastructure.persistence.adapter;
 
+import com.jpablodrexler.photomanager.domain.model.AssetFilter;
 import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Album;
 import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.AlbumEntity;
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.AssetEntity;
 import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.JpaAlbumRepository;
@@ -10,6 +12,7 @@ import com.jpablodrexler.photomanager.infrastructure.persistence.mapper.AlbumEnt
 import com.jpablodrexler.photomanager.infrastructure.persistence.mapper.AssetEntityMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -29,6 +32,7 @@ import static org.mockito.Mockito.when;
 class AlbumRepositoryImplTest {
 
     @Mock JpaAlbumRepository jpa;
+    @Mock AssetRepository assetRepository;
     @Mock AlbumEntityMapper albumMapper;
     @Mock AssetEntityMapper assetMapper;
     @InjectMocks AlbumRepositoryImpl sut;
@@ -131,6 +135,35 @@ class AlbumRepositoryImplTest {
 
         verify(jpa).removeAsset(1L, 10L);
         verify(jpa).removeAsset(1L, 20L);
+    }
+
+    @Test
+    void findSmartAlbumAssets_delegatesToAssetRepositoryWithOverriddenPaging() {
+        AssetFilter filter = new AssetFilter(null, "cat", null, null, null,
+                com.jpablodrexler.photomanager.domain.enums.SortCriteria.FILE_NAME, 0, 1, false, null);
+        Asset domain = Asset.builder().assetId(1L).build();
+        PaginatedResult<Asset> repoResult = new PaginatedResult<>(List.of(domain), 1L, 2, 50);
+        ArgumentCaptor<AssetFilter> filterCaptor = ArgumentCaptor.forClass(AssetFilter.class);
+        when(assetRepository.findFiltered(filterCaptor.capture())).thenReturn(repoResult);
+
+        PaginatedResult<Asset> result = sut.findSmartAlbumAssets(filter, 2, 50);
+
+        assertThat(result).isSameAs(repoResult);
+        assertThat(filterCaptor.getValue().page()).isEqualTo(2);
+        assertThat(filterCaptor.getValue().pageSize()).isEqualTo(50);
+        assertThat(filterCaptor.getValue().search()).isEqualTo("cat");
+    }
+
+    @Test
+    void findSmartAlbumAssets_zeroPageSize_usesDefaultPageSize() {
+        AssetFilter filter = new AssetFilter(null, null, null, null, null, null, 0, 1, false, null);
+        ArgumentCaptor<AssetFilter> filterCaptor = ArgumentCaptor.forClass(AssetFilter.class);
+        when(assetRepository.findFiltered(filterCaptor.capture()))
+                .thenReturn(new PaginatedResult<>(List.of(), 0L, 0, 100));
+
+        sut.findSmartAlbumAssets(filter, 0, 0);
+
+        assertThat(filterCaptor.getValue().pageSize()).isEqualTo(100);
     }
 
     private static <T> T eq(T value) {

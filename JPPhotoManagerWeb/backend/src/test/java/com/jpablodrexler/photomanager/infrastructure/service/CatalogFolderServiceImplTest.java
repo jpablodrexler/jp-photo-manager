@@ -346,6 +346,7 @@ class CatalogFolderServiceImplTest {
         when(folderRepository.findByPath("/music")).thenReturn(Optional.of(folder));
         when(storageService.listFiles("/music")).thenReturn(List.of("/music/song.mp3"));
         when(assetRepository.findByFolder(folder)).thenReturn(List.of());
+        when(storageService.isAudioFile("song.mp3")).thenReturn(true);
         stubAudioAssetCreationOk(folder, "/music/song.mp3");
 
         sut.catalogFolder("/music", null, NO_OP_HEARTBEAT, new AtomicInteger(0), 1);

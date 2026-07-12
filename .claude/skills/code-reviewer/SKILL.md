@@ -300,8 +300,21 @@ already committed". This must come before all other `requestMatchers` rules.
 | JPA repository       | `JpaFooRepository` in `infrastructure/persistence/jpa/`           | `JpaAssetRepository`                 |
 | JPA entity           | `FooEntity` in `infrastructure/persistence/entity/`               | `AssetEntity`, `FolderEntity`        |
 | Domain model         | Plain class in `domain/model/`                                    | `Asset`, `Folder`                    |
+| HTTP request DTO     | `FooRequestDto` in `infrastructure/web/dto/request/`              | `CreateAlbumRequestDto`              |
+| HTTP response DTO    | `FooResponseDto` in `infrastructure/web/dto/response/`            | `AssetResponseDto`                   |
+| HTTP shared DTO      | Unchanged name in `infrastructure/web/dto/shared/`                | `UserPreferenceDto`                  |
 
 🟡 Flag any violation of the above.
+
+🔴 Flag any class placed directly in `infrastructure/web/dto/` instead of one of
+its `request/`, `response/`, or `shared/` subpackages.
+
+🟡 Flag a request DTO (used only as `@RequestBody`/`@RequestParam`) that isn't
+named `{BaseName}RequestDto`, or a response DTO (used only as a `ResponseEntity<...>`/
+return-type payload, including nested inside another response DTO) that isn't named
+`{BaseName}ResponseDto`. A DTO belongs in `shared/` only if the exact same class is
+verified to appear as both a request and a response payload across every controller
+method that references it — don't place it there just because the name is ambiguous.
 
 ---
 
@@ -456,6 +469,7 @@ These have caused real bugs in this codebase and deserve extra attention:
 | CORS missing `PATCH`                       | `AppConfig.corsFilter()` `allowedMethods` omitting `"PATCH"` when `@PatchMapping` endpoints exist → 403 on preflight                            |
 | Missing OpenAPI annotations on controller  | New `@RestController` added without `@Tag` / `@Operation` / `@ApiResponses` — controller appears in Swagger UI under "default" with no documentation |
 | Hand-written mapper                        | Entity ↔ domain model or HTTP DTO ↔ domain model conversion done manually instead of with a MapStruct `@Mapper(componentModel = "spring")`      |
+| DTO placed directly in `web/dto/`          | New HTTP DTO added straight to `infrastructure/web/dto/` instead of its `request/`, `response/`, or `shared/` subpackage, or named without the `RequestDto`/`ResponseDto` suffix |
 
 ---
 

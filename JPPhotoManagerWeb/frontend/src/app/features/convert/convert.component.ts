@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
@@ -35,13 +35,15 @@ type ProcessStep = 'configure' | 'running' | 'results';
   templateUrl: './convert.component.html',
   styleUrl: './convert.component.scss'
 })
-export class ConvertComponent implements OnInit {
+export class ConvertComponent implements OnInit, OnDestroy {
 
   step: ProcessStep = 'configure';
   definitions: ConvertAssetsDirectoriesDefinition[] = [];
   statusMessages: string[] = [];
   results: ConvertAssetsResult[] = [];
   running = false;
+
+  private eventSource?: EventSource;
 
   displayedColumns = ['sourceDirectory', 'destinationDirectory', 'includeSubFolders', 'actions'];
 
@@ -56,6 +58,10 @@ export class ConvertComponent implements OnInit {
       next: defs => this.definitions = defs,
       error: () => this.snackBar.open('Failed to load configuration', 'Dismiss', { duration: 3000 })
     });
+  }
+
+  ngOnDestroy(): void {
+    this.eventSource?.close();
   }
 
   addDefinition(): void {
@@ -102,6 +108,7 @@ export class ConvertComponent implements OnInit {
     this.results = [];
 
     const eventSource = this.convertService.run();
+    this.eventSource = eventSource;
 
     eventSource.addEventListener('status', (event: MessageEvent) => {
       this.statusMessages.push(event.data);

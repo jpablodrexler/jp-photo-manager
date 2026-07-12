@@ -59,7 +59,7 @@ describe('PreferenceService', () => {
   });
 
   it('save_callsPutWithCorrectBody', () => {
-    service.save('dark');
+    service.save('dark').subscribe();
     const req = httpMock.expectOne('/api/preferences');
     expect(req.request.method).to.equal('PUT');
     expect(req.request.body).to.deep.equal({ themeMode: 'dark' });

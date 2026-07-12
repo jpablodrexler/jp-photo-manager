@@ -85,7 +85,9 @@
 
 <mat-sidenav-container class="app-sidenav-container">
   <mat-sidenav position="end" [opened]="mediaPlayer.isVideoPlaying()" mode="over" class="video-sidenav">
-    <app-video-player />
+    @defer (when mediaPlayer.isVideoPlaying()) {
+      <app-video-player />
+    }
   </mat-sidenav>
   <mat-sidenav-content>
     <div class="app-content">
@@ -99,7 +101,9 @@
 }
 
 @if (mediaPlayer.currentTrack() && !mediaPlayer.isVideoPlaying()) {
-  <app-audio-player />
+  @defer (on immediate) {
+    <app-audio-player />
+  }
 }
 
 @if (mediaPlayer.isAudioFullscreen()) {

@@ -24,9 +24,7 @@ export class PreferenceService {
     );
   }
 
-  save(themeMode: 'dark' | 'light'): void {
-    this.http.put(this.baseUrl, { themeMode }).pipe(
-      catchError(() => of(undefined))
-    ).subscribe();
+  save(themeMode: 'dark' | 'light'): Observable<void> {
+    return this.http.put<void>(this.baseUrl, { themeMode });
   }
 }

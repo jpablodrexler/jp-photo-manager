@@ -118,6 +118,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   readonly tagSeparatorKeysCodes = [ENTER, COMMA] as const;
   private readonly searchSubject = new Subject<string>();
   private searchSubscription?: Subscription;
+  private catalogEventSource?: EventSource;
   private readonly destroy$ = new Subject<void>();
 
   assets: Asset[] = [];
@@ -217,6 +218,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.stopSlideshow();
     this.disconnectObserver();
     this.searchSubscription?.unsubscribe();
+    this.catalogEventSource?.close();
     this.bpSub.unsubscribe();
     this.destroy$.next();
     this.destroy$.complete();
@@ -278,7 +280,9 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   rateCurrentAsset(star: number): void {
-    this.rateAsset(this.currentViewerAsset!, star);
+    const asset = this.currentViewerAsset;
+    if (!asset) return;
+    this.rateAsset(asset, star);
   }
 
   clearFilters(): void {
@@ -632,6 +636,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   startCatalog(): void {
     const es = this.assetService.catalogAssets();
+    this.catalogEventSource = es;
     es.addEventListener('done', () => es.close());
     es.addEventListener('error', () => es.close());
   }
@@ -932,7 +937,16 @@ export class GalleryComponent implements OnInit, OnDestroy {
   playAsset(asset: Asset, event: Event): void {
     event.stopPropagation();
     if (asset.fileType === 'PLAYLIST') {
-      this.audioPlayer.loadPlaylist(asset.assetId);
+      this.audioPlayer.loadPlaylist(asset.assetId).subscribe({
+        next: (assets) => {
+          if (assets.length > 0) {
+            this.audioPlayer.play(assets, 0);
+          }
+        },
+        error: () => {
+          this.snackBar.open('Failed to load playlist', 'Dismiss', { duration: 3000 });
+        },
+      });
     } else {
       this.audioPlayer.play([asset]);
     }
@@ -940,7 +954,16 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   playAllAudio(): void {
     if (this.currentFolder) {
-      this.audioPlayer.loadFolder(this.currentFolder);
+      this.audioPlayer.loadFolder(this.currentFolder).subscribe({
+        next: (assets) => {
+          if (assets.length > 0) {
+            this.audioPlayer.play(assets, 0);
+          }
+        },
+        error: () => {
+          this.snackBar.open('Failed to load audio files', 'Dismiss', { duration: 3000 });
+        },
+      });
     }
   }
 

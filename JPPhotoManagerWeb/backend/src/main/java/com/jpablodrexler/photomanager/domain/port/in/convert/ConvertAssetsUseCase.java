@@ -1,5 +1,7 @@
 package com.jpablodrexler.photomanager.domain.port.in.convert;
 
+import java.util.concurrent.CompletableFuture;
+
 public interface ConvertAssetsUseCase {
-    void execute(long runId);
+    CompletableFuture<Void> execute(long runId);
 }

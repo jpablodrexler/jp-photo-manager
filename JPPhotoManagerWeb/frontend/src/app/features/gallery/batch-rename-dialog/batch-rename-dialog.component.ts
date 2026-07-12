@@ -1,4 +1,4 @@
-import { Component, Inject, OnDestroy } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -34,7 +34,7 @@ export interface BatchRenameDialogData {
   templateUrl: './batch-rename-dialog.component.html',
   styleUrl: './batch-rename-dialog.component.scss',
 })
-export class BatchRenameDialogComponent implements OnDestroy {
+export class BatchRenameDialogComponent implements OnInit, OnDestroy {
   pattern = '';
   previews: RenamePreview[] = [];
   previewError: string | null = null;
@@ -48,7 +48,9 @@ export class BatchRenameDialogComponent implements OnDestroy {
     private assetService: AssetService,
     private dialogRef: MatDialogRef<BatchRenameDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: BatchRenameDialogData,
-  ) {
+  ) {}
+
+  ngOnInit(): void {
     this.patternChange$.pipe(
       debounceTime(400),
       distinctUntilChanged(),

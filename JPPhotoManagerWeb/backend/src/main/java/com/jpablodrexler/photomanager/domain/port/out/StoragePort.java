@@ -42,4 +42,8 @@ public interface StoragePort {
     ExifMetadata getExifMetadata(String filePath);
 
     boolean isVideoFile(String fileName);
+
+    boolean isAudioFile(String fileName);
+
+    boolean isPlaylistFile(String fileName);
 }

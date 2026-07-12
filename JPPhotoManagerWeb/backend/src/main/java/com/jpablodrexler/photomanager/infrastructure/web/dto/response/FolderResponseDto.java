@@ -1,15 +1,15 @@
-package com.jpablodrexler.photomanager.infrastructure.web.dto;
+package com.jpablodrexler.photomanager.infrastructure.web.dto.response;
 
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class FolderDto {
+public class FolderResponseDto {
 
     private Long folderId;
     private String path;
     private String name;
     private String parentPath;
-    private List<FolderDto> children;
+    private List<FolderResponseDto> children;
 }

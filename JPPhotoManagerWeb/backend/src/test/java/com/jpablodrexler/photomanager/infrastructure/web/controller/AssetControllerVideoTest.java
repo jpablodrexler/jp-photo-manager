@@ -25,7 +25,7 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCa
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -126,8 +126,8 @@ class AssetControllerVideoTest {
         return asset;
     }
 
-    private AssetDto buildAssetDto(String fileName, Long id, boolean isVideo) {
-        AssetDto dto = new AssetDto();
+    private AssetResponseDto buildAssetDto(String fileName, Long id, boolean isVideo) {
+        AssetResponseDto dto = new AssetResponseDto();
         dto.setAssetId(id);
         dto.setFileName(fileName);
         dto.setVideo(isVideo);

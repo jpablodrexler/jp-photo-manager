@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
+import com.jpablodrexler.photomanager.domain.port.out.ProgressPort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -9,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 @Service
-public class KafkaProgressRegistry {
+public class KafkaProgressRegistry implements ProgressPort {
 
     private final ConcurrentHashMap<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Long, CompletableFuture<Void>> completions = new ConcurrentHashMap<>();
@@ -19,6 +20,7 @@ public class KafkaProgressRegistry {
         emitters.put(runId, emitter);
     }
 
+    @Override
     public void registerCompletion(long runId, CompletableFuture<Void> completion) {
         completions.put(runId, completion);
     }

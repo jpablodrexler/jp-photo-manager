@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.application.usecase.catalog;
 
-import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
+import com.jpablodrexler.photomanager.domain.port.out.ProgressPort;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +29,7 @@ class CatalogAssetsUseCaseImplTest {
 
     @Mock JobLauncher asyncCatalogJobLauncher;
     @Mock Job catalogJob;
-    @Mock KafkaProgressRegistry kafkaProgressRegistry;
+    @Mock ProgressPort progressPort;
     @Mock JobExecution jobExecution;
 
     SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -37,7 +37,7 @@ class CatalogAssetsUseCaseImplTest {
 
     @BeforeEach
     void setUp() {
-        sut = new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob, kafkaProgressRegistry, meterRegistry);
+        sut = new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob, progressPort, meterRegistry);
     }
 
     @Test
@@ -46,7 +46,7 @@ class CatalogAssetsUseCaseImplTest {
 
         sut.execute(42L);
 
-        verify(kafkaProgressRegistry).registerCompletion(eq(42L), any(CompletableFuture.class));
+        verify(progressPort).registerCompletion(eq(42L), any(CompletableFuture.class));
         verify(asyncCatalogJobLauncher).run(eq(catalogJob), any(JobParameters.class));
     }
 
@@ -54,7 +54,7 @@ class CatalogAssetsUseCaseImplTest {
     void execute_registersCompletionBeforeStartingJob() throws Exception {
         AtomicBoolean completionRegistered = new AtomicBoolean(false);
         doAnswer(inv -> { completionRegistered.set(true); return null; })
-                .when(kafkaProgressRegistry).registerCompletion(anyLong(), any());
+                .when(progressPort).registerCompletion(anyLong(), any());
         when(asyncCatalogJobLauncher.run(any(), any())).thenAnswer(inv -> {
             assertThat(completionRegistered.get()).isTrue();
             return jobExecution;
@@ -80,7 +80,7 @@ class CatalogAssetsUseCaseImplTest {
     void execute_returnsCompletableFutureRegisteredInRegistry() throws Exception {
         when(asyncCatalogJobLauncher.run(any(), any())).thenReturn(jobExecution);
         ArgumentCaptor<CompletableFuture<Void>> futureCaptor = ArgumentCaptor.forClass(CompletableFuture.class);
-        doNothing().when(kafkaProgressRegistry).registerCompletion(anyLong(), futureCaptor.capture());
+        doNothing().when(progressPort).registerCompletion(anyLong(), futureCaptor.capture());
 
         CompletableFuture<Void> result = sut.execute(42L);
 

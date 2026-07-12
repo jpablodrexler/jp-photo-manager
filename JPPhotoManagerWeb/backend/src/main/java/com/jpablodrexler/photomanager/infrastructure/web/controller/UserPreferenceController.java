@@ -4,15 +4,14 @@ import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.model.UserPreference;
 import com.jpablodrexler.photomanager.domain.port.in.preference.GetUserPreferenceUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.preference.SaveUserPreferenceUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.UserPreferenceDto;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.shared.UserPreferenceDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -27,7 +26,7 @@ public class UserPreferenceController {
 
     private final GetUserPreferenceUseCase getPreference;
     private final SaveUserPreferenceUseCase savePreference;
-    private final UserRepository userRepository;
+    private final GetCurrentUserUseCase getCurrentUserUseCase;
 
     @Operation(summary = "Get current user preference")
     @ApiResponses({
@@ -54,7 +53,6 @@ public class UserPreferenceController {
     }
 
     private User resolveUser() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByUsername(username).orElseThrow();
+        return getCurrentUserUseCase.execute();
     }
 }

@@ -8,7 +8,6 @@ import com.jpablodrexler.photomanager.domain.model.AudioMetadata;
 import com.jpablodrexler.photomanager.domain.model.ExifMetadata;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.infrastructure.service.AudioMetadataService;
-import com.jpablodrexler.photomanager.infrastructure.service.StorageServiceAdapter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemProcessor;
@@ -39,10 +38,10 @@ public class CatalogAssetItemProcessor implements ItemProcessor<Path, CatalogBat
         String filePathStr = filePath.toAbsolutePath().toString();
         String fileName = filePath.getFileName().toString();
         try {
-            if (StorageServiceAdapter.isPlaylistFile(fileName)) {
+            if (storagePort.isPlaylistFile(fileName)) {
                 return processPlaylist(filePathStr, fileName);
             }
-            if (StorageServiceAdapter.isAudioFile(fileName)) {
+            if (storagePort.isAudioFile(fileName)) {
                 return processAudio(filePathStr, fileName, filePath);
             }
             return processImage(filePathStr, fileName);

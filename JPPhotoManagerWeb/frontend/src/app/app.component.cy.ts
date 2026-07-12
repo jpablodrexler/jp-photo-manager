@@ -45,7 +45,7 @@ function buildProviders(isLoggedIn: boolean, isDark: Observable<boolean>) {
   };
   const preferenceServiceStub: Partial<PreferenceService> = {
     load: cy.stub().returns(of(undefined)) as unknown as PreferenceService['load'],
-    save: cy.stub() as unknown as PreferenceService['save'],
+    save: cy.stub().returns(of(undefined)) as unknown as PreferenceService['save'],
   };
   return {
     providers: [
@@ -102,7 +102,7 @@ describe('AppComponent — responsive navigation', () => {
     };
     const preferenceServiceStub: Partial<PreferenceService> = {
       load: cy.stub().returns(of(undefined)) as unknown as PreferenceService['load'],
-      save: cy.stub() as unknown as PreferenceService['save'],
+      save: cy.stub().returns(of(undefined)) as unknown as PreferenceService['save'],
     };
     return cy.mount(AppComponent, {
       providers: [
@@ -157,7 +157,7 @@ describe('AppComponent — theme toggle', () => {
     };
     const preferenceServiceStub: Partial<PreferenceService> = {
       load: cy.stub().returns(of(undefined)) as unknown as PreferenceService['load'],
-      save: cy.stub() as unknown as PreferenceService['save'],
+      save: cy.stub().returns(of(undefined)) as unknown as PreferenceService['save'],
     };
     cy.mount(AppComponent, {
       providers: [
@@ -183,7 +183,7 @@ describe('AppComponent — theme toggle', () => {
     };
     const preferenceServiceStub: Partial<PreferenceService> = {
       load: cy.stub().returns(of(undefined)) as unknown as PreferenceService['load'],
-      save: cy.stub() as unknown as PreferenceService['save'],
+      save: cy.stub().returns(of(undefined)) as unknown as PreferenceService['save'],
     };
     cy.mount(AppComponent, {
       providers: [

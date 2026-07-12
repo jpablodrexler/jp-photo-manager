@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.infrastructure.web.dto;
+package com.jpablodrexler.photomanager.infrastructure.web.dto.response;
 
 import java.util.List;
 

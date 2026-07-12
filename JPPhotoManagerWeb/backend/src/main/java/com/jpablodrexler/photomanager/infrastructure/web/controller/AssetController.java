@@ -33,19 +33,19 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCa
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AddTagRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.BulkTagRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.DownloadAssetsRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.ExifMetadataDto;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.MoveAssetsRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.RateAssetRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.RenameAssetsRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.RenameAssetsResponse;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.RenamePreviewDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.AddTagRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.BulkTagRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.DownloadAssetsRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.ExifMetadataResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.MoveAssetsRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.RateAssetRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.RenameAssetsRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.RenameAssetsResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.RenamePreviewResponseDto;
 import com.jpablodrexler.photomanager.domain.model.RenameAssetsResult;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.TimelineGroupDto;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.UploadAssetResponse;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.TimelineGroupResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.UploadAssetResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -132,7 +132,7 @@ public class AssetController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping
-    public ResponseEntity<PaginatedData<AssetDto>> getAssets(
+    public ResponseEntity<PaginatedData<AssetResponseDto>> getAssets(
             @RequestParam String folderPath,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "FILE_NAME") SortCriteria sort,
@@ -145,9 +145,9 @@ public class AssetController {
         Set<String> tagSet = parseTags(tags);
         AssetFilter filter = new AssetFilter(folderId, search, dateFrom, dateTo, minRating, sort, page, 50, false, tagSet);
         PaginatedResult<Asset> result = getAssetsUseCase.execute(filter);
-        List<AssetDto> dtos = result.items().stream().map(assetWebMapper::toDto).collect(Collectors.toList());
+        List<AssetResponseDto> dtos = result.items().stream().map(assetWebMapper::toDto).collect(Collectors.toList());
         int totalPages = result.pageSize() > 0 ? (int) Math.ceil((double) result.total() / result.pageSize()) : 0;
-        PaginatedData<AssetDto> data = new PaginatedData<>(dtos, page, totalPages, result.total());
+        PaginatedData<AssetResponseDto> data = new PaginatedData<>(dtos, page, totalPages, result.total());
         return ResponseEntity.ok(data);
     }
 
@@ -157,7 +157,7 @@ public class AssetController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping("/timeline")
-    public ResponseEntity<PaginatedData<TimelineGroupDto>> getTimeline(
+    public ResponseEntity<PaginatedData<TimelineGroupResponseDto>> getTimeline(
             @RequestParam String folderPath,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(required = false) String search,
@@ -169,9 +169,9 @@ public class AssetController {
         Set<String> tagSet = parseTags(tags);
         AssetFilter filter = new AssetFilter(folderId, search, dateFrom, dateTo, minRating, null, page, 0, false, tagSet);
         PaginatedResult<com.jpablodrexler.photomanager.domain.model.TimelineGroup> result = getAssetsTimelineUseCase.execute(filter);
-        List<TimelineGroupDto> dtos = result.items().stream().map(assetWebMapper::toTimelineGroupDto).collect(Collectors.toList());
+        List<TimelineGroupResponseDto> dtos = result.items().stream().map(assetWebMapper::toTimelineGroupDto).collect(Collectors.toList());
         int totalPages = result.pageSize() > 0 ? (int) Math.ceil((double) result.total() / result.pageSize()) : 0;
-        PaginatedData<TimelineGroupDto> data = new PaginatedData<>(dtos, page, totalPages, result.total());
+        PaginatedData<TimelineGroupResponseDto> data = new PaginatedData<>(dtos, page, totalPages, result.total());
         return ResponseEntity.ok(data);
     }
 
@@ -217,7 +217,8 @@ public class AssetController {
     @Operation(summary = "Catalog assets via SSE stream")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "SSE stream of catalog progress events"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Non-admin user")
     })
     @GetMapping("/catalog")
     @PreAuthorize("hasRole('ADMIN')")
@@ -260,7 +261,7 @@ public class AssetController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @PostMapping("/move")
-    public ResponseEntity<Boolean> moveAssets(@Valid @RequestBody MoveAssetsRequest request) {
+    public ResponseEntity<Boolean> moveAssets(@Valid @RequestBody MoveAssetsRequestDto request) {
         boolean result = moveAssetsUseCase.execute(request.getAssetIds(), request.getDestinationFolderPath(),
                 request.isPreserveOriginal());
         return ResponseEntity.ok(result);
@@ -273,14 +274,14 @@ public class AssetController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @PostMapping("/rename")
-    public ResponseEntity<RenameAssetsResponse> renameAssets(@Valid @RequestBody RenameAssetsRequest request) {
+    public ResponseEntity<RenameAssetsResponseDto> renameAssets(@Valid @RequestBody RenameAssetsRequestDto request) {
         try {
             RenameAssetsResult result = renameAssetsUseCase.execute(
                     request.assetIds(), request.pattern(), request.applied());
-            List<RenamePreviewDto> previews = result.previews().stream()
-                    .map(p -> new RenamePreviewDto(p.assetId(), p.oldName(), p.newName()))
+            List<RenamePreviewResponseDto> previews = result.previews().stream()
+                    .map(assetWebMapper::toDto)
                     .collect(Collectors.toList());
-            return ResponseEntity.ok(new RenameAssetsResponse(previews, result.applied()));
+            return ResponseEntity.ok(new RenameAssetsResponseDto(previews, result.applied()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
@@ -293,7 +294,7 @@ public class AssetController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @PostMapping("/download")
-    public void downloadAssets(@Valid @RequestBody DownloadAssetsRequest request, HttpServletResponse response)
+    public void downloadAssets(@Valid @RequestBody DownloadAssetsRequestDto request, HttpServletResponse response)
             throws IOException {
         if (request.getAssetIds().size() > maxDownloadAssets) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
@@ -313,14 +314,15 @@ public class AssetController {
     })
     @PatchMapping("/{id}/rating")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void rateAsset(@PathVariable Long id, @Valid @RequestBody RateAssetRequest body) {
+    public void rateAsset(@PathVariable Long id, @Valid @RequestBody RateAssetRequestDto body) {
         rateAssetUseCase.execute(id, body.rating(), resolveUserId());
     }
 
     @Operation(summary = "Remove assets from catalog (optionally delete files)")
     @ApiResponses({
         @ApiResponse(responseCode = "204", description = "Assets removed"),
-        @ApiResponse(responseCode = "401", description = "Unauthorized")
+        @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Non-admin user")
     })
     @DeleteMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -336,9 +338,9 @@ public class AssetController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping("/duplicates")
-    public ResponseEntity<List<List<AssetDto>>> getDuplicatedAssets() {
+    public ResponseEntity<List<List<AssetResponseDto>>> getDuplicatedAssets() {
         List<List<Asset>> duplicates = getDuplicatedAssetsUseCase.execute();
-        List<List<AssetDto>> result = duplicates.stream()
+        List<List<AssetResponseDto>> result = duplicates.stream()
                 .map(group -> group.stream().map(assetWebMapper::toDto).collect(Collectors.toList()))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(result);
@@ -352,10 +354,10 @@ public class AssetController {
         @ApiResponse(responseCode = "404", description = "Asset not found")
     })
     @GetMapping("/{assetId}/exif")
-    public ResponseEntity<ExifMetadataDto> getExifMetadata(@PathVariable Long assetId) {
+    public ResponseEntity<ExifMetadataResponseDto> getExifMetadata(@PathVariable Long assetId) {
         try {
             AssetExif exif = getAssetExifUseCase.execute(assetId);
-            ExifMetadataDto dto = ExifMetadataDto.from(exif);
+            ExifMetadataResponseDto dto = assetWebMapper.toDto(exif);
             if (dto == null) {
                 return ResponseEntity.noContent().build();
             }
@@ -379,7 +381,7 @@ public class AssetController {
         @ApiResponse(responseCode = "415", description = "Unsupported media type")
     })
     @PostMapping("/upload")
-    public ResponseEntity<UploadAssetResponse> uploadAsset(@RequestPart("file") MultipartFile file,
+    public ResponseEntity<UploadAssetResponseDto> uploadAsset(@RequestPart("file") MultipartFile file,
                                                             @RequestPart("folderPath") String folderPath) {
         String contentType = file.getContentType();
         String originalFilename = file.getOriginalFilename();
@@ -403,7 +405,7 @@ public class AssetController {
         try {
             Asset asset = uploadAssetUseCase.execute(folderPath, safeFilename, file.getBytes());
             return ResponseEntity.status(HttpStatus.ACCEPTED)
-                    .body(new UploadAssetResponse(asset.getAssetId(), asset.getProcessingStatus().name()));
+                    .body(new UploadAssetResponseDto(asset.getAssetId(), asset.getProcessingStatus().name()));
         } catch (FolderNotFoundException e) {
             return ResponseEntity.notFound().build();
         } catch (IOException e) {
@@ -439,6 +441,7 @@ public class AssetController {
     @ApiResponses({
         @ApiResponse(responseCode = "202", description = "Reprocessing re-triggered"),
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
+        @ApiResponse(responseCode = "403", description = "Non-admin user"),
         @ApiResponse(responseCode = "404", description = "Asset not found")
     })
     @PostMapping("/{id}/reprocess")
@@ -461,7 +464,7 @@ public class AssetController {
         @ApiResponse(responseCode = "500", description = "Image processing error")
     })
     @PostMapping("/{id}/crop")
-    public ResponseEntity<AssetDto> cropAsset(@PathVariable Long id, @RequestBody CropAssetRequest request) {
+    public ResponseEntity<AssetResponseDto> cropAsset(@PathVariable Long id, @RequestBody CropAssetRequest request) {
         try {
             Asset asset = cropAssetUseCase.execute(id, request);
             return ResponseEntity.status(HttpStatus.CREATED).body(assetWebMapper.toDto(asset));
@@ -479,7 +482,7 @@ public class AssetController {
         @ApiResponse(responseCode = "404", description = "Asset not found")
     })
     @PostMapping("/{id}/tags")
-    public ResponseEntity<Void> addTag(@PathVariable Long id, @Valid @RequestBody AddTagRequest body) {
+    public ResponseEntity<Void> addTag(@PathVariable Long id, @Valid @RequestBody AddTagRequestDto body) {
         addTagToAssetUseCase.execute(id, body.name(), resolveUserId());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -508,7 +511,7 @@ public class AssetController {
     })
     @PostMapping("/tags/bulk")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void bulkAddTag(@Valid @RequestBody BulkTagRequest body) {
+    public void bulkAddTag(@Valid @RequestBody BulkTagRequestDto body) {
         bulkAddTagUseCase.execute(body.assetIds(), body.name());
     }
 
@@ -520,7 +523,7 @@ public class AssetController {
     })
     @DeleteMapping("/tags/bulk")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void bulkRemoveTag(@Valid @RequestBody BulkTagRequest body) {
+    public void bulkRemoveTag(@Valid @RequestBody BulkTagRequestDto body) {
         bulkRemoveTagUseCase.execute(body.assetIds(), body.name());
     }
 

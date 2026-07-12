@@ -3,7 +3,6 @@ package com.jpablodrexler.photomanager.application.usecase.user;
 import com.jpablodrexler.photomanager.domain.model.UserSummary;
 import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -87,12 +87,12 @@ class UserUseCasesTest {
         @InjectMocks UpdatePasswordUseCaseImpl sut;
 
         @Test
-        void execute_userNotFound_throwsEntityNotFoundException() {
+        void execute_userNotFound_throwsNoSuchElementException() {
             UUID userId = UUID.randomUUID();
             when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> sut.execute(userId, "newpass"))
-                    .isInstanceOf(EntityNotFoundException.class);
+                    .isInstanceOf(NoSuchElementException.class);
         }
 
         @Test
@@ -118,12 +118,12 @@ class UserUseCasesTest {
         @InjectMocks DeleteUserUseCaseImpl sut;
 
         @Test
-        void execute_userNotFound_throwsEntityNotFoundException() {
+        void execute_userNotFound_throwsNoSuchElementException() {
             UUID userId = UUID.randomUUID();
             when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> sut.execute(userId))
-                    .isInstanceOf(EntityNotFoundException.class);
+                    .isInstanceOf(NoSuchElementException.class);
         }
 
         @Test

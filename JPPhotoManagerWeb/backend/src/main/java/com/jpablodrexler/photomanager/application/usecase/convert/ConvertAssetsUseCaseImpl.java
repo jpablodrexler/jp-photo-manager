@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -30,16 +31,22 @@ public class ConvertAssetsUseCaseImpl implements ConvertAssetsUseCase {
     @Async
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public void execute(long runId) {
-        List<ConvertDirectoriesDefinition> definitions = convertConfigRepository.findAllOrderByOrder();
-        List<ConvertAssetsResult> results = new ArrayList<>();
+    public CompletableFuture<Void> execute(long runId) {
+        try {
+            List<ConvertDirectoriesDefinition> definitions = convertConfigRepository.findAllOrderByOrder();
+            List<ConvertAssetsResult> results = new ArrayList<>();
 
-        for (ConvertDirectoriesDefinition def : definitions) {
-            results.add(convertDirectory(def, runId));
+            for (ConvertDirectoriesDefinition def : definitions) {
+                results.add(convertDirectory(def, runId));
+            }
+
+            kafkaTemplate.send("job.convert.progress", String.valueOf(runId),
+                    ConvertProgressMessage.done(runId, results));
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            log.error("Convert run {} failed", runId, e);
+            return CompletableFuture.failedFuture(e);
         }
-
-        kafkaTemplate.send("job.convert.progress", String.valueOf(runId),
-                ConvertProgressMessage.done(runId, results));
     }
 
     private ConvertAssetsResult convertDirectory(ConvertDirectoriesDefinition def, long runId) {

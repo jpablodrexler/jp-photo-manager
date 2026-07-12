@@ -132,10 +132,10 @@ public class CatalogFolderServiceImpl implements CatalogFolderPort {
     private Asset createAsset(Folder folder, String directoryPath, String fileName) {
         String filePath = directoryPath + "/" + fileName;
         try {
-            if (StorageServiceAdapter.isPlaylistFile(fileName)) {
+            if (storageService.isPlaylistFile(fileName)) {
                 return createPlaylistAsset(folder, directoryPath, fileName);
             }
-            if (StorageServiceAdapter.isAudioFile(fileName)) {
+            if (storageService.isAudioFile(fileName)) {
                 return createAudioAsset(folder, directoryPath, fileName);
             }
             Asset asset = new Asset();

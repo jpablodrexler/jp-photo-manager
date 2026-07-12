@@ -88,6 +88,32 @@ class AssetRepositoryImplTest {
     }
 
     @Test
+    void findFiltered_nullFolderId_passesNullFolderToJpa() {
+        AssetFilter filter = new AssetFilter(null, null, null, null, null, null, 0, 10, false, null);
+        Page<AssetEntity> emptyPage = new PageImpl<>(List.of());
+        ArgumentCaptor<FolderEntity> folderCaptor = ArgumentCaptor.forClass(FolderEntity.class);
+        when(jpa.findWithFilters(folderCaptor.capture(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
+                .thenReturn(emptyPage);
+
+        sut.findFiltered(filter);
+
+        assertThat(folderCaptor.getValue()).isNull();
+    }
+
+    @Test
+    void findAllFilteredSortedByDateDesc_nullFolderId_passesNullFolderToJpa() {
+        AssetFilter filter = new AssetFilter(null, null, null, null, null, null, 0, 10, false, null);
+        Page<AssetEntity> emptyPage = new PageImpl<>(List.of());
+        ArgumentCaptor<FolderEntity> folderCaptor = ArgumentCaptor.forClass(FolderEntity.class);
+        when(jpa.findWithFilters(folderCaptor.capture(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
+                .thenReturn(emptyPage);
+
+        sut.findAllFilteredSortedByDateDesc(filter);
+
+        assertThat(folderCaptor.getValue()).isNull();
+    }
+
+    @Test
     void findFiltered_withSearchText_passesSearchWithWildcards() {
         AssetFilter filter = new AssetFilter(1L, " Cat ", null, null, null, null, 0, 10, false, null);
         Page<AssetEntity> emptyPage = new PageImpl<>(List.of());

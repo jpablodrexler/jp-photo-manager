@@ -56,14 +56,16 @@ management:
         include: health,prometheus
   endpoint:
     health:
-      show-details: always
+      show-details: when-authorized
+      roles: ADMIN
   health:
     defaults:
       enabled: true
-  metrics:
-    export:
-      prometheus:
+  prometheus:
+    metrics:
+      export:
         enabled: true
+  metrics:
     tags:
       application: ${spring.application.name}
     distribution:

@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.infrastructure.web.dto;
+package com.jpablodrexler.photomanager.infrastructure.web.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.jpablodrexler.photomanager.domain.enums.FileType;
@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-public class AssetDto {
+public class AssetResponseDto {
 
     private Long assetId;
     private Long folderId;

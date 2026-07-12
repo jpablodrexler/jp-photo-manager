@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.application.usecase.catalog;
 
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
-import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
+import com.jpablodrexler.photomanager.domain.port.out.ProgressPort;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
@@ -24,17 +24,17 @@ public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
 
     private final JobLauncher asyncCatalogJobLauncher;
     private final Job catalogJob;
-    private final KafkaProgressRegistry kafkaProgressRegistry;
+    private final ProgressPort progressPort;
     private final Counter catalogAssetsCounter;
 
     public CatalogAssetsUseCaseImpl(
             @Qualifier("asyncCatalogJobLauncher") JobLauncher asyncCatalogJobLauncher,
             Job catalogJob,
-            KafkaProgressRegistry kafkaProgressRegistry,
+            ProgressPort progressPort,
             MeterRegistry meterRegistry) {
         this.asyncCatalogJobLauncher = asyncCatalogJobLauncher;
         this.catalogJob = catalogJob;
-        this.kafkaProgressRegistry = kafkaProgressRegistry;
+        this.progressPort = progressPort;
         this.catalogAssetsCounter = Counter.builder("photomanager_catalog_assets_total")
                 .description("Total assets cataloged")
                 .register(meterRegistry);
@@ -46,7 +46,7 @@ public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
     public CompletableFuture<Void> execute(long runId) {
         try {
             CompletableFuture<Void> completion = new CompletableFuture<>();
-            kafkaProgressRegistry.registerCompletion(runId, completion);
+            progressPort.registerCompletion(runId, completion);
 
             JobParameters params = new JobParametersBuilder()
                     .addLong("runId", runId)

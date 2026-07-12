@@ -102,7 +102,11 @@ export class AppComponent implements OnInit, OnDestroy {
   toggleTheme(): void {
     const newMode = this.themeService.toggle();
     if (this.authService.isLoggedIn()) {
-      this.preferenceService.save(newMode);
+      this.preferenceService.save(newMode).subscribe({
+        error: () => {
+          this.snackBar.open('Failed to save theme preference', 'Dismiss', { duration: 3000 });
+        },
+      });
     }
   }
 

@@ -1,10 +1,10 @@
-package com.jpablodrexler.photomanager.infrastructure.web.dto;
+package com.jpablodrexler.photomanager.infrastructure.web.dto.request;
 
 import com.jpablodrexler.photomanager.application.dto.AlbumFilterJson;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 
-public record UpdateAlbumRequest(
+public record CreateAlbumRequestDto(
         @NotBlank String name,
         String description,
         AlbumFilterJson filterJson

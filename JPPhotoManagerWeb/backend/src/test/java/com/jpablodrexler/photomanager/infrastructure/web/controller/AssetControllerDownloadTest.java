@@ -22,7 +22,7 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCa
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.DownloadAssetsRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.DownloadAssetsRequestDto;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -107,7 +107,7 @@ class AssetControllerDownloadTest {
 
     @Test
     void downloadAssets_validRequest_returns200WithZipHeaders() throws Exception {
-        DownloadAssetsRequest request = new DownloadAssetsRequest();
+        DownloadAssetsRequestDto request = new DownloadAssetsRequestDto();
         request.setAssetIds(List.of(10L, 20L, 30L));
 
         doNothing().when(downloadAssetsUseCase).execute(eq(List.of(10L, 20L, 30L)), any(), any());
@@ -124,7 +124,7 @@ class AssetControllerDownloadTest {
 
     @Test
     void downloadAssets_emptyAssetIds_returns400() throws Exception {
-        DownloadAssetsRequest request = new DownloadAssetsRequest();
+        DownloadAssetsRequestDto request = new DownloadAssetsRequestDto();
         request.setAssetIds(List.of());
 
         mockMvc.perform(post("/api/assets/download")
@@ -136,7 +136,7 @@ class AssetControllerDownloadTest {
     @Test
     void downloadAssets_exceedsMaxDownloadAssets_returns400() throws Exception {
         List<Long> ids = IntStream.rangeClosed(1, 501).mapToObj(Long::valueOf).toList();
-        DownloadAssetsRequest request = new DownloadAssetsRequest();
+        DownloadAssetsRequestDto request = new DownloadAssetsRequestDto();
         request.setAssetIds(ids);
 
         mockMvc.perform(post("/api/assets/download")

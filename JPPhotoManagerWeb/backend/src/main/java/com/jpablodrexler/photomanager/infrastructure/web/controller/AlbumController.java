@@ -8,7 +8,6 @@ import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
 import com.jpablodrexler.photomanager.domain.model.Asset;
-import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.in.album.AddAssetsToAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.CreateAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.DeleteAlbumUseCase;
@@ -16,13 +15,13 @@ import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.RemoveAssetsFromAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.UpdateAlbumUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AlbumAssetIdsRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AlbumDto;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AlbumSummaryDto;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.CreateAlbumRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.UpdateAlbumRequest;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.AlbumAssetIdsRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AlbumResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AlbumSummaryResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.CreateAlbumRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.UpdateAlbumRequestDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AlbumWebMapper;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,7 +32,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -53,7 +51,7 @@ public class AlbumController {
     private final DeleteAlbumUseCase deleteAlbumUseCase;
     private final AddAssetsToAlbumUseCase addAssetsToAlbumUseCase;
     private final RemoveAssetsFromAlbumUseCase removeAssetsFromAlbumUseCase;
-    private final UserRepository userRepository;
+    private final GetCurrentUserUseCase getCurrentUserUseCase;
     private final AlbumWebMapper albumWebMapper;
     private final AssetWebMapper assetWebMapper;
     private final ObjectMapper objectMapper;
@@ -64,7 +62,7 @@ public class AlbumController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping
-    public ResponseEntity<List<AlbumSummaryDto>> listAlbums() {
+    public ResponseEntity<List<AlbumSummaryResponseDto>> listAlbums() {
         List<AlbumData> albums = getAlbumsUseCase.execute(resolveUserId());
         return ResponseEntity.ok(albums.stream().map(albumWebMapper::toSummaryDto).collect(Collectors.toList()));
     }
@@ -76,7 +74,7 @@ public class AlbumController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @PostMapping
-    public ResponseEntity<AlbumSummaryDto> createAlbum(@Valid @RequestBody CreateAlbumRequest request) {
+    public ResponseEntity<AlbumSummaryResponseDto> createAlbum(@Valid @RequestBody CreateAlbumRequestDto request) {
         AlbumData album = createAlbumUseCase.execute(resolveUserId(), request.name(), request.description(), serializeFilterJson(request.filterJson()));
         return ResponseEntity.status(HttpStatus.CREATED).body(albumWebMapper.toSummaryDto(album));
     }
@@ -88,7 +86,7 @@ public class AlbumController {
         @ApiResponse(responseCode = "404", description = "Album not found")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<AlbumDto> getAlbum(@PathVariable Long id,
+    public ResponseEntity<AlbumResponseDto> getAlbum(@PathVariable Long id,
                                               @RequestParam(defaultValue = "0") int page) {
         try {
             UUID userId = resolveUserId();
@@ -96,17 +94,10 @@ public class AlbumController {
             PaginatedResult<Asset> assetsPage = getAlbumUseCase.executeAssets(id, userId, page);
             int totalPages = assetsPage.pageSize() > 0
                     ? (int) Math.ceil((double) assetsPage.total() / assetsPage.pageSize()) : 0;
-            PaginatedData<AssetDto> assetDtos = new PaginatedData<>(
+            PaginatedData<AssetResponseDto> assetDtos = new PaginatedData<>(
                     assetsPage.items().stream().map(assetWebMapper::toDto).collect(Collectors.toList()),
                     page, totalPages, assetsPage.total());
-            AlbumDto dto = new AlbumDto();
-            dto.setAlbumId(summary.albumId());
-            dto.setName(summary.name());
-            dto.setDescription(summary.description());
-            dto.setCreatedAt(summary.createdAt());
-            dto.setAssets(assetDtos);
-            dto.setFilterJson(deserializeFilterJson(summary.filterJson()));
-            return ResponseEntity.ok(dto);
+            return ResponseEntity.ok(albumWebMapper.toDto(summary, assetDtos));
         } catch (AlbumNotFoundException e) {
             return ResponseEntity.notFound().build();
         }
@@ -120,8 +111,8 @@ public class AlbumController {
         @ApiResponse(responseCode = "404", description = "Album not found")
     })
     @PutMapping("/{id}")
-    public ResponseEntity<AlbumSummaryDto> updateAlbum(@PathVariable Long id,
-                                                        @Valid @RequestBody UpdateAlbumRequest request) {
+    public ResponseEntity<AlbumSummaryResponseDto> updateAlbum(@PathVariable Long id,
+                                                        @Valid @RequestBody UpdateAlbumRequestDto request) {
         try {
             AlbumData updated = updateAlbumUseCase.execute(id, resolveUserId(), request.name(), request.description(), serializeFilterJson(request.filterJson()));
             return ResponseEntity.ok(albumWebMapper.toSummaryDto(updated));
@@ -155,7 +146,7 @@ public class AlbumController {
     })
     @PostMapping("/{id}/assets")
     public ResponseEntity<Void> addAssets(@PathVariable Long id,
-                                          @Valid @RequestBody AlbumAssetIdsRequest request) {
+                                          @Valid @RequestBody AlbumAssetIdsRequestDto request) {
         try {
             addAssetsToAlbumUseCase.execute(id, resolveUserId(), request.assetIds());
             return ResponseEntity.noContent().build();
@@ -173,7 +164,7 @@ public class AlbumController {
     })
     @DeleteMapping("/{id}/assets")
     public ResponseEntity<Void> removeAssets(@PathVariable Long id,
-                                             @Valid @RequestBody AlbumAssetIdsRequest request) {
+                                             @Valid @RequestBody AlbumAssetIdsRequestDto request) {
         try {
             removeAssetsFromAlbumUseCase.execute(id, resolveUserId(), request.assetIds());
             return ResponseEntity.noContent().build();
@@ -183,10 +174,7 @@ public class AlbumController {
     }
 
     private UUID resolveUserId() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByUsername(username)
-                .map(User::getId)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + username));
+        return getCurrentUserUseCase.execute().getId();
     }
 
     private String serializeFilterJson(AlbumFilterJson filterJson) {
@@ -195,15 +183,6 @@ public class AlbumController {
             return objectMapper.writeValueAsString(filterJson);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to serialize filterJson", e);
-        }
-    }
-
-    private AlbumFilterJson deserializeFilterJson(String filterJson) {
-        if (filterJson == null) return null;
-        try {
-            return objectMapper.readValue(filterJson, AlbumFilterJson.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to deserialize filterJson", e);
         }
     }
 }

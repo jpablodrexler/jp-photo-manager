@@ -5,7 +5,7 @@ import com.jpablodrexler.photomanager.domain.model.FolderStorageEntry;
 import com.jpablodrexler.photomanager.domain.model.FormatEntry;
 import com.jpablodrexler.photomanager.domain.model.MonthlyCountEntry;
 import com.jpablodrexler.photomanager.domain.model.RatingEntry;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AnalyticsResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AnalyticsResponseDto;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")

@@ -1,7 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -15,11 +14,9 @@ public class ConvertAssetsDirectoriesDefinitionEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
     @Column(name = "source_directory", nullable = false)
     private String sourceDirectory;
 
-    @NotBlank
     @Column(name = "destination_directory", nullable = false)
     private String destinationDirectory;
 

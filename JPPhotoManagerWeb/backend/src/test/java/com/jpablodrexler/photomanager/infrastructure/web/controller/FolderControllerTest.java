@@ -5,7 +5,7 @@ import com.jpablodrexler.photomanager.domain.port.in.folder.GetDrivesUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.folder.GetInitialFolderUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.folder.GetRecentTargetPathsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.folder.GetSubFoldersUseCase;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.FolderDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.FolderResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.FolderWebMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +44,7 @@ class FolderControllerTest {
     @Test
     void getFolders_noParentPath_returnsAllFolders() throws Exception {
         Folder folder = buildFolder(1L, "/photos");
-        FolderDto dto = buildFolderDto(1L, "/photos");
+        FolderResponseDto dto = buildFolderDto(1L, "/photos");
         when(getSubFoldersUseCase.execute(null)).thenReturn(List.of(folder));
         when(folderWebMapper.toDto(folder)).thenReturn(dto);
 
@@ -58,7 +58,7 @@ class FolderControllerTest {
     @Test
     void getFolders_withParentPath_returnsSubFolders() throws Exception {
         Folder sub = buildFolder(2L, "/photos/2024");
-        FolderDto dto = buildFolderDto(2L, "/photos/2024");
+        FolderResponseDto dto = buildFolderDto(2L, "/photos/2024");
         when(getSubFoldersUseCase.execute("/photos")).thenReturn(List.of(sub));
         when(folderWebMapper.toDto(sub)).thenReturn(dto);
 
@@ -129,8 +129,8 @@ class FolderControllerTest {
         return folder;
     }
 
-    private FolderDto buildFolderDto(Long id, String path) {
-        FolderDto dto = new FolderDto();
+    private FolderResponseDto buildFolderDto(Long id, String path) {
+        FolderResponseDto dto = new FolderResponseDto();
         dto.setFolderId(id);
         dto.setPath(path);
         dto.setName(path.substring(path.lastIndexOf('/') + 1));

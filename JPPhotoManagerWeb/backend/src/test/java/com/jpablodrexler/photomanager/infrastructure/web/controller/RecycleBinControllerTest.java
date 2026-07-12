@@ -7,9 +7,9 @@ import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.in.recycle.GetDeletedAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.recycle.PurgeAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.recycle.RestoreAssetsUseCase;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.RecycleBinPurgeRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.RecycleBinRestoreRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.RecycleBinPurgeRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.RecycleBinRestoreRequestDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +54,7 @@ class RecycleBinControllerTest {
         Asset asset = buildAsset(folder, "deleted.jpg", 10L);
         PaginatedResult<Asset> result = new PaginatedResult<>(List.of(asset), 1L, 0, 50);
 
-        AssetDto dto = new AssetDto();
+        AssetResponseDto dto = new AssetResponseDto();
         dto.setAssetId(10L);
         dto.setFileName("deleted.jpg");
 
@@ -86,7 +86,7 @@ class RecycleBinControllerTest {
     void restore_validRequest_returns204() throws Exception {
         doNothing().when(restoreAssetsUseCase).execute(anyList());
 
-        RecycleBinRestoreRequest request = new RecycleBinRestoreRequest(List.of(10L, 11L));
+        RecycleBinRestoreRequestDto request = new RecycleBinRestoreRequestDto(List.of(10L, 11L));
         mockMvc.perform(post("/api/recycle-bin/restore")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -101,7 +101,7 @@ class RecycleBinControllerTest {
     void purge_withAssetIds_returns204() throws Exception {
         doNothing().when(purgeAssetsUseCase).execute(anyList());
 
-        RecycleBinPurgeRequest request = new RecycleBinPurgeRequest(List.of(10L, 11L));
+        RecycleBinPurgeRequestDto request = new RecycleBinPurgeRequestDto(List.of(10L, 11L));
         mockMvc.perform(delete("/api/recycle-bin")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

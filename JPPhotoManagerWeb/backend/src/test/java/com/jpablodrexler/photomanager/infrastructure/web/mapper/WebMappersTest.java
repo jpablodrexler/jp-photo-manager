@@ -4,9 +4,9 @@ import com.jpablodrexler.photomanager.domain.model.AlbumData;
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AlbumSummaryDto;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.FolderDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AlbumSummaryResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.FolderResponseDto;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -40,7 +40,7 @@ class WebMappersTest {
                 .rating(4)
                 .build();
 
-        AssetDto dto = assetWebMapper.toDto(asset);
+        AssetResponseDto dto = assetWebMapper.toDto(asset);
 
         assertThat(dto.getAssetId()).isEqualTo(42L);
         assertThat(dto.getFolderId()).isEqualTo(1L);
@@ -62,7 +62,7 @@ class WebMappersTest {
     void assetWebMapper_toDto_nullFolder_doesNotSetFolderFields() {
         Asset asset = Asset.builder().assetId(1L).fileName("a.jpg").build();
 
-        AssetDto dto = assetWebMapper.toDto(asset);
+        AssetResponseDto dto = assetWebMapper.toDto(asset);
 
         assertThat(dto.getFolderId()).isNull();
         assertThat(dto.getFolderPath()).isNull();
@@ -72,7 +72,7 @@ class WebMappersTest {
     void folderWebMapper_toDto_mapsAllFields() {
         Folder folder = Folder.builder().folderId(5L).path("/photos/2024").build();
 
-        FolderDto dto = folderWebMapper.toDto(folder);
+        FolderResponseDto dto = folderWebMapper.toDto(folder);
 
         assertThat(dto.getFolderId()).isEqualTo(5L);
         assertThat(dto.getPath()).isEqualTo("/photos/2024");
@@ -85,7 +85,7 @@ class WebMappersTest {
         Instant now = Instant.now();
         AlbumData data = new AlbumData(10L, "Vacation", "Summer 2024", now, 42L, null);
 
-        AlbumSummaryDto dto = albumWebMapper.toSummaryDto(data);
+        AlbumSummaryResponseDto dto = albumWebMapper.toSummaryDto(data);
 
         assertThat(dto.getAlbumId()).isEqualTo(10L);
         assertThat(dto.getName()).isEqualTo("Vacation");

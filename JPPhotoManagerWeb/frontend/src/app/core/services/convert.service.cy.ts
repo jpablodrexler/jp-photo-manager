@@ -54,6 +54,7 @@ describe('ConvertService', () => {
   it('should return an EventSource for convert SSE', () => {
     const source = service.run();
     expect(source).to.be.instanceOf(EventSource);
+    expect(source.url).to.contain('/api/convert/run');
     source.close();
   });
 });

@@ -1,5 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Asset } from '../models/asset.model';
 
 @Injectable({ providedIn: 'root' })
@@ -60,29 +62,18 @@ export class MediaPlayerService {
     this.loadAndPlay(assets[startIndex]);
   }
 
-  loadFolder(folderPath: string): void {
+  loadFolder(folderPath: string): Observable<Asset[]> {
     const params = new HttpParams()
       .set('folderPath', folderPath)
       .set('sort', 'FILE_NAME')
       .set('page', '0');
-    this.http.get<{ items: Asset[] }>('/api/assets', { params }).subscribe({
-      next: (data) => {
-        const audioAssets = data.items.filter(a => a.fileType === 'AUDIO');
-        if (audioAssets.length > 0) {
-          this.play(audioAssets, 0);
-        }
-      },
-    });
+    return this.http.get<{ items: Asset[] }>('/api/assets', { params }).pipe(
+      map(data => data.items.filter(a => a.fileType === 'AUDIO'))
+    );
   }
 
-  loadPlaylist(assetId: number): void {
-    this.http.get<Asset[]>(`/api/audio/playlist/${assetId}`).subscribe({
-      next: (assets) => {
-        if (assets.length > 0) {
-          this.play(assets, 0);
-        }
-      },
-    });
+  loadPlaylist(assetId: number): Observable<Asset[]> {
+    return this.http.get<Asset[]>(`/api/audio/playlist/${assetId}`);
   }
 
   togglePause(): void {

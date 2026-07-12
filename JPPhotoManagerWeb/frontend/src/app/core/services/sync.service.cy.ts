@@ -54,6 +54,7 @@ describe('SyncService', () => {
   it('should return an EventSource for sync SSE', () => {
     const source = service.run();
     expect(source).to.be.instanceOf(EventSource);
+    expect(source.url).to.contain('/api/sync/run');
     source.close();
   });
 });

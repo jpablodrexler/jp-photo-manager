@@ -18,6 +18,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// Deliberately omits @ActiveProfiles("test"): SecurityConfig is @Profile("!test"), and this
+// test exists specifically to verify swagger-ui/api-docs are reachable under the real production
+// SecurityConfig without a JWT cookie. Activating the test profile would disable SecurityConfig
+// and defeat the test's purpose.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, properties = {
     "photomanager.jwt-secret=test-jwt-secret-for-openapi-testing-min32chars"
 })

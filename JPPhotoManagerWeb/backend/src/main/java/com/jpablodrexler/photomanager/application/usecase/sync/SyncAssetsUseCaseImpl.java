@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -32,16 +33,22 @@ public class SyncAssetsUseCaseImpl implements SyncAssetsUseCase {
     @Async
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public void execute(long runId) {
-        List<SyncDirectoriesDefinition> definitions = syncConfigRepository.findAllOrderByOrder();
-        List<SyncAssetsResult> results = new ArrayList<>();
+    public CompletableFuture<Void> execute(long runId) {
+        try {
+            List<SyncDirectoriesDefinition> definitions = syncConfigRepository.findAllOrderByOrder();
+            List<SyncAssetsResult> results = new ArrayList<>();
 
-        for (SyncDirectoriesDefinition def : definitions) {
-            results.add(syncDirectories(def, runId));
+            for (SyncDirectoriesDefinition def : definitions) {
+                results.add(syncDirectories(def, runId));
+            }
+
+            kafkaTemplate.send("job.sync.progress", String.valueOf(runId),
+                    SyncProgressMessage.done(runId, results));
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            log.error("Sync run {} failed", runId, e);
+            return CompletableFuture.failedFuture(e);
         }
-
-        kafkaTemplate.send("job.sync.progress", String.valueOf(runId),
-                SyncProgressMessage.done(runId, results));
     }
 
     private SyncAssetsResult syncDirectories(SyncDirectoriesDefinition def, long runId) {

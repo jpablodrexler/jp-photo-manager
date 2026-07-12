@@ -14,14 +14,16 @@ import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.RemoveAssetsFromAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.UpdateAlbumUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
 import com.jpablodrexler.photomanager.application.dto.AlbumFilterJson;
+import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.application.exception.SmartAlbumMembershipException;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AlbumAssetIdsRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AlbumSummaryDto;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.CreateAlbumRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.dto.UpdateAlbumRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.AlbumAssetIdsRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AlbumResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AlbumSummaryResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.CreateAlbumRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.UpdateAlbumRequestDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AlbumWebMapper;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +38,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -69,7 +70,7 @@ class AlbumControllerTest {
     @MockitoBean
     RemoveAssetsFromAlbumUseCase removeAssetsFromAlbumUseCase;
     @MockitoBean
-    UserRepository userRepository;
+    GetCurrentUserUseCase getCurrentUserUseCase;
     @MockitoBean
     AlbumWebMapper albumWebMapper;
     @MockitoBean
@@ -85,7 +86,7 @@ class AlbumControllerTest {
         User user = new User();
         user.setId(userId);
         user.setUsername("admin");
-        when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
+        when(getCurrentUserUseCase.execute()).thenReturn(user);
     }
 
     // --- GET /api/albums ---
@@ -94,7 +95,7 @@ class AlbumControllerTest {
     @WithMockUser("user")
     void listAlbums_returnsAlbumList_200() throws Exception {
         AlbumData album = new AlbumData(1L, "Wedding", null, now, 5L, null);
-        AlbumSummaryDto dto = new AlbumSummaryDto();
+        AlbumSummaryResponseDto dto = new AlbumSummaryResponseDto();
         dto.setAlbumId(1L);
         dto.setName("Wedding");
         dto.setAssetCount(5L);
@@ -115,7 +116,7 @@ class AlbumControllerTest {
     @WithMockUser("user")
     void createAlbum_validRequest_returns201WithDto() throws Exception {
         AlbumData created = new AlbumData(2L, "Vacation 2025", null, now, 0L, null);
-        AlbumSummaryDto dto = new AlbumSummaryDto();
+        AlbumSummaryResponseDto dto = new AlbumSummaryResponseDto();
         dto.setAlbumId(2L);
         dto.setName("Vacation 2025");
         dto.setAssetCount(0L);
@@ -123,7 +124,7 @@ class AlbumControllerTest {
         when(createAlbumUseCase.execute(eq(userId), eq("Vacation 2025"), isNull(), isNull())).thenReturn(created);
         when(albumWebMapper.toSummaryDto(created)).thenReturn(dto);
 
-        CreateAlbumRequest req = new CreateAlbumRequest("Vacation 2025", null, null);
+        CreateAlbumRequestDto req = new CreateAlbumRequestDto("Vacation 2025", null, null);
         mockMvc.perform(post("/api/albums")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -143,13 +144,21 @@ class AlbumControllerTest {
         Asset asset = buildAsset(folder, "photo.jpg", 10L);
         PaginatedResult<Asset> assets = new PaginatedResult<>(List.of(asset), 1L, 0, 50);
 
-        AssetDto assetDto = new AssetDto();
+        AssetResponseDto assetDto = new AssetResponseDto();
         assetDto.setAssetId(10L);
         assetDto.setFileName("photo.jpg");
+
+        AlbumResponseDto albumDto = new AlbumResponseDto();
+        albumDto.setAlbumId(1L);
+        albumDto.setName("Wedding");
+        albumDto.setDescription("2024");
+        albumDto.setCreatedAt(now);
+        albumDto.setAssets(new PaginatedData<>(List.of(assetDto), 0, 1, 1L));
 
         when(getAlbumUseCase.executeSummary(1L, userId)).thenReturn(summary);
         when(getAlbumUseCase.executeAssets(1L, userId, 0)).thenReturn(assets);
         when(assetWebMapper.toDto(asset)).thenReturn(assetDto);
+        when(albumWebMapper.toDto(eq(summary), any())).thenReturn(albumDto);
 
         mockMvc.perform(get("/api/albums/1"))
                 .andExpect(status().isOk())
@@ -173,14 +182,14 @@ class AlbumControllerTest {
     @WithMockUser("user")
     void updateAlbum_validRequest_returns200() throws Exception {
         AlbumData updated = new AlbumData(1L, "New Name", null, now, 3L, null);
-        AlbumSummaryDto dto = new AlbumSummaryDto();
+        AlbumSummaryResponseDto dto = new AlbumSummaryResponseDto();
         dto.setAlbumId(1L);
         dto.setName("New Name");
 
         when(updateAlbumUseCase.execute(eq(1L), eq(userId), eq("New Name"), isNull(), isNull())).thenReturn(updated);
         when(albumWebMapper.toSummaryDto(updated)).thenReturn(dto);
 
-        UpdateAlbumRequest req = new UpdateAlbumRequest("New Name", null, null);
+        UpdateAlbumRequestDto req = new UpdateAlbumRequestDto("New Name", null, null);
         mockMvc.perform(put("/api/albums/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -206,7 +215,7 @@ class AlbumControllerTest {
     void addAssets_validRequest_returns204() throws Exception {
         doNothing().when(addAssetsToAlbumUseCase).execute(eq(1L), eq(userId), anyList());
 
-        AlbumAssetIdsRequest req = new AlbumAssetIdsRequest(List.of(101L, 102L));
+        AlbumAssetIdsRequestDto req = new AlbumAssetIdsRequestDto(List.of(101L, 102L));
         mockMvc.perform(post("/api/albums/1/assets")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -220,7 +229,7 @@ class AlbumControllerTest {
     void removeAssets_validRequest_returns204() throws Exception {
         doNothing().when(removeAssetsFromAlbumUseCase).execute(eq(1L), eq(userId), anyList());
 
-        AlbumAssetIdsRequest req = new AlbumAssetIdsRequest(List.of(102L));
+        AlbumAssetIdsRequestDto req = new AlbumAssetIdsRequestDto(List.of(102L));
         mockMvc.perform(delete("/api/albums/1/assets")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -234,7 +243,7 @@ class AlbumControllerTest {
     void createAlbum_withFilterJson_returns201WithFilterJson() throws Exception {
         AlbumFilterJson filterJson = new AlbumFilterJson(null, null, null, 4);
         AlbumData created = new AlbumData(3L, "Top Picks", null, now, 0L, "{\"minRating\":4}");
-        AlbumSummaryDto dto = new AlbumSummaryDto();
+        AlbumSummaryResponseDto dto = new AlbumSummaryResponseDto();
         dto.setAlbumId(3L);
         dto.setName("Top Picks");
         dto.setFilterJson(filterJson);
@@ -242,7 +251,7 @@ class AlbumControllerTest {
         when(createAlbumUseCase.execute(eq(userId), eq("Top Picks"), isNull(), any())).thenReturn(created);
         when(albumWebMapper.toSummaryDto(created)).thenReturn(dto);
 
-        CreateAlbumRequest req = new CreateAlbumRequest("Top Picks", null, filterJson);
+        CreateAlbumRequestDto req = new CreateAlbumRequestDto("Top Picks", null, filterJson);
         mockMvc.perform(post("/api/albums")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -254,7 +263,7 @@ class AlbumControllerTest {
     @Test
     @WithMockUser("user")
     void createAlbum_withEmptyFilterJson_returns400() throws Exception {
-        CreateAlbumRequest req = new CreateAlbumRequest("Bad Smart", null, new AlbumFilterJson(null, null, null, null));
+        CreateAlbumRequestDto req = new CreateAlbumRequestDto("Bad Smart", null, new AlbumFilterJson(null, null, null, null));
         mockMvc.perform(post("/api/albums")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -265,7 +274,7 @@ class AlbumControllerTest {
     @WithMockUser("user")
     void updateAlbum_withNullFilterJson_returns200WithNullFilterJson() throws Exception {
         AlbumData updated = new AlbumData(1L, "Vacation Static", null, now, 2L, null);
-        AlbumSummaryDto dto = new AlbumSummaryDto();
+        AlbumSummaryResponseDto dto = new AlbumSummaryResponseDto();
         dto.setAlbumId(1L);
         dto.setName("Vacation Static");
         dto.setFilterJson(null);
@@ -273,7 +282,7 @@ class AlbumControllerTest {
         when(updateAlbumUseCase.execute(eq(1L), eq(userId), eq("Vacation Static"), isNull(), isNull())).thenReturn(updated);
         when(albumWebMapper.toSummaryDto(updated)).thenReturn(dto);
 
-        UpdateAlbumRequest req = new UpdateAlbumRequest("Vacation Static", null, null);
+        UpdateAlbumRequestDto req = new UpdateAlbumRequestDto("Vacation Static", null, null);
         mockMvc.perform(put("/api/albums/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -287,7 +296,7 @@ class AlbumControllerTest {
         doThrow(new SmartAlbumMembershipException("add"))
                 .when(addAssetsToAlbumUseCase).execute(eq(7L), eq(userId), anyList());
 
-        AlbumAssetIdsRequest req = new AlbumAssetIdsRequest(List.of(101L, 102L));
+        AlbumAssetIdsRequestDto req = new AlbumAssetIdsRequestDto(List.of(101L, 102L));
         mockMvc.perform(post("/api/albums/7/assets")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -301,7 +310,7 @@ class AlbumControllerTest {
         doThrow(new SmartAlbumMembershipException("remove"))
                 .when(removeAssetsFromAlbumUseCase).execute(eq(7L), eq(userId), anyList());
 
-        AlbumAssetIdsRequest req = new AlbumAssetIdsRequest(List.of(101L));
+        AlbumAssetIdsRequestDto req = new AlbumAssetIdsRequestDto(List.of(101L));
         mockMvc.perform(delete("/api/albums/7/assets")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))

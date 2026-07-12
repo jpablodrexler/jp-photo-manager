@@ -113,6 +113,7 @@ describe('AssetService', () => {
   it('should return an EventSource for catalog SSE', () => {
     const source = service.catalogAssets();
     expect(source).to.be.instanceOf(EventSource);
+    expect(source.url).to.contain('/api/assets/catalog');
     source.close();
   });
 
