@@ -1,0 +1,140 @@
+# Backend — equivalent of the `backend` service in ../docker-compose.yml.
+#
+# Image: build and make ../backend/Dockerfile's image available to your
+# cluster before applying this file, e.g.:
+#   docker build -t photomanager-backend:latest ../backend
+#   kind load docker-image photomanager-backend:latest        # kind
+#   minikube image load photomanager-backend:latest            # minikube
+# or push to a real registry and update `image:`/set imagePullPolicy: Always.
+#
+# Catalog directories: docker-compose bind-mounts HOST_IMAGE_DIR(_N) from
+# the host via .env (git-ignored). This manifest deliberately declares NO
+# catalog hostPath volumes of its own — a real filesystem path is
+# machine-specific and must never sit in a versioned file, even as a
+# placeholder. Instead, copy ../k8s/catalog-volumes.yaml.example to
+# ../k8s/catalog-volumes.yaml (git-ignored, see .gitignore) and edit it with
+# your real path(s); kustomization.yaml applies it as a patch on top of this
+# Deployment. See the README's Kubernetes Setup section.
+#
+# hostPath only works because the backend Pod is guaranteed to land on the
+# one node that has the directory; it does NOT work on a multi-node
+# cluster. For a real multi-node deployment, use a PersistentVolumeClaim
+# backed by shared storage (NFS, EFS, Azure Files, etc. — anything that
+# supports ReadWriteMany) in the patch instead of hostPath.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: thumbnails
+  namespace: photomanager
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: photomanager
+  labels:
+    app: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: photomanager
+spec:
+  # Scaling beyond 1 replica is supported by the app (catalog_run_state
+  # distributed lock + persistent Kafka consumer groups), but the
+  # `thumbnails` PVC above must then use a ReadWriteMany-capable storage
+  # class instead of the default ReadWriteOnce.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: photomanager-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: photomanager-config
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: photomanager-secrets
+                  key: POSTGRES_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: photomanager-secrets
+                  key: JWT_SECRET
+          # No catalog/catalog2/catalog3 volumeMounts here — see the
+          # top-of-file comment. They're added by the
+          # k8s/catalog-volumes.yaml patch (from catalog-volumes.yaml.example).
+          volumeMounts:
+            - name: thumbnails
+              mountPath: /thumbnails
+          # Spring Boot startup here does Flyway migrations and joins three
+          # Kafka consumer groups before /actuator/health responds — slow
+          # enough under load (e.g. other pods pulling multi-GB images
+          # concurrently, or a small Docker Desktop VM sharing a handful of
+          # CPUs across the whole stack) that a fixed initialDelaySeconds on
+          # the liveness probe was observed killing the container
+          # mid-startup (readiness/liveness both saw "connection refused"
+          # for minutes, then liveness restarted it before it ever came up).
+          # A startupProbe defers liveness/readiness checking until the app
+          # has responded at least once, with its own much longer allowance.
+          #
+          # failureThreshold 60 * periodSeconds 10 = 10 minutes. This isn't
+          # generous for padding's sake — under real observed contention (a
+          # 4-CPU Docker Desktop VM running Postgres+Kafka+Redis+Mongo+
+          # Prometheus+Grafana alongside this backend while it also
+          # initial-catalogs real photo libraries) plain Spring context
+          # startup that normally takes ~15s was measured taking 5+ minutes,
+          # and the previous failureThreshold: 30 (5 min) killed the
+          # container seconds before it would have passed. If your host has
+          # more CPU/RAM to spare, increasing the Docker Desktop / cluster
+          # resource allocation is the real fix — see the README's
+          # Kubernetes section.
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            failureThreshold: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            periodSeconds: 20
+            timeoutSeconds: 5
+      # No catalog/catalog2/catalog3 volumes here — see the top-of-file
+      # comment. They're added by the k8s/catalog-volumes.yaml patch.
+      volumes:
+        - name: thumbnails
+          persistentVolumeClaim:
+            claimName: thumbnails

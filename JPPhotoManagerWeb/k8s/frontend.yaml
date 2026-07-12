@@ -1,0 +1,55 @@
+# Frontend — equivalent of the `frontend` service in ../docker-compose.yml.
+# nginx.conf inside the image proxy_passes /api to http://backend:8080/api/
+# by hostname, so the backend Service above MUST be named "backend" for
+# this to resolve unchanged.
+#
+# Image: build and load ../frontend/Dockerfile the same way as the backend:
+#   docker build -t photomanager-frontend:latest ../frontend
+#   kind load docker-image photomanager-frontend:latest
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: photomanager
+  labels:
+    app: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: photomanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: photomanager-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 20
