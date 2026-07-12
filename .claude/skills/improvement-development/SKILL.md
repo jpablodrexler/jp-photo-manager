@@ -4,8 +4,9 @@ description: >
   Orchestrates the full improvement lifecycle end-to-end: selects the next
   improvement, proposes SDD artifacts if missing, implements all change tasks,
   runs code and security reviews (findings fixed before continuing), runs
-  backend and frontend tests until they pass, builds and deploys updated Docker
-  images if Docker is running, then archives the SDD change and marks the
+  backend and frontend tests until they pass, builds updated Docker images and
+  deploys them via Kubernetes (if a live cluster deployment exists) or Docker
+  Compose (if Docker is running), then archives the SDD change and marks the
   improvement as implemented. Use when you want a fully automated improvement
   development cycle with minimal manual steps.
 license: MIT
@@ -33,7 +34,7 @@ Five phases executed by six dedicated subagents (3a and 3b run in parallel):
 | 2 — Implement & Review  | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `security-reviewer` (conditional, findings fixed before done) |
 | 3a — Backend tests      | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test` until passing                                                    |
 | 3b — Frontend tests     | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                   |
-| 4 — Docker build/deploy | Subagent 5 | builds and deploys app images (skipped if Docker not running)                                                    |
+| 4 — Build & deploy      | Subagent 5 | builds app images and deploys via Kubernetes (`kubectl rollout restart`) if a live `photomanager` deployment exists, else Docker Compose/Dockerfiles (skipped if Docker not running) |
 | 5 — Archive             | Subagent 6 | `openspec-archive-change <name>` → `improvements-archive <name>`                                                 |
 
 ---
@@ -242,7 +243,17 @@ not covered by Phase 2's review. Ask the user whether to:
 
 ---
 
-## Phase 4 — Docker Build & Deploy (Subagent 5)
+## Phase 4 — Build & Deploy (Subagent 5)
+
+This project can be deployed via Kubernetes (`JPPhotoManagerWeb/k8s/` +
+`kustomization.yaml`) or Docker Compose (`JPPhotoManagerWeb/docker-compose.yml`)
+— both build the same `photomanager-backend`/`photomanager-frontend` images.
+Kubernetes takes priority when both are present, because running
+docker-compose's `frontend` service (`ports: "80:80"`) alongside an active
+Kubernetes ingress controller fails outright on a host port 80 conflict, and
+because a stray `docker compose up` would silently deploy to a disconnected
+instance while the real (Kubernetes) environment everyone tests against stays
+on the old image.
 
 Spawn a **general-purpose subagent** via the Agent tool with the following
 prompt:
@@ -254,7 +265,66 @@ prompt:
 >   response with `DOCKER: SKIPPED — Docker not running` and stop.
 > - If Docker is running: proceed to Step 2.
 >
-> **Step 2 — Probe Docker Compose version**
+> **Step 2 — Determine the deploy target: Kubernetes or Docker Compose**
+> Run: `kubectl get deployment backend frontend -n photomanager --no-headers`
+>
+> - If this succeeds and lists both `backend` and `frontend`: a live
+>   Kubernetes deployment exists. Follow **Step 3K** below, then stop — do
+>   not perform Steps 3–7.
+> - If it fails for any reason (`kubectl` not installed, no cluster context
+>   configured, the namespace or deployments don't exist): there is no live
+>   Kubernetes deployment. Continue with **Step 3** below.
+>
+> **Step 3K — Kubernetes build & deploy**
+>
+> 1. Build the images (same tags `k8s/backend.yaml`/`k8s/frontend.yaml`
+>    reference):
+>    ```
+>    docker build -t photomanager-backend:latest JPPhotoManagerWeb/backend
+>    docker build -t photomanager-frontend:latest JPPhotoManagerWeb/frontend
+>    ```
+>    Allow up to 10 minutes per build before treating it as a failure.
+> 2. Check whether the freshly built image needs loading into the cluster's
+>    own container runtime — Docker Desktop's Kubernetes shares the local
+>    Docker image cache, so this is often a no-op:
+>    ```
+>    kubectl config current-context
+>    ```
+>    - Context name contains `kind`: run
+>      `kind load docker-image photomanager-backend:latest photomanager-frontend:latest`
+>    - Context name contains `minikube`: run
+>      `minikube image load photomanager-backend:latest` and
+>      `minikube image load photomanager-frontend:latest`
+>    - Otherwise (`docker-desktop`, or a remote cluster pulling from a
+>      registry): skip this step.
+> 3. Restart both Deployments so they pick up the freshly built `:latest`
+>    image — `imagePullPolicy: IfNotPresent` will not repull a tag it
+>    already has cached, even after a rebuild:
+>    ```
+>    kubectl rollout restart deployment/backend deployment/frontend -n photomanager
+>    ```
+> 4. Wait for the rollout. Give the backend up to 12 minutes — its Spring
+>    Boot startup has been observed taking several minutes on
+>    CPU-constrained clusters (see the `startupProbe` comment in
+>    `k8s/backend.yaml`); a slow-but-successful rollout is expected, not a
+>    failure:
+>    ```
+>    kubectl rollout status deployment/backend -n photomanager --timeout=12m
+>    kubectl rollout status deployment/frontend -n photomanager --timeout=2m
+>    ```
+> 5. Verify:
+>    ```
+>    kubectl get pods -n photomanager -l 'app in (backend,frontend)'
+>    ```
+>    Both should show `1/1` and `Running`.
+>
+> End your response with one of:
+> - `DOCKER: DEPLOYED — kubectl rollout restart backend, frontend (namespace photomanager)`
+> - `DOCKER: BLOCKED — <brief reason>` if a build, image-load, or rollout
+>   failed (or `kubectl rollout status` timed out) and you cannot resolve it
+>   without human input.
+>
+> **Step 3 — Probe Docker Compose version**
 > Determine which compose command is available:
 >
 > - Run `docker compose version`. If it succeeds, use `docker compose` for all
@@ -264,7 +334,7 @@ prompt:
 > - If neither succeeds, note that only individual `docker build` commands will
 >   be used.
 >
-> **Step 3 — Discover the Docker setup**
+> **Step 4 — Discover the Docker setup**
 > Look for the project's Docker configuration in this order:
 >
 > 1. A `docker-compose.yml` or `compose.yml` at the repository root or under
@@ -275,7 +345,7 @@ prompt:
 > If neither is found: end your response with
 > `DOCKER: SKIPPED — no Dockerfile or compose file found`.
 >
-> **Step 4 — Identify application services**
+> **Step 5 — Identify application services**
 > If a compose file exists, read it and classify each service:
 >
 > - **Application service**: has a `build:` key pointing to a local directory
@@ -288,13 +358,13 @@ prompt:
 >
 > Build the list of application service names to pass to the compose command.
 >
-> **Step 5 — Build and deploy**
+> **Step 6 — Build and deploy**
 > Allow up to 10 minutes per image build before treating it as a failure.
 >
 > - **If a compose file exists**: run
 >   `<compose-cmd> up --build -d <app-services>`
->   where `<compose-cmd>` is `docker compose` or `docker-compose` (from Step 2)
->   and `<app-services>` is the space-separated list identified in Step 4.
+>   where `<compose-cmd>` is `docker compose` or `docker-compose` (from Step 3)
+>   and `<app-services>` is the space-separated list identified in Step 5.
 >   Example: `docker compose up --build -d backend frontend`
 > - **If only individual Dockerfiles exist**: build and restart each image:
 >   1. Build the images:
@@ -317,7 +387,7 @@ prompt:
 >      docker restart <container-name-or-id>
 >      ```
 >
-> **Step 6 — Verify**
+> **Step 7 — Verify**
 > Run `docker ps` and confirm the updated containers are listed as running.
 >
 > End your response with one of:
@@ -371,7 +441,7 @@ After all phases complete, display:
 **Security review:** ✓ All findings resolved (or N/A — no security-sensitive changes)
 **Backend tests:** ✓ All passing
 **Frontend tests:** ✓ All passing
-**Docker:** ✓ <value from DOCKER signal, e.g. "Deployed — backend, frontend" or "Skipped — Docker not running">
+**Docker:** ✓ <value from DOCKER signal, e.g. "Deployed — kubectl rollout restart backend, frontend (namespace photomanager)", "Deployed — backend, frontend", or "Skipped — Docker not running">
 **SDD change:** ✓ Archived
 **Improvement:** ✓ Marked as implemented
 ```
@@ -414,3 +484,8 @@ After all phases complete, display:
   `docker rm`, `docker rmi`, or any command that stops or removes containers
   or images beyond what is strictly required to restart the application
   services being deployed.
+- **No destructive kubectl commands.** Do not run `kubectl delete`,
+  `kubectl scale --replicas=0`, or `kustomize`/`kubectl apply -k` (which would
+  reconcile the whole stack, including PVCs and Secrets, when Phase 4 only
+  needs to redeploy two Deployments). `kubectl rollout restart` is the only
+  deploy action Phase 4's Kubernetes branch should ever run.

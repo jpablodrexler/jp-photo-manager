@@ -1,0 +1,22 @@
+# Non-secret configuration shared by the backend and, where relevant, the
+# infrastructure StatefulSets/Deployments. Mirrors the plain environment
+# variables set in ../docker-compose.yml's `backend` service.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: photomanager-config
+  namespace: photomanager
+data:
+  POSTGRES_HOST: "db"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "photomanager"
+  POSTGRES_USERNAME: "postgres"
+  # Semicolon-separated list of catalog roots inside the container. Must line
+  # up with the /catalog, /catalog2, /catalog3 hostPath volumes mounted on
+  # the backend Deployment (see backend.yaml).
+  CATALOG_DIR: "/catalog;/catalog2;/catalog3"
+  THUMBNAILS_DIR: "/thumbnails"
+  KAFKA_BOOTSTRAP: "kafka:9092"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  MONGO_URI: "mongodb://mongo:27017/photomanager"

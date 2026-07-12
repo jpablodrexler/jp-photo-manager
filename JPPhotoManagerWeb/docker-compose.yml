@@ -57,6 +57,10 @@ services:
   backend:
     build:
       context: ./backend
+    # Explicit name (matches k8s/backend.yaml) so it doesn't depend on the
+    # directory docker compose is invoked from — compose otherwise derives
+    # it from the project folder name (e.g. jpphotomanagerweb-backend).
+    image: photomanager-backend:latest
     restart: unless-stopped
     depends_on:
       db:
@@ -97,6 +101,9 @@ services:
   frontend:
     build:
       context: ./frontend
+    # Explicit name (matches k8s/frontend.yaml) — see the backend service's
+    # comment above for why.
+    image: photomanager-frontend:latest
     restart: unless-stopped
     ports:
       - "80:80"

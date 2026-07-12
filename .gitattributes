@@ -7,6 +7,11 @@
 # the platform the repo was checked out on.
 .githooks/* text eol=lf
 
+# Same reasoning for shell scripts — a CRLF-corrupted shebang
+# (#!/usr/bin/env bash\r) fails with a confusing "bad interpreter" /
+# "invalid option name" error on WSL, Linux, and Git Bash.
+*.sh text eol=lf
+
 ###############################################################################
 # Set default behavior for command prompt diff.
 #
