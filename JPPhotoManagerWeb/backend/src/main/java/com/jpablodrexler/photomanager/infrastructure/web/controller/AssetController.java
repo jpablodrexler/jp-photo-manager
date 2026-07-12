@@ -1,10 +1,10 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.application.dto.AssetFilter;
-import com.jpablodrexler.photomanager.application.dto.AssetImage;
+import com.jpablodrexler.photomanager.domain.model.AssetFilter;
+import com.jpablodrexler.photomanager.domain.model.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
-import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.application.exception.FolderNotFoundException;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 import com.jpablodrexler.photomanager.domain.model.Asset;
@@ -43,7 +43,7 @@ import com.jpablodrexler.photomanager.infrastructure.web.dto.RateAssetRequest;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.RenameAssetsRequest;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.RenameAssetsResponse;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.RenamePreviewDto;
-import com.jpablodrexler.photomanager.application.dto.RenameAssetsResult;
+import com.jpablodrexler.photomanager.domain.model.RenameAssetsResult;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.TimelineGroupDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.UploadAssetResponse;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;

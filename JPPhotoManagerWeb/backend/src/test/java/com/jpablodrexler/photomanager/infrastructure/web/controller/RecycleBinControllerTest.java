@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.in.recycle.GetDeletedAssetsUseCase;

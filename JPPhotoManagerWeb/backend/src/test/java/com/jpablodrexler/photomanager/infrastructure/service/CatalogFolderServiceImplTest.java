@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
-import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
+import com.jpablodrexler.photomanager.domain.model.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.domain.enums.FileType;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetAudio;

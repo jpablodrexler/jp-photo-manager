@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
-import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.in.recycle.GetDeletedAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.recycle.PurgeAssetsUseCase;

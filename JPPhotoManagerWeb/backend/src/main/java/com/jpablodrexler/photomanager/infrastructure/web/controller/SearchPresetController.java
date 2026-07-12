@@ -2,7 +2,7 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jpablodrexler.photomanager.application.dto.FilterPreset;
+import com.jpablodrexler.photomanager.domain.model.FilterPreset;
 import com.jpablodrexler.photomanager.application.exception.SearchPresetNotFoundException;
 import com.jpablodrexler.photomanager.domain.model.SearchPreset;
 import com.jpablodrexler.photomanager.domain.model.User;

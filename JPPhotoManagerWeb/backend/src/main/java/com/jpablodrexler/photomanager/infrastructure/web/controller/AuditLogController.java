@@ -1,8 +1,8 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.application.dto.AuditLogFilter;
+import com.jpablodrexler.photomanager.domain.model.AuditLogFilter;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
-import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.AuditEvent;
 import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.in.audit.GetAuditLogUseCase;

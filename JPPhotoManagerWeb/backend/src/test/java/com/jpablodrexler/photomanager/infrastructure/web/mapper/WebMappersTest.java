@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.web.mapper;
 
-import com.jpablodrexler.photomanager.application.dto.AlbumData;
+import com.jpablodrexler.photomanager.domain.model.AlbumData;
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;

@@ -1,8 +1,8 @@
 package com.jpablodrexler.photomanager.domain.port.out;
 
-import com.jpablodrexler.photomanager.application.dto.AssetFilter;
-import com.jpablodrexler.photomanager.application.dto.FolderStat;
-import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.AssetFilter;
+import com.jpablodrexler.photomanager.domain.model.FolderStat;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.enums.ProcessingStatus;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;

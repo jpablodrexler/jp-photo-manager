@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.domain.port.in.catalog;
 
-import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
+import com.jpablodrexler.photomanager.domain.model.CatalogChangeNotification;
 
 import java.util.function.Consumer;
 

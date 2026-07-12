@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.application.usecase.user;
 
-import com.jpablodrexler.photomanager.application.dto.UserSummary;
+import com.jpablodrexler.photomanager.domain.model.UserSummary;
 import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import jakarta.persistence.EntityNotFoundException;

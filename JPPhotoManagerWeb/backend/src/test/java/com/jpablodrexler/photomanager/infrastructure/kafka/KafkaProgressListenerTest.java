@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.kafka;
 
-import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
+import com.jpablodrexler.photomanager.domain.model.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.application.dto.CatalogProgressMessage;
 import com.jpablodrexler.photomanager.application.dto.ConvertProgressMessage;
 import com.jpablodrexler.photomanager.application.dto.SyncProgressMessage;

@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.application.dto;
+package com.jpablodrexler.photomanager.domain.model;
 
 public record AssetImage(byte[] bytes, String fileName) {
 }

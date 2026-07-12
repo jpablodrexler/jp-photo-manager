@@ -1,8 +1,8 @@
 package com.jpablodrexler.photomanager.application.usecase.asset;
 
-import com.jpablodrexler.photomanager.application.dto.AssetFilter;
-import com.jpablodrexler.photomanager.application.dto.AssetImage;
-import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.AssetFilter;
+import com.jpablodrexler.photomanager.domain.model.AssetImage;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
 import com.jpablodrexler.photomanager.domain.model.Folder;

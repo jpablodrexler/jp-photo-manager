@@ -2,9 +2,9 @@ package com.jpablodrexler.photomanager.application.usecase.album;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jpablodrexler.photomanager.application.dto.AlbumData;
+import com.jpablodrexler.photomanager.domain.model.AlbumData;
 import com.jpablodrexler.photomanager.application.dto.AlbumFilterJson;
-import com.jpablodrexler.photomanager.application.dto.AssetFilter;
+import com.jpablodrexler.photomanager.domain.model.AssetFilter;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 import com.jpablodrexler.photomanager.domain.model.Album;
 import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumsUseCase;

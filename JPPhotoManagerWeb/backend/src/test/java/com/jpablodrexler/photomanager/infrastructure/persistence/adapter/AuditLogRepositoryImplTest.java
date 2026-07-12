@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.persistence.adapter;
 
-import com.jpablodrexler.photomanager.application.dto.AuditLogFilter;
-import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.AuditLogFilter;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.enums.AuditAction;
 import com.jpablodrexler.photomanager.domain.enums.AuditEntityType;
 import com.jpablodrexler.photomanager.domain.model.AuditEvent;

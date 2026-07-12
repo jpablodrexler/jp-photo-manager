@@ -2,10 +2,10 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jpablodrexler.photomanager.application.dto.AlbumData;
+import com.jpablodrexler.photomanager.domain.model.AlbumData;
 import com.jpablodrexler.photomanager.application.dto.AlbumFilterJson;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
-import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.User;

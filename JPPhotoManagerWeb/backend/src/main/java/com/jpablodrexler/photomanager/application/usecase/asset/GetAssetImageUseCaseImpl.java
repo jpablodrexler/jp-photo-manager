@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.application.usecase.asset;
 
-import com.jpablodrexler.photomanager.application.dto.AssetImage;
+import com.jpablodrexler.photomanager.domain.model.AssetImage;
 import com.jpablodrexler.photomanager.domain.enums.AuditAction;
 import com.jpablodrexler.photomanager.domain.enums.AuditEntityType;
 import com.jpablodrexler.photomanager.domain.model.AuditEvent;

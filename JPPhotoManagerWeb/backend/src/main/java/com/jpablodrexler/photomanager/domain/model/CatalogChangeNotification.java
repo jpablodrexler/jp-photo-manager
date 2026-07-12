@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.application.dto;
+package com.jpablodrexler.photomanager.domain.model;
 
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;

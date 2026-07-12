@@ -1,5 +1,7 @@
 package com.jpablodrexler.photomanager.application.dto;
 
+import com.jpablodrexler.photomanager.domain.model.CatalogChangeNotification;
+
 public record CatalogProgressMessage(long runId, CatalogChangeNotification notification, boolean done,
         Integer foldersScanned, Long assetsAdded, Long durationMs) {
 

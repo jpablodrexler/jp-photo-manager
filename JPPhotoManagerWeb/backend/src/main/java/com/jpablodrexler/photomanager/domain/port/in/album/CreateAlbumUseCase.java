@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.domain.port.in.album;
 
-import com.jpablodrexler.photomanager.application.dto.AlbumData;
+import com.jpablodrexler.photomanager.domain.model.AlbumData;
 import java.util.UUID;
 
 public interface CreateAlbumUseCase {

@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.domain.port.in.asset;
 
-import com.jpablodrexler.photomanager.application.dto.AssetImage;
+import com.jpablodrexler.photomanager.domain.model.AssetImage;
 import java.io.IOException;
 import java.util.UUID;
 

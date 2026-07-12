@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.application.usecase.album;
 
-import com.jpablodrexler.photomanager.application.dto.AlbumData;
+import com.jpablodrexler.photomanager.domain.model.AlbumData;
 import com.jpablodrexler.photomanager.domain.model.Album;
 import com.jpablodrexler.photomanager.domain.port.in.album.CreateAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AlbumRepository;

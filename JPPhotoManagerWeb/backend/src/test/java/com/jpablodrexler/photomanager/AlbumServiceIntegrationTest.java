@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager;
 
-import com.jpablodrexler.photomanager.application.dto.AlbumData;
-import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.AlbumData;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.SmartAlbumMembershipException;
 import com.jpablodrexler.photomanager.domain.model.Asset;

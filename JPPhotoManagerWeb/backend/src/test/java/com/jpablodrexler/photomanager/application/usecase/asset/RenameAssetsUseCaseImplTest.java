@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.application.usecase.asset;
 
-import com.jpablodrexler.photomanager.application.dto.RenameAssetsResult;
+import com.jpablodrexler.photomanager.domain.model.RenameAssetsResult;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;

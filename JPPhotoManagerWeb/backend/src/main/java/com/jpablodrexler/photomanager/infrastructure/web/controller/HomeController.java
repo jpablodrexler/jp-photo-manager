@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.application.dto.HomeStats;
+import com.jpablodrexler.photomanager.domain.model.HomeStats;
 import com.jpablodrexler.photomanager.domain.port.in.home.GetHomeStatsUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.application.dto.UserSummary;
+import com.jpablodrexler.photomanager.domain.model.UserSummary;
 import com.jpablodrexler.photomanager.domain.port.in.user.CreateUserUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.user.DeleteUserUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.user.ListUsersUseCase;

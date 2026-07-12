@@ -2,9 +2,9 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
-import com.jpablodrexler.photomanager.application.dto.AssetFilter;
-import com.jpablodrexler.photomanager.application.dto.AssetImage;
-import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.AssetFilter;
+import com.jpablodrexler.photomanager.domain.model.AssetImage;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
 import com.jpablodrexler.photomanager.domain.model.Folder;
@@ -32,8 +32,8 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCa
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
-import com.jpablodrexler.photomanager.application.dto.RenameAssetsResult;
-import com.jpablodrexler.photomanager.application.dto.RenamePreview;
+import com.jpablodrexler.photomanager.domain.model.RenameAssetsResult;
+import com.jpablodrexler.photomanager.domain.model.RenamePreview;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.MoveAssetsRequest;
 
@@ -451,8 +451,8 @@ class AssetControllerTest {
         Folder folder = buildFolder(1L, "/photos");
         Asset asset = buildAsset(folder, "photo.jpg", 1L);
         TimelineGroup group = new TimelineGroup(LocalDate.of(2024, 5, 10), "May 10, 2024", List.of(asset));
-        com.jpablodrexler.photomanager.application.dto.PaginatedResult<TimelineGroup> result =
-                new com.jpablodrexler.photomanager.application.dto.PaginatedResult<>(List.of(group), 1L, 0, 30);
+        com.jpablodrexler.photomanager.domain.model.PaginatedResult<TimelineGroup> result =
+                new com.jpablodrexler.photomanager.domain.model.PaginatedResult<>(List.of(group), 1L, 0, 30);
 
         com.jpablodrexler.photomanager.infrastructure.web.dto.AssetDto assetDto = buildAssetDto("photo.jpg", 1L);
         TimelineGroupDto groupDto = new TimelineGroupDto(LocalDate.of(2024, 5, 10), "May 10, 2024", List.of(assetDto));
@@ -473,8 +473,8 @@ class AssetControllerTest {
 
     @Test
     void getTimeline_emptyFolder_returns200WithEmptyItems() throws Exception {
-        com.jpablodrexler.photomanager.application.dto.PaginatedResult<TimelineGroup> result =
-                new com.jpablodrexler.photomanager.application.dto.PaginatedResult<>(List.of(), 0L, 0, 30);
+        com.jpablodrexler.photomanager.domain.model.PaginatedResult<TimelineGroup> result =
+                new com.jpablodrexler.photomanager.domain.model.PaginatedResult<>(List.of(), 0L, 0, 30);
 
         when(folderRepository.findByPath("/empty")).thenReturn(Optional.empty());
         when(getAssetsTimelineUseCase.execute(any(AssetFilter.class))).thenReturn(result);

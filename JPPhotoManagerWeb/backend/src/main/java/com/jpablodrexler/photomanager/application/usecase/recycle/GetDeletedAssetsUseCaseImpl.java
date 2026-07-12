@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.application.usecase.recycle;
 
-import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.in.recycle.GetDeletedAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;

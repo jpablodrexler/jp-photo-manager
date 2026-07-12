@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.domain.port.out;
 
-import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
+import com.jpablodrexler.photomanager.domain.model.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 
 import java.util.concurrent.atomic.AtomicInteger;

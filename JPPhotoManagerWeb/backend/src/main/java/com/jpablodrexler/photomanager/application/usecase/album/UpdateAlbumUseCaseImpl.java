@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.application.usecase.album;
 
-import com.jpablodrexler.photomanager.application.dto.AlbumData;
-import com.jpablodrexler.photomanager.application.dto.AssetFilter;
+import com.jpablodrexler.photomanager.domain.model.AlbumData;
+import com.jpablodrexler.photomanager.domain.model.AssetFilter;
 import com.jpablodrexler.photomanager.application.dto.AlbumFilterJson;
 import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;

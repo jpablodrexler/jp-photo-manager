@@ -2,7 +2,7 @@ package com.jpablodrexler.photomanager.infrastructure.batch;
 
 import com.jpablodrexler.photomanager.application.dto.AssetCatalogedEvent;
 import com.jpablodrexler.photomanager.application.dto.AssetDeletedEvent;
-import com.jpablodrexler.photomanager.application.dto.CatalogChangeNotification;
+import com.jpablodrexler.photomanager.domain.model.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.application.dto.CatalogProgressMessage;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
 import com.jpablodrexler.photomanager.domain.model.Asset;

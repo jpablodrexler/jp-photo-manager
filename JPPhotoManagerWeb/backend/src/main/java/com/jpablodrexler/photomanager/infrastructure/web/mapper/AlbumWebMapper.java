@@ -2,7 +2,7 @@ package com.jpablodrexler.photomanager.infrastructure.web.mapper;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jpablodrexler.photomanager.application.dto.AlbumData;
+import com.jpablodrexler.photomanager.domain.model.AlbumData;
 import com.jpablodrexler.photomanager.application.dto.AlbumFilterJson;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.AlbumSummaryDto;
 import org.mapstruct.Mapper;

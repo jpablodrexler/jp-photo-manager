@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.domain.port.out;
 
-import com.jpablodrexler.photomanager.application.dto.AssetFilter;
-import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.AssetFilter;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Album;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 

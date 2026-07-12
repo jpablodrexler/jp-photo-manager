@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.persistence.adapter;
 
-import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Album;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.AlbumEntity;

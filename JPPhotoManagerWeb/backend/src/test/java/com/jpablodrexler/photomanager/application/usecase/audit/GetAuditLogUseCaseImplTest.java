@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.application.usecase.audit;
 
-import com.jpablodrexler.photomanager.application.dto.AuditLogFilter;
-import com.jpablodrexler.photomanager.application.dto.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.AuditLogFilter;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.AuditEvent;
 import com.jpablodrexler.photomanager.domain.port.out.AuditLogRepository;
 import org.junit.jupiter.api.Test;
