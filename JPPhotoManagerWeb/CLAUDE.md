@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this folder.
 
+## Never read these files
+
+`JPPhotoManagerWeb/k8s/catalog-volumes.yaml` and `JPPhotoManagerWeb/k8s/secret.yaml` contain real
+secrets and machine-specific paths and must **never** be read, under any circumstances — not via a
+direct request, not while reviewing a diff or PR, not while walking git branch history, and not as
+part of a broad "review all the code" sweep. Both are gitignored (see `.gitignore`) and have
+`.example` counterparts (`catalog-volumes.yaml.example`, `secret.yaml.example`) that are safe to
+read instead when documenting or reasoning about their structure.
+
 ## Overview
 
 `JPPhotoManagerWeb` is the web rewrite of the JP Photo Manager desktop application. It is split into two sub-projects:
