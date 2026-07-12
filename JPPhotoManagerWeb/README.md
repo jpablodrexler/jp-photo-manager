@@ -970,9 +970,30 @@ All resources live in a dedicated `photomanager` namespace (`k8s/namespace.yaml`
   kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=300s
   ```
   On Docker Desktop this creates a `LoadBalancer` Service that binds directly to `localhost` — no extra tunneling needed. On minikube, run `minikube tunnel` in a separate terminal to get the same effect; kind needs a cluster created with `extraPortMappings` for 80/443 (see the [kind docs](https://kind.sigs.k8s.io/docs/user/ingress/)). If you'd rather skip the controller entirely, `kubectl port-forward` still works for everything (see [Accessing services](#accessing-services)).
+
+  `./deploy-k8s.sh` (see [Setup](#setup-1)) runs this install command for you — safe to skip typing it out by hand.
 - The backend and frontend images built and available to the cluster (a registry push, or `kind load docker-image` / `minikube image load` for local clusters — see below).
 
 ### Setup
+
+Steps 1–3 below are one-time, manual setup — they need real values (image builds, secrets, your photo directory paths) that can't be safely scripted with placeholders. Once they're done, `deploy-k8s.sh` (in this directory) automates step 4 below plus the ingress-nginx install from [Prerequisites](#prerequisites-1) — safe to re-run any time you want to reapply the latest configuration:
+```bash
+cd JPPhotoManagerWeb
+./deploy-k8s.sh
+```
+It checks that `k8s/secret.yaml` and `k8s/catalog-volumes.yaml` exist (failing loudly with the exact `cp` command if not, rather than silently deploying broken config), installs/updates ingress-nginx, waits for it to be ready, then applies the secret and the kustomized stack. It does not build images (step 1) — run that yourself first, and again after any code change, then re-run the script (or `kubectl rollout restart deployment/backend deployment/frontend -n photomanager`) to pick it up.
+
+> **Running `deploy-k8s.sh` on Windows:** it's a bash script — double-clicking it in Explorer or running it from plain `cmd.exe`/PowerShell (`.\deploy-k8s.sh`) won't work, since neither knows how to interpret bash syntax. Use one of:
+> - **Git Bash** (recommended — already installed if you have Git for Windows, and `kubectl`/`docker` from Docker Desktop are already on its `PATH` with no extra setup): right-click inside `JPPhotoManagerWeb` in Explorer → **"Git Bash Here"** (or open Git Bash from the Start menu and `cd` there), then run `./deploy-k8s.sh` — or `bash deploy-k8s.sh` if it complains about permissions.
+> - **From PowerShell without switching shells**: `& "C:\Program Files\Git\bin\bash.exe" deploy-k8s.sh` (adjust the path if Git is installed elsewhere).
+> - **WSL**, if installed: `wsl bash deploy-k8s.sh` from PowerShell, or `./deploy-k8s.sh` from inside a WSL terminal. This script only calls `kubectl` (never `docker` directly), but WSL commonly has no working kubeconfig for it even when `kubectl` itself resolves fine — two failure modes we've hit in practice:
+>   - `kubectl: command not found` — `kubectl` isn't installed inside this WSL distro at all. Either install it there directly, or enable **Docker Desktop → Settings → Resources → WSL Integration** for your distro (which installs it and wires up the kubeconfig automatically).
+>   - Every command fails with `dial tcp 127.0.0.1:8080: connect: connection refused` — `kubectl` exists but has no kubeconfig, so it silently falls back to the legacy `localhost:8080` default instead of erroring clearly. `deploy-k8s.sh` handles this itself: it detects WSL (via `/proc/version`), and if `$KUBECONFIG` is unset and `~/.kube/config` doesn't exist, falls back to the Windows-side kubeconfig that Git Bash/PowerShell already use successfully (translated from `%USERPROFILE%` via `wslpath`, so it works regardless of username or Windows drive letter). No manual setup needed for the script itself.
+>
+>     For running `kubectl` commands directly in an interactive WSL terminal (outside the script), set this once in `~/.bashrc` — note it won't help the script above, since `wsl bash deploy-k8s.sh` is a non-interactive invocation and non-interactive non-login shells never source `~/.bashrc`:
+>     ```bash
+>     export KUBECONFIG="/mnt/c/Users/<you>/.kube/config"
+>     ```
 
 1. **Build the backend and frontend images** (same Dockerfiles docker-compose uses):
    ```bash
@@ -1007,7 +1028,7 @@ All resources live in a dedicated `photomanager` namespace (`k8s/namespace.yaml`
 
    > **Docker Desktop Kubernetes on Windows:** unlike `docker-compose`, which auto-translates a `C:/Users/...` bind mount, `hostPath` is resolved by the kubelet running *inside* the Docker Desktop VM — it does not see Windows drive letters directly. The VM exposes them at `/run/desktop/mnt/host/<lowercase-drive-letter>/...`, so `C:/Users/you/Pictures` becomes `/run/desktop/mnt/host/c/Users/you/Pictures`. minikube and kind have their own equivalents (`minikube mount`, or a `hostPath`/`extraMounts` entry in the kind cluster config) instead of this Docker Desktop-specific path.
 
-4. **Apply everything** (run from `JPPhotoManagerWeb/`, same as `docker compose up`):
+4. **Apply everything** — `./deploy-k8s.sh` automates this step (plus the ingress-nginx install from Prerequisites); by hand, run from `JPPhotoManagerWeb/` (same as `docker compose up`):
    ```bash
    kubectl apply -f k8s/secret.yaml
    kubectl apply -k .
