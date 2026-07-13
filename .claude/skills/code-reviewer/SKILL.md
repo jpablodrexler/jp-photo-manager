@@ -27,6 +27,10 @@ stacks; apply the relevant checklist(s) based on which files are under review.
 3. Work through the relevant checklist(s) below, section by section.
 4. Report findings grouped by **severity**, then by file.
 5. Summarise with a short verdict and the top action items.
+6. Write the full report to a new, dated markdown file — see
+   "Review Report Format & Output File" below. Do this on every run, not just
+   full-codebase sweeps: a single-file or single-PR review still gets its own
+   dated report, scoped to whatever was actually reviewed.
 
 Severity levels used throughout:
 
@@ -473,9 +477,9 @@ These have caused real bugs in this codebase and deserve extra attention:
 
 ---
 
-## 16. Review Report Format
+## 16. Review Report Format & Output File
 
-Structure the output as follows:
+Structure the in-chat summary as follows:
 
 ```
 ## Review: <file or PR title>
@@ -495,3 +499,26 @@ single most important thing to fix first.>
 ```
 
 If there are no findings in a severity category, omit that category entirely.
+
+### Write the report to a dated markdown file
+
+Every time this skill runs — full-codebase sweep, single file, or PR review —
+also write the findings to a new markdown file so work can be resumed later
+without re-deriving context:
+
+- **Path:** `JPPhotoManagerWeb/CODE_REVIEW_FINDINGS_{YYYY-MM-DD}.md` (today's
+  date, ISO 8601). If a file for that date already exists (e.g., a second
+  review the same day), append `-2`, `-3`, etc. before `.md` rather than
+  overwriting the earlier run's report.
+- **Content:** the same Critical/Warnings/Suggestions grouping as the in-chat
+  summary, using GitHub task-list checkboxes (`- [ ]`) per finding instead of
+  plain bullets, so items can be checked off as they're fixed. Include a short
+  header noting the scope reviewed (full codebase vs. a specific file/PR) and
+  which commit(s)/state the review was run against. Only include categories
+  that have findings — omit empty ones.
+- **Scope of content:** write only what was actually found in *this* run —
+  don't carry forward unresolved items from a previous dated report by
+  default. If asked to produce a combined or updated backlog, do that
+  explicitly as its own step rather than silently merging.
+- Do not overwrite or delete a previous dated report — each run's file is a
+  point-in-time snapshot.
