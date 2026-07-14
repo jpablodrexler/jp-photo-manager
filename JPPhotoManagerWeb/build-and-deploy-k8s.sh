@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Installs the ingress-nginx controller (if not already present) and applies
-# the full Kubernetes configuration for the web application — the exact
-# steps documented in README.md's "Running with Kubernetes" section
-# (Prerequisites + Setup), automated so you don't have to run them by hand.
-# Safe to re-run — every step here is idempotent.
+# Builds the backend and frontend Docker images, installs the ingress-nginx
+# controller (if not already present), and applies the full Kubernetes
+# configuration for the web application — the exact steps documented in
+# README.md's "Running with Kubernetes" section (Prerequisites + Setup),
+# automated so you don't have to run them by hand. Safe to re-run — every
+# step here is idempotent.
 #
-# Usage: ./deploy-k8s.sh   (run from anywhere; the script cds to its own dir)
+# Usage: ./build-and-deploy-k8s.sh   (run from anywhere; the script cds to its own dir)
 #
 # Prerequisite: k8s/secret.yaml and k8s/catalog-volumes.yaml must already
 # exist (copied from their .example templates and filled in) — this script
@@ -22,7 +23,7 @@ INGRESS_NGINX_MANIFEST="https://raw.githubusercontent.com/kubernetes/ingress-ngi
 # Under WSL, `kubectl` commonly has no kubeconfig of its own even when the
 # binary itself resolves fine — it then silently falls back to the legacy
 # localhost:8080 default and fails with "connection refused" instead of a
-# clear error. This can't be fixed via ~/.bashrc: `wsl bash deploy-k8s.sh`
+# clear error. This can't be fixed via ~/.bashrc: `wsl bash build-and-deploy-k8s.sh`
 # is a non-interactive invocation, and non-interactive non-login shells
 # never source ~/.bashrc, so a variable exported there is invisible here
 # regardless. Detect that situation and fall back to the Windows-side
@@ -42,6 +43,25 @@ fi
 echo "==> Checking kubectl connectivity ..."
 kubectl cluster-info >/dev/null
 echo "    Connected."
+
+echo "==> Building backend and frontend images ..."
+docker build -t photomanager-backend:latest ./backend
+docker build -t photomanager-frontend:latest ./frontend
+
+echo "==> Making images visible to the cluster ..."
+CURRENT_CONTEXT="$(kubectl config current-context)"
+case "$CURRENT_CONTEXT" in
+    kind-*)
+        kind load docker-image photomanager-backend:latest photomanager-frontend:latest --name "${CURRENT_CONTEXT#kind-}"
+        ;;
+    minikube)
+        minikube image load photomanager-backend:latest
+        minikube image load photomanager-frontend:latest
+        ;;
+    *)
+        echo "    Context '$CURRENT_CONTEXT' shares the local Docker image cache directly (e.g. Docker Desktop) — no extra step needed."
+        ;;
+esac
 
 echo "==> Checking required local configuration files ..."
 MISSING=0
@@ -92,6 +112,13 @@ kubectl apply -f k8s/secret.yaml
 
 echo "==> Applying the Kubernetes stack (namespace, ConfigMaps, Services, StatefulSets, Deployments, PVCs, Ingress) ..."
 kubectl apply -k .
+
+echo "==> Restarting backend/frontend so they pick up the freshly built images ..."
+# imagePullPolicy: IfNotPresent means the kubelet won't repull a :latest tag
+# it already has cached, even though the image we just built above replaced
+# its content — an explicit rollout restart is the only way already-running
+# pods pick up the new image. Harmless to run on a brand-new deployment too.
+kubectl rollout restart deployment/backend deployment/frontend -n photomanager
 
 echo ""
 echo "Deployment applied successfully!"
