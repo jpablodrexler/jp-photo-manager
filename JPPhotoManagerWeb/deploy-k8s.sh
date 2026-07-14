@@ -84,6 +84,9 @@ kubectl wait --namespace ingress-nginx \
     --timeout=300s
 echo "    ingress-nginx controller is ready."
 
+echo "==> Applying the namespace (secret below targets it and must not run first on a fresh cluster) ..."
+kubectl apply -f k8s/namespace.yaml
+
 echo "==> Applying the secret ..."
 kubectl apply -f k8s/secret.yaml
 

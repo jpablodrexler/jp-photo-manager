@@ -1135,6 +1135,13 @@ kubectl scale deployment/backend deployment/frontend -n photomanager --replicas=
 
 **Duplicate image tags in `docker images` (e.g. both `jpphotomanagerweb-backend` and `photomanager-backend` pointing at the same image ID).** `docker-compose.yml`'s `backend`/`frontend` services set an explicit `image: photomanager-backend:latest` / `image: photomanager-frontend:latest` — matching `k8s/backend.yaml`/`k8s/frontend.yaml` exactly — precisely so `docker compose build` and `docker build -t photomanager-backend:latest ./backend` produce the same tag and this can't happen going forward. If you still have leftover `jpphotomanagerweb-*` tags from before that field was added, they're harmless (same underlying image, just an extra name); clean them up with `docker rmi jpphotomanagerweb-backend:latest jpphotomanagerweb-frontend:latest` (using `--replicas=0` first as above if either is in use).
 
+**`deploy-k8s.sh` (or any `kubectl` command) hangs and then fails with `dial tcp <ip>:6443: connectex: A connection attempt failed...`.** `kubectl` is pointed at a context whose cluster isn't actually running. This happens whenever more than one local Kubernetes provider is installed (e.g. both Docker Desktop and Rancher Desktop) — `kubectl config current-context` can silently be left on the one that's stopped. Check and fix:
+```bash
+kubectl config get-contexts          # shows all contexts; * marks the current one
+kubectl config use-context docker-desktop   # switch to the one that's actually running
+```
+If the target context's provider isn't running at all (e.g. Rancher Desktop's app process isn't started), the fix is to launch that provider — or switch to whichever one you do have running, as above.
+
 **Nothing responds at `http://localhost` or `http://photomanager.local` even though all pods are `1/1 Running`.** Unlike `docker-compose`, nothing is listening on a host port by default in Kubernetes — there's no `frontend` container publishing `80:80`. Confirm something is actually bound:
 ```bash
 kubectl get svc -n ingress-nginx ingress-nginx-controller   # EXTERNAL-IP should be "localhost", not <pending>
