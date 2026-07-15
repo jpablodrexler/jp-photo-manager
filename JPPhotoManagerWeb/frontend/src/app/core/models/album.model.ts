@@ -41,3 +41,7 @@ export interface UpdateAlbumRequest {
 export interface AlbumAssetIdsRequest {
   assetIds: number[];
 }
+
+export interface EditAlbumFilterDialogData {
+  filterJson: AlbumFilterJson;
+}

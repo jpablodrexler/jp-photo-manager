@@ -1,5 +1,4 @@
 import { Component, Inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,21 +8,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatListModule } from '@angular/material/list';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AlbumSummary } from '../../../core/models/album.model';
-
-export interface AddToAlbumDialogData {
-  albums: AlbumSummary[];
-}
-
-export interface AddToAlbumDialogResult {
-  albumId: number | null;
-  newAlbumName: string | null;
-}
+import { AddToAlbumDialogData, AddToAlbumDialogResult } from '../../../core/models/dialog.model';
 
 @Component({
   selector: 'app-add-to-album-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatDialogModule,
     MatButtonModule,

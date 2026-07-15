@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -8,7 +7,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -21,7 +20,6 @@ import { AlbumSummary, AlbumFilterJson } from '../../core/models/album.model';
   selector: 'app-albums',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     RouterLink,
     MatToolbarModule,
@@ -30,7 +28,6 @@ import { AlbumSummary, AlbumFilterJson } from '../../core/models/album.model';
     MatIconModule,
     MatInputModule,
     MatFormFieldModule,
-    MatSnackBarModule,
     MatChipsModule,
     MatTooltipModule,
     MatSlideToggleModule,
@@ -67,7 +64,8 @@ export class AlbumsComponent implements OnInit {
     return album.filterJson != null;
   }
 
-  formatFilterSummary(filter: AlbumFilterJson): string {
+  formatFilterSummary(filter: AlbumFilterJson | null | undefined): string {
+    if (!filter) return 'No criteria';
     const parts: string[] = [];
     if (filter.search) parts.push(`Search: ${filter.search}`);
     if (filter.dateFrom) parts.push(`From: ${filter.dateFrom}`);

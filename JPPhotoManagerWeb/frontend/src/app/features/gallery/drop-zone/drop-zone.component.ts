@@ -8,7 +8,6 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
@@ -22,7 +21,7 @@ const ACCEPTED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff',
 @Component({
   selector: 'app-drop-zone',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatIconModule, MatProgressBarModule],
+  imports: [MatButtonModule, MatIconModule, MatProgressBarModule],
   templateUrl: './drop-zone.component.html',
   styleUrl: './drop-zone.component.scss',
 })
@@ -66,18 +65,19 @@ export class DropZoneComponent implements OnDestroy {
     }
   }
 
+  onFileInputChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.onFilesSelected(input.files);
+  }
+
   onFilesSelected(fileList: FileList | null): void {
     if (!fileList) return;
-    const accepted: File[] = [];
-    for (let i = 0; i < fileList.length; i++) {
-      const file = fileList[i];
+    const accepted = Array.from(fileList).filter(file => {
       const ext = file.name.includes('.')
         ? file.name.substring(file.name.lastIndexOf('.') + 1).toLowerCase()
         : '';
-      if (ACCEPTED_EXTENSIONS.has(ext)) {
-        accepted.push(file);
-      }
-    }
+      return ACCEPTED_EXTENSIONS.has(ext);
+    });
     for (const file of accepted) {
       this.uploadQueue.push({ file, progress: 0, status: 'pending' });
     }

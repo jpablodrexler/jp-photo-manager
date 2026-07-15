@@ -1,5 +1,4 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { ThumbnailComponent } from '../../../shared/components/thumbnail/thumbnail.component';
 import { TimelineGroup } from '../../../core/models/timeline-group.model';
 import { Asset } from '../../../core/models/asset.model';
@@ -7,7 +6,7 @@ import { Asset } from '../../../core/models/asset.model';
 @Component({
   selector: 'app-timeline-view',
   standalone: true,
-  imports: [CommonModule, ThumbnailComponent],
+  imports: [ThumbnailComponent],
   templateUrl: './timeline-view.component.html',
   styleUrl: './timeline-view.component.scss',
 })

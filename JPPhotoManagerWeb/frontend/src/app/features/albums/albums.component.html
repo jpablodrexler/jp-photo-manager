@@ -56,7 +56,7 @@
         <mat-card-title>
           {{ album.name }}
           @if (isSmartAlbum(album)) {
-            <mat-chip [matTooltip]="formatFilterSummary(album.filterJson!)">Smart</mat-chip>
+            <mat-chip [matTooltip]="formatFilterSummary(album.filterJson)">Smart</mat-chip>
           }
         </mat-card-title>
         <mat-card-subtitle>{{ album.assetCount }} photo{{ album.assetCount === 1 ? '' : 's' }}</mat-card-subtitle>

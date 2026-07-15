@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpEvent, HttpParams } from '@angular/common/http';
 import { Observable, catchError, throwError } from 'rxjs';
-import { Asset, CropAssetRequest, RenameAssetsResponse, SortCriteria, UploadAssetResponse } from '../models/asset.model';
+import { Asset, AssetTimelineFilters, CropAssetRequest, RenameAssetsResponse, SortCriteria, UploadAssetResponse } from '../models/asset.model';
 import { ExifMetadata } from '../models/exif-metadata.model';
 import { PaginatedData } from '../models/paginated-data.model';
 import { TimelineGroup } from '../models/timeline-group.model';
@@ -33,7 +33,7 @@ export class AssetService {
   }
 
   getTimeline(folderPath: string, page = 0,
-              filters?: { search?: string; dateFrom?: string; dateTo?: string; minRating?: number }
+              filters?: AssetTimelineFilters
   ): Observable<PaginatedData<TimelineGroup>> {
     let params = new HttpParams()
       .set('folderPath', folderPath)

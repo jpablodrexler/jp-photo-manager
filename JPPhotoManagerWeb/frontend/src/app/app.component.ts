@@ -16,13 +16,13 @@ import { BackgroundSyncService } from './core/services/background-sync.service';
 import { MediaPlayerService } from './core/services/media-player.service';
 import { ThemeService } from './core/services/theme.service';
 import { PreferenceService } from './core/services/preference.service';
-import { CatalogNotification } from './core/models/catalog-notification.model';
+import { CatalogNotification, CatalogState } from './core/models/catalog-notification.model';
 import { AudioPlayerComponent } from './features/audio-player/audio-player.component';
 import { VideoPlayerComponent } from './features/gallery/video-player/video-player.component';
 import { MediaFullscreenOverlayComponent } from './shared/components/media-fullscreen-overlay/media-fullscreen-overlay.component';
 import { AboutDialogComponent } from './shared/components/about-dialog/about-dialog.component';
 import { AccentColorPickerComponent } from './shared/components/accent-color-picker/accent-color-picker.component';
-import { CatalogProgressFooterComponent, CatalogState } from './shared/components/catalog-progress-footer/catalog-progress-footer.component';
+import { CatalogProgressFooterComponent } from './shared/components/catalog-progress-footer/catalog-progress-footer.component';
 
 @Component({
   selector: 'app-root',

@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,7 +10,6 @@ import { AnalyticsData, ChartEntry } from '../../core/models/analytics.model';
   selector: 'app-analytics',
   standalone: true,
   imports: [
-    CommonModule,
     MatCardModule,
     MatProgressSpinnerModule,
     MatIconModule,

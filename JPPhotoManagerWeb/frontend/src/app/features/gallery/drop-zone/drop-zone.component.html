@@ -12,7 +12,7 @@
   accept="image/*"
   multiple
   style="display: none"
-  (change)="onFilesSelected($any($event.target).files)"
+  (change)="onFileInputChange($event)"
 />
 
 @if (uploadQueue.length > 0) {

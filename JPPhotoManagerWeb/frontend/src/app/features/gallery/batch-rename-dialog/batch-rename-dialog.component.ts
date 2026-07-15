@@ -1,5 +1,5 @@
 import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -12,17 +12,12 @@ import { debounceTime, distinctUntilChanged, switchMap, takeUntil } from 'rxjs/o
 import { of } from 'rxjs';
 import { AssetService } from '../../../core/services/asset.service';
 import { RenamePreview } from '../../../core/models/asset.model';
-
-export interface BatchRenameDialogData {
-  assetIds: number[];
-  assetCount: number;
-}
+import { BatchRenameDialogData } from '../../../core/models/dialog.model';
 
 @Component({
   selector: 'app-batch-rename-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatButtonModule,
     MatDialogModule,
@@ -97,8 +92,8 @@ export class BatchRenameDialogComponent implements OnInit, OnDestroy {
       next: () => {
         this.dialogRef.close({ success: true, count: this.data.assetIds.length });
       },
-      error: (err: { error?: { message?: string } }) => {
-        const message = err?.error?.message ?? 'Rename failed';
+      error: (err: HttpErrorResponse) => {
+        const message = err.error?.message ?? 'Rename failed';
         this.dialogRef.close({ success: false, error: message });
       },
     });

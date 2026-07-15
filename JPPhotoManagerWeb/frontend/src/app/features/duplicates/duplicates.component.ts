@@ -4,17 +4,13 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { AssetService } from '../../core/services/asset.service';
 import { Asset } from '../../core/models/asset.model';
+import { DuplicateGroup } from '../../core/models/duplicate-group.model';
 import { FileSizePipe } from '../../shared/pipes/file-size.pipe';
-
-interface DuplicateGroup {
-  assets: Asset[];
-  keepIndex: number;
-}
 
 @Component({
   selector: 'app-duplicates',
@@ -25,7 +21,6 @@ interface DuplicateGroup {
     MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
-    MatSnackBarModule,
     MatChipsModule,
     MatTooltipModule,
     FileSizePipe

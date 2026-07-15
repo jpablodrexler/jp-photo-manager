@@ -1,12 +1,11 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatCardModule } from '@angular/material/card';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { ThumbnailComponent } from '../../../shared/components/thumbnail/thumbnail.component';
 import { AlbumService } from '../../../core/services/album.service';
 import { Album, AlbumFilterJson } from '../../../core/models/album.model';
@@ -16,14 +15,11 @@ import { EditAlbumFilterDialogComponent } from './edit-album-filter-dialog.compo
   selector: 'app-album-detail',
   standalone: true,
   imports: [
-    CommonModule,
     RouterLink,
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
-    MatSnackBarModule,
     MatCardModule,
-    MatDialogModule,
     ThumbnailComponent
   ],
   templateUrl: './album-detail.component.html',

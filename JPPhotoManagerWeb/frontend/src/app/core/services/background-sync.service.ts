@@ -1,27 +1,6 @@
 import { Injectable } from '@angular/core';
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
-
-interface SyncQueueEntry {
-  url: string;
-  method: string;
-  body: unknown;
-  timestamp: number;
-}
-
-interface PhotoManagerDBSchema extends DBSchema {
-  'photomanager-sync-queue': {
-    key: number;
-    value: SyncQueueEntry;
-  };
-}
-
-interface SyncManager {
-  register(tag: string): Promise<void>;
-}
-
-interface ServiceWorkerRegistrationWithSync extends ServiceWorkerRegistration {
-  sync?: SyncManager;
-}
+import { openDB, IDBPDatabase } from 'idb';
+import { PhotoManagerDBSchema, ServiceWorkerRegistrationWithSync } from '../models/background-sync.model';
 
 @Injectable({ providedIn: 'root' })
 export class BackgroundSyncService {

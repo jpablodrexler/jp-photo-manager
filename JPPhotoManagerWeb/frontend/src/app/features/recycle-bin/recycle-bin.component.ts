@@ -1,9 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { RecycleBinService } from '../../core/services/recycle-bin.service';
 import { ThumbnailComponent } from '../../shared/components/thumbnail/thumbnail.component';
 import { Asset } from '../../core/models/asset.model';
@@ -13,11 +12,9 @@ import { PaginatedData } from '../../core/models/paginated-data.model';
   selector: 'app-recycle-bin',
   standalone: true,
   imports: [
-    CommonModule,
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
-    MatSnackBarModule,
     ThumbnailComponent
   ],
   templateUrl: './recycle-bin.component.html',

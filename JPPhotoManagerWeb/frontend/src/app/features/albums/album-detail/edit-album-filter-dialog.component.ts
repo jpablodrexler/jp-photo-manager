@@ -1,5 +1,4 @@
 import { Component, Inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -8,17 +7,12 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
-import { AlbumFilterJson } from '../../../core/models/album.model';
-
-export interface EditAlbumFilterDialogData {
-  filterJson: AlbumFilterJson;
-}
+import { AlbumFilterJson, EditAlbumFilterDialogData } from '../../../core/models/album.model';
 
 @Component({
   selector: 'app-edit-album-filter-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatDialogModule,
     MatButtonModule,

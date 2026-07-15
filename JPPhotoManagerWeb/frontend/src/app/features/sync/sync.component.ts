@@ -1,5 +1,4 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,7 +8,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatListModule } from '@angular/material/list';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { SyncService } from '../../core/services/sync.service';
 import { SyncAssetsDirectoriesDefinition, SyncAssetsResult } from '../../core/models/sync-config.model';
 import { AuthService } from '../../core/services/auth.service';
@@ -20,7 +19,6 @@ type ProcessStep = 'configure' | 'running' | 'results';
   selector: 'app-sync',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatTableModule,
     MatButtonModule,
@@ -29,8 +27,7 @@ type ProcessStep = 'configure' | 'running' | 'results';
     MatCheckboxModule,
     MatCardModule,
     MatProgressBarModule,
-    MatListModule,
-    MatSnackBarModule
+    MatListModule
   ],
   templateUrl: './sync.component.html',
   styleUrl: './sync.component.scss'
@@ -115,7 +112,7 @@ export class SyncComponent implements OnInit, OnDestroy {
     });
 
     eventSource.addEventListener('results', (event: MessageEvent) => {
-      this.results = JSON.parse(event.data);
+      this.results = JSON.parse(event.data as string) as SyncAssetsResult[];
       this.step = 'results';
       this.running = false;
       eventSource.close();

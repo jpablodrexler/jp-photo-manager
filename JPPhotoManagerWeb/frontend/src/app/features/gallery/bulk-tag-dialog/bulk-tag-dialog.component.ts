@@ -1,5 +1,4 @@
 import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -13,16 +12,12 @@ import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { Subject, forkJoin, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { TagService } from '../../../core/services/tag.service';
-
-export interface BulkTagDialogData {
-  assetIds: number[];
-}
+import { BulkTagDialogData } from '../../../core/models/dialog.model';
 
 @Component({
   selector: 'app-bulk-tag-dialog',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatButtonModule,
     MatIconModule,
@@ -49,7 +44,7 @@ export class BulkTagDialogComponent implements OnInit, OnDestroy {
 
   constructor(
     private tagService: TagService,
-    private dialogRef: MatDialogRef<BulkTagDialogComponent>,
+    private dialogRef: MatDialogRef<BulkTagDialogComponent, boolean>,
     @Inject(MAT_DIALOG_DATA) public data: BulkTagDialogData,
   ) {}
 

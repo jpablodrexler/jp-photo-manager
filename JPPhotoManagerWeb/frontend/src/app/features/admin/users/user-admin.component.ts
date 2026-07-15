@@ -7,7 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { UserAdminService } from '../../../core/services/user-admin.service';
 import { UserAdmin } from '../../../core/models/user-admin.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -16,7 +16,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
   selector: 'app-user-admin',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, MatTableModule, MatButtonModule,
-            MatFormFieldModule, MatInputModule, MatIconModule, MatCardModule, MatDialogModule],
+            MatFormFieldModule, MatInputModule, MatIconModule, MatCardModule],
   templateUrl: './user-admin.component.html',
   styleUrl: './user-admin.component.scss'
 })
@@ -85,9 +85,10 @@ export class UserAdminComponent implements OnInit {
   }
 
   deleteUser(id: string): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: { title: 'Delete user', message: 'Delete this user?' }
-    });
+    const dialogRef = this.dialog.open<ConfirmDialogComponent, unknown, boolean>(
+      ConfirmDialogComponent,
+      { data: { title: 'Delete user', message: 'Delete this user?' } },
+    );
     dialogRef.afterClosed().subscribe(confirmed => {
       if (!confirmed) return;
       this.userAdminService.deleteUser(id).subscribe({

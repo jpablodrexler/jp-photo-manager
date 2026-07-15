@@ -20,13 +20,13 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatSidenavModule } from "@angular/material/sidenav";
-import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { MatDialog } from "@angular/material/dialog";
 import { MatChipsModule, MatChipInputEvent } from "@angular/material/chips";
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from "@angular/material/autocomplete";
 import { COMMA, ENTER } from "@angular/cdk/keycodes";
 import { BreakpointObserver, Breakpoints } from "@angular/cdk/layout";
-import { Subject, Subscription } from "rxjs";
+import { Subject } from "rxjs";
 import { debounceTime, distinctUntilChanged, takeUntil } from "rxjs/operators";
 import { ScrollingModule } from "@angular/cdk/scrolling";
 import { FolderNavComponent } from "../folder-nav/folder-nav.component";
@@ -40,6 +40,7 @@ import { Asset, SortCriteria } from "../../core/models/asset.model";
 import { AlbumSummary } from "../../core/models/album.model";
 import { SearchPreset } from "../../core/models/search-preset.model";
 import { PaginatedData } from "../../core/models/paginated-data.model";
+import { AddToAlbumDialogResult, FolderPickerDialogResult } from "../../core/models/dialog.model";
 import { DropZoneComponent } from "./drop-zone/drop-zone.component";
 import { AddToAlbumDialogComponent } from "./add-to-album-dialog/add-to-album-dialog.component";
 import { SavePresetDialogComponent } from "./save-preset-dialog/save-preset-dialog.component";
@@ -70,8 +71,6 @@ type ViewType = "grid" | "timeline";
     MatNativeDateModule,
     MatSelectModule,
     MatMenuModule,
-    MatSnackBarModule,
-    MatDialogModule,
     MatProgressBarModule,
     MatSidenavModule,
     MatChipsModule,
@@ -97,7 +96,6 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   isMobile = false;
   sidenavOpen = true;
-  private bpSub!: Subscription;
 
   currentFolder: string = "";
   viewMode: ViewMode = "thumbnails";
@@ -113,7 +111,6 @@ export class GalleryComponent implements OnInit, OnDestroy {
   tagFilterControl = new FormControl<string>('', { nonNullable: true });
   readonly tagSeparatorKeysCodes = [ENTER, COMMA] as const;
   private readonly searchSubject = new Subject<string>();
-  private searchSubscription?: Subscription;
   private catalogEventSource?: EventSource;
   private readonly destroy$ = new Subject<void>();
 
@@ -170,8 +167,8 @@ export class GalleryComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.searchSubscription = this.searchSubject
-      .pipe(debounceTime(400), distinctUntilChanged())
+    this.searchSubject
+      .pipe(debounceTime(400), distinctUntilChanged(), takeUntil(this.destroy$))
       .subscribe(() => {
         this.pageIndex = 0;
         this.loadAssets();
@@ -191,8 +188,9 @@ export class GalleryComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.bpSub = this.breakpointObserver
+    this.breakpointObserver
       .observe([Breakpoints.Handset])
+      .pipe(takeUntil(this.destroy$))
       .subscribe((result) => {
         this.isMobile = result.matches;
         this.sidenavOpen = !result.matches;
@@ -213,9 +211,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.stopSlideshow();
     this.disconnectObserver();
-    this.searchSubscription?.unsubscribe();
     this.catalogEventSource?.close();
-    this.bpSub.unsubscribe();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -247,7 +243,8 @@ export class GalleryComponent implements OnInit, OnDestroy {
     });
   }
 
-  onSearchChange(value: string): void {
+  onSearchChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
     this.searchTerm = value;
     this.searchSubject.next(value);
   }
@@ -696,7 +693,11 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   addToAlbum(asset: Asset): void {
-    const dialogRef = this.dialog.open(AddToAlbumDialogComponent, {
+    const dialogRef = this.dialog.open<
+      AddToAlbumDialogComponent,
+      unknown,
+      AddToAlbumDialogResult
+    >(AddToAlbumDialogComponent, {
       width: "400px",
       data: { albums: this.userAlbums },
     });
@@ -767,9 +768,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   saveCurrentFiltersAsPreset(): void {
-    const dialogRef = this.dialog.open(SavePresetDialogComponent, {
-      width: "360px",
-    });
+    const dialogRef = this.dialog.open<SavePresetDialogComponent, unknown, string>(
+      SavePresetDialogComponent,
+      { width: "360px" },
+    );
     dialogRef.afterClosed().subscribe((name) => {
       if (!name) return;
       const dateFrom = this.dateFrom
@@ -838,7 +840,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   openBulkTagDialog(): void {
     const ids = Array.from(this.selectedAssets);
     if (ids.length === 0) return;
-    this.dialog.open(BulkTagDialogComponent, {
+    this.dialog.open<BulkTagDialogComponent, unknown, boolean>(BulkTagDialogComponent, {
       width: '440px',
       data: { assetIds: ids },
     }).afterClosed().subscribe((changed) => {
@@ -866,7 +868,11 @@ export class GalleryComponent implements OnInit, OnDestroy {
   moveSelectedAssets(mode: 'move' | 'copy'): void {
     const ids = Array.from(this.selectedAssets);
     if (ids.length === 0) return;
-    this.dialog.open(FolderPickerDialogComponent, {
+    this.dialog.open<
+      FolderPickerDialogComponent,
+      unknown,
+      FolderPickerDialogResult | null
+    >(FolderPickerDialogComponent, {
       width: '480px',
       data: { mode, assetCount: ids.length, sourceFolder: this.currentFolder },
     }).afterClosed().subscribe((result) => {

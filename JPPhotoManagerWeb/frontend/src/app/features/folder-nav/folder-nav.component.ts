@@ -1,5 +1,4 @@
 import { Component, OnInit, Output, EventEmitter } from "@angular/core";
-import { CommonModule } from "@angular/common";
 import {
   MatTreeModule,
   MatTreeFlatDataSource,
@@ -10,20 +9,12 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { FlatTreeControl } from "@angular/cdk/tree";
 import { FolderService } from "../../core/services/folder.service";
-import { Folder } from "../../core/models/folder.model";
-
-interface FlatFolder {
-  expandable: boolean;
-  name: string;
-  path: string;
-  level: number;
-}
+import { Folder, FlatFolder } from "../../core/models/folder.model";
 
 @Component({
   selector: "app-folder-nav",
   standalone: true,
   imports: [
-    CommonModule,
     MatTreeModule,
     MatIconModule,
     MatButtonModule,

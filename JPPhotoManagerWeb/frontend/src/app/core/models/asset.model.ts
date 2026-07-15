@@ -63,3 +63,10 @@ export type SortCriteria =
   | 'FILE_MODIFICATION_DATE_TIME'
   | 'THUMBNAIL_CREATION_DATE_TIME'
   | 'RATING';
+
+export interface AssetTimelineFilters {
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  minRating?: number;
+}

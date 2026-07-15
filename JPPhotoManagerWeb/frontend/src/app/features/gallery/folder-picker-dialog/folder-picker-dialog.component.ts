@@ -2,16 +2,7 @@ import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { FolderNavComponent } from '../../folder-nav/folder-nav.component';
-
-export interface FolderPickerDialogData {
-  mode: 'move' | 'copy';
-  assetCount: number;
-  sourceFolder: string;
-}
-
-export interface FolderPickerDialogResult {
-  destinationFolder: string;
-}
+import { FolderPickerDialogData, FolderPickerDialogResult } from '../../../core/models/dialog.model';
 
 @Component({
   selector: 'app-folder-picker-dialog',

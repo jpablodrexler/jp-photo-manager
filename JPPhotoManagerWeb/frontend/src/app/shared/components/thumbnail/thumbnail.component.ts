@@ -1,5 +1,4 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { Asset } from '../../../core/models/asset.model';
@@ -8,7 +7,7 @@ import { FileSizePipe } from '../../pipes/file-size.pipe';
 @Component({
   selector: 'app-thumbnail',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule, FileSizePipe],
+  imports: [MatCardModule, MatIconModule, FileSizePipe],
   template: `
     <mat-card class="thumbnail-card" [class.selected]="selected">
       <img

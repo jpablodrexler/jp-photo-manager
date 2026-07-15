@@ -164,7 +164,7 @@
       <div class="filter-toolbar">
         <mat-form-field appearance="outline" class="filter-search">
           <mat-label>Search by filename</mat-label>
-          <input matInput [value]="searchTerm" (input)="onSearchChange($any($event.target).value)" />
+          <input matInput [value]="searchTerm" (input)="onSearchChange($event)" />
           <mat-icon matSuffix>search</mat-icon>
         </mat-form-field>
 

@@ -6,3 +6,10 @@ export interface Folder {
   children?: Folder[];
   expanded?: boolean;
 }
+
+export interface FlatFolder {
+  expandable: boolean;
+  name: string;
+  path: string;
+  level: number;
+}

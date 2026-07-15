@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -17,7 +17,6 @@ import { Asset } from '../../core/models/asset.model';
   selector: 'app-home',
   standalone: true,
   imports: [
-    CommonModule,
     DatePipe,
     RouterLink,
     MatCardModule,
