@@ -8,9 +8,11 @@ description: >
   triggers when explicitly asked to review a pull request, file, or change.
   Covers both sub-projects (backend and frontend) and all cross-cutting
   concerns: hexagonal architecture layering, naming, transactions, async,
-  testing, and TypeScript/Java style rules. Also TRIGGERS when asked to fix,
-  address, resolve, or work through findings from an existing dated
-  CODE_REVIEW_FINDINGS report — see "Fix Workflow" below.
+  testing, and TypeScript/Java style rules. A full-codebase sweep of the whole
+  web application produces one report per architecture layer instead of a
+  single consolidated report — see "Full-Codebase Sweeps" below. Also TRIGGERS
+  when asked to fix, address, resolve, or work through findings from an
+  existing dated CODE_REVIEW_FINDINGS report — see "Fix Workflow" below.
 metadata:
   scope: [JPPhotoManagerWeb]
 ---
@@ -31,16 +33,106 @@ This skill covers two distinct workflows:
 
 ## Workflow
 
-1. Identify which sub-project(s) are affected: **backend** (Java), **frontend**
+1. Identify the **scope**: a full-codebase sweep of the whole web application,
+   or a scoped review (single file, PR, feature, or one sub-project).
+   - **Scoped review** → follow steps 2–6 below as a single pass, producing
+     one report (unchanged from prior behavior).
+   - **Full-codebase sweep** → follow "Full-Codebase Sweeps: Review by Layer"
+     instead. It runs steps 2–6 once per layer, each producing its own report.
+2. Identify which sub-project(s) are affected: **backend** (Java), **frontend**
    (Angular/TypeScript), or both.
-2. Read every changed file before forming any opinion.
-3. Work through the relevant checklist(s) below, section by section.
-4. Report findings grouped by **severity**, then by file.
-5. Summarise with a short verdict and the top action items.
-6. Write the full report to a new, dated markdown file — see
+3. Read every changed file before forming any opinion.
+4. Work through the relevant checklist(s) below, section by section.
+5. Report findings grouped by **severity**, then by file.
+6. Summarise with a short verdict and the top action items.
+7. Write the full report to a new, dated markdown file — see
    "Review Report Format & Output File" below. Do this on every run, not just
    full-codebase sweeps: a single-file or single-PR review still gets its own
    dated report, scoped to whatever was actually reviewed.
+
+### Full-Codebase Sweeps: Review by Layer
+
+When asked to review all the code in the web application (or the entire
+backend, or the entire frontend), don't produce one giant consolidated
+report and don't review it inline in the main conversation. Instead, split
+the sweep into one pass per **architecture layer**, each run by its own
+subagent and producing its own dated report file (see "Process" below). This
+keeps each pass's context small (a single layer's files, isolated in its own
+subagent, not the whole codebase piled into the orchestrating conversation),
+makes the sweep resumable across sessions, and lets the user later fix one
+layer's findings at a time (§17) instead of wading through everything at
+once.
+
+**The layers:**
+
+| Layer key                | Report suffix          | Directory scope                                                                                                    | Primary checklist sections                                    |
+| ------------------------ | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Backend domain           | `backend-domain`         | `backend/.../domain/**`                                                                                                                   | §1.1, §5, §8 (domain-model rows)                                 |
+| Backend application      | `backend-application`    | `backend/.../application/usecase/**`                                                                                                      | §1.1, §1.2, §2, §4, §7, §8 (use-case rows)                       |
+| Backend api               | `backend-api`             | `backend/.../infrastructure/web/**` (controllers, request/response DTOs)                                                                  | §1.1 (controller delegation), §3.4, §6 (DTO/entity drift), §8 (DTO rows) |
+| Backend infrastructure   | `backend-infrastructure` | `backend/.../infrastructure/persistence/**`, `infrastructure/service/**`, `infrastructure/kafka/**`, `infrastructure/batch/**`, `infrastructure/config/**` | §1.2, §3.1–3.3, §5, §6, §7                                       |
+| Frontend core             | `frontend-core`           | `frontend/src/app/core/**`                                                                                                                | §10.2, §11, §12                                                  |
+| Frontend features         | `frontend-features`       | `frontend/src/app/features/**`                                                                                                            | §10.1, §10.3, §11, §12                                           |
+| Frontend shared           | `frontend-shared`         | `frontend/src/app/shared/**`                                                                                                              | §1.3, §10.1, §11, §12                                            |
+| Cross-cutting             | `cross-cutting`           | Both sub-projects; no single directory                                                                                                    | §9, §13, §14, delegate-only port/adapter or service pairs (§1.2/§10.2), dependency-direction violations, systemic naming patterns |
+
+If only the backend (or only the frontend) is in scope, skip the layers that
+don't apply — e.g. a "review the whole backend" request produces 4 reports
+(domain, application, api, infrastructure) plus a backend-scoped
+cross-cutting report, not all 8.
+
+**What goes in the cross-cutting report:** findings that don't belong to one
+file's home layer — backend testing conventions (§9) and Cypress conventions
+(§13), comment/code-style patterns (§14) that recur across many files, and
+anything whose root cause spans two layers at once (e.g. a delegate-only
+port/adapter pair, where the finding is really about the port *and* the
+adapter *and* the callers, not just one of them). A naming or architecture
+violation that's local to a single file still goes in that file's own layer
+report, even if the rule itself is defined in a "cross-cutting" section like
+§8/§12.
+
+**Process — one subagent per layer:**
+
+Each layer's review runs in its own subagent (`Agent` tool,
+`subagent_type: general-purpose`), not inline in the main conversation. This
+is what actually keeps the sweep within session limits: each subagent starts
+cold, reads only its own layer's files, writes its own report, and never
+touches the orchestrating conversation's context.
+
+1. Before starting, check `docs/code-review/` for layer report files already
+   dated today. If a sweep was interrupted in an earlier session, resume by
+   only dispatching subagents for the layers that don't have a report yet for
+   today's date — don't redo layers already completed.
+2. The remaining applicable layers are independent of each other (no layer's
+   review depends on another's findings), so dispatch all of them together:
+   one `Agent` call per layer, all issued in the **same message** so they run
+   in parallel. Don't dispatch them one at a time and wait in between.
+3. Each subagent's prompt must be self-contained — it has no memory of this
+   conversation — and must include:
+   - The layer key, its directory scope, and its primary checklist sections
+     (copy the relevant row from the layer table above into the prompt).
+   - An instruction to first read
+     `.claude/skills/code-reviewer/SKILL.md` in the repo for the full text of
+     those checklist sections, the severity legend, and the "Review Report
+     Format & Output File" section (§16) — don't restate the whole checklist
+     in the prompt, point the subagent at the file.
+   - The exact output path to write:
+     `docs/code-review/CODE_REVIEW_FINDINGS_{today's date}_{layer suffix}.md`
+     (apply the `-2`/`-3` collision rule from §16 itself if the file already
+     exists).
+   - An explicit instruction to only read/review files under that layer's own
+     directory scope — not the whole repo — and to write the report file
+     itself rather than just returning findings as chat text.
+   - A short return-message instruction: report back the Critical/Warning/
+     Suggestion counts and the path it wrote, not the full findings text —
+     the orchestrating conversation only needs the summary, the report file
+     is the full record.
+4. These are launched as background agents by default — don't poll or sleep
+   waiting for them; you'll be notified as each one completes.
+5. Once every dispatched subagent has completed, give a short in-chat
+   summary: the list of report files written, and the Critical/Warning/
+   Suggestion count per layer (from each subagent's return message), so the
+   user can see at a glance which layer needs attention first.
 
 Severity levels used throughout:
 
@@ -538,20 +630,35 @@ If there are no findings in a severity category, omit that category entirely.
 
 Every time this skill runs — full-codebase sweep, single file, or PR review —
 also write the findings to a new markdown file so work can be resumed later
-without re-deriving context:
+without re-deriving context.
+
+**Scoped review (single file, PR, feature, or one sub-project) — one file:**
 
 - **Path:** `docs/code-review/CODE_REVIEW_FINDINGS_{YYYY-MM-DD}.md` (repo
-  root, today's date, ISO 8601). This directory is gitignored — reports are
-  local working artifacts, not committed history. Create the directory if it
-  doesn't exist yet. If a file for that date already exists (e.g., a second
-  review the same day), append `-2`, `-3`, etc. before `.md` rather than
-  overwriting the earlier run's report.
+  root, today's date, ISO 8601). If a file for that date already exists (e.g.,
+  a second review the same day), append `-2`, `-3`, etc. before `.md` rather
+  than overwriting the earlier run's report.
+
+**Full-codebase sweep (§"Full-Codebase Sweeps: Review by Layer") — one file
+per layer:**
+
+- **Path:** `docs/code-review/CODE_REVIEW_FINDINGS_{YYYY-MM-DD}_{layer}.md`,
+  where `{layer}` is the report suffix from the layer table (e.g.
+  `backend-domain`, `frontend-features`, `cross-cutting`). Same `-2`, `-3`
+  collision rule, applied per date+layer combination.
+- Write each layer's file as soon as that layer's pass is done (see the
+  "Process" steps above) — don't hold all layers in memory to write at once.
+
+**Both cases:**
+
+- This directory is gitignored — reports are local working artifacts, not
+  committed history. Create the directory if it doesn't exist yet.
 - **Content:** the same Critical/Warnings/Suggestions grouping as the in-chat
   summary, using GitHub task-list checkboxes (`- [ ]`) per finding instead of
   plain bullets, so items can be checked off as they're fixed. Include a short
-  header noting the scope reviewed (full codebase vs. a specific file/PR) and
-  which commit(s)/state the review was run against. Only include categories
-  that have findings — omit empty ones.
+  header noting the scope reviewed (full codebase sweep + layer name, vs. a
+  specific file/PR) and which commit(s)/state the review was run against.
+  Only include categories that have findings — omit empty ones.
 - **Scope of content:** write only what was actually found in *this* run —
   don't carry forward unresolved items from a previous dated report by
   default. If asked to produce a combined or updated backlog, do that
@@ -569,26 +676,39 @@ It is interactive and incremental: fix a chunk, check it off, ask what's next.
 **This workflow never commits** — all changes stay uncommitted in the working
 tree for the user to review and commit themselves.
 
-### 17.1 Locate and read the report
+### 17.1 Locate the report(s) for a date
 
-1. If the user names a specific report file, use it. Otherwise use the most
-   recent `docs/code-review/CODE_REVIEW_FINDINGS_*.md` (by date, then by the
-   `-2`, `-3`, ... suffix). If none exists, say so and stop — there is nothing
-   to fix.
-2. Read the full report before asking anything, so the menu of categories/
+1. If the user names a specific report file, skip straight to §17.2 with that
+   file. Otherwise resolve a **date**: the date the user asked for, or
+   (default) the most recent date that has any
+   `docs/code-review/CODE_REVIEW_FINDINGS_*.md` file. If none exists, say so
+   and stop — there is nothing to fix.
+2. List every report file for that date (there may be several `-2`/`-3` reruns
+   per layer — treat each filename, suffix included, as a distinct report).
+   For each, quickly check whether it has any unchecked (`- [ ]`) boxes left;
+   drop fully-checked-off reports from the list.
+3. **If exactly one report remains**, use it directly — don't make the user
+   pick from a list of one. **If more than one remains** (the normal case
+   after a layer-split full-codebase sweep, or several same-day scoped
+   reviews), ask the user which report to work on first, showing the layer
+   name (or scope, for a pre-layer-split report) and a rough Critical/Warning/
+   Suggestion count for each so they can prioritize. Work on exactly one
+   report at a time — don't mix findings from two reports into a single fix
+   pass.
+
+### 17.2 Read the report, then ask what to fix
+
+1. Read the full report before asking anything, so the menu of categories/
    findings you present next is accurate and reflects what's already checked
    off from prior sessions.
+2. Do not silently pick a starting point or scope. Ask the user whether they
+   want to fix:
+   - An entire severity category (🔴 Critical, 🟡 Warning, or 🟢 Suggestion), or
+   - A specific finding — let them name it, or list the still-unchecked
+     findings in a category for them to choose from.
 
-### 17.2 Ask what to fix
-
-Do not silently pick a starting point or scope. Ask the user whether they want
-to fix:
-- An entire severity category (🔴 Critical, 🟡 Warning, or 🟢 Suggestion), or
-- A specific finding — let them name it, or list the still-unchecked findings
-  in a category for them to choose from.
-
-Only offer categories/findings that still have unchecked (`- [ ]`) boxes; a
-category with everything already checked off isn't worth presenting again.
+   Only offer categories/findings that still have unchecked (`- [ ]`) boxes; a
+   category with everything already checked off isn't worth presenting again.
 
 ### 17.3 Fix loop
 
@@ -631,9 +751,17 @@ For the selected scope, work through each unchecked finding one at a time:
 After finishing the selected scope, run the widest verification available
 (full backend suite, full frontend Cypress suite, lint, production build)
 once before asking what's next — don't let per-finding narrow tests substitute
-for a full-suite check when a scope is done. Then repeat from §17.2: ask what
-to fix next, offering only what's still unchecked. Stop when the user says to
-stop, or when every finding in the report is checked off.
+for a full-suite check when a scope is done. Then:
+
+- If the current report still has unchecked findings, repeat from §17.2: ask
+  what to fix next **within the same report**, offering only what's still
+  unchecked.
+- If the current report is now fully checked off, go back to §17.1 — re-list
+  the remaining reports for the date (if this was a layer-split sweep, there
+  are likely others) and ask the user whether to move to another one or stop.
+
+Stop when the user says to stop, or when every report for the date is fully
+checked off.
 
 ### 17.5 Never commit
 

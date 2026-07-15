@@ -275,3 +275,4 @@ JPPhotoManagerWeb/.env
 JPPhotoManagerWeb/k8s/secret.yaml
 JPPhotoManagerWeb/k8s/catalog-volumes.yaml
 docs/code-review/
+docs/security-review/

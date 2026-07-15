@@ -34,7 +34,7 @@ Five phases executed by six dedicated subagents (3a and 3b run in parallel):
 | 2 — Implement & Review  | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `security-reviewer` (conditional, findings fixed before done) |
 | 3a — Backend tests      | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test` until passing                                                    |
 | 3b — Frontend tests     | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                   |
-| 4 — Build & deploy      | Subagent 5 | builds app images and deploys via Kubernetes (`kubectl rollout restart`) if a live `photomanager` deployment exists, else Docker Compose/Dockerfiles (skipped if Docker not running) |
+| 4 — Build & deploy      | Subagent 5 | deploys via `build-and-deploy-k8s.sh` if a live `photomanager` deployment exists, else Docker Compose/Dockerfiles (skipped if Docker not running) |
 | 5 — Archive             | Subagent 6 | `openspec-archive-change <name>` → `improvements-archive <name>`                                                 |
 
 ---
@@ -122,12 +122,16 @@ prompt:
 > `IMPLEMENT_BLOCKED — <brief reason>` and stop.
 >
 > **Step 2 — Code review**
-> Invoke `code-reviewer` via the Skill tool using its **Review** workflow
-> (this subagent runs unattended — do not invoke the skill's interactive Fix
-> Workflow, which is designed for a human to steer turn-by-turn across a
-> conversation). Every invocation writes a dated
-> `docs/code-review/CODE_REVIEW_FINDINGS_*.md` report (repo root, gitignored). After the review
-> completes, examine the findings:
+> Invoke `code-reviewer` via the Skill tool using its **Review** workflow,
+> scoped to the files changed by `<change-name>` (this subagent runs
+> unattended — do not invoke the skill's interactive Fix Workflow, which is
+> designed for a human to steer turn-by-turn across a conversation). This is
+> a scoped review of one change, not a full-codebase sweep of the whole web
+> application — the code-reviewer skill's per-layer report split and
+> subagent dispatch only apply to whole-app sweeps, so do not request or
+> expect multiple reports or additional subagents here. Every invocation
+> writes a single dated `docs/code-review/CODE_REVIEW_FINDINGS_*.md` report
+> (repo root, gitignored). After the review completes, examine the findings:
 >
 > - If the report contains **no 🔴 Critical or 🟡 Warning findings**: proceed.
 > - If the report contains any 🔴 Critical or 🟡 Warning findings: fix every
@@ -153,19 +157,32 @@ prompt:
 > handling, dependency changes (`pom.xml` / `package.json`), or data persistence.
 >
 > - If **none** of these areas were touched: skip this step.
-> - If **any** were touched: invoke `security-reviewer` via the Skill tool.
->   After the review completes, fix every 🔴 Critical and 🟡 Warning finding in
->   the source files, then re-invoke `security-reviewer` to confirm no new
->   findings were introduced. Repeat until the report is clean.
+> - If **any** were touched: invoke `security-reviewer` via the Skill tool
+>   using its **Review** workflow, scoped to the files changed by
+>   `<change-name>` (this subagent runs unattended — do not invoke the
+>   skill's interactive Fix Workflow, which is designed for a human to steer
+>   turn-by-turn across a conversation). This is a scoped review of one
+>   change, not a full-codebase sweep of the whole web application — the
+>   security-reviewer skill's per-layer report split and subagent dispatch
+>   only apply to whole-app sweeps, so do not request or expect multiple
+>   reports or additional subagents here. Every invocation writes a single
+>   dated `docs/security-review/SECURITY_REVIEW_FINDINGS_*.md` report (repo
+>   root, gitignored). After the review completes, fix every 🔴 Critical and
+>   🟡 Warning finding in the source files — check each off in that report
+>   file (`- [ ]` → `- [x]`) with a `**Fixed:**` note as you go, the same
+>   convention `code-reviewer`'s Fix Workflow uses — then re-invoke
+>   `security-reviewer` to confirm no new findings were introduced; this
+>   writes a fresh report for the re-check. Repeat until the re-check report
+>   is clean.
 >   If after 3 rounds of fix-and-re-review findings are still present, end
 >   your response with `SECURITY_BLOCKED — repeated review cycles` and stop.
 >   If you encounter a finding you cannot fix without human input: end your
 >   response with `SECURITY_BLOCKED — <brief reason>` and stop.
 >   Once the security report is clean, re-invoke `code-reviewer` (Review
->   workflow, same non-interactive caveat as Step 2) for a final pass scoped
->   to the security fixes — apply any 🔴 Critical or 🟡 Warning findings,
->   checking each off in that pass's report file with a `**Fixed:**` note as
->   in Step 2, before proceeding.
+>   workflow, same non-interactive and scoped-not-full-sweep caveats as
+>   Step 2) for a final pass scoped to the security fixes — apply any 🔴
+>   Critical or 🟡 Warning findings, checking each off in that pass's report
+>   file with a `**Fixed:**` note as in Step 2, before proceeding.
 >
 > Do not return until all Critical and Warning security and code-review findings
 > are resolved.
@@ -259,14 +276,22 @@ not covered by Phase 2's review. Ask the user whether to:
 ## Phase 4 — Build & Deploy (Subagent 5)
 
 This project can be deployed via Kubernetes (`JPPhotoManagerWeb/k8s/` +
-`kustomization.yaml`) or Docker Compose (`JPPhotoManagerWeb/docker-compose.yml`)
-— both build the same `photomanager-backend`/`photomanager-frontend` images.
-Kubernetes takes priority when both are present, because running
-docker-compose's `frontend` service (`ports: "80:80"`) alongside an active
-Kubernetes ingress controller fails outright on a host port 80 conflict, and
-because a stray `docker compose up` would silently deploy to a disconnected
-instance while the real (Kubernetes) environment everyone tests against stays
-on the old image.
+`kustomization.yaml`, driven by `JPPhotoManagerWeb/build-and-deploy-k8s.sh`)
+or Docker Compose (`JPPhotoManagerWeb/docker-compose.yml`) — both build the
+same `photomanager-backend`/`photomanager-frontend` images. Kubernetes takes
+priority when both are present, because running docker-compose's `frontend`
+service (`ports: "80:80"`) alongside an active Kubernetes ingress controller
+fails outright on a host port 80 conflict, and because a stray
+`docker compose up` would silently deploy to a disconnected instance while
+the real (Kubernetes) environment everyone tests against stays on the old
+image.
+
+The Kubernetes branch always redeploys through `build-and-deploy-k8s.sh`
+rather than replicating its steps by hand — the script is the single source
+of truth for the build-and-deploy sequence (documented in the top-level
+README's "Running with Kubernetes" section) and is idempotent, safe to
+re-run. Do not inline `docker build` / `kubectl apply` steps here that
+duplicate what the script already does.
 
 Spawn a **general-purpose subagent** via the Agent tool with the following
 prompt:
@@ -288,54 +313,50 @@ prompt:
 >   configured, the namespace or deployments don't exist): there is no live
 >   Kubernetes deployment. Continue with **Step 3** below.
 >
-> **Step 3K — Kubernetes build & deploy**
+> **Step 3K — Kubernetes build & deploy via script**
 >
-> 1. Build the images (same tags `k8s/backend.yaml`/`k8s/frontend.yaml`
->    reference):
+> 1. Run the deploy script from the repo root (it `cd`s to its own directory
+>    internally, so this works regardless of current working directory):
 >    ```
->    docker build -t photomanager-backend:latest JPPhotoManagerWeb/backend
->    docker build -t photomanager-frontend:latest JPPhotoManagerWeb/frontend
+>    bash JPPhotoManagerWeb/build-and-deploy-k8s.sh
 >    ```
->    Allow up to 10 minutes per build before treating it as a failure.
-> 2. Check whether the freshly built image needs loading into the cluster's
->    own container runtime — Docker Desktop's Kubernetes shares the local
->    Docker image cache, so this is often a no-op:
->    ```
->    kubectl config current-context
->    ```
->    - Context name contains `kind`: run
->      `kind load docker-image photomanager-backend:latest photomanager-frontend:latest`
->    - Context name contains `minikube`: run
->      `minikube image load photomanager-backend:latest` and
->      `minikube image load photomanager-frontend:latest`
->    - Otherwise (`docker-desktop`, or a remote cluster pulling from a
->      registry): skip this step.
-> 3. Restart both Deployments so they pick up the freshly built `:latest`
->    image — `imagePullPolicy: IfNotPresent` will not repull a tag it
->    already has cached, even after a rebuild:
->    ```
->    kubectl rollout restart deployment/backend deployment/frontend -n photomanager
->    ```
-> 4. Wait for the rollout. Give the backend up to 12 minutes — its Spring
->    Boot startup has been observed taking several minutes on
->    CPU-constrained clusters (see the `startupProbe` comment in
->    `k8s/backend.yaml`); a slow-but-successful rollout is expected, not a
->    failure:
+>    Allow up to 20 minutes total before treating it as a failure — it builds
+>    both images (up to 10 min each), may install the ingress-nginx
+>    controller on a first run (up to ~5 min to become ready), and applies
+>    the full Kubernetes stack.
+> 2. If the script exits non-zero: read its output — it prints a specific
+>    `ERROR:` line for each failure mode (missing `k8s/secret.yaml` or
+>    `k8s/catalog-volumes.yaml`, `kubectl` not connected, ingress-nginx pod
+>    not scheduled/ready in time). **Do not create, edit, or read
+>    `k8s/secret.yaml` or `k8s/catalog-volumes.yaml` yourself** — per
+>    `JPPhotoManagerWeb/CLAUDE.md` they hold real secrets and machine-specific
+>    paths and must never be read under any circumstances. If either is
+>    missing, end your response with `DOCKER: BLOCKED — <the script's ERROR
+>    line>` verbatim so the user can create it from the matching
+>    `.example` template themselves. For any other script failure, end with
+>    `DOCKER: BLOCKED — <brief reason>`.
+> 3. The script triggers `kubectl rollout restart` near the end but returns
+>    as soon as it prints pod status — it does not block until the rollout
+>    finishes. After the script exits 0, explicitly wait for the rollout to
+>    settle. Give the backend up to 12 minutes — its Spring Boot startup has
+>    been observed taking several minutes on CPU-constrained clusters (see
+>    the `startupProbe` comment in `k8s/backend.yaml`); a slow-but-successful
+>    rollout is expected, not a failure:
 >    ```
 >    kubectl rollout status deployment/backend -n photomanager --timeout=12m
 >    kubectl rollout status deployment/frontend -n photomanager --timeout=2m
 >    ```
-> 5. Verify:
+> 4. Verify:
 >    ```
 >    kubectl get pods -n photomanager -l 'app in (backend,frontend)'
 >    ```
 >    Both should show `1/1` and `Running`.
 >
 > End your response with one of:
-> - `DOCKER: DEPLOYED — kubectl rollout restart backend, frontend (namespace photomanager)`
-> - `DOCKER: BLOCKED — <brief reason>` if a build, image-load, or rollout
->   failed (or `kubectl rollout status` timed out) and you cannot resolve it
->   without human input.
+> - `DOCKER: DEPLOYED — build-and-deploy-k8s.sh (namespace photomanager)`
+> - `DOCKER: BLOCKED — <brief reason>` if the script, or the rollout wait
+>   after it, failed (or `kubectl rollout status` timed out) and you cannot
+>   resolve it without human input.
 >
 > **Step 3 — Probe Docker Compose version**
 > Determine which compose command is available:
@@ -454,7 +475,7 @@ After all phases complete, display:
 **Security review:** ✓ All findings resolved (or N/A — no security-sensitive changes)
 **Backend tests:** ✓ All passing
 **Frontend tests:** ✓ All passing
-**Docker:** ✓ <value from DOCKER signal, e.g. "Deployed — kubectl rollout restart backend, frontend (namespace photomanager)", "Deployed — backend, frontend", or "Skipped — Docker not running">
+**Docker:** ✓ <value from DOCKER signal, e.g. "Deployed — build-and-deploy-k8s.sh (namespace photomanager)", "Deployed — backend, frontend", or "Skipped — Docker not running">
 **SDD change:** ✓ Archived
 **Improvement:** ✓ Marked as implemented
 ```
@@ -494,6 +515,19 @@ After all phases complete, display:
   across a conversation — it does not fit an unattended subagent. Phase 2
   always invokes the plain Review workflow and fixes findings itself,
   updating the resulting report's checkboxes directly (see Step 2/3 above).
+- **Phase 2's code review is always scoped, never a full-codebase sweep.**
+  `code-reviewer` splits into one report per architecture layer (each run by
+  its own subagent) only when asked to review the entire web application.
+  Phase 2 reviews a single change's files, so it must stay on that single-
+  report path — one dated report per invocation, reviewed inline by Subagent
+  2 itself, no further subagents spawned.
+- **`security-reviewer` has the same two-workflow and scoped-vs-sweep split
+  as `code-reviewer`; Phase 2 always uses Review, scoped, never Fix or a
+  full sweep.** Same rationale as the two bullets above — the interactive
+  Fix Workflow doesn't fit an unattended subagent, and this step is
+  reviewing one change's files, not the whole app. Subagent 2 fixes
+  findings itself and updates the resulting report's checkboxes directly
+  (see Step 3 above).
 - **No git commits at any point.** Neither this skill nor any subagent it
   spawns may run `git commit`, `git push`, or any other git write command
   at any point in the workflow. This applies to all phases, including after
@@ -503,8 +537,19 @@ After all phases complete, display:
   `docker rm`, `docker rmi`, or any command that stops or removes containers
   or images beyond what is strictly required to restart the application
   services being deployed.
-- **No destructive kubectl commands.** Do not run `kubectl delete`,
-  `kubectl scale --replicas=0`, or `kustomize`/`kubectl apply -k` (which would
-  reconcile the whole stack, including PVCs and Secrets, when Phase 4 only
-  needs to redeploy two Deployments). `kubectl rollout restart` is the only
-  deploy action Phase 4's Kubernetes branch should ever run.
+- **No destructive kubectl commands.** Do not run `kubectl delete` or
+  `kubectl scale --replicas=0` at any point. Phase 4's Kubernetes branch's
+  only deploy action is running `build-and-deploy-k8s.sh` (plus the
+  `kubectl rollout status` / `kubectl get pods` verification that follows
+  it) — the script's own `kubectl apply -f`/`kubectl apply -k` calls are an
+  accepted exception to "don't reconcile the whole stack by hand" precisely
+  because they're script-owned, reviewed, and idempotent; do not additionally
+  run `kubectl apply -k` or equivalent manually, outside the script, for any
+  reason.
+- **Never touch `k8s/secret.yaml` or `k8s/catalog-volumes.yaml`.** Per
+  `JPPhotoManagerWeb/CLAUDE.md`, these two files hold real secrets and
+  machine-specific paths and must never be read, created, or edited by any
+  subagent — not even to "fix" a `build-and-deploy-k8s.sh` failure caused by
+  one being missing. If the script reports either missing, surface its exact
+  `ERROR:` line to the user and stop; the user must copy the `.example`
+  template and fill it in themselves.
