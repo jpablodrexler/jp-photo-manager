@@ -2,6 +2,7 @@ package com.jpablodrexler.photomanager.application.usecase.tag;
 
 import com.jpablodrexler.photomanager.domain.enums.AuditAction;
 import com.jpablodrexler.photomanager.domain.enums.AuditEntityType;
+import com.jpablodrexler.photomanager.application.exception.TagNotFoundException;
 import com.jpablodrexler.photomanager.domain.model.AuditEvent;
 import com.jpablodrexler.photomanager.domain.model.Tag;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
@@ -34,7 +35,7 @@ public class RemoveTagFromAssetUseCaseImpl implements RemoveTagFromAssetUseCase 
     public void execute(Long assetId, String name, UUID userId) {
         String normalized = name.toLowerCase(Locale.ROOT).trim();
         Tag tag = tagRepository.findByName(normalized)
-                .orElseThrow(() -> new NoSuchElementException("Tag not found: " + normalized));
+                .orElseThrow(() -> new TagNotFoundException(normalized));
 
         int removed = assetRepository.removeTagFromAsset(assetId, tag.getTagId());
         if (removed == 0) {
@@ -55,7 +56,7 @@ public class RemoveTagFromAssetUseCaseImpl implements RemoveTagFromAssetUseCase 
             metadata.put("tagId", tag.getTagId());
             auditLogRepository.log(AuditEvent.builder()
                     .userId(userId)
-                    .action(AuditAction.AssetUntagged)
+                    .action(AuditAction.ASSET_UNTAGGED)
                     .entityType(AuditEntityType.ASSET)
                     .entityId(String.valueOf(assetId))
                     .timestamp(Instant.now())

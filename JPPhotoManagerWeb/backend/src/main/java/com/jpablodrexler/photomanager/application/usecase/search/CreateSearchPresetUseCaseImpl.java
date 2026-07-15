@@ -2,6 +2,7 @@ package com.jpablodrexler.photomanager.application.usecase.search;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jpablodrexler.photomanager.application.exception.UserNotFoundException;
 import com.jpablodrexler.photomanager.domain.model.FilterPreset;
 import com.jpablodrexler.photomanager.domain.model.SearchPreset;
 import com.jpablodrexler.photomanager.domain.port.in.search.CreateSearchPresetUseCase;
@@ -25,7 +26,7 @@ public class CreateSearchPresetUseCaseImpl implements CreateSearchPresetUseCase 
     @Override
     @Transactional
     public SearchPreset execute(UUID userId, String name, FilterPreset criteria) {
-        userRepository.findById(userId).orElseThrow();
+        userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
         String filterJson;
         try {
             filterJson = objectMapper.writeValueAsString(criteria);

@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.application.usecase.user;
 
+import com.jpablodrexler.photomanager.application.exception.UserNotFoundException;
 import com.jpablodrexler.photomanager.domain.port.in.user.DeleteUserUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -7,7 +8,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Service
@@ -21,7 +21,7 @@ public class DeleteUserUseCaseImpl implements DeleteUserUseCase {
     @PreAuthorize("hasRole('ADMIN')")
     public void execute(UUID userId) {
         if (userRepository.findById(userId).isEmpty()) {
-            throw new NoSuchElementException("User not found: " + userId);
+            throw new UserNotFoundException(userId);
         }
         userRepository.deleteById(userId);
     }

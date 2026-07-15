@@ -39,7 +39,7 @@ class AuditLogKafkaListenerTest {
 
         ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
         verify(auditLogRepository).log(captor.capture());
-        assertThat(captor.getValue().getAction()).isEqualTo(AuditAction.AssetCataloged);
+        assertThat(captor.getValue().getAction()).isEqualTo(AuditAction.ASSET_CATALOGED);
         assertThat(captor.getValue().getEntityId()).isEqualTo("7");
     }
 
@@ -49,7 +49,7 @@ class AuditLogKafkaListenerTest {
 
         ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
         verify(auditLogRepository).log(captor.capture());
-        assertThat(captor.getValue().getAction()).isEqualTo(AuditAction.AssetDeleted);
+        assertThat(captor.getValue().getAction()).isEqualTo(AuditAction.ASSET_DELETED);
         assertThat(captor.getValue().getEntityId()).isEqualTo("9");
         assertThat(captor.getValue().getMetadata()).containsEntry("folderId", 3L).containsEntry("permanent", true);
     }
@@ -67,7 +67,7 @@ class AuditLogKafkaListenerTest {
 
         ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
         verify(auditLogRepository).log(captor.capture());
-        assertThat(captor.getValue().getAction()).isEqualTo(AuditAction.CatalogRun);
+        assertThat(captor.getValue().getAction()).isEqualTo(AuditAction.CATALOG_RUN);
         assertThat(captor.getValue().getEntityId()).isEqualTo("42");
         assertThat(captor.getValue().getMetadata())
                 .containsEntry("foldersScanned", 3)
@@ -92,7 +92,7 @@ class AuditLogKafkaListenerTest {
 
         ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
         verify(auditLogRepository).log(captor.capture());
-        assertThat(captor.getValue().getAction()).isEqualTo(AuditAction.SyncRun);
+        assertThat(captor.getValue().getAction()).isEqualTo(AuditAction.SYNC_RUN);
         assertThat(captor.getValue().getEntityId()).isEqualTo("8");
         assertThat(captor.getValue().getMetadata())
                 .containsEntry("sourceDir", "/src")
@@ -117,7 +117,7 @@ class AuditLogKafkaListenerTest {
 
         ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
         verify(auditLogRepository).log(captor.capture());
-        assertThat(captor.getValue().getAction()).isEqualTo(AuditAction.ConvertRun);
+        assertThat(captor.getValue().getAction()).isEqualTo(AuditAction.CONVERT_RUN);
         assertThat(captor.getValue().getEntityId()).isEqualTo("11");
         assertThat(captor.getValue().getMetadata())
                 .containsEntry("sourceDir", "/src")

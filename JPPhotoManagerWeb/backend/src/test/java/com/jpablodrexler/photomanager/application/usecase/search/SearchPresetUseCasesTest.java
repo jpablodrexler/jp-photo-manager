@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager.application.usecase.search;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpablodrexler.photomanager.domain.model.FilterPreset;
 import com.jpablodrexler.photomanager.application.exception.SearchPresetNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.UserNotFoundException;
 import com.jpablodrexler.photomanager.domain.model.SearchPreset;
 import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.out.SearchPresetRepository;
@@ -39,12 +40,12 @@ class SearchPresetUseCasesTest {
         @InjectMocks CreateSearchPresetUseCaseImpl sut;
 
         @Test
-        void execute_userNotFound_throwsNoSuchElementException() {
+        void execute_userNotFound_throwsUserNotFoundException() {
             UUID userId = UUID.randomUUID();
             when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> sut.execute(userId, "My Preset", new FilterPreset("cats", null, null, null)))
-                    .isInstanceOf(java.util.NoSuchElementException.class);
+                    .isInstanceOf(UserNotFoundException.class);
             verify(searchPresetRepository, never()).save(any());
         }
 

@@ -2,6 +2,7 @@ package com.jpablodrexler.photomanager.application.usecase.tag;
 
 import com.jpablodrexler.photomanager.domain.enums.AuditAction;
 import com.jpablodrexler.photomanager.domain.enums.AuditEntityType;
+import com.jpablodrexler.photomanager.application.exception.AssetNotFoundException;
 import com.jpablodrexler.photomanager.domain.model.AuditEvent;
 import com.jpablodrexler.photomanager.domain.model.Tag;
 import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
@@ -17,7 +18,6 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Service
@@ -33,7 +33,7 @@ public class AddTagToAssetUseCaseImpl implements AddTagToAssetUseCase {
     @Transactional
     public void execute(Long assetId, String name, UUID userId) {
         if (!assetRepository.existsById(assetId)) {
-            throw new NoSuchElementException("Asset not found: " + assetId);
+            throw new AssetNotFoundException(assetId);
         }
 
         String normalized = name.toLowerCase(Locale.ROOT).trim();
@@ -52,7 +52,7 @@ public class AddTagToAssetUseCaseImpl implements AddTagToAssetUseCase {
             metadata.put("tagId", tag.getTagId());
             auditLogRepository.log(AuditEvent.builder()
                     .userId(userId)
-                    .action(AuditAction.AssetTagged)
+                    .action(AuditAction.ASSET_TAGGED)
                     .entityType(AuditEntityType.ASSET)
                     .entityId(String.valueOf(assetId))
                     .timestamp(Instant.now())

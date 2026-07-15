@@ -43,7 +43,7 @@ public class GetAssetImageUseCaseImpl implements GetAssetImageUseCase {
         try {
             auditLogRepository.log(AuditEvent.builder()
                     .userId(userId)
-                    .action(AuditAction.AssetViewed)
+                    .action(AuditAction.ASSET_VIEWED)
                     .entityType(AuditEntityType.ASSET)
                     .entityId(String.valueOf(assetId))
                     .timestamp(Instant.now())

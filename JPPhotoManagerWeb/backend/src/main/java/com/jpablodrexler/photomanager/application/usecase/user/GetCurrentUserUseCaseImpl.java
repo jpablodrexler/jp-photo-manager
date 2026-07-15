@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.application.usecase.user;
 
+import com.jpablodrexler.photomanager.application.exception.UserNotFoundException;
 import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
@@ -18,6 +19,7 @@ public class GetCurrentUserUseCaseImpl implements GetCurrentUserUseCase {
     @Transactional(readOnly = true)
     public User execute() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByUsername(username).orElseThrow();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException(username));
     }
 }

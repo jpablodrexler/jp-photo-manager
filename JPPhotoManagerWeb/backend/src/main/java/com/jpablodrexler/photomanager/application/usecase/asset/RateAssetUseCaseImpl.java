@@ -41,7 +41,7 @@ public class RateAssetUseCaseImpl implements RateAssetUseCase {
         try {
             auditLogRepository.log(AuditEvent.builder()
                     .userId(userId)
-                    .action(AuditAction.AssetRated)
+                    .action(AuditAction.ASSET_RATED)
                     .entityType(AuditEntityType.ASSET)
                     .entityId(String.valueOf(assetId))
                     .timestamp(Instant.now())

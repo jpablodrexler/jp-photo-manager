@@ -39,7 +39,7 @@ class AuditLogRepositoryImplTest {
     void log_delegatesToMongoRepositoryWithMappedDocument() {
         AuditEvent event = AuditEvent.builder()
                 .userId(UUID.randomUUID())
-                .action(AuditAction.AssetRated)
+                .action(AuditAction.ASSET_RATED)
                 .entityType(AuditEntityType.ASSET)
                 .entityId("1")
                 .timestamp(Instant.now())

@@ -75,7 +75,7 @@ public class DownloadAssetsUseCaseImpl implements DownloadAssetsUseCase {
         try {
             auditLogRepository.log(AuditEvent.builder()
                     .userId(userId)
-                    .action(AuditAction.AssetDownloaded)
+                    .action(AuditAction.ASSET_DOWNLOADED)
                     .entityType(AuditEntityType.ASSET)
                     .entityId(String.valueOf(assetId))
                     .timestamp(Instant.now())

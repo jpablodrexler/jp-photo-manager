@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundExcepti
 import com.jpablodrexler.photomanager.application.exception.SearchPresetNotFoundException;
 import com.jpablodrexler.photomanager.domain.port.in.home.GetHomeStatsUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.controller.HomeController;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.HomeWebMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,8 @@ class GlobalExceptionHandlerTest {
 
     @MockitoBean
     GetHomeStatsUseCase getHomeStatsUseCase;
+    @MockitoBean
+    HomeWebMapper homeWebMapper;
 
     @Test
     void albumNotFoundException_returns404WithErrorBody() throws Exception {

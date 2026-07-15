@@ -1,14 +1,14 @@
 package com.jpablodrexler.photomanager.domain.enums;
 
 public enum AuditAction {
-    AssetViewed,
-    AssetDownloaded,
-    AssetTagged,
-    AssetUntagged,
-    AssetRated,
-    AssetDeleted,
-    AssetCataloged,
-    CatalogRun,
-    SyncRun,
-    ConvertRun
+    ASSET_VIEWED,
+    ASSET_DOWNLOADED,
+    ASSET_TAGGED,
+    ASSET_UNTAGGED,
+    ASSET_RATED,
+    ASSET_DELETED,
+    ASSET_CATALOGED,
+    CATALOG_RUN,
+    SYNC_RUN,
+    CONVERT_RUN
 }
