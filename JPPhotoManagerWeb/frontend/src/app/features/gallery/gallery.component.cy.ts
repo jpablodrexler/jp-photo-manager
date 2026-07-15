@@ -1,5 +1,6 @@
 import { mount } from 'cypress/angular';
 import { of, throwError } from 'rxjs';
+import { MatChipInputEvent } from '@angular/material/chips';
 import { MatDialog } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
@@ -494,7 +495,7 @@ describe('GalleryComponent', () => {
       component.startSlideshow(0);
       component.pauseSlideshow();
       expect(component.slideshowPlaying).to.be.false;
-      expect((component as any).slideshowTimer).to.be.null;
+      expect((component as unknown as { slideshowTimer: ReturnType<typeof setInterval> | null }).slideshowTimer).to.be.null;
       expect(component.currentViewerIndex).to.equal(0);
     });
   });
@@ -812,7 +813,7 @@ describe('GalleryComponent', () => {
     mountGallery({ getAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.addTagFilter({ value: 'vacation', chipInput: { clear: () => {} } } as any);
+      component.addTagFilter({ value: 'vacation', chipInput: { clear: () => {} } } as unknown as MatChipInputEvent);
       expect(component.selectedTags).to.deep.equal(['vacation']);
       expect(component.pageIndex).to.equal(0);
     });

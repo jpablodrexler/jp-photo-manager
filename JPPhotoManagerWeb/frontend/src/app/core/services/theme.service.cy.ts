@@ -18,7 +18,7 @@ describe('ThemeService', () => {
     TestBed.resetTestingModule();
   });
 
-  it('init_storedDarkPreference_appliesDarkClass', () => {
+  it('should apply the dark class when the stored preference is dark', () => {
     localStorage.setItem(STORAGE_KEY, 'dark');
     const service = createService();
     service.init();
@@ -26,7 +26,7 @@ describe('ThemeService', () => {
     expect(document.documentElement.classList.contains('theme-light')).to.be.false;
   });
 
-  it('init_storedLightPreference_appliesLightClass', () => {
+  it('should apply the light class when the stored preference is light', () => {
     localStorage.setItem(STORAGE_KEY, 'light');
     const service = createService();
     service.init();
@@ -34,7 +34,7 @@ describe('ThemeService', () => {
     expect(document.documentElement.classList.contains('theme-dark')).to.be.false;
   });
 
-  it('init_noStoredPreference_systemDark_appliesDarkClass', () => {
+  it('should apply the dark class when there is no stored preference and the system prefers dark', () => {
     localStorage.removeItem(STORAGE_KEY);
     cy.stub(window, 'matchMedia').returns({
       matches: true,
@@ -51,7 +51,7 @@ describe('ThemeService', () => {
     expect(document.documentElement.classList.contains('theme-dark')).to.be.true;
   });
 
-  it('toggle_currentlyDark_switchesToLightAndWritesLocalStorage', () => {
+  it('should switch to light and write to localStorage when currently dark', () => {
     localStorage.setItem(STORAGE_KEY, 'dark');
     const service = createService();
     service.init();
@@ -62,7 +62,7 @@ describe('ThemeService', () => {
     expect(document.documentElement.classList.contains('theme-dark')).to.be.false;
   });
 
-  it('toggle_currentlyLight_switchesToDark', () => {
+  it('should switch to dark when currently light', () => {
     localStorage.setItem(STORAGE_KEY, 'light');
     const service = createService();
     service.init();
@@ -72,13 +72,13 @@ describe('ThemeService', () => {
     expect(document.documentElement.classList.contains('theme-dark')).to.be.true;
   });
 
-  it('setAccentColor_validHex_setsCSSVariable', () => {
+  it('should set the CSS variable for a valid hex accent color', () => {
     const service = createService();
     service.setAccentColor('#1565c0');
     expect(document.documentElement.style.getPropertyValue('--accent-color')).to.equal('#1565c0');
   });
 
-  it('setAccentColor_validHex_updatesMetaThemeColor', () => {
+  it('should update the meta theme-color for a valid hex accent color', () => {
     const meta = document.createElement('meta');
     meta.name = 'theme-color';
     meta.setAttribute('content', '#2e7d32');
@@ -91,13 +91,13 @@ describe('ThemeService', () => {
     document.head.removeChild(meta);
   });
 
-  it('setAccentColor_validHex_persistsToLocalStorage', () => {
+  it('should persist a valid hex accent color to localStorage', () => {
     const service = createService();
     service.setAccentColor('#6a1b9a');
     expect(localStorage.getItem(ACCENT_STORAGE_KEY)).to.equal('#6a1b9a');
   });
 
-  it('setAccentColor_validHex_emitsOnAccentColor$', () => {
+  it('should emit on accentColor$ for a valid hex accent color', () => {
     const service = createService();
     const emitted: string[] = [];
     service.accentColor$.subscribe(c => emitted.push(c));
@@ -105,14 +105,14 @@ describe('ThemeService', () => {
     expect(emitted).to.include('#00695c');
   });
 
-  it('init_storedAccentColor_appliesSavedColor', () => {
+  it('should apply the saved accent color on init', () => {
     localStorage.setItem(ACCENT_STORAGE_KEY, '#bf360c');
     const service = createService();
     service.init();
     expect(document.documentElement.style.getPropertyValue('--accent-color')).to.equal('#bf360c');
   });
 
-  it('init_noStoredAccentColor_usesDefault', () => {
+  it('should use the default accent color when none is stored', () => {
     localStorage.removeItem(ACCENT_STORAGE_KEY);
     const service = createService();
     service.init();

@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { RecycleBinService } from '../../core/services/recycle-bin.service';
 import { ThumbnailComponent } from '../../shared/components/thumbnail/thumbnail.component';
@@ -18,7 +17,6 @@ import { PaginatedData } from '../../core/models/paginated-data.model';
     MatToolbarModule,
     MatButtonModule,
     MatIconModule,
-    MatCheckboxModule,
     MatSnackBarModule,
     ThumbnailComponent
   ],

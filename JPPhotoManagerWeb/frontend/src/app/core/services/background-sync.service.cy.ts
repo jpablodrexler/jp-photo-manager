@@ -28,13 +28,13 @@ describe('BackgroundSyncService', () => {
     });
   });
 
-  it('queueMutation_called_storesEntryInIndexedDB', () => {
+  it('should store the entry in IndexedDB when a mutation is queued', () => {
     cy.wrap(service.queueMutation('/api/assets/1/rating', 'PATCH', { rating: 5 })).then(() => {
       cy.wrap(service.getPendingCount()).should('equal', 1);
     });
   });
 
-  it('getPendingCount_afterQueuingTwoMutations_returnsTwo', () => {
+  it('should return two after queuing two mutations', () => {
     cy.wrap(
       service.queueMutation('/api/assets/1/rating', 'PATCH', { rating: 4 }).then(() =>
         service.queueMutation('/api/assets/2/rating', 'PATCH', { rating: 3 })

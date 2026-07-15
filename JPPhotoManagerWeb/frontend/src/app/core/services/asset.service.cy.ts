@@ -117,7 +117,7 @@ describe('AssetService', () => {
     source.close();
   });
 
-  it('getExifMetadata_validId_issuesGetRequestAndReturnsMappedObject', () => {
+  it('should issue a GET request and return the mapped EXIF metadata for a valid id', () => {
     const mockExif: ExifMetadata = {
       cameraMake: 'Canon',
       cameraModel: 'EOS 90D',
@@ -142,7 +142,7 @@ describe('AssetService', () => {
     req.flush(mockExif);
   });
 
-  it('getExifMetadata_assetWithNoExif_returnsNull', () => {
+  it('should return null for an asset with no EXIF data', () => {
     service.getExifMetadata(99).subscribe(data => {
       expect(data).to.be.null;
     });
@@ -151,7 +151,7 @@ describe('AssetService', () => {
     req.flush(null);
   });
 
-  it('getTimeline_withFolderAndPage_sendsCorrectParams', () => {
+  it('should send the correct params for folder and page', () => {
     const mockPage = { items: [], pageIndex: 0, totalPages: 0, totalItems: 0 };
 
     service.getTimeline('/photos', 2).subscribe(data => {
@@ -165,7 +165,7 @@ describe('AssetService', () => {
     req.flush(mockPage);
   });
 
-  it('getTimeline_withFilters_forwardsAllFilterParams', () => {
+  it('should forward all filter params', () => {
     service.getTimeline('/photos', 0, {
       search: 'beach',
       dateFrom: '2024-01-01',
@@ -181,7 +181,7 @@ describe('AssetService', () => {
     req.flush({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 });
   });
 
-  it('renameAssets_previewMode_postsCorrectBodyAndReturnsResponse', () => {
+  it('should POST the correct body and return the response in preview mode', () => {
     const mockResponse: RenameAssetsResponse = {
       previews: [{ assetId: 1, oldName: 'old.jpg', newName: 'new.jpg' }],
       applied: false,
@@ -197,7 +197,7 @@ describe('AssetService', () => {
     req.flush(mockResponse);
   });
 
-  it('renameAssets_applyMode_setsAppliedTrueInRequestBody', () => {
+  it('should set applied to true in the request body in apply mode', () => {
     service.renameAssets([1, 2], 'photo_{index:02d}.{ext}', true).subscribe();
 
     const req = httpMock.expectOne('/api/assets/rename');
@@ -205,7 +205,7 @@ describe('AssetService', () => {
     req.flush({ previews: [], applied: true });
   });
 
-  it('uploadAsset_202Response_parsesAssetIdAndProcessingStatus', () => {
+  it('should parse the asset id and processing status from a 202 response', () => {
     const mockResponse: UploadAssetResponse = { assetId: 42, status: 'PENDING' };
     const file = new File([new Uint8Array([0xff, 0xd8])], 'photo.jpg', { type: 'image/jpeg' });
 
@@ -223,14 +223,14 @@ describe('AssetService', () => {
     req.flush(mockResponse, { status: 202, statusText: 'Accepted' });
   });
 
-  it('observeUpload_validAssetId_returnsEventSourceForObserveEndpoint', () => {
+  it('should return an EventSource for the observe endpoint given a valid asset id', () => {
     const source = service.observeUpload(42);
     expect(source).to.be.instanceOf(EventSource);
     expect(source.url).to.contain('/api/assets/upload/42/observe');
     source.close();
   });
 
-  it('getTimeline_withNoFilters_omitsOptionalParams', () => {
+  it('should omit optional params when no filters are given', () => {
     service.getTimeline('/photos').subscribe();
 
     const req = httpMock.expectOne(r => r.url === '/api/assets/timeline');

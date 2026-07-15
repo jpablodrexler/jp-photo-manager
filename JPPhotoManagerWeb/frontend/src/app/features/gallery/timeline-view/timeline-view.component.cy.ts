@@ -1,4 +1,5 @@
 import { mount } from 'cypress/angular';
+import { EventEmitter } from '@angular/core';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { TimelineViewComponent } from './timeline-view.component';
 import { TimelineGroup } from '../../../core/models/timeline-group.model';
@@ -63,7 +64,7 @@ describe('TimelineViewComponent', () => {
     cy.mount(TimelineViewComponent, {
       componentProperties: {
         groups: [mockGroups[0]],
-        thumbnailClick: { emit: clickSpy } as any,
+        thumbnailClick: { emit: clickSpy } as unknown as EventEmitter<Asset>,
       },
       providers: [provideNoopAnimations()],
     });
