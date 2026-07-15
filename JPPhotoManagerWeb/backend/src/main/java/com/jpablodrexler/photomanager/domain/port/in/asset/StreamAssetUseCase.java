@@ -1,8 +1,8 @@
 package com.jpablodrexler.photomanager.domain.port.in.asset;
 
-import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.AssetStreamInfo;
 
 public interface StreamAssetUseCase {
 
-    Asset execute(Long assetId);
+    AssetStreamInfo execute(Long assetId);
 }

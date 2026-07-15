@@ -5,18 +5,16 @@ import com.jpablodrexler.photomanager.domain.model.AssetImage;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
-import com.jpablodrexler.photomanager.application.exception.FolderNotFoundException;
 import com.jpablodrexler.photomanager.domain.enums.SortCriteria;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
-import com.jpablodrexler.photomanager.domain.model.Folder;
-import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.CropAssetRequestDto;
 import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetThumbnailUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
@@ -26,13 +24,12 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.ReprocessAssetUseCase
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.folder.GetFolderIdByPathUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkAddTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
-import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
-import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.AddTagRequestDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.BulkTagRequestDto;
@@ -65,18 +62,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -107,12 +100,12 @@ public class AssetController {
     private final RemoveTagFromAssetUseCase removeTagFromAssetUseCase;
     private final BulkAddTagUseCase bulkAddTagUseCase;
     private final BulkRemoveTagUseCase bulkRemoveTagUseCase;
-    private final ThumbnailPort thumbnailPort;
-    private final FolderRepository folderRepository;
+    private final GetAssetThumbnailUseCase getAssetThumbnailUseCase;
+    private final GetFolderIdByPathUseCase getFolderIdByPathUseCase;
     private final AssetWebMapper assetWebMapper;
     private final MeterRegistry meterRegistry;
     private final KafkaProgressRegistry kafkaProgressRegistry;
-    private final UserRepository userRepository;
+    private final GetCurrentUserUseCase getCurrentUserUseCase;
 
     private final AtomicInteger sseConnectionCount = new AtomicInteger(0);
 
@@ -141,13 +134,12 @@ public class AssetController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
             @RequestParam(required = false) Integer minRating,
             @RequestParam(required = false) String tags) {
-        Long folderId = folderRepository.findByPath(folderPath).map(Folder::getFolderId).orElse(null);
+        Long folderId = getFolderIdByPathUseCase.execute(folderPath);
         Set<String> tagSet = parseTags(tags);
         AssetFilter filter = new AssetFilter(folderId, search, dateFrom, dateTo, minRating, sort, page, 50, false, tagSet);
         PaginatedResult<Asset> result = getAssetsUseCase.execute(filter);
         List<AssetResponseDto> dtos = result.items().stream().map(assetWebMapper::toDto).collect(Collectors.toList());
-        int totalPages = result.pageSize() > 0 ? (int) Math.ceil((double) result.total() / result.pageSize()) : 0;
-        PaginatedData<AssetResponseDto> data = new PaginatedData<>(dtos, page, totalPages, result.total());
+        PaginatedData<AssetResponseDto> data = new PaginatedData<>(dtos, page, result.totalPages(), result.total());
         return ResponseEntity.ok(data);
     }
 
@@ -165,13 +157,12 @@ public class AssetController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
             @RequestParam(required = false) Integer minRating,
             @RequestParam(required = false) String tags) {
-        Long folderId = folderRepository.findByPath(folderPath).map(Folder::getFolderId).orElse(null);
+        Long folderId = getFolderIdByPathUseCase.execute(folderPath);
         Set<String> tagSet = parseTags(tags);
         AssetFilter filter = new AssetFilter(folderId, search, dateFrom, dateTo, minRating, null, page, 0, false, tagSet);
         PaginatedResult<com.jpablodrexler.photomanager.domain.model.TimelineGroup> result = getAssetsTimelineUseCase.execute(filter);
         List<TimelineGroupResponseDto> dtos = result.items().stream().map(assetWebMapper::toTimelineGroupDto).collect(Collectors.toList());
-        int totalPages = result.pageSize() > 0 ? (int) Math.ceil((double) result.total() / result.pageSize()) : 0;
-        PaginatedData<TimelineGroupResponseDto> data = new PaginatedData<>(dtos, page, totalPages, result.total());
+        PaginatedData<TimelineGroupResponseDto> data = new PaginatedData<>(dtos, page, result.totalPages(), result.total());
         return ResponseEntity.ok(data);
     }
 
@@ -183,7 +174,7 @@ public class AssetController {
     })
     @GetMapping("/{assetId}/thumbnail")
     public ResponseEntity<byte[]> getThumbnail(@PathVariable Long assetId) {
-        byte[] data = thumbnailPort.loadThumbnail(assetId + ".bin");
+        byte[] data = getAssetThumbnailUseCase.execute(assetId);
         if (data == null) {
             return ResponseEntity.notFound().build();
         }
@@ -201,17 +192,12 @@ public class AssetController {
         @ApiResponse(responseCode = "415", description = "Unsupported media type")
     })
     @GetMapping("/{assetId}/image")
-    public ResponseEntity<byte[]> getFullImage(@PathVariable Long assetId) {
-        try {
-            AssetImage image = getAssetImageUseCase.execute(assetId, resolveUserId());
-            MediaType mediaType = detectMediaType(image.bytes());
-            if (mediaType == null) {
-                return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
-            }
-            return ResponseEntity.ok().contentType(mediaType).body(image.bytes());
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<byte[]> getFullImage(@PathVariable Long assetId) throws IOException {
+        AssetImage image = getAssetImageUseCase.execute(assetId, resolveUserId());
+        if (image.mimeType() == null) {
+            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
         }
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(image.mimeType())).body(image.bytes());
     }
 
     @Operation(summary = "Catalog assets via SSE stream")
@@ -262,8 +248,8 @@ public class AssetController {
     })
     @PostMapping("/move")
     public ResponseEntity<Boolean> moveAssets(@Valid @RequestBody MoveAssetsRequestDto request) {
-        boolean result = moveAssetsUseCase.execute(request.getAssetIds(), request.getDestinationFolderPath(),
-                request.isPreserveOriginal());
+        boolean result = moveAssetsUseCase.execute(request.assetIds(), request.destinationFolderPath(),
+                request.preserveOriginal());
         return ResponseEntity.ok(result);
     }
 
@@ -275,16 +261,12 @@ public class AssetController {
     })
     @PostMapping("/rename")
     public ResponseEntity<RenameAssetsResponseDto> renameAssets(@Valid @RequestBody RenameAssetsRequestDto request) {
-        try {
-            RenameAssetsResult result = renameAssetsUseCase.execute(
-                    request.assetIds(), request.pattern(), request.applied());
-            List<RenamePreviewResponseDto> previews = result.previews().stream()
-                    .map(assetWebMapper::toDto)
-                    .collect(Collectors.toList());
-            return ResponseEntity.ok(new RenameAssetsResponseDto(previews, result.applied()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        RenameAssetsResult result = renameAssetsUseCase.execute(
+                request.assetIds(), request.pattern(), request.applied());
+        List<RenamePreviewResponseDto> previews = result.previews().stream()
+                .map(assetWebMapper::toDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(new RenameAssetsResponseDto(previews, result.applied()));
     }
 
     @Operation(summary = "Download selected assets as a ZIP file")
@@ -296,13 +278,13 @@ public class AssetController {
     @PostMapping("/download")
     public void downloadAssets(@Valid @RequestBody DownloadAssetsRequestDto request, HttpServletResponse response)
             throws IOException {
-        if (request.getAssetIds().size() > maxDownloadAssets) {
+        if (request.assetIds().size() > maxDownloadAssets) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
         response.setContentType("application/zip");
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"photos.zip\"");
-        downloadAssetsUseCase.execute(request.getAssetIds(), response.getOutputStream(), resolveUserId());
+        downloadAssetsUseCase.execute(request.assetIds(), response.getOutputStream(), resolveUserId());
     }
 
     @Operation(summary = "Rate an asset")
@@ -355,22 +337,13 @@ public class AssetController {
     })
     @GetMapping("/{assetId}/exif")
     public ResponseEntity<ExifMetadataResponseDto> getExifMetadata(@PathVariable Long assetId) {
-        try {
-            AssetExif exif = getAssetExifUseCase.execute(assetId);
-            ExifMetadataResponseDto dto = assetWebMapper.toDto(exif);
-            if (dto == null) {
-                return ResponseEntity.noContent().build();
-            }
-            return ResponseEntity.ok(dto);
-        } catch (java.util.NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
+        AssetExif exif = getAssetExifUseCase.execute(assetId);
+        ExifMetadataResponseDto dto = assetWebMapper.toDto(exif);
+        if (dto == null) {
+            return ResponseEntity.noContent().build();
         }
+        return ResponseEntity.ok(dto);
     }
-
-    private static final java.util.Set<String> ALLOWED_CONTENT_TYPES = java.util.Set.of(
-            "image/jpeg", "image/png", "image/gif", "image/bmp", "image/tiff", "image/webp");
-    private static final java.util.Set<String> ALLOWED_EXTENSIONS = java.util.Set.of(
-            "jpg", "jpeg", "png", "gif", "bmp", "tiff", "tif", "webp");
 
     @Operation(summary = "Upload a new asset to a folder")
     @ApiResponses({
@@ -382,35 +355,10 @@ public class AssetController {
     })
     @PostMapping("/upload")
     public ResponseEntity<UploadAssetResponseDto> uploadAsset(@RequestPart("file") MultipartFile file,
-                                                            @RequestPart("folderPath") String folderPath) {
-        String contentType = file.getContentType();
-        String originalFilename = file.getOriginalFilename();
-        // Strip any directory prefix the client may have embedded in the filename (path traversal defence).
-        // Paths.get().getFileName() returns only the last component; replacing '\' first handles Windows paths
-        // sent by any client regardless of the server's OS.
-        java.nio.file.Path filenamePath = originalFilename != null
-                ? Paths.get(originalFilename.replace('\\', '/')).getFileName()
-                : null;
-        String safeFilename = (filenamePath != null) ? filenamePath.toString() : null;
-        if (safeFilename == null || safeFilename.isBlank()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-        String extension = safeFilename.contains(".")
-                ? safeFilename.substring(safeFilename.lastIndexOf('.') + 1).toLowerCase()
-                : "";
-        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)
-                || !ALLOWED_EXTENSIONS.contains(extension)) {
-            return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build();
-        }
-        try {
-            Asset asset = uploadAssetUseCase.execute(folderPath, safeFilename, file.getBytes());
-            return ResponseEntity.status(HttpStatus.ACCEPTED)
-                    .body(new UploadAssetResponseDto(asset.getAssetId(), asset.getProcessingStatus().name()));
-        } catch (FolderNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+                                                            @RequestPart("folderPath") String folderPath) throws IOException {
+        Asset asset = uploadAssetUseCase.execute(folderPath, file.getOriginalFilename(), file.getContentType(), file.getBytes());
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(new UploadAssetResponseDto(asset.getAssetId(), asset.getProcessingStatus().name()));
     }
 
     @Operation(summary = "Observe an in-flight upload's hash/EXIF/thumbnail processing progress via SSE")
@@ -447,12 +395,8 @@ public class AssetController {
     @PostMapping("/{id}/reprocess")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> reprocessAsset(@PathVariable Long id) {
-        try {
-            reprocessAssetUseCase.execute(id);
-            return ResponseEntity.accepted().build();
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
-        }
+        reprocessAssetUseCase.execute(id);
+        return ResponseEntity.accepted().build();
     }
 
     @Operation(summary = "Crop an asset to a social media format and save as a new asset")
@@ -464,15 +408,9 @@ public class AssetController {
         @ApiResponse(responseCode = "500", description = "Image processing error")
     })
     @PostMapping("/{id}/crop")
-    public ResponseEntity<AssetResponseDto> cropAsset(@PathVariable Long id, @RequestBody CropAssetRequestDto request) {
-        try {
-            Asset asset = cropAssetUseCase.execute(id, assetWebMapper.toDomain(request));
-            return ResponseEntity.status(HttpStatus.CREATED).body(assetWebMapper.toDto(asset));
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    public ResponseEntity<AssetResponseDto> cropAsset(@PathVariable Long id, @RequestBody CropAssetRequestDto request) throws IOException {
+        Asset asset = cropAssetUseCase.execute(id, assetWebMapper.toDomain(request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(assetWebMapper.toDto(asset));
     }
 
     @Operation(summary = "Add a tag to an asset")
@@ -495,12 +433,8 @@ public class AssetController {
     })
     @DeleteMapping("/{id}/tags")
     public ResponseEntity<Void> removeTag(@PathVariable Long id, @RequestParam String name) {
-        try {
-            removeTagFromAssetUseCase.execute(id, name, resolveUserId());
-            return ResponseEntity.noContent().build();
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.notFound().build();
-        }
+        removeTagFromAssetUseCase.execute(id, name, resolveUserId());
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Add a tag to multiple assets at once")
@@ -535,11 +469,7 @@ public class AssetController {
      */
     private UUID resolveUserId() {
         try {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth == null) {
-                return null;
-            }
-            return userRepository.findByUsername(auth.getName()).map(User::getId).orElse(null);
+            return getCurrentUserUseCase.execute().getId();
         } catch (Exception e) {
             log.warn("Failed to resolve current user id for audit logging: {}", e.getMessage());
             return null;
@@ -552,29 +482,5 @@ public class AssetController {
                 .map(String::trim)
                 .filter(t -> !t.isEmpty())
                 .collect(Collectors.toSet());
-    }
-
-    private MediaType detectMediaType(byte[] bytes) {
-        if (bytes.length >= 3
-                && (bytes[0] & 0xFF) == 0xFF
-                && (bytes[1] & 0xFF) == 0xD8
-                && (bytes[2] & 0xFF) == 0xFF) {
-            return MediaType.IMAGE_JPEG;
-        }
-        if (bytes.length >= 4
-                && (bytes[0] & 0xFF) == 0x89
-                && bytes[1] == 'P'
-                && bytes[2] == 'N'
-                && bytes[3] == 'G') {
-            return MediaType.IMAGE_PNG;
-        }
-        if (bytes.length >= 4
-                && bytes[0] == 'G'
-                && bytes[1] == 'I'
-                && bytes[2] == 'F'
-                && bytes[3] == '8') {
-            return MediaType.IMAGE_GIF;
-        }
-        return null;
     }
 }

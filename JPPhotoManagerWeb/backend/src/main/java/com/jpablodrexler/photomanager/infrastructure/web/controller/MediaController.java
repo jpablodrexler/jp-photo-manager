@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.AssetStreamInfo;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetPlaylistUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.StreamAssetUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto;
@@ -24,7 +25,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -52,29 +52,19 @@ public class MediaController {
         @ApiResponse(responseCode = "200", description = "Full asset content"),
         @ApiResponse(responseCode = "206", description = "Partial content (byte-range response)"),
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
-        @ApiResponse(responseCode = "404", description = "Asset not found"),
-        @ApiResponse(responseCode = "500", description = "Could not determine content length")
+        @ApiResponse(responseCode = "404", description = "Asset not found")
     })
     @GetMapping("/api/assets/{id}/stream")
     public ResponseEntity<ResourceRegion> streamAsset(
             @PathVariable Long id,
             @RequestHeader(value = HttpHeaders.RANGE, required = false) String rangeHeader) {
 
-        Asset asset = streamAssetUseCase.execute(id);
+        AssetStreamInfo streamInfo = streamAssetUseCase.execute(id);
+        Asset asset = streamInfo.asset();
+        long contentLength = streamInfo.fileSize();
 
         Resource resource = new FileSystemResource(asset.getFullPath());
-        if (!resource.exists()) {
-            return ResponseEntity.notFound().build();
-        }
-
         MediaType mediaType = resolveMediaType(asset.getFileName(), resource);
-
-        long contentLength;
-        try {
-            contentLength = resource.contentLength();
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(mediaType);

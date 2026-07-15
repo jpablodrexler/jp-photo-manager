@@ -76,7 +76,7 @@ class UploadKafkaPipelineIntegrationTest extends PostgresIntegrationTest {
             jpegBytes = in.readAllBytes();
         }
 
-        Asset placeholder = uploadAssetUseCase.execute(catalogFolder.toString(), "uploaded.jpg", jpegBytes);
+        Asset placeholder = uploadAssetUseCase.execute(catalogFolder.toString(), "uploaded.jpg", "image/jpeg", jpegBytes);
         assertThat(placeholder.getProcessingStatus()).isEqualTo(ProcessingStatus.PENDING);
         assertThat(placeholder.getHash()).isNull();
 
@@ -103,7 +103,7 @@ class UploadKafkaPipelineIntegrationTest extends PostgresIntegrationTest {
             jpegBytes = in.readAllBytes();
         }
 
-        Asset placeholder = uploadAssetUseCase.execute(catalogFolder.toString(), "reprocess-me.jpg", jpegBytes);
+        Asset placeholder = uploadAssetUseCase.execute(catalogFolder.toString(), "reprocess-me.jpg", "image/jpeg", jpegBytes);
         Asset completed = pollUntilCompleted(placeholder.getAssetId(), Duration.ofSeconds(15));
         String originalHash = completed.getHash();
 

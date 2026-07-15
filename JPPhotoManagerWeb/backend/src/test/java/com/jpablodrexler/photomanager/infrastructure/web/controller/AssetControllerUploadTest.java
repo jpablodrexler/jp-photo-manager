@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.jpablodrexler.photomanager.application.exception.FolderNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.UnsupportedAssetTypeException;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
@@ -8,6 +9,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetThumbnailUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
@@ -17,13 +19,12 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.ReprocessAssetUseCase
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.folder.GetFolderIdByPathUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkAddTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
-import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
-import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -92,9 +93,9 @@ class AssetControllerUploadTest {
     @MockitoBean
     BulkRemoveTagUseCase bulkRemoveTagUseCase;
     @MockitoBean
-    ThumbnailPort thumbnailPort;
+    GetAssetThumbnailUseCase getAssetThumbnailUseCase;
     @MockitoBean
-    FolderRepository folderRepository;
+    GetFolderIdByPathUseCase getFolderIdByPathUseCase;
     @MockitoBean
     AssetWebMapper assetWebMapper;
     @MockitoBean
@@ -102,7 +103,7 @@ class AssetControllerUploadTest {
     @MockitoBean
     KafkaProgressRegistry kafkaProgressRegistry;
     @MockitoBean
-    UserRepository userRepository;
+    GetCurrentUserUseCase getCurrentUserUseCase;
 
     @Test
     void uploadAsset_validJpeg_returns202WithAssetIdAndProcessingStatus() throws Exception {
@@ -117,7 +118,7 @@ class AssetControllerUploadTest {
         asset.setFileSize(1024L);
         asset.setProcessingStatus(com.jpablodrexler.photomanager.domain.enums.ProcessingStatus.PENDING);
 
-        when(uploadAssetUseCase.execute(eq("/photos"), eq("photo.jpg"), any())).thenReturn(asset);
+        when(uploadAssetUseCase.execute(eq("/photos"), eq("photo.jpg"), eq("image/jpeg"), any())).thenReturn(asset);
 
         MockMultipartFile file = new MockMultipartFile(
                 "file", "photo.jpg", "image/jpeg", new byte[]{(byte) 0xFF, (byte) 0xD8});
@@ -134,6 +135,9 @@ class AssetControllerUploadTest {
 
     @Test
     void uploadAsset_nonImageContentType_returns415() throws Exception {
+        when(uploadAssetUseCase.execute(eq("/photos"), eq("doc.txt"), eq("text/plain"), any()))
+                .thenThrow(new UnsupportedAssetTypeException("text/plain"));
+
         MockMultipartFile file = new MockMultipartFile(
                 "file", "doc.txt", "text/plain", "hello".getBytes());
         MockMultipartFile folderPathPart = new MockMultipartFile(
@@ -147,6 +151,9 @@ class AssetControllerUploadTest {
 
     @Test
     void uploadAsset_spoofedContentTypeWithExeExtension_returns415() throws Exception {
+        when(uploadAssetUseCase.execute(eq("/photos"), eq("virus.exe"), eq("image/jpeg"), any()))
+                .thenThrow(new UnsupportedAssetTypeException("image/jpeg"));
+
         MockMultipartFile file = new MockMultipartFile(
                 "file", "virus.exe", "image/jpeg", new byte[]{(byte) 0xFF, (byte) 0xD8});
         MockMultipartFile folderPathPart = new MockMultipartFile(
@@ -160,7 +167,7 @@ class AssetControllerUploadTest {
 
     @Test
     void uploadAsset_unknownFolder_returns404() throws Exception {
-        when(uploadAssetUseCase.execute(eq("/unknown"), anyString(), any()))
+        when(uploadAssetUseCase.execute(eq("/unknown"), anyString(), anyString(), any()))
                 .thenThrow(new FolderNotFoundException("/unknown"));
 
         MockMultipartFile file = new MockMultipartFile(
@@ -176,7 +183,7 @@ class AssetControllerUploadTest {
 
     @Test
     void uploadAsset_ioException_returns500() throws Exception {
-        when(uploadAssetUseCase.execute(eq("/photos"), anyString(), any()))
+        when(uploadAssetUseCase.execute(eq("/photos"), anyString(), anyString(), any()))
                 .thenThrow(new IOException("disk full"));
 
         MockMultipartFile file = new MockMultipartFile(

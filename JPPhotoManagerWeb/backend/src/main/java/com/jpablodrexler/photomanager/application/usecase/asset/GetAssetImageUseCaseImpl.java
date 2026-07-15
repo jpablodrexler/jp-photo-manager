@@ -36,7 +36,31 @@ public class GetAssetImageUseCaseImpl implements GetAssetImageUseCase {
 
         logAudit(assetId, userId);
 
-        return new AssetImage(bytes, asset.getFileName());
+        return new AssetImage(bytes, asset.getFileName(), detectMimeType(bytes));
+    }
+
+    private String detectMimeType(byte[] bytes) {
+        if (bytes.length >= 3
+                && (bytes[0] & 0xFF) == 0xFF
+                && (bytes[1] & 0xFF) == 0xD8
+                && (bytes[2] & 0xFF) == 0xFF) {
+            return "image/jpeg";
+        }
+        if (bytes.length >= 4
+                && (bytes[0] & 0xFF) == 0x89
+                && bytes[1] == 'P'
+                && bytes[2] == 'N'
+                && bytes[3] == 'G') {
+            return "image/png";
+        }
+        if (bytes.length >= 4
+                && bytes[0] == 'G'
+                && bytes[1] == 'I'
+                && bytes[2] == 'F'
+                && bytes[3] == '8') {
+            return "image/gif";
+        }
+        return null;
     }
 
     private void logAudit(Long assetId, UUID userId) {

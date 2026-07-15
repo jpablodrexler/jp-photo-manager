@@ -6,6 +6,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetThumbnailUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
@@ -15,13 +16,12 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.ReprocessAssetUseCase
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.folder.GetFolderIdByPathUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkAddTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
-import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
-import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.DownloadAssetsRequestDto;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
@@ -93,9 +93,9 @@ class AssetControllerDownloadTest {
     @MockitoBean
     BulkRemoveTagUseCase bulkRemoveTagUseCase;
     @MockitoBean
-    ThumbnailPort thumbnailPort;
+    GetAssetThumbnailUseCase getAssetThumbnailUseCase;
     @MockitoBean
-    FolderRepository folderRepository;
+    GetFolderIdByPathUseCase getFolderIdByPathUseCase;
     @MockitoBean
     AssetWebMapper assetWebMapper;
     @MockitoBean
@@ -103,12 +103,11 @@ class AssetControllerDownloadTest {
     @MockitoBean
     KafkaProgressRegistry kafkaProgressRegistry;
     @MockitoBean
-    UserRepository userRepository;
+    GetCurrentUserUseCase getCurrentUserUseCase;
 
     @Test
     void downloadAssets_validRequest_returns200WithZipHeaders() throws Exception {
-        DownloadAssetsRequestDto request = new DownloadAssetsRequestDto();
-        request.setAssetIds(List.of(10L, 20L, 30L));
+        DownloadAssetsRequestDto request = new DownloadAssetsRequestDto(List.of(10L, 20L, 30L));
 
         doNothing().when(downloadAssetsUseCase).execute(eq(List.of(10L, 20L, 30L)), any(), any());
 
@@ -124,8 +123,7 @@ class AssetControllerDownloadTest {
 
     @Test
     void downloadAssets_emptyAssetIds_returns400() throws Exception {
-        DownloadAssetsRequestDto request = new DownloadAssetsRequestDto();
-        request.setAssetIds(List.of());
+        DownloadAssetsRequestDto request = new DownloadAssetsRequestDto(List.of());
 
         mockMvc.perform(post("/api/assets/download")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -136,8 +134,7 @@ class AssetControllerDownloadTest {
     @Test
     void downloadAssets_exceedsMaxDownloadAssets_returns400() throws Exception {
         List<Long> ids = IntStream.rangeClosed(1, 501).mapToObj(Long::valueOf).toList();
-        DownloadAssetsRequestDto request = new DownloadAssetsRequestDto();
-        request.setAssetIds(ids);
+        DownloadAssetsRequestDto request = new DownloadAssetsRequestDto(ids);
 
         mockMvc.perform(post("/api/assets/download")
                         .contentType(MediaType.APPLICATION_JSON)

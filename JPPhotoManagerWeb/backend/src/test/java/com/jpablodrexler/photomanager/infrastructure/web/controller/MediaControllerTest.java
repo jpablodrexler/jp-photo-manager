@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.AssetStreamInfo;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetPlaylistUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.StreamAssetUseCase;
@@ -44,7 +45,7 @@ class MediaControllerTest {
                 .folder(folder)
                 .fileName("track.mp3")
                 .build();
-        when(streamAssetUseCase.execute(1L)).thenReturn(asset);
+        when(streamAssetUseCase.execute(1L)).thenReturn(new AssetStreamInfo(asset, 10_000L));
 
         ResponseEntity<ResourceRegion> response = sut.streamAsset(1L, "bytes=0-4999");
 
@@ -64,7 +65,7 @@ class MediaControllerTest {
                 .folder(folder)
                 .fileName("track.mp3")
                 .build();
-        when(streamAssetUseCase.execute(2L)).thenReturn(asset);
+        when(streamAssetUseCase.execute(2L)).thenReturn(new AssetStreamInfo(asset, 1_000L));
 
         ResponseEntity<ResourceRegion> response = sut.streamAsset(2L, null);
 
@@ -83,7 +84,7 @@ class MediaControllerTest {
                 .folder(folder)
                 .fileName("clip.mp4")
                 .build();
-        when(streamAssetUseCase.execute(3L)).thenReturn(asset);
+        when(streamAssetUseCase.execute(3L)).thenReturn(new AssetStreamInfo(asset, 1_000L));
 
         ResponseEntity<ResourceRegion> response = sut.streamAsset(3L, null);
 
@@ -104,7 +105,7 @@ class MediaControllerTest {
                 .folder(folder)
                 .fileName("clip.webm")
                 .build();
-        when(streamAssetUseCase.execute(4L)).thenReturn(asset);
+        when(streamAssetUseCase.execute(4L)).thenReturn(new AssetStreamInfo(asset, 1_000L));
 
         ResponseEntity<ResourceRegion> response = sut.streamAsset(4L, null);
 

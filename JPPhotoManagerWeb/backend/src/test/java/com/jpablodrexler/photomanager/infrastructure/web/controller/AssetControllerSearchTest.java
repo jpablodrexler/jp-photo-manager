@@ -9,6 +9,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetThumbnailUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
@@ -18,13 +19,12 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.ReprocessAssetUseCase
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.folder.GetFolderIdByPathUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkAddTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
-import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
-import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -37,7 +37,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -91,9 +90,9 @@ class AssetControllerSearchTest {
     @MockitoBean
     BulkRemoveTagUseCase bulkRemoveTagUseCase;
     @MockitoBean
-    ThumbnailPort thumbnailPort;
+    GetAssetThumbnailUseCase getAssetThumbnailUseCase;
     @MockitoBean
-    FolderRepository folderRepository;
+    GetFolderIdByPathUseCase getFolderIdByPathUseCase;
     @MockitoBean
     AssetWebMapper assetWebMapper;
     @MockitoBean
@@ -101,7 +100,7 @@ class AssetControllerSearchTest {
     @MockitoBean
     KafkaProgressRegistry kafkaProgressRegistry;
     @MockitoBean
-    UserRepository userRepository;
+    GetCurrentUserUseCase getCurrentUserUseCase;
 
     private PaginatedResult<Asset> emptyPage() {
         return new PaginatedResult<>(List.of(), 0L, 0, 50);
@@ -109,7 +108,7 @@ class AssetControllerSearchTest {
 
     @Test
     void getAssets_noFilters_callsUseCaseWithNullSearch() throws Exception {
-        when(folderRepository.findByPath(any())).thenReturn(Optional.empty());
+        when(getFolderIdByPathUseCase.execute(any())).thenReturn(null);
         when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(emptyPage());
 
         mockMvc.perform(get("/api/assets")
@@ -125,7 +124,7 @@ class AssetControllerSearchTest {
 
     @Test
     void getAssets_withSearchParam_callsUseCaseWithSearch() throws Exception {
-        when(folderRepository.findByPath(any())).thenReturn(Optional.empty());
+        when(getFolderIdByPathUseCase.execute(any())).thenReturn(null);
         when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(emptyPage());
 
         mockMvc.perform(get("/api/assets")
@@ -138,7 +137,7 @@ class AssetControllerSearchTest {
 
     @Test
     void getAssets_withDateParams_callsUseCaseWithParsedLocalDates() throws Exception {
-        when(folderRepository.findByPath(any())).thenReturn(Optional.empty());
+        when(getFolderIdByPathUseCase.execute(any())).thenReturn(null);
         when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(emptyPage());
 
         mockMvc.perform(get("/api/assets")
@@ -154,7 +153,7 @@ class AssetControllerSearchTest {
 
     @Test
     void getAssets_withTagsParam_passesTagSetToUseCase() throws Exception {
-        when(folderRepository.findByPath(any())).thenReturn(Optional.empty());
+        when(getFolderIdByPathUseCase.execute(any())).thenReturn(null);
         when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(emptyPage());
 
         mockMvc.perform(get("/api/assets")

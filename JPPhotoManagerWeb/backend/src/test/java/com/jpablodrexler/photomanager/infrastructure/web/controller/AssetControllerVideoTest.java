@@ -9,6 +9,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetThumbnailUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
@@ -18,13 +19,12 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.ReprocessAssetUseCase
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.folder.GetFolderIdByPathUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkAddTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
-import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
-import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
@@ -37,7 +37,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -69,12 +68,12 @@ class AssetControllerVideoTest {
     @MockitoBean RemoveTagFromAssetUseCase removeTagFromAssetUseCase;
     @MockitoBean BulkAddTagUseCase bulkAddTagUseCase;
     @MockitoBean BulkRemoveTagUseCase bulkRemoveTagUseCase;
-    @MockitoBean ThumbnailPort thumbnailPort;
-    @MockitoBean FolderRepository folderRepository;
+    @MockitoBean GetAssetThumbnailUseCase getAssetThumbnailUseCase;
+    @MockitoBean GetFolderIdByPathUseCase getFolderIdByPathUseCase;
     @MockitoBean AssetWebMapper assetWebMapper;
     @MockitoBean MeterRegistry meterRegistry;
     @MockitoBean KafkaProgressRegistry kafkaProgressRegistry;
-    @MockitoBean UserRepository userRepository;
+    @MockitoBean GetCurrentUserUseCase getCurrentUserUseCase;
 
     @Test
     void getAssets_videoAsset_responseContainsIsVideoTrue() throws Exception {
@@ -82,7 +81,7 @@ class AssetControllerVideoTest {
         Asset videoAsset = buildAsset(folder, "clip.mp4", 1L, true);
         PaginatedResult<Asset> page = new PaginatedResult<>(List.of(videoAsset), 1L, 0, 50);
 
-        when(folderRepository.findByPath("/videos")).thenReturn(Optional.of(folder));
+        when(getFolderIdByPathUseCase.execute("/videos")).thenReturn(1L);
         when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(page);
         when(assetWebMapper.toDto(videoAsset)).thenReturn(buildAssetDto("clip.mp4", 1L, true));
 
@@ -99,7 +98,7 @@ class AssetControllerVideoTest {
         Asset imageAsset = buildAsset(folder, "photo.jpg", 2L, false);
         PaginatedResult<Asset> page = new PaginatedResult<>(List.of(imageAsset), 1L, 0, 50);
 
-        when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
+        when(getFolderIdByPathUseCase.execute("/photos")).thenReturn(1L);
         when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(page);
         when(assetWebMapper.toDto(imageAsset)).thenReturn(buildAssetDto("photo.jpg", 2L, false));
 

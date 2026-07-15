@@ -2,6 +2,7 @@ package com.jpablodrexler.photomanager.application.usecase.asset;
 
 import com.jpablodrexler.photomanager.application.dto.AssetUploadedEvent;
 import com.jpablodrexler.photomanager.application.exception.FolderNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.UnsupportedAssetTypeException;
 import com.jpablodrexler.photomanager.domain.enums.ProcessingStatus;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
@@ -61,11 +62,47 @@ class UploadAssetUseCaseImplTest {
     void execute_folderNotFound_throwsFolderNotFoundException() {
         when(folderRepository.findByPath("/photos")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> sut.execute("/photos", "img.jpg", new byte[]{1}))
+        assertThatThrownBy(() -> sut.execute("/photos", "img.jpg", "image/jpeg", new byte[]{1}))
                 .isInstanceOf(FolderNotFoundException.class);
 
         verify(assetRepository, never()).save(any());
         verify(kafkaTemplate, never()).send(any(), any(), any());
+    }
+
+    @Test
+    void execute_missingFilename_throwsIllegalArgumentException() {
+        assertThatThrownBy(() -> sut.execute("/photos", null, "image/jpeg", new byte[]{1}))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(assetRepository, never()).save(any());
+    }
+
+    @Test
+    void execute_disallowedContentType_throwsUnsupportedAssetTypeException() {
+        assertThatThrownBy(() -> sut.execute("/photos", "doc.txt", "text/plain", new byte[]{1}))
+                .isInstanceOf(UnsupportedAssetTypeException.class);
+
+        verify(assetRepository, never()).save(any());
+    }
+
+    @Test
+    void execute_spoofedContentTypeWithDisallowedExtension_throwsUnsupportedAssetTypeException() {
+        assertThatThrownBy(() -> sut.execute("/photos", "virus.exe", "image/jpeg", new byte[]{1}))
+                .isInstanceOf(UnsupportedAssetTypeException.class);
+
+        verify(assetRepository, never()).save(any());
+    }
+
+    @Test
+    void execute_filenameWithDirectoryPrefix_stripsToBaseNameOnly() throws IOException {
+        Folder folder = Folder.builder().folderId(1L).path("/photos").build();
+        when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
+        when(storagePort.isVideoFile("img.jpg")).thenReturn(false);
+        when(assetRepository.save(any(Asset.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        sut.execute("/photos", "../../etc/img.jpg", "image/jpeg", new byte[]{1});
+
+        verify(storagePort).copyFile(any(), eq("/photos/img.jpg"));
     }
 
     @Test
@@ -82,7 +119,7 @@ class UploadAssetUseCaseImplTest {
             return a;
         });
 
-        Asset result = sut.execute("/photos", "img.jpg", new byte[]{1, 2, 3});
+        Asset result = sut.execute("/photos", "img.jpg", "image/jpeg", new byte[]{1, 2, 3});
 
         assertThat(result.getAssetId()).isEqualTo(10L);
         assertThat(result.getProcessingStatus()).isEqualTo(ProcessingStatus.PENDING);
@@ -102,7 +139,7 @@ class UploadAssetUseCaseImplTest {
             return a;
         });
 
-        sut.execute("/photos", "img.jpg", new byte[]{1, 2, 3});
+        sut.execute("/photos", "img.jpg", "image/jpeg", new byte[]{1, 2, 3});
         triggerAfterCommit();
 
         ArgumentCaptor<AssetUploadedEvent> eventCaptor = ArgumentCaptor.forClass(AssetUploadedEvent.class);
@@ -125,7 +162,7 @@ class UploadAssetUseCaseImplTest {
             return a;
         });
 
-        sut.execute("/photos", "img.jpg", new byte[]{1, 2, 3});
+        sut.execute("/photos", "img.jpg", "image/jpeg", new byte[]{1, 2, 3});
 
         verify(kafkaTemplate, never()).send(any(), any(), any());
     }

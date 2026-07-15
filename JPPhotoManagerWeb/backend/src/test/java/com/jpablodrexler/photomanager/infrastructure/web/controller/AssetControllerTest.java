@@ -19,6 +19,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetThumbnailUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
@@ -28,13 +29,12 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.ReprocessAssetUseCase
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.folder.GetFolderIdByPathUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkAddTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
-import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
-import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
 import com.jpablodrexler.photomanager.domain.model.RenameAssetsResult;
 import com.jpablodrexler.photomanager.domain.model.RenamePreview;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
@@ -55,7 +55,6 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import org.mockito.invocation.InvocationOnMock;
@@ -113,9 +112,9 @@ class AssetControllerTest {
     @MockitoBean
     BulkRemoveTagUseCase bulkRemoveTagUseCase;
     @MockitoBean
-    ThumbnailPort thumbnailPort;
+    GetAssetThumbnailUseCase getAssetThumbnailUseCase;
     @MockitoBean
-    FolderRepository folderRepository;
+    GetFolderIdByPathUseCase getFolderIdByPathUseCase;
     @MockitoBean
     AssetWebMapper assetWebMapper;
     @Autowired
@@ -123,7 +122,7 @@ class AssetControllerTest {
     @MockitoBean
     KafkaProgressRegistry kafkaProgressRegistry;
     @MockitoBean
-    UserRepository userRepository;
+    GetCurrentUserUseCase getCurrentUserUseCase;
 
     @TestConfiguration
     static class MeterRegistryTestConfig {
@@ -141,7 +140,7 @@ class AssetControllerTest {
         Asset asset = buildAsset(folder, "photo.jpg", 1L);
         PaginatedResult<Asset> page = new PaginatedResult<>(List.of(asset), 1L, 0, 50);
 
-        when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
+        when(getFolderIdByPathUseCase.execute("/photos")).thenReturn(1L);
         when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(page);
         when(assetWebMapper.toDto(asset)).thenReturn(buildAssetDto("photo.jpg", 1L));
 
@@ -158,7 +157,7 @@ class AssetControllerTest {
     @Test
     void getAssets_emptyFolder_returns200WithEmptyItems() throws Exception {
         PaginatedResult<Asset> page = new PaginatedResult<>(List.of(), 0L, 0, 50);
-        when(folderRepository.findByPath("/empty")).thenReturn(Optional.empty());
+        when(getFolderIdByPathUseCase.execute("/empty")).thenReturn(null);
         when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(page);
 
         mockMvc.perform(get("/api/assets")
@@ -173,7 +172,7 @@ class AssetControllerTest {
 
     @Test
     void getThumbnail_thumbnailExists_returns200WithJpegBytes() throws Exception {
-        when(thumbnailPort.loadThumbnail("42.bin"))
+        when(getAssetThumbnailUseCase.execute(42L))
                 .thenReturn(new byte[]{(byte) 0xFF, (byte) 0xD8});
 
         mockMvc.perform(get("/api/assets/42/thumbnail"))
@@ -183,7 +182,7 @@ class AssetControllerTest {
 
     @Test
     void getThumbnail_thumbnailExists_returnsCacheControlImmutable() throws Exception {
-        when(thumbnailPort.loadThumbnail("42.bin"))
+        when(getAssetThumbnailUseCase.execute(42L))
                 .thenReturn(new byte[]{(byte) 0xFF, (byte) 0xD8});
 
         mockMvc.perform(get("/api/assets/42/thumbnail"))
@@ -194,7 +193,7 @@ class AssetControllerTest {
 
     @Test
     void getThumbnail_thumbnailMissing_returns404() throws Exception {
-        when(thumbnailPort.loadThumbnail("99.bin")).thenReturn(null);
+        when(getAssetThumbnailUseCase.execute(99L)).thenReturn(null);
 
         mockMvc.perform(get("/api/assets/99/thumbnail"))
                 .andExpect(status().isNotFound());
@@ -203,9 +202,9 @@ class AssetControllerTest {
     // --- GET /api/assets/{id}/image ---
 
     @Test
-    void getFullImage_jpegMagicBytes_returns200WithJpegContentType() throws Exception {
+    void getFullImage_jpegMimeType_returns200WithJpegContentType() throws Exception {
         when(getAssetImageUseCase.execute(1L, null))
-                .thenReturn(new AssetImage(new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF}, "photo.jpg"));
+                .thenReturn(new AssetImage(new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF}, "photo.jpg", "image/jpeg"));
 
         mockMvc.perform(get("/api/assets/1/image"))
                 .andExpect(status().isOk())
@@ -214,17 +213,17 @@ class AssetControllerTest {
 
     @Test
     void getFullImage_assetNotFound_returns404() throws Exception {
-        when(getAssetImageUseCase.execute(99L, null)).thenThrow(new RuntimeException("not found"));
+        when(getAssetImageUseCase.execute(99L, null)).thenThrow(new NoSuchElementException("Asset not found: 99"));
 
         mockMvc.perform(get("/api/assets/99/image"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void getFullImage_pngMagicBytes_returns200WithPngContentType() throws Exception {
+    void getFullImage_pngMimeType_returns200WithPngContentType() throws Exception {
         byte[] pngBytes = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', (byte) 0x1A, '\n'};
         when(getAssetImageUseCase.execute(2L, null))
-                .thenReturn(new AssetImage(pngBytes, "image.png"));
+                .thenReturn(new AssetImage(pngBytes, "image.png", "image/png"));
 
         mockMvc.perform(get("/api/assets/2/image"))
                 .andExpect(status().isOk())
@@ -232,10 +231,10 @@ class AssetControllerTest {
     }
 
     @Test
-    void getFullImage_gifMagicBytes_returns200WithGifContentType() throws Exception {
+    void getFullImage_gifMimeType_returns200WithGifContentType() throws Exception {
         byte[] gifBytes = {'G', 'I', 'F', '8', '9', 'a'};
         when(getAssetImageUseCase.execute(3L, null))
-                .thenReturn(new AssetImage(gifBytes, "anim.gif"));
+                .thenReturn(new AssetImage(gifBytes, "anim.gif", "image/gif"));
 
         mockMvc.perform(get("/api/assets/3/image"))
                 .andExpect(status().isOk())
@@ -243,23 +242,12 @@ class AssetControllerTest {
     }
 
     @Test
-    void getFullImage_unknownMagicBytes_returns415() throws Exception {
+    void getFullImage_nullMimeType_returns415() throws Exception {
         when(getAssetImageUseCase.execute(4L, null))
-                .thenReturn(new AssetImage(new byte[]{1, 2, 3}, "disguised.jpg"));
+                .thenReturn(new AssetImage(new byte[]{1, 2, 3}, "disguised.jpg", null));
 
         mockMvc.perform(get("/api/assets/4/image"))
                 .andExpect(status().isUnsupportedMediaType());
-    }
-
-    @Test
-    void getFullImage_pngMagicBytesWithJpgExtension_returns200WithPngContentType() throws Exception {
-        byte[] pngBytes = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', (byte) 0x1A, '\n'};
-        when(getAssetImageUseCase.execute(5L, null))
-                .thenReturn(new AssetImage(pngBytes, "misleading.jpg"));
-
-        mockMvc.perform(get("/api/assets/5/image"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.IMAGE_PNG));
     }
 
     // --- GET /api/assets/catalog (SSE) ---
@@ -298,10 +286,7 @@ class AssetControllerTest {
     void moveAssets_validRequest_returns200WithTrue() throws Exception {
         when(moveAssetsUseCase.execute(any(), eq("/dest"), eq(false))).thenReturn(true);
 
-        MoveAssetsRequestDto request = new MoveAssetsRequestDto();
-        request.setAssetIds(new Long[]{1L, 2L});
-        request.setDestinationFolderPath("/dest");
-        request.setPreserveOriginal(false);
+        MoveAssetsRequestDto request = new MoveAssetsRequestDto(new Long[]{1L, 2L}, "/dest", false);
 
         mockMvc.perform(post("/api/assets/move")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -314,10 +299,7 @@ class AssetControllerTest {
     void moveAssets_moveFails_returns200WithFalse() throws Exception {
         when(moveAssetsUseCase.execute(any(), eq("/dest"), eq(false))).thenReturn(false);
 
-        MoveAssetsRequestDto request = new MoveAssetsRequestDto();
-        request.setAssetIds(new Long[]{1L});
-        request.setDestinationFolderPath("/dest");
-        request.setPreserveOriginal(false);
+        MoveAssetsRequestDto request = new MoveAssetsRequestDto(new Long[]{1L}, "/dest", false);
 
         mockMvc.perform(post("/api/assets/move")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -434,7 +416,7 @@ class AssetControllerTest {
     @Test
     void getAssets_withMinRating_callsUseCaseWithMinRating() throws Exception {
         PaginatedResult<Asset> page = new PaginatedResult<>(List.of(), 0L, 0, 50);
-        when(folderRepository.findByPath("/photos")).thenReturn(Optional.empty());
+        when(getFolderIdByPathUseCase.execute("/photos")).thenReturn(null);
         when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(page);
 
         mockMvc.perform(get("/api/assets")
@@ -459,7 +441,7 @@ class AssetControllerTest {
         com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto assetDto = buildAssetDto("photo.jpg", 1L);
         TimelineGroupResponseDto groupDto = new TimelineGroupResponseDto(LocalDate.of(2024, 5, 10), "May 10, 2024", List.of(assetDto));
 
-        when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
+        when(getFolderIdByPathUseCase.execute("/photos")).thenReturn(1L);
         when(getAssetsTimelineUseCase.execute(any(AssetFilter.class))).thenReturn(result);
         when(assetWebMapper.toTimelineGroupDto(group)).thenReturn(groupDto);
 
@@ -478,7 +460,7 @@ class AssetControllerTest {
         com.jpablodrexler.photomanager.domain.model.PaginatedResult<TimelineGroup> result =
                 new com.jpablodrexler.photomanager.domain.model.PaginatedResult<>(List.of(), 0L, 0, 30);
 
-        when(folderRepository.findByPath("/empty")).thenReturn(Optional.empty());
+        when(getFolderIdByPathUseCase.execute("/empty")).thenReturn(null);
         when(getAssetsTimelineUseCase.execute(any(AssetFilter.class))).thenReturn(result);
 
         mockMvc.perform(get("/api/assets/timeline")

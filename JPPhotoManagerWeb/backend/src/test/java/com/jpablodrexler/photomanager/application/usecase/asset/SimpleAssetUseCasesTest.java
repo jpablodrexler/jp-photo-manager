@@ -2,6 +2,7 @@ package com.jpablodrexler.photomanager.application.usecase.asset;
 
 import com.jpablodrexler.photomanager.domain.model.AssetFilter;
 import com.jpablodrexler.photomanager.domain.model.AssetImage;
+import com.jpablodrexler.photomanager.domain.model.AssetStreamInfo;
 import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
@@ -10,6 +11,7 @@ import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AuditLogRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
+import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -118,6 +120,61 @@ class SimpleAssetUseCasesTest {
         }
 
         @Test
+        void execute_jpegMagicBytes_returnsJpegMimeType() throws IOException {
+            Long assetId = 1L;
+            Folder folder = Folder.builder().path("/photos").build();
+            Asset asset = Asset.builder().assetId(assetId).folder(folder).fileName("img.jpg").build();
+            when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+            when(storagePort.readFileBytes("/photos/img.jpg"))
+                    .thenReturn(new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF});
+
+            AssetImage result = sut.execute(assetId, null);
+
+            assertThat(result.mimeType()).isEqualTo("image/jpeg");
+        }
+
+        @Test
+        void execute_pngMagicBytes_returnsPngMimeType() throws IOException {
+            Long assetId = 1L;
+            Folder folder = Folder.builder().path("/photos").build();
+            Asset asset = Asset.builder().assetId(assetId).folder(folder).fileName("img.png").build();
+            when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+            when(storagePort.readFileBytes("/photos/img.png"))
+                    .thenReturn(new byte[]{(byte) 0x89, 'P', 'N', 'G', '\r', '\n', (byte) 0x1A, '\n'});
+
+            AssetImage result = sut.execute(assetId, null);
+
+            assertThat(result.mimeType()).isEqualTo("image/png");
+        }
+
+        @Test
+        void execute_gifMagicBytes_returnsGifMimeType() throws IOException {
+            Long assetId = 1L;
+            Folder folder = Folder.builder().path("/photos").build();
+            Asset asset = Asset.builder().assetId(assetId).folder(folder).fileName("anim.gif").build();
+            when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+            when(storagePort.readFileBytes("/photos/anim.gif"))
+                    .thenReturn(new byte[]{'G', 'I', 'F', '8', '9', 'a'});
+
+            AssetImage result = sut.execute(assetId, null);
+
+            assertThat(result.mimeType()).isEqualTo("image/gif");
+        }
+
+        @Test
+        void execute_unknownMagicBytes_returnsNullMimeType() throws IOException {
+            Long assetId = 1L;
+            Folder folder = Folder.builder().path("/photos").build();
+            Asset asset = Asset.builder().assetId(assetId).folder(folder).fileName("disguised.jpg").build();
+            when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+            when(storagePort.readFileBytes("/photos/disguised.jpg")).thenReturn(new byte[]{1, 2, 3});
+
+            AssetImage result = sut.execute(assetId, null);
+
+            assertThat(result.mimeType()).isNull();
+        }
+
+        @Test
         void execute_assetFound_logsAssetViewedAuditEvent() throws IOException {
             Long assetId = 1L;
             Folder folder = Folder.builder().path("/photos").build();
@@ -147,6 +204,77 @@ class SimpleAssetUseCasesTest {
             when(assetRepository.findById(99L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> sut.execute(99L, null))
+                    .isInstanceOf(NoSuchElementException.class);
+        }
+    }
+
+    @Nested
+    @ExtendWith(MockitoExtension.class)
+    class GetAssetThumbnailUseCaseImplTest {
+
+        @Mock ThumbnailPort thumbnailPort;
+        @InjectMocks GetAssetThumbnailUseCaseImpl sut;
+
+        @Test
+        void execute_thumbnailExists_returnsBytes() {
+            byte[] bytes = new byte[]{1, 2, 3};
+            when(thumbnailPort.loadThumbnail("42.bin")).thenReturn(bytes);
+
+            byte[] result = sut.execute(42L);
+
+            assertThat(result).isEqualTo(bytes);
+        }
+
+        @Test
+        void execute_thumbnailMissing_returnsNull() {
+            when(thumbnailPort.loadThumbnail("99.bin")).thenReturn(null);
+
+            byte[] result = sut.execute(99L);
+
+            assertThat(result).isNull();
+        }
+    }
+
+    @Nested
+    @ExtendWith(MockitoExtension.class)
+    class StreamAssetUseCaseImplTest {
+
+        @Mock AssetRepository assetRepository;
+        @Mock StoragePort storagePort;
+        @InjectMocks StreamAssetUseCaseImpl sut;
+
+        @Test
+        void execute_assetAndFileExist_returnsStreamInfoWithFileSize() {
+            Long assetId = 1L;
+            Folder folder = Folder.builder().path("/media").build();
+            Asset asset = Asset.builder().assetId(assetId).folder(folder).fileName("clip.mp4").build();
+            when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+            when(storagePort.fileExists("/media/clip.mp4")).thenReturn(true);
+            when(storagePort.getFileSize("/media/clip.mp4")).thenReturn(2048L);
+
+            AssetStreamInfo result = sut.execute(assetId);
+
+            assertThat(result.asset()).isEqualTo(asset);
+            assertThat(result.fileSize()).isEqualTo(2048L);
+        }
+
+        @Test
+        void execute_assetNotFound_throwsNoSuchElementException() {
+            when(assetRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> sut.execute(99L))
+                    .isInstanceOf(NoSuchElementException.class);
+        }
+
+        @Test
+        void execute_fileMissingOnDisk_throwsNoSuchElementException() {
+            Long assetId = 1L;
+            Folder folder = Folder.builder().path("/media").build();
+            Asset asset = Asset.builder().assetId(assetId).folder(folder).fileName("clip.mp4").build();
+            when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+            when(storagePort.fileExists("/media/clip.mp4")).thenReturn(false);
+
+            assertThatThrownBy(() -> sut.execute(assetId))
                     .isInstanceOf(NoSuchElementException.class);
         }
     }
