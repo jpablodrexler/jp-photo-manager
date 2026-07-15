@@ -17,7 +17,7 @@ import java.util.TreeMap;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class PlsPlaylistParserAdapter implements PlaylistParserPort {
+public class PlsPlaylistParserServiceAdapter implements PlaylistParserPort {
 
     private final AssetRepository assetRepository;
 

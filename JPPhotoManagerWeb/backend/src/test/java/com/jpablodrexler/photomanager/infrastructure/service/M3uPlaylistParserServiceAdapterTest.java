@@ -17,57 +17,54 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PlsPlaylistParserAdapterTest {
+class M3uPlaylistParserServiceAdapterTest {
 
     @Mock AssetRepository assetRepository;
-    @InjectMocks PlsPlaylistParserAdapter sut;
+    @InjectMocks M3uPlaylistParserServiceAdapter sut;
 
     @TempDir
     Path tempDir;
 
     @Test
-    void parse_validPlsFile_returnsAssetsInOrder() throws Exception {
+    void parse_validM3uFile_returnsAssetsInOrder() throws Exception {
         Asset track1 = Asset.builder().assetId(1L).fileName("track1.mp3").build();
         Asset track2 = Asset.builder().assetId(2L).fileName("track2.mp3").build();
+        Asset track3 = Asset.builder().assetId(3L).fileName("track3.mp3").build();
 
         when(assetRepository.findByFileName("track1.mp3")).thenReturn(List.of(track1));
         when(assetRepository.findByFileName("track2.mp3")).thenReturn(List.of(track2));
+        when(assetRepository.findByFileName("track3.mp3")).thenReturn(List.of(track3));
 
-        Path playlist = tempDir.resolve("playlist.pls");
+        Path playlist = tempDir.resolve("playlist.m3u");
         Files.writeString(playlist,
-                "[playlist]\n" +
-                "File1=/music/track1.mp3\n" +
-                "Title1=Track 1\n" +
-                "Length1=180\n" +
-                "File2=/music/track2.mp3\n" +
-                "Title2=Track 2\n" +
-                "Length2=200\n" +
-                "NumberOfEntries=2\n" +
-                "Version=2\n");
+                "#EXTM3U\n" +
+                "#EXTINF:180,Artist1 - Track1\n" +
+                "/music/artist1/track1.mp3\n" +
+                "#EXTINF:200,Artist2 - Track2\n" +
+                "/music/artist2/track2.mp3\n" +
+                "#EXTINF:150,Artist3 - Track3\n" +
+                "/music/artist3/track3.mp3\n");
 
         List<Asset> result = sut.parse(playlist);
 
         assertThat(result).extracting(Asset::getAssetId)
-                .containsExactly(1L, 2L);
+                .containsExactly(1L, 2L, 3L);
     }
 
     @Test
-    void parse_outOfOrderEntries_returnsInNumericalOrder() throws Exception {
+    void parse_fileNotInCatalog_skipsEntry() throws Exception {
         Asset track1 = Asset.builder().assetId(1L).fileName("track1.mp3").build();
-        Asset track2 = Asset.builder().assetId(2L).fileName("track2.mp3").build();
-
         when(assetRepository.findByFileName("track1.mp3")).thenReturn(List.of(track1));
-        when(assetRepository.findByFileName("track2.mp3")).thenReturn(List.of(track2));
+        when(assetRepository.findByFileName("unknown.mp3")).thenReturn(List.of());
 
-        Path playlist = tempDir.resolve("playlist.pls");
+        Path playlist = tempDir.resolve("playlist.m3u");
         Files.writeString(playlist,
-                "[playlist]\n" +
-                "File2=/music/track2.mp3\n" +
-                "File1=/music/track1.mp3\n");
+                "#EXTM3U\n" +
+                "/music/track1.mp3\n" +
+                "/music/unknown.mp3\n");
 
         List<Asset> result = sut.parse(playlist);
 
-        assertThat(result).extracting(Asset::getAssetId)
-                .containsExactly(1L, 2L);
+        assertThat(result).extracting(Asset::getAssetId).containsExactly(1L);
     }
 }

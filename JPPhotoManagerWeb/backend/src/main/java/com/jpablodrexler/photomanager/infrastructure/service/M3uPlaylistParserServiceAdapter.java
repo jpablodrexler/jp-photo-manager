@@ -16,7 +16,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class M3uPlaylistParserAdapter implements PlaylistParserPort {
+public class M3uPlaylistParserServiceAdapter implements PlaylistParserPort {
 
     private final AssetRepository assetRepository;
 
