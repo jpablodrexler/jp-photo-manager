@@ -3,12 +3,13 @@ name: improvement-development
 description: >
   Orchestrates the full improvement lifecycle end-to-end: selects the next
   improvement, proposes SDD artifacts if missing, implements all change tasks,
-  runs code and security reviews (findings fixed before continuing), runs
-  backend and frontend tests until they pass, builds updated Docker images and
-  deploys them via Kubernetes (if a live cluster deployment exists) or Docker
-  Compose (if Docker is running), then archives the SDD change and marks the
-  improvement as implemented. Use when you want a fully automated improvement
-  development cycle with minimal manual steps.
+  runs code, security, and (when schema files changed) database reviews
+  (findings fixed before continuing), runs backend and frontend tests until
+  they pass, builds updated Docker images and deploys them via Kubernetes (if
+  a live cluster deployment exists) or Docker Compose (if Docker is running),
+  then archives the SDD change and marks the improvement as implemented. Use
+  when you want a fully automated improvement development cycle with minimal
+  manual steps.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
@@ -31,7 +32,7 @@ Five phases executed by six dedicated subagents (3a and 3b run in parallel):
 | Phase                   | Subagent   | Skills / actions                                                                                                 |
 | ----------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
 | 1 — Select & Propose    | Subagent 1 | `improvements-next` (confirm only) → `openspec-propose` (if artifacts missing)                                  |
-| 2 — Implement & Review  | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `security-reviewer` (conditional, findings fixed before done) |
+| 2 — Implement & Review  | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `security-reviewer` (conditional) + `database-reviewer` (conditional, findings fixed before done) |
 | 3a — Backend tests      | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test` until passing                                                    |
 | 3b — Frontend tests     | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                   |
 | 4 — Build & deploy      | Subagent 5 | deploys via `build-and-deploy-k8s.sh` if a live `photomanager` deployment exists, else Docker Compose/Dockerfiles (skipped if Docker not running) |
@@ -187,7 +188,49 @@ prompt:
 > Do not return until all Critical and Warning security and code-review findings
 > are resolved.
 >
-> **Step 4 — Signal completion**
+> **Step 4 — Database review (conditional)**
+> Check whether all changes made so far (Steps 1–3) touch any of these
+> database-schema areas: a Flyway migration under `db/migration/`, a JPA
+> entity under `infrastructure/persistence/entity/`, or a repository query
+> (`@Query`, derived query method, or native query) under
+> `infrastructure/persistence/jpa/` or `infrastructure/persistence/adapter/`.
+>
+> - If **none** of these areas were touched: skip this step.
+> - If **any** were touched: invoke `database-reviewer` via the Skill tool
+>   using its **Review** workflow, scoped to the files changed by
+>   `<change-name>` (this subagent runs unattended — do not invoke the
+>   skill's interactive Fix Workflow, which is designed for a human to steer
+>   turn-by-turn across a conversation). This is a scoped review of one
+>   change, not a full migration-history audit — do not request or expect
+>   additional subagents here. Every invocation writes a single dated
+>   `docs/database-review/DATABASE_REVIEW_FINDINGS_*.md` report (repo root,
+>   gitignored). After the review completes, fix every 🔴 Critical and 🟡
+>   Warning finding in the source files — check each off in that report file
+>   (`- [ ]` → `- [x]`) with a `**Fixed:**` note as you go, the same
+>   convention `code-reviewer`'s Fix Workflow uses — then re-invoke
+>   `database-reviewer` to confirm no new findings were introduced; this
+>   writes a fresh report for the re-check. Repeat until the re-check report
+>   is clean.
+>   Remember that a fix to an already-applied Flyway migration is never an
+>   edit to the existing file — it must be a new `V{n+1}__*.sql` migration
+>   (per the skill's own §5); only entity-only findings (e.g. `@Table(indexes
+>   = ...)` drift) may be fixed by editing the entity directly.
+>   If after 3 rounds of fix-and-re-review findings are still present, end
+>   your response with `DATABASE_BLOCKED — repeated review cycles` and stop.
+>   If you encounter a finding you cannot fix without human input (e.g. it
+>   requires a data-backfill/locking strategy decision): end your response
+>   with `DATABASE_BLOCKED — <brief reason>` and stop.
+>   Once the database report is clean, re-invoke `code-reviewer` (Review
+>   workflow, same non-interactive and scoped-not-full-sweep caveats as
+>   Step 2) for a final pass scoped to the database fixes — apply any 🔴
+>   Critical or 🟡 Warning findings, checking each off in that pass's report
+>   file with a `**Fixed:**` note as in Step 2, before proceeding.
+>
+> Do not proceed to Step 5 until all Critical and Warning database-review
+> findings (and any follow-on code-review findings from the same sub-step)
+> are resolved.
+>
+> **Step 5 — Signal completion**
 > End your response with exactly this line:
 > `IMPLEMENT: DONE`
 
@@ -473,6 +516,7 @@ After all phases complete, display:
 **Implementation:** ✓ All tasks complete
 **Code review:** ✓ All findings resolved
 **Security review:** ✓ All findings resolved (or N/A — no security-sensitive changes)
+**Database review:** ✓ All findings resolved (or N/A — no schema changes)
 **Backend tests:** ✓ All passing
 **Frontend tests:** ✓ All passing
 **Docker:** ✓ <value from DOCKER signal, e.g. "Deployed — build-and-deploy-k8s.sh (namespace photomanager)", "Deployed — backend, frontend", or "Skipped — Docker not running">
@@ -494,8 +538,9 @@ After all phases complete, display:
   artifacts are `done`. If Phase 1 returns `PROPOSE_BLOCKED`, surface the
   details to the user and stop.
 - Do not start Phase 3 until Phase 2 returns `IMPLEMENT: DONE`. If Phase 2
-  returns `IMPLEMENT_BLOCKED`, `REVIEW_BLOCKED`, or `SECURITY_BLOCKED`, surface
-  the details to the user and wait for guidance before continuing.
+  returns `IMPLEMENT_BLOCKED`, `REVIEW_BLOCKED`, `SECURITY_BLOCKED`, or
+  `DATABASE_BLOCKED`, surface the details to the user and wait for guidance
+  before continuing.
 - Do not start Phase 4 until both test subagents in Phase 3 report `PASS`. If
   either reports `BLOCKED`, surface the details to the user and wait for
   guidance before continuing. If either reports `PROD_CODE_FIXED:` lines,
@@ -528,6 +573,12 @@ After all phases complete, display:
   reviewing one change's files, not the whole app. Subagent 2 fixes
   findings itself and updates the resulting report's checkboxes directly
   (see Step 3 above).
+- **`database-reviewer` follows the same conditional-trigger, scoped-Review,
+  never-Fix pattern as `security-reviewer`.** It only runs when Step 4
+  detects a Flyway migration, JPA entity, or repository query changed;
+  Subagent 2 fixes findings itself (creating a new `V{n+1}__*.sql` migration
+  for any fix to already-applied schema, never editing an existing one) and
+  updates the resulting report's checkboxes directly (see Step 4 above).
 - **No git commits at any point.** Neither this skill nor any subagent it
   spawns may run `git commit`, `git push`, or any other git write command
   at any point in the workflow. This applies to all phases, including after
