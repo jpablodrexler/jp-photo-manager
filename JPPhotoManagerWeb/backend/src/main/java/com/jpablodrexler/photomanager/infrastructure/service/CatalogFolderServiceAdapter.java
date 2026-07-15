@@ -41,7 +41,7 @@ import java.util.function.Consumer;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CatalogFolderServiceImpl implements CatalogFolderPort {
+public class CatalogFolderServiceAdapter implements CatalogFolderPort {
 
     private static final int THUMBNAIL_MAX_WIDTH = 200;
     private static final int THUMBNAIL_MAX_HEIGHT = 150;

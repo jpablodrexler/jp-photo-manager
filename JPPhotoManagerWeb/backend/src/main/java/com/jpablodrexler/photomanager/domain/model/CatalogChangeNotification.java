@@ -1,6 +1,5 @@
 package com.jpablodrexler.photomanager.domain.model;
 
-import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -18,7 +18,8 @@ public class SaveConvertConfigUseCaseImpl implements SaveConvertConfigUseCase {
     @Override
     @Transactional
     public void execute(List<ConvertDirectoriesDefinition> definitions) {
-        convertConfigRepository.deleteAll();
+        // saveAll() already clears the table in the same batch before inserting —
+        // no separate deleteAll() call needed here.
         for (int i = 0; i < definitions.size(); i++) {
             definitions.get(i).setId(null);
             definitions.get(i).setOrder(i);

@@ -41,6 +41,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -124,26 +125,26 @@ class AssetControllerTagTest {
     @Test
     void bulkAddTag_validRequest_returns204() throws Exception {
         String body = objectMapper.writeValueAsString(Map.of("assetIds", List.of(1L, 2L, 3L), "name", "to-print"));
-        doNothing().when(bulkAddTagUseCase).execute(any(), anyString());
+        doNothing().when(bulkAddTagUseCase).execute(any(), anyString(), any());
 
         mockMvc.perform(post("/api/assets/tags/bulk")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isNoContent());
 
-        verify(bulkAddTagUseCase).execute(eq(List.of(1L, 2L, 3L)), eq("to-print"));
+        verify(bulkAddTagUseCase).execute(eq(List.of(1L, 2L, 3L)), eq("to-print"), isNull());
     }
 
     @Test
     void bulkRemoveTag_validRequest_returns204() throws Exception {
         String body = objectMapper.writeValueAsString(Map.of("assetIds", List.of(4L, 5L), "name", "draft"));
-        doNothing().when(bulkRemoveTagUseCase).execute(any(), anyString());
+        doNothing().when(bulkRemoveTagUseCase).execute(any(), anyString(), any());
 
         mockMvc.perform(delete("/api/assets/tags/bulk")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isNoContent());
 
-        verify(bulkRemoveTagUseCase).execute(eq(List.of(4L, 5L)), eq("draft"));
+        verify(bulkRemoveTagUseCase).execute(eq(List.of(4L, 5L)), eq("draft"), isNull());
     }
 }

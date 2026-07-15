@@ -5,17 +5,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpablodrexler.photomanager.domain.model.FilterPreset;
 import com.jpablodrexler.photomanager.domain.model.SearchPreset;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.SearchPresetResponseDto;
-import org.mapstruct.Mapper;
-import org.mapstruct.Named;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
-@Mapper(componentModel = "spring")
-public interface SearchPresetWebMapper {
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class SearchPresetWebMapper {
 
-    Logger LOG = LoggerFactory.getLogger(SearchPresetWebMapper.class);
+    private final ObjectMapper objectMapper;
 
-    default SearchPresetResponseDto toDto(SearchPreset preset) {
+    public SearchPresetResponseDto toDto(SearchPreset preset) {
         FilterPreset filter = parseFilterJson(preset.getFilterJson());
         return new SearchPresetResponseDto(
                 preset.getPresetId(),
@@ -28,15 +29,14 @@ public interface SearchPresetWebMapper {
         );
     }
 
-    @Named("parseFilterJson")
-    default FilterPreset parseFilterJson(String filterJson) {
+    private FilterPreset parseFilterJson(String filterJson) {
         if (filterJson == null || filterJson.isBlank()) {
             return null;
         }
         try {
-            return new ObjectMapper().readValue(filterJson, FilterPreset.class);
+            return objectMapper.readValue(filterJson, FilterPreset.class);
         } catch (JsonProcessingException e) {
-            LOG.warn("Failed to parse filterJson: {}", filterJson, e);
+            log.warn("Failed to parse filterJson: {}", filterJson, e);
             return null;
         }
     }

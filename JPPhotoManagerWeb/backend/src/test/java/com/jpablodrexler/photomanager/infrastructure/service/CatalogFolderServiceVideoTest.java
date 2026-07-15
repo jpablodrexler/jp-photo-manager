@@ -43,7 +43,7 @@ class CatalogFolderServiceVideoTest {
     @Mock AudioMetadataService audioMetadataService;
 
     @InjectMocks
-    CatalogFolderServiceImpl sut;
+    CatalogFolderServiceAdapter sut;
 
     @BeforeEach
     void setUp() {

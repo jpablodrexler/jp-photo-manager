@@ -25,6 +25,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -164,9 +165,5 @@ class AlbumRepositoryImplTest {
         sut.findSmartAlbumAssets(filter, 0, 0);
 
         assertThat(filterCaptor.getValue().pageSize()).isEqualTo(100);
-    }
-
-    private static <T> T eq(T value) {
-        return org.mockito.ArgumentMatchers.eq(value);
     }
 }

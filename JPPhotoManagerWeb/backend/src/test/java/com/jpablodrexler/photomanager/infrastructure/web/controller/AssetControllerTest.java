@@ -2,6 +2,7 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import com.jpablodrexler.photomanager.domain.model.AssetFilter;
 import com.jpablodrexler.photomanager.domain.model.AssetImage;
 import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
@@ -12,7 +13,7 @@ import com.jpablodrexler.photomanager.domain.model.TimelineGroup;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.TimelineGroupResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.ExifMetadataResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.RenamePreviewResponseDto;
-import com.jpablodrexler.photomanager.domain.model.CropAssetRequest;
+import com.jpablodrexler.photomanager.domain.model.CropRegion;
 import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
@@ -44,7 +45,8 @@ import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -55,9 +57,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.mockito.invocation.InvocationOnMock;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,8 +75,6 @@ class AssetControllerTest {
     MockMvc mockMvc;
     @Autowired
     ObjectMapper objectMapper;
-    @Autowired
-    AssetController assetController;
 
     @MockitoBean
     CropAssetUseCase cropAssetUseCase;
@@ -120,18 +118,18 @@ class AssetControllerTest {
     FolderRepository folderRepository;
     @MockitoBean
     AssetWebMapper assetWebMapper;
-    @MockitoBean
+    @Autowired
     MeterRegistry meterRegistry;
     @MockitoBean
     KafkaProgressRegistry kafkaProgressRegistry;
     @MockitoBean
     UserRepository userRepository;
 
-    @BeforeEach
-    void resetSseCounter() {
-        AtomicInteger count = (AtomicInteger) ReflectionTestUtils.getField(assetController, "sseConnectionCount");
-        if (count != null) {
-            count.set(0);
+    @TestConfiguration
+    static class MeterRegistryTestConfig {
+        @Bean
+        MeterRegistry meterRegistry() {
+            return new SimpleMeterRegistry();
         }
     }
 
@@ -284,14 +282,14 @@ class AssetControllerTest {
     void catalogAssets_sseGauge_incrementsOnOpen() throws Exception {
         when(catalogAssetsUseCase.execute(anyLong())).thenReturn(CompletableFuture.completedFuture(null));
 
-        AtomicInteger count = (AtomicInteger) ReflectionTestUtils.getField(assetController, "sseConnectionCount");
-        assertThat(count).isNotNull();
-        assertThat(count.get()).isEqualTo(0);
+        double before = meterRegistry.get("photomanager_active_sse_connections").gauge().value();
 
         mockMvc.perform(get("/api/assets/catalog"))
                 .andExpect(request().asyncStarted())
                 .andReturn();
-        assertThat(count.get()).isGreaterThanOrEqualTo(1);
+
+        double after = meterRegistry.get("photomanager_active_sse_connections").gauge().value();
+        assertThat(after).isGreaterThan(before);
     }
 
     // --- POST /api/assets/move ---
@@ -500,7 +498,8 @@ class AssetControllerTest {
         Asset saved = buildAsset(folder, "photo_INSTAGRAM_POST.jpg", 2L);
         com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto savedDto = buildAssetDto("photo_INSTAGRAM_POST.jpg", 2L);
 
-        when(cropAssetUseCase.execute(eq(1L), any(CropAssetRequest.class))).thenReturn(saved);
+        when(assetWebMapper.toDomain(any())).thenReturn(new CropRegion("INSTAGRAM_POST", 0, 0, 100, 100));
+        when(cropAssetUseCase.execute(eq(1L), any(CropRegion.class))).thenReturn(saved);
         when(assetWebMapper.toDto(saved)).thenReturn(savedDto);
 
         mockMvc.perform(post("/api/assets/1/crop")
@@ -512,7 +511,8 @@ class AssetControllerTest {
 
     @Test
     void cropAsset_assetNotFound_returns404() throws Exception {
-        when(cropAssetUseCase.execute(eq(99L), any(CropAssetRequest.class)))
+        when(assetWebMapper.toDomain(any())).thenReturn(new CropRegion("INSTAGRAM_POST", 0, 0, 100, 100));
+        when(cropAssetUseCase.execute(eq(99L), any(CropRegion.class)))
                 .thenThrow(new NoSuchElementException("Asset not found: 99"));
 
         mockMvc.perform(post("/api/assets/99/crop")
@@ -523,7 +523,8 @@ class AssetControllerTest {
 
     @Test
     void cropAsset_outOfBoundsCoordinates_returns400() throws Exception {
-        when(cropAssetUseCase.execute(eq(1L), any(CropAssetRequest.class)))
+        when(assetWebMapper.toDomain(any())).thenReturn(new CropRegion("INSTAGRAM_POST", 9999, 9999, 100, 100));
+        when(cropAssetUseCase.execute(eq(1L), any(CropRegion.class)))
                 .thenThrow(new IllegalArgumentException("Crop coordinates out of bounds"));
 
         mockMvc.perform(post("/api/assets/1/crop")

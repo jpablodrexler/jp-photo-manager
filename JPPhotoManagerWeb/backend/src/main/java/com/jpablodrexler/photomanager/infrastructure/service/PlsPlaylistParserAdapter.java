@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.infrastructure.adapter.out.playlist;
+package com.jpablodrexler.photomanager.infrastructure.service;
 
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
@@ -12,18 +12,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeMap;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class M3uPlaylistParserAdapter implements PlaylistParserPort {
+public class PlsPlaylistParserAdapter implements PlaylistParserPort {
 
     private final AssetRepository assetRepository;
 
     @Override
     public boolean supports(String fileName) {
-        String lower = fileName.toLowerCase();
-        return lower.endsWith(".m3u") || lower.endsWith(".m3u8");
+        return fileName.toLowerCase().endsWith(".pls");
     }
 
     @Override
@@ -31,19 +31,34 @@ public class M3uPlaylistParserAdapter implements PlaylistParserPort {
         List<Asset> result = new ArrayList<>();
         try {
             List<String> lines = Files.readAllLines(playlistPath);
+            TreeMap<Integer, String> fileEntries = new TreeMap<>();
             for (String line : lines) {
                 String trimmed = line.trim();
-                if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                if (!trimmed.toLowerCase().startsWith("file")) {
                     continue;
                 }
-                String fileName = Path.of(trimmed).getFileName().toString();
+                int eqIdx = trimmed.indexOf('=');
+                if (eqIdx < 0) {
+                    continue;
+                }
+                String key = trimmed.substring(0, eqIdx).trim();
+                String value = trimmed.substring(eqIdx + 1).trim();
+                try {
+                    int index = Integer.parseInt(key.substring(4));
+                    fileEntries.put(index, value);
+                } catch (NumberFormatException ignored) {
+                    // skip malformed key
+                }
+            }
+            for (String filePath : fileEntries.values()) {
+                String fileName = Path.of(filePath).getFileName().toString();
                 List<Asset> found = assetRepository.findByFileName(fileName);
                 if (!found.isEmpty()) {
                     result.add(found.get(0));
                 }
             }
         } catch (IOException e) {
-            log.error("Failed to parse M3U playlist: {}", playlistPath, e);
+            log.error("Failed to parse PLS playlist: {}", playlistPath, e);
         }
         return result;
     }

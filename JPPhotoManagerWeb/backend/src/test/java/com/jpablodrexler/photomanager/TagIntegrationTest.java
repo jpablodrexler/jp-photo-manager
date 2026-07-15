@@ -132,7 +132,7 @@ class TagIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void bulkAddTag_addsTagToAllAssets() {
-        bulkAddTagUseCase.execute(List.of(asset1.getAssetId(), asset2.getAssetId()), "to-print");
+        bulkAddTagUseCase.execute(List.of(asset1.getAssetId(), asset2.getAssetId()), "to-print", null);
 
         AssetFilter filter = new AssetFilter(folderId, null, null, null, null, null, 0, 50, false, Set.of("to-print"));
         PaginatedResult<Asset> result = getAssetsUseCase.execute(filter);

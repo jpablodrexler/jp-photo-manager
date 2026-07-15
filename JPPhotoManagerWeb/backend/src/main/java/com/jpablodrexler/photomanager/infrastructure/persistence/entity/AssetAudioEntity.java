@@ -2,10 +2,12 @@ package com.jpablodrexler.photomanager.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "asset_audio")
 @Data
+@NoArgsConstructor
 public class AssetAudioEntity {
 
     @Id

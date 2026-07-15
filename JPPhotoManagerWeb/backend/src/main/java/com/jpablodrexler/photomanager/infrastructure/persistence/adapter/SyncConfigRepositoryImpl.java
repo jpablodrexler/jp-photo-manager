@@ -33,10 +33,4 @@ public class SyncConfigRepositoryImpl implements SyncConfigRepository {
                 .toList();
         jpa.saveAll(entities);
     }
-
-    @Override
-    @Transactional
-    public void deleteAll() {
-        jpa.deleteAllInBatch();
-    }
 }

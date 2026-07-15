@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.config;
 
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
-import com.jpablodrexler.photomanager.infrastructure.service.UserServiceImpl;
+import com.jpablodrexler.photomanager.domain.port.out.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class DataInitializer {
 
     private final UserRepository userRepository;
-    private final UserServiceImpl userService;
+    private final UserService userService;
 
     @EventListener(ApplicationReadyEvent.class)
     public void seedDefaultAdmin() {

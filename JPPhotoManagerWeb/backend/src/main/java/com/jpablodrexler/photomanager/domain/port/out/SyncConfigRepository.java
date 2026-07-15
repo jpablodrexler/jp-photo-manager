@@ -9,6 +9,4 @@ public interface SyncConfigRepository {
     List<SyncDirectoriesDefinition> findAllOrderByOrder();
 
     void saveAll(List<SyncDirectoriesDefinition> definitions);
-
-    void deleteAll();
 }

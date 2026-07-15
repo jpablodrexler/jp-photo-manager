@@ -33,7 +33,6 @@ class SyncConfigUseCasesTest {
 
             sut.execute(List.of(d1, d2));
 
-            verify(syncConfigRepository).deleteAll();
             verify(syncConfigRepository).saveAll(List.of(d1, d2));
             assertThat(d1.getId()).isNull();
             assertThat(d1.getOrder()).isZero();

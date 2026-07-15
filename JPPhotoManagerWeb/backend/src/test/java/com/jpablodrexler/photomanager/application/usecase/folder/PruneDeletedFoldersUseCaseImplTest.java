@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.application.usecase.catalog;
+package com.jpablodrexler.photomanager.application.usecase.folder;
 
 import com.jpablodrexler.photomanager.domain.model.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
@@ -11,15 +11,20 @@ import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.List;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,6 +37,7 @@ class PruneDeletedFoldersUseCaseImplTest {
     @Mock StoragePort storagePort;
     @Mock ThumbnailPort thumbnailPort;
     @Mock Consumer<CatalogChangeNotification> consumer;
+    @Mock PlatformTransactionManager transactionManager;
 
     @InjectMocks PruneDeletedFoldersUseCaseImpl sut;
 
@@ -108,5 +114,38 @@ class PruneDeletedFoldersUseCaseImplTest {
 
         verify(folderRepository, never()).deleteById(1L);
         verify(folderRepository).deleteById(2L);
+    }
+
+    @Test
+    void execute_folderMissingFromDisk_deletesDbRecordsBeforeThumbnails() {
+        Folder folder = Folder.builder().folderId(1L).path("/photos/gone").build();
+        Asset asset = Asset.builder().assetId(10L).folder(folder).fileName("a.jpg").build();
+        when(folderRepository.findAll()).thenReturn(List.of(folder));
+        when(storagePort.directoryExists("/photos/gone")).thenReturn(false);
+        when(assetRepository.findByFolder(folder)).thenReturn(List.of(asset));
+
+        sut.execute(consumer);
+
+        InOrder order = inOrder(assetRepository, folderRepository, thumbnailPort);
+        order.verify(assetRepository).deleteById(10L);
+        order.verify(folderRepository).deleteById(1L);
+        order.verify(thumbnailPort).deleteThumbnail(asset.getThumbnailBlobName());
+    }
+
+    @Test
+    void execute_dbDeletionFails_doesNotDeleteThumbnail() {
+        Folder folder = Folder.builder().folderId(1L).path("/photos/gone").build();
+        Asset asset = Asset.builder().assetId(10L).folder(folder).fileName("a.jpg").build();
+        when(folderRepository.findAll()).thenReturn(List.of(folder));
+        when(storagePort.directoryExists("/photos/gone")).thenReturn(false);
+        when(assetRepository.findByFolder(folder)).thenReturn(List.of(asset));
+        doThrow(new RuntimeException("db unavailable")).when(assetRepository).deleteById(10L);
+
+        assertThatThrownBy(() -> sut.execute(consumer))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("db unavailable");
+
+        verify(thumbnailPort, never()).deleteThumbnail(any());
+        verify(folderRepository, never()).deleteById(any());
     }
 }

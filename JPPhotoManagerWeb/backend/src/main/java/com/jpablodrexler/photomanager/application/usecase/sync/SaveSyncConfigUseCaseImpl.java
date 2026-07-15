@@ -18,7 +18,8 @@ public class SaveSyncConfigUseCaseImpl implements SaveSyncConfigUseCase {
     @Override
     @Transactional
     public void execute(List<SyncDirectoriesDefinition> definitions) {
-        syncConfigRepository.deleteAll();
+        // saveAll() already clears the table in the same batch before inserting —
+        // no separate deleteAll() call needed here.
         for (int i = 0; i < definitions.size(); i++) {
             definitions.get(i).setId(null);
             definitions.get(i).setOrder(i);

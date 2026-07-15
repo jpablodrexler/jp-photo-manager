@@ -41,7 +41,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class CatalogFolderServiceImplTest {
+class CatalogFolderServiceAdapterTest {
 
     private static final Runnable NO_OP_HEARTBEAT = () -> {};
 
@@ -67,7 +67,7 @@ class CatalogFolderServiceImplTest {
     AudioMetadataService audioMetadataService;
 
     @InjectMocks
-    CatalogFolderServiceImpl sut;
+    CatalogFolderServiceAdapter sut;
 
     @BeforeEach
     void setUp() {

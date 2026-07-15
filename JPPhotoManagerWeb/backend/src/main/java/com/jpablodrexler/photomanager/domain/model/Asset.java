@@ -33,7 +33,9 @@ public class Asset {
     private LocalDateTime fileModificationDateTime;
     private LocalDateTime deletedAt;
     private int rating;
+    @Builder.Default
     private Set<String> tags = new HashSet<>();
+    @Builder.Default
     private FileType fileType = FileType.IMAGE;
     @Builder.Default
     private boolean isVideo = false;

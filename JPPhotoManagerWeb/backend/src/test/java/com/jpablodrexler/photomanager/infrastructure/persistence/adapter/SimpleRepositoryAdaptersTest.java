@@ -133,12 +133,6 @@ class SimpleRepositoryAdaptersTest {
             verify(jpa).deleteAllInBatch();
             verify(jpa).saveAll(List.of(entity));
         }
-
-        @Test
-        void deleteAll_delegatesToJpa() {
-            sut.deleteAll();
-            verify(jpa).deleteAllInBatch();
-        }
     }
 
     @Nested
@@ -171,12 +165,6 @@ class SimpleRepositoryAdaptersTest {
 
             verify(jpa).deleteAllInBatch();
             verify(jpa).saveAll(List.of(entity));
-        }
-
-        @Test
-        void deleteAll_delegatesToJpa() {
-            sut.deleteAll();
-            verify(jpa).deleteAllInBatch();
         }
     }
 

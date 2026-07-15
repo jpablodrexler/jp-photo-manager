@@ -1,5 +1,8 @@
 package com.jpablodrexler.photomanager.domain.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum SocialMediaFormat {
     INSTAGRAM_POST(1080, 1080, false),
     INSTAGRAM_PORTRAIT(1080, 1350, false),
@@ -23,8 +26,4 @@ public enum SocialMediaFormat {
         this.targetHeight = targetHeight;
         this.isCircle = isCircle;
     }
-
-    public int getTargetWidth() { return targetWidth; }
-    public int getTargetHeight() { return targetHeight; }
-    public boolean isCircle() { return isCircle; }
 }

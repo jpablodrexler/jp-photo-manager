@@ -33,10 +33,4 @@ public class ConvertConfigRepositoryImpl implements ConvertConfigRepository {
                 .toList();
         jpa.saveAll(entities);
     }
-
-    @Override
-    @Transactional
-    public void deleteAll() {
-        jpa.deleteAllInBatch();
-    }
 }

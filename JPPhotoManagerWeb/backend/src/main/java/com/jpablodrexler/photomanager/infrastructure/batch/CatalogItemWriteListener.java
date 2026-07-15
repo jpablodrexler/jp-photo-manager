@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.batch;
 
 import com.jpablodrexler.photomanager.application.dto.CatalogProgressMessage;
-import com.jpablodrexler.photomanager.domain.port.in.catalog.PruneDeletedFoldersUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.folder.PruneDeletedFoldersUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.ItemWriteListener;

@@ -6,7 +6,7 @@ import com.jpablodrexler.photomanager.infrastructure.service.CatalogScheduler;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 
 import java.util.concurrent.CompletableFuture;
@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 })
 class SyncKafkaPipelineIntegrationTest extends PostgresIntegrationTest {
 
-    @MockBean
+    @MockitoBean
     CatalogScheduler catalogScheduler;
 
     @Autowired

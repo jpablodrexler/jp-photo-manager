@@ -30,7 +30,7 @@ class AlbumServiceIntegrationTest extends PostgresIntegrationTest {
     @Autowired
     CreateAlbumUseCase createAlbumUseCase;
     @Autowired
-    GetAlbumUseCase getAlbumUseCase;
+    GetAlbumAssetsUseCase getAlbumAssetsUseCase;
     @Autowired
     DeleteAlbumUseCase deleteAlbumUseCase;
     @Autowired
@@ -91,7 +91,7 @@ class AlbumServiceIntegrationTest extends PostgresIntegrationTest {
 
         addAssetsToAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId(), asset2.getAssetId()));
 
-        PaginatedResult<Asset> page = getAlbumUseCase.executeAssets(album.albumId(), testUserId, 0);
+        PaginatedResult<Asset> page = getAlbumAssetsUseCase.execute(album.albumId(), testUserId, 0);
         assertThat(page.total()).isEqualTo(2);
         assertThat(page.items()).extracting(Asset::getAssetId)
                 .containsExactlyInAnyOrder(asset1.getAssetId(), asset2.getAssetId());
@@ -103,7 +103,7 @@ class AlbumServiceIntegrationTest extends PostgresIntegrationTest {
         addAssetsToAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId()));
         addAssetsToAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId()));
 
-        PaginatedResult<Asset> page = getAlbumUseCase.executeAssets(album.albumId(), testUserId, 0);
+        PaginatedResult<Asset> page = getAlbumAssetsUseCase.execute(album.albumId(), testUserId, 0);
         assertThat(page.total()).isEqualTo(1);
     }
 
@@ -114,7 +114,7 @@ class AlbumServiceIntegrationTest extends PostgresIntegrationTest {
 
         removeAssetsFromAlbumUseCase.execute(album.albumId(), testUserId, List.of(asset1.getAssetId()));
 
-        PaginatedResult<Asset> page = getAlbumUseCase.executeAssets(album.albumId(), testUserId, 0);
+        PaginatedResult<Asset> page = getAlbumAssetsUseCase.execute(album.albumId(), testUserId, 0);
         assertThat(page.total()).isEqualTo(1);
         assertThat(page.items().get(0).getAssetId()).isEqualTo(asset2.getAssetId());
     }
@@ -131,7 +131,7 @@ class AlbumServiceIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void getAlbumAssets_unknownAlbum_throwsAlbumNotFoundException() {
-        assertThatThrownBy(() -> getAlbumUseCase.executeAssets(99999L, testUserId, 0))
+        assertThatThrownBy(() -> getAlbumAssetsUseCase.execute(99999L, testUserId, 0))
                 .isInstanceOf(AlbumNotFoundException.class);
     }
 
@@ -145,7 +145,7 @@ class AlbumServiceIntegrationTest extends PostgresIntegrationTest {
         AlbumData album = createAlbumUseCase.execute(testUserId, "High Rated", null, "{\"minRating\":4}");
         assertThat(album.filterJson()).isNotNull();
 
-        PaginatedResult<Asset> page = getAlbumUseCase.executeAssets(album.albumId(), testUserId, 0);
+        PaginatedResult<Asset> page = getAlbumAssetsUseCase.execute(album.albumId(), testUserId, 0);
         assertThat(page.total()).isEqualTo(1);
         assertThat(page.items().get(0).getAssetId()).isEqualTo(asset1.getAssetId());
         assertThat(albumRepository.countAssets(album.albumId())).isZero();

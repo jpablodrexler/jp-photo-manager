@@ -1,4 +1,4 @@
-package com.jpablodrexler.photomanager.domain.port.in.catalog;
+package com.jpablodrexler.photomanager.domain.port.in.folder;
 
 import com.jpablodrexler.photomanager.domain.model.CatalogChangeNotification;
 

@@ -9,6 +9,4 @@ public interface ConvertConfigRepository {
     List<ConvertDirectoriesDefinition> findAllOrderByOrder();
 
     void saveAll(List<ConvertDirectoriesDefinition> definitions);
-
-    void deleteAll();
 }
