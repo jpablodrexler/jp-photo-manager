@@ -56,8 +56,7 @@ public class AuditLogController {
         List<AuditLogEntryResponseDto> dtos = result.items().stream()
                 .map(auditLogWebMapper::toDto)
                 .collect(Collectors.toList());
-        int totalPages = result.pageSize() > 0 ? (int) Math.ceil((double) result.total() / result.pageSize()) : 0;
-        PaginatedData<AuditLogEntryResponseDto> data = new PaginatedData<>(dtos, page, totalPages, result.total());
+        PaginatedData<AuditLogEntryResponseDto> data = new PaginatedData<>(dtos, page, result.totalPages(), result.total());
         return ResponseEntity.ok(data);
     }
 }

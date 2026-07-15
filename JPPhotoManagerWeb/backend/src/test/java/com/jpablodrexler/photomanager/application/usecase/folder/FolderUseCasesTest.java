@@ -100,4 +100,31 @@ class FolderUseCasesTest {
             assertThat(sut.execute()).isEqualTo("/test/pictures");
         }
     }
+
+    @Nested
+    @ExtendWith(MockitoExtension.class)
+    class GetFolderIdByPathUseCaseImplTest {
+
+        @Mock FolderRepository folderRepository;
+        @InjectMocks GetFolderIdByPathUseCaseImpl sut;
+
+        @Test
+        void execute_folderExists_returnsFolderId() {
+            Folder folder = Folder.builder().folderId(1L).path("/photos").build();
+            when(folderRepository.findByPath("/photos")).thenReturn(java.util.Optional.of(folder));
+
+            Long result = sut.execute("/photos");
+
+            assertThat(result).isEqualTo(1L);
+        }
+
+        @Test
+        void execute_folderNotFound_returnsNull() {
+            when(folderRepository.findByPath("/missing")).thenReturn(java.util.Optional.empty());
+
+            Long result = sut.execute("/missing");
+
+            assertThat(result).isNull();
+        }
+    }
 }

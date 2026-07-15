@@ -18,6 +18,7 @@ public interface AssetEntityMapper {
     Asset toDomain(AssetEntity entity);
 
     @Mapping(target = "tags", ignore = true)
+    @Mapping(source = "folder", target = "folder", qualifiedByName = "toFolderEntityRef")
     AssetEntity toEntity(Asset domain);
 
     @Named("tagEntitiesToNames")

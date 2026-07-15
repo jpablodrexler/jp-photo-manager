@@ -1,8 +1,6 @@
 package com.jpablodrexler.photomanager.application.usecase.catalog;
 
 import com.jpablodrexler.photomanager.domain.port.out.ProgressPort;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,12 +30,11 @@ class CatalogAssetsUseCaseImplTest {
     @Mock ProgressPort progressPort;
     @Mock JobExecution jobExecution;
 
-    SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
     CatalogAssetsUseCaseImpl sut;
 
     @BeforeEach
     void setUp() {
-        sut = new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob, progressPort, meterRegistry);
+        sut = new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob, progressPort);
     }
 
     @Test
@@ -85,14 +82,5 @@ class CatalogAssetsUseCaseImplTest {
         CompletableFuture<Void> result = sut.execute(42L);
 
         assertThat(result).isSameAs(futureCaptor.getValue());
-    }
-
-    @Test
-    void incrementCatalogCounter_incrementsMetricsCounter() {
-        sut.incrementCatalogCounter();
-
-        Counter counter = meterRegistry.find("photomanager_catalog_assets_total").counter();
-        assertThat(counter).isNotNull();
-        assertThat(counter.count()).isEqualTo(1.0);
     }
 }

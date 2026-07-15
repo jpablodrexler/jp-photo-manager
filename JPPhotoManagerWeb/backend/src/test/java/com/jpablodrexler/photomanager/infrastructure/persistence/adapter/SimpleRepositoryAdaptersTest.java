@@ -4,7 +4,7 @@ import com.jpablodrexler.photomanager.domain.model.*;
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.*;
 import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.*;
 import com.jpablodrexler.photomanager.infrastructure.persistence.mapper.*;
-
+import jakarta.persistence.EntityManager;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,6 +19,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -253,13 +254,16 @@ class SimpleRepositoryAdaptersTest {
     class RecentTargetPathRepositoryImplTest {
 
         @Mock JpaRecentTargetPathRepository jpa;
+        @Mock RecentTargetPathEntityMapper mapper;
         @InjectMocks RecentTargetPathRepositoryImpl sut;
 
         @Test
         void findAllOrderByIdDesc_returnsMappedList() {
             RecentTargetPathEntity entity = new RecentTargetPathEntity("/foo");
             entity.setId(1L);
+            RecentTargetPath domain = RecentTargetPath.builder().id(1L).path("/foo").build();
             when(jpa.findAllByOrderByIdDesc()).thenReturn(List.of(entity));
+            when(mapper.toDomain(entity)).thenReturn(domain);
 
             List<RecentTargetPath> result = sut.findAllOrderByIdDesc();
 
@@ -277,8 +281,12 @@ class SimpleRepositoryAdaptersTest {
         void save_mapsAndPersists() {
             RecentTargetPath path = RecentTargetPath.builder().path("/bar").build();
             RecentTargetPathEntity entity = new RecentTargetPathEntity("/bar");
-            entity.setId(2L);
-            when(jpa.save(any(RecentTargetPathEntity.class))).thenReturn(entity);
+            RecentTargetPathEntity saved = new RecentTargetPathEntity("/bar");
+            saved.setId(2L);
+            RecentTargetPath savedDomain = RecentTargetPath.builder().id(2L).path("/bar").build();
+            when(mapper.toEntity(path)).thenReturn(entity);
+            when(jpa.save(entity)).thenReturn(saved);
+            when(mapper.toDomain(saved)).thenReturn(savedDomain);
 
             RecentTargetPath result = sut.save(path);
 
@@ -300,6 +308,40 @@ class SimpleRepositoryAdaptersTest {
             sut.deleteAll(List.of(p1, p2));
 
             verify(jpa).deleteAllById(List.of(1L, 2L));
+        }
+    }
+
+    @Nested
+    @ExtendWith(MockitoExtension.class)
+    class AssetAudioRepositoryImplTest {
+
+        @Mock JpaAssetAudioRepository jpa;
+        @Mock AssetAudioEntityMapper mapper;
+        @Mock EntityManager entityManager;
+        @InjectMocks AssetAudioRepositoryImpl sut;
+
+        @Test
+        void save_newRecord_setsAssetReferenceAndPersists() {
+            AssetAudio audio = AssetAudio.builder().assetId(1L).title("Song").build();
+            AssetEntity assetRef = new AssetEntity();
+            AssetAudioEntity saved = new AssetAudioEntity();
+            AssetAudio savedDomain = AssetAudio.builder().assetId(1L).title("Song").build();
+
+            when(jpa.findByAssetAssetId(1L)).thenReturn(Optional.empty());
+            when(entityManager.getReference(AssetEntity.class, 1L)).thenReturn(assetRef);
+            when(jpa.save(any(AssetAudioEntity.class))).thenReturn(saved);
+            when(mapper.toDomain(saved)).thenReturn(savedDomain);
+
+            AssetAudio result = sut.save(audio);
+
+            assertThat(result).isEqualTo(savedDomain);
+            verify(mapper).updateEntityFromDomain(eq(audio), any(AssetAudioEntity.class));
+        }
+
+        @Test
+        void deleteByAssetId_delegatesToJpa() {
+            sut.deleteByAssetId(1L);
+            verify(jpa).deleteByAssetAssetId(1L);
         }
     }
 

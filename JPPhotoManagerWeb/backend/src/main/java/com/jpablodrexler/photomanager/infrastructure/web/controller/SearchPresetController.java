@@ -1,7 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.jpablodrexler.photomanager.domain.model.FilterPreset;
-import com.jpablodrexler.photomanager.application.exception.SearchPresetNotFoundException;
 import com.jpablodrexler.photomanager.domain.model.SearchPreset;
 import com.jpablodrexler.photomanager.domain.port.in.search.CreateSearchPresetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.search.DeleteSearchPresetUseCase;
@@ -55,7 +54,7 @@ public class SearchPresetController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public SearchPresetResponseDto create(@Valid @RequestBody CreatePresetRequestDto body) {
-        FilterPreset criteria = new FilterPreset(body.search(), body.dateFrom(), body.dateTo(), body.minRating());
+        FilterPreset criteria = searchPresetWebMapper.toDomain(body);
         SearchPreset preset = createSearchPresetUseCase.execute(resolveUserId(), body.name(), criteria);
         return searchPresetWebMapper.toDto(preset);
     }

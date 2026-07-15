@@ -118,6 +118,32 @@ class StorageServiceImplTest {
         assertThat(result).isFalse();
     }
 
+    // --- fileExists ---
+
+    @Test
+    void fileExists_existingFile_returnsTrue() throws IOException {
+        Path file = tempDir.resolve("file.txt");
+        Files.createFile(file);
+
+        boolean result = sut.fileExists(file.toString());
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void fileExists_nonExistentPath_returnsFalse() {
+        boolean result = sut.fileExists(tempDir.resolve("nonexistent.txt").toString());
+
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void fileExists_directoryPath_returnsFalse() {
+        boolean result = sut.fileExists(tempDir.toString());
+
+        assertThat(result).isFalse();
+    }
+
     // --- createDirectory ---
 
     @Test

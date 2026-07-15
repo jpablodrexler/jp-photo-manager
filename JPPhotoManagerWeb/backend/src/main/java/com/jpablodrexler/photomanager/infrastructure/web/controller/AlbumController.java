@@ -1,12 +1,8 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpablodrexler.photomanager.domain.model.AlbumData;
-import com.jpablodrexler.photomanager.application.dto.AlbumFilterJson;
 import com.jpablodrexler.photomanager.application.dto.PaginatedData;
 import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
-import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.in.album.AddAssetsToAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.CreateAlbumUseCase;
@@ -23,6 +19,7 @@ import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AlbumSumma
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.CreateAlbumRequestDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.UpdateAlbumRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.AlbumFilterJsonConverter;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AlbumWebMapper;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -56,7 +53,7 @@ public class AlbumController {
     private final GetCurrentUserUseCase getCurrentUserUseCase;
     private final AlbumWebMapper albumWebMapper;
     private final AssetWebMapper assetWebMapper;
-    private final ObjectMapper objectMapper;
+    private final AlbumFilterJsonConverter albumFilterJsonConverter;
 
     @Operation(summary = "List albums for the authenticated user")
     @ApiResponses({
@@ -77,7 +74,8 @@ public class AlbumController {
     })
     @PostMapping
     public ResponseEntity<AlbumSummaryResponseDto> createAlbum(@Valid @RequestBody CreateAlbumRequestDto request) {
-        AlbumData album = createAlbumUseCase.execute(resolveUserId(), request.name(), request.description(), serializeFilterJson(request.filterJson()));
+        AlbumData album = createAlbumUseCase.execute(resolveUserId(), request.name(), request.description(),
+                albumFilterJsonConverter.serializeFilterJson(request.filterJson()));
         return ResponseEntity.status(HttpStatus.CREATED).body(albumWebMapper.toSummaryDto(album));
     }
 
@@ -90,19 +88,13 @@ public class AlbumController {
     @GetMapping("/{id}")
     public ResponseEntity<AlbumResponseDto> getAlbum(@PathVariable Long id,
                                               @RequestParam(defaultValue = "0") int page) {
-        try {
-            UUID userId = resolveUserId();
-            AlbumData summary = getAlbumSummaryUseCase.execute(id, userId);
-            PaginatedResult<Asset> assetsPage = getAlbumAssetsUseCase.execute(id, userId, page);
-            int totalPages = assetsPage.pageSize() > 0
-                    ? (int) Math.ceil((double) assetsPage.total() / assetsPage.pageSize()) : 0;
-            PaginatedData<AssetResponseDto> assetDtos = new PaginatedData<>(
-                    assetsPage.items().stream().map(assetWebMapper::toDto).collect(Collectors.toList()),
-                    page, totalPages, assetsPage.total());
-            return ResponseEntity.ok(albumWebMapper.toDto(summary, assetDtos));
-        } catch (AlbumNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        UUID userId = resolveUserId();
+        AlbumData summary = getAlbumSummaryUseCase.execute(id, userId);
+        PaginatedResult<Asset> assetsPage = getAlbumAssetsUseCase.execute(id, userId, page);
+        PaginatedData<AssetResponseDto> assetDtos = new PaginatedData<>(
+                assetsPage.items().stream().map(assetWebMapper::toDto).collect(Collectors.toList()),
+                page, assetsPage.totalPages(), assetsPage.total());
+        return ResponseEntity.ok(albumWebMapper.toDto(summary, assetDtos));
     }
 
     @Operation(summary = "Update album name or description")
@@ -115,12 +107,9 @@ public class AlbumController {
     @PutMapping("/{id}")
     public ResponseEntity<AlbumSummaryResponseDto> updateAlbum(@PathVariable Long id,
                                                         @Valid @RequestBody UpdateAlbumRequestDto request) {
-        try {
-            AlbumData updated = updateAlbumUseCase.execute(id, resolveUserId(), request.name(), request.description(), serializeFilterJson(request.filterJson()));
-            return ResponseEntity.ok(albumWebMapper.toSummaryDto(updated));
-        } catch (AlbumNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        AlbumData updated = updateAlbumUseCase.execute(id, resolveUserId(), request.name(), request.description(),
+                albumFilterJsonConverter.serializeFilterJson(request.filterJson()));
+        return ResponseEntity.ok(albumWebMapper.toSummaryDto(updated));
     }
 
     @Operation(summary = "Delete an album")
@@ -131,12 +120,8 @@ public class AlbumController {
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAlbum(@PathVariable Long id) {
-        try {
-            deleteAlbumUseCase.execute(id, resolveUserId());
-            return ResponseEntity.noContent().build();
-        } catch (AlbumNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        deleteAlbumUseCase.execute(id, resolveUserId());
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Add assets to an album")
@@ -149,12 +134,8 @@ public class AlbumController {
     @PostMapping("/{id}/assets")
     public ResponseEntity<Void> addAssets(@PathVariable Long id,
                                           @Valid @RequestBody AlbumAssetIdsRequestDto request) {
-        try {
-            addAssetsToAlbumUseCase.execute(id, resolveUserId(), request.assetIds());
-            return ResponseEntity.noContent().build();
-        } catch (AlbumNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        addAssetsToAlbumUseCase.execute(id, resolveUserId(), request.assetIds());
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Remove assets from an album")
@@ -167,24 +148,11 @@ public class AlbumController {
     @DeleteMapping("/{id}/assets")
     public ResponseEntity<Void> removeAssets(@PathVariable Long id,
                                              @Valid @RequestBody AlbumAssetIdsRequestDto request) {
-        try {
-            removeAssetsFromAlbumUseCase.execute(id, resolveUserId(), request.assetIds());
-            return ResponseEntity.noContent().build();
-        } catch (AlbumNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        }
+        removeAssetsFromAlbumUseCase.execute(id, resolveUserId(), request.assetIds());
+        return ResponseEntity.noContent().build();
     }
 
     private UUID resolveUserId() {
         return getCurrentUserUseCase.execute().getId();
-    }
-
-    private String serializeFilterJson(AlbumFilterJson filterJson) {
-        if (filterJson == null) return null;
-        try {
-            return objectMapper.writeValueAsString(filterJson);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize filterJson", e);
-        }
     }
 }

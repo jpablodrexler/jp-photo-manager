@@ -33,12 +33,7 @@ public class AssetAudioRepositoryImpl implements AssetAudioRepository {
         AssetAudioEntity entity = jpa.findByAssetAssetId(assetAudio.getAssetId())
                 .orElseGet(AssetAudioEntity::new);
         entity.setAsset(entityManager.getReference(AssetEntity.class, assetAudio.getAssetId()));
-        entity.setTitle(assetAudio.getTitle());
-        entity.setArtist(assetAudio.getArtist());
-        entity.setAlbum(assetAudio.getAlbum());
-        entity.setDurationSeconds(assetAudio.getDurationSeconds());
-        entity.setBitrateKbps(assetAudio.getBitrateKbps());
-        entity.setSampleRateHz(assetAudio.getSampleRateHz());
+        mapper.updateEntityFromDomain(assetAudio, entity);
         return mapper.toDomain(jpa.save(entity));
     }
 

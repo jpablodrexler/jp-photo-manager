@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.application.usecase.folder;
 
 import com.jpablodrexler.photomanager.domain.model.CatalogChangeNotification;
-import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
+import com.jpablodrexler.photomanager.domain.enums.Reason;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.in.folder.PruneDeletedFoldersUseCase;
@@ -59,7 +59,7 @@ public class PruneDeletedFoldersUseCaseImpl implements PruneDeletedFoldersUseCas
 
         log.info("Pruned folder no longer on disk: {}", folder.getPath());
         if (consumer != null) {
-            consumer.accept(new CatalogChangeNotification(ReasonEnum.FOLDER_DELETED, folder.getPath(), 0));
+            consumer.accept(new CatalogChangeNotification(Reason.FOLDER_DELETED, folder.getPath(), 0));
         }
     }
 }

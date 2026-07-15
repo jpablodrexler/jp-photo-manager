@@ -7,6 +7,8 @@ import com.jpablodrexler.photomanager.domain.port.in.user.ListUsersUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.user.UpdatePasswordUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.CreateUserRequestDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.UpdatePasswordRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.UserSummaryResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.UserAdminWebMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -30,6 +32,7 @@ public class UserAdminController {
     private final CreateUserUseCase createUserUseCase;
     private final UpdatePasswordUseCase updatePasswordUseCase;
     private final DeleteUserUseCase deleteUserUseCase;
+    private final UserAdminWebMapper userAdminWebMapper;
 
     @Operation(summary = "List all users")
     @ApiResponses({
@@ -38,8 +41,8 @@ public class UserAdminController {
         @ApiResponse(responseCode = "403", description = "Forbidden — admin role required")
     })
     @GetMapping
-    public List<UserSummary> listUsers() {
-        return listUsersUseCase.execute();
+    public List<UserSummaryResponseDto> listUsers() {
+        return userAdminWebMapper.toDtoList(listUsersUseCase.execute());
     }
 
     @Operation(summary = "Create a new user")
@@ -50,9 +53,9 @@ public class UserAdminController {
         @ApiResponse(responseCode = "403", description = "Forbidden — admin role required")
     })
     @PostMapping
-    public ResponseEntity<UserSummary> createUser(@Valid @RequestBody CreateUserRequestDto request) {
+    public ResponseEntity<UserSummaryResponseDto> createUser(@Valid @RequestBody CreateUserRequestDto request) {
         UserSummary created = createUserUseCase.execute(request.username(), request.password(), "USER");
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        return ResponseEntity.status(HttpStatus.CREATED).body(userAdminWebMapper.toDto(created));
     }
 
     @Operation(summary = "Change a user's password")

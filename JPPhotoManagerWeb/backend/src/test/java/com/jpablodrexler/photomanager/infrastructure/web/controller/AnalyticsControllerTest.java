@@ -3,7 +3,7 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 import com.jpablodrexler.photomanager.domain.model.AnalyticsData;
 import com.jpablodrexler.photomanager.domain.port.in.analytics.GetAnalyticsUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AnalyticsResponseDto;
-import com.jpablodrexler.photomanager.infrastructure.web.mapper.AnalyticsMapper;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.AnalyticsWebMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -28,7 +28,7 @@ class AnalyticsControllerTest {
     GetAnalyticsUseCase getAnalyticsUseCase;
 
     @MockitoBean
-    AnalyticsMapper analyticsMapper;
+    AnalyticsWebMapper analyticsWebMapper;
 
     @Test
     void getAnalytics_authenticated_returns200WithBody() throws Exception {
@@ -40,7 +40,7 @@ class AnalyticsControllerTest {
                 .build();
         AnalyticsResponseDto dto = new AnalyticsResponseDto(List.of(), List.of(), List.of(), List.of());
         when(getAnalyticsUseCase.execute()).thenReturn(data);
-        when(analyticsMapper.toDto(data)).thenReturn(dto);
+        when(analyticsWebMapper.toDto(data)).thenReturn(dto);
 
         mockMvc.perform(get("/api/analytics"))
                 .andExpect(status().isOk())
@@ -60,7 +60,7 @@ class AnalyticsControllerTest {
                 .build();
         AnalyticsResponseDto emptyDto = new AnalyticsResponseDto(List.of(), List.of(), List.of(), List.of());
         when(getAnalyticsUseCase.execute()).thenReturn(empty);
-        when(analyticsMapper.toDto(empty)).thenReturn(emptyDto);
+        when(analyticsWebMapper.toDto(empty)).thenReturn(emptyDto);
 
         mockMvc.perform(get("/api/analytics"))
                 .andExpect(status().isOk())

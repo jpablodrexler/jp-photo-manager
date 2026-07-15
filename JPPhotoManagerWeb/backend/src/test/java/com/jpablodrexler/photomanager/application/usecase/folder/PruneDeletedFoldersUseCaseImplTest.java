@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.application.usecase.folder;
 
 import com.jpablodrexler.photomanager.domain.model.CatalogChangeNotification;
-import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
+import com.jpablodrexler.photomanager.domain.enums.Reason;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
@@ -85,7 +85,7 @@ class PruneDeletedFoldersUseCaseImplTest {
 
         ArgumentCaptor<CatalogChangeNotification> captor = ArgumentCaptor.forClass(CatalogChangeNotification.class);
         verify(consumer).accept(captor.capture());
-        assertThat(captor.getValue().getReason()).isEqualTo(ReasonEnum.FOLDER_DELETED);
+        assertThat(captor.getValue().getReason()).isEqualTo(Reason.FOLDER_DELETED);
         assertThat(captor.getValue().getFolderPath()).isEqualTo("/photos/deleted");
     }
 

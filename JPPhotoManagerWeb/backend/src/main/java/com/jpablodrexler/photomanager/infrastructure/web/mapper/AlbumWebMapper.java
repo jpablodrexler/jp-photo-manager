@@ -9,7 +9,7 @@ import org.mapstruct.InjectionStrategy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring", uses = AlbumFilterJsonDeserializer.class, injectionStrategy = InjectionStrategy.CONSTRUCTOR)
+@Mapper(componentModel = "spring", uses = AlbumFilterJsonConverter.class, injectionStrategy = InjectionStrategy.CONSTRUCTOR)
 public interface AlbumWebMapper {
 
     @Mapping(source = "filterJson", target = "filterJson", qualifiedByName = "deserializeFilterJson")

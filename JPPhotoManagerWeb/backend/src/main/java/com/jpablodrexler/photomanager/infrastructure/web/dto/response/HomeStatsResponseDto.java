@@ -1,7 +1,5 @@
 package com.jpablodrexler.photomanager.infrastructure.web.dto.response;
 
-import com.jpablodrexler.photomanager.domain.model.FolderStat;
-
 import java.time.Instant;
 import java.util.List;
 
@@ -11,6 +9,6 @@ public record HomeStatsResponseDto(
         Instant lastCatalogCompletedAt,
         long totalFileSize,
         long duplicateCount,
-        List<FolderStat> topFolders,
+        List<FolderStatResponseDto> topFolders,
         List<AssetSummaryResponseDto> recentAssets) {
 }

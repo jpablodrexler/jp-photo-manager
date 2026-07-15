@@ -2,7 +2,7 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.jpablodrexler.photomanager.domain.port.in.analytics.GetAnalyticsUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AnalyticsResponseDto;
-import com.jpablodrexler.photomanager.infrastructure.web.mapper.AnalyticsMapper;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.AnalyticsWebMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AnalyticsController {
 
     private final GetAnalyticsUseCase getAnalyticsUseCase;
-    private final AnalyticsMapper analyticsMapper;
+    private final AnalyticsWebMapper analyticsWebMapper;
 
     @Operation(summary = "Get analytics data")
     @ApiResponses({
@@ -29,6 +29,6 @@ public class AnalyticsController {
     })
     @GetMapping
     public ResponseEntity<AnalyticsResponseDto> getAnalytics() {
-        return ResponseEntity.ok(analyticsMapper.toDto(getAnalyticsUseCase.execute()));
+        return ResponseEntity.ok(analyticsWebMapper.toDto(getAnalyticsUseCase.execute()));
     }
 }

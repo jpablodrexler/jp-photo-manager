@@ -132,6 +132,8 @@ class SearchPresetControllerTest {
                 .createdAt(Instant.now())
                 .build();
 
+        when(searchPresetWebMapper.toDomain(any(CreatePresetRequestDto.class)))
+                .thenReturn(new FilterPreset("sunset", null, null, 4));
         when(createSearchPresetUseCase.execute(eq(userId), eq("Sunsets"), any(FilterPreset.class)))
                 .thenReturn(created);
         when(searchPresetWebMapper.toDto(created)).thenReturn(

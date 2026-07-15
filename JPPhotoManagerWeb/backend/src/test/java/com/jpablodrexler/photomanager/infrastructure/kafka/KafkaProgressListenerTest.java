@@ -4,7 +4,7 @@ import com.jpablodrexler.photomanager.domain.model.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.application.dto.CatalogProgressMessage;
 import com.jpablodrexler.photomanager.application.dto.ConvertProgressMessage;
 import com.jpablodrexler.photomanager.application.dto.SyncProgressMessage;
-import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
+import com.jpablodrexler.photomanager.domain.enums.Reason;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +43,7 @@ class KafkaProgressListenerTest {
     @Test
     void onCatalogProgress_progressMessage_sendsEventToEmitter() throws IOException {
         CatalogChangeNotification notification =
-                new CatalogChangeNotification(ReasonEnum.ASSET_CREATED, new Asset(), 0);
+                new CatalogChangeNotification(Reason.ASSET_CREATED, new Asset(), 0);
         CatalogProgressMessage message = CatalogProgressMessage.progress(42L, notification);
 
         sut.onCatalogProgress(message);
@@ -67,7 +67,7 @@ class KafkaProgressListenerTest {
     void onCatalogProgress_unknownRunId_silentlySkips() throws IOException {
         when(registry.getEmitter(99L)).thenReturn(null);
         CatalogChangeNotification notification =
-                new CatalogChangeNotification(ReasonEnum.ASSET_CREATED, new Asset(), 0);
+                new CatalogChangeNotification(Reason.ASSET_CREATED, new Asset(), 0);
         CatalogProgressMessage message = CatalogProgressMessage.progress(99L, notification);
 
         sut.onCatalogProgress(message);

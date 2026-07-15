@@ -19,7 +19,7 @@ class WebMappersTest {
 
     private final AssetWebMapper assetWebMapper = new AssetWebMapperImpl();
     private final FolderWebMapper folderWebMapper = new FolderWebMapperImpl();
-    private final AlbumWebMapper albumWebMapper = new AlbumWebMapperImpl(new AlbumFilterJsonDeserializer(new ObjectMapper()));
+    private final AlbumWebMapper albumWebMapper = new AlbumWebMapperImpl(new AlbumFilterJsonConverter(new ObjectMapper()));
 
     @Test
     void assetWebMapper_toDto_mapsAllFields() {

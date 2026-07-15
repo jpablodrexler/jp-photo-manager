@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.domain.enums;
 
-public enum ReasonEnum {
+public enum Reason {
     ASSET_CREATED,
     ASSET_UPDATED,
     ASSET_DELETED,

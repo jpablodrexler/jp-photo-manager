@@ -4,7 +4,7 @@ import com.jpablodrexler.photomanager.application.dto.AssetCatalogedEvent;
 import com.jpablodrexler.photomanager.application.dto.AssetDeletedEvent;
 import com.jpablodrexler.photomanager.domain.model.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.application.dto.CatalogProgressMessage;
-import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
+import com.jpablodrexler.photomanager.domain.enums.Reason;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
 import com.jpablodrexler.photomanager.domain.model.Folder;
@@ -94,7 +94,7 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
             catalogAssetsCounter.increment();
 
             CatalogChangeNotification notification =
-                    new CatalogChangeNotification(ReasonEnum.ASSET_CREATED, saved, 0);
+                    new CatalogChangeNotification(Reason.ASSET_CREATED, saved, 0);
             kafkaTemplate.send("job.catalog.progress", String.valueOf(runId),
                     CatalogProgressMessage.progress(runId, notification));
             kafkaTemplate.send("asset.cataloged", String.valueOf(saved.getAssetId()),
@@ -123,7 +123,7 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
                     thumbnailPort.deleteThumbnail(asset.getThumbnailBlobName());
 
                     CatalogChangeNotification notification =
-                            new CatalogChangeNotification(ReasonEnum.ASSET_DELETED, asset, 0);
+                            new CatalogChangeNotification(Reason.ASSET_DELETED, asset, 0);
                     kafkaTemplate.send("job.catalog.progress", String.valueOf(runId),
                             CatalogProgressMessage.progress(runId, notification));
                     kafkaTemplate.send("asset.deleted", String.valueOf(asset.getAssetId()),
@@ -143,7 +143,7 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
                 f.setPath(folderPath);
                 Folder saved = folderRepository.save(f);
                 CatalogChangeNotification notification =
-                        new CatalogChangeNotification(ReasonEnum.FOLDER_CREATED, folderPath, 0);
+                        new CatalogChangeNotification(Reason.FOLDER_CREATED, folderPath, 0);
                 kafkaTemplate.send("job.catalog.progress", String.valueOf(runId),
                         CatalogProgressMessage.progress(runId, notification));
                 return saved;

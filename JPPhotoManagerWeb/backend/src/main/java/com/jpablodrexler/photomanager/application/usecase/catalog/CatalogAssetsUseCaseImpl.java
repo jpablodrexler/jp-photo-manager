@@ -2,8 +2,6 @@ package com.jpablodrexler.photomanager.application.usecase.catalog;
 
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.ProgressPort;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
@@ -25,19 +23,14 @@ public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
     private final JobLauncher asyncCatalogJobLauncher;
     private final Job catalogJob;
     private final ProgressPort progressPort;
-    private final Counter catalogAssetsCounter;
 
     public CatalogAssetsUseCaseImpl(
             @Qualifier("asyncCatalogJobLauncher") JobLauncher asyncCatalogJobLauncher,
             Job catalogJob,
-            ProgressPort progressPort,
-            MeterRegistry meterRegistry) {
+            ProgressPort progressPort) {
         this.asyncCatalogJobLauncher = asyncCatalogJobLauncher;
         this.catalogJob = catalogJob;
         this.progressPort = progressPort;
-        this.catalogAssetsCounter = Counter.builder("photomanager_catalog_assets_total")
-                .description("Total assets cataloged")
-                .register(meterRegistry);
     }
 
     @Override
@@ -63,9 +56,5 @@ public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
             log.error("Failed to start catalog job", e);
             return CompletableFuture.failedFuture(e);
         }
-    }
-
-    public void incrementCatalogCounter() {
-        catalogAssetsCounter.increment();
     }
 }

@@ -1,13 +1,11 @@
 package com.jpablodrexler.photomanager.infrastructure.service;
 
-import com.jpablodrexler.photomanager.domain.model.CatalogChangeNotification;
 import com.jpablodrexler.photomanager.domain.enums.FileType;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetAudio;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
 import com.jpablodrexler.photomanager.domain.model.AudioMetadata;
 import com.jpablodrexler.photomanager.domain.model.Folder;
-import com.jpablodrexler.photomanager.domain.enums.ReasonEnum;
 import com.jpablodrexler.photomanager.domain.model.ExifMetadata;
 import com.jpablodrexler.photomanager.domain.port.out.AssetAudioRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
@@ -31,12 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
@@ -58,66 +51,6 @@ public class CatalogFolderServiceAdapter implements CatalogFolderPort {
     int batchSize;
 
     @Transactional
-    public void catalogFolder(String folderPath, Consumer<CatalogChangeNotification> callback,
-                              Runnable heartbeatCallback, AtomicInteger processed, int total) {
-        Folder folder = folderRepository.findByPath(folderPath).orElseGet(() -> {
-            Folder f = new Folder();
-            f.setPath(folderPath);
-            Folder saved = folderRepository.save(f);
-            if (callback != null) {
-                callback.accept(new CatalogChangeNotification(ReasonEnum.FOLDER_CREATED, folderPath,
-                        computePercent(processed.get(), total)));
-            }
-            return saved;
-        });
-
-        List<String> filesOnDisk = storageService.listFiles(folderPath);
-        Set<String> fileNamesOnDisk = new HashSet<>();
-        for (String filePath : filesOnDisk) {
-            fileNamesOnDisk.add(Paths.get(filePath).getFileName().toString());
-        }
-
-        List<Asset> cataloguedAssets = assetRepository.findByFolder(folder);
-        Set<String> cataloguedFileNames = new HashSet<>();
-        for (Asset asset : cataloguedAssets) {
-            cataloguedFileNames.add(asset.getFileName());
-        }
-
-        int assetsProcessed = 0;
-        for (String filePath : filesOnDisk) {
-            String fileName = Paths.get(filePath).getFileName().toString();
-            if (!cataloguedFileNames.contains(fileName)) {
-                try {
-                    Asset asset = createAsset(folder, folderPath, fileName);
-                    assetsProcessed++;
-                    if (heartbeatCallback != null && assetsProcessed % batchSize == 0) {
-                        heartbeatCallback.run();
-                    }
-                    if (callback != null) {
-                        callback.accept(new CatalogChangeNotification(ReasonEnum.ASSET_CREATED, asset,
-                                computePercent(processed.get(), total)));
-                    }
-                } catch (Exception e) {
-                    log.error("Failed to catalog asset: {}", filePath, e);
-                }
-            }
-        }
-
-        for (Asset asset : cataloguedAssets) {
-            if (!fileNamesOnDisk.contains(asset.getFileName())) {
-                assetRepository.deleteById(asset.getAssetId());
-                thumbnailStorageService.deleteThumbnail(asset.getThumbnailBlobName());
-                if (callback != null) {
-                    callback.accept(new CatalogChangeNotification(ReasonEnum.ASSET_DELETED, asset,
-                            computePercent(processed.get(), total)));
-                }
-            }
-        }
-
-        processed.incrementAndGet();
-    }
-
-    @Transactional
     public Asset createAsset(String directoryPath, String fileName) {
         Folder folder = folderRepository.findByPath(directoryPath).orElseGet(() -> {
             Folder f = new Folder();
@@ -127,7 +60,7 @@ public class CatalogFolderServiceAdapter implements CatalogFolderPort {
         return createAsset(folder, directoryPath, fileName);
     }
 
-    // Runs within the caller's transaction (catalogFolder or createAsset).
+    // Runs within the caller's (createAsset) transaction.
     // The folder entity is already managed in that transaction, so no detached-entity issues.
     private Asset createAsset(Folder folder, String directoryPath, String fileName) {
         String filePath = directoryPath + "/" + fileName;
@@ -290,10 +223,5 @@ public class CatalogFolderServiceAdapter implements CatalogFolderPort {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ImageIO.write(image, "jpg", out);
         return out.toByteArray();
-    }
-
-    private int computePercent(int processed, int total) {
-        if (total == 0) return 100;
-        return (int) ((double) processed / total * 100);
     }
 }

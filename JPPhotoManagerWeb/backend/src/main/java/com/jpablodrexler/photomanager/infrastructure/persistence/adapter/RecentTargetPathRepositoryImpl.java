@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.domain.model.RecentTargetPath;
 import com.jpablodrexler.photomanager.domain.port.out.RecentTargetPathRepository;
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.RecentTargetPathEntity;
 import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.JpaRecentTargetPathRepository;
+import com.jpablodrexler.photomanager.infrastructure.persistence.mapper.RecentTargetPathEntityMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,12 +16,13 @@ import java.util.List;
 public class RecentTargetPathRepositoryImpl implements RecentTargetPathRepository {
 
     private final JpaRecentTargetPathRepository jpa;
+    private final RecentTargetPathEntityMapper mapper;
 
     @Override
     @Transactional(readOnly = true)
     public List<RecentTargetPath> findAllOrderByIdDesc() {
         return jpa.findAllByOrderByIdDesc().stream()
-                .map(e -> RecentTargetPath.builder().id(e.getId()).path(e.getPath()).build())
+                .map(mapper::toDomain)
                 .toList();
     }
 
@@ -33,11 +35,9 @@ public class RecentTargetPathRepositoryImpl implements RecentTargetPathRepositor
     @Override
     @Transactional
     public RecentTargetPath save(RecentTargetPath recentTargetPath) {
-        RecentTargetPathEntity entity = new RecentTargetPathEntity();
-        entity.setId(recentTargetPath.getId());
-        entity.setPath(recentTargetPath.getPath());
+        RecentTargetPathEntity entity = mapper.toEntity(recentTargetPath);
         RecentTargetPathEntity saved = jpa.save(entity);
-        return RecentTargetPath.builder().id(saved.getId()).path(saved.getPath()).build();
+        return mapper.toDomain(saved);
     }
 
     @Override

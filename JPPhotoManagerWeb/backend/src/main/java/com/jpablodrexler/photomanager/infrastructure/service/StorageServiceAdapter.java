@@ -93,6 +93,11 @@ public class StorageServiceAdapter implements StoragePort {
     }
 
     @Override
+    public boolean fileExists(String filePath) {
+        return Files.isRegularFile(Paths.get(filePath));
+    }
+
+    @Override
     public void createDirectory(String path) {
         try {
             Files.createDirectories(Paths.get(path));

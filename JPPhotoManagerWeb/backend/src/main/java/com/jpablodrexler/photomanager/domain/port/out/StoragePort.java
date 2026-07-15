@@ -15,6 +15,8 @@ public interface StoragePort {
 
     boolean directoryExists(String path);
 
+    boolean fileExists(String filePath);
+
     void createDirectory(String path);
 
     byte[] readFileBytes(String filePath) throws IOException;

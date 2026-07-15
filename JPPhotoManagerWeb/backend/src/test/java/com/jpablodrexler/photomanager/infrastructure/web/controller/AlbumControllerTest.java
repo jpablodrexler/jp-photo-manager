@@ -25,6 +25,7 @@ import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AlbumSumma
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.CreateAlbumRequestDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.UpdateAlbumRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.AlbumFilterJsonConverter;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AlbumWebMapper;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,6 +79,8 @@ class AlbumControllerTest {
     AlbumWebMapper albumWebMapper;
     @MockitoBean
     AssetWebMapper assetWebMapper;
+    @MockitoBean
+    AlbumFilterJsonConverter albumFilterJsonConverter;
 
     private UUID userId;
     private Instant now;

@@ -3,7 +3,6 @@ package com.jpablodrexler.photomanager;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
-import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -24,8 +23,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.testcontainers.junit.jupiter.EnabledIfDockerAvailable;
 
@@ -61,9 +58,6 @@ class ExifMetadataIntegrationTest {
     CatalogFolderPort catalogFolderService;
 
     @Autowired
-    AssetRepository assetRepository;
-
-    @Autowired
     AssetExifRepository assetExifRepository;
 
     @Autowired
@@ -83,14 +77,7 @@ class ExifMetadataIntegrationTest {
 
     @Test
     void catalogedJpeg_getExifEndpoint_returnsCameraMake() throws Exception {
-        catalogFolderService.catalogFolder(
-                fixtureDir.toString(), null, () -> {}, new AtomicInteger(0), 1);
-
-        List<Asset> assets = assetRepository.findAll();
-        Asset asset = assets.stream()
-                .filter(a -> "test-with-exif.jpg".equals(a.getFileName()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Asset not found after cataloging"));
+        Asset asset = catalogFolderService.createAsset(fixtureDir.toString(), "test-with-exif.jpg");
 
         mockMvc.perform(get("/api/assets/" + asset.getAssetId() + "/exif"))
                 .andExpect(status().isOk())
@@ -139,11 +126,6 @@ class ExifMetadataIntegrationTest {
             Files.copy(in, folder.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
         }
 
-        catalogFolderService.catalogFolder(folder.toString(), null, () -> {}, new AtomicInteger(0), 1);
-
-        return assetRepository.findAll().stream()
-                .filter(a -> fileName.equals(a.getFileName()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Asset not found after cataloging: " + fileName));
+        return catalogFolderService.createAsset(folder.toString(), fileName);
     }
 }

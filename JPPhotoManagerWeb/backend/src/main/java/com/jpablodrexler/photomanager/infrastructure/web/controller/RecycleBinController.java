@@ -40,10 +40,9 @@ public class RecycleBinController {
     @GetMapping
     public ResponseEntity<PaginatedData<AssetResponseDto>> listDeleted(@RequestParam(defaultValue = "0") int page) {
         PaginatedResult<Asset> result = getDeletedAssetsUseCase.execute(page);
-        int totalPages = result.pageSize() > 0 ? (int) Math.ceil((double) result.total() / result.pageSize()) : 0;
         PaginatedData<AssetResponseDto> data = new PaginatedData<>(
                 result.items().stream().map(assetWebMapper::toDto).collect(Collectors.toList()),
-                page, totalPages, result.total());
+                page, result.totalPages(), result.total());
         return ResponseEntity.ok(data);
     }
 

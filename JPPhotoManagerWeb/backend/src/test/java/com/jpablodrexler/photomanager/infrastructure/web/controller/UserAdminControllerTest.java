@@ -8,6 +8,8 @@ import com.jpablodrexler.photomanager.domain.port.in.user.ListUsersUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.user.UpdatePasswordUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.CreateUserRequestDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.UpdatePasswordRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.UserSummaryResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.UserAdminWebMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -43,6 +45,8 @@ class UserAdminControllerTest {
     UpdatePasswordUseCase updatePasswordUseCase;
     @MockitoBean
     DeleteUserUseCase deleteUserUseCase;
+    @MockitoBean
+    UserAdminWebMapper userAdminWebMapper;
 
     // --- GET /api/admin/users ---
 
@@ -50,7 +54,9 @@ class UserAdminControllerTest {
     void listUsers_returnsAllUsers_200() throws Exception {
         UUID id = UUID.randomUUID();
         UserSummary user = new UserSummary(id, "alice", Instant.parse("2025-01-01T00:00:00Z"));
+        UserSummaryResponseDto dto = new UserSummaryResponseDto(id, "alice", Instant.parse("2025-01-01T00:00:00Z"));
         when(listUsersUseCase.execute()).thenReturn(List.of(user));
+        when(userAdminWebMapper.toDtoList(List.of(user))).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/admin/users"))
                 .andExpect(status().isOk())
@@ -61,6 +67,7 @@ class UserAdminControllerTest {
     @Test
     void listUsers_emptyList_returns200WithEmptyArray() throws Exception {
         when(listUsersUseCase.execute()).thenReturn(List.of());
+        when(userAdminWebMapper.toDtoList(List.of())).thenReturn(List.of());
 
         mockMvc.perform(get("/api/admin/users"))
                 .andExpect(status().isOk())
@@ -72,8 +79,11 @@ class UserAdminControllerTest {
     @Test
     void createUser_validRequest_returns201WithUserSummary() throws Exception {
         UUID id = UUID.randomUUID();
-        UserSummary created = new UserSummary(id, "bob", Instant.now());
+        Instant createdAt = Instant.now();
+        UserSummary created = new UserSummary(id, "bob", createdAt);
+        UserSummaryResponseDto dto = new UserSummaryResponseDto(id, "bob", createdAt);
         when(createUserUseCase.execute("bob", "secret123", "USER")).thenReturn(created);
+        when(userAdminWebMapper.toDto(created)).thenReturn(dto);
 
         CreateUserRequestDto request = new CreateUserRequestDto("bob", "secret123");
         mockMvc.perform(post("/api/admin/users")

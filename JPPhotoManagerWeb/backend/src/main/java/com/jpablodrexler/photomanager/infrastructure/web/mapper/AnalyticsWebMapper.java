@@ -9,7 +9,7 @@ import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AnalyticsR
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
-public interface AnalyticsMapper {
+public interface AnalyticsWebMapper {
 
     AnalyticsResponseDto toDto(AnalyticsData data);
 

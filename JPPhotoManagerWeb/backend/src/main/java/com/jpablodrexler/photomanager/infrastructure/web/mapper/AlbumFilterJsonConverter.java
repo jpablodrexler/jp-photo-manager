@@ -9,17 +9,26 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-class AlbumFilterJsonDeserializer {
+public class AlbumFilterJsonConverter {
 
     private final ObjectMapper objectMapper;
 
     @Named("deserializeFilterJson")
-    AlbumFilterJson deserializeFilterJson(String filterJson) {
+    public AlbumFilterJson deserializeFilterJson(String filterJson) {
         if (filterJson == null) return null;
         try {
             return objectMapper.readValue(filterJson, AlbumFilterJson.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to deserialize filterJson", e);
+        }
+    }
+
+    public String serializeFilterJson(AlbumFilterJson filterJson) {
+        if (filterJson == null) return null;
+        try {
+            return objectMapper.writeValueAsString(filterJson);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize filterJson", e);
         }
     }
 }

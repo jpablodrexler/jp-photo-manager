@@ -7,7 +7,6 @@ import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.CatalogRunHistoryPort;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -93,8 +92,7 @@ class GetHomeStatsUseCaseCachingTest {
         CatalogAssetsUseCaseImpl catalogAssetsUseCase(JobLauncher asyncCatalogJobLauncher,
                                                        Job catalogJob,
                                                        KafkaProgressRegistry kafkaProgressRegistry) {
-            return new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob,
-                    kafkaProgressRegistry, new SimpleMeterRegistry());
+            return new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob, kafkaProgressRegistry);
         }
     }
 

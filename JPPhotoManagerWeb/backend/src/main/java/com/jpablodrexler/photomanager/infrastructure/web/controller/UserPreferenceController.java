@@ -24,8 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserPreferenceController {
 
-    private final GetUserPreferenceUseCase getPreference;
-    private final SaveUserPreferenceUseCase savePreference;
+    private final GetUserPreferenceUseCase getUserPreferenceUseCase;
+    private final SaveUserPreferenceUseCase saveUserPreferenceUseCase;
     private final GetCurrentUserUseCase getCurrentUserUseCase;
 
     @Operation(summary = "Get current user preference")
@@ -36,7 +36,7 @@ public class UserPreferenceController {
     @GetMapping
     public ResponseEntity<UserPreferenceDto> getPreference() {
         User user = resolveUser();
-        UserPreference pref = getPreference.execute(user.getId());
+        UserPreference pref = getUserPreferenceUseCase.execute(user.getId());
         return ResponseEntity.ok(new UserPreferenceDto(pref.getThemeMode()));
     }
 
@@ -48,7 +48,7 @@ public class UserPreferenceController {
     @PutMapping
     public ResponseEntity<Void> savePreference(@RequestBody UserPreferenceDto dto) {
         User user = resolveUser();
-        savePreference.execute(user.getId(), dto.themeMode());
+        saveUserPreferenceUseCase.execute(user.getId(), dto.themeMode());
         return ResponseEntity.ok().build();
     }
 

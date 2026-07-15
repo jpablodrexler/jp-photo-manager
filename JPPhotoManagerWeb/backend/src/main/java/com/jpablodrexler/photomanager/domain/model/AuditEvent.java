@@ -12,9 +12,8 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * A single append-only audit trail entry. Persisted via {@link com.jpablodrexler.photomanager.domain.port.out.AuditLogRepository}
- * to the {@code asset_audit_log} MongoDB collection. {@code metadata} is a free-form map whose shape
- * varies per {@link #action} (see the mongodb-audit-log spec for the documented per-action shapes).
+ * A single append-only audit trail entry. {@code metadata} is a free-form map whose shape
+ * varies per {@link #action}.
  */
 @Data
 @Builder

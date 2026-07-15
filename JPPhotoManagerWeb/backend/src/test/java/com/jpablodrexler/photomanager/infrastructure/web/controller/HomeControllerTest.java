@@ -5,6 +5,7 @@ import com.jpablodrexler.photomanager.domain.model.FolderStat;
 import com.jpablodrexler.photomanager.domain.model.HomeStats;
 import com.jpablodrexler.photomanager.domain.port.in.home.GetHomeStatsUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetSummaryResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.FolderStatResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.HomeStatsResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.HomeWebMapper;
 import org.junit.jupiter.api.Test;
@@ -82,8 +83,11 @@ class HomeControllerTest {
         List<FolderStat> topFolders = List.of(
                 new FolderStat("/photos/vacation", 500L),
                 new FolderStat("/photos/family", 200L));
+        List<FolderStatResponseDto> topFoldersDto = List.of(
+                new FolderStatResponseDto("/photos/vacation", 500L),
+                new FolderStatResponseDto("/photos/family", 200L));
         HomeStats stats = new HomeStats(2L, 700L, null, 0L, 0L, topFolders, List.of());
-        HomeStatsResponseDto dto = new HomeStatsResponseDto(2L, 700L, null, 0L, 0L, topFolders, List.of());
+        HomeStatsResponseDto dto = new HomeStatsResponseDto(2L, 700L, null, 0L, 0L, topFoldersDto, List.of());
         when(getHomeStatsUseCase.execute()).thenReturn(stats);
         when(homeWebMapper.toDto(stats)).thenReturn(dto);
 

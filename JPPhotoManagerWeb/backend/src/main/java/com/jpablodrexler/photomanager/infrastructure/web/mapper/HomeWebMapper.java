@@ -1,8 +1,10 @@
 package com.jpablodrexler.photomanager.infrastructure.web.mapper;
 
 import com.jpablodrexler.photomanager.domain.model.AssetSummary;
+import com.jpablodrexler.photomanager.domain.model.FolderStat;
 import com.jpablodrexler.photomanager.domain.model.HomeStats;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetSummaryResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.FolderStatResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.HomeStatsResponseDto;
 import org.mapstruct.Mapper;
 
@@ -12,4 +14,6 @@ public interface HomeWebMapper {
     HomeStatsResponseDto toDto(HomeStats stats);
 
     AssetSummaryResponseDto toDto(AssetSummary summary);
+
+    FolderStatResponseDto toDto(FolderStat stat);
 }
