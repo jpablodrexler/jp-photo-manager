@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -35,6 +37,7 @@ class MoveAssetsUseCaseImplTest {
     @Mock FolderRepository folderRepository;
     @Mock StoragePort storagePort;
     @Mock RecentTargetPathRepository recentTargetPathRepository;
+    @Mock PlatformTransactionManager transactionManager;
     @InjectMocks MoveAssetsUseCaseImpl sut;
 
     private static final String ROOT = "/tmp/photos";
@@ -99,6 +102,46 @@ class MoveAssetsUseCaseImplTest {
         boolean result = sut.execute(new Long[]{1L}, DEST, true);
 
         assertThat(result).isFalse();
+    }
+
+    @Test
+    void execute_dbSaveFailsAfterMove_revertsFileOnDiskAndReturnsFalse() throws IOException {
+        Asset asset = buildAsset(1L, "/tmp/photos/src", "img.jpg");
+        Folder destFolder = Folder.builder().folderId(2L).path(DEST).build();
+        when(assetRepository.findAllById(List.of(1L))).thenReturn(List.of(asset));
+        when(folderRepository.findByPath(DEST)).thenReturn(Optional.of(destFolder));
+        when(storagePort.directoryExists(DEST)).thenReturn(true);
+        when(assetRepository.save(any())).thenThrow(new RuntimeException("db unavailable"));
+
+        boolean result = sut.execute(new Long[]{1L}, DEST, false);
+
+        assertThat(result).isFalse();
+        verify(storagePort).moveFile("/tmp/photos/src/img.jpg", DEST + "/img.jpg");
+        verify(storagePort).moveFile(DEST + "/img.jpg", "/tmp/photos/src/img.jpg");
+    }
+
+    @Test
+    void execute_secondAssetFailsToMove_firstAssetMoveIsNotRolledBack() throws IOException {
+        Asset first = buildAsset(1L, "/tmp/photos/src", "a.jpg");
+        Asset second = buildAsset(2L, "/tmp/photos/src", "b.jpg");
+        Folder destFolder = Folder.builder().folderId(2L).path(DEST).build();
+        when(assetRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(first, second));
+        when(folderRepository.findByPath(DEST)).thenReturn(Optional.of(destFolder));
+        when(storagePort.directoryExists(DEST)).thenReturn(true);
+        when(assetRepository.save(first)).thenReturn(first);
+        doAnswer(invocation -> {
+            String dest = invocation.getArgument(1);
+            if ((DEST + "/b.jpg").equals(dest)) {
+                throw new IOException("disk full");
+            }
+            return null;
+        }).when(storagePort).moveFile(any(), any());
+
+        boolean result = sut.execute(new Long[]{1L, 2L}, DEST, false);
+
+        assertThat(result).isFalse();
+        verify(assetRepository).save(first);
+        assertThat(first.getFolder()).isEqualTo(destFolder);
     }
 
     @Test

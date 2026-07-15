@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -25,6 +26,7 @@ class RenameAssetsUseCaseImplTest {
 
     @Mock AssetRepository assetRepository;
     @Mock StoragePort storagePort;
+    @Mock PlatformTransactionManager transactionManager;
     @InjectMocks RenameAssetsUseCaseImpl sut;
 
     private static final String FOLDER_PATH = "/photos";
@@ -174,6 +176,48 @@ class RenameAssetsUseCaseImplTest {
                 .hasMessageContaining("Failed to rename asset");
 
         verify(assetRepository, never()).save(any());
+    }
+
+    @Test
+    void execute_applied_dbSaveFailsAfterMoveFile_revertsFileOnDiskAndThrows() throws Exception {
+        Asset asset = buildAsset(1L, "old.jpg", null);
+        when(assetRepository.findAllById(List.of(1L))).thenReturn(List.of(asset));
+        when(assetRepository.findByFolder(asset.getFolder())).thenReturn(List.of(asset));
+        when(assetRepository.save(any())).thenThrow(new RuntimeException("db unavailable"));
+
+        assertThatThrownBy(() -> sut.execute(new Long[]{1L}, "new.{ext}", true))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("db unavailable");
+
+        verify(storagePort).moveFile(FOLDER_PATH + "/old.jpg", FOLDER_PATH + "/new.jpg");
+        verify(storagePort).moveFile(FOLDER_PATH + "/new.jpg", FOLDER_PATH + "/old.jpg");
+    }
+
+    @Test
+    void execute_applied_secondAssetFailsToMove_firstAssetRenameIsNotRolledBack() throws Exception {
+        Folder folder1 = Folder.builder().folderId(10L).path(FOLDER_PATH).build();
+        Folder folder2 = Folder.builder().folderId(11L).path("/photos2").build();
+        Asset a1 = Asset.builder().assetId(1L).fileName("a.jpg").folder(folder1).build();
+        Asset a2 = Asset.builder().assetId(2L).fileName("b.jpg").folder(folder2).build();
+        when(assetRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(a1, a2));
+        when(assetRepository.findByFolder(folder1)).thenReturn(List.of(a1));
+        when(assetRepository.findByFolder(folder2)).thenReturn(List.of(a2));
+        when(assetRepository.save(a1)).thenAnswer(inv -> inv.getArgument(0));
+        doAnswer(invocation -> {
+            String dest = invocation.getArgument(1);
+            if ("/photos2/new_2.jpg".equals(dest)) {
+                throw new IOException("disk error");
+            }
+            return null;
+        }).when(storagePort).moveFile(any(), any());
+
+        assertThatThrownBy(() -> sut.execute(new Long[]{1L, 2L}, "new_{index:01d}.{ext}", true))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Failed to rename asset");
+
+        verify(assetRepository).save(a1);
+        assertThat(a1.getFileName()).isEqualTo("new_1.jpg");
+        verify(storagePort).moveFile(FOLDER_PATH + "/a.jpg", FOLDER_PATH + "/new_1.jpg");
     }
 
     // --- helpers ---

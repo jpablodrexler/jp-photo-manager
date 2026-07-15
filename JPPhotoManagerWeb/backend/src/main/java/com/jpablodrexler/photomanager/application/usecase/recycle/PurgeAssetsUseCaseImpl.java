@@ -8,6 +8,8 @@ import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,8 @@ public class PurgeAssetsUseCaseImpl implements PurgeAssetsUseCase {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    @CacheEvict("home-stats")
     public void execute(List<Long> assetIds) {
         List<Asset> targets = assetIds.isEmpty()
                 ? assetRepository.findAllDeleted()

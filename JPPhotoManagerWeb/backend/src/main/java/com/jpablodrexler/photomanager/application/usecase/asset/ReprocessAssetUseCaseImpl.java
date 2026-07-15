@@ -10,6 +10,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.NoSuchElementException;
 
@@ -35,6 +37,13 @@ public class ReprocessAssetUseCaseImpl implements ReprocessAssetUseCase {
         String filePath = asset.getFolder().getPath() + "/" + asset.getFileName();
         AssetUploadedEvent event = new AssetUploadedEvent(asset.getAssetId(), filePath,
                 asset.getFolder().getPath(), asset.getFileName());
-        kafkaTemplate.send("asset.uploaded", String.valueOf(asset.getAssetId()), event);
+        // Deferred until commit: a consumer that reads asset.uploaded before this transaction
+        // commits would race against the PROCESSING status update's visibility.
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                kafkaTemplate.send("asset.uploaded", String.valueOf(event.assetId()), event);
+            }
+        });
     }
 }

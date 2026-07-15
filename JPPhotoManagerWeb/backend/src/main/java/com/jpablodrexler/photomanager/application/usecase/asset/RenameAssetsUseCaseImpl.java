@@ -9,7 +9,9 @@ import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
@@ -38,9 +40,9 @@ public class RenameAssetsUseCaseImpl implements RenameAssetsUseCase {
 
     private final AssetRepository assetRepository;
     private final StoragePort storagePort;
+    private final PlatformTransactionManager transactionManager;
 
     @Override
-    @Transactional
     public RenameAssetsResult execute(Long[] assetIds, String pattern, boolean applied) {
         validateDateFormat(pattern);
         List<Asset> assets = assetRepository.findAllById(Arrays.asList(assetIds));
@@ -167,6 +169,9 @@ public class RenameAssetsUseCaseImpl implements RenameAssetsUseCase {
     }
 
     private void applyRenames(List<Asset> assets, List<RenamePreview> previews) {
+        TransactionTemplate perAssetTransaction = new TransactionTemplate(transactionManager);
+        perAssetTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
         for (int i = 0; i < assets.size(); i++) {
             Asset asset = assets.get(i);
             String newName = previews.get(i).newName();
@@ -174,13 +179,30 @@ public class RenameAssetsUseCaseImpl implements RenameAssetsUseCase {
             String newPath = asset.getFolder().getPath() + "/" + newName;
             try {
                 storagePort.moveFile(oldPath, newPath);
-                asset.setFileName(newName);
-                assetRepository.save(asset);
-                log.info("Renamed asset {} → {}", oldPath, newPath);
             } catch (IOException e) {
                 log.error("Failed to rename asset {} to {}", oldPath, newPath, e);
                 throw new RuntimeException("Failed to rename asset: " + oldPath, e);
             }
+
+            try {
+                perAssetTransaction.executeWithoutResult(status -> {
+                    asset.setFileName(newName);
+                    assetRepository.save(asset);
+                });
+                log.info("Renamed asset {} → {}", oldPath, newPath);
+            } catch (RuntimeException e) {
+                log.error("Failed to persist rename for asset {}, reverting file on disk", asset.getAssetId(), e);
+                revertRename(newPath, oldPath, asset.getAssetId());
+                throw e;
+            }
+        }
+    }
+
+    private void revertRename(String newPath, String oldPath, Long assetId) {
+        try {
+            storagePort.moveFile(newPath, oldPath);
+        } catch (IOException undoEx) {
+            log.error("Failed to revert file rename for asset {} after DB save failure", assetId, undoEx);
         }
     }
 }

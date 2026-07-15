@@ -15,6 +15,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -58,7 +60,14 @@ public class UploadAssetUseCaseImpl implements UploadAssetUseCase {
             asset = assetRepository.save(asset);
 
             AssetUploadedEvent event = new AssetUploadedEvent(asset.getAssetId(), destPath, folderPath, fileName);
-            kafkaTemplate.send("asset.uploaded", String.valueOf(asset.getAssetId()), event);
+            // Deferred until commit: a consumer that reads asset.uploaded before this transaction
+            // commits would race against the placeholder row's visibility.
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    kafkaTemplate.send("asset.uploaded", String.valueOf(event.assetId()), event);
+                }
+            });
 
             return asset;
         } finally {

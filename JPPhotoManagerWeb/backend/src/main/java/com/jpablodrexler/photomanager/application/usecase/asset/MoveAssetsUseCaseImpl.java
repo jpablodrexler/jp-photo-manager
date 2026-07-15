@@ -14,14 +14,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @RequiredArgsConstructor
@@ -34,12 +34,12 @@ public class MoveAssetsUseCaseImpl implements MoveAssetsUseCase {
     private final FolderRepository folderRepository;
     private final StoragePort storagePort;
     private final RecentTargetPathRepository recentTargetPathRepository;
+    private final PlatformTransactionManager transactionManager;
 
     @Value("${photomanager.root-catalog-folders:${user.home}/Pictures}")
     private String rootCatalogFolders;
 
     @Override
-    @Transactional
     @PreAuthorize("hasRole('ADMIN')")
     @CacheEvict(value = {"home-stats", "sub-folders"}, allEntries = true)
     public boolean execute(Long[] assetIds, String destinationPath, boolean preserveOriginal) {
@@ -47,6 +47,9 @@ public class MoveAssetsUseCaseImpl implements MoveAssetsUseCase {
         List<Asset> assets = assetRepository.findAllById(Arrays.asList(assetIds));
         Folder destination = folderRepository.findByPath(destinationPath)
                 .orElseGet(() -> folderRepository.save(Folder.builder().path(destinationPath).build()));
+
+        TransactionTemplate perAssetTransaction = new TransactionTemplate(transactionManager);
+        perAssetTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
         for (Asset asset : assets) {
             String sourcePath = asset.getFolder().getPath() + "/" + asset.getFileName();
@@ -60,19 +63,37 @@ public class MoveAssetsUseCaseImpl implements MoveAssetsUseCase {
                 } else {
                     storagePort.moveFile(sourcePath, destFilePath);
                 }
-                asset.setFolder(destination);
-                assetRepository.save(asset);
             } catch (IOException e) {
                 log.error("Failed to move asset {} to {}", sourcePath, destFilePath, e);
-                if (TransactionSynchronizationManager.isActualTransactionActive()) {
-                    TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-                }
+                return false;
+            }
+
+            try {
+                perAssetTransaction.executeWithoutResult(status -> {
+                    asset.setFolder(destination);
+                    assetRepository.save(asset);
+                });
+            } catch (RuntimeException e) {
+                log.error("Failed to persist move for asset {}, reverting file on disk", asset.getAssetId(), e);
+                revertFileOperation(preserveOriginal, sourcePath, destFilePath, asset.getAssetId());
                 return false;
             }
         }
 
         saveRecentTargetPath(destinationPath);
         return true;
+    }
+
+    private void revertFileOperation(boolean preserveOriginal, String sourcePath, String destFilePath, Long assetId) {
+        try {
+            if (preserveOriginal) {
+                storagePort.deleteFile(destFilePath);
+            } else {
+                storagePort.moveFile(destFilePath, sourcePath);
+            }
+        } catch (IOException undoEx) {
+            log.error("Failed to revert file operation for asset {} after DB save failure", assetId, undoEx);
+        }
     }
 
     private void validateDestinationPath(String destinationFolderPath) {
