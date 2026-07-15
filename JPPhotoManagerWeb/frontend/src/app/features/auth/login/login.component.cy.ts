@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { of, throwError } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
@@ -16,7 +15,7 @@ describe('LoginComponent', () => {
       isLoggedIn: cy.stub().returns(false),
       ...authServiceOverrides
     };
-    return mount(LoginComponent, {
+    return cy.mount(LoginComponent, {
       providers: [
         { provide: AuthService, useValue: authServiceStub },
         provideNoopAnimations(),
@@ -25,7 +24,7 @@ describe('LoginComponent', () => {
     }).then(({ component }) => ({ component, authServiceStub }));
   }
 
-  it('submit_validCredentials_callsAuthServiceLogin', () => {
+  it('should call AuthService.login with the entered credentials on submit', () => {
     mountLogin().then(({ authServiceStub }) => {
       cy.get('input[formControlName="username"]').type('admin');
       cy.get('input[formControlName="password"]').type('admin');
@@ -34,7 +33,7 @@ describe('LoginComponent', () => {
     });
   });
 
-  it('login_serverError_displaysErrorMessage', () => {
+  it('should display an error message when the server rejects the login', () => {
     mountLogin({
       login: cy.stub().returns(throwError(() => new Error('Unauthorized')))
     });
@@ -50,7 +49,7 @@ describe('LoginComponent', () => {
       isLoggedIn: cy.stub().returns(false)
     };
     const navigateByUrlStub = cy.stub();
-    return mount(LoginComponent, {
+    return cy.mount(LoginComponent, {
       providers: [
         { provide: AuthService, useValue: authServiceStub },
         { provide: Router, useValue: { navigateByUrl: navigateByUrlStub } },
@@ -63,7 +62,7 @@ describe('LoginComponent', () => {
     }).then(() => ({ navigateByUrlStub }));
   }
 
-  it('submit_relativeReturnUrl_navigatesToIt', () => {
+  it('should navigate to a relative returnUrl after login', () => {
     mountLoginWithReturnUrl('/gallery').then(({ navigateByUrlStub }) => {
       cy.get('input[formControlName="username"]').type('admin');
       cy.get('input[formControlName="password"]').type('admin');
@@ -72,7 +71,7 @@ describe('LoginComponent', () => {
     });
   });
 
-  it('submit_protocolRelativeReturnUrl_fallsBackToHome', () => {
+  it('should fall back to home when the returnUrl is protocol-relative', () => {
     mountLoginWithReturnUrl('//evil.com').then(({ navigateByUrlStub }) => {
       cy.get('input[formControlName="username"]').type('admin');
       cy.get('input[formControlName="password"]').type('admin');
@@ -81,7 +80,7 @@ describe('LoginComponent', () => {
     });
   });
 
-  it('submit_absoluteReturnUrl_fallsBackToHome', () => {
+  it('should fall back to home when the returnUrl is an absolute URL', () => {
     mountLoginWithReturnUrl('https://evil.com').then(({ navigateByUrlStub }) => {
       cy.get('input[formControlName="username"]').type('admin');
       cy.get('input[formControlName="password"]').type('admin');

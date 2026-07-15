@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { of } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
@@ -19,7 +18,7 @@ describe('AlbumsComponent', () => {
       deleteAlbum: cy.stub().returns(of(undefined)),
       ...albumServiceOverrides
     };
-    return mount(AlbumsComponent, {
+    return cy.mount(AlbumsComponent, {
       providers: [
         { provide: AlbumService, useValue: serviceStub },
         provideNoopAnimations(),
@@ -28,7 +27,7 @@ describe('AlbumsComponent', () => {
     }).then(({ component }) => ({ component, serviceStub }));
   }
 
-  it('ngOnInit_displaysAlbums_twoCardsRendered', () => {
+  it('should render a card for each album loaded on init', () => {
     mountAlbums();
     cy.get('mat-card').should('have.length', 2);
     cy.contains('Wedding').should('exist');
@@ -37,49 +36,33 @@ describe('AlbumsComponent', () => {
     cy.contains('7 photos').should('exist');
   });
 
-  it('deleteAlbum_callsServiceDelete_removesCard', () => {
+  it('should call the delete service when the delete album button is clicked', () => {
     mountAlbums().then(({ serviceStub }) => {
       cy.get('button[title="Delete album"]').first().click();
       cy.wrap(serviceStub.deleteAlbum).should('have.been.calledWith', mockAlbums[0].albumId);
     });
   });
 
-  it('smartAlbum_showsSmartBadge', () => {
+  it('should show the smart badge only on smart albums', () => {
     const albumsWithSmart: AlbumSummary[] = [
       { albumId: 1, name: 'Static Album', description: null, assetCount: 5, createdAt: '2024-01-01T00:00:00Z', filterJson: null },
       { albumId: 2, name: 'Smart Album', description: null, assetCount: 10, createdAt: '2024-01-01T00:00:00Z', filterJson: { minRating: 4 } }
     ];
-    const serviceStub: Partial<AlbumService> = {
+    mountAlbums({
       getAlbums: cy.stub().returns(of(albumsWithSmart)),
       createAlbum: cy.stub().returns(of(albumsWithSmart[0])),
-      deleteAlbum: cy.stub().returns(of(undefined))
-    };
-    mount(AlbumsComponent, {
-      providers: [
-        { provide: AlbumService, useValue: serviceStub },
-        provideNoopAnimations(),
-        provideRouter([])
-      ]
     });
     cy.get('mat-chip').should('have.length', 1).and('contain.text', 'Smart');
     cy.contains('Static Album').closest('mat-card').find('mat-chip').should('not.exist');
     cy.contains('Smart Album').closest('mat-card').find('mat-chip').should('contain.text', 'Smart');
   });
 
-  it('createAlbumForm_smartToggle_showsFilterFields', () => {
+  it('should show filter fields when the smart toggle is enabled in the create album form', () => {
     const smartAlbum: AlbumSummary = { albumId: 3, name: 'Top Picks', description: null, assetCount: 0, createdAt: '2024-01-01T00:00:00Z', filterJson: { minRating: 4 } };
     const createStub = cy.stub().returns(of(smartAlbum));
-    const serviceStub: Partial<AlbumService> = {
+    mountAlbums({
       getAlbums: cy.stub().returns(of([])),
       createAlbum: createStub,
-      deleteAlbum: cy.stub().returns(of(undefined))
-    };
-    mount(AlbumsComponent, {
-      providers: [
-        { provide: AlbumService, useValue: serviceStub },
-        provideNoopAnimations(),
-        provideRouter([])
-      ]
     });
     cy.get('button[title="New album"]').click();
     cy.get('mat-slide-toggle button').click();

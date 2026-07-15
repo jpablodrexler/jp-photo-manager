@@ -1,4 +1,3 @@
-import { mount } from "cypress/angular";
 import { of, throwError } from "rxjs";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { FolderNavComponent } from "./folder-nav.component";

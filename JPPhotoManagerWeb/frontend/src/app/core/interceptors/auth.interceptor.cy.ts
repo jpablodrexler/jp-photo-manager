@@ -38,7 +38,7 @@ describe('authInterceptor', () => {
     httpMock.verify();
   });
 
-  it('on401FromNonAuthEndpoint_callsRefreshOnce', () => {
+  it('should call refresh once on a 401 from a non-auth endpoint', () => {
     setup(throwError(() => new Error('refresh failed')));
 
     http.get('/api/assets').subscribe({ error: () => {} });
@@ -48,7 +48,7 @@ describe('authInterceptor', () => {
     cy.wrap(refreshStub).should('have.been.calledOnce');
   });
 
-  it('refreshFailure_callsClearSessionAndNavigatesToLogin', () => {
+  it('should clear the session and navigate to login when refresh fails', () => {
     setup(throwError(() => new Error('refresh failed')));
 
     http.get('/api/assets').subscribe({ error: () => {} });
@@ -59,7 +59,7 @@ describe('authInterceptor', () => {
     cy.wrap(navigateStub).should('have.been.calledWith', '/login');
   });
 
-  it('on401FromRefreshEndpoint_doesNotCallRefreshAndCallsClearSession', () => {
+  it('should not call refresh and should clear the session on a 401 from the refresh endpoint', () => {
     setup(of(undefined));
 
     http.post('/api/auth/refresh', {}).subscribe({ error: () => {} });

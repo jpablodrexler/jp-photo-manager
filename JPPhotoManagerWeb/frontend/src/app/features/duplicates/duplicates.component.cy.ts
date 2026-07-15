@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { of, throwError } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { DuplicatesComponent } from './duplicates.component';
@@ -124,7 +123,7 @@ describe('DuplicatesComponent', () => {
     });
   });
 
-  it('assetItem_whenHovered_showsFullFilePath', () => {
+  it('should show the full file path in a tooltip when an asset item is hovered', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
       cy.get('.asset-item').first().trigger('mouseenter', { bubbles: true });
@@ -132,7 +131,7 @@ describe('DuplicatesComponent', () => {
     });
   });
 
-  it('assetItem_eachItem_hasTooltipWithFullPath', () => {
+  it('should set a tooltip with the full path on every asset item', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
       cy.get('.asset-item').each(($item, index) => {

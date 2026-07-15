@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ThumbnailComponent } from './thumbnail.component';
 import { Asset } from '../../../core/models/asset.model';

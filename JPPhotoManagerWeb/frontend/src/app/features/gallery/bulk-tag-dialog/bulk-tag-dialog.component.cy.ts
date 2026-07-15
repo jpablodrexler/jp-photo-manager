@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -16,7 +15,7 @@ const defaultDialogRef = (): Partial<MatDialogRef<BulkTagDialogComponent>> => ({
 });
 
 describe('BulkTagDialogComponent', () => {
-  it('renders_withAssetIds_showsCorrectTitle', () => {
+  it('should show the correct title with the asset count', () => {
     cy.mount(BulkTagDialogComponent, {
       providers: [
         provideNoopAnimations(),
@@ -29,7 +28,7 @@ describe('BulkTagDialogComponent', () => {
     cy.contains('Tag 3 asset(s)').should('be.visible');
   });
 
-  it('cancel_clickCancel_closesDialogWithFalse', () => {
+  it('should close the dialog with false when Cancel is clicked', () => {
     const dialogRef = defaultDialogRef();
     cy.mount(BulkTagDialogComponent, {
       providers: [
@@ -44,7 +43,7 @@ describe('BulkTagDialogComponent', () => {
     cy.get('@dialogClose').should('have.been.calledWith', false);
   });
 
-  it('confirm_withTagsToAdd_callsBulkAddAndCloses', () => {
+  it('should call bulkAddTag and close the dialog when tags to add are confirmed', () => {
     const bulkAddStub = cy.stub().returns(of(undefined));
     const tagService = { ...defaultTagService(), bulkAddTag: bulkAddStub } as Partial<TagService>;
     const dialogRef = defaultDialogRef();
@@ -65,7 +64,7 @@ describe('BulkTagDialogComponent', () => {
     cy.get('@dialogClose').should('have.been.calledWith', true);
   });
 
-  it('confirm_withTagsToRemove_callsBulkRemoveAndCloses', () => {
+  it('should call bulkRemoveTag and close the dialog when tags to remove are confirmed', () => {
     const bulkRemoveStub = cy.stub().returns(of(undefined));
     const tagService = { ...defaultTagService(), bulkRemoveTag: bulkRemoveStub } as Partial<TagService>;
     const dialogRef = defaultDialogRef();
@@ -86,7 +85,7 @@ describe('BulkTagDialogComponent', () => {
     cy.get('@dialogClose').should('have.been.calledWith', true);
   });
 
-  it('confirm_noTags_closesWithFalse', () => {
+  it('should close the dialog with false when confirmed with no tags', () => {
     const dialogRef = defaultDialogRef();
     cy.mount(BulkTagDialogComponent, {
       providers: [

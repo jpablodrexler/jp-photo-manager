@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { of } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
@@ -43,7 +42,7 @@ describe('RecycleBinComponent', () => {
     }).then(result => ({ ...result, serviceStub }));
   }
 
-  it('loadPage_withDeletedAssets_rendersTwoThumbnailCards', () => {
+  it('should render a thumbnail card for each deleted asset on the page', () => {
     const page: PaginatedData<Asset> = { items: deletedAssets, pageIndex: 0, totalPages: 1, totalItems: 2 };
     const getRecycleBin = cy.stub().returns(of(page));
 
@@ -52,7 +51,7 @@ describe('RecycleBinComponent', () => {
     cy.get('app-thumbnail').should('have.length', 2);
   });
 
-  it('restoreSelected_withOneSelectedAsset_callsRestoreAssetsAndShowsSnackBar', () => {
+  it('should restore the selected asset and show a confirmation snackbar', () => {
     const page: PaginatedData<Asset> = { items: deletedAssets, pageIndex: 0, totalPages: 1, totalItems: 2 };
     const getRecycleBin = cy.stub().returns(of(page));
     const restoreAssets = cy.stub().returns(of(undefined));
@@ -68,7 +67,7 @@ describe('RecycleBinComponent', () => {
     cy.get('.mat-mdc-snack-bar-label').should('contain', 'Restored successfully');
   });
 
-  it('purgeSelected_withOneSelectedAsset_callsPurgeAssetsAndShowsSnackBar', () => {
+  it('should permanently delete the selected asset and show a confirmation snackbar', () => {
     const page: PaginatedData<Asset> = { items: deletedAssets, pageIndex: 0, totalPages: 1, totalItems: 2 };
     const getRecycleBin = cy.stub().returns(of(page));
     const purgeAssets = cy.stub().returns(of(undefined));
@@ -84,7 +83,7 @@ describe('RecycleBinComponent', () => {
     cy.get('.mat-mdc-snack-bar-label').should('contain', 'Permanently deleted');
   });
 
-  it('purgeAll_clicksEmptyButton_callsPurgeAll', () => {
+  it('should call purgeAll when the empty recycle bin button is clicked', () => {
     const purgeAll = cy.stub().returns(of(undefined));
 
     mountRecycleBin({ purgeAll });

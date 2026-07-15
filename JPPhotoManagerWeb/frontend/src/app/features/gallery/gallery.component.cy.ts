@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { of, throwError } from 'rxjs';
 import { MatChipInputEvent } from '@angular/material/chips';
 import { MatDialog } from '@angular/material/dialog';
@@ -136,7 +135,7 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('ngOnInit_doesNotCallCatalogAssets', () => {
+  it('should not call catalogAssets on init', () => {
     const catalogAssets = cy.stub();
     mountGallery({ catalogAssets });
     cy.wrap(catalogAssets).should('not.have.been.called');
@@ -161,7 +160,7 @@ describe('GalleryComponent', () => {
     cy.get('.asset-list-row').should('have.length', 2);
   });
 
-  it('assetListRows_folderSelected_containThumbnailImgElements', () => {
+  it('should render thumbnail img elements in the asset list rows when a folder is selected', () => {
     const getAssets = cy.stub().returns(of({
       items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
     }));
@@ -175,7 +174,7 @@ describe('GalleryComponent', () => {
     cy.get('.asset-list-row img.list-thumb').should('have.length', 2);
   });
 
-  it('thumbnailImg_folderSelected_srcMatchesThumbnailUrl', () => {
+  it('should set the thumbnail img src to the thumbnail URL when a folder is selected', () => {
     const getAssets = cy.stub().returns(of({
       items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
     }));
@@ -325,7 +324,7 @@ describe('GalleryComponent', () => {
 
   // --- Virtual scrolling tests ---
 
-  it('thumbnailsView_withMultiplePages_noPaginationBarRendered', () => {
+  it('should not render a pagination bar in thumbnails view with multiple pages', () => {
     const getAssets = cy.stub().returns(of({ items: mockAssets, pageIndex: 0, totalPages: 3, totalItems: 6 }));
 
     mountGallery({ getAssets }).then(({ fixture }) => {
@@ -338,7 +337,7 @@ describe('GalleryComponent', () => {
     cy.get('.pagination-bar').should('not.exist');
   });
 
-  it('loadNextPage_afterPage0_appendsAssetsAndCallsGetAssetsWithPage1', () => {
+  it('should append assets and call getAssets with page 1 when loading the next page after page 0', () => {
     const page0: PaginatedData<Asset> = { items: mockAssets, pageIndex: 0, totalPages: 2, totalItems: 4 };
     const page1: PaginatedData<Asset> = { items: [...mockAssets], pageIndex: 1, totalPages: 2, totalItems: 4 };
     const getAssets = cy.stub()
@@ -357,7 +356,7 @@ describe('GalleryComponent', () => {
     cy.wrap(getAssets).should('have.been.calledWith', '/photos', 1, 'FILE_NAME');
   });
 
-  it('onFolderSelected_resetsAssetsAndCallsGetAssetsWithPage0', () => {
+  it('should reset assets and call getAssets with page 0 when a folder is selected', () => {
     const getAssets = cy.stub().returns(of({ items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2 }));
 
     mountGallery({ getAssets }).then(({ fixture }) => {
@@ -372,7 +371,7 @@ describe('GalleryComponent', () => {
     cy.get('.asset-list-row').should('have.length', 2);
   });
 
-  it('onSortChange_resetsAssetsAndCallsGetAssetsWithPage0', () => {
+  it('should reset assets and call getAssets with page 0 when the sort changes', () => {
     const getAssets = cy.stub().returns(of({ items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2 }));
 
     mountGallery({ getAssets }).then(({ fixture }) => {
@@ -388,7 +387,7 @@ describe('GalleryComponent', () => {
     cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'FILE_SIZE');
   });
 
-  it('isLoading_true_progressBarVisible', () => {
+  it('should show the progress bar when isLoading is true', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
@@ -399,7 +398,7 @@ describe('GalleryComponent', () => {
     cy.get('mat-progress-bar').should('exist');
   });
 
-  it('allLoaded_true_endOfListVisible', () => {
+  it('should show the end-of-list indicator when allLoaded is true', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.assets = [...mockAssets];
@@ -412,7 +411,7 @@ describe('GalleryComponent', () => {
 
   // --- Download tests ---
 
-  it('downloadSelected_withSelectedAsset_callsDownloadAssetsWithCorrectIds', () => {
+  it('should call downloadAssets with the correct IDs for the selected asset', () => {
     const downloadAssets = cy.stub().returns(of(new Blob()));
     cy.stub(URL, 'createObjectURL').returns('blob:http://localhost/fake');
     cy.stub(URL, 'revokeObjectURL');
@@ -425,7 +424,7 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('downloadSelected_serviceReturnsError_showsFailedSnackBar', () => {
+  it('should show a failed snackbar when the download service returns an error', () => {
     const downloadAssets = cy.stub().returns(throwError(() => new Error('network error')));
 
     mountGallery({ downloadAssets }).then(({ fixture }) => {
@@ -437,7 +436,7 @@ describe('GalleryComponent', () => {
     cy.get('.mat-mdc-snack-bar-label').should('contain', 'Failed to download assets');
   });
 
-  it('loadNextPage_whenAllLoaded_doesNotCallGetAssets', () => {
+  it('should not call getAssets when loading the next page after everything is loaded', () => {
     const getAssets = cy.stub().returns(of(emptyPage));
 
     mountGallery({ getAssets }).then(({ fixture }) => {
@@ -452,7 +451,7 @@ describe('GalleryComponent', () => {
 
   // --- Slideshow tests ---
 
-  it('startSlideshow_fromThumbnailsToolbar_entersSlideshowModeAndShowsControls', () => {
+  it('should enter slideshow mode and show controls when starting from the thumbnails toolbar', () => {
     const threeAssets: Asset[] = [
       ...mockAssets,
       {
@@ -476,7 +475,7 @@ describe('GalleryComponent', () => {
     cy.get('.slideshow-progress-bar').should('exist');
   });
 
-  it('advanceSlideshow_afterInterval_incrementsCurrentViewerIndex', () => {
+  it('should increment the current viewer index when the slideshow advances', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.assets = [...mockAssets];
@@ -488,7 +487,7 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('pauseSlideshow_whilePlaying_stopsAdvancing', () => {
+  it('should stop advancing when the slideshow is paused while playing', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.assets = [...mockAssets];
@@ -500,7 +499,7 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('exitSlideshow_onEscapeKey_returnsToViewerMode', () => {
+  it('should return to viewer mode when Escape is pressed during the slideshow', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.assets = [...mockAssets];
@@ -511,7 +510,7 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('toggleSlideshowPlay_onSpaceKey_togglesPlayPause', () => {
+  it('should toggle play/pause when the space key is pressed during the slideshow', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.assets = [...mockAssets];
@@ -524,7 +523,7 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('advanceSlideshow_atLastAsset_stopsSlideshowAndShowsCompleteMessage', () => {
+  it('should stop the slideshow and show a complete message at the last asset', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.assets = [...mockAssets];
@@ -535,7 +534,7 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('startSlideshow_fromViewerToolbar_keepsSameIndex', () => {
+  it('should keep the same index when starting the slideshow from the viewer toolbar', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.assets = [...mockAssets];
@@ -549,7 +548,7 @@ describe('GalleryComponent', () => {
 
   // --- Search and filter tests ---
 
-  it('loadNextPage_withSearchTerm_callsGetAssetsWithSearchParam', () => {
+  it('should call getAssets with the search param when loading the next page with a search term', () => {
     const getAssets = cy.stub().returns(of(emptyPage));
 
     mountGallery({ getAssets }).then(({ fixture }) => {
@@ -562,7 +561,7 @@ describe('GalleryComponent', () => {
     cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'FILE_NAME', 'vacation', undefined, undefined);
   });
 
-  it('onDateChange_withDateFrom_callsGetAssetsWithIsoDateString', () => {
+  it('should call getAssets with an ISO date string when dateFrom changes', () => {
     const getAssets = cy.stub().returns(of(emptyPage));
 
     mountGallery({ getAssets }).then(({ fixture }) => {
@@ -575,7 +574,7 @@ describe('GalleryComponent', () => {
     cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'FILE_NAME', undefined, '2024-06-15', undefined);
   });
 
-  it('clearFilters_resetsFilterStateAndReloads', () => {
+  it('should reset the filter state and reload assets when filters are cleared', () => {
     const getAssets = cy.stub().returns(of(emptyPage));
 
     mountGallery({ getAssets }).then(({ fixture }) => {
@@ -595,7 +594,7 @@ describe('GalleryComponent', () => {
     cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'FILE_NAME', undefined, undefined, undefined);
   });
 
-  it('onFolderSelected_clearsFilersThenLoadsAssets', () => {
+  it('should clear filters then load assets when a folder is selected', () => {
     const getAssets = cy.stub().returns(of({ items: [], pageIndex: 0, totalPages: 1, totalItems: 0 }));
 
     mountGallery({ getAssets }).then(({ fixture }) => {
@@ -613,7 +612,7 @@ describe('GalleryComponent', () => {
 
   // --- Responsive sidenav tests ---
 
-  it('mobileViewport_sidenavInOverMode_toggleButtonVisible', () => {
+  it('should show the toggle button with the sidenav in over mode on a mobile viewport', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.isMobile = true;
@@ -625,7 +624,7 @@ describe('GalleryComponent', () => {
     cy.get('mat-sidenav.mat-drawer-over').should('exist');
   });
 
-  it('desktopViewport_sidenavInSideMode_toggleButtonNotRendered', () => {
+  it('should not render the toggle button with the sidenav in side mode on a desktop viewport', () => {
     const bpObs: Partial<BreakpointObserver> = {
       observe: cy.stub().returns(of({ matches: false, breakpoints: {} })),
     };
@@ -657,7 +656,7 @@ describe('GalleryComponent', () => {
     cy.get('app-folder-nav').should('exist');
   });
 
-  it('mobileViewport_onFolderSelected_closesSidenav', () => {
+  it('should close the sidenav when a folder is selected on a mobile viewport', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.isMobile = true;
@@ -674,7 +673,7 @@ describe('GalleryComponent', () => {
 
   // --- Star rating tests ---
 
-  it('rateAsset_callWithStar4_callsServiceAndUpdatesAssetRating', () => {
+  it('should call the service and update the asset rating when rating with 4 stars', () => {
     const rateAsset = cy.stub().returns(of(undefined));
 
     mountGallery({ rateAsset }).then(({ fixture }) => {
@@ -685,7 +684,7 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('rateAsset_sameStarAsCurrentRating_togglesRatingToZero', () => {
+  it('should toggle the rating to zero when rating with the same star as the current rating', () => {
     const ratedAsset: Asset = { ...mockAssets[0], rating: 4 };
     const rateAsset = cy.stub().returns(of(undefined));
 
@@ -697,7 +696,7 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('onMinRatingChange_filterStar3_callsGetAssetsWithMinRating3', () => {
+  it('should call getAssets with minRating 3 when filtering by 3 stars', () => {
     const getAssets = cy.stub().returns(of(emptyPage));
 
     mountGallery({ getAssets }).then(({ fixture }) => {
@@ -710,7 +709,7 @@ describe('GalleryComponent', () => {
     cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'FILE_NAME', undefined, undefined, undefined, 3);
   });
 
-  it('onSortChange_ratingSortSelected_callsGetAssetsWithRatingSort', () => {
+  it('should call getAssets with the rating sort when rating sort is selected', () => {
     const getAssets = cy.stub().returns(of(emptyPage));
 
     mountGallery({ getAssets }).then(({ fixture }) => {
@@ -730,7 +729,7 @@ describe('GalleryComponent', () => {
     { presetId: 2, name: '2024 photos', createdAt: '2024-06-02T00:00:00Z', dateFrom: '2024-01-01', dateTo: '2024-12-31' },
   ];
 
-  it('presetDropdown_withTwoPresets_rendersBothPresetNames', () => {
+  it('should render both preset names in the preset dropdown', () => {
     const listPresets = cy.stub().returns(of(mockPresets));
 
     mountGallery({}, { listPresets }).then(({ fixture }) => {
@@ -742,7 +741,7 @@ describe('GalleryComponent', () => {
     cy.get('mat-option').should('contain', '2024 photos');
   });
 
-  it('applyPreset_selectFirstPreset_populatesFilterFieldsAndCallsGetAssets', () => {
+  it('should populate filter fields and call getAssets when selecting the first preset', () => {
     const listPresets = cy.stub().returns(of(mockPresets));
     const getAssets = cy.stub().returns(of(emptyPage));
 
@@ -757,7 +756,7 @@ describe('GalleryComponent', () => {
     cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'FILE_NAME', 'vacation', undefined, undefined, 3);
   });
 
-  it('applyPreset_presetWithDateRange_populatesDateFieldsAndCallsGetAssets', () => {
+  it('should populate date fields and call getAssets when applying a preset with a date range', () => {
     const listPresets = cy.stub().returns(of(mockPresets));
     const getAssets = cy.stub().returns(of(emptyPage));
 
@@ -773,7 +772,7 @@ describe('GalleryComponent', () => {
     cy.wrap(getAssets).should('have.been.calledWith', '/photos', 0, 'FILE_NAME', undefined, '2024-01-01', '2024-12-31', undefined);
   });
 
-  it('saveCurrentFiltersAsPreset_confirmDialog_callsCreatePresetAndAppendsToList', () => {
+  it('should call createPreset and append it to the list when confirming the save-preset dialog', () => {
     const newPreset: SearchPreset = { presetId: 3, name: 'Birthday 2024', createdAt: '2024-06-03T00:00:00Z', search: 'birthday' };
     const createPreset = cy.stub().returns(of(newPreset));
     const listPresets = cy.stub().returns(of([]));
@@ -791,7 +790,7 @@ describe('GalleryComponent', () => {
     cy.wrap(createPreset).should('have.been.calledWithMatch', { name: 'Birthday 2024', search: 'birthday' });
   });
 
-  it('deletePreset_clickCloseIcon_callsDeletePresetAndRemovesFromList', () => {
+  it('should call deletePreset and remove it from the list when the close icon is clicked', () => {
     const deletePreset = cy.stub().returns(of(undefined));
     const listPresets = cy.stub().returns(of(mockPresets));
 
@@ -807,7 +806,7 @@ describe('GalleryComponent', () => {
 
   // --- Tag filter tests ---
 
-  it('tagFilter_addTagViaInput_reloadsAssetsWithTagParam', () => {
+  it('should reload assets with the tag param when a tag is added via the input', () => {
     const getAssets = cy.stub().returns(of(emptyPage));
 
     mountGallery({ getAssets }).then(({ fixture }) => {
@@ -821,7 +820,7 @@ describe('GalleryComponent', () => {
     cy.wrap(getAssets).should('have.been.called');
   });
 
-  it('tagFilter_removeTagChip_reloadsAssetsWithoutTag', () => {
+  it('should reload assets without the tag when a tag chip is removed', () => {
     const getAssets = cy.stub().returns(of(emptyPage));
 
     mountGallery({ getAssets }).then(({ fixture }) => {
@@ -835,7 +834,7 @@ describe('GalleryComponent', () => {
     cy.wrap(getAssets).should('have.been.called');
   });
 
-  it('tagFilter_clearFilters_clearsSelectedTags', () => {
+  it('should clear the selected tags when filters are cleared', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.selectedTags = ['vacation'];
@@ -846,7 +845,7 @@ describe('GalleryComponent', () => {
 
   // --- Query-param pre-selection tests ---
 
-  it('ngOnInit_withFolderQueryParam_callsOnFolderSelectedWithCorrectPath', () => {
+  it('should call onFolderSelected with the correct path from the folder query param on init', () => {
     const getAssets = cy.stub().returns(of({ items: [], pageIndex: 0, totalPages: 1, totalItems: 0 }));
 
     const activatedRouteStub = {
@@ -882,7 +881,7 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('ngOnInit_withFolderAndAssetIdQueryParams_opensViewerForMatchingAsset', () => {
+  it('should open the viewer for the matching asset from the folder and assetId query params on init', () => {
     const getAssets = cy.stub().returns(of({ items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2 }));
 
     const activatedRouteStub = {
@@ -921,7 +920,7 @@ describe('GalleryComponent', () => {
 
   // --- View-mode toggle tests ---
 
-  it('setViewType_toTimeline_setsViewTypeAndCallsGetTimeline', () => {
+  it('should set the view type and call getTimeline when switching to timeline view', () => {
     const mockTimelinePage: PaginatedData<TimelineGroup> = {
       items: [{ localDate: '2024-05-10', label: 'May 10, 2024', assets: [mockAssets[0]] }],
       pageIndex: 0, totalPages: 1, totalItems: 1,
@@ -939,7 +938,7 @@ describe('GalleryComponent', () => {
     cy.wrap(getTimeline).should('have.been.calledWith', '/photos', 0);
   });
 
-  it('setViewType_toGrid_callsGetAssetsAndShowsThumbnailGrid', () => {
+  it('should call getAssets and show the thumbnail grid when switching to grid view', () => {
     const getAssets = cy.stub().returns(of({ items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2 }));
     const getTimeline = cy.stub().returns(of({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 }));
 
@@ -955,7 +954,7 @@ describe('GalleryComponent', () => {
     cy.wrap(getAssets).should('have.been.called');
   });
 
-  it('setViewType_toTimeline_rendersTimelineViewComponent', () => {
+  it('should render the timeline view component when switching to timeline view', () => {
     const mockTimelinePage: PaginatedData<TimelineGroup> = {
       items: [{ localDate: '2024-05-10', label: 'May 10, 2024', assets: [mockAssets[0]] }],
       pageIndex: 0, totalPages: 1, totalItems: 1,
@@ -972,7 +971,7 @@ describe('GalleryComponent', () => {
     cy.get('app-timeline-view').should('exist');
   });
 
-  it('filterChange_inTimelineMode_resetsTimelineAndReloads', () => {
+  it('should reset the timeline and reload when a filter changes in timeline mode', () => {
     const getTimeline = cy.stub().returns(of({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 }));
 
     mountGallery({ getTimeline }).then(({ fixture }) => {
@@ -989,7 +988,7 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('onFolderSelected_whileInViewerMode_switchesToThumbnailsMode', () => {
+  it('should switch to thumbnails mode when a folder is selected while in viewer mode', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.assets = [...mockAssets];
@@ -1002,7 +1001,7 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('onFolderSelected_whileInSlideshowMode_switchesToThumbnailsMode', () => {
+  it('should switch to thumbnails mode when a folder is selected while in slideshow mode', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.assets = [...mockAssets];
@@ -1015,7 +1014,7 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('moveSelectedAssets_moveConfirmed_showsMovedSnackbarAndClearsSelection', () => {
+  it('should show a moved snackbar and clear the selection when a move is confirmed', () => {
     const getAssets = cy.stub().returns(of(emptyPage));
     mountGallery({ getAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
@@ -1031,7 +1030,7 @@ describe('GalleryComponent', () => {
     cy.wrap(getAssets).should('have.been.called');
   });
 
-  it('moveSelectedAssets_copyConfirmed_showsCopiedSnackbar', () => {
+  it('should show a copied snackbar when a copy is confirmed', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       cy.stub(component['dialog'], 'open').returns({ afterClosed: () => of({ destinationFolder: '/target' }) } as never);
@@ -1044,7 +1043,7 @@ describe('GalleryComponent', () => {
     cy.contains('Copied 1 asset(s)').should('be.visible');
   });
 
-  it('moveSelectedAssets_moveFails_showsErrorSnackbar', () => {
+  it('should show an error snackbar when the move fails', () => {
     const moveAssets = cy.stub().returns(throwError(() => new Error('Network error')));
     mountGallery({ moveAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
@@ -1058,17 +1057,17 @@ describe('GalleryComponent', () => {
     cy.contains('Failed to move assets').should('be.visible');
   });
 
-  it('matSidenavContent_onMount_hasDisplayFlex', () => {
+  it('should give mat-sidenav-content display flex on mount', () => {
     mountGallery();
     cy.get('mat-sidenav-content').should('have.css', 'display', 'flex');
   });
 
-  it('matSidenavContent_onMount_hasFlexDirectionColumn', () => {
+  it('should give mat-sidenav-content flex-direction column on mount', () => {
     mountGallery();
     cy.get('mat-sidenav-content').should('have.css', 'flex-direction', 'column');
   });
 
-  it('assetVirtualViewport_folderSelected_hasPositiveHeight', () => {
+  it('should give the asset virtual viewport a positive height when a folder is selected', () => {
     const getAssets = cy.stub().returns(of({
       items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
     }));
@@ -1080,7 +1079,7 @@ describe('GalleryComponent', () => {
     cy.get('cdk-virtual-scroll-viewport').invoke('outerHeight').should('be.gt', 0);
   });
 
-  it('assetListRows_folderSelected_areVisible', () => {
+  it('should make the asset list rows visible when a folder is selected', () => {
     const getAssets = cy.stub().returns(of({
       items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
     }));
@@ -1092,7 +1091,7 @@ describe('GalleryComponent', () => {
     cy.get('.asset-list-row').should('be.visible');
   });
 
-  it('ngOnInit_withoutFolderQueryParam_doesNotPreSelectFolder', () => {
+  it('should not pre-select a folder when there is no folder query param on init', () => {
     const getAssets = cy.stub().returns(of({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 }));
 
     const activatedRouteStub = {
@@ -1125,7 +1124,7 @@ describe('GalleryComponent', () => {
 
   // --- Status bar tests ---
 
-  it('statusBar_inThumbnailsMode_showsTotalPhotosOnly', () => {
+  it('should show only the total photo count in the status bar in thumbnails mode', () => {
     const getAssets = cy.stub().returns(of({
       items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
     }));
@@ -1140,7 +1139,7 @@ describe('GalleryComponent', () => {
     cy.get('.status-bar').should('not.contain', 'of 2 photos');
   });
 
-  it('statusBar_inThumbnailsMode_withSelectedAssets_showsSelectedCount', () => {
+  it('should show the selected count in the status bar in thumbnails mode when assets are selected', () => {
     const getAssets = cy.stub().returns(of({
       items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
     }));
@@ -1160,7 +1159,7 @@ describe('GalleryComponent', () => {
     cy.get('.status-bar').should('contain', '1 selected');
   });
 
-  it('statusBar_inThumbnailsMode_noSelection_doesNotShowSelectedCount', () => {
+  it('should not show the selected count in the status bar in thumbnails mode when nothing is selected', () => {
     const getAssets = cy.stub().returns(of({
       items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
     }));
@@ -1174,7 +1173,7 @@ describe('GalleryComponent', () => {
     cy.get('.status-bar').should('not.contain', 'selected');
   });
 
-  it('statusBar_inViewerModeAtFirstAsset_showsPositionOneOfTotal', () => {
+  it('should show position 1 of total in the status bar in viewer mode at the first asset', () => {
     const getAssets = cy.stub().returns(of({
       items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
     }));
@@ -1193,7 +1192,7 @@ describe('GalleryComponent', () => {
     cy.get('.status-bar').should('contain', '1 of 2 photos');
   });
 
-  it('statusBar_inViewerModeAfterNavigatingToSecondAsset_showsPositionTwoOfTotal', () => {
+  it('should show position 2 of total in the status bar after navigating to the second asset in viewer mode', () => {
     const getAssets = cy.stub().returns(of({
       items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
     }));
@@ -1213,7 +1212,7 @@ describe('GalleryComponent', () => {
     cy.get('.status-bar').should('contain', '2 of 2 photos');
   });
 
-  it('statusBar_inSlideshowModeAtSecondAsset_showsPositionTwoOfTotal', () => {
+  it('should show position 2 of total in the status bar in slideshow mode at the second asset', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.assets = [...mockAssets];
@@ -1228,7 +1227,7 @@ describe('GalleryComponent', () => {
 
   // --- Video asset tests ---
 
-  it('videoAsset_inThumbnailList_showsPlayOverlayIcon', () => {
+  it('should show a play overlay icon for a video asset in the thumbnail list', () => {
     const videoAsset: Asset = {
       assetId: 10,
       folderId: 1,
@@ -1256,7 +1255,7 @@ describe('GalleryComponent', () => {
     cy.get('.asset-list-row .video-overlay-icon').should('exist');
   });
 
-  it('openViewer_videoAsset_showsVideoElementNotImg', () => {
+  it('should show a video element instead of an img for a video asset in the viewer', () => {
     const videoAsset: Asset = {
       assetId: 10,
       folderId: 1,
@@ -1284,7 +1283,7 @@ describe('GalleryComponent', () => {
     cy.get('img.viewer-image').should('not.exist');
   });
 
-  it('openViewer_imageAsset_showsImgElementNotVideo', () => {
+  it('should show an img element instead of a video for an image asset in the viewer', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.assets = [...mockAssets];
@@ -1298,7 +1297,7 @@ describe('GalleryComponent', () => {
 
   // --- rename flow ---
 
-  it('renameSelectedAssets_success_showsSnackbarAndReloadsGallery', () => {
+  it('should show a snackbar and reload the gallery when renaming succeeds', () => {
     const mockDialogRef = { afterClosed: cy.stub().returns(of({ success: true, count: 2 })) };
     const mockDialog: Partial<MatDialog> = { open: cy.stub().returns(mockDialogRef) as unknown as MatDialog['open'] };
 
@@ -1307,7 +1306,6 @@ describe('GalleryComponent', () => {
       component.currentFolder = '/photos';
       component.selectedAssets = new Set([1, 2]);
       // Replace the injected dialog with the mock after mount
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (component as unknown as { dialog: MatDialog }).dialog = mockDialog as MatDialog;
       component.renameSelectedAssets();
       fixture.detectChanges();
@@ -1316,7 +1314,7 @@ describe('GalleryComponent', () => {
     cy.get('.mat-mdc-snack-bar-label').should('contain', 'Renamed 2 asset(s)');
   });
 
-  it('renameSelectedAssets_failure_showsErrorSnackbar', () => {
+  it('should show an error snackbar when renaming fails', () => {
     const mockDialogRef = { afterClosed: cy.stub().returns(of({ success: false, error: 'ASSET_NAME_COLLISION' })) };
     const mockDialog: Partial<MatDialog> = { open: cy.stub().returns(mockDialogRef) as unknown as MatDialog['open'] };
 
@@ -1324,7 +1322,6 @@ describe('GalleryComponent', () => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
       component.selectedAssets = new Set([1]);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (component as unknown as { dialog: MatDialog }).dialog = mockDialog as MatDialog;
       component.renameSelectedAssets();
       fixture.detectChanges();
@@ -1335,7 +1332,7 @@ describe('GalleryComponent', () => {
 
   // --- Pan drag tests ---
 
-  it('onViewerMouseMove_whileIsDragging_updatesPanXAndPanY', () => {
+  it('should update panX and panY on mouse move while dragging', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.isDragging = true;
@@ -1346,7 +1343,7 @@ describe('GalleryComponent', () => {
     });
   });
 
-  it('resetZoom_whenCalledWithNonZeroPan_resetsPanXAndPanYToZero', () => {
+  it('should reset panX and panY to zero when resetZoom is called with a non-zero pan', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.panX = 50;
@@ -1360,12 +1357,12 @@ describe('GalleryComponent', () => {
 
   // --- Role-based access control tests ---
 
-  it('catalogButton_viewerRole_notRendered', () => {
+  it('should not render the catalog button for a viewer role', () => {
     mountGallery({}, {}, {}, { isAdmin: cy.stub().returns(false) });
     cy.get('button[title="Run catalog"]').should('not.exist');
   });
 
-  it('catalogButton_adminRole_rendered', () => {
+  it('should render the catalog button for an admin role', () => {
     mountGallery({}, {}, {}, { isAdmin: cy.stub().returns(true) });
     cy.get('button[title="Run catalog"]').should('exist');
   });

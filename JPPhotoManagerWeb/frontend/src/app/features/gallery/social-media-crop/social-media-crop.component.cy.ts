@@ -44,7 +44,7 @@ function mountCrop(assetServiceOverrides: Partial<AssetService> = {}) {
 }
 
 describe('SocialMediaCropComponent', () => {
-  it('renders_withAsset_showsFormatSelectCanvasAndButtons', () => {
+  it('should show the format select, canvas, and action buttons for an asset', () => {
     mountCrop();
     cy.get('mat-select').should('exist');
     cy.get('canvas').should('exist');
@@ -52,7 +52,7 @@ describe('SocialMediaCropComponent', () => {
     cy.contains('button', 'Cancel').should('exist');
   });
 
-  it('cancel_clickCancel_emitsCancelled', () => {
+  it('should emit cancelled when the Cancel button is clicked', () => {
     mountCrop().then(({ component }) => {
       cy.spy(component.cancelled, 'emit').as('cancelledEmit');
       cy.contains('button', 'Cancel').click();
@@ -60,7 +60,7 @@ describe('SocialMediaCropComponent', () => {
     });
   });
 
-  it('formatSelect_choosingDifferentFormat_updatesSelectedFormat', () => {
+  it('should update the selected format when a different format is chosen', () => {
     mountCrop().then(({ component }) => {
       cy.get('mat-select').click();
       cy.get('mat-option').contains('Facebook Post').click();
@@ -70,7 +70,7 @@ describe('SocialMediaCropComponent', () => {
     });
   });
 
-  it('saveAndDownload_success_callsCropAssetWithSelectedFormatAndEmitsCancelled', () => {
+  it('should call cropAsset with the selected format and emit cancelled on successful save', () => {
     mountCrop().then(({ component, assetService }) => {
       cy.window().then(win => cy.stub(win, 'open'));
       cy.spy(component.cancelled, 'emit').as('cancelledEmit');
@@ -85,7 +85,7 @@ describe('SocialMediaCropComponent', () => {
     });
   });
 
-  it('saveAndDownload_error_showsFailureSnackbarMessage', () => {
+  it('should show a failure snackbar message when saving the crop fails', () => {
     mountCrop({ cropAsset: cy.stub().returns(throwError(() => new Error('save failed'))) });
     cy.contains('button', 'Save & Download').click();
     cy.contains('Failed to save crop').should('be.visible');

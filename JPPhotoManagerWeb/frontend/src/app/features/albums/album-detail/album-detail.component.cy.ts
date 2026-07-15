@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
@@ -42,7 +41,7 @@ describe('AlbumDetailComponent', () => {
       updateAlbum: cy.stub().returns(of({ albumId: ALBUM_ID, name: album.name, description: null, assetCount: 3, createdAt: '2024-01-01T00:00:00Z' })),
       ...albumServiceOverrides
     };
-    return mount(AlbumDetailComponent, {
+    return cy.mount(AlbumDetailComponent, {
       providers: [
         { provide: AlbumService, useValue: serviceStub },
         {
@@ -55,13 +54,13 @@ describe('AlbumDetailComponent', () => {
     }).then(({ component }) => ({ component, serviceStub }));
   }
 
-  it('ngOnInit_displaysThreeAssets_thumbnailsRendered', () => {
+  it('should render a thumbnail for each asset loaded on init', () => {
     mountDetail();
     cy.get('app-thumbnail').should('have.length', 3);
     cy.get('mat-toolbar').contains('My Album').should('exist');
   });
 
-  it('removeAsset_callsServiceRemoveAssets', () => {
+  it('should call the service removeAssets method when removing an asset', () => {
     mountDetail().then(({ component, serviceStub }) => {
       component.albumId = ALBUM_ID;
       component.removeAsset(mockAssets[0].assetId);
@@ -69,19 +68,19 @@ describe('AlbumDetailComponent', () => {
     });
   });
 
-  it('smartAlbumDetail_showsBannerAndHidesRemoveButton', () => {
+  it('should show the smart album banner and hide the remove button for a smart album', () => {
     mountDetail(smartAlbum);
     cy.get('.smart-album-banner').should('exist').and('contain.text', 'Smart album');
     cy.get('.remove-btn').should('not.exist');
   });
 
-  it('staticAlbumDetail_showsRemoveButtonAndNoBanner', () => {
+  it('should show the remove button and no banner for a static album', () => {
     mountDetail(mockAlbum);
     cy.get('.smart-album-banner').should('not.exist');
     cy.get('.remove-btn').should('exist');
   });
 
-  it('smartAlbumDetail_editFilter_callsUpdateAlbum', () => {
+  it('should call updateAlbum with the new filter when editing a smart album filter', () => {
     const updatedFilter: AlbumFilterJson = { minRating: 4 };
     const dialogRef = { afterClosed: () => of(updatedFilter) };
     mountDetail(smartAlbum).then(({ component, serviceStub }) => {

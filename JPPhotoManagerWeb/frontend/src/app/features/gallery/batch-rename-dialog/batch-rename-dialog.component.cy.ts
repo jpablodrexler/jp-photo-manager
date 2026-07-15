@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -20,7 +19,7 @@ const defaultDialogRef = (): Partial<MatDialogRef<BatchRenameDialogComponent>> =
 const defaultData = { assetIds: [1, 2], assetCount: 2 };
 
 describe('BatchRenameDialogComponent', () => {
-  it('emptyPattern_applyButtonIsDisabled', () => {
+  it('should disable the Apply button when the pattern is empty', () => {
     cy.mount(BatchRenameDialogComponent, {
       providers: [
         provideNoopAnimations(),
@@ -33,7 +32,7 @@ describe('BatchRenameDialogComponent', () => {
     cy.contains('button', 'Apply').should('be.disabled');
   });
 
-  it('validPatternWithPreviews_applyButtonIsEnabled', () => {
+  it('should enable the Apply button when a valid pattern produces previews', () => {
     const renameStub = cy.stub().returns(of(previewResponse([
       { assetId: 1, oldName: 'a.jpg', newName: 'photo_001.jpg' },
       { assetId: 2, oldName: 'b.jpg', newName: 'photo_002.jpg' },
@@ -54,7 +53,7 @@ describe('BatchRenameDialogComponent', () => {
     cy.contains('button', 'Apply').should('not.be.disabled');
   });
 
-  it('collisionError_applyButtonDisabledAndErrorShown', () => {
+  it('should disable the Apply button and show an error on a name collision', () => {
     const renameStub = cy.stub().returns(throwError(() => ({ status: 400, error: { message: 'ASSET_NAME_COLLISION' } })));
     const assetService: Partial<AssetService> = { renameAssets: renameStub };
 
@@ -73,7 +72,7 @@ describe('BatchRenameDialogComponent', () => {
     cy.contains('button', 'Apply').should('be.disabled');
   });
 
-  it('cancel_closesDialogWithNull', () => {
+  it('should close the dialog with null when Cancel is clicked', () => {
     const dialogRef = defaultDialogRef();
     cy.mount(BatchRenameDialogComponent, {
       providers: [
@@ -88,7 +87,7 @@ describe('BatchRenameDialogComponent', () => {
     cy.get('@dialogClose').should('have.been.calledWith', null);
   });
 
-  it('applySuccess_closesDialogWithSuccessResult', () => {
+  it('should close the dialog with a success result when applying the rename succeeds', () => {
     const previewStub = cy.stub();
     previewStub.withArgs([1, 2], 'new.{ext}', false).returns(of(previewResponse([
       { assetId: 1, oldName: 'a.jpg', newName: 'new.jpg' },
@@ -112,7 +111,7 @@ describe('BatchRenameDialogComponent', () => {
     cy.get('@dialogClose').should('have.been.calledWith', { success: true, count: 2 });
   });
 
-  it('applyError_closesDialogWithErrorResult', () => {
+  it('should close the dialog with an error result when applying the rename fails', () => {
     const previewStub = cy.stub();
     previewStub.withArgs([1], 'test.{ext}', false).returns(of(previewResponse([
       { assetId: 1, oldName: 'a.jpg', newName: 'test.jpg' },

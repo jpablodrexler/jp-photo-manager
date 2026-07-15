@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
@@ -68,11 +67,16 @@ describe('AppComponent', () => {
     return cy.mount(AppComponent, { providers });
   }
 
-  beforeEach(() => { mountApp(); });
+  let componentInstance: AppComponent | undefined;
+
+  beforeEach(() => {
+    componentInstance = undefined;
+    mountApp().then(({ fixture }) => { componentInstance = fixture.componentInstance; });
+  });
 
   it('should create the app', () => {
-    mountApp().then(({ fixture }) => {
-      expect(fixture.componentInstance).to.be.ok;
+    cy.then(() => {
+      expect(componentInstance).to.be.ok;
     });
   });
 
@@ -85,7 +89,7 @@ describe('AppComponent', () => {
   });
 });
 
-describe('AppComponent — responsive navigation', () => {
+describe('AppComponent', () => {
   function mountApp(isMobileMatches: boolean) {
     const authServiceStub: Partial<AuthService> = {
       isLoggedIn: () => true,
@@ -118,21 +122,21 @@ describe('AppComponent — responsive navigation', () => {
     });
   }
 
-  it('mobileViewport_hamburgerButtonVisible_inlineLinksNotRendered', () => {
+  it('should show the hamburger button and hide inline links on a mobile viewport', () => {
     mountApp(true);
     cy.get('button[aria-label="Open navigation"]').should('be.visible');
     cy.get('a[routerLink="/home"]').should('not.exist');
   });
 
-  it('desktopViewport_inlineLinksVisible_hamburgerNotRendered', () => {
+  it('should show inline links and hide the hamburger button on a desktop viewport', () => {
     mountApp(false);
     cy.get('button[aria-label="Open navigation"]').should('not.exist');
     cy.get('a[routerLink="/home"]').should('be.visible');
   });
 });
 
-describe('AppComponent — theme toggle', () => {
-  it('toggleButton_themeIsLight_showsDarkModeIcon', () => {
+describe('AppComponent', () => {
+  it('should show the dark mode icon on the toggle button when the theme is light', () => {
     const { providers } = buildProviders(true, of(false));
     cy.mount(AppComponent, { providers });
     cy.get('button[aria-label="Switch to dark mode"]').should('exist');
@@ -140,7 +144,7 @@ describe('AppComponent — theme toggle', () => {
       .should('contain.text', 'dark_mode');
   });
 
-  it('toggleButton_themeIsDark_showsLightModeIcon', () => {
+  it('should show the light mode icon on the toggle button when the theme is dark', () => {
     const { providers } = buildProviders(true, of(true));
     cy.mount(AppComponent, { providers });
     cy.get('button[aria-label="Switch to light mode"]').should('exist');
@@ -148,7 +152,7 @@ describe('AppComponent — theme toggle', () => {
       .should('contain.text', 'light_mode');
   });
 
-  it('toggleButton_notLoggedIn_isAbsent', () => {
+  it('should not render the theme toggle button when the user is not logged in', () => {
     const authServiceStub: Partial<AuthService> = { isLoggedIn: () => false, isAdmin: cy.stub().returns(false) };
     const themeServiceStub: Partial<ThemeService> = {
       isDark$: of(true),
@@ -174,7 +178,7 @@ describe('AppComponent — theme toggle', () => {
     cy.get('button[aria-label*="mode"]').should('not.exist');
   });
 
-  it('toggleButton_clicked_callsThemeServiceToggle', () => {
+  it('should call ThemeService.toggle when the toggle button is clicked', () => {
     const toggleStub = cy.stub().returns('light');
     const themeServiceStub: Partial<ThemeService> = {
       isDark$: of(true),

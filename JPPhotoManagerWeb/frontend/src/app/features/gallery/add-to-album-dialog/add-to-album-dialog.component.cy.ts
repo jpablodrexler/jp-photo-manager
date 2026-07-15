@@ -26,44 +26,44 @@ const mountDialog = (albums: AlbumSummary[], dialogRef = defaultDialogRef()) => 
 };
 
 describe('AddToAlbumDialogComponent', () => {
-  it('renders_withAlbums_listsEachAlbumWithAssetCount', () => {
+  it('should list each album with its asset count', () => {
     mountDialog([staticAlbum, smartAlbum]);
     cy.contains('Vacation (12 photos)').should('be.visible');
     cy.contains('Top Rated (5 photos)').should('be.visible');
   });
 
-  it('renders_noAlbums_showsCreateNewOnly', () => {
+  it('should show only the create-new option when there are no albums', () => {
     mountDialog([]);
     cy.contains('Select an existing album').should('not.exist');
     cy.contains('Create a new album').should('be.visible');
   });
 
-  it('smartAlbum_radioButton_isDisabled', () => {
+  it('should disable the radio button for a smart album', () => {
     mountDialog([staticAlbum, smartAlbum]);
     cy.contains('mat-radio-button', 'Top Rated').find('input[type="radio"]').should('be.disabled');
     cy.contains('mat-radio-button', 'Vacation').find('input[type="radio"]').should('not.be.disabled');
   });
 
-  it('confirm_disabled_whenNothingSelectedOrTyped', () => {
+  it('should disable the Add button when nothing is selected or typed', () => {
     mountDialog([staticAlbum]);
     cy.contains('button', 'Add').should('be.disabled');
   });
 
-  it('confirm_existingAlbumSelected_closesWithAlbumId', () => {
+  it('should close the dialog with the albumId when an existing album is selected', () => {
     mountDialog([staticAlbum]);
     cy.contains('mat-radio-button', 'Vacation').find('input[type="radio"]').click({ force: true });
     cy.contains('button', 'Add').should('not.be.disabled').click();
     cy.get('@dialogClose').should('have.been.calledWith', { albumId: 1, newAlbumName: null });
   });
 
-  it('confirm_newAlbumNameTyped_closesWithNewAlbumName', () => {
+  it('should close the dialog with the trimmed new album name when typed', () => {
     mountDialog([staticAlbum]);
     cy.get('input[matInput]').type('  Fresh Album  ');
     cy.contains('button', 'Add').should('not.be.disabled').click();
     cy.get('@dialogClose').should('have.been.calledWith', { albumId: null, newAlbumName: 'Fresh Album' });
   });
 
-  it('cancel_clickCancel_closesDialogWithNoArgs', () => {
+  it('should close the dialog with no args when Cancel is clicked', () => {
     mountDialog([staticAlbum]);
     cy.contains('button', 'Cancel').click();
     cy.get('@dialogClose').should('have.been.called');

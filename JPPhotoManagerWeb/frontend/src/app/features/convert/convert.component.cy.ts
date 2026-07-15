@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { of, throwError } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ConvertComponent } from './convert.component';
@@ -76,7 +75,7 @@ describe('ConvertComponent', () => {
     });
   });
 
-  it('addDefinition_whenAddButtonClicked_rendersNewRowInTable', () => {
+  it('should render a new row in the table when the add button is clicked', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
       cy.get('tr[mat-row]').should('have.length', 1);
@@ -85,7 +84,7 @@ describe('ConvertComponent', () => {
     });
   });
 
-  it('addDefinition_whenNewRowAdded_sourceDirectoryInputIsEditable', () => {
+  it('should allow editing the source directory input of a newly added row', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
       cy.get('button').contains('Add').click();
@@ -93,7 +92,7 @@ describe('ConvertComponent', () => {
     });
   });
 
-  it('addDefinition_whenNewRowAdded_createsNewArrayReference', () => {
+  it('should create a new array reference when a definition is added', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
       const originalRef = component.definitions;
@@ -110,7 +109,7 @@ describe('ConvertComponent', () => {
     });
   });
 
-  it('removeDefinition_whenDeleteButtonClicked_removesRowFromTable', () => {
+  it('should remove the row from the table when the delete button is clicked', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
       cy.get('tr[mat-row]').should('have.length', 1);
@@ -119,7 +118,7 @@ describe('ConvertComponent', () => {
     });
   });
 
-  it('removeDefinition_whenCalled_createsNewArrayReference', () => {
+  it('should create a new array reference when a definition is removed', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
       const originalRef = component.definitions;
@@ -140,7 +139,7 @@ describe('ConvertComponent', () => {
     });
   });
 
-  it('moveUp_whenCalled_createsNewArrayReference', () => {
+  it('should create a new array reference when a definition is moved up', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.definitions = [
@@ -174,7 +173,7 @@ describe('ConvertComponent', () => {
     });
   });
 
-  it('moveDown_whenCalled_createsNewArrayReference', () => {
+  it('should create a new array reference when a definition is moved down', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.definitions = [

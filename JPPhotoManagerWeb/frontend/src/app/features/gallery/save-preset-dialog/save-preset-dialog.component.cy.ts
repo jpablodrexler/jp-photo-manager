@@ -7,38 +7,28 @@ const defaultDialogRef = (): Partial<MatDialogRef<SavePresetDialogComponent, str
 });
 
 describe('SavePresetDialogComponent', () => {
-  it('confirm_disabled_whenNameEmpty', () => {
+  beforeEach(() => {
     cy.mount(SavePresetDialogComponent, {
       providers: [provideNoopAnimations(), { provide: MatDialogRef, useValue: defaultDialogRef() }],
     });
+  });
 
+  it('should disable Save when the name is empty', () => {
     cy.contains('button', 'Save').should('be.disabled');
   });
 
-  it('confirm_withName_closesDialogWithTrimmedName', () => {
-    cy.mount(SavePresetDialogComponent, {
-      providers: [provideNoopAnimations(), { provide: MatDialogRef, useValue: defaultDialogRef() }],
-    });
-
+  it('should close the dialog with the trimmed name when Save is clicked', () => {
     cy.get('input[matInput]').type('  My Preset  ');
     cy.contains('button', 'Save').should('not.be.disabled').click();
     cy.get('@dialogClose').should('have.been.calledWith', 'My Preset');
   });
 
-  it('confirm_enterKeydown_closesDialog', () => {
-    cy.mount(SavePresetDialogComponent, {
-      providers: [provideNoopAnimations(), { provide: MatDialogRef, useValue: defaultDialogRef() }],
-    });
-
+  it('should close the dialog on Enter keydown', () => {
     cy.get('input[matInput]').type('Quick Preset{enter}');
     cy.get('@dialogClose').should('have.been.calledWith', 'Quick Preset');
   });
 
-  it('cancel_clickCancel_closesDialogWithNoArgs', () => {
-    cy.mount(SavePresetDialogComponent, {
-      providers: [provideNoopAnimations(), { provide: MatDialogRef, useValue: defaultDialogRef() }],
-    });
-
+  it('should close the dialog with no args when Cancel is clicked', () => {
     cy.contains('button', 'Cancel').click();
     cy.get('@dialogClose').should('have.been.called');
   });

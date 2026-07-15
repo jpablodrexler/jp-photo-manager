@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { EventEmitter } from '@angular/core';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { TimelineViewComponent } from './timeline-view.component';
@@ -35,7 +34,7 @@ describe('TimelineViewComponent', () => {
     },
   ];
 
-  it('rendersGroupsWithCorrectHeaders_whenGroupsProvided', () => {
+  it('should render groups with the correct month and day headers', () => {
     cy.mount(TimelineViewComponent, {
       componentProperties: { groups: mockGroups },
       providers: [provideNoopAnimations()],
@@ -48,7 +47,7 @@ describe('TimelineViewComponent', () => {
     cy.get('.timeline-thumbnail-cell').should('have.length', 2);
   });
 
-  it('showsEmptyState_whenGroupsIsEmpty', () => {
+  it('should show the empty state when there are no groups', () => {
     cy.mount(TimelineViewComponent, {
       componentProperties: { groups: [] },
       providers: [provideNoopAnimations()],
@@ -58,7 +57,7 @@ describe('TimelineViewComponent', () => {
     cy.get('.timeline-container').should('not.exist');
   });
 
-  it('emitsThumbnailClick_whenThumbnailIsClicked', () => {
+  it('should emit thumbnailClick when a thumbnail is clicked', () => {
     const clickSpy = cy.spy().as('clickSpy');
 
     cy.mount(TimelineViewComponent, {
@@ -73,7 +72,7 @@ describe('TimelineViewComponent', () => {
     cy.get('@clickSpy').should('have.been.calledOnce');
   });
 
-  it('sameMonthGroupsShareOneMonthHeader', () => {
+  it('should share one month header across groups in the same month', () => {
     const sameMonthGroups: TimelineGroup[] = [
       { localDate: '2024-05-10', label: 'May 10, 2024', assets: [mockAsset] },
       { localDate: '2024-05-09', label: 'May 9, 2024', assets: [{ ...mockAsset, assetId: 2 }] },

@@ -1,32 +1,32 @@
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { CatalogProgressFooterComponent } from './catalog-progress-footer.component';
 
+function mountFooter(componentProperties: Partial<CatalogProgressFooterComponent> = {}) {
+  return cy.mount(CatalogProgressFooterComponent, {
+    componentProperties,
+    providers: [provideNoopAnimations()],
+  });
+}
+
 describe('CatalogProgressFooterComponent', () => {
   it('should create the component', () => {
-    cy.mount(CatalogProgressFooterComponent, {
-      providers: [provideNoopAnimations()],
-    }).then(({ fixture }) => {
+    mountFooter().then(({ fixture }) => {
       expect(fixture.componentInstance).to.be.ok;
     });
   });
 
   it('should render the idle state by default', () => {
-    cy.mount(CatalogProgressFooterComponent, {
-      providers: [provideNoopAnimations()],
-    });
+    mountFooter();
 
     cy.get('.catalog-status-text').should('contain.text', 'Idle');
     cy.get('mat-progress-bar').should('not.exist');
   });
 
   it('should show the progress bar and percent when running', () => {
-    cy.mount(CatalogProgressFooterComponent, {
-      componentProperties: {
-        state: 'running',
-        percentCompleted: 60,
-        currentStatusText: '/photos/vacation',
-      },
-      providers: [provideNoopAnimations()],
+    mountFooter({
+      state: 'running',
+      percentCompleted: 60,
+      currentStatusText: '/photos/vacation',
     });
 
     cy.get('mat-progress-bar').should('exist');
@@ -35,18 +35,13 @@ describe('CatalogProgressFooterComponent', () => {
   });
 
   it('should display the last completed timestamp when idle', () => {
-    cy.mount(CatalogProgressFooterComponent, {
-      componentProperties: { lastCompletedAt: new Date() },
-      providers: [provideNoopAnimations()],
-    });
+    mountFooter({ lastCompletedAt: new Date() });
 
     cy.get('.catalog-status-text').should('contain.text', 'Idle');
   });
 
   it('should emit reconnect when the refresh button is clicked', () => {
-    cy.mount(CatalogProgressFooterComponent, {
-      providers: [provideNoopAnimations()],
-    }).then(({ fixture }) => {
+    mountFooter().then(({ fixture }) => {
       cy.spy(fixture.componentInstance.reconnect, 'emit').as('reconnectSpy');
       cy.get('.catalog-refresh-btn').click();
       cy.get('@reconnectSpy').should('have.been.calledOnce');
@@ -54,10 +49,7 @@ describe('CatalogProgressFooterComponent', () => {
   });
 
   it('should disable the refresh button while running', () => {
-    cy.mount(CatalogProgressFooterComponent, {
-      componentProperties: { state: 'running' },
-      providers: [provideNoopAnimations()],
-    });
+    mountFooter({ state: 'running' });
 
     cy.get('.catalog-refresh-btn').should('be.disabled');
   });

@@ -29,7 +29,7 @@ describe('AnalyticsService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('getAnalytics_onSuccess_returnsAnalyticsData', () => {
+  it('should return analytics data on a successful GET /api/analytics', () => {
     service.getAnalytics().subscribe(data => {
       expect(data).to.deep.equal(mockData);
     });
@@ -39,7 +39,7 @@ describe('AnalyticsService', () => {
     req.flush(mockData);
   });
 
-  it('getAnalytics_onError_propagatesError', () => {
+  it('should propagate the error when the request fails', () => {
     let errorReceived = false;
 
     service.getAnalytics().subscribe({

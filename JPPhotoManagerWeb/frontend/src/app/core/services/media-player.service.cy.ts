@@ -22,7 +22,7 @@ function makeAsset(fileName: string): Asset {
   };
 }
 
-describe('MediaPlayerService — isVideoAsset()', () => {
+describe('MediaPlayerService', () => {
   let sut: MediaPlayerService;
 
   beforeEach(() => {

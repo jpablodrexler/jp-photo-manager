@@ -5,7 +5,7 @@ import { AuthService } from './auth.service';
 
 const SESSION_KEY = 'photomanager_session';
 
-describe('AuthService — proactive refresh timer', () => {
+describe('AuthService', () => {
   let service: AuthService;
   let httpMock: HttpTestingController;
 

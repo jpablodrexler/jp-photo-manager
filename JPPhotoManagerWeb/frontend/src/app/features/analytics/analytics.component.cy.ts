@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { of, throwError, NEVER } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { AnalyticsComponent } from './analytics.component';
@@ -25,12 +24,12 @@ describe('AnalyticsComponent', () => {
     ],
   };
 
-  it('analyticsComponent_whenLoading_showsSpinner', () => {
+  it('should show a spinner while analytics data is loading', () => {
     const serviceStub: Partial<AnalyticsService> = {
       getAnalytics: cy.stub().returns(NEVER),
     };
 
-    mount(AnalyticsComponent, {
+    cy.mount(AnalyticsComponent, {
       providers: [
         provideNoopAnimations(),
         { provide: AnalyticsService, useValue: serviceStub },
@@ -41,12 +40,12 @@ describe('AnalyticsComponent', () => {
     cy.get('.analytics-grid').should('not.exist');
   });
 
-  it('analyticsComponent_onSuccess_rendersFourCharts', () => {
+  it('should render four charts when analytics data loads successfully', () => {
     const serviceStub: Partial<AnalyticsService> = {
       getAnalytics: cy.stub().returns(of(mockData)),
     };
 
-    mount(AnalyticsComponent, {
+    cy.mount(AnalyticsComponent, {
       providers: [
         provideNoopAnimations(),
         { provide: AnalyticsService, useValue: serviceStub },
@@ -61,12 +60,12 @@ describe('AnalyticsComponent', () => {
     cy.contains('mat-card-title', 'Rating Distribution').should('exist');
   });
 
-  it('analyticsComponent_onError_showsErrorMessage', () => {
+  it('should show an error message when loading analytics data fails', () => {
     const serviceStub: Partial<AnalyticsService> = {
       getAnalytics: cy.stub().returns(throwError(() => new Error('API error'))),
     };
 
-    mount(AnalyticsComponent, {
+    cy.mount(AnalyticsComponent, {
       providers: [
         provideNoopAnimations(),
         { provide: AnalyticsService, useValue: serviceStub },

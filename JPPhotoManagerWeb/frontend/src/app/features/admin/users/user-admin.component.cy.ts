@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { of } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
@@ -20,7 +19,7 @@ describe('UserAdminComponent', () => {
       updatePassword: cy.stub().returns(of(undefined)),
       ...userAdminServiceOverrides
     };
-    return mount(UserAdminComponent, {
+    return cy.mount(UserAdminComponent, {
       providers: [
         { provide: UserAdminService, useValue: serviceStub },
         provideNoopAnimations(),
@@ -29,7 +28,7 @@ describe('UserAdminComponent', () => {
     }).then(({ component }) => ({ component, serviceStub }));
   }
 
-  it('ngOnInit_displaysUsers', () => {
+  it('should display the list of users on init', () => {
     mountAdmin();
     cy.get('table').should('exist');
     cy.get('tr.mat-mdc-row').should('have.length', 2);
@@ -37,7 +36,7 @@ describe('UserAdminComponent', () => {
     cy.contains('alice').should('exist');
   });
 
-  it('deleteUser_confirmedInDialog_callsServiceDelete', () => {
+  it('should call the delete service when deletion is confirmed in the dialog', () => {
     mountAdmin().then(({ serviceStub }) => {
       cy.get('button[title="Delete user"]').first().click();
       cy.get('mat-dialog-container').contains('button', 'Delete').click();
@@ -45,7 +44,7 @@ describe('UserAdminComponent', () => {
     });
   });
 
-  it('deleteUser_cancelledInDialog_doesNotCallServiceDelete', () => {
+  it('should not call the delete service when deletion is cancelled in the dialog', () => {
     mountAdmin().then(({ serviceStub }) => {
       cy.get('button[title="Delete user"]').first().click();
       cy.get('mat-dialog-container').contains('button', 'Cancel').click();

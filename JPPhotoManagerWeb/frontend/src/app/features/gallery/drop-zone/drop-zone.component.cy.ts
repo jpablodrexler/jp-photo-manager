@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { of, Subject, throwError } from 'rxjs';
 import { HttpEventType, HttpResponse, HttpUploadProgressEvent } from '@angular/common/http';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
@@ -38,12 +37,12 @@ describe('DropZoneComponent', () => {
     }).then(result => ({ ...result, assetServiceStub }));
   }
 
-  it('mounts_withFolderPath_noUploadQueueVisible', () => {
+  it('should not show an upload queue when mounted with just a folder path', () => {
     mountDropZone();
     cy.get('.upload-queue').should('not.exist');
   });
 
-  it('dragover_event_setsDraggingAndShowsOverlay', () => {
+  it('should show the drop overlay on a dragover event', () => {
     mountDropZone().then(({ fixture }) => {
       const component = fixture.componentInstance;
       const mockEvent = { preventDefault: () => {} } as DragEvent;
@@ -53,7 +52,7 @@ describe('DropZoneComponent', () => {
     cy.get('.drop-overlay').should('be.visible');
   });
 
-  it('dragleave_event_hidesDropOverlay', () => {
+  it('should hide the drop overlay on a dragleave event', () => {
     mountDropZone().then(({ fixture }) => {
       const component = fixture.componentInstance;
       const mockEvent = { preventDefault: () => {} } as DragEvent;
@@ -65,7 +64,7 @@ describe('DropZoneComponent', () => {
     cy.get('.drop-overlay').should('not.exist');
   });
 
-  it('onFilesSelected_nonImageFile_doesNotAddToQueue', () => {
+  it('should not add a non-image file to the upload queue', () => {
     mountDropZone().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.onFilesSelected(makeFileList([makeFile('document.txt', 'text/plain')]));
@@ -74,7 +73,7 @@ describe('DropZoneComponent', () => {
     cy.get('.upload-queue').should('not.exist');
   });
 
-  it('onFilesSelected_validJpeg_addsQueueItemAndCallsUploadAsset', () => {
+  it('should add a queue item and call uploadAsset for a valid JPEG file', () => {
     const uploadSubject = new Subject<unknown>();
     const uploadAsset = cy.stub().returns(uploadSubject.asObservable());
 
@@ -88,7 +87,7 @@ describe('DropZoneComponent', () => {
     cy.get('mat-progress-bar').should('exist');
   });
 
-  it('uploadResponse_202Accepted_showsProcessingIndicatorAndOpensObserveStream', () => {
+  it('should show a processing indicator and open the observe stream on a 202 Accepted response', () => {
     const observeUpload = cy.stub().returns(new MockEventSource());
 
     mountDropZone({ observeUpload } as Partial<AssetService>).then(({ fixture }) => {
@@ -101,7 +100,7 @@ describe('DropZoneComponent', () => {
     cy.get('.status-processing').should('contain.text', 'Processing');
   });
 
-  it('uploadComplete_sseDoneEvent_showsSuccessIconAndEmitsUploadComplete', () => {
+  it('should show a success icon and emit uploadComplete on an SSE done event', () => {
     const uploadComplete = cy.stub();
     const mockEventSource = new MockEventSource();
     const observeUpload = cy.stub().returns(mockEventSource);
@@ -120,7 +119,7 @@ describe('DropZoneComponent', () => {
     cy.get('.status-done').should('exist');
   });
 
-  it('uploadFailure_sseFailedEvent_showsErrorIconAndEmitsUploadComplete', () => {
+  it('should show an error icon and emit uploadComplete on an SSE failed event', () => {
     const uploadComplete = cy.stub();
     const mockEventSource = new MockEventSource();
     const observeUpload = cy.stub().returns(mockEventSource);
@@ -139,7 +138,7 @@ describe('DropZoneComponent', () => {
     cy.get('.status-error').should('exist');
   });
 
-  it('uploadTimeError_415Response_showsErrorIconAndNoFurtherUploadAttempted', () => {
+  it('should show an error icon and attempt no further upload on a 415 response', () => {
     const uploadAsset = cy.stub().returns(throwError(() => new Error('415 Unsupported Media Type')));
 
     mountDropZone({ uploadAsset } as Partial<AssetService>).then(({ fixture }) => {

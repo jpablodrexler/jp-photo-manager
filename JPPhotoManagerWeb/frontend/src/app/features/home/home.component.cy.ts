@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { of } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
@@ -43,7 +42,7 @@ describe('HomeComponent', () => {
     const homeServiceStub: Partial<HomeService> = {
       getStats: cy.stub().returns(of(stats))
     };
-    return mount(HomeComponent, {
+    return cy.mount(HomeComponent, {
       providers: [
         { provide: HomeService, useValue: homeServiceStub },
         provideNoopAnimations(),
@@ -52,54 +51,54 @@ describe('HomeComponent', () => {
     });
   }
 
-  it('ngOnInit_displaysFolderCount', () => {
+  it('should display the folder count on init', () => {
     mountHome({ ...emptyStats, folderCount: 42, assetCount: 100 });
     cy.contains('42').should('exist');
     cy.contains('Folders Catalogued').should('exist');
   });
 
-  it('ngOnInit_displaysAssetCount', () => {
+  it('should display the asset count on init', () => {
     mountHome({ ...emptyStats, folderCount: 10, assetCount: 999 });
     cy.contains('999').should('exist');
     cy.contains('Assets Catalogued').should('exist');
   });
 
-  it('ngOnInit_nullLastCompleted_displaysNever', () => {
+  it('should display "Never" when lastCompleted is null', () => {
     mountHome(emptyStats);
     cy.contains('Never').should('exist');
   });
 
   // --- Task 8.1: Enriched stats ---
 
-  it('richStats_totalSizeCardVisible', () => {
+  it('should show the total size card when stats are rich', () => {
     mountHome(richStats);
     cy.contains('Total Size').should('be.visible');
   });
 
-  it('richStats_duplicatesBadgeVisible_whenDuplicatesExist', () => {
+  it('should show the duplicates badge when duplicates exist', () => {
     mountHome(richStats);
     cy.get('.mat-badge-content').should('exist');
     cy.get('.mat-badge-content').should('not.have.class', 'mat-badge-hidden');
   });
 
-  it('richStats_recentPhotosStrip_hasTwelveThumbnails', () => {
+  it('should show twelve thumbnails in the recent photos strip', () => {
     mountHome(richStats);
     cy.get('.strip-item app-thumbnail').should('have.length', 12);
   });
 
-  it('richStats_recentPhotosStrip_displaysFileSize', () => {
+  it('should display the file size on each thumbnail in the recent photos strip', () => {
     mountHome(richStats);
     cy.get('.strip-item app-thumbnail').first().within(() => {
       cy.get('.thumbnail-size').should('contain', 'MB');
     });
   });
 
-  it('richStats_topFoldersList_hasFiveRows', () => {
+  it('should show five rows in the top folders list', () => {
     mountHome(richStats);
     cy.get('.folder-row').should('have.length', 5);
   });
 
-  it('richStats_topFolders_showsFolderPathAndCount', () => {
+  it('should show the folder path and asset count for each top folder row', () => {
     mountHome(richStats);
     cy.get('.folder-row').first().within(() => {
       cy.get('.folder-path').should('contain', '/photos/vacation');
@@ -109,39 +108,39 @@ describe('HomeComponent', () => {
 
   // --- Task 8.2: Empty library ---
 
-  it('emptyStats_recentPhotosStrip_isHiddenAndShowsEmptyState', () => {
+  it('should hide the recent photos strip and show the empty state when there are no stats', () => {
     mountHome(emptyStats);
     cy.get('.strip-item').should('not.exist');
     cy.get('.empty-state').should('be.visible');
   });
 
-  it('emptyStats_topFolders_sectionNotRendered', () => {
+  it('should not render the top folders section when there are no stats', () => {
     mountHome(emptyStats);
     cy.get('.folder-row').should('not.exist');
   });
 
-  it('emptyStats_totalSizeCard_showsZero', () => {
+  it('should show zero on the total size card when there are no stats', () => {
     mountHome(emptyStats);
     cy.get('.stat-card').contains('Total Size').parents('.stat-card').within(() => {
       cy.get('.stat-value').should('contain', '0 B');
     });
   });
 
-  it('emptyStats_duplicatesBadge_isHidden', () => {
+  it('should hide the duplicates badge when there are no stats', () => {
     mountHome(emptyStats);
     cy.get('.mat-badge-hidden').should('exist');
   });
 
   // --- Task 8.3: Click thumbnail navigates to gallery ---
 
-  it('clickRecentPhoto_navigatesToGalleryWithFolderAndAssetIdParams', () => {
+  it('should navigate to the gallery with the folder and assetId params when a recent photo is clicked', () => {
     const navigateSpy = cy.stub().as('navigate');
 
     const homeServiceStub: Partial<HomeService> = {
       getStats: cy.stub().returns(of(richStats))
     };
 
-    mount(HomeComponent, {
+    cy.mount(HomeComponent, {
       providers: [
         { provide: HomeService, useValue: homeServiceStub },
         provideNoopAnimations(),

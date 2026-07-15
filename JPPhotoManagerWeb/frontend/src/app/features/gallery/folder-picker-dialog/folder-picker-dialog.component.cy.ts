@@ -30,36 +30,36 @@ const mountDialog = (mode: 'move' | 'copy', dialogRef = defaultDialogRef(), fold
 };
 
 describe('FolderPickerDialogComponent', () => {
-  it('title_moveMode_showsMoveTitle', () => {
+  it('should show the move title and button in move mode', () => {
     mountDialog('move');
     cy.contains('Move to Folder').should('be.visible');
     cy.contains('Move here').should('be.visible');
   });
 
-  it('title_copyMode_showsCopyTitle', () => {
+  it('should show the copy title and button in copy mode', () => {
     mountDialog('copy');
     cy.contains('Copy to Folder').should('be.visible');
     cy.contains('Copy here').should('be.visible');
   });
 
-  it('confirmButton_beforeSelection_isDisabled', () => {
+  it('should disable the confirm button before a folder is selected', () => {
     mountDialog('move');
     cy.contains('Move here').should('be.disabled');
   });
 
-  it('confirmButton_afterValidSelection_isEnabled', () => {
+  it('should enable the confirm button after a valid folder is selected', () => {
     mountDialog('move');
     cy.contains('Downloads').click();
     cy.contains('Move here').should('not.be.disabled');
   });
 
-  it('confirmButton_whenDestinationEqualsSource_isDisabled', () => {
+  it('should disable the confirm button when the destination equals the source', () => {
     mountDialog('move');
     cy.contains('Pictures').click();
     cy.contains('Move here').should('be.disabled');
   });
 
-  it('cancel_clicked_closesWithNull', () => {
+  it('should close the dialog with null when Cancel is clicked', () => {
     const dialogRef = defaultDialogRef();
     mountDialog('move', dialogRef);
     cy.contains('Cancel').click();

@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { EventEmitter, SimpleChange } from '@angular/core';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';

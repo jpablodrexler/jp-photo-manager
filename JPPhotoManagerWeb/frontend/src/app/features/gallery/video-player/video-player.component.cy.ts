@@ -1,4 +1,3 @@
-import { mount } from 'cypress/angular';
 import { signal } from '@angular/core';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { VideoPlayerComponent } from './video-player.component';
