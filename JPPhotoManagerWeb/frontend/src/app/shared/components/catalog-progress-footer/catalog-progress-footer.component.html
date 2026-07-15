@@ -22,7 +22,7 @@
   <button mat-icon-button
           class="catalog-refresh-btn"
           [disabled]="state === 'running'"
-          (click)="connect()"
+          (click)="reconnect.emit()"
           matTooltip="Reconnect to catalog stream"
           aria-label="Reconnect to catalog stream">
     <mat-icon>refresh</mat-icon>

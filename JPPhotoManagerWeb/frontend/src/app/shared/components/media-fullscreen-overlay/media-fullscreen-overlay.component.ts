@@ -1,7 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MediaPlayerService } from '../../../core/services/media-player.service';
+import { Asset } from '../../../core/models/asset.model';
 
 @Component({
   selector: 'app-media-fullscreen-overlay',
@@ -11,7 +11,17 @@ import { MediaPlayerService } from '../../../core/services/media-player.service'
   styleUrl: './media-fullscreen-overlay.component.scss',
 })
 export class MediaFullscreenOverlayComponent {
-  readonly mediaPlayer = inject(MediaPlayerService);
+  @Input() track: Asset | null = null;
+  @Input() currentTime = 0;
+  @Input() duration = 0;
+  @Input() isPlaying = false;
+
+  @Output() closed = new EventEmitter<void>();
+  @Output() seekRequested = new EventEmitter<number>();
+  @Output() previous = new EventEmitter<void>();
+  @Output() stopped = new EventEmitter<void>();
+  @Output() playPauseToggled = new EventEmitter<void>();
+  @Output() nextTrack = new EventEmitter<void>();
 
   formatTime(seconds: number): string {
     if (!isFinite(seconds) || isNaN(seconds)) return '0:00';
@@ -22,6 +32,6 @@ export class MediaFullscreenOverlayComponent {
 
   onSeek(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.mediaPlayer.seek(Number(input.value));
+    this.seekRequested.emit(Number(input.value));
   }
 }

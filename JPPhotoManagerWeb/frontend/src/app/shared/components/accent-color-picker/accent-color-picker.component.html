@@ -4,7 +4,7 @@
       class="swatch"
       [style.background-color]="swatch.value"
       [attr.aria-label]="swatch.label"
-      [class.active]="(accentColor$ | async) === swatch.value"
+      [class.active]="accentColor === swatch.value"
       (click)="select(swatch.value)"
     >
       <mat-icon class="check-icon">check</mat-icon>

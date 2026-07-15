@@ -1,4 +1,5 @@
 import { mount } from 'cypress/angular';
+import { EventEmitter, SimpleChange } from '@angular/core';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { of, throwError } from 'rxjs';
 import { ExifPanelComponent } from './exif-panel.component';
@@ -45,7 +46,7 @@ const defaultTagService = (): Partial<TagService> => ({
 });
 
 describe('ExifPanelComponent', () => {
-  it('panel_visibleFalse_panelContentHidden', () => {
+  it('should hide the panel content when not visible', () => {
     const assetService = { getExifMetadata: cy.stub().returns(of(null)) } as Partial<AssetService>;
 
     cy.mount(ExifPanelComponent, {
@@ -60,7 +61,7 @@ describe('ExifPanelComponent', () => {
     cy.get('.exif-panel').should('not.be.visible');
   });
 
-  it('panel_visibleTrue_panelContentVisible', () => {
+  it('should show the panel content when visible', () => {
     const assetService = { getExifMetadata: cy.stub().returns(of(null)) } as Partial<AssetService>;
 
     cy.mount(ExifPanelComponent, {
@@ -75,7 +76,7 @@ describe('ExifPanelComponent', () => {
     cy.get('.exif-panel').should('be.visible');
   });
 
-  it('panel_withExifData_displaysNonNullFields', () => {
+  it('should display non-null EXIF fields', () => {
     const assetService = { getExifMetadata: cy.stub().returns(of(exifWithData)) } as Partial<AssetService>;
 
     cy.mount(ExifPanelComponent, {
@@ -93,7 +94,7 @@ describe('ExifPanelComponent', () => {
     cy.contains('50mm').should('be.visible');
   });
 
-  it('panel_allNullExif_showsNoDataMessage', () => {
+  it('should show a no-data message when all EXIF fields are null', () => {
     const assetService = { getExifMetadata: cy.stub().returns(of(null)) } as Partial<AssetService>;
 
     cy.mount(ExifPanelComponent, {
@@ -108,7 +109,7 @@ describe('ExifPanelComponent', () => {
     cy.contains('No EXIF data available').should('be.visible');
   });
 
-  it('panel_closeButtonClick_emitsClosed', () => {
+  it('should emit closed when the close button is clicked', () => {
     const closedSpy = cy.spy().as('closedSpy');
     const assetService = { getExifMetadata: cy.stub().returns(of(exifWithData)) } as Partial<AssetService>;
 
@@ -116,7 +117,7 @@ describe('ExifPanelComponent', () => {
       componentProperties: {
         asset: makeAsset(),
         visible: true,
-        closed: { emit: closedSpy } as any,
+        closed: { emit: closedSpy } as unknown as EventEmitter<void>,
       },
       providers: [
         provideNoopAnimations(),
@@ -129,7 +130,7 @@ describe('ExifPanelComponent', () => {
     cy.get('@closedSpy').should('have.been.calledOnce');
   });
 
-  it('panel_sameAssetOpenTwice_issuesOnlyOneHttpRequest', () => {
+  it('should issue only one HTTP request when the same asset is opened twice', () => {
     const getExifStub = cy.stub().returns(of(exifWithData));
     const assetService = { getExifMetadata: getExifStub } as Partial<AssetService>;
     const asset = makeAsset();
@@ -144,15 +145,15 @@ describe('ExifPanelComponent', () => {
       ],
     }).then(({ component }) => {
       component.visible = false;
-      component.ngOnChanges({ visible: {} as any });
+      component.ngOnChanges({ visible: new SimpleChange(true, false, false) });
       component.visible = true;
-      component.ngOnChanges({ visible: {} as any });
+      component.ngOnChanges({ visible: new SimpleChange(false, true, false) });
     });
 
     cy.wrap(getExifStub).should('have.been.calledOnce');
   });
 
-  it('tags_displaysExistingTags', () => {
+  it('should display existing tags', () => {
     const assetService = { getExifMetadata: cy.stub().returns(of(null)) } as Partial<AssetService>;
 
     cy.mount(ExifPanelComponent, {
@@ -168,7 +169,7 @@ describe('ExifPanelComponent', () => {
     cy.contains('family').should('be.visible');
   });
 
-  it('tags_addTagViaInput_callsServiceAndUpdatesChips', () => {
+  it('should call the service and update chips when adding a tag via input', () => {
     const assetService = { getExifMetadata: cy.stub().returns(of(null)) } as Partial<AssetService>;
     const addTagStub = cy.stub().returns(of(undefined));
     const tagService = { ...defaultTagService(), addTag: addTagStub } as Partial<TagService>;
@@ -187,7 +188,7 @@ describe('ExifPanelComponent', () => {
     cy.contains('beach').should('be.visible');
   });
 
-  it('tags_removeTag_callsServiceAndRemovesChip', () => {
+  it('should call the service and remove the chip when removing a tag', () => {
     const assetService = { getExifMetadata: cy.stub().returns(of(null)) } as Partial<AssetService>;
     const removeTagStub = cy.stub().returns(of(undefined));
     const tagService = { ...defaultTagService(), removeTag: removeTagStub } as Partial<TagService>;
@@ -207,7 +208,7 @@ describe('ExifPanelComponent', () => {
     cy.contains('sunset').should('not.exist');
   });
 
-  it('tags_autocomplete_showsSuggestionsOnInput', () => {
+  it('should show autocomplete suggestions on input', () => {
     const assetService = { getExifMetadata: cy.stub().returns(of(null)) } as Partial<AssetService>;
     const searchTagsStub = cy.stub().returns(of(['vacation', 'valley']));
     const tagService = { ...defaultTagService(), searchTags: searchTagsStub } as Partial<TagService>;

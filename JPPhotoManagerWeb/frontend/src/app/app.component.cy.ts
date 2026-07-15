@@ -33,7 +33,7 @@ function buildProviders(isLoggedIn: boolean, isDark: Observable<boolean>) {
   const authServiceStub: Partial<AuthService> = {
     isLoggedIn: () => isLoggedIn,
     isAdmin: cy.stub().returns(false),
-    logout: (() => {}) as unknown as () => void,
+    logout: () => of(undefined),
   };
   const bpObsStub: Partial<BreakpointObserver> = {
     observe: cy.stub().returns(of({ matches: false, breakpoints: {} })),
@@ -90,7 +90,7 @@ describe('AppComponent — responsive navigation', () => {
     const authServiceStub: Partial<AuthService> = {
       isLoggedIn: () => true,
       isAdmin: cy.stub().returns(false),
-      logout: cy.stub() as unknown as () => void,
+      logout: cy.stub().returns(of(undefined)) as unknown as () => Observable<void>,
     };
     const bpObs: Partial<BreakpointObserver> = {
       observe: cy.stub().returns(of({ matches: isMobileMatches, breakpoints: {} })),

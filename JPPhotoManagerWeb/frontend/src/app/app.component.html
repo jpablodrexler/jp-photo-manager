@@ -26,7 +26,7 @@
           {{ (isDark$ | async) ? 'Switch to light' : 'Switch to dark' }}
         </button>
         <div style="padding: 0 8px;">
-          <app-accent-color-picker />
+          <app-accent-color-picker [accentColor]="(accentColor$ | async) ?? null" (accentColorSelected)="selectAccentColor($event)" />
         </div>
         <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon> Logout</button>
         <button mat-menu-item (click)="openAbout()"><mat-icon>info</mat-icon> About</button>
@@ -68,7 +68,7 @@
         <mat-icon>palette</mat-icon>
       </button>
       <mat-menu #colorMenu="matMenu">
-        <app-accent-color-picker />
+        <app-accent-color-picker [accentColor]="(accentColor$ | async) ?? null" (accentColorSelected)="selectAccentColor($event)" />
       </mat-menu>
       <button mat-icon-button (click)="toggleTheme()" [attr.aria-label]="(isDark$ | async) ? 'Switch to light mode' : 'Switch to dark mode'">
         <mat-icon>{{ (isDark$ | async) ? 'light_mode' : 'dark_mode' }}</mat-icon>
@@ -97,7 +97,13 @@
 </mat-sidenav-container>
 
 @if (isLoggedIn) {
-  <app-catalog-progress-footer />
+  <app-catalog-progress-footer
+    [state]="catalogState"
+    [percentCompleted]="catalogPercentCompleted"
+    [currentStatusText]="catalogStatusText"
+    [lastCompletedAt]="catalogLastCompletedAt"
+    (reconnect)="connectCatalog()"
+  />
 }
 
 @if (mediaPlayer.currentTrack() && !mediaPlayer.isVideoPlaying()) {
@@ -107,5 +113,16 @@
 }
 
 @if (mediaPlayer.isAudioFullscreen()) {
-  <app-media-fullscreen-overlay />
+  <app-media-fullscreen-overlay
+    [track]="mediaPlayer.currentTrack()"
+    [currentTime]="mediaPlayer.currentTime()"
+    [duration]="mediaPlayer.duration()"
+    [isPlaying]="mediaPlayer.isPlaying()"
+    (closed)="mediaPlayer.isAudioFullscreen.set(false)"
+    (seekRequested)="mediaPlayer.seek($event)"
+    (previous)="mediaPlayer.prev()"
+    (stopped)="mediaPlayer.stop()"
+    (playPauseToggled)="mediaPlayer.togglePause()"
+    (nextTrack)="mediaPlayer.next()"
+  />
 }

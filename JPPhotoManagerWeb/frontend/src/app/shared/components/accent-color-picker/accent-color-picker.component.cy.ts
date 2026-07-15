@@ -1,41 +1,19 @@
-import { BehaviorSubject } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { AccentColorPickerComponent } from './accent-color-picker.component';
-import { ThemeService } from '../../../core/services/theme.service';
 
 describe('AccentColorPickerComponent', () => {
-  describe('with real ThemeService', () => {
-    beforeEach(() => {
-      cy.mount(AccentColorPickerComponent, {
-        providers: [provideNoopAnimations()],
-      });
+  it('mount_rendersEightSwatches', () => {
+    cy.mount(AccentColorPickerComponent, {
+      providers: [provideNoopAnimations()],
     });
 
-    it('mount_rendersEightSwatches', () => {
-      cy.get('.swatch').should('have.length', 8);
-    });
-
-    it('swatchClick_updatesActiveClass', () => {
-      cy.get('.swatch').eq(2).click();
-      cy.get('.swatch').eq(2).should('have.class', 'active');
-      cy.get('.swatch').not(':eq(2)').each($el => {
-        cy.wrap($el).should('not.have.class', 'active');
-      });
-    });
+    cy.get('.swatch').should('have.length', 8);
   });
 
-  it('mount_activeSwatchHasCheckIcon', () => {
-    const accentSubject = new BehaviorSubject<string>('#2e7d32');
-    const themeServiceStub: Partial<ThemeService> = {
-      accentColor$: accentSubject.asObservable(),
-      setAccentColor: cy.stub(),
-    };
-
+  it('accentColorInput_marksMatchingSwatchActive', () => {
     cy.mount(AccentColorPickerComponent, {
-      providers: [
-        provideNoopAnimations(),
-        { provide: ThemeService, useValue: themeServiceStub },
-      ],
+      componentProperties: { accentColor: '#2e7d32' },
+      providers: [provideNoopAnimations()],
     });
 
     cy.get('.swatch').first().should('have.class', 'active');
@@ -45,23 +23,13 @@ describe('AccentColorPickerComponent', () => {
     });
   });
 
-  it('swatchClick_callsSetAccentColor', () => {
-    const accentSubject = new BehaviorSubject<string>('#2e7d32');
-    const setAccentColorStub = cy.stub();
-    const themeServiceStub: Partial<ThemeService> = {
-      accentColor$: accentSubject.asObservable(),
-      setAccentColor: setAccentColorStub,
-    };
-
+  it('swatchClick_emitsAccentColorSelected', () => {
     cy.mount(AccentColorPickerComponent, {
-      providers: [
-        provideNoopAnimations(),
-        { provide: ThemeService, useValue: themeServiceStub },
-      ],
+      providers: [provideNoopAnimations()],
+    }).then(({ fixture }) => {
+      cy.spy(fixture.componentInstance.accentColorSelected, 'emit').as('selectedSpy');
+      cy.get('.swatch').eq(1).click();
+      cy.get('@selectedSpy').should('have.been.calledOnceWith', '#1565c0');
     });
-
-    cy.get('.swatch').eq(1).click();
-    cy.wrap(setAccentColorStub).should('have.been.calledOnce');
-    cy.wrap(setAccentColorStub).should('have.been.calledWith', '#1565c0');
   });
 });

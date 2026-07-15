@@ -17,7 +17,6 @@ import { MatInputModule } from "@angular/material/input";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatNativeDateModule } from "@angular/material/core";
 import { MatSelectModule } from "@angular/material/select";
-import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatMenuModule } from "@angular/material/menu";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatSidenavModule } from "@angular/material/sidenav";
@@ -31,7 +30,7 @@ import { Subject, Subscription } from "rxjs";
 import { debounceTime, distinctUntilChanged, takeUntil } from "rxjs/operators";
 import { ScrollingModule } from "@angular/cdk/scrolling";
 import { FolderNavComponent } from "../folder-nav/folder-nav.component";
-import { ExifPanelComponent } from "../../shared/components/exif-panel/exif-panel.component";
+import { ExifPanelComponent } from "./exif-panel/exif-panel.component";
 import { FileSizePipe } from "../../shared/pipes/file-size.pipe";
 import { AssetService } from "../../core/services/asset.service";
 import { TagService } from "../../core/services/tag.service";
@@ -70,7 +69,6 @@ type ViewType = "grid" | "timeline";
     MatDatepickerModule,
     MatNativeDateModule,
     MatSelectModule,
-    MatCheckboxModule,
     MatMenuModule,
     MatSnackBarModule,
     MatDialogModule,
@@ -84,9 +82,7 @@ type ViewType = "grid" | "timeline";
     FileSizePipe,
     DropZoneComponent,
     TimelineViewComponent,
-    FolderPickerDialogComponent,
     SocialMediaCropComponent,
-    BatchRenameDialogComponent,
   ],
   templateUrl: "./gallery.component.html",
   styleUrl: "./gallery.component.scss",

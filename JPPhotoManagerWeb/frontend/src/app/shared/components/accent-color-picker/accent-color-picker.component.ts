@@ -1,19 +1,16 @@
-import { AsyncPipe } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
-import { ThemeService } from '../../../core/services/theme.service';
 
 @Component({
   selector: 'app-accent-color-picker',
   standalone: true,
-  imports: [AsyncPipe, MatIconModule],
+  imports: [MatIconModule],
   templateUrl: './accent-color-picker.component.html',
   styleUrl: './accent-color-picker.component.scss',
 })
 export class AccentColorPickerComponent {
-  private readonly themeService = inject(ThemeService);
-
-  readonly accentColor$ = this.themeService.accentColor$;
+  @Input() accentColor: string | null = null;
+  @Output() accentColorSelected = new EventEmitter<string>();
 
   readonly PALETTE = [
     { label: 'Forest Green', value: '#2e7d32' },
@@ -27,6 +24,6 @@ export class AccentColorPickerComponent {
   ];
 
   select(color: string): void {
-    this.themeService.setAccentColor(color);
+    this.accentColorSelected.emit(color);
   }
 }

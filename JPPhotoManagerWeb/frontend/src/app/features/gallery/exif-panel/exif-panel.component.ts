@@ -4,7 +4,6 @@ import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
-import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule, MatChipInputEvent } from '@angular/material/chips';
 import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
@@ -28,7 +27,6 @@ import { ExifMetadata } from '../../../core/models/exif-metadata.model';
     MatButtonModule,
     MatExpansionModule,
     MatIconModule,
-    MatListModule,
     MatProgressSpinnerModule,
     MatChipsModule,
     MatAutocompleteModule,
@@ -39,7 +37,7 @@ import { ExifMetadata } from '../../../core/models/exif-metadata.model';
   styleUrl: './exif-panel.component.scss'
 })
 export class ExifPanelComponent implements OnChanges, OnInit, OnDestroy {
-  @Input() asset!: Asset;
+  @Input({ required: true }) asset!: Asset;
   @Input() visible = false;
   @Output() closed = new EventEmitter<void>();
 
@@ -70,7 +68,7 @@ export class ExifPanelComponent implements OnChanges, OnInit, OnDestroy {
       takeUntil(this.destroy$),
     ).subscribe(q => {
       if (q && q.length >= 1) {
-        this.tagService.searchTags(q).subscribe(tags => {
+        this.tagService.searchTags(q).pipe(takeUntil(this.destroy$)).subscribe(tags => {
           this.tagSuggestions = tags.filter(t => !(this.asset?.tags ?? []).includes(t));
         });
       } else {
