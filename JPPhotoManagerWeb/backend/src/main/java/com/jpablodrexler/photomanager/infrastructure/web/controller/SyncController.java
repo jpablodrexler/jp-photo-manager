@@ -1,10 +1,11 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.domain.model.SyncDirectoriesDefinition;
 import com.jpablodrexler.photomanager.domain.port.in.sync.GetSyncConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.sync.SaveSyncConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.sync.SyncAssetsUseCase;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.shared.SyncDirectoryPairDto;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.SyncWebMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -27,6 +28,7 @@ public class SyncController {
     private final SaveSyncConfigUseCase saveSyncConfigUseCase;
     private final SyncAssetsUseCase syncAssetsUseCase;
     private final KafkaProgressRegistry kafkaProgressRegistry;
+    private final SyncWebMapper syncWebMapper;
 
     @Operation(summary = "Get sync directory pair configuration")
     @ApiResponses({
@@ -34,8 +36,8 @@ public class SyncController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping("/configuration")
-    public ResponseEntity<List<SyncDirectoriesDefinition>> getConfiguration() {
-        return ResponseEntity.ok(getSyncConfigUseCase.execute());
+    public ResponseEntity<List<SyncDirectoryPairDto>> getConfiguration() {
+        return ResponseEntity.ok(syncWebMapper.toDtoList(getSyncConfigUseCase.execute()));
     }
 
     @Operation(summary = "Save sync directory pair configuration")
@@ -45,8 +47,8 @@ public class SyncController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @PutMapping("/configuration")
-    public ResponseEntity<Void> setConfiguration(@Valid @RequestBody List<SyncDirectoriesDefinition> definitions) {
-        saveSyncConfigUseCase.execute(definitions);
+    public ResponseEntity<Void> setConfiguration(@Valid @RequestBody List<SyncDirectoryPairDto> definitions) {
+        saveSyncConfigUseCase.execute(syncWebMapper.toDomainList(definitions));
         return ResponseEntity.noContent().build();
     }
 

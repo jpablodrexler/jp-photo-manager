@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.application.usecase.asset;
 
 import com.jpablodrexler.photomanager.domain.model.Asset;
-import com.jpablodrexler.photomanager.domain.model.CropAssetRequest;
+import com.jpablodrexler.photomanager.domain.model.CropRegion;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
@@ -67,7 +67,7 @@ class CropAssetUseCaseImplTest {
             return null;
         }).when(storagePort).copyFile(any(), any());
 
-        sut.execute(1L, new CropAssetRequest("INSTAGRAM_POST", 0, 0, 400, 400));
+        sut.execute(1L, new CropRegion("INSTAGRAM_POST", 0, 0, 400, 400));
 
         BufferedImage result = ImageIO.read(new ByteArrayInputStream(capturedBytes.get()));
         assertThat(result.getWidth()).isEqualTo(1080);
@@ -85,7 +85,7 @@ class CropAssetUseCaseImplTest {
 
         ArgumentCaptor<String> destCaptor = ArgumentCaptor.forClass(String.class);
 
-        sut.execute(1L, new CropAssetRequest("TWITTER_HEADER", 0, 0, 150, 50));
+        sut.execute(1L, new CropRegion("TWITTER_HEADER", 0, 0, 150, 50));
 
         verify(storagePort).copyFile(any(), destCaptor.capture());
         assertThat(destCaptor.getValue()).endsWith("_TWITTER_HEADER.jpg");
@@ -101,7 +101,7 @@ class CropAssetUseCaseImplTest {
         when(assetRepository.findByFolderAndFileName(eq(folder), eq("photo_INSTAGRAM_POST.jpg")))
                 .thenReturn(Optional.of(existing));
 
-        Asset result = sut.execute(1L, new CropAssetRequest("INSTAGRAM_POST", 0, 0, 200, 200));
+        Asset result = sut.execute(1L, new CropRegion("INSTAGRAM_POST", 0, 0, 200, 200));
 
         assertThat(result.getAssetId()).isEqualTo(99L);
         verify(catalogFolderPort, never()).createAsset(any(), any());
@@ -114,7 +114,7 @@ class CropAssetUseCaseImplTest {
         when(assetRepository.findById(1L)).thenReturn(Optional.of(asset));
         when(storagePort.readFileBytes(any())).thenReturn(imageBytes);
 
-        CropAssetRequest request = new CropAssetRequest("INSTAGRAM_POST", 50, 50, 100, 100);
+        CropRegion request = new CropRegion("INSTAGRAM_POST", 50, 50, 100, 100);
 
         assertThatThrownBy(() -> sut.execute(1L, request))
                 .isInstanceOf(IllegalArgumentException.class)

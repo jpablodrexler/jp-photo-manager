@@ -2,9 +2,9 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpablodrexler.photomanager.domain.port.out.JwtTokenPort;
-import com.jpablodrexler.photomanager.infrastructure.service.RefreshTokenServiceImpl;
-import com.jpablodrexler.photomanager.infrastructure.service.UserServiceImpl;
-import com.jpablodrexler.photomanager.infrastructure.web.AuthRequest;
+import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenService;
+import com.jpablodrexler.photomanager.domain.port.out.UserService;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.AuthRequestDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -33,11 +33,11 @@ class AuthControllerTest {
     ObjectMapper objectMapper;
 
     @MockitoBean
-    UserServiceImpl userService;
+    UserService userService;
     @MockitoBean
     JwtTokenPort jwtTokenService;
     @MockitoBean
-    RefreshTokenServiceImpl refreshTokenService;
+    RefreshTokenService refreshTokenService;
 
     // --- POST /api/auth/login ---
 
@@ -48,7 +48,7 @@ class AuthControllerTest {
         when(jwtTokenService.tokenExpiry("jwt-token")).thenReturn(expiry);
         when(refreshTokenService.issueRefreshToken("admin")).thenReturn("refresh-token");
 
-        AuthRequest request = new AuthRequest("admin", "admin");
+        AuthRequestDto request = new AuthRequestDto("admin", "admin");
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -62,7 +62,7 @@ class AuthControllerTest {
         when(userService.authenticate("admin", "wrong"))
                 .thenThrow(new BadCredentialsException("Bad credentials"));
 
-        AuthRequest request = new AuthRequest("admin", "wrong");
+        AuthRequestDto request = new AuthRequestDto("admin", "wrong");
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -71,7 +71,7 @@ class AuthControllerTest {
 
     @Test
     void login_blankUsername_returns400() throws Exception {
-        AuthRequest request = new AuthRequest("", "pass");
+        AuthRequestDto request = new AuthRequestDto("", "pass");
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

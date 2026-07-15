@@ -1,9 +1,12 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.domain.model.AssetSummaryDto;
+import com.jpablodrexler.photomanager.domain.model.AssetSummary;
 import com.jpablodrexler.photomanager.domain.model.FolderStat;
 import com.jpablodrexler.photomanager.domain.model.HomeStats;
 import com.jpablodrexler.photomanager.domain.port.in.home.GetHomeStatsUseCase;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetSummaryResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.HomeStatsResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.HomeWebMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -27,6 +30,8 @@ class HomeControllerTest {
 
     @MockitoBean
     GetHomeStatsUseCase getHomeStatsUseCase;
+    @MockitoBean
+    HomeWebMapper homeWebMapper;
 
     // --- GET /api/home/stats ---
 
@@ -34,7 +39,9 @@ class HomeControllerTest {
     void getStats_returnsCountsAndLastCompleted() throws Exception {
         Instant lastCatalog = Instant.parse("2025-01-15T10:00:00Z");
         HomeStats stats = new HomeStats(42L, 1000L, lastCatalog, 0L, 0L, List.of(), List.of());
+        HomeStatsResponseDto dto = new HomeStatsResponseDto(42L, 1000L, lastCatalog, 0L, 0L, List.of(), List.of());
         when(getHomeStatsUseCase.execute()).thenReturn(stats);
+        when(homeWebMapper.toDto(stats)).thenReturn(dto);
 
         mockMvc.perform(get("/api/home/stats"))
                 .andExpect(status().isOk())
@@ -46,7 +53,9 @@ class HomeControllerTest {
     @Test
     void getStats_noCompletedCatalog_returnsNullTimestamp() throws Exception {
         HomeStats stats = new HomeStats(0L, 0L, null, 0L, 0L, List.of(), List.of());
+        HomeStatsResponseDto dto = new HomeStatsResponseDto(0L, 0L, null, 0L, 0L, List.of(), List.of());
         when(getHomeStatsUseCase.execute()).thenReturn(stats);
+        when(homeWebMapper.toDto(stats)).thenReturn(dto);
 
         mockMvc.perform(get("/api/home/stats"))
                 .andExpect(status().isOk())
@@ -58,7 +67,9 @@ class HomeControllerTest {
     @Test
     void getStats_returnsTotalFileSizeAndDuplicateCount() throws Exception {
         HomeStats stats = new HomeStats(5L, 200L, null, 26_112_000_000L, 3L, List.of(), List.of());
+        HomeStatsResponseDto dto = new HomeStatsResponseDto(5L, 200L, null, 26_112_000_000L, 3L, List.of(), List.of());
         when(getHomeStatsUseCase.execute()).thenReturn(stats);
+        when(homeWebMapper.toDto(stats)).thenReturn(dto);
 
         mockMvc.perform(get("/api/home/stats"))
                 .andExpect(status().isOk())
@@ -72,7 +83,9 @@ class HomeControllerTest {
                 new FolderStat("/photos/vacation", 500L),
                 new FolderStat("/photos/family", 200L));
         HomeStats stats = new HomeStats(2L, 700L, null, 0L, 0L, topFolders, List.of());
+        HomeStatsResponseDto dto = new HomeStatsResponseDto(2L, 700L, null, 0L, 0L, topFolders, List.of());
         when(getHomeStatsUseCase.execute()).thenReturn(stats);
+        when(homeWebMapper.toDto(stats)).thenReturn(dto);
 
         mockMvc.perform(get("/api/home/stats"))
                 .andExpect(status().isOk())
@@ -84,11 +97,16 @@ class HomeControllerTest {
 
     @Test
     void getStats_returnsRecentAssetsList() throws Exception {
-        List<AssetSummaryDto> recent = List.of(
-                new AssetSummaryDto(1L, "sunset.jpg", "/photos/vacation", "/api/assets/1/thumbnail", 1024L),
-                new AssetSummaryDto(2L, "beach.jpg", "/photos/summer", "/api/assets/2/thumbnail", 2048L));
+        List<AssetSummary> recent = List.of(
+                new AssetSummary(1L, "sunset.jpg", "/photos/vacation", "/api/assets/1/thumbnail", 1024L),
+                new AssetSummary(2L, "beach.jpg", "/photos/summer", "/api/assets/2/thumbnail", 2048L));
+        List<AssetSummaryResponseDto> recentDtos = List.of(
+                new AssetSummaryResponseDto(1L, "sunset.jpg", "/photos/vacation", "/api/assets/1/thumbnail", 1024L),
+                new AssetSummaryResponseDto(2L, "beach.jpg", "/photos/summer", "/api/assets/2/thumbnail", 2048L));
         HomeStats stats = new HomeStats(1L, 2L, null, 0L, 0L, List.of(), recent);
+        HomeStatsResponseDto dto = new HomeStatsResponseDto(1L, 2L, null, 0L, 0L, List.of(), recentDtos);
         when(getHomeStatsUseCase.execute()).thenReturn(stats);
+        when(homeWebMapper.toDto(stats)).thenReturn(dto);
 
         mockMvc.perform(get("/api/home/stats"))
                 .andExpect(status().isOk())

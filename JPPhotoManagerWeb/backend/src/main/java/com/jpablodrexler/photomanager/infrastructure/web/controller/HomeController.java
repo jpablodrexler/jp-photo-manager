@@ -1,7 +1,8 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.domain.model.HomeStats;
 import com.jpablodrexler.photomanager.domain.port.in.home.GetHomeStatsUseCase;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.HomeStatsResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.HomeWebMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class HomeController {
 
     private final GetHomeStatsUseCase getHomeStatsUseCase;
+    private final HomeWebMapper homeWebMapper;
 
     @Operation(summary = "Get dashboard statistics")
     @ApiResponses({
@@ -23,7 +25,7 @@ public class HomeController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping("/stats")
-    public HomeStats getStats() {
-        return getHomeStatsUseCase.execute();
+    public HomeStatsResponseDto getStats() {
+        return homeWebMapper.toDto(getHomeStatsUseCase.execute());
     }
 }

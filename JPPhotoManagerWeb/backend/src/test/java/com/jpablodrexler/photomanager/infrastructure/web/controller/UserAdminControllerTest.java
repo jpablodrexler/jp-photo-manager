@@ -6,8 +6,8 @@ import com.jpablodrexler.photomanager.domain.port.in.user.CreateUserUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.user.DeleteUserUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.user.ListUsersUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.user.UpdatePasswordUseCase;
-import com.jpablodrexler.photomanager.infrastructure.web.CreateUserRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.UpdatePasswordRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.CreateUserRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.UpdatePasswordRequestDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -75,7 +75,7 @@ class UserAdminControllerTest {
         UserSummary created = new UserSummary(id, "bob", Instant.now());
         when(createUserUseCase.execute("bob", "secret123", "USER")).thenReturn(created);
 
-        CreateUserRequest request = new CreateUserRequest("bob", "secret123");
+        CreateUserRequestDto request = new CreateUserRequestDto("bob", "secret123");
         mockMvc.perform(post("/api/admin/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -86,7 +86,7 @@ class UserAdminControllerTest {
 
     @Test
     void createUser_blankUsername_returns400() throws Exception {
-        CreateUserRequest request = new CreateUserRequest("", "secret123");
+        CreateUserRequestDto request = new CreateUserRequestDto("", "secret123");
         mockMvc.perform(post("/api/admin/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -100,7 +100,7 @@ class UserAdminControllerTest {
         UUID id = UUID.randomUUID();
         doNothing().when(updatePasswordUseCase).execute(eq(id), eq("newpass"));
 
-        UpdatePasswordRequest request = new UpdatePasswordRequest("newpass");
+        UpdatePasswordRequestDto request = new UpdatePasswordRequestDto("newpass");
         mockMvc.perform(patch("/api/admin/users/" + id + "/password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

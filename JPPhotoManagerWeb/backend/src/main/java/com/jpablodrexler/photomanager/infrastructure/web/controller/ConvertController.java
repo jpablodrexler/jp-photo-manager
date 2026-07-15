@@ -1,10 +1,11 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.domain.model.ConvertDirectoriesDefinition;
 import com.jpablodrexler.photomanager.domain.port.in.convert.ConvertAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.convert.GetConvertConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.convert.SaveConvertConfigUseCase;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.shared.ConvertDirectoryPairDto;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.ConvertWebMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -27,6 +28,7 @@ public class ConvertController {
     private final SaveConvertConfigUseCase saveConvertConfigUseCase;
     private final ConvertAssetsUseCase convertAssetsUseCase;
     private final KafkaProgressRegistry kafkaProgressRegistry;
+    private final ConvertWebMapper convertWebMapper;
 
     @Operation(summary = "Get convert directory pair configuration")
     @ApiResponses({
@@ -34,8 +36,8 @@ public class ConvertController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping("/configuration")
-    public ResponseEntity<List<ConvertDirectoriesDefinition>> getConfiguration() {
-        return ResponseEntity.ok(getConvertConfigUseCase.execute());
+    public ResponseEntity<List<ConvertDirectoryPairDto>> getConfiguration() {
+        return ResponseEntity.ok(convertWebMapper.toDtoList(getConvertConfigUseCase.execute()));
     }
 
     @Operation(summary = "Save convert directory pair configuration")
@@ -45,8 +47,8 @@ public class ConvertController {
         @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @PutMapping("/configuration")
-    public ResponseEntity<Void> setConfiguration(@Valid @RequestBody List<ConvertDirectoriesDefinition> definitions) {
-        saveConvertConfigUseCase.execute(definitions);
+    public ResponseEntity<Void> setConfiguration(@Valid @RequestBody List<ConvertDirectoryPairDto> definitions) {
+        saveConvertConfigUseCase.execute(convertWebMapper.toDomainList(definitions));
         return ResponseEntity.noContent().build();
     }
 

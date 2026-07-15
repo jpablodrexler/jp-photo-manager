@@ -6,6 +6,8 @@ import com.jpablodrexler.photomanager.domain.port.in.sync.GetSyncConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.sync.SaveSyncConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.sync.SyncAssetsUseCase;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.shared.SyncDirectoryPairDto;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.SyncWebMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -42,13 +44,17 @@ class SyncControllerTest {
     SyncAssetsUseCase syncAssetsUseCase;
     @MockitoBean
     KafkaProgressRegistry kafkaProgressRegistry;
+    @MockitoBean
+    SyncWebMapper syncWebMapper;
 
     // --- GET /api/sync/configuration ---
 
     @Test
     void getConfiguration_returns200WithDefinitions() throws Exception {
         SyncDirectoriesDefinition def = buildDef("/src", "/dst");
+        SyncDirectoryPairDto dto = buildDto("/src", "/dst");
         when(getSyncConfigUseCase.execute()).thenReturn(List.of(def));
+        when(syncWebMapper.toDtoList(List.of(def))).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/sync/configuration"))
                 .andExpect(status().isOk())
@@ -59,6 +65,7 @@ class SyncControllerTest {
     @Test
     void getConfiguration_emptyList_returns200WithEmptyArray() throws Exception {
         when(getSyncConfigUseCase.execute()).thenReturn(List.of());
+        when(syncWebMapper.toDtoList(List.of())).thenReturn(List.of());
 
         mockMvc.perform(get("/api/sync/configuration"))
                 .andExpect(status().isOk())
@@ -70,14 +77,27 @@ class SyncControllerTest {
     @Test
     void setConfiguration_validBody_returns204() throws Exception {
         doNothing().when(saveSyncConfigUseCase).execute(any());
-        List<SyncDirectoriesDefinition> defs = List.of(buildDef("/src", "/dst"));
+        List<SyncDirectoryPairDto> dtos = List.of(buildDto("/src", "/dst"));
+        when(syncWebMapper.toDomainList(any())).thenReturn(List.of(buildDef("/src", "/dst")));
 
         mockMvc.perform(put("/api/sync/configuration")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(defs)))
+                        .content(objectMapper.writeValueAsString(dtos)))
                 .andExpect(status().isNoContent());
 
         verify(saveSyncConfigUseCase).execute(any());
+    }
+
+    @Test
+    void setConfiguration_blankSourceDirectory_returns400() throws Exception {
+        List<SyncDirectoryPairDto> dtos = List.of(buildDto("", "/dst"));
+
+        mockMvc.perform(put("/api/sync/configuration")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dtos)))
+                .andExpect(status().isBadRequest());
+
+        verify(saveSyncConfigUseCase, never()).execute(any());
     }
 
     // --- GET /api/sync/run (SSE) ---
@@ -95,12 +115,16 @@ class SyncControllerTest {
                 .andExpect(status().isOk());
     }
 
-    // --- helper ---
+    // --- helpers ---
 
     private SyncDirectoriesDefinition buildDef(String source, String dest) {
         SyncDirectoriesDefinition def = new SyncDirectoriesDefinition();
         def.setSourceDirectory(source);
         def.setDestinationDirectory(dest);
         return def;
+    }
+
+    private SyncDirectoryPairDto buildDto(String source, String dest) {
+        return new SyncDirectoryPairDto(null, source, dest, false, false, 0);
     }
 }

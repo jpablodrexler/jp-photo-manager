@@ -11,7 +11,7 @@ import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.model.User;
-import com.jpablodrexler.photomanager.domain.model.CropAssetRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.CropAssetRequestDto;
 import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
@@ -464,9 +464,9 @@ public class AssetController {
         @ApiResponse(responseCode = "500", description = "Image processing error")
     })
     @PostMapping("/{id}/crop")
-    public ResponseEntity<AssetResponseDto> cropAsset(@PathVariable Long id, @RequestBody CropAssetRequest request) {
+    public ResponseEntity<AssetResponseDto> cropAsset(@PathVariable Long id, @RequestBody CropAssetRequestDto request) {
         try {
-            Asset asset = cropAssetUseCase.execute(id, request);
+            Asset asset = cropAssetUseCase.execute(id, assetWebMapper.toDomain(request));
             return ResponseEntity.status(HttpStatus.CREATED).body(assetWebMapper.toDto(asset));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
@@ -512,7 +512,7 @@ public class AssetController {
     @PostMapping("/tags/bulk")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void bulkAddTag(@Valid @RequestBody BulkTagRequestDto body) {
-        bulkAddTagUseCase.execute(body.assetIds(), body.name());
+        bulkAddTagUseCase.execute(body.assetIds(), body.name(), resolveUserId());
     }
 
     @Operation(summary = "Remove a tag from multiple assets at once")
@@ -524,7 +524,7 @@ public class AssetController {
     @DeleteMapping("/tags/bulk")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void bulkRemoveTag(@Valid @RequestBody BulkTagRequestDto body) {
-        bulkRemoveTagUseCase.execute(body.assetIds(), body.name());
+        bulkRemoveTagUseCase.execute(body.assetIds(), body.name(), resolveUserId());
     }
 
     /**

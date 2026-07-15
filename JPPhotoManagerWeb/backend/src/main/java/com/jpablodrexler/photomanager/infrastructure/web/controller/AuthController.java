@@ -1,11 +1,11 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.jpablodrexler.photomanager.domain.port.out.JwtTokenPort;
-import com.jpablodrexler.photomanager.infrastructure.service.RefreshTokenServiceImpl;
-import com.jpablodrexler.photomanager.infrastructure.service.UserServiceImpl;
-import com.jpablodrexler.photomanager.infrastructure.web.AuthRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.LoginResponse;
-import com.jpablodrexler.photomanager.infrastructure.web.MeResponse;
+import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenService;
+import com.jpablodrexler.photomanager.domain.port.out.UserService;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.AuthRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.LoginResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.MeResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.exception.InvalidRefreshTokenException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -36,9 +36,9 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserServiceImpl userService;
+    private final UserService userService;
     private final JwtTokenPort jwtTokenService;
-    private final RefreshTokenServiceImpl refreshTokenService;
+    private final RefreshTokenService refreshTokenService;
 
     @Operation(summary = "Get the current authenticated user's username and role")
     @ApiResponses({
@@ -46,7 +46,7 @@ public class AuthController {
         @ApiResponse(responseCode = "401", description = "Not authenticated")
     })
     @GetMapping("/me")
-    public ResponseEntity<MeResponse> me() {
+    public ResponseEntity<MeResponseDto> me() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         String role = auth.getAuthorities().stream()
@@ -55,7 +55,7 @@ public class AuthController {
                 .map(a -> a.substring(5))
                 .findFirst()
                 .orElse("VIEWER");
-        return ResponseEntity.ok(new MeResponse(username, role));
+        return ResponseEntity.ok(new MeResponseDto(username, role));
     }
 
     @Operation(summary = "Authenticate and receive JWT cookie")
@@ -64,7 +64,7 @@ public class AuthController {
         @ApiResponse(responseCode = "401", description = "Invalid credentials")
     })
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody AuthRequest request,
+    public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody AuthRequestDto request,
                                                HttpServletResponse response) {
         try {
             String token = userService.authenticate(request.username(), request.password());
@@ -87,7 +87,7 @@ public class AuthController {
 
             response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
             response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
-            return ResponseEntity.ok(new LoginResponse(request.username().toLowerCase(), expiresAt));
+            return ResponseEntity.ok(new LoginResponseDto(request.username().toLowerCase(), expiresAt));
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -99,14 +99,14 @@ public class AuthController {
         @ApiResponse(responseCode = "401", description = "Missing or invalid refresh token")
     })
     @PostMapping("/refresh")
-    public ResponseEntity<LoginResponse> refresh(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<LoginResponseDto> refresh(HttpServletRequest request, HttpServletResponse response) {
         String tokenValue = extractCookieValue(request, "refreshToken").orElse(null);
         if (tokenValue == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         try {
-            RefreshTokenServiceImpl.RotatedToken rotated = refreshTokenService.validateAndRotate(tokenValue);
+            RefreshTokenService.RotatedToken rotated = refreshTokenService.validateAndRotate(tokenValue);
 
             String newJwt = jwtTokenService.generateToken(rotated.username());
             Instant newExpiresAt = jwtTokenService.tokenExpiry(newJwt);
@@ -127,7 +127,7 @@ public class AuthController {
 
             response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
             response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
-            return ResponseEntity.ok(new LoginResponse(rotated.username(), newExpiresAt));
+            return ResponseEntity.ok(new LoginResponseDto(rotated.username(), newExpiresAt));
         } catch (InvalidRefreshTokenException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }

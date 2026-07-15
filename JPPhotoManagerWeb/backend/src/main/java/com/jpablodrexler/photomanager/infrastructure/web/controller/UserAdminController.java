@@ -5,8 +5,8 @@ import com.jpablodrexler.photomanager.domain.port.in.user.CreateUserUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.user.DeleteUserUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.user.ListUsersUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.user.UpdatePasswordUseCase;
-import com.jpablodrexler.photomanager.infrastructure.web.CreateUserRequest;
-import com.jpablodrexler.photomanager.infrastructure.web.UpdatePasswordRequest;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.CreateUserRequestDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.UpdatePasswordRequestDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -50,7 +50,7 @@ public class UserAdminController {
         @ApiResponse(responseCode = "403", description = "Forbidden — admin role required")
     })
     @PostMapping
-    public ResponseEntity<UserSummary> createUser(@Valid @RequestBody CreateUserRequest request) {
+    public ResponseEntity<UserSummary> createUser(@Valid @RequestBody CreateUserRequestDto request) {
         UserSummary created = createUserUseCase.execute(request.username(), request.password(), "USER");
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -65,7 +65,7 @@ public class UserAdminController {
     })
     @PatchMapping("/{id}/password")
     public ResponseEntity<Void> updatePassword(@PathVariable UUID id,
-                                               @Valid @RequestBody UpdatePasswordRequest request) {
+                                               @Valid @RequestBody UpdatePasswordRequestDto request) {
         updatePasswordUseCase.execute(id, request.password());
         return ResponseEntity.ok().build();
     }

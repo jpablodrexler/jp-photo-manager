@@ -2,8 +2,10 @@ package com.jpablodrexler.photomanager.infrastructure.web.mapper;
 
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
+import com.jpablodrexler.photomanager.domain.model.CropRegion;
 import com.jpablodrexler.photomanager.domain.model.RenamePreview;
 import com.jpablodrexler.photomanager.domain.model.TimelineGroup;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.request.CropAssetRequestDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.AssetResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.ExifMetadataResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.RenamePreviewResponseDto;
@@ -32,6 +34,8 @@ public interface AssetWebMapper {
     ExifMetadataResponseDto toDto(AssetExif exif);
 
     RenamePreviewResponseDto toDto(RenamePreview preview);
+
+    CropRegion toDomain(CropAssetRequestDto dto);
 
     default TimelineGroupResponseDto toTimelineGroupDto(TimelineGroup group) {
         List<AssetResponseDto> assetDtos = group.getAssets().stream().map(this::toDto).toList();

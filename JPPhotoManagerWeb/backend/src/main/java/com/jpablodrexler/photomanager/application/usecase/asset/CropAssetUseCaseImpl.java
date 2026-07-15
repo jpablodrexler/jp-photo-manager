@@ -2,7 +2,7 @@ package com.jpablodrexler.photomanager.application.usecase.asset;
 
 import com.jpablodrexler.photomanager.domain.enums.SocialMediaFormat;
 import com.jpablodrexler.photomanager.domain.model.Asset;
-import com.jpablodrexler.photomanager.domain.model.CropAssetRequest;
+import com.jpablodrexler.photomanager.domain.model.CropRegion;
 import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
@@ -38,7 +38,7 @@ public class CropAssetUseCaseImpl implements CropAssetUseCase {
 
     @Override
     @Transactional
-    public Asset execute(long assetId, CropAssetRequest request) throws IOException {
+    public Asset execute(long assetId, CropRegion request) throws IOException {
         Asset asset = assetRepository.findById(assetId)
                 .orElseThrow(() -> new NoSuchElementException("Asset not found: " + assetId));
 
@@ -87,7 +87,7 @@ public class CropAssetUseCaseImpl implements CropAssetUseCase {
                 });
     }
 
-    private void validateCropBounds(CropAssetRequest request, int imgWidth, int imgHeight) {
+    private void validateCropBounds(CropRegion request, int imgWidth, int imgHeight) {
         if (request.x() < 0 || request.y() < 0
                 || request.width() <= 0 || request.height() <= 0
                 || (long) request.x() + request.width() > imgWidth

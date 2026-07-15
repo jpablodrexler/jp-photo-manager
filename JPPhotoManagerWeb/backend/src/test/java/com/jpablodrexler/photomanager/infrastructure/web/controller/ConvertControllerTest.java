@@ -6,6 +6,8 @@ import com.jpablodrexler.photomanager.domain.port.in.convert.ConvertAssetsUseCas
 import com.jpablodrexler.photomanager.domain.port.in.convert.GetConvertConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.convert.SaveConvertConfigUseCase;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.shared.ConvertDirectoryPairDto;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.ConvertWebMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -42,13 +44,17 @@ class ConvertControllerTest {
     ConvertAssetsUseCase convertAssetsUseCase;
     @MockitoBean
     KafkaProgressRegistry kafkaProgressRegistry;
+    @MockitoBean
+    ConvertWebMapper convertWebMapper;
 
     // --- GET /api/convert/configuration ---
 
     @Test
     void getConfiguration_returns200WithDefinitions() throws Exception {
         ConvertDirectoriesDefinition def = buildDef("/src", "/dst");
+        ConvertDirectoryPairDto dto = buildDto("/src", "/dst");
         when(getConvertConfigUseCase.execute()).thenReturn(List.of(def));
+        when(convertWebMapper.toDtoList(List.of(def))).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/convert/configuration"))
                 .andExpect(status().isOk())
@@ -59,6 +65,7 @@ class ConvertControllerTest {
     @Test
     void getConfiguration_emptyList_returns200WithEmptyArray() throws Exception {
         when(getConvertConfigUseCase.execute()).thenReturn(List.of());
+        when(convertWebMapper.toDtoList(List.of())).thenReturn(List.of());
 
         mockMvc.perform(get("/api/convert/configuration"))
                 .andExpect(status().isOk())
@@ -70,14 +77,27 @@ class ConvertControllerTest {
     @Test
     void setConfiguration_validBody_returns204() throws Exception {
         doNothing().when(saveConvertConfigUseCase).execute(any());
-        List<ConvertDirectoriesDefinition> defs = List.of(buildDef("/src", "/dst"));
+        List<ConvertDirectoryPairDto> dtos = List.of(buildDto("/src", "/dst"));
+        when(convertWebMapper.toDomainList(any())).thenReturn(List.of(buildDef("/src", "/dst")));
 
         mockMvc.perform(put("/api/convert/configuration")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(defs)))
+                        .content(objectMapper.writeValueAsString(dtos)))
                 .andExpect(status().isNoContent());
 
         verify(saveConvertConfigUseCase).execute(any());
+    }
+
+    @Test
+    void setConfiguration_blankSourceDirectory_returns400() throws Exception {
+        List<ConvertDirectoryPairDto> dtos = List.of(buildDto("", "/dst"));
+
+        mockMvc.perform(put("/api/convert/configuration")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dtos)))
+                .andExpect(status().isBadRequest());
+
+        verify(saveConvertConfigUseCase, never()).execute(any());
     }
 
     // --- GET /api/convert/run (SSE) ---
@@ -95,12 +115,16 @@ class ConvertControllerTest {
                 .andExpect(status().isOk());
     }
 
-    // --- helper ---
+    // --- helpers ---
 
     private ConvertDirectoriesDefinition buildDef(String source, String dest) {
         ConvertDirectoriesDefinition def = new ConvertDirectoriesDefinition();
         def.setSourceDirectory(source);
         def.setDestinationDirectory(dest);
         return def;
+    }
+
+    private ConvertDirectoryPairDto buildDto(String source, String dest) {
+        return new ConvertDirectoryPairDto(null, source, dest, false, false, 0);
     }
 }
