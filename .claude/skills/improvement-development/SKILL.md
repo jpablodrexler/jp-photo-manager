@@ -122,13 +122,24 @@ prompt:
 > `IMPLEMENT_BLOCKED — <brief reason>` and stop.
 >
 > **Step 2 — Code review**
-> Invoke `code-reviewer` via the Skill tool. After the review completes,
-> examine the findings:
+> Invoke `code-reviewer` via the Skill tool using its **Review** workflow
+> (this subagent runs unattended — do not invoke the skill's interactive Fix
+> Workflow, which is designed for a human to steer turn-by-turn across a
+> conversation). Every invocation writes a dated
+> `docs/code-review/CODE_REVIEW_FINDINGS_*.md` report (repo root, gitignored). After the review
+> completes, examine the findings:
 >
 > - If the report contains **no 🔴 Critical or 🟡 Warning findings**: proceed.
 > - If the report contains any 🔴 Critical or 🟡 Warning findings: fix every
->   one of them in the source files, then re-invoke `code-reviewer` to confirm
->   no new findings were introduced. Repeat until the report is clean.
+>   one of them in the source files. As you fix each finding, check it off in
+>   that report file (`- [ ]` → `- [x]`) with a `**Fixed:** <one-sentence
+>   summary of what changed>` note appended to the same line — the same
+>   convention the code-reviewer skill's Fix Workflow uses — so the report is
+>   left as an accurate record of what this session resolved rather than a
+>   stale "nothing done" snapshot. Then re-invoke `code-reviewer` to confirm
+>   no new findings were introduced; this writes a fresh report for the
+>   re-check (the original report already reflects what was fixed). Repeat
+>   until the re-check report is clean.
 >   If after 3 rounds of fix-and-re-review findings are still present, end
 >   your response with `REVIEW_BLOCKED — repeated review cycles` and stop.
 > - If you encounter a finding you cannot fix without human input: end your
@@ -150,9 +161,11 @@ prompt:
 >   your response with `SECURITY_BLOCKED — repeated review cycles` and stop.
 >   If you encounter a finding you cannot fix without human input: end your
 >   response with `SECURITY_BLOCKED — <brief reason>` and stop.
->   Once the security report is clean, re-invoke `code-reviewer` for a final
->   pass scoped to the security fixes — apply any 🔴 Critical or 🟡 Warning
->   findings before proceeding.
+>   Once the security report is clean, re-invoke `code-reviewer` (Review
+>   workflow, same non-interactive caveat as Step 2) for a final pass scoped
+>   to the security fixes — apply any 🔴 Critical or 🟡 Warning findings,
+>   checking each off in that pass's report file with a `**Fixed:**` note as
+>   in Step 2, before proceeding.
 >
 > Do not return until all Critical and Warning security and code-review findings
 > are resolved.
@@ -475,6 +488,12 @@ After all phases complete, display:
 - **Missing signal fallback**: if any subagent returns without its expected
   signal, treat it as `BLOCKED`, surface the subagent's raw response to the
   user, and wait for guidance before proceeding to the next phase.
+- **`code-reviewer` has two workflows; Phase 2 always uses Review, never
+  Fix.** The skill's interactive Fix Workflow (§17) asks the user which
+  category/finding to work on next and is meant to be steered turn-by-turn
+  across a conversation — it does not fit an unattended subagent. Phase 2
+  always invokes the plain Review workflow and fixes findings itself,
+  updating the resulting report's checkboxes directly (see Step 2/3 above).
 - **No git commits at any point.** Neither this skill nor any subagent it
   spawns may run `git commit`, `git push`, or any other git write command
   at any point in the workflow. This applies to all phases, including after

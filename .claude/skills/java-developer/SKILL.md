@@ -197,6 +197,22 @@ The impl delegates to a Spring Data JPA interface in `infrastructure/persistence
 
 **Callers always inject the domain port interface, never the adapter class.**
 
+### 3.4 Do not create a delegate-only port/adapter
+
+Before adding a new `FooPort`/`FooServiceAdapter` pair, check whether the
+capability already exists on another port (`StoragePort` in particular covers
+a lot: file I/O, hashing, thumbnails, EXIF). If it does, inject that existing
+port directly — do not create a new port whose adapter's only job is to call
+the existing one (`FooAdapter.doThing() { return storagePort.doThing(); }`).
+A port/adapter earns its existence by containing real logic; a pure
+pass-through is dead weight and, worse, a second "source of truth" that can
+silently drift from the original (this happened: `HashCalculatorPort`/
+`AssetHashCalculatorAdapter` duplicated `StoragePort.computeHash`'s SHA-256
+logic instead of reusing it, and neither was ever depended on for the actual
+capability — see the `code-reviewer` skill §15 for the full incident). If you
+inherit or find such a pair, delete it and repoint any callers to the port
+that has the real implementation, rather than making it delegate.
+
 ---
 
 ## 4. Naming Conventions
@@ -511,6 +527,55 @@ public interface AssetWebMapper {
 
 Use `@Named` qualifiers when a mapper exposes multiple methods returning the same type
 (e.g., `toEntityRef` for FK-only references vs `toEntity` for full mapping).
+
+Each entity/DTO pair gets **one mapper interface** — named `{Entity}Mapper`
+(persistence) or `{Entity}WebMapper` (HTTP) — with a `toDto`/`toModel` (or `toDomain`)
+method per direction. Never split one entity's conversions across multiple mapper
+classes, and never hand-write a mapper method MapStruct could generate. Inject the
+mapper into whatever needs it (controller, use case, repository adapter) via the
+consumer's own Lombok `@RequiredArgsConstructor`, exactly like any other collaborator:
+
+```java
+@RestController
+@RequiredArgsConstructor
+public class AssetController {
+    private final AssetWebMapper assetWebMapper;   // MapStruct interface, Lombok-injected
+    ...
+}
+```
+
+**If a conversion step needs a Spring bean the mapper can't reach directly** (e.g.
+parsing a JSON column with the shared `ObjectMapper` instead of `new ObjectMapper()`
+per call), do **not** turn the mapper into an `abstract class` with a Lombok
+`@RequiredArgsConstructor`/field to inject it — MapStruct's generated `*Impl`
+subclass does not reliably forward a Lombok-generated constructor and can still emit
+a no-arg `super()` call, failing to compile even with the `lombok-mapstruct-binding`
+annotation processor added (confirmed on this codebase). Instead, extract that one
+conversion step into its own small `@Component` with a normal Lombok
+`@RequiredArgsConstructor`, and wire it into the mapper with `uses = ...` +
+`injectionStrategy = InjectionStrategy.CONSTRUCTOR`:
+
+```java
+@Component
+@RequiredArgsConstructor
+class AlbumFilterJsonDeserializer {
+    private final ObjectMapper objectMapper;
+
+    @Named("deserializeFilterJson")
+    AlbumFilterJson deserializeFilterJson(String filterJson) { ... }
+}
+
+@Mapper(componentModel = "spring", uses = AlbumFilterJsonDeserializer.class,
+        injectionStrategy = InjectionStrategy.CONSTRUCTOR)
+public interface AlbumWebMapper {
+    @Mapping(source = "filterJson", target = "filterJson", qualifiedByName = "deserializeFilterJson")
+    AlbumSummaryResponseDto toSummaryDto(AlbumData data);
+}
+```
+
+The mapper stays a plain `interface` with no constructor of its own; the `ObjectMapper`
+dependency still flows through ordinary Lombok constructor injection — just on the
+small delegate `@Component`, not on the mapper itself.
 
 ### 6.6 JPA Delete-Then-Insert Pattern
 

@@ -57,8 +57,8 @@ src/test/resources/
 ```
 
 Mirror the main package structure exactly. A test for
-`infrastructure/service/CatalogFolderServiceImpl.java` lives at
-`infrastructure/service/CatalogFolderServiceImplTest.java`.
+`infrastructure/service/CatalogFolderServiceAdapter.java` lives at
+`infrastructure/service/CatalogFolderServiceAdapterTest.java`.
 
 ---
 
@@ -66,7 +66,7 @@ Mirror the main package structure exactly. A test for
 
 | Rule                                                                 | Example                                                             |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Test class sits in the same package as the class under test          | `CatalogFolderServiceImplTest` alongside `CatalogFolderServiceImpl` |
+| Test class sits in the same package as the class under test          | `CatalogFolderServiceAdapterTest` alongside `CatalogFolderServiceAdapter` |
 | File name is `{ClassName}Test.java` or `{ClassName}Tests.java`       | `CatalogAssetsServiceImplTest.java`                                 |
 | Integration test classes use the `IT` suffix or `Integration` suffix | `ApplicationIntegrationTest.java`                                   |
 
@@ -78,7 +78,7 @@ Mirror the main package structure exactly. A test for
 | ------------- | -------------------------------------- | -------------------------------------------- |
 | Test class    | `{ClassName}Test`                      | `CatalogAssetsServiceImplTest`               |
 | Test method   | `methodName_condition_expectedResult`  | `catalogFolder_newFile_createsAsset`         |
-| SUT variable  | always `sut`                           | `@InjectMocks CatalogFolderServiceImpl sut;` |
+| SUT variable  | always `sut`                           | `@InjectMocks CatalogFolderServiceAdapter sut;` |
 | Mock variable | `{type}` or `{field}` name (camelCase) | `@Mock StorageService storageService;`       |
 
 ---
@@ -89,13 +89,13 @@ Every unit test class follows this structure:
 
 ```java
 @ExtendWith(MockitoExtension.class)
-class CatalogFolderServiceImplTest {
+class CatalogFolderServiceAdapterTest {
 
     @Mock FolderRepository folderRepository;
     @Mock AssetRepository assetRepository;
     @Mock StorageService storageService;
     @Mock ThumbnailStorageService thumbnailStorageService;
-    @InjectMocks CatalogFolderServiceImpl sut;
+    @InjectMocks CatalogFolderServiceAdapter sut;
 
     @Test
     void catalogFolder_newFolder_savesFolderToRepository() {
@@ -486,10 +486,10 @@ cd JPPhotoManagerWeb/backend
 mvn test
 
 # Single test class
-mvn test -Dtest=CatalogFolderServiceImplTest
+mvn test -Dtest=CatalogFolderServiceAdapterTest
 
 # Single test method
-mvn test -Dtest=CatalogFolderServiceImplTest#catalogFolder_newFolder_savesFolderToRepository
+mvn test -Dtest=CatalogFolderServiceAdapterTest#catalogFolder_newFolder_savesFolderToRepository
 
 # All tests in a package
 mvn test -Dtest="com.jpablodrexler.photomanager.infrastructure.service.*"
