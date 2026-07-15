@@ -31,7 +31,7 @@ describe('PreferenceService', () => {
     TestBed.resetTestingModule();
   });
 
-  it('load_onSuccess_callsGetAndAppliesThemeMode', () => {
+  it('should call GET and apply the theme mode on success', () => {
     let completed = false;
     service.load().subscribe({ complete: () => { completed = true; } });
 
@@ -43,7 +43,7 @@ describe('PreferenceService', () => {
     cy.wrap(applyThemeStub).should('have.been.calledWith', 'light');
   });
 
-  it('load_onError_swallowsErrorSilently', () => {
+  it('should swallow the error silently on failure', () => {
     let completed = false;
     let errored = false;
     service.load().subscribe({
@@ -58,7 +58,7 @@ describe('PreferenceService', () => {
     expect(errored).to.be.false;
   });
 
-  it('save_callsPutWithCorrectBody', () => {
+  it('should call PUT with the correct body when saving', () => {
     service.save('dark').subscribe();
     const req = httpMock.expectOne('/api/preferences');
     expect(req.request.method).to.equal('PUT');

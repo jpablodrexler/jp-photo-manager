@@ -1,5 +1,6 @@
 import { mount } from 'cypress/angular';
 import { of } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -86,8 +87,7 @@ describe('AlbumDetailComponent', () => {
     mountDetail(smartAlbum).then(({ component, serviceStub }) => {
       component.albumId = ALBUM_ID;
       component.album = smartAlbum;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (component as any).dialog = { open: () => dialogRef };
+      (component as unknown as { dialog: MatDialog }).dialog = { open: () => dialogRef } as unknown as MatDialog;
       component.openEditFilterDialog();
       cy.wrap(serviceStub.updateAlbum).should('have.been.calledWith', ALBUM_ID, {
         name: 'Smart Album',

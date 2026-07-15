@@ -15,15 +15,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { HttpEventType } from '@angular/common/http';
 import { AssetService } from '../../../core/services/asset.service';
 import { UploadAssetResponse } from '../../../core/models/asset.model';
+import { UploadItem } from '../../../core/models/upload-item.model';
 
 const ACCEPTED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff', 'tif', 'webp']);
-
-interface UploadItem {
-  file: File;
-  progress: number;
-  status: 'pending' | 'uploading' | 'processing' | 'done' | 'error';
-  eventSource?: EventSource;
-}
 
 @Component({
   selector: 'app-drop-zone',

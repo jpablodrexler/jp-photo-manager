@@ -37,11 +37,19 @@ describe('UserAdminComponent', () => {
     cy.contains('alice').should('exist');
   });
 
-  it('deleteUser_callsServiceDelete', () => {
-    cy.on('window:confirm', () => true);
+  it('deleteUser_confirmedInDialog_callsServiceDelete', () => {
     mountAdmin().then(({ serviceStub }) => {
       cy.get('button[title="Delete user"]').first().click();
+      cy.get('mat-dialog-container').contains('button', 'Delete').click();
       cy.wrap(serviceStub.deleteUser).should('have.been.calledWith', mockUsers[0].id);
+    });
+  });
+
+  it('deleteUser_cancelledInDialog_doesNotCallServiceDelete', () => {
+    mountAdmin().then(({ serviceStub }) => {
+      cy.get('button[title="Delete user"]').first().click();
+      cy.get('mat-dialog-container').contains('button', 'Cancel').click();
+      cy.wrap(serviceStub.deleteUser).should('not.have.been.called');
     });
   });
 });

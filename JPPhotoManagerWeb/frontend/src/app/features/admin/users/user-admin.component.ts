@@ -7,14 +7,16 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { UserAdminService } from '../../../core/services/user-admin.service';
 import { UserAdmin } from '../../../core/models/user-admin.model';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-user-admin',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, MatTableModule, MatButtonModule,
-            MatFormFieldModule, MatInputModule, MatIconModule, MatCardModule],
+            MatFormFieldModule, MatInputModule, MatIconModule, MatCardModule, MatDialogModule],
   templateUrl: './user-admin.component.html',
   styleUrl: './user-admin.component.scss'
 })
@@ -36,7 +38,8 @@ export class UserAdminComponent implements OnInit {
 
   constructor(
     private userAdminService: UserAdminService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -82,13 +85,18 @@ export class UserAdminComponent implements OnInit {
   }
 
   deleteUser(id: string): void {
-    if (!confirm('Delete this user?')) return;
-    this.userAdminService.deleteUser(id).subscribe({
-      next: () => {
-        this.users = this.users.filter(u => u.id !== id);
-        this.errorMessage = null;
-      },
-      error: () => (this.errorMessage = 'Failed to delete user.')
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: { title: 'Delete user', message: 'Delete this user?' }
+    });
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+      this.userAdminService.deleteUser(id).subscribe({
+        next: () => {
+          this.users = this.users.filter(u => u.id !== id);
+          this.errorMessage = null;
+        },
+        error: () => (this.errorMessage = 'Failed to delete user.')
+      });
     });
   }
 }

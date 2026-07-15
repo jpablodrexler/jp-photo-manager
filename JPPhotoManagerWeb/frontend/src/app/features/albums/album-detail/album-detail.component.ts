@@ -75,13 +75,16 @@ export class AlbumDetailComponent implements OnInit {
   }
 
   openEditFilterDialog(): void {
+    const album = this.album;
+    if (!album) return;
+
     const ref = this.dialog.open(EditAlbumFilterDialogComponent, {
-      data: { filterJson: this.album!.filterJson ?? {} }
+      data: { filterJson: album.filterJson ?? {} }
     });
     ref.afterClosed().subscribe((result: AlbumFilterJson | null | undefined) => {
       if (result !== null && result !== undefined) {
         this.albumService.updateAlbum(this.albumId, {
-          name: this.album!.name,
+          name: album.name,
           filterJson: result
         }).subscribe({
           next: () => this.loadPage(0),

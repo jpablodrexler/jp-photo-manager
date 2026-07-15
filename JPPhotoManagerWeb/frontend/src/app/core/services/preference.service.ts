@@ -2,10 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, map, of, tap } from 'rxjs';
 import { ThemeService } from './theme.service';
-
-interface PreferenceResponse {
-  themeMode: 'dark' | 'light';
-}
+import { PreferenceResponse } from '../models/preference.model';
 
 @Injectable({ providedIn: 'root' })
 export class PreferenceService {
