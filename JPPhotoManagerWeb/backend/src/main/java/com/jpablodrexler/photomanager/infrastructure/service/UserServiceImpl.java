@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager.infrastructure.service;
 import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.out.JwtTokenPort;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
+import com.jpablodrexler.photomanager.domain.port.out.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,12 +14,13 @@ import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
-public class UserServiceImpl {
+public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenPort jwtUtil;
 
+    @Override
     @Transactional
     public void register(String username, String password) {
         String normalized = username.toLowerCase();
@@ -33,6 +35,7 @@ public class UserServiceImpl {
         userRepository.save(user);
     }
 
+    @Override
     @Transactional(readOnly = true)
     public String authenticate(String username, String password) {
         String normalized = username.toLowerCase();

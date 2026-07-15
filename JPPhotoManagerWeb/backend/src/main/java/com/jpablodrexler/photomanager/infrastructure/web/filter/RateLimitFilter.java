@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.web.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jpablodrexler.photomanager.infrastructure.web.ErrorResponse;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.ErrorResponseDto;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.BucketConfiguration;
@@ -96,7 +96,7 @@ public class RateLimitFilter implements Filter {
         resp.setContentType(MediaType.APPLICATION_JSON_VALUE);
         resp.setHeader(HttpHeaders.RETRY_AFTER, String.valueOf(retryAfterSeconds));
 
-        ErrorResponse body = new ErrorResponse(
+        ErrorResponseDto body = new ErrorResponseDto(
                 Instant.now().toString(),
                 429,
                 "Too Many Requests",

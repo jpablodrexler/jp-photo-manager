@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.application.usecase.catalog.CatalogAssetsU
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.home.GetHomeStatsUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.CatalogRunHistoryPort;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -14,7 +15,6 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -62,15 +63,15 @@ class GetHomeStatsUseCaseCachingTest {
         }
 
         @Bean
-        JobExplorer jobExplorer() {
-            return mock(JobExplorer.class);
+        CatalogRunHistoryPort catalogRunHistoryPort() {
+            return mock(CatalogRunHistoryPort.class);
         }
 
         @Bean
         GetHomeStatsUseCaseImpl getHomeStatsUseCase(FolderRepository folderRepository,
                                                      AssetRepository assetRepository,
-                                                     JobExplorer jobExplorer) {
-            return new GetHomeStatsUseCaseImpl(folderRepository, assetRepository, jobExplorer);
+                                                     CatalogRunHistoryPort catalogRunHistoryPort) {
+            return new GetHomeStatsUseCaseImpl(folderRepository, assetRepository, catalogRunHistoryPort);
         }
 
         @Bean
@@ -111,7 +112,7 @@ class GetHomeStatsUseCaseCachingTest {
 
         FolderRepository folderRepository = context.getBean(FolderRepository.class);
         assetRepository = context.getBean(AssetRepository.class);
-        JobExplorer jobExplorer = context.getBean(JobExplorer.class);
+        CatalogRunHistoryPort catalogRunHistoryPort = context.getBean(CatalogRunHistoryPort.class);
         JobLauncher asyncCatalogJobLauncher = context.getBean(JobLauncher.class);
         kafkaProgressRegistry = context.getBean(KafkaProgressRegistry.class);
 
@@ -121,7 +122,7 @@ class GetHomeStatsUseCaseCachingTest {
         when(assetRepository.countDuplicates()).thenReturn(0L);
         when(assetRepository.findTopFoldersByAssetCount(5)).thenReturn(List.of());
         when(assetRepository.findRecentAssets(12)).thenReturn(List.of());
-        when(jobExplorer.getJobInstances("catalogJob", 0, 20)).thenReturn(List.of());
+        when(catalogRunHistoryPort.findLastCompletedCatalogRunTime()).thenReturn(Optional.empty());
         when(asyncCatalogJobLauncher.run(any(), any(JobParameters.class))).thenReturn(mock(JobExecution.class));
     }
 

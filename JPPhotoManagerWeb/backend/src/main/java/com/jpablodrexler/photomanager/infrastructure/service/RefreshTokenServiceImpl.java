@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.infrastructure.web.exception.InvalidRefres
 import com.jpablodrexler.photomanager.domain.model.RefreshToken;
 import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenRepository;
+import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenService;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,9 +20,7 @@ import java.util.Base64;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class RefreshTokenServiceImpl {
-
-    public record RotatedToken(String newTokenValue, String username, java.time.Instant newExpiresAt) {}
+public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
@@ -31,6 +30,7 @@ public class RefreshTokenServiceImpl {
 
     private final SecureRandom secureRandom = new SecureRandom();
 
+    @Override
     @Transactional
     public String issueRefreshToken(String username) {
         User user = userRepository.findByUsername(username)
@@ -52,6 +52,7 @@ public class RefreshTokenServiceImpl {
         return tokenValue;
     }
 
+    @Override
     @Transactional
     public RotatedToken validateAndRotate(String tokenValue) {
         RefreshToken existing = refreshTokenRepository.findByToken(tokenValue)
@@ -73,6 +74,7 @@ public class RefreshTokenServiceImpl {
         return new RotatedToken(newTokenValue, username, newExpiresAt);
     }
 
+    @Override
     @Transactional
     public void revokeAllForUser(String username) {
         User user = userRepository.findByUsername(username)

@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.infrastructure.web.exception.InvalidRefres
 import com.jpablodrexler.photomanager.domain.model.RefreshToken;
 import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenRepository;
+import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenService;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,7 +85,7 @@ class RefreshTokenServiceTest {
         when(refreshTokenRepository.findByToken(argThat(t -> !"existing-token-value".equals(t))))
                 .thenReturn(Optional.of(newToken));
 
-        RefreshTokenServiceImpl.RotatedToken result = sut.validateAndRotate("existing-token-value");
+        RefreshTokenService.RotatedToken result = sut.validateAndRotate("existing-token-value");
 
         assertThat(result).isNotNull();
         assertThat(result.username()).isEqualTo("alice");
