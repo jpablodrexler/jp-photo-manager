@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, switchMap, tap } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, tap } from 'rxjs';
 import { PreferenceService } from './preference.service';
 import { LoginResponse, MeResponse, Session } from '../models/auth.model';
 
@@ -23,7 +23,7 @@ export class AuthService {
         )
       ),
       tap(() => this.scheduleProactiveRefresh()),
-      tap(() => this.preferenceService.load().subscribe()),
+      switchMap(() => this.preferenceService.load().pipe(catchError(() => of(undefined)))),
       map(() => undefined)
     );
   }
@@ -61,9 +61,9 @@ export class AuthService {
     }
   }
 
-  logout(): void {
-    this.http.post<void>('/api/auth/logout', {}).subscribe();
+  logout(): Observable<void> {
     this.clearSession();
+    return this.http.post<void>('/api/auth/logout', {});
   }
 
   clearSession(): void {

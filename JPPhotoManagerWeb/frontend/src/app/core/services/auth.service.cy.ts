@@ -28,7 +28,7 @@ describe('AuthService — proactive refresh timer', () => {
     service.clearSession();
   });
 
-  it('scheduleProactiveRefresh_withFutureExpiry_schedulesTimer', () => {
+  it('should schedule a timer when the session has a future expiry', () => {
     localStorage.setItem(SESSION_KEY, JSON.stringify({
       username: 'alice',
       expiresAt: Date.now() + 10 * 60 * 1000,
@@ -39,7 +39,7 @@ describe('AuthService — proactive refresh timer', () => {
     expect((service as unknown as { refreshTimer: unknown }).refreshTimer).to.not.be.null;
   });
 
-  it('clearSession_cancelsRefreshTimerAndRemovesStorage', () => {
+  it('should cancel the refresh timer and remove stored session on clear', () => {
     localStorage.setItem(SESSION_KEY, JSON.stringify({
       username: 'alice',
       expiresAt: Date.now() + 10 * 60 * 1000,
