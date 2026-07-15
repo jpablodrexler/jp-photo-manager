@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.infrastructure.web.mapper;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpablodrexler.photomanager.domain.model.AlbumData;
 import com.jpablodrexler.photomanager.domain.enums.ImageRotation;
 import com.jpablodrexler.photomanager.domain.model.Asset;
@@ -18,7 +19,7 @@ class WebMappersTest {
 
     private final AssetWebMapper assetWebMapper = new AssetWebMapperImpl();
     private final FolderWebMapper folderWebMapper = new FolderWebMapperImpl();
-    private final AlbumWebMapper albumWebMapper = new AlbumWebMapperImpl();
+    private final AlbumWebMapper albumWebMapper = new AlbumWebMapperImpl(new AlbumFilterJsonDeserializer(new ObjectMapper()));
 
     @Test
     void assetWebMapper_toDto_mapsAllFields() {

@@ -11,7 +11,8 @@ import com.jpablodrexler.photomanager.domain.port.in.album.AddAssetsToAlbumUseCa
 import com.jpablodrexler.photomanager.domain.port.in.album.CreateAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.DeleteAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumsUseCase;
-import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumSummaryUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.RemoveAssetsFromAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.UpdateAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
@@ -60,7 +61,9 @@ class AlbumControllerTest {
     @MockitoBean
     CreateAlbumUseCase createAlbumUseCase;
     @MockitoBean
-    GetAlbumUseCase getAlbumUseCase;
+    GetAlbumSummaryUseCase getAlbumSummaryUseCase;
+    @MockitoBean
+    GetAlbumAssetsUseCase getAlbumAssetsUseCase;
     @MockitoBean
     UpdateAlbumUseCase updateAlbumUseCase;
     @MockitoBean
@@ -155,8 +158,8 @@ class AlbumControllerTest {
         albumDto.setCreatedAt(now);
         albumDto.setAssets(new PaginatedData<>(List.of(assetDto), 0, 1, 1L));
 
-        when(getAlbumUseCase.executeSummary(1L, userId)).thenReturn(summary);
-        when(getAlbumUseCase.executeAssets(1L, userId, 0)).thenReturn(assets);
+        when(getAlbumSummaryUseCase.execute(1L, userId)).thenReturn(summary);
+        when(getAlbumAssetsUseCase.execute(1L, userId, 0)).thenReturn(assets);
         when(assetWebMapper.toDto(asset)).thenReturn(assetDto);
         when(albumWebMapper.toDto(eq(summary), any())).thenReturn(albumDto);
 
@@ -170,7 +173,7 @@ class AlbumControllerTest {
     @Test
     @WithMockUser("user")
     void getAlbum_unknownAlbum_returns404() throws Exception {
-        when(getAlbumUseCase.executeSummary(999L, userId)).thenThrow(new AlbumNotFoundException(999L));
+        when(getAlbumSummaryUseCase.execute(999L, userId)).thenThrow(new AlbumNotFoundException(999L));
 
         mockMvc.perform(get("/api/albums/999"))
                 .andExpect(status().isNotFound());

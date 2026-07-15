@@ -11,8 +11,9 @@ import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.in.album.AddAssetsToAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.CreateAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.DeleteAlbumUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumsUseCase;
-import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.album.GetAlbumSummaryUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.RemoveAssetsFromAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.album.UpdateAlbumUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
@@ -46,7 +47,8 @@ public class AlbumController {
 
     private final GetAlbumsUseCase getAlbumsUseCase;
     private final CreateAlbumUseCase createAlbumUseCase;
-    private final GetAlbumUseCase getAlbumUseCase;
+    private final GetAlbumSummaryUseCase getAlbumSummaryUseCase;
+    private final GetAlbumAssetsUseCase getAlbumAssetsUseCase;
     private final UpdateAlbumUseCase updateAlbumUseCase;
     private final DeleteAlbumUseCase deleteAlbumUseCase;
     private final AddAssetsToAlbumUseCase addAssetsToAlbumUseCase;
@@ -90,8 +92,8 @@ public class AlbumController {
                                               @RequestParam(defaultValue = "0") int page) {
         try {
             UUID userId = resolveUserId();
-            AlbumData summary = getAlbumUseCase.executeSummary(id, userId);
-            PaginatedResult<Asset> assetsPage = getAlbumUseCase.executeAssets(id, userId, page);
+            AlbumData summary = getAlbumSummaryUseCase.execute(id, userId);
+            PaginatedResult<Asset> assetsPage = getAlbumAssetsUseCase.execute(id, userId, page);
             int totalPages = assetsPage.pageSize() > 0
                     ? (int) Math.ceil((double) assetsPage.total() / assetsPage.pageSize()) : 0;
             PaginatedData<AssetResponseDto> assetDtos = new PaginatedData<>(
