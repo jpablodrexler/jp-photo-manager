@@ -1,6 +1,6 @@
 package com.jpablodrexler.photomanager.domain.port.out;
 
-public interface UserService {
+public interface UserAuthPort {
 
     void register(String username, String password);
 

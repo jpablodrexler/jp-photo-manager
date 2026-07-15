@@ -2,7 +2,7 @@ package com.jpablodrexler.photomanager.domain.port.out;
 
 import java.time.Instant;
 
-public interface RefreshTokenService {
+public interface RefreshTokenPort {
 
     record RotatedToken(String newTokenValue, String username, Instant newExpiresAt) {}
 

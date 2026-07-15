@@ -4,11 +4,10 @@ import com.jpablodrexler.photomanager.infrastructure.web.exception.InvalidRefres
 import com.jpablodrexler.photomanager.domain.model.RefreshToken;
 import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenRepository;
-import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenService;
+import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenPort;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -24,7 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class RefreshTokenServiceTest {
+class RefreshTokenServiceAdapterTest {
 
     @Mock
     private RefreshTokenRepository refreshTokenRepository;
@@ -32,8 +31,11 @@ class RefreshTokenServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private RefreshTokenIssuer refreshTokenIssuer;
+
     @InjectMocks
-    private RefreshTokenServiceImpl sut;
+    private RefreshTokenServiceAdapter sut;
 
     private User buildUser(String username) {
         User user = new User();
@@ -53,21 +55,13 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    void issueRefreshToken_validUser_savesTokenAndReturnsNonBlankString() {
-        ReflectionTestUtils.setField(sut, "refreshTokenExpiryDays", 30);
-        User user = buildUser("alice");
-        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
-        when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    void issueRefreshToken_delegatesToRefreshTokenIssuer() {
+        when(refreshTokenIssuer.issueRefreshToken("alice")).thenReturn("issued-token");
 
         String result = sut.issueRefreshToken("alice");
 
-        assertThat(result).isNotBlank();
-        ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
-        verify(refreshTokenRepository).save(captor.capture());
-        RefreshToken saved = captor.getValue();
-        assertThat(saved.getUser()).isEqualTo(user);
-        assertThat(saved.isRevoked()).isFalse();
-        assertThat(saved.getExpiresAt()).isAfter(Instant.now());
+        assertThat(result).isEqualTo("issued-token");
+        verify(refreshTokenIssuer).issueRefreshToken("alice");
     }
 
     @Test
@@ -79,18 +73,19 @@ class RefreshTokenServiceTest {
         newToken.setToken("new-token");
         newToken.setExpiresAt(Instant.now().plusSeconds(86400));
 
-        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
         when(refreshTokenRepository.findByToken("existing-token-value")).thenReturn(Optional.of(existing));
         when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(refreshTokenIssuer.issueRefreshToken("alice")).thenReturn("new-token");
         when(refreshTokenRepository.findByToken(argThat(t -> !"existing-token-value".equals(t))))
                 .thenReturn(Optional.of(newToken));
 
-        RefreshTokenService.RotatedToken result = sut.validateAndRotate("existing-token-value");
+        RefreshTokenPort.RotatedToken result = sut.validateAndRotate("existing-token-value");
 
         assertThat(result).isNotNull();
         assertThat(result.username()).isEqualTo("alice");
         assertThat(result.newExpiresAt()).isNotNull();
         assertThat(existing.isRevoked()).isTrue();
+        verify(refreshTokenIssuer).issueRefreshToken("alice");
     }
 
     @Test

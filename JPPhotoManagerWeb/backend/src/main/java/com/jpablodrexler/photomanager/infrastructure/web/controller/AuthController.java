@@ -1,8 +1,9 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.domain.port.out.JwtTokenPort;
-import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenService;
-import com.jpablodrexler.photomanager.domain.port.out.UserService;
+import com.jpablodrexler.photomanager.domain.port.in.auth.LoginUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.auth.LogoutUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.auth.RefreshTokenUseCase;
+import com.jpablodrexler.photomanager.infrastructure.web.AuthCookieFactory;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.AuthRequestDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.LoginResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.MeResponseDto;
@@ -36,9 +37,10 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserService userService;
-    private final JwtTokenPort jwtTokenService;
-    private final RefreshTokenService refreshTokenService;
+    private final LoginUseCase loginUseCase;
+    private final RefreshTokenUseCase refreshTokenUseCase;
+    private final LogoutUseCase logoutUseCase;
+    private final AuthCookieFactory authCookieFactory;
 
     @Operation(summary = "Get the current authenticated user's username and role")
     @ApiResponses({
@@ -67,27 +69,16 @@ public class AuthController {
     public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody AuthRequestDto request,
                                                HttpServletResponse response) {
         try {
-            String token = userService.authenticate(request.username(), request.password());
-            Instant expiresAt = jwtTokenService.tokenExpiry(token);
+            LoginUseCase.LoginResult result = loginUseCase.execute(request.username(), request.password());
 
-            ResponseCookie jwtCookie = ResponseCookie.from("jwt", token)
-                    .httpOnly(true)
-                    .path("/")
-                    .sameSite("Strict")
-                    .maxAge(Duration.between(Instant.now(), expiresAt))
-                    .build();
-
-            String refreshTokenValue = refreshTokenService.issueRefreshToken(request.username());
-            ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshTokenValue)
-                    .httpOnly(true)
-                    .path("/api/auth/refresh")
-                    .sameSite("Strict")
-                    .maxAge(Duration.ofDays(30))
-                    .build();
+            ResponseCookie jwtCookie = authCookieFactory.jwtCookie(result.jwtToken(),
+                    Duration.between(Instant.now(), result.jwtExpiresAt()));
+            ResponseCookie refreshCookie = authCookieFactory.refreshCookie(result.refreshTokenValue(),
+                    Duration.ofDays(30));
 
             response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
             response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
-            return ResponseEntity.ok(new LoginResponseDto(request.username().toLowerCase(), expiresAt));
+            return ResponseEntity.ok(new LoginResponseDto(result.username(), result.jwtExpiresAt()));
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -106,28 +97,16 @@ public class AuthController {
         }
 
         try {
-            RefreshTokenService.RotatedToken rotated = refreshTokenService.validateAndRotate(tokenValue);
+            RefreshTokenUseCase.RefreshResult result = refreshTokenUseCase.execute(tokenValue);
 
-            String newJwt = jwtTokenService.generateToken(rotated.username());
-            Instant newExpiresAt = jwtTokenService.tokenExpiry(newJwt);
-
-            ResponseCookie jwtCookie = ResponseCookie.from("jwt", newJwt)
-                    .httpOnly(true)
-                    .path("/")
-                    .sameSite("Strict")
-                    .maxAge(Duration.between(Instant.now(), newExpiresAt))
-                    .build();
-
-            ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", rotated.newTokenValue())
-                    .httpOnly(true)
-                    .path("/api/auth/refresh")
-                    .sameSite("Strict")
-                    .maxAge(Duration.ofDays(30))
-                    .build();
+            ResponseCookie jwtCookie = authCookieFactory.jwtCookie(result.jwtToken(),
+                    Duration.between(Instant.now(), result.jwtExpiresAt()));
+            ResponseCookie refreshCookie = authCookieFactory.refreshCookie(result.newRefreshTokenValue(),
+                    Duration.ofDays(30));
 
             response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
             response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
-            return ResponseEntity.ok(new LoginResponseDto(rotated.username(), newExpiresAt));
+            return ResponseEntity.ok(new LoginResponseDto(result.username(), result.jwtExpiresAt()));
         } catch (InvalidRefreshTokenException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -139,41 +118,15 @@ public class AuthController {
     })
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
-        String username = resolveUsernameForLogout(request);
-        if (username != null) {
-            try {
-                refreshTokenService.revokeAllForUser(username);
-            } catch (Exception e) {
-                // best-effort revocation
-            }
-        }
+        String jwtValue = extractCookieValue(request, "jwt").orElse(null);
+        logoutUseCase.execute(jwtValue);
 
-        ResponseCookie jwtClear = ResponseCookie.from("jwt", "")
-                .httpOnly(true)
-                .path("/")
-                .sameSite("Strict")
-                .maxAge(0)
-                .build();
-        ResponseCookie refreshClear = ResponseCookie.from("refreshToken", "")
-                .httpOnly(true)
-                .path("/api/auth/refresh")
-                .sameSite("Strict")
-                .maxAge(0)
-                .build();
+        ResponseCookie jwtClear = authCookieFactory.clearJwtCookie();
+        ResponseCookie refreshClear = authCookieFactory.clearRefreshCookie();
 
         response.addHeader(HttpHeaders.SET_COOKIE, jwtClear.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshClear.toString());
         return ResponseEntity.ok().build();
-    }
-
-    private String resolveUsernameForLogout(HttpServletRequest request) {
-        Optional<String> jwtValue = extractCookieValue(request, "jwt");
-        if (jwtValue.isPresent()) {
-            try {
-                return jwtTokenService.extractUsername(jwtValue.get());
-            } catch (Exception ignored) {}
-        }
-        return null;
     }
 
     private Optional<String> extractCookieValue(HttpServletRequest request, String name) {

@@ -21,7 +21,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class UserServiceImplTest {
+class UserAuthServiceAdapterTest {
 
     @Mock
     UserRepository userRepository;
@@ -33,7 +33,7 @@ class UserServiceImplTest {
     JwtTokenPort jwtUtil;
 
     @InjectMocks
-    UserServiceImpl sut;
+    UserAuthServiceAdapter sut;
 
     @Test
     void register_newUser_savesWithHashedPassword() {

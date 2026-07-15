@@ -1,13 +1,15 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jpablodrexler.photomanager.domain.port.out.JwtTokenPort;
-import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenService;
-import com.jpablodrexler.photomanager.domain.port.out.UserService;
+import com.jpablodrexler.photomanager.domain.port.in.auth.LoginUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.auth.LogoutUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.auth.RefreshTokenUseCase;
+import com.jpablodrexler.photomanager.infrastructure.web.AuthCookieFactory;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.AuthRequestDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.context.ActiveProfiles;
@@ -23,6 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
+@Import(AuthCookieFactory.class)
 @ActiveProfiles("test")
 class AuthControllerTest {
 
@@ -33,20 +36,19 @@ class AuthControllerTest {
     ObjectMapper objectMapper;
 
     @MockitoBean
-    UserService userService;
+    LoginUseCase loginUseCase;
     @MockitoBean
-    JwtTokenPort jwtTokenService;
+    RefreshTokenUseCase refreshTokenUseCase;
     @MockitoBean
-    RefreshTokenService refreshTokenService;
+    LogoutUseCase logoutUseCase;
 
     // --- POST /api/auth/login ---
 
     @Test
     void login_validCredentials_returns200WithUsernameAndSetsJwtCookie() throws Exception {
         Instant expiry = Instant.parse("2025-12-31T00:00:00Z");
-        when(userService.authenticate("admin", "admin")).thenReturn("jwt-token");
-        when(jwtTokenService.tokenExpiry("jwt-token")).thenReturn(expiry);
-        when(refreshTokenService.issueRefreshToken("admin")).thenReturn("refresh-token");
+        when(loginUseCase.execute("admin", "admin"))
+                .thenReturn(new LoginUseCase.LoginResult("admin", "jwt-token", expiry, "refresh-token"));
 
         AuthRequestDto request = new AuthRequestDto("admin", "admin");
         mockMvc.perform(post("/api/auth/login")
@@ -59,7 +61,7 @@ class AuthControllerTest {
 
     @Test
     void login_invalidCredentials_returns401() throws Exception {
-        when(userService.authenticate("admin", "wrong"))
+        when(loginUseCase.execute("admin", "wrong"))
                 .thenThrow(new BadCredentialsException("Bad credentials"));
 
         AuthRequestDto request = new AuthRequestDto("admin", "wrong");

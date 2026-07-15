@@ -1,7 +1,7 @@
 package com.jpablodrexler.photomanager;
 
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
-import com.jpablodrexler.photomanager.infrastructure.service.UserServiceImpl;
+import com.jpablodrexler.photomanager.infrastructure.service.UserAuthServiceAdapter;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,7 +64,7 @@ class RefreshTokenRedisMirrorIntegrationTest {
     UserRepository userRepository;
 
     @Autowired
-    UserServiceImpl userService;
+    UserAuthServiceAdapter userAuthServiceAdapter;
 
     @Autowired
     StringRedisTemplate redisTemplate;
@@ -72,7 +72,7 @@ class RefreshTokenRedisMirrorIntegrationTest {
     @BeforeEach
     void setUp() {
         if (userRepository.findByUsername(USERNAME).isEmpty()) {
-            userService.register(USERNAME, PASSWORD);
+            userAuthServiceAdapter.register(USERNAME, PASSWORD);
         }
     }
 

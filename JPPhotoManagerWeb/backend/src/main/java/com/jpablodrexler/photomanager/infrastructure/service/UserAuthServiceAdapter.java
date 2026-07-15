@@ -3,7 +3,7 @@ package com.jpablodrexler.photomanager.infrastructure.service;
 import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.out.JwtTokenPort;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
-import com.jpablodrexler.photomanager.domain.port.out.UserService;
+import com.jpablodrexler.photomanager.domain.port.out.UserAuthPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,7 +14,7 @@ import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
-public class UserServiceImpl implements UserService {
+public class UserAuthServiceAdapter implements UserAuthPort {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;

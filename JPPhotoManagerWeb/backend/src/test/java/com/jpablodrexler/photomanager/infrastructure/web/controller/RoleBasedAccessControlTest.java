@@ -7,6 +7,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetThumbnailUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
@@ -16,13 +17,12 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.ReprocessAssetUseCase
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.folder.GetFolderIdByPathUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkAddTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkRemoveTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
-import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
-import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
-import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -36,7 +36,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -90,9 +89,9 @@ class RoleBasedAccessControlTest {
     @MockitoBean
     BulkRemoveTagUseCase bulkRemoveTagUseCase;
     @MockitoBean
-    ThumbnailPort thumbnailPort;
+    GetAssetThumbnailUseCase getAssetThumbnailUseCase;
     @MockitoBean
-    FolderRepository folderRepository;
+    GetFolderIdByPathUseCase getFolderIdByPathUseCase;
     @MockitoBean
     AssetWebMapper assetWebMapper;
     @MockitoBean
@@ -100,7 +99,7 @@ class RoleBasedAccessControlTest {
     @MockitoBean
     KafkaProgressRegistry kafkaProgressRegistry;
     @MockitoBean
-    UserRepository userRepository;
+    GetCurrentUserUseCase getCurrentUserUseCase;
 
     @Test
     @WithMockUser(roles = "VIEWER")
@@ -119,7 +118,7 @@ class RoleBasedAccessControlTest {
     @Test
     @WithMockUser(roles = "VIEWER")
     void getAssets_viewerRole_returns200() throws Exception {
-        when(folderRepository.findByPath(any())).thenReturn(Optional.empty());
+        when(getFolderIdByPathUseCase.execute(any())).thenReturn(null);
         when(getAssetsUseCase.execute(any())).thenReturn(new PaginatedResult<>(List.of(), 0L, 0, 50));
         when(assetWebMapper.toDto(any(Asset.class))).thenReturn(null);
 

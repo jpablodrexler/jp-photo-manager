@@ -9,16 +9,16 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class JwtUtilTest {
+class JwtTokenServiceAdapterTest {
 
     private static final String SECRET = "test-secret-key-that-is-long-enough-for-hmac-sha256-signing";
     private static final int EXPIRY_HOURS = 1;
 
-    private JwtUtil sut;
+    private JwtTokenServiceAdapter sut;
 
     @BeforeEach
     void setUp() {
-        sut = new JwtUtil();
+        sut = new JwtTokenServiceAdapter();
         ReflectionTestUtils.setField(sut, "jwtSecret", SECRET);
         ReflectionTestUtils.setField(sut, "jwtExpiryHours", EXPIRY_HOURS);
         sut.init();
@@ -26,11 +26,11 @@ class JwtUtilTest {
 
     @Test
     void init_blankSecret_throwsIllegalStateException() {
-        JwtUtil util = new JwtUtil();
-        ReflectionTestUtils.setField(util, "jwtSecret", "");
-        ReflectionTestUtils.setField(util, "jwtExpiryHours", 1);
+        JwtTokenServiceAdapter adapter = new JwtTokenServiceAdapter();
+        ReflectionTestUtils.setField(adapter, "jwtSecret", "");
+        ReflectionTestUtils.setField(adapter, "jwtExpiryHours", 1);
 
-        assertThatThrownBy(util::init).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(adapter::init).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -68,7 +68,7 @@ class JwtUtilTest {
 
     @Test
     void isTokenValid_tokenSignedWithDifferentKey_returnsFalse() {
-        JwtUtil other = new JwtUtil();
+        JwtTokenServiceAdapter other = new JwtTokenServiceAdapter();
         ReflectionTestUtils.setField(other, "jwtSecret", "different-secret-key-that-is-long-enough-for-hmac");
         ReflectionTestUtils.setField(other, "jwtExpiryHours", 1);
         other.init();

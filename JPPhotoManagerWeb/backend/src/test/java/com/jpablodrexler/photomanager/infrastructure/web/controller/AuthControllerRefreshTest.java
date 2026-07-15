@@ -1,12 +1,14 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
-import com.jpablodrexler.photomanager.domain.port.out.JwtTokenPort;
-import com.jpablodrexler.photomanager.domain.port.out.RefreshTokenService;
-import com.jpablodrexler.photomanager.domain.port.out.UserService;
+import com.jpablodrexler.photomanager.domain.port.in.auth.LoginUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.auth.LogoutUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.auth.RefreshTokenUseCase;
+import com.jpablodrexler.photomanager.infrastructure.web.AuthCookieFactory;
 import com.jpablodrexler.photomanager.infrastructure.web.exception.InvalidRefreshTokenException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,6 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
+@Import(AuthCookieFactory.class)
 @ActiveProfiles("test")
 class AuthControllerRefreshTest {
 
@@ -26,22 +29,21 @@ class AuthControllerRefreshTest {
     MockMvc mockMvc;
 
     @MockitoBean
-    UserService userService;
+    LoginUseCase loginUseCase;
     @MockitoBean
-    JwtTokenPort jwtTokenService;
+    RefreshTokenUseCase refreshTokenUseCase;
     @MockitoBean
-    RefreshTokenService refreshTokenService;
+    LogoutUseCase logoutUseCase;
 
     // --- POST /api/auth/refresh ---
 
     @Test
     void refresh_validToken_returns200WithNewJwtCookie() throws Exception {
         Instant newExpiry = Instant.parse("2025-12-31T00:00:00Z");
-        RefreshTokenService.RotatedToken rotated = new RefreshTokenService.RotatedToken("new-refresh", "alice", newExpiry);
+        RefreshTokenUseCase.RefreshResult result =
+                new RefreshTokenUseCase.RefreshResult("alice", "new-jwt", newExpiry, "new-refresh");
 
-        when(refreshTokenService.validateAndRotate("valid-refresh")).thenReturn(rotated);
-        when(jwtTokenService.generateToken("alice")).thenReturn("new-jwt");
-        when(jwtTokenService.tokenExpiry("new-jwt")).thenReturn(newExpiry);
+        when(refreshTokenUseCase.execute("valid-refresh")).thenReturn(result);
 
         mockMvc.perform(post("/api/auth/refresh")
                         .cookie(new jakarta.servlet.http.Cookie("refreshToken", "valid-refresh")))
@@ -58,7 +60,7 @@ class AuthControllerRefreshTest {
 
     @Test
     void refresh_invalidToken_returns401() throws Exception {
-        when(refreshTokenService.validateAndRotate("bad-token"))
+        when(refreshTokenUseCase.execute("bad-token"))
                 .thenThrow(new InvalidRefreshTokenException("Token expired or not found"));
 
         mockMvc.perform(post("/api/auth/refresh")
