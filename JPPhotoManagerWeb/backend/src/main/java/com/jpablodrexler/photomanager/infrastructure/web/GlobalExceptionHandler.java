@@ -2,9 +2,11 @@ package com.jpablodrexler.photomanager.infrastructure.web;
 
 import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.AssetNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.FolderNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.SearchPresetNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.SmartAlbumMembershipException;
 import com.jpablodrexler.photomanager.application.exception.TagNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.UnsupportedAssetTypeException;
 import com.jpablodrexler.photomanager.application.exception.UserNotFoundException;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.ErrorResponseDto;
 import jakarta.persistence.EntityNotFoundException;
@@ -70,6 +72,13 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponseDto(Instant.now().toString(), 404, "Not Found", ex.getMessage()));
     }
 
+    @ExceptionHandler(FolderNotFoundException.class)
+    public ResponseEntity<ErrorResponseDto> handleFolderNotFound(FolderNotFoundException ex) {
+        log.warn("Folder not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponseDto(Instant.now().toString(), 404, "Not Found", ex.getMessage()));
+    }
+
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ErrorResponseDto> handleEntityNotFound(EntityNotFoundException ex) {
         log.warn("Entity not found: {}", ex.getMessage());
@@ -120,6 +129,13 @@ public class GlobalExceptionHandler {
         log.warn("Invalid argument: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponseDto(Instant.now().toString(), 400, "Bad Request", ex.getMessage()));
+    }
+
+    @ExceptionHandler(UnsupportedAssetTypeException.class)
+    public ResponseEntity<ErrorResponseDto> handleUnsupportedAssetType(UnsupportedAssetTypeException ex) {
+        log.warn("Unsupported asset type: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(new ErrorResponseDto(Instant.now().toString(), 415, "Unsupported Media Type", ex.getMessage()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)

@@ -31,6 +31,12 @@ public interface JpaAssetRepository extends JpaRepository<AssetEntity, Long>, Jp
 
     Optional<AssetEntity> findByFolderAndFileName(FolderEntity folder, String fileName);
 
+    @Query("SELECT a FROM AssetEntity a JOIN FETCH a.folder WHERE a.assetId = :assetId")
+    Optional<AssetEntity> findByIdWithFolder(@Param("assetId") Long assetId);
+
+    @Query("SELECT a FROM AssetEntity a JOIN FETCH a.folder WHERE a.assetId IN :assetIds")
+    List<AssetEntity> findAllByIdWithFolder(@Param("assetIds") List<Long> assetIds);
+
     @Query("SELECT a FROM AssetEntity a JOIN FETCH a.folder WHERE a.fileName = :fileName AND a.deletedAt IS NULL")
     List<AssetEntity> findByFileNameNotDeleted(@Param("fileName") String fileName);
 
@@ -43,6 +49,9 @@ public interface JpaAssetRepository extends JpaRepository<AssetEntity, Long>, Jp
 
     @Query("SELECT a FROM AssetEntity a JOIN FETCH a.folder WHERE a.deletedAt IS NULL")
     List<AssetEntity> findNotDeleted();
+
+    @Query("SELECT a FROM AssetEntity a JOIN FETCH a.folder")
+    List<AssetEntity> findAllWithFolder();
 
     @Query("SELECT a FROM AssetEntity a JOIN FETCH a.folder WHERE a.hash = :hash AND a.deletedAt IS NULL")
     List<AssetEntity> findByHashNotDeleted(String hash);

@@ -5,6 +5,7 @@ import com.jpablodrexler.photomanager.domain.model.AssetFilter;
 import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.SmartAlbumMembershipException;
+import com.jpablodrexler.photomanager.application.exception.UserNotFoundException;
 import com.jpablodrexler.photomanager.domain.model.Album;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.User;
@@ -66,7 +67,7 @@ class AlbumUseCasesTest {
         }
 
         @Test
-        void addAssetsToSmartAlbum_throws422() {
+        void execute_smartAlbum_throwsSmartAlbumMembershipException() {
             Long albumId = 7L;
             UUID userId = UUID.randomUUID();
             Album album = Album.builder().albumId(albumId).userId(userId).filterJson("{\"minRating\":3}").build();
@@ -104,17 +105,17 @@ class AlbumUseCasesTest {
         }
 
         @Test
-        void execute_userNotFound_throwsIllegalArgumentException() {
+        void execute_userNotFound_throwsUserNotFoundException() {
             UUID userId = UUID.randomUUID();
             when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> sut.execute(userId, "Album", null, null))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(UserNotFoundException.class)
                     .hasMessageContaining(userId.toString());
         }
 
         @Test
-        void createAlbum_withFilterJson_storesSerializedJson() {
+        void execute_withFilterJson_storesSerializedJson() {
             UUID userId = UUID.randomUUID();
             User user = User.builder().id(userId).username("alice").build();
             String filterJsonStr = "{\"minRating\":4}";
@@ -331,7 +332,7 @@ class AlbumUseCasesTest {
         }
 
         @Test
-        void removeAssetsFromSmartAlbum_throws422() {
+        void execute_smartAlbum_throwsSmartAlbumMembershipException() {
             Long albumId = 7L;
             UUID userId = UUID.randomUUID();
             Album album = Album.builder().albumId(albumId).userId(userId).filterJson("{\"minRating\":3}").build();

@@ -61,6 +61,10 @@ public class SyncController {
     public SseEmitter run() {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
         long runId = System.currentTimeMillis();
+        Runnable cleanup = () -> kafkaProgressRegistry.remove(runId);
+        emitter.onCompletion(cleanup);
+        emitter.onTimeout(cleanup);
+        emitter.onError(t -> cleanup.run());
         kafkaProgressRegistry.registerEmitter(runId, emitter);
         syncAssetsUseCase.execute(runId);
         return emitter;

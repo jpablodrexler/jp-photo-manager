@@ -4,7 +4,6 @@ import com.jpablodrexler.photomanager.application.dto.AssetUploadedEvent;
 import com.jpablodrexler.photomanager.application.dto.UploadProgressMessage;
 import com.jpablodrexler.photomanager.domain.enums.ProcessingStatus;
 import com.jpablodrexler.photomanager.domain.enums.UploadStage;
-import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +15,6 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.util.backoff.FixedBackOff;
-
-import java.util.Optional;
 
 /**
  * Dedicated container factories for the three kafka-async-upload stage processors
@@ -72,11 +69,8 @@ public class UploadProcessorKafkaConfig {
         }
         log.error("Retry exhausted for {} stage, assetId={}: {}", stage, event.assetId(), exception.getMessage());
 
-        Optional<Asset> assetOpt = assetRepository.findById(event.assetId());
-        if (assetOpt.isPresent()) {
-            Asset asset = assetOpt.get();
-            asset.setProcessingStatus(ProcessingStatus.FAILED);
-            assetRepository.save(asset);
+        if (assetRepository.existsById(event.assetId())) {
+            assetRepository.updateProcessingStatus(event.assetId(), ProcessingStatus.FAILED);
         } else {
             log.warn("Asset {} not found while recovering failed {} stage", event.assetId(), stage);
         }

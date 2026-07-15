@@ -4,7 +4,6 @@ import com.jpablodrexler.photomanager.application.dto.AssetUploadedEvent;
 import com.jpablodrexler.photomanager.application.dto.UploadProgressMessage;
 import com.jpablodrexler.photomanager.domain.enums.ProcessingStatus;
 import com.jpablodrexler.photomanager.domain.enums.UploadStage;
-import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.Test;
@@ -16,8 +15,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -41,15 +38,12 @@ class UploadProcessorKafkaConfigTest {
     void recoverFailedStage_retriesExhausted_marksAssetFailedAndPublishesFailedMessage() {
         AssetUploadedEvent event = new AssetUploadedEvent(1L, "/photos/img.jpg", "/photos", "img.jpg");
         ConsumerRecord<Object, Object> record = new ConsumerRecord<>("asset.uploaded", 0, 0L, "1", event);
-        Asset asset = new Asset();
-        asset.setAssetId(1L);
-        when(assetRepository.findById(1L)).thenReturn(Optional.of(asset));
+        when(assetRepository.existsById(1L)).thenReturn(true);
 
         ReflectionTestUtils.invokeMethod(sut, "recoverFailedStage", record, UploadStage.EXIF,
                 new RuntimeException("boom"));
 
-        assertThat(asset.getProcessingStatus()).isEqualTo(ProcessingStatus.FAILED);
-        verify(assetRepository).save(asset);
+        verify(assetRepository).updateProcessingStatus(1L, ProcessingStatus.FAILED);
 
         ArgumentCaptor<UploadProgressMessage> captor = ArgumentCaptor.forClass(UploadProgressMessage.class);
         verify(kafkaTemplate).send(eq("job.upload.progress"), eq("1"), captor.capture());
@@ -62,7 +56,7 @@ class UploadProcessorKafkaConfigTest {
     void recoverFailedStage_assetNotFound_stillPublishesFailedMessage() {
         AssetUploadedEvent event = new AssetUploadedEvent(99L, "/photos/img.jpg", "/photos", "img.jpg");
         ConsumerRecord<Object, Object> record = new ConsumerRecord<>("asset.uploaded", 0, 0L, "99", event);
-        when(assetRepository.findById(99L)).thenReturn(Optional.empty());
+        when(assetRepository.existsById(99L)).thenReturn(false);
 
         ReflectionTestUtils.invokeMethod(sut, "recoverFailedStage", record, UploadStage.HASH,
                 new RuntimeException("boom"));

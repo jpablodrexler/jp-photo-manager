@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.application.usecase.album;
 
+import com.jpablodrexler.photomanager.application.exception.UserNotFoundException;
 import com.jpablodrexler.photomanager.domain.model.AlbumData;
 import com.jpablodrexler.photomanager.domain.model.Album;
 import com.jpablodrexler.photomanager.domain.port.in.album.CreateAlbumUseCase;
@@ -23,7 +24,7 @@ public class CreateAlbumUseCaseImpl implements CreateAlbumUseCase {
     @Transactional
     public AlbumData execute(UUID userId, String name, String description, String filterJson) {
         userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+                .orElseThrow(() -> new UserNotFoundException(userId));
         Album album = new Album();
         album.setUserId(userId);
         album.setName(name);

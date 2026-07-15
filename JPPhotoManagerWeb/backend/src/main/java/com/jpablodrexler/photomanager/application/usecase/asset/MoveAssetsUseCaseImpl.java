@@ -45,11 +45,12 @@ public class MoveAssetsUseCaseImpl implements MoveAssetsUseCase {
     public boolean execute(Long[] assetIds, String destinationPath, boolean preserveOriginal) {
         validateDestinationPath(destinationPath);
         List<Asset> assets = assetRepository.findAllById(Arrays.asList(assetIds));
-        Folder destination = folderRepository.findByPath(destinationPath)
-                .orElseGet(() -> folderRepository.save(Folder.builder().path(destinationPath).build()));
 
         TransactionTemplate perAssetTransaction = new TransactionTemplate(transactionManager);
         perAssetTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
+        Folder destination = perAssetTransaction.execute(status -> folderRepository.findByPath(destinationPath)
+                .orElseGet(() -> folderRepository.save(Folder.builder().path(destinationPath).build())));
 
         for (Asset asset : assets) {
             String sourcePath = asset.getFolder().getPath() + "/" + asset.getFileName();

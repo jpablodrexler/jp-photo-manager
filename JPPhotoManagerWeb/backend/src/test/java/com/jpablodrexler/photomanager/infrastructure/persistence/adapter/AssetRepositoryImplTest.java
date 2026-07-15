@@ -45,7 +45,7 @@ class AssetRepositoryImplTest {
     void findById_present_returnsMappedDomain() {
         AssetEntity entity = new AssetEntity();
         Asset domain = Asset.builder().assetId(1L).build();
-        when(jpa.findById(1L)).thenReturn(Optional.of(entity));
+        when(jpa.findByIdWithFolder(1L)).thenReturn(Optional.of(entity));
         when(assetMapper.toDomain(entity)).thenReturn(domain);
 
         Optional<Asset> result = sut.findById(1L);
@@ -55,7 +55,7 @@ class AssetRepositoryImplTest {
 
     @Test
     void findById_absent_returnsEmpty() {
-        when(jpa.findById(99L)).thenReturn(Optional.empty());
+        when(jpa.findByIdWithFolder(99L)).thenReturn(Optional.empty());
 
         assertThat(sut.findById(99L)).isEmpty();
     }
@@ -217,7 +217,7 @@ class AssetRepositoryImplTest {
     void findAll_returnsMappedList() {
         AssetEntity entity = new AssetEntity();
         Asset domain = Asset.builder().assetId(2L).build();
-        when(jpa.findAll()).thenReturn(List.of(entity));
+        when(jpa.findAllWithFolder()).thenReturn(List.of(entity));
         when(assetMapper.toDomain(entity)).thenReturn(domain);
 
         assertThat(sut.findAll()).containsExactly(domain);
@@ -227,7 +227,7 @@ class AssetRepositoryImplTest {
     void findAllById_returnsMappedList() {
         AssetEntity entity = new AssetEntity();
         Asset domain = Asset.builder().assetId(1L).build();
-        when(jpa.findAllById(List.of(1L))).thenReturn(List.of(entity));
+        when(jpa.findAllByIdWithFolder(List.of(1L))).thenReturn(List.of(entity));
         when(assetMapper.toDomain(entity)).thenReturn(domain);
 
         assertThat(sut.findAllById(List.of(1L))).containsExactly(domain);

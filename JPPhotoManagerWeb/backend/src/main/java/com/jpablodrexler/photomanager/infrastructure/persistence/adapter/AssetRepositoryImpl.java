@@ -53,7 +53,7 @@ public class AssetRepositoryImpl implements AssetRepository {
     @Override
     @Transactional(readOnly = true)
     public Optional<Asset> findById(Long id) {
-        return jpa.findById(id).map(assetMapper::toDomain);
+        return jpa.findByIdWithFolder(id).map(assetMapper::toDomain);
     }
 
     @Override
@@ -124,13 +124,13 @@ public class AssetRepositoryImpl implements AssetRepository {
     @Override
     @Transactional(readOnly = true)
     public List<Asset> findAll() {
-        return jpa.findAll().stream().map(assetMapper::toDomain).toList();
+        return jpa.findAllWithFolder().stream().map(assetMapper::toDomain).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Asset> findAllById(List<Long> ids) {
-        return jpa.findAllById(ids).stream().map(assetMapper::toDomain).toList();
+        return jpa.findAllByIdWithFolder(ids).stream().map(assetMapper::toDomain).toList();
     }
 
     @Override
