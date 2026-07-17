@@ -1109,6 +1109,8 @@ kubectl port-forward -n photomanager svc/prometheus 9090:9090
 kubectl port-forward -n photomanager svc/grafana 3000:3000
 ```
 
+For Grafana, PostgreSQL, and MongoDB specifically, `./port-forward-k8s.sh` runs those three commands for you in the background in one step and is safe to re-run (a port already forwarded is left alone, not duplicated). `./build-and-deploy-k8s.sh` already calls it automatically after deploying — run it standalone afterward any time a tunnel needs to be re-established (a machine reboot, a Docker Desktop restart, or one of those pods being replaced all kill the tunnel without killing the pod behind it), without needing to rebuild images or reapply manifests.
+
 ### Common commands
 
 ```bash

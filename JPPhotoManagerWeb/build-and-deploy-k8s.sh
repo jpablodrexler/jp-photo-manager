@@ -6,9 +6,7 @@ set -euo pipefail
 # configuration for the web application — the exact steps documented in
 # README.md's "Running with Kubernetes" section (Prerequisites + Setup),
 # automated so you don't have to run them by hand. Safe to re-run — every
-# step here is idempotent, including the background port-forwards started
-# at the end (see below): a port already forwarded from a previous run is
-# detected and skipped rather than duplicated.
+# step here is idempotent.
 #
 # Usage: ./build-and-deploy-k8s.sh   (run from anywhere; the script cds to its own dir)
 #
@@ -17,12 +15,13 @@ set -euo pipefail
 # does not create them, since they hold machine-specific / sensitive values
 # that must never be scripted into existence with placeholder content.
 #
-# After applying the stack, the script also starts background
-# `kubectl port-forward` tunnels for Grafana, PostgreSQL, and MongoDB (the
-# same commands documented in README.md's "Accessing services" section)
-# so those services are reachable at localhost immediately, without an
-# extra manual step. They keep running after the script exits — use the
-# `kill <PID>` commands printed at the end to stop them.
+# After applying the stack, this script calls ./port-forward-k8s.sh to start
+# background port-forwards for Grafana, PostgreSQL, and MongoDB so those
+# services are reachable at localhost immediately. That script lives on its
+# own rather than being inlined here because it needs re-running any time a
+# tunnel drops — a machine reboot, a Docker Desktop restart, or one of
+# those pods being replaced — none of which require rebuilding images or
+# reapplying manifests, so it shouldn't require rerunning this whole script.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -136,40 +135,8 @@ echo "==> Current pod status:"
 kubectl get pods -n photomanager
 
 echo ""
-echo "==> Starting background port-forwards for Grafana, PostgreSQL, and MongoDB ..."
-echo "    (a port already forwarded from a previous run of this script is left alone, not duplicated)"
-
-# Checks whether something is already listening on 127.0.0.1:<port> using
-# bash's built-in /dev/tcp pseudo-device — no extra tool (nc, lsof, ss)
-# required, so this works the same in Git Bash, WSL, and native Linux/macOS
-# bash, all of which this script already has to support (see the WSL
-# kubeconfig handling above).
-port_in_use() {
-    (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null
-}
-
-# Starts `kubectl port-forward` in the background for one service, unless
-# the local port is already in use (most likely by a still-running
-# port-forward from a previous invocation of this script). Prints the PID
-# so it can be killed later; PIDs are also collected into PORT_FORWARD_PIDS
-# for the summary at the end.
-PORT_FORWARD_PIDS=()
-start_port_forward() {
-    local label="$1" svc="$2" local_port="$3" remote_port="$4"
-    if port_in_use "$local_port"; then
-        echo "    ${label}: localhost:${local_port} is already in use — skipping (already forwarded?)."
-        return
-    fi
-    nohup kubectl port-forward -n photomanager "svc/${svc}" "${local_port}:${remote_port}" \
-        >/dev/null 2>&1 &
-    local pid=$!
-    PORT_FORWARD_PIDS+=("$pid")
-    echo "    ${label}: localhost:${local_port} (PID ${pid})"
-}
-
-start_port_forward "Grafana"    grafana 3000  3000
-start_port_forward "PostgreSQL" db      5433  5432
-start_port_forward "MongoDB"    mongo   27017 27017
+echo "==> Starting Grafana/PostgreSQL/MongoDB port-forwards ..."
+"$SCRIPT_DIR/port-forward-k8s.sh"
 
 echo ""
 echo "Next steps:"
@@ -184,13 +151,8 @@ echo "         Add-Content -Path \"\$env:SystemRoot\\System32\\drivers\\etc\\hos
 echo "       Linux/macOS:"
 echo "         echo \"127.0.0.1 photomanager.local\" | sudo tee -a /etc/hosts"
 echo "  3. Open http://photomanager.local"
-echo "  4. Grafana, PostgreSQL, and MongoDB are now reachable at localhost:3000,"
-echo "     localhost:5433, and localhost:27017 respectively (see README's"
-echo "     'Connecting DBeaver to the database' / MongoDB client sections for"
-echo "     connection settings). These port-forwards keep running after this"
-echo "     script exits; stop them when no longer needed with:"
-if [ "${#PORT_FORWARD_PIDS[@]}" -gt 0 ]; then
-    echo "       kill ${PORT_FORWARD_PIDS[*]}"
-else
-    echo "       kill <PID>   (all three were already forwarded — see 'skipping' lines above)"
-fi
+echo "  4. Grafana, PostgreSQL, and MongoDB port-forwards were started above —"
+echo "     see the output for their addresses and the 'kill <PID>' command to"
+echo "     stop them. Re-run ./port-forward-k8s.sh standalone any time a"
+echo "     tunnel drops (reboot, Docker Desktop restart, pod replaced) —"
+echo "     no rebuild or redeploy needed."
