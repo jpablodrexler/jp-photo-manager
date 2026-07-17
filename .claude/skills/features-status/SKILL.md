@@ -1,18 +1,17 @@
 ---
 name: features-status
-description: Reports feature tracking progress by counting rows in openspec/features.md and openspec/features-implemented.md. Returns total, implemented, pending, and percent-complete counts. TRIGGER when the user asks for a feature status report, progress report, "features vs implemented features", how many features are done/pending, or similar summary requests about the feature backlog.
+description: Reports feature tracking progress by counting rows in openspec/features.md and openspec/features-implemented.md. Returns total, implemented, pending, and percent-complete counts, plus a priority-tier and artifacts-readiness breakdown of pending features. TRIGGER when the user asks for a feature status report, progress report, "features vs implemented features", how many features are done/pending, or similar summary requests about the feature backlog.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "1.1"
 ---
 
 Report feature-tracking progress by counting rows in `openspec/features.md`
 (pending) and `openspec/features-implemented.md` (implemented).
 
-**Input**: None required. Optional flag `--detail` to also break down pending
-features by priority tier (P0–P3) from the `## Dependencies` section of
-`openspec/features.md`.
+**Input**: None required. The report always includes the priority-tier and
+artifacts-readiness breakdown of pending features.
 
 ---
 
@@ -38,7 +37,7 @@ total     = pending + implemented
 percent   = round(100 * implemented / total, 1)
 ```
 
-### 4. (Optional) Priority breakdown — only if `--detail` was passed
+### 4. Priority breakdown
 
 Scan the `### Hard implementation dependencies` and the `P0`/`P1`/`P2`/`P3`
 labeled subsections under `## Dependencies` in `openspec/features.md`. Tally
@@ -49,6 +48,8 @@ immediately) vs `⬜ Pending`.
 
 ### 5. Display the report
 
+Always display both the summary table and the detail breakdown:
+
 ```
 ## Feature Tracker Status
 
@@ -58,11 +59,7 @@ immediately) vs `⬜ Pending`.
 | ✅ Implemented         | <implemented> |
 | ⬜ Pending             | <pending> |
 | **Progress**           | **<percent>%** |
-```
 
-If `--detail` was requested, append:
-
-```
 ### Pending breakdown by priority
 
 | Tier | Count |
