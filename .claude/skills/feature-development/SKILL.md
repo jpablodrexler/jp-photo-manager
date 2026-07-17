@@ -1,13 +1,13 @@
 ---
-name: improvement-development
+name: feature-development
 description: >
-  Orchestrates the full improvement lifecycle end-to-end: selects the next
-  improvement, proposes SDD artifacts if missing, implements all change tasks,
+  Orchestrates the full feature lifecycle end-to-end: selects the next
+  feature, proposes SDD artifacts if missing, implements all change tasks,
   runs code and security reviews (findings fixed before continuing), runs
   backend and frontend tests until they pass, builds updated Docker images and
   deploys them via Kubernetes (if a live cluster deployment exists) or Docker
   Compose (if Docker is running), then archives the SDD change and marks the
-  improvement as implemented. Use when you want a fully automated improvement
+  feature as implemented. Use when you want a fully automated feature
   development cycle with minimal manual steps.
 license: MIT
 metadata:
@@ -15,12 +15,12 @@ metadata:
   version: "1.0"
 ---
 
-Orchestrate the full improvement lifecycle from selection to archive using
+Orchestrate the full feature lifecycle from selection to archive using
 dedicated subagents for each phase.
 
-**Input**: Optional improvement name or number. If provided, passes it to
-`improvements-next` to skip the recommendation step and jump straight to
-confirmation for that improvement.
+**Input**: Optional feature name or number. If provided, passes it to
+`features-next` to skip the recommendation step and jump straight to
+confirmation for that feature.
 
 ---
 
@@ -30,12 +30,12 @@ Five phases executed by six dedicated subagents (3a and 3b run in parallel):
 
 | Phase                   | Subagent   | Skills / actions                                                                                                 |
 | ----------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
-| 1 — Select & Propose    | Subagent 1 | `improvements-next` (confirm only) → `openspec-propose` (if artifacts missing)                                  |
+| 1 — Select & Propose    | Subagent 1 | `features-next` (confirm only) → `openspec-propose` (if artifacts missing)                                  |
 | 2 — Implement & Review  | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `security-reviewer` (conditional, findings fixed before done) |
 | 3a — Backend tests      | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test` until passing                                                    |
 | 3b — Frontend tests     | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                   |
 | 4 — Build & deploy      | Subagent 5 | deploys via `build-and-deploy-k8s.sh` if a live `photomanager` deployment exists, else Docker Compose/Dockerfiles (skipped if Docker not running) |
-| 5 — Archive             | Subagent 6 | `openspec-archive-change <name>` → `improvements-archive <name>`                                                 |
+| 5 — Archive             | Subagent 6 | `openspec-archive-change <name>` → `features-archive <name>`                                                 |
 
 ---
 
@@ -51,8 +51,8 @@ prompt (substitute `<input>` with the argument passed to this skill, if any):
 > If the command fails or is not found, end your response with
 > `PROPOSE_BLOCKED — openspec CLI not found` and stop.
 >
-> **Step 1 — Select the improvement**
-> Use the Skill tool to invoke the `improvements-next` skill (pass the argument
+> **Step 1 — Select the feature**
+> Use the Skill tool to invoke the `features-next` skill (pass the argument
 > `<input>` if one was provided; otherwise invoke with no argument). The skill
 > will present a recommendation, ask for user confirmation, and return a
 > `CHANGE_NAME: <change-name>` line. Capture that value and proceed to Step 2.
@@ -450,9 +450,9 @@ prompt:
 > or incomplete tasks — respond to those prompts normally; they are part of the
 > archiving workflow.
 >
-> **Step 2** — Invoke `improvements-archive <change-name>`. Wait for it to
-> complete fully (the improvement row must be updated to `✅ Implemented` in
-> `openspec/improvements.md`).
+> **Step 2** — Invoke `features-archive <change-name>`. Wait for it to
+> complete fully (the feature row must be updated to `✅ Implemented` in
+> `openspec/features.md`).
 >
 > After both steps complete, end your response with exactly this line:
 > `ARCHIVE: DONE`
@@ -466,7 +466,7 @@ Do not display the Final Summary until this subagent returns `ARCHIVE: DONE`.
 After all phases complete, display:
 
 ```
-## Improvement Development Complete
+## Feature Development Complete
 
 **Change:** <change-name>
 **Artifacts:** ✓ Created
@@ -477,7 +477,7 @@ After all phases complete, display:
 **Frontend tests:** ✓ All passing
 **Docker:** ✓ <value from DOCKER signal, e.g. "Deployed — build-and-deploy-k8s.sh (namespace photomanager)", "Deployed — backend, frontend", or "Skipped — Docker not running">
 **SDD change:** ✓ Archived
-**Improvement:** ✓ Marked as implemented
+**Feature:** ✓ Marked as implemented
 ```
 
 ---
