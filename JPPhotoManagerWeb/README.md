@@ -730,6 +730,7 @@ If you have an existing catalog in a **host PostgreSQL instance** and want to mo
 |---|---|---|---|
 | `db` | `postgres:18` | `5433` | PostgreSQL 18; data persisted in the `pgdata` named volume |
 | `kafka` | `apache/kafka:3.9.0` | `9092` (internal) `9094` (host) | Apache Kafka in KRaft mode (no ZooKeeper); pub/sub backbone for catalog/sync/convert progress events. Port 9092 is for inter-container traffic; port 9094 exposes the broker to the host machine. |
+| `mongo` | `mongo:8` | `27017` | MongoDB 8; stores the `asset_exif` and `asset_audit_log` collections; data persisted in the `mongodata` named volume; no authentication configured |
 | `backend` | JRE 21 Alpine | `8080` | Spring Boot REST API; `HOST_IMAGE_DIR` bind-mounted at `/catalog`; connects to Kafka via `kafka:9092` |
 | `frontend` | Nginx Alpine | `80` | Angular SPA; reverse-proxies `/api` to the backend |
 | `prometheus` | `prom/prometheus` | `9090` | Scrapes backend metrics from `/actuator/prometheus` every 15 s |
@@ -745,6 +746,7 @@ After `docker compose up`, all services are reachable from the host machine:
 | Backend REST API | `http://localhost:8080/api` | JWT cookie set on login |
 | Swagger UI | `http://localhost:8080/swagger-ui.html` | — |
 | PostgreSQL | `localhost:5433` | see table below |
+| MongoDB | `localhost:27017` | no auth — see below |
 | Prometheus | `http://localhost:9090` | — |
 | Grafana | `http://localhost:3000` | `admin` / value of `GRAFANA_ADMIN_PASSWORD` (default: `admin`) |
 
@@ -766,6 +768,42 @@ Steps:
 2. Select **PostgreSQL** and click **Next**.
 3. Fill in the fields from the table above and click **Test Connection** to verify.
 4. Click **Finish**.
+
+#### Installing a MongoDB client on Windows and connecting to the database
+
+[MongoDB Compass](https://www.mongodb.com/try/download/compass) is the official GUI client — the MongoDB equivalent of DBeaver above.
+
+**Install (pick one):**
+- **winget** (recommended):
+  ```powershell
+  winget install MongoDB.Compass.Full
+  ```
+- **Manual download**: get the installer from the [MongoDB Compass download page](https://www.mongodb.com/try/download/compass) and run it.
+
+Prefer a CLI instead of a GUI? Install `mongosh` the same way:
+```powershell
+winget install MongoDB.Shell
+```
+
+**Connection settings:**
+
+| Field | Value |
+|---|---|
+| Connection string | `mongodb://localhost:27017/photomanager` |
+| Authentication | None — the `mongo` container runs without credentials |
+
+Steps (Compass):
+1. Open MongoDB Compass.
+2. Paste the connection string above into the **URI** field on the welcome screen.
+3. Click **Connect**.
+4. Expand the `photomanager` database in the sidebar to browse the `asset_exif` and `asset_audit_log` collections.
+
+Or from `mongosh`:
+```bash
+mongosh "mongodb://localhost:27017/photomanager"
+```
+
+This same connection string works unchanged against a Kubernetes deployment — see [Accessing services](#accessing-services) for the `kubectl port-forward` command that maps `svc/mongo` to the same local port.
 
 #### Calling the backend API directly from the host
 
@@ -1060,6 +1098,9 @@ kubectl port-forward -n photomanager svc/backend 8080:8080
 
 # PostgreSQL, for DBeaver etc. (compose: localhost:5433)
 kubectl port-forward -n photomanager svc/db 5433:5432
+
+# MongoDB, for Compass/mongosh etc. (compose: localhost:27017)
+kubectl port-forward -n photomanager svc/mongo 27017:27017
 
 # Prometheus (compose: http://localhost:9090)
 kubectl port-forward -n photomanager svc/prometheus 9090:9090
