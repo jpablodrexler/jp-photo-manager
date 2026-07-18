@@ -3,12 +3,13 @@ name: feature-development
 description: >
   Orchestrates the full feature lifecycle end-to-end: selects the next
   feature, proposes SDD artifacts if missing, implements all change tasks,
-  runs code and security reviews (findings fixed before continuing), runs
-  backend and frontend tests until they pass, builds updated Docker images and
-  deploys them via Kubernetes (if a live cluster deployment exists) or Docker
-  Compose (if Docker is running), then archives the SDD change and marks the
-  feature as implemented. Use when you want a fully automated feature
-  development cycle with minimal manual steps.
+  runs code, security, and (when schema files changed) database reviews
+  (findings fixed before continuing), runs backend and frontend tests until
+  they pass, builds updated Docker images and deploys them via Kubernetes (if
+  a live cluster deployment exists) or Docker Compose (if Docker is running),
+  then archives the SDD change and marks the feature as implemented. Use
+  when you want a fully automated feature development cycle with minimal
+  manual steps.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
@@ -28,14 +29,14 @@ confirmation for that feature.
 
 Five phases executed by six dedicated subagents (3a and 3b run in parallel):
 
-| Phase                   | Subagent   | Skills / actions                                                                                                 |
-| ----------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
-| 1 — Select & Propose    | Subagent 1 | `features-next` (confirm only) → `openspec-propose` (if artifacts missing)                                  |
-| 2 — Implement & Review  | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `security-reviewer` (conditional, findings fixed before done) |
-| 3a — Backend tests      | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test` until passing                                                    |
-| 3b — Frontend tests     | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                   |
-| 4 — Build & deploy      | Subagent 5 | deploys via `build-and-deploy-k8s.sh` if a live `photomanager` deployment exists, else Docker Compose/Dockerfiles (skipped if Docker not running) |
-| 5 — Archive             | Subagent 6 | `openspec-archive-change <name>` → `features-archive <name>`                                                 |
+| Phase                  | Subagent   | Skills / actions                                                                                                                                  |
+| ---------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 — Select & Propose   | Subagent 1 | `features-next` (confirm only) → `openspec-propose` (if artifacts missing)                                                                        |
+| 2 — Implement & Review | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `database-reviewer` + `security-reviewer` (conditional, findings fixed before done)          |
+| 3a — Backend tests     | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test` until passing                                                                                     |
+| 3b — Frontend tests    | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                                                    |
+| 4 — Build & deploy     | Subagent 5 | deploys via `build-and-deploy-k8s.sh` if a live `photomanager` deployment exists, else Docker Compose/Dockerfiles (skipped if Docker not running) |
+| 5 — Archive            | Subagent 6 | `openspec-archive-change <name>` → `features-archive <name>`                                                                                      |
 
 ---
 
@@ -137,7 +138,7 @@ prompt:
 > - If the report contains any 🔴 Critical or 🟡 Warning findings: fix every
 >   one of them in the source files. As you fix each finding, check it off in
 >   that report file (`- [ ]` → `- [x]`) with a `**Fixed:** <one-sentence
->   summary of what changed>` note appended to the same line — the same
+summary of what changed>` note appended to the same line — the same
 >   convention the code-reviewer skill's Fix Workflow uses — so the report is
 >   left as an accurate record of what this session resolved rather than a
 >   stale "nothing done" snapshot. Then re-invoke `code-reviewer` to confirm
@@ -151,7 +152,45 @@ prompt:
 >
 > Do not proceed to Step 3 until all Critical and Warning findings are resolved.
 >
-> **Step 3 — Security review (conditional)**
+> **Step 3 — Database review (conditional)**
+> Check whether all changes made so far (Steps 1–2) touch any of these
+> database-schema areas: a Flyway migration under `db/migration/`, a JPA
+> entity under `infrastructure/persistence/entity/`, or a repository query
+> (`@Query`, derived query method, or native query) under
+> `infrastructure/persistence/jpa/` or `infrastructure/persistence/adapter/`.
+>
+> - If **none** of these areas were touched: skip this step.
+> - If **any** were touched: invoke `database-reviewer` via the Skill tool
+>   using its **Review** workflow, scoped to the files changed by
+>   `<change-name>` (this subagent runs unattended — do not invoke the
+>   skill's interactive Fix Workflow, which is designed for a human to steer
+>   turn-by-turn across a conversation). This is a scoped review of one
+>   change, not a full migration-history audit — do not request or expect
+>   additional subagents here. Every invocation writes a single dated
+>   `docs/database-review/DATABASE_REVIEW_FINDINGS_*.md` report (repo root,
+>   gitignored). After the review completes, fix every 🔴 Critical and 🟡
+>   Warning finding in the source files — check each off in that report file
+>   (`- [ ]` → `- [x]`) with a `**Fixed:**` note as you go, the same
+>   convention `code-reviewer`'s Fix Workflow uses — then re-invoke
+>   `database-reviewer` to confirm no new findings were introduced; this
+>   writes a fresh report for the re-check. Repeat until the re-check report
+>   is clean.
+>   Remember that a fix to an already-applied Flyway migration is never an
+>   edit to the existing file — it must be a new `V{n+1}__*.sql` migration
+>   (per the skill's own §5); only entity-only findings (e.g. `@Table(indexes
+= ...)` drift) may be fixed by editing the entity directly.
+>   If after 3 rounds of fix-and-re-review findings are still present, end
+>   your response with `DATABASE_BLOCKED — repeated review cycles` and stop.
+>   If you encounter a finding you cannot fix without human input (e.g. it
+>   requires a data-backfill/locking strategy decision): end your response
+>   with `DATABASE_BLOCKED — <brief reason>` and stop.
+>   Once the database report is clean, re-invoke `code-reviewer` (Review
+>   workflow, same non-interactive and scoped-not-full-sweep caveats as
+>   Step 2) for a final pass scoped to the database fixes — apply any 🔴
+>   Critical or 🟡 Warning findings, checking each off in that pass's report
+>   file with a `**Fixed:**` note as in Step 2, before proceeding.
+>
+> **Step 4 — Security review (conditional)**
 > Check whether all changes made so far (Steps 1 and 2) touch any of these
 > security-sensitive areas: authentication, authorization, file I/O, user input
 > handling, dependency changes (`pom.xml` / `package.json`), or data persistence.
@@ -184,10 +223,11 @@ prompt:
 >   Critical or 🟡 Warning findings, checking each off in that pass's report
 >   file with a `**Fixed:**` note as in Step 2, before proceeding.
 >
-> Do not return until all Critical and Warning security and code-review findings
-> are resolved.
+> Do not proceed to Step 5 until all Critical and Warning code-review,
+> database-review, and security-review findings (including any follow-on
+> code-review findings from the database and security sub-steps) are resolved.
 >
-> **Step 4 — Signal completion**
+> **Step 5 — Signal completion**
 > End your response with exactly this line:
 > `IMPLEMENT: DONE`
 
@@ -214,13 +254,13 @@ Prompt:
 > 3. If any tests fail:
 >    a. Read the failure output carefully.
 >    b. Identify the root cause (compilation error, assertion mismatch, missing
->       mock setup, etc.), checking files related to `<change-name>` first.
+>    mock setup, etc.), checking files related to `<change-name>` first.
 >    c. Fix the affected files under `JPPhotoManagerWeb/backend/`. Prefer fixing
->       test code over production source code. If you must modify a production
->       source file, note it with `PROD_CODE_FIXED: <filename> — <reason>`.
+>    test code over production source code. If you must modify a production
+>    source file, note it with `PROD_CODE_FIXED: <filename> — <reason>`.
 >    d. Re-run `cd JPPhotoManagerWeb/backend && mvn test`.
 >    e. Repeat until all tests pass or you reach a failure you cannot fix
->       without human input.
+>    without human input.
 >
 > End your response with one of:
 >
@@ -241,14 +281,14 @@ Prompt:
 > 3. If any tests fail:
 >    a. Read the failure output carefully.
 >    b. Identify the root cause (type error, missing stub, assertion mismatch,
->       missing `provideNoopAnimations()`, etc.), checking files related to
->       `<change-name>` first.
+>    missing `provideNoopAnimations()`, etc.), checking files related to
+>    `<change-name>` first.
 >    c. Fix the affected files under `JPPhotoManagerWeb/frontend/`. Prefer fixing
->       test code over production source code. If you must modify a production
->       source file, note it with `PROD_CODE_FIXED: <filename> — <reason>`.
+>    test code over production source code. If you must modify a production
+>    source file, note it with `PROD_CODE_FIXED: <filename> — <reason>`.
 >    d. Re-run `cd JPPhotoManagerWeb/frontend && npm test`.
 >    e. Repeat until all tests pass or you reach a failure you cannot fix
->       without human input.
+>    without human input.
 >
 > End your response with one of:
 >
@@ -265,6 +305,7 @@ subagents report `PASS`.
 If either subagent's response contains one or more `PROD_CODE_FIXED:` lines,
 surface them to the user with a note that those production source changes were
 not covered by Phase 2's review. Ask the user whether to:
+
 - **Proceed** — continue to Phase 4 without additional review.
 - **Re-run Phase 2** — spawn a new Subagent 2 with the same prompt to review
   and code-review the production fixes, then re-run Phase 3 (spawn new
@@ -332,7 +373,7 @@ prompt:
 >    `JPPhotoManagerWeb/CLAUDE.md` they hold real secrets and machine-specific
 >    paths and must never be read under any circumstances. If either is
 >    missing, end your response with `DOCKER: BLOCKED — <the script's ERROR
->    line>` verbatim so the user can create it from the matching
+line>` verbatim so the user can create it from the matching
 >    `.example` template themselves. For any other script failure, end with
 >    `DOCKER: BLOCKED — <brief reason>`.
 > 3. The script triggers `kubectl rollout restart` near the end but returns
@@ -353,6 +394,7 @@ prompt:
 >    Both should show `1/1` and `Running`.
 >
 > End your response with one of:
+>
 > - `DOCKER: DEPLOYED — build-and-deploy-k8s.sh (namespace photomanager)`
 > - `DOCKER: BLOCKED — <brief reason>` if the script, or the rollout wait
 >   after it, failed (or `kubectl rollout status` timed out) and you cannot
@@ -472,6 +514,7 @@ After all phases complete, display:
 **Artifacts:** ✓ Created
 **Implementation:** ✓ All tasks complete
 **Code review:** ✓ All findings resolved
+**Database review:** ✓ All findings resolved (or N/A — no schema changes)
 **Security review:** ✓ All findings resolved (or N/A — no security-sensitive changes)
 **Backend tests:** ✓ All passing
 **Frontend tests:** ✓ All passing
@@ -494,8 +537,8 @@ After all phases complete, display:
   artifacts are `done`. If Phase 1 returns `PROPOSE_BLOCKED`, surface the
   details to the user and stop.
 - Do not start Phase 3 until Phase 2 returns `IMPLEMENT: DONE`. If Phase 2
-  returns `IMPLEMENT_BLOCKED`, `REVIEW_BLOCKED`, or `SECURITY_BLOCKED`, surface
-  the details to the user and wait for guidance before continuing.
+  returns `IMPLEMENT_BLOCKED`, `REVIEW_BLOCKED`, `DATABASE_BLOCKED`, or `SECURITY_BLOCKED`, surface the details to the user and wait for guidance
+  before continuing.
 - Do not start Phase 4 until both test subagents in Phase 3 report `PASS`. If
   either reports `BLOCKED`, surface the details to the user and wait for
   guidance before continuing. If either reports `PROD_CODE_FIXED:` lines,
@@ -521,13 +564,19 @@ After all phases complete, display:
   Phase 2 reviews a single change's files, so it must stay on that single-
   report path — one dated report per invocation, reviewed inline by Subagent
   2 itself, no further subagents spawned.
+- **`database-reviewer` follows the same conditional-trigger, scoped-Review,
+  never-Fix pattern as `code-reviewer`.** It only runs when Step 3
+  detects a Flyway migration, JPA entity, or repository query changed;
+  Subagent 2 fixes findings itself (creating a new `V{n+1}__*.sql` migration
+  for any fix to already-applied schema, never editing an existing one) and
+  updates the resulting report's checkboxes directly (see Step 3 above).
 - **`security-reviewer` has the same two-workflow and scoped-vs-sweep split
   as `code-reviewer`; Phase 2 always uses Review, scoped, never Fix or a
   full sweep.** Same rationale as the two bullets above — the interactive
   Fix Workflow doesn't fit an unattended subagent, and this step is
   reviewing one change's files, not the whole app. Subagent 2 fixes
   findings itself and updates the resulting report's checkboxes directly
-  (see Step 3 above).
+  (see Step 4 above).
 - **No git commits at any point.** Neither this skill nor any subagent it
   spawns may run `git commit`, `git push`, or any other git write command
   at any point in the workflow. This applies to all phases, including after
