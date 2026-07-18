@@ -45,7 +45,6 @@ This document records all **pending** features to the JPPhotoManagerWeb applicat
 | 71  | `webdav-server`             | Expose the catalog over WebDAV (`PROPFIND`, `GET`, `PUT`, `DELETE`, `MKCOL`) at `/webdav/` so users can mount the catalog as a network drive on Windows (Map Network Drive), macOS (Finder → Connect to Server), and Linux (`davfs2`); the virtual folder tree mirrors the `assets.folder_path` hierarchy; `GET` on an asset path streams the original file via the existing `StoragePort`; `PUT` to any folder path triggers the same catalog pipeline as drag-and-drop upload (#3); `DELETE` routes through the soft-delete path from `soft-delete-recycle-bin` (#9); implemented with `milton-server-ce` (pure Java WebDAV server, no servlet dependency conflicts) or a custom Spring MVC `WebdavController` handling raw `PROPFIND` XML via JAXB; authentication uses HTTP Basic over the existing `UserDetailsService` — JWT cookies are not compatible with native OS WebDAV clients; no schema change | ✅ Created | ⬜ Pending |
 | 74  | `mongodb-user-preferences`        | Move `user_preferences` and `search_presets` from rigid PostgreSQL tables to a single MongoDB `user_configs` collection keyed by `userId`; adding a new UI preference (theme, gallery layout, notification toggle) requires no Flyway migration; search preset payloads grow naturally as new filter fields are added without altering existing rows; only the two persistence adapters (`UserPreferenceRepositoryImpl`, `SearchPresetRepositoryImpl`) change — use cases, domain models, and REST controllers are untouched; the existing PostgreSQL tables are dropped after a one-time data migration | ⬜ Pending | ⬜ Pending |
 | 77  | `kafka-catalog-coordination`      | Prevent duplicate concurrent catalog scans when multiple app instances are deployed; `CatalogScheduler` currently uses `@Scheduled(fixedDelay)` on every JVM — two instances each trigger a full directory traversal simultaneously, doubling disk I/O and risking duplicate database writes; a single-partition `catalog.requests` Kafka topic provides natural leader election via Kafka consumer groups: only one member processes a `CatalogJobRequested` event while others skip; replace the `@Scheduled` trigger in `CatalogScheduler` with a Kafka producer that publishes to `catalog.requests` on the same interval; requires the Kafka infrastructure introduced by `kafka-catalog-pipeline` (#75) | ⬜ Pending | ⬜ Pending |
-| 82  | `redis-search-tag-cache`          | Cache the two highest-frequency gallery read paths in Redis: (1) paginated asset search results (`GET /api/assets`) keyed by `assets:{sha256(folderPath+page+sort+filters)}` with a 5-minute TTL, invalidated on `asset.cataloged` and `asset.deleted` Kafka events from #75; (2) the tag list with counts (`GET /api/tags`) keyed `tags:all` with a 5-minute TTL, invalidated on `AddTagToAssetUseCase` and `RemoveTagFromAssetUseCase`; extends `server-side-spring-cache` (#28) which targets home stats, folder tree, and EXIF lookups with per-JVM Caffeine — this feature covers the two hottest gallery endpoints and uses Redis for distributed invalidation that works correctly across multiple instances; the `@Cacheable`/`@CacheEvict` annotations from #28 can be reused by switching the Spring cache manager from `CaffeineCacheManager` to a Lettuce-backed `RedisCacheManager` | ⬜ Pending | ⬜ Pending |
 
 ---
 
@@ -75,10 +74,6 @@ This document records all **pending** features to the JPPhotoManagerWeb applicat
 
 `redis-refresh-tokens` (#79) is now implemented — every refresh token is mirrored into Redis via a hash at `refresh_token:{token}` with `userId`, `tokenId`, and `issuedAt` fields (dual-write phase; PostgreSQL remains the read source of truth). When implementing `session-management` (#46), store `userAgent` as an additional field on that same Redis hash (`HSET refresh_token:{token} userAgent {ua}`) instead of adding a `user_agent` column to the PostgreSQL `refresh_tokens` table — this makes the V22 migration unnecessary.
 
-**Feature 28 → Feature 82** (prerequisite already implemented)
-
-`server-side-spring-cache` (#28) is now implemented with `CaffeineCacheManager`. `redis-search-tag-cache` (#82) adds the gallery pagination and tag-list endpoints to the caching scope established by #28 and upgrades the Spring cache manager from Caffeine to Redis; the existing `@Cacheable`/`@CacheEvict` annotations continue to work without modification when the `CacheManager` bean is switched to `RedisCacheManager`.
-
 ### Recommended implementation order
 
 For the pending dependent clusters:
@@ -103,17 +98,13 @@ Within dependent clusters:
 54 (notification-center) → 48 (email-notifications)
 60 (archive-support) → 61 (asset-backup)
 75 (kafka-catalog-pipeline, already done) → 77 (kafka-catalog-coordination)
-28 (server-side-spring-cache, already done) → 82 (redis-search-tag-cache) [extend Caffeine scope to Redis]
 ```
 
 Feature 74 (mongodb-user-preferences) has no hard dependencies and can be delivered in any order.
 
-Priority ordering for the MongoDB, Kafka, and Redis features:
+Priority ordering for the MongoDB and Kafka features:
 
 ```
-P2 — scalability and performance wins:
-  82 (redis-search-tag-cache)         — implement after #28 (already implemented, Caffeine) for a smooth upgrade path
-
 P3 — operational convenience:
   74 (mongodb-user-preferences)       — standalone; most useful now that MongoDB is already provisioned by #72 or #73 (both already implemented)
   77 (kafka-catalog-coordination)     — requires #75 (already implemented); lower urgency when running a single instance
@@ -149,15 +140,14 @@ The V17 migration must run after V16 because the `search_vector` generated colum
 
 Note on V22 (`session-management`): `redis-refresh-tokens` (#79) has been implemented, so V22 is moot — store the `user_agent` field as a Redis hash field on the existing `refresh_token:{token}` hash instead of adding this PostgreSQL column.
 
-### MongoDB, Kafka, and Redis infrastructure provisioning
+### MongoDB and Kafka infrastructure provisioning
 
-Features #73–#82 require no Flyway migrations — they do not modify the PostgreSQL schema. However, they do require provisioning new infrastructure components alongside the existing PostgreSQL container:
+Features #74 and #77 require no Flyway migrations — they do not modify the PostgreSQL schema. However, they do require provisioning new infrastructure components alongside the existing PostgreSQL container (Redis is already fully provisioned and in use by `redis-distributed-rate-limiting` #78, `redis-refresh-tokens` #79, `redis-thumbnail-cache` #81, and `redis-search-tag-cache` #82, all now implemented — no pending feature requires further Redis provisioning):
 
 | Infrastructure | Required by features | Notes |
 | -------------- | ------------------------ | ----- |
 | MongoDB 7+     | #74 | Add `mongo` service to `docker-compose.yml` (already provisioned by `mongodb-exif-store`, #72, and `mongodb-audit-log`, #73, both now implemented) |
 | Apache Kafka 3.7+ (KRaft mode) | #77 | Add `kafka` service; no ZooKeeper required in KRaft mode |
-| Redis 7+       | #82 | Add `redis` service with `allkeys-lru` eviction and a memory cap (already provisioned by `redis-distributed-rate-limiting`, #78, and reused by `redis-refresh-tokens`, #79, and `redis-thumbnail-cache`, #81, all now implemented) |
 
 Recommended additions to `docker-compose.yml`:
 
@@ -175,12 +165,9 @@ kafka:
     KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
     KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-
-redis:
-  image: redis:7-alpine
-  ports: ["6379:6379"]
-  command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
 ```
+
+Redis is already provisioned (used by #78, #79, #81, and #82, all implemented) — no `redis:` service addition is needed for the remaining pending features.
 
 Corresponding `application.yml` additions:
 
@@ -189,9 +176,6 @@ spring:
   data:
     mongodb:
       uri: mongodb://localhost:27017/photomanager   # feature #74 (MongoDB already provisioned by #72, #73)
-    redis:
-      host: ${REDIS_HOST:localhost}                 # feature #82 (Redis already provisioned by #78, #79, #81)
-      port: ${REDIS_PORT:6379}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}  # feature #77 (Kafka already provisioned by #75)
 ```
@@ -391,14 +375,3 @@ JWT cookies cannot be forwarded by OS-level WebDAV mounts. The WebDAV endpoint a
 
 Kafka's consumer group protocol guarantees that a single-partition topic has exactly one active consumer per group at any time. `catalog.requests` is configured with `partitions=1`. All app instances join the consumer group `catalog-coordinator`. Kafka's group coordinator assigns the single partition to one member; the others idle. When the active member receives a `CatalogJobRequested` event, it checks `CatalogScheduler.isRunning()` before launching — this guards against duplicate triggers if the scheduling interval fires before the previous job completes. The `@Scheduled` timer in `CatalogScheduler` becomes a `kafkaTemplate.send("catalog.requests", ...)` call rather than a direct `JobLauncher.run()` invocation.
 
-**Feature 82 — cache invalidation strategy**
-
-Asset search result cache invalidation is driven by Kafka events from `kafka-catalog-pipeline` (#75): a `@KafkaListener` subscribed to `asset.cataloged` and `asset.deleted` calls `redisTemplate.delete(pattern)` using the folder path as a key prefix (`assets:{folderPath}:*`). Without #75 in place, invalidation falls back to direct calls in `CatalogAssetItemWriter.write()` and `DeleteAssetsUseCaseImpl.execute()`. Tag cache invalidation is simpler: `AddTagToAssetUseCaseImpl` and `RemoveTagFromAssetUseCaseImpl` each call `redisTemplate.delete("tags:all")`. Since `server-side-spring-cache` (#28) is already implemented with `CaffeineCacheManager`, upgrading to Redis requires only switching the `CacheManager` bean to `RedisCacheManager` backed by a Lettuce `RedisConnectionFactory` — the `@Cacheable` and `@CacheEvict` annotations on the use cases require no change.
-
-**MongoDB, Kafka, and Redis — overlap with existing features (summary)**
-
-The following table lists every new feature that directly overlaps with or fills a gap in an existing planned feature:
-
-| New feature | Overlaps / conflicts with | Relationship |
-| --- | --- | --- |
-| `redis-search-tag-cache` (#82) | `server-side-spring-cache` (#28) | **Extension** — #82 covers gallery endpoints #28 omits; upgrades Caffeine to Redis |

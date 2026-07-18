@@ -2,8 +2,11 @@ package com.jpablodrexler.photomanager.application.usecase.tag;
 
 import com.jpablodrexler.photomanager.application.exception.AssetNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.TagNotFoundException;
+import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.model.Tag;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.AuditLogRepository;
 import com.jpablodrexler.photomanager.domain.port.out.TagRepository;
 import org.junit.jupiter.api.Nested;
@@ -36,6 +39,8 @@ class TagUseCasesTest {
         TagRepository tagRepository;
         @Mock
         AuditLogRepository auditLogRepository;
+        @Mock
+        AssetSearchCachePort assetSearchCachePort;
         @InjectMocks
         AddTagToAssetUseCaseImpl sut;
 
@@ -50,6 +55,20 @@ class TagUseCasesTest {
 
             verify(tagRepository).save(argThat(t -> "vacation".equals(t.getName())));
             verify(assetRepository).addTagToAsset(1L, 10L);
+        }
+
+        @Test
+        void execute_taggedAsset_evictsAssetSearchCacheForItsFolder() {
+            when(assetRepository.existsById(1L)).thenReturn(true);
+            Tag existing = Tag.builder().tagId(5L).name("vacation").build();
+            when(tagRepository.findByName("vacation")).thenReturn(Optional.of(existing));
+            Folder folder = Folder.builder().folderId(7L).path("/photos").build();
+            Asset asset = Asset.builder().assetId(1L).folder(folder).build();
+            when(assetRepository.findById(1L)).thenReturn(Optional.of(asset));
+
+            sut.execute(1L, "vacation", null);
+
+            verify(assetSearchCachePort).evictFolder(7L);
         }
 
         @Test
@@ -131,6 +150,8 @@ class TagUseCasesTest {
         TagRepository tagRepository;
         @Mock
         AuditLogRepository auditLogRepository;
+        @Mock
+        AssetSearchCachePort assetSearchCachePort;
         @InjectMocks
         RemoveTagFromAssetUseCaseImpl sut;
 
@@ -145,6 +166,21 @@ class TagUseCasesTest {
 
             verify(assetRepository).removeTagFromAsset(1L, 10L);
             verify(tagRepository, never()).deleteById(anyLong());
+        }
+
+        @Test
+        void execute_tagRemoved_evictsAssetSearchCacheForItsFolder() {
+            Tag tag = Tag.builder().tagId(10L).name("vacation").build();
+            when(tagRepository.findByName("vacation")).thenReturn(Optional.of(tag));
+            when(assetRepository.removeTagFromAsset(1L, 10L)).thenReturn(1);
+            when(tagRepository.isUsedByOtherAssets(10L, 1L)).thenReturn(true);
+            Folder folder = Folder.builder().folderId(9L).path("/photos").build();
+            Asset asset = Asset.builder().assetId(1L).folder(folder).build();
+            when(assetRepository.findById(1L)).thenReturn(Optional.of(asset));
+
+            sut.execute(1L, "vacation", null);
+
+            verify(assetSearchCachePort).evictFolder(9L);
         }
 
         @Test
@@ -223,6 +259,8 @@ class TagUseCasesTest {
         TagRepository tagRepository;
         @Mock
         AuditLogRepository auditLogRepository;
+        @Mock
+        AssetSearchCachePort assetSearchCachePort;
         @InjectMocks
         BulkAddTagUseCaseImpl sut;
 
@@ -237,6 +275,24 @@ class TagUseCasesTest {
             verify(assetRepository).addTagToAsset(1L, 20L);
             verify(assetRepository).addTagToAsset(2L, 20L);
             verify(assetRepository).addTagToAsset(3L, 20L);
+        }
+
+        @Test
+        void execute_assetsInDifferentFolders_evictsEachDistinctFolderOnce() {
+            when(tagRepository.findByName("to-print")).thenReturn(Optional.empty());
+            Tag saved = Tag.builder().tagId(20L).name("to-print").build();
+            when(tagRepository.save(any())).thenReturn(saved);
+            Folder folderA = Folder.builder().folderId(1L).path("/a").build();
+            Folder folderB = Folder.builder().folderId(2L).path("/b").build();
+            when(assetRepository.findAllById(List.of(1L, 2L, 3L))).thenReturn(List.of(
+                    Asset.builder().assetId(1L).folder(folderA).build(),
+                    Asset.builder().assetId(2L).folder(folderA).build(),
+                    Asset.builder().assetId(3L).folder(folderB).build()));
+
+            sut.execute(List.of(1L, 2L, 3L), "to-print", null);
+
+            verify(assetSearchCachePort).evictFolder(1L);
+            verify(assetSearchCachePort).evictFolder(2L);
         }
 
         @Test
@@ -272,6 +328,8 @@ class TagUseCasesTest {
         TagRepository tagRepository;
         @Mock
         AuditLogRepository auditLogRepository;
+        @Mock
+        AssetSearchCachePort assetSearchCachePort;
         @InjectMocks
         BulkRemoveTagUseCaseImpl sut;
 
@@ -286,6 +344,23 @@ class TagUseCasesTest {
             verify(assetRepository).removeTagFromAsset(1L, 10L);
             verify(assetRepository).removeTagFromAsset(2L, 10L);
             verify(assetRepository).removeTagFromAsset(3L, 10L);
+        }
+
+        @Test
+        void execute_assetsInDifferentFolders_evictsEachDistinctFolderOnce() {
+            Tag tag = Tag.builder().tagId(10L).name("draft").build();
+            when(tagRepository.findByName("draft")).thenReturn(Optional.of(tag));
+            when(tagRepository.isUsedByOtherAssets(10L, -1L)).thenReturn(true);
+            Folder folderA = Folder.builder().folderId(1L).path("/a").build();
+            Folder folderB = Folder.builder().folderId(2L).path("/b").build();
+            when(assetRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(
+                    Asset.builder().assetId(1L).folder(folderA).build(),
+                    Asset.builder().assetId(2L).folder(folderB).build()));
+
+            sut.execute(List.of(1L, 2L), "draft", null);
+
+            verify(assetSearchCachePort).evictFolder(1L);
+            verify(assetSearchCachePort).evictFolder(2L);
         }
 
         @Test

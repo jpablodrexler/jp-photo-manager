@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.domain.model.Tag;
 import com.jpablodrexler.photomanager.domain.port.in.tag.ListTagsUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.TagRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ public class ListTagsUseCaseImpl implements ListTagsUseCase {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "tags", key = "'all'", condition = "#query == null or #query.isBlank()")
     public List<Tag> execute(String query) {
         String q = (query == null) ? "" : query.trim();
         return tagRepository.findByNameContaining(q, MAX_RESULTS);

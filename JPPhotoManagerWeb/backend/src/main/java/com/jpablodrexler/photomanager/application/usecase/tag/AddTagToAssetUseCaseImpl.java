@@ -7,10 +7,12 @@ import com.jpablodrexler.photomanager.domain.model.AuditEvent;
 import com.jpablodrexler.photomanager.domain.model.Tag;
 import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.AuditLogRepository;
 import com.jpablodrexler.photomanager.domain.port.out.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,9 +30,11 @@ public class AddTagToAssetUseCaseImpl implements AddTagToAssetUseCase {
     private final AssetRepository assetRepository;
     private final TagRepository tagRepository;
     private final AuditLogRepository auditLogRepository;
+    private final AssetSearchCachePort assetSearchCachePort;
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "tags", key = "'all'")
     public void execute(Long assetId, String name, UUID userId) {
         if (!assetRepository.existsById(assetId)) {
             throw new AssetNotFoundException(assetId);
@@ -41,6 +45,12 @@ public class AddTagToAssetUseCaseImpl implements AddTagToAssetUseCase {
                 .orElseGet(() -> tagRepository.save(Tag.builder().name(normalized).build()));
 
         assetRepository.addTagToAsset(assetId, tag.getTagId());
+
+        // A tag change can alter this folder's tag-filtered "assets" search-cache entries just as
+        // much as a catalog/delete event does, but no Kafka event exists for tag mutations — evict
+        // synchronously here instead of leaving stale results until the 5-minute TTL expires.
+        assetRepository.findById(assetId).ifPresent(asset ->
+                assetSearchCachePort.evictFolder(asset.getFolder() != null ? asset.getFolder().getFolderId() : null));
 
         logAudit(assetId, tag, userId);
     }

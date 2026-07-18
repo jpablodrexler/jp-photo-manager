@@ -6,6 +6,7 @@ import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ public class GetAssetsUseCaseImpl implements GetAssetsUseCase {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "assets", keyGenerator = "assetSearchCacheKeyGenerator")
     public PaginatedResult<Asset> execute(AssetFilter filter) {
         return assetRepository.findFiltered(filter);
     }

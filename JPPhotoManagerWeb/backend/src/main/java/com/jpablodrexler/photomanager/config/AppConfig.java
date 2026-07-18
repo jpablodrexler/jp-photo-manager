@@ -1,7 +1,13 @@
 package com.jpablodrexler.photomanager.config;
 
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jpablodrexler.photomanager.domain.model.Asset;
+import com.jpablodrexler.photomanager.domain.model.AssetExif;
+import com.jpablodrexler.photomanager.domain.model.Folder;
+import com.jpablodrexler.photomanager.domain.model.HomeStats;
+import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
+import com.jpablodrexler.photomanager.domain.model.Tag;
 import com.jpablodrexler.photomanager.infrastructure.web.filter.RateLimitFilter;
 import io.github.bucket4j.redis.lettuce.cas.LettuceBasedProxyManager;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
@@ -15,12 +21,18 @@ import io.lettuce.core.codec.StringCodec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.cache.annotation.CachingConfigurer;
+import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -31,13 +43,14 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 
 @Configuration
 @EnableScheduling
 @EnableCaching
-public class AppConfig {
+public class AppConfig implements CachingConfigurer {
 
     @Value("${photomanager.cors-allowed-origins}")
     private List<String> corsAllowedOrigins;
@@ -108,25 +121,84 @@ public class AppConfig {
         return scheduler;
     }
 
+    /**
+     * Backs all five named caches ({@code home-stats}, {@code sub-folders}, {@code asset-exif},
+     * {@code assets}, {@code tags}) with Redis instead of a per-JVM Caffeine cache, so a write on
+     * one backend instance correctly invalidates the copy served by another
+     * (see {@code redis-search-tag-cache}). Reuses the auto-configured {@link RedisConnectionFactory}
+     * already provisioned for the refresh-token store and thumbnail cache — no new connection
+     * plumbing. Keys are prefixed {@code <cacheName>:} (single colon, via
+     * {@code computePrefixWith}) rather than Spring's default {@code <cacheName>::} (double colon)
+     * so the {@code assets} cache's keys can be pattern-matched as {@code assets:{folderId}:*} for
+     * folder-scoped eviction.
+     *
+     * <p>Each cache gets its own {@link Jackson2JsonRedisSerializer} built for its exact declared
+     * return type (via the application's auto-configured {@link ObjectMapper}, so {@code JavaTimeModule}
+     * etc. still apply) rather than one shared {@link GenericJackson2JsonRedisSerializer} with
+     * {@code @class} polymorphic type hints. Two problems ruled that generic approach out (both
+     * confirmed via {@code AssetSearchTagCacheIntegrationTest} while developing
+     * {@code redis-search-tag-cache}): (1) enabling default typing mutates the {@code ObjectMapper}
+     * instance in place — even a {@link ObjectMapper#copy()} only defers the problem — and (2) Jackson
+     * writes the type hint differently for a top-level JSON object ({@code {"@class":...}}) versus a
+     * top-level JSON array ({@code ["java.util.ArrayList",[...]]}), so the {@code tags} cache (whose
+     * value is a bare {@code List<Tag>}) silently deserialized into the wrong shape and the cache
+     * effectively never hit. Serializing against an explicit {@link JavaType} per cache sidesteps type
+     * hints entirely — there is only one possible shape to read back.
+     */
     @Bean
-    public CacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
-        cacheManager.registerCustomCache("home-stats",
-                Caffeine.newBuilder()
-                        .maximumSize(1)
-                        .expireAfterWrite(10, TimeUnit.MINUTES)
-                        .build());
-        cacheManager.registerCustomCache("sub-folders",
-                Caffeine.newBuilder()
-                        .maximumSize(500)
-                        .expireAfterWrite(5, TimeUnit.MINUTES)
-                        .build());
-        cacheManager.registerCustomCache("asset-exif",
-                Caffeine.newBuilder()
-                        .maximumSize(2000)
-                        .expireAfterWrite(30, TimeUnit.MINUTES)
-                        .build());
-        return cacheManager;
+    public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory, ObjectMapper objectMapper) {
+        RedisCacheConfiguration baseConfig = RedisCacheConfiguration.defaultCacheConfig()
+                .computePrefixWith(name -> name + ":");
+
+        Map<String, RedisCacheConfiguration> perCacheConfigurations = Map.of(
+                "home-stats", typedConfig(baseConfig, objectMapper, HomeStats.class)
+                        .entryTtl(Duration.ofMinutes(10)),
+                "sub-folders", typedConfig(baseConfig, objectMapper,
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, Folder.class))
+                        .entryTtl(Duration.ofMinutes(5)),
+                "asset-exif", typedConfig(baseConfig, objectMapper, AssetExif.class)
+                        .entryTtl(Duration.ofMinutes(30)),
+                "assets", typedConfig(baseConfig, objectMapper,
+                        objectMapper.getTypeFactory().constructParametricType(PaginatedResult.class, Asset.class))
+                        .entryTtl(Duration.ofMinutes(5)),
+                "tags", typedConfig(baseConfig, objectMapper,
+                        objectMapper.getTypeFactory().constructCollectionType(List.class, Tag.class))
+                        .entryTtl(Duration.ofMinutes(5))
+        );
+
+        RedisCacheConfiguration fallbackConfig = baseConfig.serializeValuesWith(RedisSerializationContext
+                .SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()));
+
+        return RedisCacheManager.builder(redisConnectionFactory)
+                .cacheDefaults(fallbackConfig)
+                .withInitialCacheConfigurations(perCacheConfigurations)
+                .build();
+    }
+
+    private RedisCacheConfiguration typedConfig(RedisCacheConfiguration base, ObjectMapper objectMapper, Class<?> type) {
+        return typedConfig(base, objectMapper, objectMapper.getTypeFactory().constructType(type));
+    }
+
+    private RedisCacheConfiguration typedConfig(RedisCacheConfiguration base, ObjectMapper objectMapper, JavaType type) {
+        return base.serializeValuesWith(RedisSerializationContext.SerializationPair
+                .fromSerializer(new Jackson2JsonRedisSerializer<>(objectMapper, type)));
+    }
+
+    /**
+     * Extends the fail-open convention already applied to {@code redis-thumbnail-cache} and
+     * {@code redis-refresh-tokens} to the Spring Cache abstraction: a Redis outage during a
+     * cache get/put/evict is caught and logged at {@code WARN} rather than propagated, so
+     * {@code @Cacheable}/{@code @CacheEvict}-annotated use cases fall back to querying their
+     * normal data source instead of turning a cache hiccup into a request failure.
+     */
+    @Override
+    public CacheErrorHandler errorHandler() {
+        return cacheErrorHandler();
+    }
+
+    @Bean
+    public CacheErrorHandler cacheErrorHandler() {
+        return new LoggingCacheErrorHandler();
     }
 
     /**
