@@ -14,6 +14,14 @@ set -euo pipefail
 # exist (copied from their .example templates and filled in) — this script
 # does not create them, since they hold machine-specific / sensitive values
 # that must never be scripted into existence with placeholder content.
+#
+# After applying the stack, this script calls ./port-forward-k8s.sh to start
+# background port-forwards for Grafana, PostgreSQL, and MongoDB so those
+# services are reachable at localhost immediately. That script lives on its
+# own rather than being inlined here because it needs re-running any time a
+# tunnel drops — a machine reboot, a Docker Desktop restart, or one of
+# those pods being replaced — none of which require rebuilding images or
+# reapplying manifests, so it shouldn't require rerunning this whole script.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -127,6 +135,10 @@ echo "==> Current pod status:"
 kubectl get pods -n photomanager
 
 echo ""
+echo "==> Starting Grafana/PostgreSQL/MongoDB port-forwards ..."
+"$SCRIPT_DIR/port-forward-k8s.sh"
+
+echo ""
 echo "Next steps:"
 echo "  1. Watch pods come up (a first-time backend startup can take several"
 echo "     minutes under CPU contention — see README's Troubleshooting section"
@@ -139,3 +151,8 @@ echo "         Add-Content -Path \"\$env:SystemRoot\\System32\\drivers\\etc\\hos
 echo "       Linux/macOS:"
 echo "         echo \"127.0.0.1 photomanager.local\" | sudo tee -a /etc/hosts"
 echo "  3. Open http://photomanager.local"
+echo "  4. Grafana, PostgreSQL, and MongoDB port-forwards were started above —"
+echo "     see the output for their addresses and the 'kill <PID>' command to"
+echo "     stop them. Re-run ./port-forward-k8s.sh standalone any time a"
+echo "     tunnel drops (reboot, Docker Desktop restart, pod replaced) —"
+echo "     no rebuild or redeploy needed."
