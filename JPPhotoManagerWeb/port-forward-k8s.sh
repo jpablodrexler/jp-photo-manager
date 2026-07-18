@@ -2,11 +2,15 @@
 set -euo pipefail
 
 # Starts background `kubectl port-forward` tunnels for Grafana, PostgreSQL,
-# and MongoDB — the same commands documented in README.md's "Accessing
-# services" section, run for you in one step. Safe to re-run: a port
-# already forwarded (e.g. from a previous run of this script, or from
+# MongoDB, and Kafka — the same commands documented in README.md's
+# "Accessing services" section, run for you in one step. Safe to re-run: a
+# port already forwarded (e.g. from a previous run of this script, or from
 # build-and-deploy-k8s.sh, which calls this script automatically after
 # deploying) is detected and left alone rather than duplicated.
+#
+# Kafka's tunnel alone isn't enough to actually use it from the host — see
+# the note printed after it starts below (and README's "Accessing services"
+# section) for the one-time hosts-file edit it also needs.
 #
 # Lives on its own, separate from build-and-deploy-k8s.sh, because
 # `kubectl port-forward` is a plain OS process, not something Kubernetes
@@ -44,7 +48,7 @@ echo "==> Checking kubectl connectivity ..."
 kubectl cluster-info >/dev/null
 echo "    Connected."
 
-echo "==> Starting background port-forwards for Grafana, PostgreSQL, and MongoDB ..."
+echo "==> Starting background port-forwards for Grafana, PostgreSQL, MongoDB, and Kafka ..."
 echo "    (a port already forwarded from a previous run is left alone, not duplicated)"
 
 # Checks whether something is already listening on 127.0.0.1:<port> using
@@ -78,6 +82,7 @@ start_port_forward() {
 start_port_forward "Grafana"    grafana 3000  3000
 start_port_forward "PostgreSQL" db      5433  5432
 start_port_forward "MongoDB"    mongo   27017 27017
+start_port_forward "Kafka"      kafka   9094  9094
 
 echo ""
 echo "Grafana, PostgreSQL, and MongoDB are reachable at localhost:3000,"
@@ -88,5 +93,18 @@ echo "script exits; stop them when no longer needed with:"
 if [ "${#PORT_FORWARD_PIDS[@]}" -gt 0 ]; then
     echo "  kill ${PORT_FORWARD_PIDS[*]}"
 else
-    echo "  kill <PID>   (all three were already forwarded — see 'skipping' lines above)"
+    echo "  kill <PID>   (all four were already forwarded — see 'skipping' lines above)"
 fi
+
+echo ""
+echo "NOTE on Kafka: the tunnel above alone is not enough to use it from the"
+echo "host. k8s/kafka.yaml advertises the broker as kafka:9094 (the in-cluster"
+echo "Service name), so a client's initial connection succeeds but every real"
+echo "operation afterward fails trying to resolve 'kafka'. One-time fix — add"
+echo "a hosts-file entry pointing kafka at 127.0.0.1 (requires admin):"
+echo "  Windows (PowerShell as Administrator):"
+echo "    Add-Content -Path \"\$env:SystemRoot\\System32\\drivers\\etc\\hosts\" -Value \"127.0.0.1 kafka\""
+echo "  Linux/macOS:"
+echo "    echo \"127.0.0.1 kafka\" | sudo tee -a /etc/hosts"
+echo "Then use kafka:9094 — not localhost:9094 — as the bootstrap server in"
+echo "your client. See README's 'Accessing services' section for details."

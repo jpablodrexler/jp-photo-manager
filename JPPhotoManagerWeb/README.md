@@ -747,6 +747,7 @@ After `docker compose up`, all services are reachable from the host machine:
 | Swagger UI | `http://localhost:8080/swagger-ui.html` | — |
 | PostgreSQL | `localhost:5433` | see table below |
 | MongoDB | `localhost:27017` | no auth — see below |
+| Kafka | `localhost:9094` | no auth — see below |
 | Prometheus | `http://localhost:9090` | — |
 | Grafana | `http://localhost:3000` | `admin` / value of `GRAFANA_ADMIN_PASSWORD` (default: `admin`) |
 
@@ -804,6 +805,38 @@ mongosh "mongodb://localhost:27017/photomanager"
 ```
 
 This same connection string works unchanged against a Kubernetes deployment — see [Accessing services](#accessing-services) for the `kubectl port-forward` command that maps `svc/mongo` to the same local port.
+
+#### Installing a Kafka client/admin tool on Windows and connecting to the broker
+
+[KafkIO](https://kafkio.com/) is a free, native Kafka GUI for Windows/macOS/Linux — the Kafka equivalent of DBeaver/MongoDB Compass above, for browsing topics, producing/consuming messages, and managing consumer groups.
+
+**Install (pick one):**
+- **Scoop**:
+  ```powershell
+  scoop bucket add extras
+  scoop install kafkio
+  ```
+- **MSI installer**: download `KafkIO-win-<version>-x64.msi` from the [KafkIO download page](https://kafkio.com/download) and run it.
+- **Portable ZIP**: download the portable `.zip` from the same page — no installation required.
+
+Prefer the official CLI instead of a GUI? The same `apache/kafka:3.9.0` distribution the project already runs works locally too, with no risk of a mismatched client/broker protocol version:
+1. Download and extract the matching binary release: [`kafka_2.13-3.9.0.tgz`](https://downloads.apache.org/kafka/3.9.0/kafka_2.13-3.9.0.tgz).
+2. Requires a JDK on `PATH` — the JDK 21 already installed for backend development (see [Running the backend](#running-the-backend)) works fine.
+3. Run the `.bat` scripts under `bin\windows\` from a command prompt inside the extracted folder, e.g.:
+   ```powershell
+   .\bin\windows\kafka-topics.bat --bootstrap-server localhost:9094 --list
+   ```
+
+**Connection settings:**
+
+| Field | Value |
+|---|---|
+| Bootstrap server(s) | `localhost:9094` |
+| Security protocol | `Plaintext` (no authentication) |
+
+In KafkIO: add a new cluster connection, set **Bootstrap servers** to `localhost:9094` and **Security protocol** to **Plaintext**, then use the built-in connection test before saving.
+
+This works as-is against Docker Compose, whose `EXTERNAL` listener is advertised as `localhost:9094` directly. Against Kubernetes it needs one extra step beyond a plain port-forward — see [Accessing services](#accessing-services) below, which covers it in detail.
 
 #### Calling the backend API directly from the host
 
@@ -1102,6 +1135,10 @@ kubectl port-forward -n photomanager svc/db 5433:5432
 # MongoDB, for Compass/mongosh etc. (compose: localhost:27017)
 kubectl port-forward -n photomanager svc/mongo 27017:27017
 
+# Kafka, for KafkIO/kcat/kafka-*.bat etc. (compose: localhost:9094)
+# — needs one more step than the others; see the callout right below.
+kubectl port-forward -n photomanager svc/kafka 9094:9094
+
 # Prometheus (compose: http://localhost:9090)
 kubectl port-forward -n photomanager svc/prometheus 9090:9090
 
@@ -1109,7 +1146,22 @@ kubectl port-forward -n photomanager svc/prometheus 9090:9090
 kubectl port-forward -n photomanager svc/grafana 3000:3000
 ```
 
-For Grafana, PostgreSQL, and MongoDB specifically, `./port-forward-k8s.sh` runs those three commands for you in the background in one step and is safe to re-run (a port already forwarded is left alone, not duplicated). `./build-and-deploy-k8s.sh` already calls it automatically after deploying — run it standalone afterward any time a tunnel needs to be re-established (a machine reboot, a Docker Desktop restart, or one of those pods being replaced all kill the tunnel without killing the pod behind it), without needing to rebuild images or reapply manifests.
+**Kafka needs one more step than the services above.** `k8s/kafka.yaml` advertises the `EXTERNAL` listener as `kafka:9094` — the in-cluster Service name — not `localhost:9094` the way Docker Compose does (`KAFKA_ADVERTISED_LISTENERS: ...EXTERNAL://localhost:9094`). A Kafka client connects in two phases: it first reaches whatever bootstrap address you give it, then reconnects using the *advertised* address returned in that first response for the actual produce/consume/admin calls. With only the port-forward above in place, that second connection to `kafka:9094` can't resolve from the host — the initial connection succeeds, but every real operation then hangs or fails with something like `Connection to node ... (kafka/<unresolved>:9094) could not be established`.
+
+Fix it the same way the Ingress section above resolves `photomanager.local` — add a hosts-file entry pointing `kafka` at `127.0.0.1`, so both connection phases resolve to the same forwarded port:
+
+- **Windows** (PowerShell as Administrator):
+  ```powershell
+  Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value "127.0.0.1 kafka"
+  ```
+- **Linux/macOS**:
+  ```bash
+  echo "127.0.0.1 kafka" | sudo tee -a /etc/hosts
+  ```
+
+Then use `kafka:9094` — not `localhost:9094` — as the bootstrap server in your client (KafkIO's **Bootstrap servers** field, or `--bootstrap-server kafka:9094` for the CLI tools from [Installing a Kafka client/admin tool](#installing-a-kafka-clientadmin-tool-on-windows-and-connecting-to-the-broker)).
+
+For Grafana, PostgreSQL, MongoDB, and Kafka specifically, `./port-forward-k8s.sh` runs those four commands for you in the background in one step and is safe to re-run (a port already forwarded is left alone, not duplicated). `./build-and-deploy-k8s.sh` already calls it automatically after deploying — run it standalone afterward any time a tunnel needs to be re-established (a machine reboot, a Docker Desktop restart, or one of those pods being replaced all kill the tunnel without killing the pod behind it), without needing to rebuild images or reapply manifests. The script starts Kafka's tunnel too, but can't safely edit your hosts file for you (that needs admin rights) — it prints the one-time hosts-file step above as a reminder each time it runs.
 
 ### Common commands
 
