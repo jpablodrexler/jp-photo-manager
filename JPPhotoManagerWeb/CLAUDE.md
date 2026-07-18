@@ -113,10 +113,10 @@ infrastructure/
 
 **Key service ports** (interfaces in `domain/port/out/`, adapters in `infrastructure/service/`):
 - `StoragePort` / `StorageServiceAdapter` — file I/O, thumbnail generation, EXIF rotation (Apache Commons Imaging), SHA-256
-- `ThumbnailPort` / `ThumbnailStorageServiceAdapter` — thumbnail read/write/delete on disk
+- `ThumbnailPort` / `ThumbnailStorageServiceAdapter` — thumbnail read/write/delete on disk, fronted by a Redis L2 cache (`redis-thumbnail-cache`)
 - `JwtTokenPort` / `JwtTokenAdapter` — JWT generation and validation (delegates to `JwtUtil`)
 
-**Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by **Flyway**; migrations live in `src/main/resources/db/migration/`. Connection is configured via environment variables (see table below). `asset_exif` lives in **MongoDB** instead (via `AssetExifRepositoryImpl` / `MongoAssetExifRepository`) — all other tables remain in PostgreSQL. Refresh tokens (`refresh_tokens` table) are dual-written to PostgreSQL and Redis: `RefreshTokenRepositoryImpl` mirrors every `save()` into `RedisRefreshTokenStore` (`refresh_token:{token}` hash, `refresh_tokens:user:{userId}` set, `refresh_token:id:{tokenId}` index) alongside the existing JPA write. This is Phase 1 of the `redis-refresh-tokens` migration — PostgreSQL remains authoritative for reads (`findByToken`/`deleteByUserId`/`deleteById`); a follow-up change will cut reads over to Redis-only and drop the PostgreSQL table. User-action history is stored append-only in a MongoDB `asset_audit_log` collection (via `AuditLogRepositoryImpl` / `MongoAuditLogRepository`), populated by `AuditLogKafkaListener` (a dedicated `audit-log-writer` Kafka consumer group) for already-published `asset.cataloged`/`asset.deleted`/`job.*.progress` events, and by direct `AuditLogRepository.log(...)` calls from the tag, rating, view, and download use cases for actions with no existing topic; a compound `userId`/`timestamp` index and a 365-day TTL index are ensured at startup by `MongoIndexInitializer`.
+**Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by **Flyway**; migrations live in `src/main/resources/db/migration/`. Connection is configured via environment variables (see table below). `asset_exif` lives in PostgreSQL like every other table (`AssetExifRepositoryImpl` / `JpaAssetExifRepository`, keyed on `asset_id BIGINT PRIMARY KEY REFERENCES assets(asset_id) ON DELETE CASCADE`, with a `raw_exif JSONB` column for the full EXIF tag map). This table briefly moved to MongoDB under `mongodb-exif-store` (#72) and was reverted back to PostgreSQL by `revert-exif-postgres-jsonb` (#84) once `gps-map-view` — the feature that had motivated a `2dsphere` geospatial index on `asset_exif` — was cancelled; see `openspec/changes/archive/2026-07-05-mongodb-exif-store/` and `openspec/changes/revert-exif-postgres-jsonb/` for the history. The MongoDB `asset_exif` data from that period was not migrated back — assets catalogued during that window get their EXIF data repopulated the next time their folder is re-catalogued. Refresh tokens (`refresh_tokens` table) are dual-written to PostgreSQL and Redis: `RefreshTokenRepositoryImpl` mirrors every `save()` into `RedisRefreshTokenStore` (`refresh_token:{token}` hash, `refresh_tokens:user:{userId}` set, `refresh_token:id:{tokenId}` index) alongside the existing JPA write. This is Phase 1 of the `redis-refresh-tokens` migration — PostgreSQL remains authoritative for reads (`findByToken`/`deleteByUserId`/`deleteById`); a follow-up change will cut reads over to Redis-only and drop the PostgreSQL table. User-action history is stored append-only in a MongoDB `asset_audit_log` collection (via `AuditLogRepositoryImpl` / `MongoAuditLogRepository`), populated by `AuditLogKafkaListener` (a dedicated `audit-log-writer` Kafka consumer group) for already-published `asset.cataloged`/`asset.deleted`/`job.*.progress` events, and by direct `AuditLogRepository.log(...)` calls from the tag, rating, view, and download use cases for actions with no existing topic; a compound `userId`/`timestamp` index and a 365-day TTL index are ensured at startup by `MongoIndexInitializer`.
 
 **Local development prerequisite:** PostgreSQL 18+ and MongoDB must be running. Quickstart:
 ```bash
@@ -124,7 +124,7 @@ docker run -d --name photomanager-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_D
 docker run -d --name photomanager-mongo -p 27017:27017 mongo:8
 ```
 
-**Thumbnails:** stored as `{assetId}.bin` files under `~/.photomanager/thumbnails/` managed by `ThumbnailStorageServiceAdapter`.
+**Thumbnails:** stored as `{assetId}.bin` files under `~/.photomanager/thumbnails/` managed by `ThumbnailStorageServiceAdapter`. A Redis L2 cache (`redis-thumbnail-cache`) sits in front of the disk store: `loadThumbnail` checks `asset:thumbnail:{assetId}` before reading disk, `saveThumbnail`/`loadThumbnail` (on a disk-read repopulate) write it with a 24-hour TTL, and `deleteThumbnail` evicts it. Requires the Redis deployment shared with `redis-distributed-rate-limiting` (#78) and `redis-refresh-tokens` (#79) to run with the `allkeys-lru` eviction policy so cache growth stays bounded. Every Redis call fails open (caught, logged at `WARN`, falls back to disk) and the whole tier can be disabled via `photomanager.thumbnail-cache.enabled=false`.
 
 **Real-time progress:** long-running operations (catalog, sync, convert) use Spring's `SseEmitter` to stream status events to the frontend.
 
@@ -136,12 +136,14 @@ docker run -d --name photomanager-mongo -p 27017:27017 mongo:8
 | `photomanager.root-catalog-folders` | `~/Pictures` | Semicolon-separated roots to catalog |
 | `photomanager.catalog-batch-size` | `1000` | Files processed per catalog pass |
 | `photomanager.thumbnails-directory` | `~/.photomanager/thumbnails` | Thumbnail storage path |
+| `photomanager.thumbnail-cache.enabled` | `true` | Enables the Redis L2 thumbnail cache (`redis-thumbnail-cache`); `false` reverts to disk-only |
+| `photomanager.thumbnail-cache.ttl-seconds` | `86400` | TTL for cached thumbnail bytes at `asset:thumbnail:{assetId}` (requires the Redis deployment's `allkeys-lru` eviction policy) |
 | `POSTGRES_HOST` | `localhost` | PostgreSQL host |
 | `POSTGRES_PORT` | `5432` | PostgreSQL port |
 | `POSTGRES_DB` | `photomanager` | Database name |
 | `POSTGRES_USERNAME` | `postgres` | Database user |
 | `POSTGRES_PASSWORD` | `postgres` | Database password |
-| `MONGO_URI` | `mongodb://localhost:27017/photomanager` | MongoDB connection URI (`asset_exif`, `asset_audit_log` collections) |
+| `MONGO_URI` | `mongodb://localhost:27017/photomanager` | MongoDB connection URI (`asset_audit_log` collection) |
 
 ### REST API
 

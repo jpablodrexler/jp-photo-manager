@@ -1,10 +1,10 @@
 ## Why
 
-Users must currently tag photos manually. Most photos already contain machine-readable metadata (year, camera make, GPS location) that could generate useful tags automatically. Auto-applying tags during cataloging reduces manual work and populates the tag system without any user effort, making photos immediately browsable by year, camera brand, or location.
+Users must currently tag photos manually. Most photos already contain machine-readable metadata (year, camera make) that could generate useful tags automatically. Auto-applying tags during cataloging reduces manual work and populates the tag system without any user effort, making photos immediately browsable by year or camera brand.
 
 ## What Changes
 
-- During the catalog operation, after EXIF metadata is extracted, an `AutoTaggingService` derives tags from: the year extracted from `dateTaken`, the normalised camera make (lowercase, e.g. `canon`, `sony`, `apple`), and — when `gps-map-view` geocoding is available — a reverse-geocoded city or country name
+- During the catalog operation, after EXIF metadata is extracted, an `AutoTaggingService` derives tags from: the year extracted from `dateTaken` and the normalised camera make (lowercase, e.g. `canon`, `sony`, `apple`)
 - Tags are written through the existing `asset_tags` table and tag infrastructure
 - Auto-applied tags are indistinguishable from manual tags (users can remove them)
 - No new schema is required
@@ -13,7 +13,7 @@ Users must currently tag photos manually. Most photos already contain machine-re
 
 ### New Capabilities
 
-- `auto-tagging`: During cataloging, tags are automatically derived from EXIF data (year, camera make) and optionally from reverse geocoding (city/country). Auto-tags are stored alongside manual tags and are removable by the user.
+- `auto-tagging`: During cataloging, tags are automatically derived from EXIF data (year, camera make). Auto-tags are stored alongside manual tags and are removable by the user.
 
 ### Modified Capabilities
 

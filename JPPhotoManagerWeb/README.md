@@ -182,14 +182,20 @@ erDiagram
         timestamp deleted_at
     }
     asset_exif {
-        bigserial exif_id PK
-        bigint asset_id FK
-        text make
-        text model
-        integer iso
-        float aperture
-        float exposure_time
-        float focal_length
+        bigint asset_id PK_FK
+        text camera_make
+        text camera_model
+        text lens_model
+        text exposure_time
+        double f_number
+        integer iso_speed
+        double focal_length
+        timestamp date_taken
+        integer width_pixels
+        integer height_pixels
+        double gps_latitude
+        double gps_longitude
+        jsonb raw_exif
     }
     users {
         uuid id PK
@@ -730,7 +736,7 @@ If you have an existing catalog in a **host PostgreSQL instance** and want to mo
 |---|---|---|---|
 | `db` | `postgres:18` | `5433` | PostgreSQL 18; data persisted in the `pgdata` named volume |
 | `kafka` | `apache/kafka:3.9.0` | `9092` (internal) `9094` (host) | Apache Kafka in KRaft mode (no ZooKeeper); pub/sub backbone for catalog/sync/convert progress events. Port 9092 is for inter-container traffic; port 9094 exposes the broker to the host machine. |
-| `mongo` | `mongo:8` | `27017` | MongoDB 8; stores the `asset_exif` and `asset_audit_log` collections; data persisted in the `mongodata` named volume; no authentication configured |
+| `mongo` | `mongo:8` | `27017` | MongoDB 8; stores the `asset_audit_log` collection; data persisted in the `mongodata` named volume; no authentication configured |
 | `backend` | JRE 21 Alpine | `8080` | Spring Boot REST API; `HOST_IMAGE_DIR` bind-mounted at `/catalog`; connects to Kafka via `kafka:9092` |
 | `frontend` | Nginx Alpine | `80` | Angular SPA; reverse-proxies `/api` to the backend |
 | `prometheus` | `prom/prometheus` | `9090` | Scrapes backend metrics from `/actuator/prometheus` every 15 s |
@@ -797,7 +803,7 @@ Steps (Compass):
 1. Open MongoDB Compass.
 2. Paste the connection string above into the **URI** field on the welcome screen.
 3. Click **Connect**.
-4. Expand the `photomanager` database in the sidebar to browse the `asset_exif` and `asset_audit_log` collections.
+4. Expand the `photomanager` database in the sidebar to browse the `asset_audit_log` collection.
 
 Or from `mongosh`:
 ```bash

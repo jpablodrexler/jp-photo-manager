@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.test.context.SpringBatchTest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -33,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
     "job.catalog.progress", "job.sync.progress", "job.convert.progress",
     "asset.cataloged", "asset.deleted"
 })
+@WithMockUser(roles = "ADMIN")
 class CatalogBatchIntegrationTest extends PostgresIntegrationTest {
 
     static final Path tempDir;

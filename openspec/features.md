@@ -8,7 +8,6 @@ This document records all **pending** features to the JPPhotoManagerWeb applicat
 
 | #   | Change name                 | Brief description                                                                                                                                                                       | Artifacts  | Implementation |
 | --- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | -------------- |
-| 13  | `gps-map-view`              | Add a Leaflet.js map panel to the EXIF viewer and a `/map` route showing clustered photo pins for the current folder or album; clicking a pin navigates to that asset in the gallery   | ✅ Created | ⬜ Pending      |
 | 16  | `keyboard-shortcuts`        | Global `KeyboardService` mapping shortcuts (`G` gallery, `A` albums, `D` duplicates, `1–5` rating, `Del` soft-delete, `/` search focus); `?` overlay listing all bindings               | ✅ Created | ⬜ Pending      |
 | 19  | `shareable-album-links`     | `POST /api/albums/{id}/share` generates a signed UUID token stored in a `shared_albums` table with optional `expires_at`; public `/s/:token` route renders the album without authentication | ✅ Created | ⬜ Pending |
 | 22  | `duplicate-auto-resolve`    | "Clean up automatically" dialog on the duplicates page with policies (keep oldest, keep newest, keep highest resolution, keep preferred folder); delegates to existing soft-delete path   | ✅ Created | ⬜ Pending      |
@@ -23,13 +22,12 @@ This document records all **pending** features to the JPPhotoManagerWeb applicat
 | 36  | `global-error-handler`      | Override Angular's `ErrorHandler` to display a `MatSnackBar` notification for all unhandled component errors; extend the existing backend `GlobalExceptionHandler` to return a consistent `{ status, message, timestamp }` JSON body for every 4xx and 5xx response so the frontend interceptor can surface a human-readable message rather than showing a raw HTTP status | ✅ Created | ⬜ Pending |
 | 37  | `asset-description`         | Add a `description` VARCHAR column to `assets` (new Flyway migration); expose `PATCH /api/assets/{id}/description`; display an editable text field in the EXIF panel in the viewer; the description field feeds directly into the `full-text-search` (#31) index once both are in place | ✅ Created | ⬜ Pending |
 | 38  | `folder-stats-in-tree`      | Show asset count and total size as a secondary line per folder node in the folder navigation tree; backed by `GET /api/folders/stats?path=...` running a lightweight `SELECT COUNT(*), SUM(file_size)` query per folder; distinct from the full analytics dashboard (#20) — this is inline contextual data in the tree, not a separate page | ✅ Created | ⬜ Pending |
-| 40  | `circuit-breaker`           | Add Resilience4j `@CircuitBreaker` on the `GeocodingPort` adapter introduced by `gps-map-view` (#13); if the external geocoding API (e.g. Nominatim) is slow or unavailable the circuit opens and the adapter returns `null` coordinates immediately rather than stalling the EXIF panel; scope extends to any future outbound HTTP adapters (cloud storage, email); not applicable to the current backend which makes no external calls — PostgreSQL and filesystem failure modes are already covered by HikariCP | ✅ Created | ⬜ Pending |
 | 43  | `request-correlation-mdc`   | Add a servlet `Filter` that injects a `requestId` UUID and the authenticated `username` into SLF4J `MDC` at the start of each request and clears it on completion; `logstash-logback-encoder` is already configured in `logback-spring.xml` and will automatically include both fields in every JSON log line; also set `X-Request-ID` on the response so the Angular frontend can log the correlation ID alongside client-side errors from `global-error-handler` (#36) | ✅ Created | ⬜ Pending |
 | 44  | `database-backup`           | Add `DatabaseBackupService` with `@Scheduled` that runs `pg_dump` via `ProcessBuilder`, compresses the output with GZip to a temp file, and uploads it through a new `CloudStoragePort` interface (domain) with swappable infrastructure implementations for AWS S3, Google Cloud Storage, and Azure Blob; enforce a configurable retention policy (delete backups older than N days); expose `POST /api/admin/backup` for on-demand trigger and `GET /api/admin/backups` to list stored backups with timestamps and sizes; schedule, retention, cloud provider, bucket, and prefix are all configurable in `application.yml`; Option B (Docker sidecar using `prodrigestivill/postgres-backup-local` + `rclone`) is documented as a deployment alternative for environments where backup must be decoupled from application health | ✅ Created | ⬜ Pending |
 | 46  | `session-management`        | The `refresh_tokens` table already stores `userId`, `tokenHash`, and `expiresAt`; add an optional `user_agent` column and expose `GET /api/auth/sessions` (list active sessions with device hint and last-used time), `DELETE /api/auth/sessions/{id}` (revoke one), and `DELETE /api/auth/sessions` (revoke all others); frontend `/profile/sessions` page lists sessions in a `MatTable` with a revoke button per row and a "sign out everywhere" action | ✅ Created | ⬜ Pending |
 | 47  | `two-factor-authentication` | TOTP-based 2FA via any RFC 6238-compliant authenticator app (Google Authenticator, Authy, 1Password); backend dependencies: `dev.samstevens.totp:totp` (secret generation, code verification, `otpauth://` URI building) and `com.google.zxing:core` + `com.google.zxing:javase` (QR code PNG encoding returned as base64); new `totp_secret` (AES-encrypted at rest) and `totp_enabled` boolean columns on `users` (Flyway migration); setup flow: `POST /api/auth/2fa/setup` returns a base64 QR code PNG, `POST /api/auth/2fa/verify` validates the first code and commits the secret; login flow: password check passes → if `totp_enabled` return a `202 TOTP_REQUIRED` challenge → `POST /api/auth/2fa/challenge` validates code and sets JWT cookie; generate 10 single-use backup codes (BCrypt-hashed, stored in `totp_backup_codes` table) in case the authenticator device is lost; TOTP verification endpoint must be covered by `api-rate-limiting` (#39) | ✅ Created | ⬜ Pending |
 | 48  | `email-notifications`       | Spring Mail (`spring-boot-starter-mail`) to send a summary email when long-running operations complete: catalog (N new assets, M updated), sync result, convert result, and backup uploaded; add `email` VARCHAR and `email_notifications_enabled` boolean to `users` (Flyway migration); configurable SMTP host, port, and credentials in `application.yml`; frontend profile page gains an email field and notification toggle; pairs naturally with `notification-center` (#54) as both are triggered by the same operation-completion events | ✅ Created | ⬜ Pending |
-| 49  | `auto-tagging`              | During cataloging, automatically apply tags derived from EXIF data: the year from `dateTaken`, camera make normalised to lowercase (e.g. `canon`, `sony`, `apple`), and — once `gps-map-view` (#13) is implemented — a reverse-geocoded city or country name; tags are written through the existing `asset_tags` table and tag infrastructure; auto-applied tags are indistinguishable from manual ones and can be removed by the user; no new schema required beyond what the tag feature already provides | ✅ Created | ⬜ Pending |
+| 49  | `auto-tagging`              | During cataloging, automatically apply tags derived from EXIF data: the year from `dateTaken` and camera make normalised to lowercase (e.g. `canon`, `sony`, `apple`); tags are written through the existing `asset_tags` table and tag infrastructure; auto-applied tags are indistinguishable from manual ones and can be removed by the user; no new schema required beyond what the tag feature already provides | ✅ Created | ⬜ Pending |
 | 50  | `image-comparison-viewer`   | Select exactly two assets in the gallery → "Compare" action opens a split-screen view showing both images side by side at matched zoom levels, with filename, size, dimensions, and rating displayed beneath each panel; most useful as a companion to the duplicates workflow but available from any multi-selection; no new backend endpoint — both images are served by the existing `GET /api/assets/{id}/image`; new `ComparisonViewerComponent` in `features/gallery/` | ✅ Created | ⬜ Pending |
 | 51  | `folder-bookmarks`          | A pin icon on each node in the folder navigation tree bookmarks it per authenticated user; bookmarks stored in a new `folder_bookmarks` table (`id`, `userId`, `folderPath`, `createdAt`); bookmarked folders appear as a pinned section above the full tree backed by `GET /api/folders/bookmarks`, `POST /api/folders/bookmarks`, and `DELETE /api/folders/bookmarks/{id}`; frontend inserts a `MatDivider` between the pinned section and the main tree; new Flyway migration | ✅ Created | ⬜ Pending |
 | 52  | `multi-language-i18n`       | Angular `@angular/localize` for the frontend starting with English and Spanish (mirrors open desktop issue #140); Spring Boot `MessageSource` for backend validation and error messages; locale preference stored per user as a `locale` column on `users` (or inside a `user_preferences` JSON column shared with dark-mode preference from #15); language toggle in the top navigation bar; Angular build produces one bundle per locale via `ng build --localize` | ✅ Created | ⬜ Pending |
@@ -47,7 +45,6 @@ This document records all **pending** features to the JPPhotoManagerWeb applicat
 | 71  | `webdav-server`             | Expose the catalog over WebDAV (`PROPFIND`, `GET`, `PUT`, `DELETE`, `MKCOL`) at `/webdav/` so users can mount the catalog as a network drive on Windows (Map Network Drive), macOS (Finder → Connect to Server), and Linux (`davfs2`); the virtual folder tree mirrors the `assets.folder_path` hierarchy; `GET` on an asset path streams the original file via the existing `StoragePort`; `PUT` to any folder path triggers the same catalog pipeline as drag-and-drop upload (#3); `DELETE` routes through the soft-delete path from `soft-delete-recycle-bin` (#9); implemented with `milton-server-ce` (pure Java WebDAV server, no servlet dependency conflicts) or a custom Spring MVC `WebdavController` handling raw `PROPFIND` XML via JAXB; authentication uses HTTP Basic over the existing `UserDetailsService` — JWT cookies are not compatible with native OS WebDAV clients; no schema change | ✅ Created | ⬜ Pending |
 | 74  | `mongodb-user-preferences`        | Move `user_preferences` and `search_presets` from rigid PostgreSQL tables to a single MongoDB `user_configs` collection keyed by `userId`; adding a new UI preference (theme, gallery layout, notification toggle) requires no Flyway migration; search preset payloads grow naturally as new filter fields are added without altering existing rows; only the two persistence adapters (`UserPreferenceRepositoryImpl`, `SearchPresetRepositoryImpl`) change — use cases, domain models, and REST controllers are untouched; the existing PostgreSQL tables are dropped after a one-time data migration | ⬜ Pending | ⬜ Pending |
 | 77  | `kafka-catalog-coordination`      | Prevent duplicate concurrent catalog scans when multiple app instances are deployed; `CatalogScheduler` currently uses `@Scheduled(fixedDelay)` on every JVM — two instances each trigger a full directory traversal simultaneously, doubling disk I/O and risking duplicate database writes; a single-partition `catalog.requests` Kafka topic provides natural leader election via Kafka consumer groups: only one member processes a `CatalogJobRequested` event while others skip; replace the `@Scheduled` trigger in `CatalogScheduler` with a Kafka producer that publishes to `catalog.requests` on the same interval; requires the Kafka infrastructure introduced by `kafka-catalog-pipeline` (#75) | ⬜ Pending | ⬜ Pending |
-| 81  | `redis-thumbnail-cache`           | Add Redis as a shared L2 thumbnail cache in front of the disk-backed `ThumbnailStorageServiceAdapter`; on a cache hit `GET asset:thumbnail:{assetId}` returns the thumbnail bytes with no disk I/O; on a miss the adapter reads from disk, stores with a 24-hour TTL via `SETEX`, and returns; Redis `allkeys-lru` eviction retains popular thumbnails and evicts cold ones automatically; complements `thumbnail-http-cache` (#26) (browser-level `Cache-Control: immutable`, already implemented) and `server-side-spring-cache` (#28) (per-JVM Caffeine for home stats and EXIF lookups, already implemented); Redis adds the shared server-side tier that survives instance restarts and eliminates dependency on co-located disk access in load-balanced deployments where the requested thumbnail may reside on a different node's filesystem | ⬜ Pending | ⬜ Pending |
 | 82  | `redis-search-tag-cache`          | Cache the two highest-frequency gallery read paths in Redis: (1) paginated asset search results (`GET /api/assets`) keyed by `assets:{sha256(folderPath+page+sort+filters)}` with a 5-minute TTL, invalidated on `asset.cataloged` and `asset.deleted` Kafka events from #75; (2) the tag list with counts (`GET /api/tags`) keyed `tags:all` with a 5-minute TTL, invalidated on `AddTagToAssetUseCase` and `RemoveTagFromAssetUseCase`; extends `server-side-spring-cache` (#28) which targets home stats, folder tree, and EXIF lookups with per-JVM Caffeine — this feature covers the two hottest gallery endpoints and uses Redis for distributed invalidation that works correctly across multiple instances; the `@Cacheable`/`@CacheEvict` annotations from #28 can be reused by switching the Spring cache manager from `CaffeineCacheManager` to a Lettuce-backed `RedisCacheManager` | ⬜ Pending | ⬜ Pending |
 
 ---
@@ -55,10 +52,6 @@ This document records all **pending** features to the JPPhotoManagerWeb applicat
 ## Dependencies
 
 ### Hard implementation dependencies
-
-**Feature 13 → Feature 1** (prerequisite already implemented)
-
-`gps-map-view` requires GPS coordinates already stored in `asset_exif`. Without `exif-metadata-panel` the coordinates are never persisted.
 
 **Feature 19 → Feature 4** (prerequisite already implemented)
 
@@ -91,14 +84,13 @@ This document records all **pending** features to the JPPhotoManagerWeb applicat
 For the pending dependent clusters:
 
 ```
-13 (gps-map-view)          — prerequisite #1  already implemented
 19 (shareable-album-links) — prerequisite #4  already implemented
 22 (duplicate-auto-resolve)— prerequisite #9  already implemented
 16 (keyboard-shortcuts)    — prerequisite #8  already implemented
 58 (video-from-images)     — prerequisite #21 already implemented; #59 also already implemented
 ```
 
-Features 24 (wallpaper-suggestion), 27 (image-etag-cache), 29 (exif-cache-service), 30 (image-rotation-viewer), 32 (folder-watch-service), 35 (thumbnail-regeneration), 36 (global-error-handler), 38 (folder-stats-in-tree), 40 (circuit-breaker), 43 (request-correlation-mdc), 50 (image-comparison-viewer), 53 (password-strength-policy), 56 (asset-image-editor), 67 (event-auto-grouping), 68 (photo-quality-scoring), 69 (iptc-xmp-metadata-editing), 70 (dominant-color-palette), 71 (webdav-server) have no hard dependencies and can be delivered in any order.
+Features 24 (wallpaper-suggestion), 27 (image-etag-cache), 29 (exif-cache-service), 30 (image-rotation-viewer), 32 (folder-watch-service), 35 (thumbnail-regeneration), 36 (global-error-handler), 38 (folder-stats-in-tree), 43 (request-correlation-mdc), 50 (image-comparison-viewer), 53 (password-strength-policy), 56 (asset-image-editor), 67 (event-auto-grouping), 68 (photo-quality-scoring), 69 (iptc-xmp-metadata-editing), 70 (dominant-color-palette), 71 (webdav-server) have no hard dependencies and can be delivered in any order.
 
 Within dependent clusters:
 
@@ -111,7 +103,6 @@ Within dependent clusters:
 54 (notification-center) → 48 (email-notifications)
 60 (archive-support) → 61 (asset-backup)
 75 (kafka-catalog-pipeline, already done) → 77 (kafka-catalog-coordination)
-28 (server-side-spring-cache, already done) → 81 (redis-thumbnail-cache) [JVM cache first, then Redis L2]
 28 (server-side-spring-cache, already done) → 82 (redis-search-tag-cache) [extend Caffeine scope to Redis]
 ```
 
@@ -121,7 +112,6 @@ Priority ordering for the MongoDB, Kafka, and Redis features:
 
 ```
 P2 — scalability and performance wins:
-  81 (redis-thumbnail-cache)          — implement after #28 (already implemented) for best layering (#26 thumbnail-http-cache already done)
   82 (redis-search-tag-cache)         — implement after #28 (already implemented, Caffeine) for a smooth upgrade path
 
 P3 — operational convenience:
@@ -151,6 +141,8 @@ Flyway migration versions must be applied in ascending order. Migrations V7–V1
 | V30       | `dominant-color-palette` — `color_palette` JSONB column on `assets`                 |
 | V31       | `event-auto-grouping` — `user_events` table                                          |
 
+Note: `revert-exif-postgres-jsonb` (#84) has been implemented and applied `V33__recreate_asset_exif.sql`, superseding the earlier `V27__drop_asset_exif.sql` — see `features-implemented.md`. This also supersedes the older reservation of "V33 for `search_presets`" mentioned under `mongodb-user-preferences` (#74) below — when #74 is eventually implemented, its `search_presets` drop migration should use the next number available at that time (V34 or later) instead.
+
 Note: `pixel_width` and `pixel_height` are already present on `assets`; only the derived `aspect_ratio` column is new. The backfill (`aspect_ratio = pixel_width / pixel_height`) must be included in the V15 migration to populate existing rows. Assets where either dimension is zero are left as `NULL` and excluded from wallpaper queries.
 
 The V17 migration must run after V16 because the `search_vector` generated column combines `file_name`, `description`, and tag data; the `description` column must exist before the generated column can reference it.
@@ -165,7 +157,7 @@ Features #73–#82 require no Flyway migrations — they do not modify the Postg
 | -------------- | ------------------------ | ----- |
 | MongoDB 7+     | #74 | Add `mongo` service to `docker-compose.yml` (already provisioned by `mongodb-exif-store`, #72, and `mongodb-audit-log`, #73, both now implemented) |
 | Apache Kafka 3.7+ (KRaft mode) | #77 | Add `kafka` service; no ZooKeeper required in KRaft mode |
-| Redis 7+       | #81, #82 | Add `redis` service with `allkeys-lru` eviction and a memory cap (already provisioned by `redis-distributed-rate-limiting`, #78, and reused by `redis-refresh-tokens`, #79, both now implemented) |
+| Redis 7+       | #82 | Add `redis` service with `allkeys-lru` eviction and a memory cap (already provisioned by `redis-distributed-rate-limiting`, #78, and reused by `redis-refresh-tokens`, #79, and `redis-thumbnail-cache`, #81, all now implemented) |
 
 Recommended additions to `docker-compose.yml`:
 
@@ -198,7 +190,7 @@ spring:
     mongodb:
       uri: mongodb://localhost:27017/photomanager   # feature #74 (MongoDB already provisioned by #72, #73)
     redis:
-      host: ${REDIS_HOST:localhost}                 # features #81, #82 (Redis already provisioned by #78, #79)
+      host: ${REDIS_HOST:localhost}                 # feature #82 (Redis already provisioned by #78, #79, #81)
       port: ${REDIS_PORT:6379}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}  # feature #77 (Kafka already provisioned by #75)
@@ -237,10 +229,6 @@ A full-text search that can only index filename and tags is still useful, but th
 **Features 32, 36, 38 — no dependencies**
 
 `folder-watch-service`, `global-error-handler`, and `folder-stats-in-tree` have no hard dependencies on other pending features and can be delivered in any order.
-
-**Feature 40 → Feature 13**
-
-`circuit-breaker` is a follow-up to `gps-map-view`. It is not warranted in the current architecture because the backend makes no outbound calls to external services. Once #13 introduces an outbound HTTP call to a geocoding API (e.g. Nominatim or Google Maps), that call becomes the first concrete circuit breaker target: if the geocoding service is slow or unavailable it will stall the EXIF panel for every viewed image. At that point, wrapping the `GeocodingPort` adapter with Resilience4j `@CircuitBreaker` and returning a fallback of `null` coordinates is the right response.
 
 **Feature 43 → Feature 36**
 
@@ -301,7 +289,7 @@ The 10 single-use recovery codes are BCrypt-hashed before insertion into `totp_b
 
 **Feature 49 → Feature 1** (prerequisite already implemented)
 
-`auto-tagging` reads `dateTaken` and camera make from EXIF data stored by `exif-metadata-panel` (#1, already implemented). The GPS city/country auto-tag additionally depends on `gps-map-view` (#13) for reverse geocoding.
+`auto-tagging` reads `dateTaken` and camera make from EXIF data stored by `exif-metadata-panel` (#1, already implemented).
 
 **Features 46, 50, 53 — no schema changes**
 
@@ -403,10 +391,6 @@ JWT cookies cannot be forwarded by OS-level WebDAV mounts. The WebDAV endpoint a
 
 Kafka's consumer group protocol guarantees that a single-partition topic has exactly one active consumer per group at any time. `catalog.requests` is configured with `partitions=1`. All app instances join the consumer group `catalog-coordinator`. Kafka's group coordinator assigns the single partition to one member; the others idle. When the active member receives a `CatalogJobRequested` event, it checks `CatalogScheduler.isRunning()` before launching — this guards against duplicate triggers if the scheduling interval fires before the previous job completes. The `@Scheduled` timer in `CatalogScheduler` becomes a `kafkaTemplate.send("catalog.requests", ...)` call rather than a direct `JobLauncher.run()` invocation.
 
-**Feature 81 — cache key stability and eviction**
-
-The cache key `asset:thumbnail:{assetId}` is stable because thumbnails are content-addressed: generated once during cataloging and never mutated (the existing `thumbnail-http-cache` feature adds `Cache-Control: immutable` for this reason). Invalidation is therefore narrowly scoped: only `PurgeAssetsUseCaseImpl` and `ThumbnailStorageServiceAdapter.deleteThumbnail()` need to call `DEL asset:thumbnail:{assetId}`. The `allkeys-lru` Redis eviction policy retains recently accessed thumbnails automatically. To prevent thumbnail caching from starving other Redis uses (rate-limit buckets, refresh tokens, SSE channels), either use a dedicated Redis instance or a separate key namespace with `maxmemory` configured per keyspace using Redis 7's `redis.conf` keyspace limits.
-
 **Feature 82 — cache invalidation strategy**
 
 Asset search result cache invalidation is driven by Kafka events from `kafka-catalog-pipeline` (#75): a `@KafkaListener` subscribed to `asset.cataloged` and `asset.deleted` calls `redisTemplate.delete(pattern)` using the folder path as a key prefix (`assets:{folderPath}:*`). Without #75 in place, invalidation falls back to direct calls in `CatalogAssetItemWriter.write()` and `DeleteAssetsUseCaseImpl.execute()`. Tag cache invalidation is simpler: `AddTagToAssetUseCaseImpl` and `RemoveTagFromAssetUseCaseImpl` each call `redisTemplate.delete("tags:all")`. Since `server-side-spring-cache` (#28) is already implemented with `CaffeineCacheManager`, upgrading to Redis requires only switching the `CacheManager` bean to `RedisCacheManager` backed by a Lettuce `RedisConnectionFactory` — the `@Cacheable` and `@CacheEvict` annotations on the use cases require no change.
@@ -417,5 +401,4 @@ The following table lists every new feature that directly overlaps with or fills
 
 | New feature | Overlaps / conflicts with | Relationship |
 | --- | --- | --- |
-| `redis-thumbnail-cache` (#81) | `server-side-spring-cache` (#28) | **Complementary** — #28 is per-JVM Caffeine; #81 adds distributed Redis |
 | `redis-search-tag-cache` (#82) | `server-side-spring-cache` (#28) | **Extension** — #82 covers gallery endpoints #28 omits; upgrades Caffeine to Redis |

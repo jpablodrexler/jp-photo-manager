@@ -20,7 +20,7 @@ import java.util.NoSuchElementException;
 
 /**
  * Persistent-consumer-group processor (kafka-async-upload, stage 2 of 3): extracts EXIF metadata for
- * a newly-uploaded asset and upserts it into the MongoDB-backed {@link AssetExifRepository}. Runs
+ * a newly-uploaded asset and upserts it into the PostgreSQL-backed {@link AssetExifRepository}. Runs
  * independently of {@link AssetHashProcessor} and {@link AssetThumbnailProcessor}.
  */
 @Component

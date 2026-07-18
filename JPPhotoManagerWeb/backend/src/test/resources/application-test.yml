@@ -38,6 +38,8 @@ photomanager:
   initial-directory: /tmp/photos
   root-catalog-folders: /tmp/photos
   thumbnails-directory: /tmp/thumbnails
+  thumbnail-cache:
+    enabled: false
   jwt-secret: "test-jwt-secret-for-testing-only-minimum-32-characters"
   jwt-expiry-hours: 1
   cors-allowed-origins: http://localhost:4200

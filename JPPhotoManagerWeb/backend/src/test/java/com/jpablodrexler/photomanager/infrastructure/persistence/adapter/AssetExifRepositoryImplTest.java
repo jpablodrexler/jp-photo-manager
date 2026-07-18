@@ -1,35 +1,39 @@
 package com.jpablodrexler.photomanager.infrastructure.persistence.adapter;
 
 import com.jpablodrexler.photomanager.domain.model.AssetExif;
-import com.jpablodrexler.photomanager.infrastructure.persistence.document.AssetExifDocument;
-import com.jpablodrexler.photomanager.infrastructure.persistence.mapper.AssetExifDocumentMapper;
-import com.jpablodrexler.photomanager.infrastructure.persistence.mongo.MongoAssetExifRepository;
+import com.jpablodrexler.photomanager.infrastructure.persistence.entity.AssetEntity;
+import com.jpablodrexler.photomanager.infrastructure.persistence.entity.AssetExifEntity;
+import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.JpaAssetExifRepository;
+import com.jpablodrexler.photomanager.infrastructure.persistence.mapper.AssetExifEntityMapper;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AssetExifRepositoryImplTest {
 
-    @Mock MongoAssetExifRepository mongoRepository;
-    @Mock AssetExifDocumentMapper mapper;
+    @Mock JpaAssetExifRepository jpa;
+    @Mock AssetExifEntityMapper mapper;
+    @Mock EntityManager entityManager;
     @InjectMocks AssetExifRepositoryImpl sut;
 
     @Test
     void findByAssetId_present_returnsMappedDomain() {
-        AssetExifDocument document = new AssetExifDocument();
+        AssetExifEntity entity = new AssetExifEntity();
         AssetExif domain = AssetExif.builder().assetId(1L).cameraMake("Canon").build();
-        when(mongoRepository.findByAssetId(1L)).thenReturn(Optional.of(document));
-        when(mapper.toDomain(document)).thenReturn(domain);
+        when(jpa.findByAssetAssetId(1L)).thenReturn(Optional.of(entity));
+        when(mapper.toDomain(entity)).thenReturn(domain);
 
         Optional<AssetExif> result = sut.findByAssetId(1L);
 
@@ -38,61 +42,80 @@ class AssetExifRepositoryImplTest {
 
     @Test
     void findByAssetId_absent_returnsEmpty() {
-        when(mongoRepository.findByAssetId(99L)).thenReturn(Optional.empty());
+        when(jpa.findByAssetAssetId(99L)).thenReturn(Optional.empty());
 
         assertThat(sut.findByAssetId(99L)).isEmpty();
     }
 
     @Test
-    void save_existingDocument_updatesInPlace() {
+    void save_existingEntity_updatesFieldsAndSaves() {
         AssetExif exif = AssetExif.builder()
                 .assetId(1L)
                 .cameraMake("Sony")
                 .cameraModel("A7")
                 .isoSpeed(400)
                 .build();
-        AssetExifDocument existing = new AssetExifDocument();
-        existing.setId("existing-id");
-        AssetExifDocument mapped = new AssetExifDocument();
-        AssetExifDocument saved = new AssetExifDocument();
-        when(mongoRepository.findByAssetId(1L)).thenReturn(Optional.of(existing));
-        when(mapper.toDocument(exif)).thenReturn(mapped);
-        when(mongoRepository.save(mapped)).thenReturn(saved);
+        AssetExifEntity existing = new AssetExifEntity();
+        AssetExifEntity saved = new AssetExifEntity();
+        AssetEntity assetRef = new AssetEntity();
+        when(jpa.findByAssetAssetId(1L)).thenReturn(Optional.of(existing));
+        when(entityManager.getReference(AssetEntity.class, 1L)).thenReturn(assetRef);
+        when(jpa.save(existing)).thenReturn(saved);
         when(mapper.toDomain(saved)).thenReturn(exif);
 
         AssetExif result = sut.save(exif);
 
         assertThat(result).isEqualTo(exif);
-        assertThat(mapped.getId()).isEqualTo("existing-id");
-        ArgumentCaptor<AssetExifDocument> captor = ArgumentCaptor.forClass(AssetExifDocument.class);
-        verify(mongoRepository).save(captor.capture());
-        assertThat(captor.getValue().getId()).isEqualTo("existing-id");
+        assertThat(existing.getCameraMake()).isEqualTo("Sony");
+        assertThat(existing.getCameraModel()).isEqualTo("A7");
+        assertThat(existing.getIsoSpeed()).isEqualTo(400);
+        verify(jpa).save(existing);
+        verify(entityManager).flush();
     }
 
     @Test
-    void save_newDocument_insertsWithoutId() {
+    void save_newEntity_createsAndSaves() {
         AssetExif exif = AssetExif.builder()
                 .assetId(2L)
                 .cameraMake("Nikon")
                 .build();
-        AssetExifDocument mapped = new AssetExifDocument();
-        AssetExifDocument saved = new AssetExifDocument();
-        when(mongoRepository.findByAssetId(2L)).thenReturn(Optional.empty());
-        when(mapper.toDocument(exif)).thenReturn(mapped);
-        when(mongoRepository.save(mapped)).thenReturn(saved);
+        AssetEntity assetRef = new AssetEntity();
+        AssetExifEntity saved = new AssetExifEntity();
+        when(jpa.findByAssetAssetId(2L)).thenReturn(Optional.empty());
+        when(entityManager.getReference(AssetEntity.class, 2L)).thenReturn(assetRef);
+        when(jpa.save(any(AssetExifEntity.class))).thenReturn(saved);
         when(mapper.toDomain(saved)).thenReturn(exif);
 
         AssetExif result = sut.save(exif);
 
         assertThat(result).isEqualTo(exif);
-        assertThat(mapped.getId()).isNull();
-        verify(mongoRepository).save(mapped);
+        verify(jpa).save(any(AssetExifEntity.class));
+        verify(entityManager).flush();
     }
 
     @Test
-    void deleteByAssetId_delegatesToMongoRepository() {
+    void save_rawExifPresent_persistsRawExifOnEntity() {
+        Map<String, String> rawExif = Map.of("GPSAltitude", "120", "LensModel", "50mm f/1.8");
+        AssetExif exif = AssetExif.builder()
+                .assetId(4L)
+                .rawExif(rawExif)
+                .build();
+        AssetExifEntity existing = new AssetExifEntity();
+        AssetEntity assetRef = new AssetEntity();
+        when(jpa.findByAssetAssetId(4L)).thenReturn(Optional.of(existing));
+        when(entityManager.getReference(AssetEntity.class, 4L)).thenReturn(assetRef);
+        when(jpa.save(existing)).thenReturn(existing);
+        when(mapper.toDomain(existing)).thenReturn(exif);
+
+        sut.save(exif);
+
+        assertThat(existing.getRawExif()).isEqualTo(rawExif);
+    }
+
+    @Test
+    void deleteByAssetId_delegatesToJpa() {
         sut.deleteByAssetId(3L);
 
-        verify(mongoRepository).deleteByAssetId(3L);
+        verify(jpa).deleteByAssetAssetId(3L);
     }
 }

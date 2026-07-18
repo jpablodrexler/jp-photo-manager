@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.MongoDBContainer;
@@ -64,6 +65,7 @@ class UploadAssetIntegrationTest {
     }
 
     @Test
+    @WithMockUser(roles = "ADMIN")
     void uploadAsset_validJpeg_returns202AndAppearsInGetAssets() throws Exception {
         Folder folder = new Folder();
         folder.setPath(catalogFolder.toString());

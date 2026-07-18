@@ -1,5 +1,7 @@
 # raw-exif-jsonb
 
+## Purpose
+
 All raw EXIF fields from the image file are stored as JSONB in `asset_exif.raw_exif` and displayed in a searchable collapsible panel in the EXIF sidebar.
 
 ---
@@ -8,19 +10,19 @@ All raw EXIF fields from the image file are stored as JSONB in `asset_exif.raw_e
 
 ### Requirement: All EXIF fields are stored during cataloging
 
-The catalog service SHALL collect all EXIF fields from all IFD directories and store them as a `Map<String, String>` in the `rawExif` field of the MongoDB `asset_exif` document (previously the `asset_exif.raw_exif` PostgreSQL `JSONB` column).
+The catalog service SHALL collect all EXIF fields from all IFD directories and store them as a `Map<String, String>` in the `raw_exif JSONB` column of the PostgreSQL `asset_exif` table.
 
 #### Scenario: Raw EXIF is populated for a new image
 
 - **GIVEN** a JPEG image with 120 EXIF fields across IFD0, ExifIFD, and GPS IFD
 - **WHEN** the image is cataloged
-- **THEN** the MongoDB `asset_exif` document's `rawExif` field contains all 120 key-value pairs as a native BSON sub-document
+- **THEN** the PostgreSQL `asset_exif.raw_exif` column contains all 120 key-value pairs as a JSONB object
 
-#### Scenario: Raw EXIF is null for images cataloged before the migration
+#### Scenario: Raw EXIF is null for assets not yet re-catalogued after the PostgreSQL revert
 
-- **GIVEN** an image cataloged before the MongoDB migration was applied, whose `asset_exif` document was copied over from the previous PostgreSQL row
+- **GIVEN** an asset that was catalogued while `asset_exif` was persisted in MongoDB (`mongodb-exif-store`, now reverted) and has not been re-catalogued since
 - **WHEN** `GET /api/assets/{id}/exif` is called
-- **THEN** `rawExif` is `null` in the response if it was `null` in the original PostgreSQL row (no error, panel is simply hidden)
+- **THEN** `rawExif` is `null` in the response, because the restored PostgreSQL `asset_exif` table starts empty and this asset has no row yet (no error; the panel hides the "All EXIF data" section as it already does for any asset with `rawExif = null`)
 
 ### Requirement: ExifPanelComponent displays all raw EXIF fields in a collapsible section
 

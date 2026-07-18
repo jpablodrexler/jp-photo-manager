@@ -85,6 +85,9 @@ photomanager:
   catalog-cooldown-minutes: 2
   catalog-timeout: 60
   thumbnails-directory: ${THUMBNAILS_DIR:${user.home}/.photomanager/thumbnails}
+  thumbnail-cache:
+    enabled: ${THUMBNAIL_CACHE_ENABLED:true}
+    ttl-seconds: ${THUMBNAIL_CACHE_TTL_SECONDS:86400}
   github:
     owner: jpablodrexler
     repo: jp-photo-manager

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 
 import java.io.InputStream;
@@ -34,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
     "job.catalog.progress", "job.sync.progress", "job.convert.progress",
     "asset.cataloged", "asset.deleted", "asset.uploaded", "job.upload.progress"
 })
+@WithMockUser(roles = "ADMIN")
 class UploadKafkaPipelineIntegrationTest extends PostgresIntegrationTest {
 
     @TempDir
@@ -65,8 +67,10 @@ class UploadKafkaPipelineIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void uploadAsset_endToEnd_reachesCompletedWithHashExifAndThumbnail() throws Exception {
+        Path testFolder = catalogFolder.resolve("end-to-end");
+        Files.createDirectories(testFolder);
         Folder folder = new Folder();
-        folder.setPath(catalogFolder.toString());
+        folder.setPath(testFolder.toString());
         folder = folderRepository.save(folder);
 
         byte[] jpegBytes;
@@ -76,7 +80,7 @@ class UploadKafkaPipelineIntegrationTest extends PostgresIntegrationTest {
             jpegBytes = in.readAllBytes();
         }
 
-        Asset placeholder = uploadAssetUseCase.execute(catalogFolder.toString(), "uploaded.jpg", "image/jpeg", jpegBytes);
+        Asset placeholder = uploadAssetUseCase.execute(testFolder.toString(), "uploaded.jpg", "image/jpeg", jpegBytes);
         assertThat(placeholder.getProcessingStatus()).isEqualTo(ProcessingStatus.PENDING);
         assertThat(placeholder.getHash()).isNull();
 
@@ -93,8 +97,10 @@ class UploadKafkaPipelineIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void reprocessAsset_afterCompletion_remainsCompletedWithConsistentData() throws Exception {
+        Path testFolder = catalogFolder.resolve("reprocess");
+        Files.createDirectories(testFolder);
         Folder folder = new Folder();
-        folder.setPath(catalogFolder.toString());
+        folder.setPath(testFolder.toString());
         folder = folderRepository.save(folder);
 
         byte[] jpegBytes;
@@ -103,7 +109,7 @@ class UploadKafkaPipelineIntegrationTest extends PostgresIntegrationTest {
             jpegBytes = in.readAllBytes();
         }
 
-        Asset placeholder = uploadAssetUseCase.execute(catalogFolder.toString(), "reprocess-me.jpg", "image/jpeg", jpegBytes);
+        Asset placeholder = uploadAssetUseCase.execute(testFolder.toString(), "reprocess-me.jpg", "image/jpeg", jpegBytes);
         Asset completed = pollUntilCompleted(placeholder.getAssetId(), Duration.ofSeconds(15));
         String originalHash = completed.getHash();
 

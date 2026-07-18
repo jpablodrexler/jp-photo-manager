@@ -28,7 +28,7 @@ public class ConvertAssetsUseCaseImpl implements ConvertAssetsUseCase {
     private final StoragePort storagePort;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    @Async
+    @Async("taskExecutor")
     @Override
     @PreAuthorize("hasRole('ADMIN')")
     public CompletableFuture<Void> execute(long runId) {

@@ -2,7 +2,6 @@ package com.jpablodrexler.photomanager.application.usecase.asset;
 
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
-import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
@@ -28,7 +27,6 @@ import static org.mockito.Mockito.when;
 class DeleteAssetsUseCaseImplTest {
 
     @Mock AssetRepository assetRepository;
-    @Mock AssetExifRepository assetExifRepository;
     @Mock StoragePort storagePort;
     @Mock ThumbnailPort thumbnailPort;
     @InjectMocks DeleteAssetsUseCaseImpl sut;
@@ -42,7 +40,6 @@ class DeleteAssetsUseCaseImplTest {
 
         verify(storagePort).deleteFile("/photos/img.jpg");
         verify(thumbnailPort).deleteThumbnail("1.bin");
-        verify(assetExifRepository).deleteByAssetId(1L);
         verify(assetRepository).deleteById(1L);
     }
 
@@ -55,7 +52,6 @@ class DeleteAssetsUseCaseImplTest {
         sut.execute(new Long[]{2L}, true);
 
         verify(thumbnailPort, never()).deleteThumbnail(any());
-        verify(assetExifRepository, never()).deleteByAssetId(any());
         verify(assetRepository, never()).deleteById(2L);
     }
 
@@ -70,7 +66,6 @@ class DeleteAssetsUseCaseImplTest {
         ArgumentCaptor<Asset> captor = ArgumentCaptor.forClass(Asset.class);
         verify(assetRepository).save(captor.capture());
         assertThat(captor.getValue().getDeletedAt()).isNotNull();
-        verify(assetExifRepository, never()).deleteByAssetId(any());
     }
 
     private static Asset buildAsset(Long id, String folderPath, String fileName) {

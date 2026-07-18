@@ -75,10 +75,9 @@ class GetAssetExifUseCaseCachingTest {
 
         @Bean
         DeleteAssetsUseCaseImpl deleteAssetsUseCase(AssetRepository assetRepository,
-                                                     AssetExifRepository assetExifRepository,
                                                      StoragePort storagePort,
                                                      ThumbnailPort thumbnailPort) {
-            return new DeleteAssetsUseCaseImpl(assetRepository, assetExifRepository, storagePort, thumbnailPort);
+            return new DeleteAssetsUseCaseImpl(assetRepository, storagePort, thumbnailPort);
         }
     }
 

@@ -131,6 +131,7 @@ describe('AssetService', () => {
       heightPixels: 4000,
       gpsLatitude: null,
       gpsLongitude: null,
+      rawExif: null,
     };
 
     service.getExifMetadata(1).subscribe(data => {

@@ -93,7 +93,7 @@ class ExifMetadataIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void purgeAsset_removesMongoExifDocument() throws Exception {
+    void purgeAsset_removesExifRowViaCascadeDelete() throws Exception {
         Asset asset = catalogFreshAsset("purge", "purge-target.jpg");
         assertThat(assetExifRepository.findByAssetId(asset.getAssetId())).isPresent();
 
@@ -104,7 +104,7 @@ class ExifMetadataIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void softDeleteAsset_keepsMongoExifDocument() throws Exception {
+    void softDeleteAsset_keepsExifRow() throws Exception {
         Asset asset = catalogFreshAsset("soft-delete", "soft-delete-target.jpg");
         assertThat(assetExifRepository.findByAssetId(asset.getAssetId())).isPresent();
 

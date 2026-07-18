@@ -9,6 +9,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -292,6 +293,53 @@ class SimpleEntityMappersTest {
             assertThat(result.getName()).isEqualTo("Nature");
             assertThat(result.getDescription()).isEqualTo("Birds");
             assertThat(result.getUser()).isNull();
+        }
+    }
+
+    @Nested
+    class AssetExifEntityMapperImplTest {
+
+        private final AssetExifEntityMapper sut = new AssetExifEntityMapperImpl();
+
+        @Test
+        void toDomain_rawExifPopulated_mapsAllFieldsIncludingRawExif() {
+            Map<String, String> rawExif = Map.of("LensModel", "50mm f/1.8", "GPSAltitude", "120");
+            AssetExifEntity entity = new AssetExifEntity();
+            entity.setAssetId(1L);
+            entity.setCameraMake("Canon");
+            entity.setCameraModel("EOS R5");
+            entity.setIsoSpeed(400);
+            entity.setGpsLatitude(37.77);
+            entity.setGpsLongitude(-122.42);
+            entity.setRawExif(rawExif);
+
+            AssetExif result = sut.toDomain(entity);
+
+            assertThat(result.getAssetId()).isEqualTo(1L);
+            assertThat(result.getCameraMake()).isEqualTo("Canon");
+            assertThat(result.getCameraModel()).isEqualTo("EOS R5");
+            assertThat(result.getIsoSpeed()).isEqualTo(400);
+            assertThat(result.getGpsLatitude()).isEqualTo(37.77);
+            assertThat(result.getGpsLongitude()).isEqualTo(-122.42);
+            assertThat(result.getRawExif()).isEqualTo(rawExif);
+        }
+
+        @Test
+        void toDomain_rawExifNull_mapsWithNullRawExif() {
+            AssetExifEntity entity = new AssetExifEntity();
+            entity.setAssetId(2L);
+            entity.setCameraMake("Nikon");
+
+            AssetExif result = sut.toDomain(entity);
+
+            assertThat(result.getAssetId()).isEqualTo(2L);
+            assertThat(result.getCameraMake()).isEqualTo("Nikon");
+            assertThat(result.getRawExif()).isNull();
+        }
+
+        @Test
+        void toDomain_nullEntity_returnsNull() {
+            assertThat(sut.toDomain(null)).isNull();
         }
     }
 }

@@ -36,6 +36,7 @@ const exifWithData: ExifMetadata = {
   heightPixels: 3000,
   gpsLatitude: null,
   gpsLongitude: null,
+  rawExif: null,
 };
 
 const defaultTagService = (): Partial<TagService> => ({

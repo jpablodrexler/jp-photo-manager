@@ -9,6 +9,7 @@ import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkAddTagUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.ListTagsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.RemoveTagFromAssetUseCase;
+import com.jpablodrexler.photomanager.application.exception.TagNotFoundException;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.TagRepository;
@@ -112,8 +113,16 @@ class TagIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
-    void removeTag_notAssigned_throws() {
+    void removeTag_tagDoesNotExist_throwsTagNotFoundException() {
         assertThatThrownBy(() -> removeTagFromAssetUseCase.execute(asset1.getAssetId(), "nonexistent", null))
+                .isInstanceOf(TagNotFoundException.class);
+    }
+
+    @Test
+    void removeTag_tagExistsButNotAssignedToThisAsset_throwsNoSuchElementException() {
+        addTagToAssetUseCase.execute(asset2.getAssetId(), "vacation", null);
+
+        assertThatThrownBy(() -> removeTagFromAssetUseCase.execute(asset1.getAssetId(), "vacation", null))
                 .isInstanceOf(NoSuchElementException.class);
     }
 

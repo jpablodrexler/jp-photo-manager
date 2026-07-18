@@ -1,6 +1,6 @@
 # auto-tagging
 
-During cataloging, tags are automatically derived from EXIF data (year, camera make) and optionally from reverse geocoding (city/country). Auto-tags are stored alongside manual tags and are removable by the user.
+During cataloging, tags are automatically derived from EXIF data (year, camera make). Auto-tags are stored alongside manual tags and are removable by the user.
 
 ---
 
@@ -37,22 +37,6 @@ When an asset is cataloged with a non-null `cameraMake`, a normalised lowercase 
 - **GIVEN** an asset with `cameraMake = "Apple"`
 - **WHEN** the asset is cataloged
 - **THEN** the tag `"apple"` is applied
-
-### Requirement: Location tags are applied when geocoding is available
-
-When an asset is cataloged with GPS coordinates and reverse geocoding returns a city and/or country, lowercase tags for the city and country SHALL be applied.
-
-#### Scenario: City and country tags applied from GPS
-
-- **GIVEN** an asset with GPS coordinates that reverse-geocode to city "Montevideo" and country "Uruguay"
-- **WHEN** the asset is cataloged
-- **THEN** tags `"montevideo"` and `"uruguay"` are applied
-
-#### Scenario: No location tags when geocoding is unavailable
-
-- **GIVEN** an asset with GPS coordinates but the geocoding service is unavailable (circuit open)
-- **WHEN** the asset is cataloged
-- **THEN** no location tags are applied and the catalog operation continues normally
 
 ### Requirement: Auto-tags are removable by the user
 
