@@ -11,11 +11,14 @@ A web rewrite of the JP Photo Manager desktop application. It replaces the origi
 - **Thumbnail grid** — paginated 200×150 thumbnail cards for all images in the selected folder.
 - **Full-screen viewer** — double-click any thumbnail to open the original at full resolution with zoom controls; press the grid icon to return.
 - **Folder tree navigation** — collapsible sidebar showing the catalogued folder hierarchy; click any folder to load its assets.
-- **Search and filter** — filter assets by file name, date range, and minimum star rating.
+- **Timeline view** — browse assets grouped by date instead of a flat grid.
+- **Search and filter** — filter assets by file name, date range, minimum star rating, and tags.
 - **Sort** — sort by file name, creation date, modification date, file size, or rating.
-- **Star rating** — rate each image 0–10 stars directly from the thumbnail grid or viewer.
+- **Star rating** — rate each image 0–5 stars directly from the thumbnail grid or viewer.
+- **Tagging** — add or remove free-form tags on one or many assets at once, with autocomplete suggestions.
 - **EXIF metadata panel** — view camera make and model, ISO, aperture, exposure time, and focal length extracted from image files.
-- **Move / copy** — select one or more images and move or copy them to another catalogued folder.
+- **Move / copy / rename** — select one or more images and move, copy, or rename them.
+- **Crop** — crop and save an asset in place.
 - **Drag-and-drop upload** — drag files from the desktop and drop them onto the gallery to upload them.
 - **Download** — download a selection of images as a ZIP archive (up to the configured `max-download-assets` limit).
 - **Add to album** — add selected images to an existing album or create a new one on the spot.
@@ -55,6 +58,15 @@ A web rewrite of the JP Photo Manager desktop application. It replaces the origi
 
 - At-a-glance statistics: total catalogued folders, total assets, combined file size, and average star rating across the library.
 
+### Analytics
+
+- Storage breakdown per folder, file-format distribution, photos-per-month trend, and star-rating distribution across the catalog (`/analytics` page).
+
+### Audio Playback
+
+- Stream audio assets (e.g. MP3) directly from the catalog with playback controls.
+- Play `.m3u`/`.pls` playlist files as a queue, resolving each referenced track back to a catalogued asset.
+
 ### Image Cataloging
 
 - The backend automatically scans all configured root folders on startup and then re-scans after a configurable cooldown (default: 2 minutes).
@@ -83,12 +95,13 @@ A web rewrite of the JP Photo Manager desktop application. It replaces the origi
 ```mermaid
 graph TB
     subgraph browser["Browser"]
-        Angular["Angular 19 SPA\nGallery · Albums · Sync · Convert · Duplicates · Recycle Bin"]
+        Angular["Angular 19 SPA\nGallery · Albums · Sync · Convert · Duplicates · Recycle Bin\nAnalytics · Audio Player"]
     end
 
     subgraph backend["Backend — port 8080"]
         SpringBoot["Spring Boot 3 REST API\n(Java 21)"]
         KPL["KafkaProgressListener\n(sse-broadcaster group)"]
+        RLF["RateLimitFilter\n(Bucket4j)"]
     end
 
     subgraph messaging["Messaging — port 9092"]
@@ -97,15 +110,21 @@ graph TB
 
     subgraph persistence["Persistence"]
         PG[("PostgreSQL 18\nphotomanager")]
+        Mongo[("MongoDB 8\nasset_audit_log")]
+        Redis[("Redis 7\nthumbnail + query caches\nrefresh tokens · rate limits")]
         FS[("File System\nimages + thumbnails")]
     end
 
     Angular -->|"HTTP REST (JSON)"| SpringBoot
     Angular -->|"SSE (EventSource)"| SpringBoot
     SpringBoot -->|"JDBC / JPA (Hibernate)"| PG
+    SpringBoot -->|"audit log writes"| Mongo
+    SpringBoot -->|"cache/session ops"| Redis
+    RLF -->|"token buckets"| Redis
     SpringBoot -->|"File I/O"| FS
-    SpringBoot -->|"publish progress events"| Kafka
+    SpringBoot -->|"publish progress + domain events"| Kafka
     Kafka -->|"consume progress events"| KPL
+    Kafka -->|"consume domain events"| Mongo
     KPL -->|"SseEmitter.send()"| SpringBoot
 ```
 
@@ -182,7 +201,7 @@ erDiagram
         timestamp deleted_at
     }
     asset_exif {
-        bigint asset_id PK_FK
+        bigint asset_id PK, FK
         text camera_make
         text camera_model
         text lens_model
@@ -249,14 +268,31 @@ erDiagram
         timestamp started_at
         timestamp last_heartbeat_at
     }
+    tags {
+        serial tag_id PK
+        varchar name UK
+    }
+    asset_tags {
+        bigint asset_id FK
+        bigint tag_id FK
+    }
+    user_preferences {
+        uuid user_id PK, FK
+        varchar theme_mode
+        timestamptz updated_at
+    }
 
     folders ||--o{ assets : "contains"
     assets ||--o| asset_exif : "has EXIF"
     users ||--o{ albums : "owns"
     users ||--o{ refresh_tokens : "has"
     users ||--o{ search_presets : "owns"
+    users ||--o| user_preferences : "has"
     albums }o--o{ assets : "album_assets"
+    assets }o--o{ tags : "asset_tags"
 ```
+
+The `asset_audit_log` collection (user-action history) lives in MongoDB, not PostgreSQL, so it isn't part of this diagram — see [Persistence](#persistence).
 
 ### Frontend Component Hierarchy
 
@@ -275,12 +311,16 @@ graph TD
     App --> Albums["AlbumsComponent\n/albums"]
     App --> RecycleBin["RecycleBinComponent\n/recycle-bin"]
     App --> UserAdmin["UserAdminComponent\n/admin/users"]
+    App --> Analytics["AnalyticsComponent\n/analytics"]
 
     Gallery --> FolderNav["FolderNavComponent\n(folder tree sidebar)"]
     Gallery --> Thumbnail["ThumbnailComponent\n(shared card)"]
+    Gallery --> AudioPlayer["AudioPlayerComponent\n(playback controls)"]
     Albums --> AlbumDetail["AlbumDetailComponent\n/albums/:id"]
     AlbumDetail --> Thumbnail
 ```
+
+The default route (`/`) redirects to `/home`.
 
 ### Project Structure
 
@@ -315,7 +355,10 @@ JPPhotoManagerWeb/
 │   ├── prometheus.yaml        # `prometheus`→ Service + Deployment
 │   ├── grafana.yaml           # `grafana`   → Service + Deployment + PVC
 │   └── ingress.yaml           # Routes external traffic to `frontend`
-└── kustomization.yaml     # Entry point: `kubectl apply -k .`
+├── kustomization.yaml     # Entry point: `kubectl apply -k .`
+├── build-and-deploy-k8s.sh # Builds images and applies the Kubernetes stack end-to-end
+├── port-forward-k8s.sh    # Starts background port-forwards for Grafana/PostgreSQL/MongoDB/Kafka
+└── migrate-db.sh          # One-time migration of a host PostgreSQL catalog into Docker Compose
 ```
 
 ---
@@ -330,17 +373,27 @@ JPPhotoManagerWeb/
 | Spring Boot | 3.4.4 |
 | Spring Web (REST + SSE) | managed by Spring Boot |
 | Spring Data JPA | managed by Spring Boot |
+| Spring Data MongoDB | managed by Spring Boot |
+| Spring Data Redis | managed by Spring Boot |
 | Spring Batch | managed by Spring Boot |
 | Spring Kafka | managed by Spring Boot |
+| Spring Security | managed by Spring Boot |
 | Spring Validation | managed by Spring Boot |
-| Spring Actuator | managed by Spring Boot |
+| Spring Actuator + Micrometer (Prometheus registry) | managed by Spring Boot |
 | Hibernate (PostgreSQL dialect) | managed by Spring Boot |
 | PostgreSQL JDBC | managed by Spring Boot |
 | Flyway + Flyway PostgreSQL extension | managed by Spring Boot |
 | Apache Kafka (KRaft) | 3.9.0 (via Docker) |
+| Redis | 7 (via Docker) |
+| MongoDB | 8 (via Docker) |
+| JJWT (JWT signing/verification) | 0.12.6 |
+| Bucket4j + Bucket4j Redis (rate limiting) | 8.10.1 |
+| springdoc-openapi (Swagger UI) | 2.8.9 |
 | Lombok | 1.18.46 |
 | MapStruct | 1.6.3 |
 | Apache Commons Imaging | 1.0-alpha3 |
+| jaudiotagger (audio metadata) | 3.0.1 |
+| logstash-logback-encoder (JSON logging) | 8.0 |
 | GitHub API client | 1.321 |
 | JUnit 5 + Mockito + AssertJ | managed by Spring Boot |
 | Testcontainers (PostgreSQL) | managed by Spring Boot |
@@ -348,30 +401,48 @@ JPPhotoManagerWeb/
 
 ### Internal architecture
 
-The backend follows a clean architecture with strict layering:
+The backend follows the same Hexagonal (Ports and Adapters) layout described in [Backend Hexagonal Architecture](#backend-hexagonal-architecture) above:
 
 ```
-api/                     → REST controllers and request/response DTOs
-application/usecase/     → Use-case implementations (one class per port/in interface)
-application/dto/         → Application DTOs: progress messages (CatalogProgressMessage,
-                           SyncProgressMessage, ConvertProgressMessage) and result types
+application/
+  dto/                   → Application DTOs: progress messages (CatalogProgressMessage,
+                           SyncProgressMessage, ConvertProgressMessage), AssetFilter, PaginatedResult…
+  usecase/                → One implementation class per port/in interface, grouped by subdomain:
+                           album, analytics, asset, audit, auth, catalog, convert, folder, home,
+                           preference, recycle, search, sync, tag, user
 domain/
-  model/                 → Pure domain POJOs (Asset, Folder, …)
+  model/                 → Pure domain POJOs (Asset, Folder, User, AuditEvent, …)
   enums/                 → ImageRotation, SortCriteria, WallpaperStyle, ReasonEnum
-  port/in/               → Use-case interfaces
+  port/in/               → Use-case interfaces, grouped the same way as usecase/
   port/out/              → Repository and service port interfaces
 infrastructure/
-  web/                   → REST controllers, HTTP DTOs, MapStruct mappers
-  persistence/           → Spring Data JPA adapters (XxxRepositoryImpl, @Entity classes)
-  service/               → Service adapters: StorageServiceAdapter, ThumbnailStorageService,
+  web/
+    controller/          → REST controllers (AssetController, AlbumController, AuthController, …)
+    dto/                  → HTTP request/response DTOs
+    mapper/               → MapStruct HTTP DTO ↔ domain mappers
+    filter/               → JwtAuthenticationFilter, RateLimitFilter (Bucket4j, backed by Redis)
+    exception/            → GlobalExceptionHandler
+  persistence/
+    entity/               → @Entity JPA classes
+    jpa/                  → Spring Data JPA repositories
+    adapter/              → Repository port implementations (XxxRepositoryImpl)
+    mapper/                → MapStruct entity ↔ domain mappers
+    mongo/                 → MongoAuditLogRepository (`asset_audit_log` collection)
+    document/              → AuditLogDocument (Mongo document)
+    redis/                 → RedisRefreshTokenStore (refresh-token mirror)
+  service/                → Service adapters: StorageServiceAdapter, ThumbnailStorageServiceAdapter,
+                           JwtTokenServiceAdapter, RefreshTokenServiceAdapter, CatalogScheduler,
+                           AssetSearchCacheServiceAdapter (Redis query-cache eviction),
                            KafkaProgressRegistry (runId → SseEmitter + CompletableFuture map)
-  kafka/                 → KafkaProgressListener — @KafkaListener on all three progress topics;
-                           routes messages to SseEmitter via KafkaProgressRegistry
-  batch/                 → Spring Batch job config and item writers/listeners (catalog pipeline)
-  config/                → AppConfig (CORS, async executor), KafkaTopicConfig (topic declarations)
+  kafka/                  → KafkaProgressListener (SSE bridge), AuditLogKafkaListener,
+                           AssetSearchCacheInvalidationListener, and the Batch pipeline's
+                           hash/thumbnail/EXIF item processors
+  batch/                  → Spring Batch job config and item readers/writers/listeners (catalog pipeline)
+  health/                 → Custom Actuator health indicators (database, thumbnail storage, geocoding)
+  config/                 → AppConfig, SecurityConfig, MongoConfig, KafkaTopicConfig, …
 ```
 
-**Dependency flow:** `api` → `application` → `domain` ← `infrastructure`
+**Dependency flow:** `infrastructure/web` → `application/usecase` → `domain` ← `infrastructure/persistence` | `infrastructure/service`
 
 Controllers are thin: they delegate immediately to use-case interfaces and never touch repositories or service adapters directly.
 
@@ -386,27 +457,84 @@ Controllers are thin: they delegate immediately to use-case interfaces and never
 | `MoveAssetsUseCase` | Copies or moves files on disk and updates the corresponding DB record. |
 | `KafkaProgressRegistry` | Thread-safe `ConcurrentHashMap` keyed by `runId`; holds the `SseEmitter` registered by the controller and the `CompletableFuture<Void>` registered by the catalog use case. Bridges Kafka consumer callbacks back to waiting HTTP connections. |
 | `KafkaProgressListener` | `@KafkaListener` on `job.catalog.progress`, `job.sync.progress`, and `job.convert.progress` (consumer group `sse-broadcaster`). Routes each message to the `SseEmitter` for its `runId`; calls `registry.complete(runId)` on `done=true`. |
-| `StorageService` | File I/O, thumbnail generation, EXIF rotation reading (Apache Commons Imaging), SHA-256 hashing. |
-| `ThumbnailStorageService` | Stores and retrieves thumbnails as `{assetId}.bin` files under the configured thumbnails directory. |
+| `StorageServiceAdapter` | File I/O, thumbnail generation, EXIF rotation reading (Apache Commons Imaging), SHA-256 hashing. |
+| `ThumbnailStorageServiceAdapter` | Stores and retrieves thumbnails as `{assetId}.bin` files under the configured thumbnails directory, fronted by a Redis L2 cache with a 24-hour TTL. |
+| `JwtTokenServiceAdapter` / `RefreshTokenServiceAdapter` | Issue and validate the JWT access token and the longer-lived refresh token; refresh tokens are dual-written to PostgreSQL and mirrored into Redis (`RedisRefreshTokenStore`). |
+| `RateLimitFilter` | Servlet filter backed by Bucket4j + Redis; throttles requests per client IP (or the trusted `X-Forwarded-For` value behind a reverse proxy). |
+| `AssetSearchCacheServiceAdapter` | Evicts the Redis-backed `assets`/`tags` query caches per folder via cursor-based `SCAN`/`DEL`, triggered by `AssetSearchCacheInvalidationListener` (Kafka) and directly by the tag-mutation use cases. |
+| `AuditLogKafkaListener` | Consumes `asset.cataloged`/`asset.deleted`/`job.*.progress` events and appends them to the MongoDB `asset_audit_log` collection; tag/rating/view/download actions are logged directly by their use cases. |
 
 ### Persistence
 
-- **Database:** PostgreSQL 18
-- **Schema migrations:** Flyway, scripts in `src/main/resources/db/migration/`
-- **ORM:** Spring Data JPA with the Hibernate PostgreSQL dialect
-- **Connection:** configured via environment variables `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USERNAME`, `POSTGRES_PASSWORD` (defaults: `localhost`, `5432`, `photomanager`, `postgres`, `postgres`)
+- **Primary database:** PostgreSQL 18 — assets, folders, users, albums, refresh tokens, search presets, sync/convert configuration, and the `catalog_run_state` distributed lock.
+  - **Schema migrations:** Flyway, scripts in `src/main/resources/db/migration/`
+  - **ORM:** Spring Data JPA with the Hibernate PostgreSQL dialect
+  - **Connection:** configured via `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USERNAME`, `POSTGRES_PASSWORD` (defaults: `localhost`, `5432`, `photomanager`, `postgres`, `postgres`)
+- **MongoDB:** append-only store for the `asset_audit_log` collection (user-action history), populated by `AuditLogKafkaListener` and direct `AuditLogRepository.log(...)` calls. Configured via `MONGO_URI`.
+- **Redis:** thumbnail L2 cache, query-result caches (`assets`, `tags`, `home-stats`, `sub-folders`, `asset-exif`), the refresh-token mirror, and the Bucket4j rate-limit counters. Every Redis call fails open — a Redis outage degrades to always querying PostgreSQL/disk rather than failing the request. Configured via `REDIS_HOST`, `REDIS_PORT`.
 
 ### REST API
 
+All endpoints below except the three under **Auth** marked *Public* require the `jwt` cookie; endpoints under **Admin** additionally require the `ADMIN` role.
+
+**Auth**
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/login` | Public | Authenticate; sets `jwt` + `refreshToken` HttpOnly cookies |
+| `POST` | `/api/auth/refresh` | Public | Rotate the JWT using the refresh-token cookie |
+| `POST` | `/api/auth/logout` | Public | Clears both cookies server-side |
+| `GET` | `/api/auth/me` | Required | Current authenticated user |
+
+**Assets**
+
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/assets` | Paginated asset list for a folder (`folderPath`, `page`, `sort`) |
+| `GET` | `/api/assets` | Paginated asset list for a folder (`folderPath`, `page`, `sort`, `search`, `dateFrom`, `dateTo`, `minRating`, `tags`) |
+| `GET` | `/api/assets/timeline` | Assets grouped by date (timeline view) |
 | `GET` | `/api/assets/{id}/thumbnail` | 200×150 JPEG thumbnail |
 | `GET` | `/api/assets/{id}/image` | Full-size original image |
-| `GET` | `/api/assets/catalog` | SSE stream — catalog progress events |
-| `GET` | `/api/assets/duplicates` | Grouped duplicate assets |
+| `GET` | `/api/assets/{id}/exif` | EXIF metadata for an asset |
+| `GET` | `/api/assets/catalog` | SSE stream — run catalog and stream progress |
+| `GET` | `/api/assets/catalog/observe` | SSE stream — observe an already-running catalog run |
 | `POST` | `/api/assets/move` | Move or copy assets to a destination folder |
+| `POST` | `/api/assets/rename` | Rename assets |
+| `POST` | `/api/assets/download` | Download assets as a ZIP archive (up to `max-download-assets`) |
+| `PATCH` | `/api/assets/{id}/rating` | Rate an asset (0–5; 0 clears the rating) |
 | `DELETE` | `/api/assets` | Remove assets from catalog (optionally delete files) |
+| `GET` | `/api/assets/duplicates` | Grouped duplicate assets |
+| `POST` | `/api/assets/upload` | Upload a file into a folder |
+| `GET` | `/api/assets/upload/{assetId}/observe` | SSE stream — observe post-upload processing |
+| `POST` | `/api/assets/{id}/reprocess` | Regenerate an asset's thumbnail/hash/EXIF |
+| `POST` | `/api/assets/{id}/crop` | Crop and save an asset |
+| `POST` | `/api/assets/{id}/tags` | Add a tag to a single asset |
+| `DELETE` | `/api/assets/{id}/tags` | Remove a tag from a single asset |
+| `POST` | `/api/assets/tags/bulk` | Add a tag to multiple assets at once |
+| `DELETE` | `/api/assets/tags/bulk` | Remove a tag from multiple assets at once |
+
+**Tags, Albums, Search Presets, Recycle Bin**
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/tags` | Tag suggestions matching a prefix (`q`) |
+| `GET` | `/api/albums` | List all albums |
+| `POST` | `/api/albums` | Create an album |
+| `GET` | `/api/albums/{id}` | Paginated album assets |
+| `PUT` | `/api/albums/{id}` | Rename/update an album |
+| `DELETE` | `/api/albums/{id}` | Delete an album |
+| `POST` | `/api/albums/{id}/assets` | Add assets to an album |
+| `DELETE` | `/api/albums/{id}/assets` | Remove assets from an album |
+| `GET` | `/api/search-presets` | List saved search presets |
+| `POST` | `/api/search-presets` | Save the current filters as a preset |
+| `DELETE` | `/api/search-presets/{id}` | Delete a preset |
+| `GET` | `/api/recycle-bin` | Paginated soft-deleted assets |
+| `POST` | `/api/recycle-bin/restore` | Restore assets from the recycle bin |
+| `DELETE` | `/api/recycle-bin` | Purge specific assets (or all, with an empty body) permanently |
+
+**Folders, Sync, Convert**
+
+| Method | Path | Description |
+|---|---|---|
 | `GET` | `/api/folders` | Catalogued folders, optionally filtered by `parentPath` |
 | `GET` | `/api/folders/drives` | Available filesystem roots |
 | `GET` | `/api/folders/initial` | Configured initial folder |
@@ -418,6 +546,29 @@ Controllers are thin: they delegate immediately to use-case interfaces and never
 | `PUT` | `/api/convert/configuration` | Save convert directory pairs |
 | `GET` | `/api/convert/run` | SSE stream — run conversion and stream status |
 
+**Media, Home/Analytics, Preferences, Audit Log**
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/assets/{id}/stream` | Stream an audio asset |
+| `GET` | `/api/audio/playlist/{id}` | Resolve a playlist asset (`.m3u`/`.pls`) to its track list |
+| `GET` | `/api/home/stats` | Dashboard statistics (total assets, folders, size, average rating) |
+| `GET` | `/api/analytics` | Storage-per-folder, format distribution, photos-per-month, rating distribution |
+| `GET` | `/api/preferences` | Current user's UI preference (theme mode) |
+| `PUT` | `/api/preferences` | Save the current user's UI preference |
+| `GET` | `/api/audit-log` | Paginated audit trail (`userId`, `entityId`, `from`, `to`, `page`, `size`); non-admins are scoped to their own `userId` |
+
+**Admin** (requires the `ADMIN` role)
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/admin/users` | List all users |
+| `POST` | `/api/admin/users` | Create a user |
+| `PATCH` | `/api/admin/users/{id}/password` | Change a user's password |
+| `DELETE` | `/api/admin/users/{id}` | Delete a user |
+
+The full interactive contract is served by Swagger UI (`/swagger-ui.html`) — see [Running the backend](#running-the-backend) below.
+
 ### Configuration
 
 All settings live in `src/main/resources/application.yml`:
@@ -427,28 +578,46 @@ All settings live in `src/main/resources/application.yml`:
 | `server.port` | `8080` | HTTP server port |
 | `photomanager.initial-directory` | `~/Pictures` | Starting folder shown in the UI |
 | `photomanager.root-catalog-folders` | `~/Pictures` | Semicolon-separated folder roots to catalog |
-| `photomanager.catalog-batch-size` | `1000` | Files processed per catalog pass |
+| `photomanager.catalog-batch-size` | `1000` | Files processed per catalog pass (also the heartbeat interval) |
 | `photomanager.catalog-cooldown-minutes` | `2` | Minimum minutes between catalog runs |
+| `photomanager.catalog-timeout` | `60` | Minutes without a heartbeat before a catalog run is considered stale |
 | `photomanager.thumbnails-directory` | `~/.photomanager/thumbnails` | Thumbnail storage path — overridden by `THUMBNAILS_DIR` env var |
+| `photomanager.thumbnail-cache.enabled` | `true` | Enables the Redis L2 thumbnail cache — overridden by `THUMBNAIL_CACHE_ENABLED` |
+| `photomanager.thumbnail-cache.ttl-seconds` | `86400` | TTL for cached thumbnail bytes — overridden by `THUMBNAIL_CACHE_TTL_SECONDS` |
+| `photomanager.jwt-secret` | *(empty — must be set)* | HS256 signing secret (≥ 32 bytes); see [Authentication](#authentication) |
+| `photomanager.jwt-expiry-hours` | `24` | JWT access-token validity in hours |
+| `photomanager.refresh-token-expiry-days` | `30` | Refresh-token validity in days |
+| `photomanager.cors-allowed-origins` | `http://localhost:4200` | Allowed CORS origin(s), e.g. the Angular dev server |
+| `photomanager.max-download-assets` | `500` | Max assets allowed in a single ZIP download request |
+| `photomanager.trusted-proxy-ips` | *(empty)* | Comma-separated reverse-proxy IPs whose `X-Forwarded-For` header is trusted for rate limiting |
+| `photomanager.recycle-bin-retention-days` | `30` | Days a soft-deleted asset stays in the recycle bin |
+| `photomanager.geocoding-base-url` | `https://nominatim.openstreetmap.org` | Reverse-geocoding endpoint polled by the `geocoding` Actuator health indicator |
 | `POSTGRES_HOST` | `localhost` | PostgreSQL host |
 | `POSTGRES_PORT` | `5432` | PostgreSQL port |
 | `POSTGRES_DB` | `photomanager` | Database name |
 | `POSTGRES_USERNAME` | `postgres` | Database user |
 | `POSTGRES_PASSWORD` | `postgres` | Database password |
+| `REDIS_HOST` | `localhost` | Redis host |
+| `REDIS_PORT` | `6379` | Redis port |
+| `MONGO_URI` | `mongodb://localhost:27017/photomanager` | MongoDB connection URI (`asset_audit_log` collection) |
 | `CATALOG_DIR` | *(unset — falls back to `~/Pictures`)* | Overrides `initial-directory` and `root-catalog-folders` |
 | `THUMBNAILS_DIR` | *(unset — falls back to `~/.photomanager/thumbnails`)* | Overrides `thumbnails-directory` |
 | `KAFKA_BOOTSTRAP` | `localhost:9092` | Kafka bootstrap server address; set to `kafka:9092` in Docker Compose |
 
 ### Running the backend
 
-**Prerequisites:** Java 21, Maven 3.9+, PostgreSQL 18 + Apache Kafka (or Docker)
+**Prerequisites:** Java 21, Maven 3.9+, and Docker to run PostgreSQL 18, MongoDB, Redis, and Apache Kafka (all four are required — the app also uses MongoDB for the audit log and Redis for caching/rate limiting)
 
-Start a local PostgreSQL instance and Kafka broker if you don't have them:
+Start local PostgreSQL, MongoDB, Redis, and Kafka instances if you don't have them:
 ```bash
 docker run -d --name photomanager-db \
   -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=photomanager \
   -p 5432:5432 postgres:18
+
+docker run -d --name photomanager-mongo -p 27017:27017 mongo:8
+
+docker run -d --name photomanager-redis -p 6379:6379 redis:7-alpine
 
 docker run -d --name photomanager-kafka \
   -p 9092:9092 -p 9094:9094 \
@@ -463,6 +632,8 @@ docker run -d --name photomanager-kafka \
   -e KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
   apache/kafka:3.9.0
 ```
+
+You'll also need `photomanager.jwt-secret` set — see [Setup (local development)](#setup-local-development) under Authentication.
 
 ```bash
 cd JPPhotoManagerWeb/backend
@@ -513,41 +684,62 @@ Tests use the `test` Spring profile (`src/test/resources/application-test.yml`).
 | Angular | 19 |
 | Angular Material | 19 |
 | Angular CDK | 19 |
+| Angular Service Worker (PWA) | 19 |
 | TypeScript | 5.6 |
 | RxJS | 7.8 |
+| ngx-charts | 24.0.0-alpha.1 |
+| idb (IndexedDB wrapper, background sync) | 8.0.3 |
 | Node.js (build/dev) | 22 |
-| Karma + Jasmine | 6.4 / 5.4 |
+| Cypress (component + e2e tests) | 15 |
+| ESLint (`@angular-eslint`, `typescript-eslint`) | 9 |
 
 ### Application structure
 
 ```
 src/app/
-  app.component.ts/html/scss   → Shell with top navigation bar
-  app.routes.ts                → Lazy routes: /gallery, /sync, /convert, /duplicates
-  app.config.ts                → ApplicationConfig (HttpClient, Router, Animations)
+  app.component.ts/html/scss   → Shell with top navigation bar (shown only when logged in)
+  app.routes.ts                → Lazy routes: /home, /gallery, /sync, /convert, /duplicates,
+                                 /albums, /albums/:id, /recycle-bin, /admin/users, /analytics
+  app.config.ts                → ApplicationConfig (HttpClient + interceptor, Router, Animations)
   core/
     models/                    → TypeScript interfaces (Asset, Folder, PaginatedData, …)
     services/                  → Angular services wrapping the backend REST API
+    guards/                    → auth.guard.ts — redirects unauthenticated users to /login
+    interceptors/              → auth.interceptor.ts — handles 401 → redirect to /login
   features/
+    auth/login/                → LoginComponent (/login)
+    home/                      → HomeComponent (/home) — dashboard with stats
     gallery/                   → Thumbnail grid + full-size image viewer
     folder-nav/                → Folder tree (Angular CDK FlatTreeControl)
     sync/                      → Sync configuration and execution
     convert/                   → Convert configuration and execution
     duplicates/                → Duplicate detection and cleanup
+    albums/                    → AlbumsComponent + AlbumDetailComponent
+    recycle-bin/                → Restore/purge soft-deleted assets
+    analytics/                  → Storage/format/rating charts (ngx-charts)
+    audio-player/                → Playback controls for streamed audio assets
+    admin/users/                → UserAdminComponent (/admin/users) — add/change password/delete users
   shared/
     components/thumbnail/      → Reusable thumbnail card component
     pipes/file-size.pipe.ts    → Human-readable file size formatting
 ```
 
-All components are **standalone** (no NgModules). Routes are lazy-loaded:
+All components are **standalone** (no NgModules). Routes are lazy-loaded and, except `/login`, protected by `authGuard`:
 
 | Path | Feature | Description |
 |---|---|---|
-| `/` | — | Redirects to `/gallery` |
+| `/` | — | Redirects to `/home` |
+| `/login` | Login | Public login form |
+| `/home` | Home | Dashboard with catalog statistics |
 | `/gallery` | Gallery | Paginated thumbnail grid and full-size viewer |
 | `/sync` | Sync | Configure and run directory sync |
 | `/convert` | Convert | Configure and run PNG→JPEG conversion |
 | `/duplicates` | Duplicates | Find and remove duplicate images |
+| `/albums` | Albums | List, create, rename, and delete albums |
+| `/albums/:id` | Album detail | Paginated asset grid within an album |
+| `/recycle-bin` | Recycle Bin | Restore or purge soft-deleted assets |
+| `/admin/users` | User Administration | Add, change password, delete users |
+| `/analytics` | Analytics | Storage, format, monthly, and rating charts |
 
 ### Gallery modes
 
@@ -560,35 +752,37 @@ Long-running operations (catalog, sync, convert) use the browser's native `Event
 
 **SSE (Server-Sent Events)** is a web standard where the server pushes a stream of text events to the client over a single long-lived HTTP connection. It is one-way (server → client only), HTTP-based — the client makes a regular `GET` request and the response stays open while the server writes `data: ...` lines as events occur — and browsers handle reconnection automatically if the connection drops.
 
-**Kafka-mediated SSE pipeline:** progress events are not sent directly from the use case to the HTTP response. Instead, the catalog/sync/convert code publishes messages to a Kafka topic, and a dedicated `KafkaProgressListener` (consumer group `sse-broadcaster`) looks up the registered `SseEmitter` for the run and forwards each message to the client. This decouples the long-running work from the HTTP layer and makes the pipeline observable by any downstream consumer.
+**Kafka-mediated SSE pipeline:** progress events are not sent directly from the use case to the HTTP response. Instead, the catalog/sync/convert code publishes messages to a Kafka topic, and `KafkaProgressListener` looks up the registered `SseEmitter` for the run and forwards each message to the client. Unlike the audit-log/cache-invalidation consumers (which use a fixed, shared consumer group so exactly one backend instance processes each event), `KafkaProgressListener` relies on the default consumer group `spring.kafka.consumer.group-id: sse-broadcaster-${HOSTNAME}` — unique **per backend instance** — so that whichever replica is actually holding the client's SSE connection always gets its own copy of every progress message, regardless of which instance's `JobLauncher` is running the batch job. This decouples the long-running work from the HTTP layer and from any particular instance, and makes the pipeline observable by any downstream consumer.
+
+For the catalog case specifically, the actual scanning/persisting happens inside a Spring Batch job with no `catalog_run_state`-style lock or heartbeat (see [Catalog Process](#catalog-process) for the full picture — that custom table was dropped years ago in favor of Spring Batch's own job repository):
 
 ```mermaid
 sequenceDiagram
     participant Angular
     participant Controller as Spring Boot Controller
     participant Registry as KafkaProgressRegistry
-    participant UseCase as Catalog Use Case / Spring Batch
+    participant UseCase as CatalogAssetsUseCaseImpl
+    participant Batch as Spring Batch (partitioned job)
     participant Kafka as Apache Kafka
     participant Listener as KafkaProgressListener
     participant DB as PostgreSQL
 
     Angular->>Controller: GET /api/assets/catalog (EventSource)
     Controller->>Registry: registerEmitter(runId, SseEmitter)
-    Controller->>UseCase: execute(runId) [async]
+    Controller->>UseCase: execute(runId, userId)
     UseCase->>Registry: registerCompletion(runId, CompletableFuture)
-    UseCase->>DB: Acquire catalog_run_state lock
+    UseCase->>Batch: JobLauncher.run(catalogJob) [async, returns immediately]
 
-    loop Per file batch (catalog-batch-size assets)
-        UseCase->>DB: Upsert Asset records + heartbeat
-        UseCase->>Kafka: publish CatalogProgressMessage to job.catalog.progress
+    loop Per asset saved, across every folder partition running in parallel
+        Batch->>DB: Save Asset/AssetExif/AssetAudio
+        Batch->>Kafka: publish CatalogProgressMessage to job.catalog.progress
         Kafka->>Listener: onCatalogProgress(message)
         Listener->>Registry: getEmitter(runId)
         Listener-->>Angular: SseEmitter.send("catalog" event)
         Angular-->>Angular: Update progress bar
     end
 
-    UseCase->>DB: Release catalog_run_state lock
-    UseCase->>Kafka: publish CatalogProgressMessage{done=true}
+    Batch->>Kafka: publish CatalogProgressMessage{done=true} (once every partition has finished)
     Kafka->>Listener: onCatalogProgress(done message)
     Listener->>Registry: complete(runId) → CompletableFuture.complete()
     Listener-->>Angular: SseEmitter.complete() — stream closed
@@ -649,12 +843,28 @@ Output goes to `dist/jp-photo-manager-ui/`.
 
 ### Running frontend tests
 
+Tests are **Cypress Component Testing** (`*.cy.ts` files colocated with the code under test) plus a separate Cypress E2E suite — there is no Karma/Jasmine setup.
+
 ```bash
 cd JPPhotoManagerWeb/frontend
+
+# Component tests, headless (what CI runs)
 npm test
 
-# Headless (CI)
-npm test -- --watch=false --browsers=ChromeHeadless
+# Component tests with code coverage
+npm run test:coverage
+
+# End-to-end tests, headless (requires the app running — see e2e-testing skill)
+npm run test:e2e
+
+# Interactive Cypress runner (component mode)
+npm run cypress:open
+
+# Interactive Cypress runner (e2e mode)
+npm run cypress:e2e
+
+# Lint
+npm run lint
 ```
 
 ---
@@ -737,7 +947,8 @@ If you have an existing catalog in a **host PostgreSQL instance** and want to mo
 | `db` | `postgres:18` | `5433` | PostgreSQL 18; data persisted in the `pgdata` named volume |
 | `kafka` | `apache/kafka:3.9.0` | `9092` (internal) `9094` (host) | Apache Kafka in KRaft mode (no ZooKeeper); pub/sub backbone for catalog/sync/convert progress events. Port 9092 is for inter-container traffic; port 9094 exposes the broker to the host machine. |
 | `mongo` | `mongo:8` | `27017` | MongoDB 8; stores the `asset_audit_log` collection; data persisted in the `mongodata` named volume; no authentication configured |
-| `backend` | JRE 21 Alpine | `8080` | Spring Boot REST API; `HOST_IMAGE_DIR` bind-mounted at `/catalog`; connects to Kafka via `kafka:9092` |
+| `redis` | `redis:7-alpine` | `6379` | Redis 7 (`allkeys-lru` eviction, 256 MB cap); backs the thumbnail cache, `assets`/`tags`/`home-stats`/`sub-folders`/`asset-exif` query caches, refresh-token mirror, and rate limiting (Bucket4j); no persistent volume — cache-only, safe to lose |
+| `backend` | JRE 21 Alpine | `8080` | Spring Boot REST API; `HOST_IMAGE_DIR` bind-mounted at `/catalog`; connects to Kafka via `kafka:9092` and Redis via `redis:6379` |
 | `frontend` | Nginx Alpine | `80` | Angular SPA; reverse-proxies `/api` to the backend |
 | `prometheus` | `prom/prometheus` | `9090` | Scrapes backend metrics from `/actuator/prometheus` every 15 s |
 | `grafana` | `grafana/grafana` | `3000` | Dashboard UI backed by Prometheus |
@@ -753,6 +964,7 @@ After `docker compose up`, all services are reachable from the host machine:
 | Swagger UI | `http://localhost:8080/swagger-ui.html` | — |
 | PostgreSQL | `localhost:5433` | see table below |
 | MongoDB | `localhost:27017` | no auth — see below |
+| Redis | `localhost:6379` | no auth — cache only, safe to flush |
 | Kafka | `localhost:9094` | no auth — see below |
 | Prometheus | `http://localhost:9090` | — |
 | Grafana | `http://localhost:3000` | `admin` / value of `GRAFANA_ADMIN_PASSWORD` (default: `admin`) |
@@ -1141,6 +1353,9 @@ kubectl port-forward -n photomanager svc/db 5433:5432
 # MongoDB, for Compass/mongosh etc. (compose: localhost:27017)
 kubectl port-forward -n photomanager svc/mongo 27017:27017
 
+# Redis, for redis-cli etc. (compose: localhost:6379)
+kubectl port-forward -n photomanager svc/redis 6379:6379
+
 # Kafka, for KafkIO/kcat/kafka-*.bat etc. (compose: localhost:9094)
 # — needs one more step than the others; see the callout right below.
 kubectl port-forward -n photomanager svc/kafka 9094:9094
@@ -1202,6 +1417,12 @@ kubectl delete pvc --all -n photomanager
 ### Troubleshooting
 
 **`kafka-0` is `CrashLoopBackOff` with `UnknownHostException: kafka` in the logs.** Already fixed in `k8s/kafka.yaml` (`publishNotReadyAddresses: true` on the headless Service — see [Architecture differences](#architecture-differences-from-docker-compose)), but if you ever see this again after editing the manifest yourself, that flag is the first thing to check.
+
+**Docker Desktop's Kubernetes tab shows no Deployment for Kafka (or PostgreSQL, or MongoDB).** Not a bug — Docker Desktop's "Deployments" view filters strictly by the `Deployment` kind, and `db`, `kafka`, and `mongo` are all `StatefulSet`s instead (see [Architecture differences](#architecture-differences-from-docker-compose) for why: they need a stable network identity and a PVC that survives pod rescheduling). Only `backend`, `frontend`, `prometheus`, and `grafana` are actual Deployments and will show up there. To see Kafka's pod, check Docker Desktop's **Pods** view (or a **StatefulSets** view, if present) for `kafka-0`, or from the command line:
+```bash
+kubectl get statefulset,pods -n photomanager -l app=kafka
+```
+`1/1 Running` there means it's healthy — it's just invisible from the Deployments filter by design.
 
 **Backend, mongo, or redis pods restart repeatedly on a fresh `kubectl apply -k .`, or the browser shows `504 Gateway Timeout` on login.** On a resource-constrained cluster (e.g. Docker Desktop's default 4-CPU / ~4 GB VM) running the full 8-service stack at once — plus the backend's first catalog scan of your real photo library — genuinely starves the CPU. We measured Spring Boot startup that normally takes ~15 seconds taking 5+ minutes under this contention. The manifests already budget for this (see the probe-tuning bullet in [Architecture differences](#architecture-differences-from-docker-compose)), but if it's still not enough for your machine:
 - Check actual resource usage: `docker stats` (per-container) and `docker info --format '{{.NCPU}} CPUs, {{.MemTotal}} bytes RAM'` (total VM capacity).
@@ -1315,52 +1536,126 @@ Each workflow has separate jobs for the backend (Java 21 + Maven) and frontend (
 
 ## Catalog Process
 
-The catalog process scans all configured root folders (`photomanager.root-catalog-folders`), generates thumbnails, computes SHA-256 hashes, and persists asset metadata to the database.
+The catalog process scans all configured root folders (`photomanager.root-catalog-folders`), generates thumbnails, computes SHA-256 hashes and EXIF/audio metadata, and persists asset metadata to the database. It is implemented as a **Spring Batch job** (`infrastructure/batch/`), replacing an earlier custom `@Async` loop + hand-rolled distributed-lock design (`catalog_run_state` table, heartbeat, stale-run detection) — that table was dropped by `V16__spring_batch_schema.sql`; if you see it mentioned elsewhere (older docs, comments), it no longer exists. See `openspec/changes/archive/2026-05-24-catalog-spring-batch/` for the migration history.
 
-### Lifecycle
+### Summary — two engines, two jobs
 
-The backend owns the catalog lifecycle entirely. The gallery frontend no longer triggers catalog runs on page load.
+It helps to think of this as **two separate engines that never block each other**:
 
-**Startup:** `CatalogScheduler` listens for `ApplicationReadyEvent` and immediately submits the first catalog run to a dedicated single-thread `ThreadPoolTaskScheduler`.
+- **Spring Batch does all the real work.** Something starts a run (a timer, or an admin clicking a button). From that point, Spring Batch owns the whole scan: walking folders, reading files, hashing them, generating thumbnails, reading EXIF/audio tags, and writing `Asset`/`AssetExif`/`AssetAudio` rows to PostgreSQL. This is a normal, synchronous, transactional Spring Batch job — if Kafka didn't exist at all, every asset would still get catalogued exactly the same way.
+- **Kafka only fans out *after the fact*.** Every time Spring Batch does something notable (asset written, folder's stale files removed, whole run finished), it drops a message on a Kafka topic and moves on — it never waits for anyone to read that message. Three independent consumers pick those messages up on their own schedule to do things that are *not* part of cataloguing itself: streaming live progress to the browser over SSE, writing an entry to the MongoDB audit log, and evicting stale entries from the Redis search cache. If Kafka is down, assets still get catalogued — you just don't see live progress, and the audit/cache side-effects lag until Kafka comes back (see `safeSend()` below).
 
-**Periodic repetition:** After each run completes, the scheduler waits `photomanager.catalog-cooldown-minutes` (default: 2 minutes) before starting the next run. The delay is measured from the **end** of the previous run (fixed delay, not fixed rate), so runs never overlap.
+So: **"how does a run start?"** → `CatalogScheduler` (automatic, every few minutes) or `GET /api/assets/catalog` (an admin, manually). **"What does Spring Batch do?"** → the actual scanning and database writes, via a partitioned job (one worker thread per folder). **"What does Kafka do?"** → nothing that affects whether an asset gets saved; it's the notification bus for everything downstream of that.
 
-**Manual trigger:** The `GET /api/assets/catalog` SSE endpoint remains available for manual or troubleshooting use. If a run is already in progress the request is silently skipped and the SSE stream completes immediately.
+```mermaid
+graph TB
+    subgraph triggers["1 — What starts a run"]
+        Scheduler["CatalogScheduler\n(ApplicationReadyEvent, then every\ncatalog-cooldown-minutes, default 2)"]
+        Manual["Admin: GET /api/assets/catalog (SSE)"]
+    end
 
-### Distributed Lock
+    UC["CatalogAssetsUseCaseImpl\nlaunches the job and returns\nimmediately — does not wait for it"]
 
-A single-row `catalog_run_state` table acts as a distributed lock across all JVM instances:
+    subgraph batch["2 — Spring Batch does the actual work (no Kafka involved here)"]
+        Partition["CatalogFolderPartitioner\none partition per folder"]
+        Worker["catalogWorkerStep × grid-size (default 4), in parallel\nReader → Processor → Writer\nhash · thumbnail · EXIF/audio · save"]
+        AfterJob["CatalogItemWriteListener.afterJob\nprune deleted folders, tally totals"]
+    end
 
-| Column | Type | Description |
-|---|---|---|
-| `id` | integer (always 1) | Single-row primary key |
-| `is_running` | boolean | Whether a run is active |
-| `started_at` | timestamptz | When the current run started |
-| `last_heartbeat_at` | timestamptz | Last heartbeat from the running instance |
-| `instance_id` | varchar | UUID of the JVM that holds the lock |
+    PG[("PostgreSQL\nassets · asset_exif · asset_audio · folders")]
 
-Before each run the backend executes an atomic `UPDATE … WHERE id=1 AND is_running=false`. Only one instance succeeds; all others skip. The lock is released in a `finally` block using `WHERE instance_id = :thisInstance` to avoid accidentally releasing another instance's lock.
+    subgraph kafka["3 — Kafka: fan-out only, after the fact"]
+        T1["job.catalog.progress"]
+        T2["asset.cataloged"]
+        T3["asset.deleted"]
+    end
 
-### Heartbeat
+    subgraph consumers["4 — Independent consumers, each optional"]
+        SSE["KafkaProgressListener\n→ live progress over SSE"]
+        Audit["AuditLogKafkaListener\n→ MongoDB asset_audit_log"]
+        Cache["AssetSearchCacheInvalidationListener\n→ evict stale Redis cache entries"]
+    end
 
-To keep long-running catalog runs alive, `last_heartbeat_at` is refreshed after every `photomanager.catalog-batch-size` (default: 1000) assets are saved. The heartbeat update runs in its own transaction (`propagation = REQUIRES_NEW`) so it is immediately visible to all JVM instances, even while the enclosing folder transaction is still open.
+    Scheduler --> UC
+    Manual --> UC
+    UC -->|"JobLauncher.run()"| Partition
+    Partition --> Worker
+    Worker -->|"assetRepository.save() etc."| PG
+    Worker -.->|"safeSend(): best-effort,\nnever blocks a save"| T1
+    Worker -.-> T2
+    Worker -.-> T3
+    Worker --> AfterJob
+    AfterJob -.->|"done"| T1
+    T1 --> SSE
+    T1 --> Audit
+    T2 --> Audit
+    T2 --> Cache
+    T3 --> Audit
+    T3 --> Cache
+```
 
-### Stale Run Detection
+The sections below go into the detail behind each numbered box in the diagram.
 
-A `@Scheduled` task runs every 60 seconds. It computes `threshold = now - catalog-timeout minutes` (default: 60 minutes) and:
+### Lifecycle / triggers
 
-1. If this JVM holds the lock and `last_heartbeat_at < threshold`: interrupts the catalog thread and releases the DB lock.
-2. Releases any locks held by other (crashed) instances whose heartbeat is also older than the threshold.
+The backend owns the catalog lifecycle entirely — the gallery frontend does not trigger catalog runs on page load.
 
-The catalog folder loop checks `Thread.currentThread().isInterrupted()` at the start of each folder iteration and returns early if set, ensuring clean shutdown on interruption.
+- **Startup + periodic repetition:** `CatalogScheduler` listens for `ApplicationReadyEvent` and immediately submits the first run to a dedicated single-thread `ThreadPoolTaskScheduler` (`AppConfig.catalogTaskScheduler`, pool size 1). After each run's `CompletableFuture` resolves, it waits `photomanager.catalog-cooldown-minutes` (default 2) before the next (`scheduleWithFixedDelay` — delay measured from the **end** of the previous run, so the scheduler never fires a second run on top of itself). This path authenticates as `system-scheduler` (`ROLE_ADMIN`) and passes `userId=null` — there's no real user to attribute a scheduled run to (the `CATALOG_RUN` audit entry it eventually produces, see below, simply has a `null` `userId`).
+- **Manual trigger:** `GET /api/assets/catalog` (admin-only, SSE) calls `CatalogAssetsUseCase.execute(runId, userId)` with a fresh `runId = System.currentTimeMillis()` and the caller's resolved user id, then registers an `SseEmitter` keyed by that `runId` in `KafkaProgressRegistry` so the HTTP caller gets a live stream of their own run.
+- **Observe-only:** `GET /api/assets/catalog/observe` doesn't start a run; it just registers the caller's `SseEmitter` as a "catalog observer" (`KafkaProgressRegistry.addCatalogObserver`) that receives a broadcast of every catalog/catalog-done event from whichever run is currently in progress (scheduled or manual) — used by the gallery to show live progress without having triggered the run itself.
+
+**Concurrency, honestly:** `CatalogAssetsUseCaseImpl.execute()` catches `JobExecutionAlreadyRunningException` from `JobLauncher.run()` and treats it as "already running, skip" — but since `runId` is unique per launch (a millisecond timestamp) and it's the job's identifying parameter, Spring Batch's `JobRepository` sees every launch as a brand-new `JobInstance`, so that exception in practice never actually fires. The only real protection against overlapping runs is that the scheduler's `ThreadPoolTaskScheduler` has a single thread and each tick blocks (`.get()`) on the previous run's completion future before the next `Runnable` can execute — so the *scheduler* never overlaps with itself, but nothing stops an admin's manual trigger from launching a second job concurrently with a scheduled one.
+
+### Spring Batch job structure
+
+```
+catalogJob (JobExecutionListener: CatalogItemWriteListener.afterJob)
+└── catalogPartitionStep
+    ├── partitions by folder: CatalogFolderPartitioner walks every root in
+    │   `photomanager.root-catalog-folders` (semicolon-separated) recursively,
+    │   one partition per folder (including the roots themselves)
+    ├── parallelism: TaskExecutorPartitionHandler, gridSize =
+    │   `photomanager.catalog-partition-grid-size` (default 4) threads
+    └── catalogWorkerStep (one execution per partition/folder), chunk size =
+        `photomanager.catalog-chunk-size` (default 50)
+        ├── reader:    CatalogFileItemReader    — lists files in the folder via StoragePort,
+        │              filters out filenames already catalogued for that Folder
+        ├── processor: CatalogAssetItemProcessor — per file, synchronously (no Kafka involved):
+        │              SHA-256 hash, 200×150 thumbnail, EXIF (images), audio metadata + album
+        │              art (audio files), or a placeholder thumbnail (playlists)
+        └── writer:    CatalogAssetItemWriter    — saves Asset + AssetExif + AssetAudio (JPA) and
+                       the thumbnail (ThumbnailPort); also a StepExecutionListener — after each
+                       partition's files are processed (afterStep), compares the Folder's
+                       catalogued Assets against what's still on disk and deletes any Asset whose
+                       file has disappeared (stale-file cleanup)
+```
+
+After the whole job finishes, `CatalogItemWriteListener.afterJob()` calls `PruneDeletedFoldersUseCase.execute(null)` (silently deletes any Folder — and its Assets/thumbnails — whose directory no longer exists on disk at all; no Kafka event is published for this, unlike the per-asset stale-file cleanup above), tallies `foldersScanned`/`assetsAdded` across every `catalogWorkerStep*` execution, and publishes the final `job.catalog.progress` `done` message (see below).
+
+### Kafka messages
+
+The catalog job's Postgres writes never depend on Kafka — hash/thumbnail/EXIF computation and the `Asset`/`AssetExif`/`AssetAudio` saves all happen synchronously in `CatalogAssetItemProcessor`/`CatalogAssetItemWriter` against JPA repositories. Kafka is used purely for **fan-out after the fact**: telling the SSE layer, the audit trail, and the search cache that something changed, without coupling the batch job to any of them directly. Every `kafkaTemplate.send(...)` call in the catalog path goes through a `safeSend()` helper that catches and logs (`WARN`) any publish failure instead of propagating it — a Kafka hiccup (broker restart, topic not yet created) can no longer fail the batch step and roll back an asset that was already persisted. This matters in practice: on Kubernetes, if `k8s/kafka.yaml`'s `log.dirs` isn't pointed at the mounted PVC, every Kafka pod restart wipes all topics, and without `safeSend()` the very next catalog write would time out publishing to a now-missing topic and abort the whole run with zero assets saved.
+
+| Topic | Partitions / retention | Produced by | Consumed by |
+|---|---|---|---|
+| `job.catalog.progress` | 3 partitions, 1h retention | `CatalogAssetItemWriter.write()` (per-asset `ASSET_CREATED` progress, in `ensureFolderExists()` for `FOLDER_CREATED`, in `afterStep()` for `ASSET_DELETED` stale-cleanup progress) and `CatalogItemWriteListener.afterJob()` (final `done` message: `foldersScanned`, `assetsAdded`, `durationMs`, `userId`) | `KafkaProgressListener.onCatalogProgress` (default per-instance consumer group — forwards non-`done` messages to the triggering run's `SseEmitter` and to every catalog observer; on `done`, completes the emitter, calls `KafkaProgressRegistry.complete(runId)` which resolves the `CompletableFuture` `CatalogAssetsUseCaseImpl.execute()` returned, and broadcasts `catalog-done` to observers) and `AuditLogKafkaListener.onCatalogProgress` (dedicated `audit-log-writer` group — ignores non-`done` messages, writes one `CATALOG_RUN` audit entry per completed run) |
+| `asset.cataloged` | 3 partitions, 7d retention | `CatalogAssetItemWriter.write()` — one event per newly-saved asset (`assetId`, `folderPath`, `timestamp`, `userId`) | `AssetSearchCacheInvalidationListener.onAssetCataloged` (dedicated `asset-search-cache-invalidator` group — resolves the folder id from `folderPath` and evicts that folder's `assets:{folderId}:*` Redis cache entries) and `AuditLogKafkaListener.onAssetCataloged` (`audit-log-writer` group — writes one `ASSET_CATALOGED` audit entry per asset) |
+| `asset.deleted` | 3 partitions, 7d retention | `CatalogAssetItemWriter.afterStep()` — one event per asset removed because its file vanished from disk since the last scan (`assetId`, `folderId`, `folderPath`, `timestamp`, `permanent=false`, `userId`); **not** produced by the explicit `DELETE /api/assets` admin endpoint or the recycle bin — those don't publish to Kafka at all today | `AssetSearchCacheInvalidationListener.onAssetDeleted` (evicts the folder's cache directly using `event.folderId()`) and `AuditLogKafkaListener.onAssetDeleted` (writes one `ASSET_DELETED` audit entry, metadata `folderId`/`permanent`) |
+
+`asset.uploaded` and `job.upload.progress` (consumed by `AssetHashProcessor`/`AssetExifProcessor`/`AssetThumbnailProcessor` and `KafkaProgressListener.onUploadProgress` respectively) belong to the separate single-file **upload** pipeline (`POST /api/assets/upload`), not the recursive folder catalog scan — mentioned here only to avoid confusing the two when reading `KafkaTopicConfig`.
+
+All topics are declared as `NewTopic` beans in `config/KafkaTopicConfig.java`; Spring's auto-configured `KafkaAdmin` creates them against the broker once at application startup (the broker itself has `auto.create.topics.enable=false`, so nothing else will create them — see `k8s/kafka.yaml`'s `KAFKA_AUTO_CREATE_TOPICS_ENABLE`).
 
 ### Configuration
 
 | Property | Default | Description |
 |---|---|---|
+| `photomanager.root-catalog-folders` | `${user.home}/Pictures` | Semicolon-separated list of root directories scanned recursively |
 | `photomanager.catalog-cooldown-minutes` | `2` | Minutes to wait between catalog runs (fixed delay from end of previous run) |
-| `photomanager.catalog-batch-size` | `1000` | Assets saved between heartbeat refreshes |
-| `photomanager.catalog-timeout` | `60` | Minutes without a heartbeat before a run is considered stale |
+| `photomanager.catalog-chunk-size` | `50` | Spring Batch chunk size (files read/processed/written per transaction) within each folder's step |
+| `photomanager.catalog-partition-grid-size` | `4` | Number of folders processed in parallel per catalog run |
+
+`photomanager.catalog-batch-size` (default `1000`) and `photomanager.catalog-timeout` (default `60`) still exist in `application.yml` but are vestiges of the pre-Spring-Batch heartbeat design described above — `catalog-timeout` isn't read by any code at all, and `catalog-batch-size` is only read by the unrelated `CatalogFolderServiceAdapter` (used by asset cropping, not catalog scanning) into a field that's never actually used. Safe to ignore.
 
 ---
 
@@ -1383,13 +1678,17 @@ Logging is configured entirely via `src/main/resources/logback-spring.xml`. The 
 
 ## Authentication
 
-The application uses **JWT stored in an HttpOnly cookie** (`SameSite=Strict`, `Path=/`). All `/api/**` endpoints except `POST /api/auth/login` require this cookie. Because the browser attaches cookies automatically to every same-origin request — including `<img src="...">` image loads and the native `EventSource` API — no custom `Authorization` header is needed and there is no risk of token theft via JavaScript.
+The application uses **JWT stored in an HttpOnly cookie** (`SameSite=Strict`, `Path=/`), alongside a longer-lived `refreshToken` HttpOnly cookie used only to obtain a new JWT. All `/api/**` endpoints require the `jwt` cookie except the three under `/api/auth/` below. Because the browser attaches cookies automatically to every same-origin request — including `<img src="...">` image loads and the native `EventSource` API — no custom `Authorization` header is needed and there is no risk of token theft via JavaScript.
 
-### Public endpoint
+### Public endpoints
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/auth/login` | Authenticate; sets `jwt` HttpOnly cookie and returns `{ "username": "...", "expiresAt": "..." }` |
+| `POST` | `/api/auth/login` | Authenticate; sets `jwt` + `refreshToken` HttpOnly cookies and returns `{ "username": "...", "expiresAt": "..." }` |
+| `POST` | `/api/auth/refresh` | Reads the `refreshToken` cookie, rotates both cookies, and returns the same response shape as login |
+| `POST` | `/api/auth/logout` | Clears both cookies server-side |
+
+`GET /api/auth/me` also exists but is **not** public — it requires the `jwt` cookie and returns the current user's `{ "username": "...", "role": "..." }`.
 
 ### JWT flow
 
@@ -1408,8 +1707,10 @@ sequenceDiagram
     Angular->>API: POST /api/auth/login {username, password}
     API->>DB: Look up user, verify BCrypt hash
     DB-->>API: User record
-    API-->>Angular: Set-Cookie: jwt=<token> (HttpOnly, SameSite=Strict) + {username, expiresAt}
-    Angular->>Angular: Store {username, expiresAt} in localStorage
+    API-->>Angular: Set-Cookie jwt=[token] and refreshToken=[token] (HttpOnly, SameSite=Strict) + {username, expiresAt}
+    Angular->>API: GET /api/auth/me (cookie sent by browser)
+    API-->>Angular: {username, role}
+    Angular->>Angular: Store {username, expiresAt, role} in localStorage
     Angular->>Angular: Schedule proactive refresh at (expiresAt − 5 min)
     Angular-->>User: Redirect to /home
 
@@ -1420,7 +1721,7 @@ sequenceDiagram
     API-->>Angular: 200 OK + data
 
     Angular->>API: POST /api/auth/logout
-    API-->>Angular: Set-Cookie: jwt=; Max-Age=0 (clears cookie)
+    API-->>Angular: Clears jwt and refreshToken cookies (Max-Age=0)
     Angular->>Angular: Clear localStorage + cancel refresh timer
     Angular-->>User: Redirect to /login
 ```
@@ -1430,7 +1731,8 @@ sequenceDiagram
 | Property | Default | Description |
 |---|---|---|
 | `photomanager.jwt-secret` | *(empty — must be set)* | HS256 signing secret (≥ 32 bytes) |
-| `photomanager.jwt-expiry-hours` | `24` | Token validity in hours |
+| `photomanager.jwt-expiry-hours` | `24` | JWT access-token validity in hours |
+| `photomanager.refresh-token-expiry-days` | `30` | Refresh-token validity in days |
 
 ### Generating JWT_SECRET
 

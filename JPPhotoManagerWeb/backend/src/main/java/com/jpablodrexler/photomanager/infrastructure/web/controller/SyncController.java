@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 import com.jpablodrexler.photomanager.domain.port.in.sync.GetSyncConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.sync.SaveSyncConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.sync.SyncAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.shared.SyncDirectoryPairDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.SyncWebMapper;
@@ -12,16 +13,19 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
+import java.util.UUID;
 
 @Tag(name = "Sync", description = "Directory synchronisation configuration and execution")
 @RestController
 @RequestMapping("/api/sync")
 @RequiredArgsConstructor
+@Slf4j
 public class SyncController {
 
     private final GetSyncConfigUseCase getSyncConfigUseCase;
@@ -29,6 +33,7 @@ public class SyncController {
     private final SyncAssetsUseCase syncAssetsUseCase;
     private final KafkaProgressRegistry kafkaProgressRegistry;
     private final SyncWebMapper syncWebMapper;
+    private final GetCurrentUserUseCase getCurrentUserUseCase;
 
     @Operation(summary = "Get sync directory pair configuration")
     @ApiResponses({
@@ -66,7 +71,21 @@ public class SyncController {
         emitter.onTimeout(cleanup);
         emitter.onError(t -> cleanup.run());
         kafkaProgressRegistry.registerEmitter(runId, emitter);
-        syncAssetsUseCase.execute(runId);
+        syncAssetsUseCase.execute(runId, resolveUserId());
         return emitter;
+    }
+
+    /**
+     * Resolves the authenticated user's id for audit-logging purposes only. Never throws: returns
+     * {@code null} when unauthenticated or the user cannot be resolved, so that an inability to
+     * identify the caller never blocks the primary request.
+     */
+    private UUID resolveUserId() {
+        try {
+            return getCurrentUserUseCase.execute().getId();
+        } catch (Exception e) {
+            log.warn("Failed to resolve current user id for audit logging: {}", e.getMessage());
+            return null;
+        }
     }
 }

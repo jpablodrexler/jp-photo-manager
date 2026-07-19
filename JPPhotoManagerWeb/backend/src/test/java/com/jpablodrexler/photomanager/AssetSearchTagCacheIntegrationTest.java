@@ -112,7 +112,7 @@ class AssetSearchTagCacheIntegrationTest extends PostgresIntegrationTest {
         Asset secondAsset = saveAsset(folder, "b.jpg", "hash-b-" + System.nanoTime());
 
         kafkaTemplate.send("asset.cataloged", String.valueOf(secondAsset.getAssetId()),
-                new AssetCatalogedEvent(secondAsset.getAssetId(), folder.getPath(), Instant.now()));
+                new AssetCatalogedEvent(secondAsset.getAssetId(), folder.getPath(), Instant.now(), null));
 
         pollUntil(() -> getAssetsUseCase.execute(filter).items().size() == 2, "assets cache to be invalidated after asset.cataloged");
     }
@@ -129,7 +129,7 @@ class AssetSearchTagCacheIntegrationTest extends PostgresIntegrationTest {
 
         assetRepository.deleteById(toDelete.getAssetId());
         kafkaTemplate.send("asset.deleted", String.valueOf(toDelete.getAssetId()),
-                new AssetDeletedEvent(toDelete.getAssetId(), folder.getFolderId(), folder.getPath(), Instant.now(), true));
+                new AssetDeletedEvent(toDelete.getAssetId(), folder.getFolderId(), folder.getPath(), Instant.now(), true, null));
 
         pollUntil(() -> getAssetsUseCase.execute(filter).items().size() == 1, "assets cache to be invalidated after asset.deleted");
     }
@@ -148,7 +148,7 @@ class AssetSearchTagCacheIntegrationTest extends PostgresIntegrationTest {
 
         Asset newAssetInA = saveAsset(folderA, "a2.jpg", "hash-a2-" + System.nanoTime());
         kafkaTemplate.send("asset.cataloged", String.valueOf(newAssetInA.getAssetId()),
-                new AssetCatalogedEvent(newAssetInA.getAssetId(), folderA.getPath(), Instant.now()));
+                new AssetCatalogedEvent(newAssetInA.getAssetId(), folderA.getPath(), Instant.now(), null));
 
         pollUntil(() -> getAssetsUseCase.execute(filterA).items().size() == 2, "folder A's cache to be invalidated");
         // Folder B's cache entry must remain untouched by folder A's eviction.

@@ -13,6 +13,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -30,6 +31,8 @@ public class CatalogItemWriteListener implements ItemWriteListener<CatalogBatchI
     @Override
     public void afterJob(JobExecution jobExecution) {
         long runId = jobExecution.getJobParameters().getLong("runId");
+        String userIdParam = jobExecution.getJobParameters().getString("userId");
+        UUID userId = userIdParam != null ? UUID.fromString(userIdParam) : null;
         log.debug("Catalog job (runId={}) completed with status {}", runId, jobExecution.getStatus());
         try {
             pruneDeletedFoldersUseCase.execute(null);
@@ -49,7 +52,11 @@ public class CatalogItemWriteListener implements ItemWriteListener<CatalogBatchI
                 ? Duration.between(jobExecution.getStartTime(), jobExecution.getEndTime()).toMillis()
                 : 0L;
 
-        kafkaTemplate.send("job.catalog.progress", String.valueOf(runId),
-                CatalogProgressMessage.done(runId, foldersScanned, assetsAdded, durationMs));
+        try {
+            kafkaTemplate.send("job.catalog.progress", String.valueOf(runId),
+                    CatalogProgressMessage.done(runId, foldersScanned, assetsAdded, durationMs, userId));
+        } catch (Exception e) {
+            log.warn("Failed to publish job.catalog.progress done message (runId={}): {}", runId, e.getMessage());
+        }
     }
 }

@@ -105,6 +105,7 @@ public class CatalogJobConfig {
     @StepScope
     public CatalogAssetItemWriter catalogAssetItemWriter(
             @Value("#{jobParameters['runId']}") Long runId,
+            @Value("#{jobParameters['userId']}") String userId,
             @Value("#{stepExecutionContext['folderPath']}") String folderPath,
             AssetRepository assetRepository,
             AssetExifRepository assetExifRepository,
@@ -114,7 +115,7 @@ public class CatalogJobConfig {
             ThumbnailPort thumbnailPort,
             KafkaTemplate<String, Object> kafkaTemplate,
             MeterRegistry meterRegistry) {
-        return new CatalogAssetItemWriter(runId, folderPath, assetRepository, assetExifRepository,
+        return new CatalogAssetItemWriter(runId, userId, folderPath, assetRepository, assetExifRepository,
                 assetAudioRepository, folderRepository, storagePort, thumbnailPort, kafkaTemplate, meterRegistry);
     }
 

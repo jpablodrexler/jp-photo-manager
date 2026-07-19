@@ -49,7 +49,7 @@ class CatalogSchedulerTest {
 
     @Test
     void onApplicationReady_scheduledRunCallsUseCase() throws Exception {
-        when(catalogAssetsUseCase.execute(anyLong())).thenReturn(CompletableFuture.completedFuture(null));
+        when(catalogAssetsUseCase.execute(anyLong(), any())).thenReturn(CompletableFuture.completedFuture(null));
         ArgumentCaptor<Runnable> runnableCaptor = ArgumentCaptor.forClass(Runnable.class);
 
         sut.onApplicationReady();
@@ -57,6 +57,6 @@ class CatalogSchedulerTest {
         verify(catalogTaskScheduler).scheduleWithFixedDelay(runnableCaptor.capture(), any(Instant.class), any(Duration.class));
         runnableCaptor.getValue().run();
 
-        verify(catalogAssetsUseCase).execute(anyLong());
+        verify(catalogAssetsUseCase).execute(anyLong(), isNull());
     }
 }

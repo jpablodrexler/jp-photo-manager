@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -20,6 +21,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SyncAssetsUseCaseImplTest {
+
+    private static final UUID USER_ID = UUID.randomUUID();
 
     @Mock SyncConfigRepository syncConfigRepository;
     @Mock StoragePort storagePort;
@@ -30,12 +33,13 @@ class SyncAssetsUseCaseImplTest {
     void execute_noDefinitions_publishesDoneWithEmptyResults() {
         when(syncConfigRepository.findAllOrderByOrder()).thenReturn(List.of());
 
-        sut.execute(0L);
+        sut.execute(0L, USER_ID);
 
         ArgumentCaptor<SyncProgressMessage> captor = ArgumentCaptor.forClass(SyncProgressMessage.class);
         verify(kafkaTemplate).send(eq("job.sync.progress"), eq("0"), captor.capture());
         assertThat(captor.getValue().done()).isTrue();
         assertThat(captor.getValue().results()).isEmpty();
+        assertThat(captor.getValue().userId()).isEqualTo(USER_ID);
     }
 
     @Test
@@ -44,7 +48,7 @@ class SyncAssetsUseCaseImplTest {
         when(syncConfigRepository.findAllOrderByOrder()).thenReturn(List.of(def));
         when(storagePort.directoryExists("/src")).thenReturn(false);
 
-        sut.execute(0L);
+        sut.execute(0L, USER_ID);
 
         ArgumentCaptor<SyncProgressMessage> captor = ArgumentCaptor.forClass(SyncProgressMessage.class);
         verify(kafkaTemplate).send(eq("job.sync.progress"), eq("0"), captor.capture());
@@ -63,7 +67,7 @@ class SyncAssetsUseCaseImplTest {
         when(storagePort.listFiles("/src")).thenReturn(List.of("/src/a.jpg"));
         when(storagePort.listFiles("/dest")).thenReturn(List.of());
 
-        sut.execute(0L);
+        sut.execute(0L, USER_ID);
 
         verify(storagePort).copyFile("/src/a.jpg", "/dest/a.jpg");
         ArgumentCaptor<SyncProgressMessage> captor = ArgumentCaptor.forClass(SyncProgressMessage.class);
@@ -81,7 +85,7 @@ class SyncAssetsUseCaseImplTest {
         when(storagePort.listFiles("/src")).thenReturn(List.of("/src/a.jpg"));
         when(storagePort.listFiles("/dest")).thenReturn(List.of("/dest/a.jpg"));
 
-        sut.execute(0L);
+        sut.execute(0L, USER_ID);
 
         verify(storagePort, never()).copyFile(any(), any());
     }
@@ -94,7 +98,7 @@ class SyncAssetsUseCaseImplTest {
         when(storagePort.listFiles("/src")).thenReturn(List.of());
         when(storagePort.listFiles("/dest")).thenReturn(List.of("/dest/extra.jpg"));
 
-        sut.execute(0L);
+        sut.execute(0L, USER_ID);
 
         verify(storagePort).deleteFile("/dest/extra.jpg");
         ArgumentCaptor<SyncProgressMessage> captor = ArgumentCaptor.forClass(SyncProgressMessage.class);
@@ -116,7 +120,7 @@ class SyncAssetsUseCaseImplTest {
         when(storagePort.listFiles("/dest/sub")).thenReturn(List.of());
         when(storagePort.listSubDirectories("/src/sub")).thenReturn(List.of());
 
-        sut.execute(0L);
+        sut.execute(0L, USER_ID);
 
         verify(storagePort).listFiles("/src/sub");
     }
@@ -128,7 +132,7 @@ class SyncAssetsUseCaseImplTest {
         when(storagePort.directoryExists(anyString())).thenReturn(true);
         when(storagePort.listFiles(anyString())).thenThrow(new RuntimeException("IO error"));
 
-        sut.execute(0L);
+        sut.execute(0L, USER_ID);
 
         ArgumentCaptor<SyncProgressMessage> captor = ArgumentCaptor.forClass(SyncProgressMessage.class);
         verify(kafkaTemplate).send(eq("job.sync.progress"), eq("0"), captor.capture());
