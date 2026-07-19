@@ -20,10 +20,11 @@ set -euo pipefail
 # script any time a tunnel needs to be re-established — no image rebuild or
 # manifest reapply required.
 #
-# Usage: ./port-forward-k8s.sh   (run from anywhere; the script cds to its own dir)
+# Usage: ./port-forward-k8s.sh   (run from anywhere; the script cds to JPPhotoManagerWeb/)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$ROOT_DIR"
 
 # Under WSL, `kubectl` commonly has no kubeconfig of its own even when the
 # binary itself resolves fine — it then silently falls back to the legacy

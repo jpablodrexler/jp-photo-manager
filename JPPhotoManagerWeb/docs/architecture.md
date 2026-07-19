@@ -268,9 +268,11 @@ JPPhotoManagerWeb/
 │   ├── grafana.yaml           # `grafana`   → Service + Deployment + PVC
 │   └── ingress.yaml           # Routes external traffic to `frontend`
 ├── kustomization.yaml     # Entry point: `kubectl apply -k .`
-├── build-and-deploy-k8s.sh # Builds images and applies the Kubernetes stack end-to-end
-├── port-forward-k8s.sh    # Starts background port-forwards for Grafana/PostgreSQL/MongoDB/Kafka
-└── migrate-db.sh          # One-time migration of a host PostgreSQL catalog into Docker Compose
+└── scripts/               # Helper shell scripts (all cd to JPPhotoManagerWeb/ on their own)
+    ├── build-and-deploy-k8s.sh # Builds images and applies the Kubernetes stack end-to-end
+    ├── cleanup-k8s.sh          # Tears down the Kubernetes stack and locally built images
+    ├── port-forward-k8s.sh     # Starts background port-forwards for Grafana/PostgreSQL/MongoDB/Kafka
+    └── migrate-db.sh           # One-time migration of a host PostgreSQL catalog into Docker Compose
 ```
 
 [← Back to README](../README.md)

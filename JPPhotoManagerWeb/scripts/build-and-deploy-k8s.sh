@@ -8,7 +8,7 @@ set -euo pipefail
 # automated so you don't have to run them by hand. Safe to re-run — every
 # step here is idempotent.
 #
-# Usage: ./build-and-deploy-k8s.sh   (run from anywhere; the script cds to its own dir)
+# Usage: ./build-and-deploy-k8s.sh   (run from anywhere; the script cds to JPPhotoManagerWeb/)
 #
 # Prerequisite: k8s/secret.yaml and k8s/catalog-volumes.yaml must already
 # exist (copied from their .example templates and filled in) — this script
@@ -24,7 +24,8 @@ set -euo pipefail
 # reapplying manifests, so it shouldn't require rerunning this whole script.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$ROOT_DIR"
 
 INGRESS_NGINX_MANIFEST="https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml"
 

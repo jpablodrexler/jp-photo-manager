@@ -45,7 +45,7 @@ The `README.md` SHALL document `docker compose up --build` as the single command
 
 ### Requirement: A migration script moves host catalog data into the container
 
-The repository SHALL include a `migrate-db.sh` script at `JPPhotoManagerWeb/migrate-db.sh` that automates the one-time transfer of an existing host PostgreSQL catalog into the containerised database. The script SHALL accept `PGHOST`, `PGPORT`, `PGUSER`, and `PGDATABASE` environment variables to support non-default host configurations.
+The repository SHALL include a `migrate-db.sh` script at `JPPhotoManagerWeb/scripts/migrate-db.sh` that automates the one-time transfer of an existing host PostgreSQL catalog into the containerised database. The script SHALL accept `PGHOST`, `PGPORT`, `PGUSER`, and `PGDATABASE` environment variables to support non-default host configurations.
 
 #### Scenario: Migration script dumps and restores catalog data
 
