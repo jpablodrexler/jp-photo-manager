@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -33,7 +34,7 @@ public class SyncAssetsUseCaseImpl implements SyncAssetsUseCase {
     @Async("taskExecutor")
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public CompletableFuture<Void> execute(long runId) {
+    public CompletableFuture<Void> execute(long runId, UUID userId) {
         try {
             List<SyncDirectoriesDefinition> definitions = syncConfigRepository.findAllOrderByOrder();
             List<SyncAssetsResult> results = new ArrayList<>();
@@ -43,7 +44,7 @@ public class SyncAssetsUseCaseImpl implements SyncAssetsUseCase {
             }
 
             kafkaTemplate.send("job.sync.progress", String.valueOf(runId),
-                    SyncProgressMessage.done(runId, results));
+                    SyncProgressMessage.done(runId, results, userId));
             return CompletableFuture.completedFuture(null);
         } catch (Exception e) {
             log.error("Sync run {} failed", runId, e);

@@ -216,7 +216,7 @@ public class AssetController {
         emitter.onError(t -> sseConnectionCount.decrementAndGet());
         long runId = System.currentTimeMillis();
         kafkaProgressRegistry.registerEmitter(runId, emitter);
-        catalogAssetsUseCase.execute(runId);
+        catalogAssetsUseCase.execute(runId, resolveUserId());
         return emitter;
     }
 

@@ -45,7 +45,7 @@ public class CatalogScheduler {
                 new UsernamePasswordAuthenticationToken(
                         "system-scheduler", null, AuthorityUtils.createAuthorityList("ROLE_ADMIN")));
         try {
-            catalogAssetsUseCase.execute(System.currentTimeMillis()).get();
+            catalogAssetsUseCase.execute(System.currentTimeMillis(), null).get();
         } catch (Exception e) {
             log.error("Scheduled catalog run failed", e);
         } finally {

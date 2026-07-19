@@ -37,7 +37,7 @@ class SyncKafkaPipelineIntegrationTest extends PostgresIntegrationTest {
         CompletableFuture<Void> completion = new CompletableFuture<>();
         kafkaProgressRegistry.registerCompletion(runId, completion);
 
-        syncAssetsUseCase.execute(runId);
+        syncAssetsUseCase.execute(runId, null);
 
         completion.get(10, TimeUnit.SECONDS);
         assertThat(completion.isDone()).isTrue();

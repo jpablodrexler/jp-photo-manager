@@ -77,7 +77,7 @@ class CatalogBatchIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void catalogJob_withThreeImages_createsThreeAssets() throws Exception {
-        catalogAssetsUseCase.execute(System.currentTimeMillis()).get(30, TimeUnit.SECONDS);
+        catalogAssetsUseCase.execute(System.currentTimeMillis(), null).get(30, TimeUnit.SECONDS);
 
         List<Asset> assets = assetRepository.findAll();
         assertThat(assets).hasSize(3);
@@ -85,8 +85,8 @@ class CatalogBatchIntegrationTest extends PostgresIntegrationTest {
 
     @Test
     void catalogJob_secondRun_skipsAlreadyCatalogedFiles() throws Exception {
-        catalogAssetsUseCase.execute(System.currentTimeMillis()).get(30, TimeUnit.SECONDS);
-        catalogAssetsUseCase.execute(System.currentTimeMillis()).get(30, TimeUnit.SECONDS);
+        catalogAssetsUseCase.execute(System.currentTimeMillis(), null).get(30, TimeUnit.SECONDS);
+        catalogAssetsUseCase.execute(System.currentTimeMillis(), null).get(30, TimeUnit.SECONDS);
 
         List<Asset> assets = assetRepository.findAll();
         assertThat(assets).hasSize(3);
@@ -95,7 +95,7 @@ class CatalogBatchIntegrationTest extends PostgresIntegrationTest {
     @Test
     void catalogJob_completionFuture_completesWhenJobFinishes() throws Exception {
         long runId = System.currentTimeMillis();
-        CompletableFuture<Void> future = catalogAssetsUseCase.execute(runId);
+        CompletableFuture<Void> future = catalogAssetsUseCase.execute(runId, null);
 
         future.get(30, TimeUnit.SECONDS);
 

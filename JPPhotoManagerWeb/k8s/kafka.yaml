@@ -79,18 +79,44 @@ spec:
               value: "1"
             - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
               value: "false"
+            # Without this, Kafka defaults to /tmp/kafka-logs — the
+            # container's ephemeral writable layer, NOT the kafka-data PVC
+            # mounted below — so every pod restart (crash, eviction,
+            # rollout) silently wiped all topics and KRaft metadata,
+            # forcing a from-scratch bootstrap each time. Observed in
+            # practice: the app's NewTopic beans (job.catalog.progress,
+            # asset.cataloged, etc.) never survived long enough to exist,
+            # so KafkaTemplate.send() timed out after 60s waiting for
+            # topic metadata and the catalog batch step failed outright —
+            # zero assets cataloged despite Postgres writes working fine.
+            - name: KAFKA_LOG_DIRS
+              value: "/var/lib/kafka/data"
           volumeMounts:
             - name: kafka-data
               mountPath: /var/lib/kafka/data
+          # A startupProbe defers liveness/readiness checking until Kafka
+          # has actually opened its port once, with its own much longer
+          # allowance — the same pattern k8s/backend.yaml uses and for the
+          # same reason: under real observed contention (a 4-CPU Docker
+          # Desktop VM running the whole stack at once), KRaft combined
+          # broker+controller bootstrap can take well over a minute, but
+          # the liveness probe below (20s delay + 3 failures at 20s each)
+          # was killing the container before it finished starting —
+          # compounding the log-dir bug above into a restart loop that
+          # never let topics persist.
+          # failureThreshold 30 * periodSeconds 10 = 5 minutes.
+          startupProbe:
+            tcpSocket:
+              port: 9092
+            failureThreshold: 30
+            periodSeconds: 10
           readinessProbe:
             tcpSocket:
               port: 9092
-            initialDelaySeconds: 10
             periodSeconds: 10
           livenessProbe:
             tcpSocket:
               port: 9092
-            initialDelaySeconds: 20
             periodSeconds: 20
   volumeClaimTemplates:
     - metadata:

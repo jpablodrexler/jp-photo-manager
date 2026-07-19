@@ -37,7 +37,7 @@ class ConvertKafkaPipelineIntegrationTest extends PostgresIntegrationTest {
         CompletableFuture<Void> completion = new CompletableFuture<>();
         kafkaProgressRegistry.registerCompletion(runId, completion);
 
-        convertAssetsUseCase.execute(runId);
+        convertAssetsUseCase.execute(runId, null);
 
         completion.get(10, TimeUnit.SECONDS);
         assertThat(completion.isDone()).isTrue();
