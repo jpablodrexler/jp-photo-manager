@@ -20,11 +20,12 @@ set -euo pipefail
 # cluster-wide infrastructure (not namespaced to `photomanager`) that's slow
 # to reinstall and safe to leave running between deployments.
 #
-# Usage: ./cleanup-k8s.sh [-y|--yes]   (run from anywhere; cds to its own dir)
+# Usage: ./cleanup-k8s.sh [-y|--yes]   (run from anywhere; cds to JPPhotoManagerWeb/)
 #   -y, --yes   Skip the confirmation prompt (for scripted/non-interactive use).
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$ROOT_DIR"
 
 SKIP_CONFIRM=0
 for arg in "$@"; do
