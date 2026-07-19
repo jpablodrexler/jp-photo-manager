@@ -43,26 +43,41 @@ Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoM
 
 ## Web Application
 
-JPPhotoManager Web is a browser-based rewrite of the desktop application, built with a **Java 21 + Spring Boot 3** REST API backend and an **Angular 19** single-page application frontend.
+JPPhotoManager Web is a browser-based rewrite of the desktop application, built with a **Java 21 + Spring Boot 3.4** REST API backend and an **Angular 19** single-page application frontend. See [`JPPhotoManagerWeb/README.md`](JPPhotoManagerWeb/README.md) for full documentation, architecture diagrams, and deployment instructions.
 
 ### Features
-* Visualization of image galleries (thumbnail grid and full-size viewer)
-* Find duplicates
-* Copy/move images between folders
+* Visualization of image galleries — paginated thumbnail grid, full-size viewer, search/filter/sort, and star ratings
+* Albums — create, rename, delete, and organize images into personal albums
+* Find duplicates (SHA-256 hash based)
+* Copy/move images between catalogued folders, drag-and-drop upload, ZIP download
+* Recycle Bin — soft-deleted images can be restored or permanently purged
 * Sync images between directory pairs
 * Convert PNG images to JPEG
-* Streaming real-time progress for long-running operations via Server-Sent Events
+* JWT authentication (HttpOnly cookie) and user administration
+* Dashboard with at-a-glance catalog statistics
+* Streaming real-time progress for long-running operations via Kafka-mediated Server-Sent Events
+* Prometheus + Grafana monitoring dashboards
 
 ### Run the web application
 
-**Backend** (requires Java 21 and Maven 3.9+):
+**Fastest — Docker Compose** (no local Java, Maven, Node.js, or database installation required):
+```bash
+cd JPPhotoManagerWeb
+cp .env.example .env   # set HOST_IMAGE_DIR and JWT_SECRET
+docker compose up --build
+```
+Open `http://localhost` in your browser.
+
+**Manual setup:**
+
+Backend (requires Java 21, Maven 3.9+, PostgreSQL 18, and Apache Kafka):
 ```bash
 cd JPPhotoManagerWeb/backend
 mvn spring-boot:run
 ```
-The API starts at `http://localhost:8080`.
+The API starts at `http://localhost:8080` (Swagger UI at `/swagger-ui.html`).
 
-**Frontend** (requires Node.js 22):
+Frontend (requires Node.js 22):
 ```bash
 cd JPPhotoManagerWeb/frontend
 npm install
@@ -70,11 +85,19 @@ npm start
 ```
 Open `http://localhost:4200` in your browser. The dev server automatically proxies `/api` requests to the backend.
 
+A Kubernetes deployment (manifests under `JPPhotoManagerWeb/k8s/`) is also available — see the web application README for details.
+
 ### Technologies used (web application)
 * [Java 21](https://openjdk.org/)
-* [Spring Boot 3](https://spring.io/projects/spring-boot)
+* [Spring Boot 3.4](https://spring.io/projects/spring-boot)
 * [Spring Data JPA](https://spring.io/projects/spring-data-jpa)
-* [SQLite](https://www.sqlite.org/index.html)
+* [Spring Security](https://spring.io/projects/spring-security) + [JJWT](https://github.com/jwtk/jjwt)
+* [Spring Batch](https://spring.io/projects/spring-batch)
+* [Spring Kafka](https://spring.io/projects/spring-kafka)
+* [PostgreSQL](https://www.postgresql.org/)
+* [MongoDB](https://www.mongodb.com/)
+* [Redis](https://redis.io/)
+* [Apache Kafka](https://kafka.apache.org/)
 * [Flyway](https://flywaydb.org/)
 * [Lombok](https://projectlombok.org/)
 * [MapStruct](https://mapstruct.org/)
@@ -85,3 +108,6 @@ Open `http://localhost:4200` in your browser. The dev server automatically proxi
 * [JUnit 5](https://junit.org/junit5/)
 * [Mockito](https://site.mockito.org/)
 * [AssertJ](https://assertj.github.io/doc/)
+* [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)
+* [Kubernetes](https://kubernetes.io/)
+* [Prometheus](https://prometheus.io/) + [Grafana](https://grafana.com/)
