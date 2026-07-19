@@ -48,11 +48,11 @@ If you have an existing catalog in a **host PostgreSQL instance** and want to mo
 2. From the `JPPhotoManagerWeb/` directory, run the script:
    ```bash
    cd JPPhotoManagerWeb
-   ./migrate-db.sh
+   ./scripts/migrate-db.sh
    ```
    The script dumps your host database, starts only the `db` container, waits for it to be ready, and restores the dump. Pass environment variables to override the defaults:
    ```bash
-   PGHOST=localhost PGPORT=5432 PGUSER=postgres PGDATABASE=photomanager ./migrate-db.sh
+   PGHOST=localhost PGPORT=5432 PGUSER=postgres PGDATABASE=photomanager ./scripts/migrate-db.sh
    ```
 
 3. Once the script prints "Migration successful!", stop your host PostgreSQL service:

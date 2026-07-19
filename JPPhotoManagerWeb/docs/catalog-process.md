@@ -70,6 +70,8 @@ The backend owns the catalog lifecycle entirely — the gallery frontend does no
 - **Manual trigger:** `GET /api/assets/catalog` (admin-only, SSE) calls `CatalogAssetsUseCase.execute(runId, userId)` with a fresh `runId = System.currentTimeMillis()` and the caller's resolved user id, then registers an `SseEmitter` keyed by that `runId` in `KafkaProgressRegistry` so the HTTP caller gets a live stream of their own run.
 - **Observe-only:** `GET /api/assets/catalog/observe` doesn't start a run; it just registers the caller's `SseEmitter` as a "catalog observer" (`KafkaProgressRegistry.addCatalogObserver`) that receives a broadcast of every catalog/catalog-done event from whichever run is currently in progress (scheduled or manual) — used by the gallery to show live progress without having triggered the run itself.
 
+`ApplicationReadyEvent` isn't published anywhere in this codebase — it's a standard Spring Boot lifecycle event, fired automatically by `SpringApplication.run(PhotoManagerApplication.class, args)` (`PhotoManagerApplication.java:12`, the app's `main()`) once the application context is fully refreshed and all `CommandLineRunner`/`ApplicationRunner` beans have completed. `CatalogScheduler` is one of two `@EventListener(ApplicationReadyEvent.class)` beans that react to it on startup — the other, `DataInitializer` (`config/DataInitializer.java:21`), seeds the default `admin`/`admin` user if none exist.
+
 **Concurrency, honestly:** `CatalogAssetsUseCaseImpl.execute()` catches `JobExecutionAlreadyRunningException` from `JobLauncher.run()` and treats it as "already running, skip" — but since `runId` is unique per launch (a millisecond timestamp) and it's the job's identifying parameter, Spring Batch's `JobRepository` sees every launch as a brand-new `JobInstance`, so that exception in practice never actually fires. The only real protection against overlapping runs is that the scheduler's `ThreadPoolTaskScheduler` has a single thread and each tick blocks (`.get()`) on the previous run's completion future before the next `Runnable` can execute — so the *scheduler* never overlaps with itself, but nothing stops an admin's manual trigger from launching a second job concurrently with a scheduled one.
 
 ## Spring Batch job structure
@@ -111,6 +113,17 @@ The catalog job's Postgres writes never depend on Kafka — hash/thumbnail/EXIF 
 `asset.uploaded` and `job.upload.progress` (consumed by `AssetHashProcessor`/`AssetExifProcessor`/`AssetThumbnailProcessor` and `KafkaProgressListener.onUploadProgress` respectively) belong to the separate single-file **upload** pipeline (`POST /api/assets/upload`), not the recursive folder catalog scan — mentioned here only to avoid confusing the two when reading `KafkaTopicConfig`.
 
 All topics are declared as `NewTopic` beans in `config/KafkaTopicConfig.java`; Spring's auto-configured `KafkaAdmin` creates them against the broker once at application startup (the broker itself has `auto.create.topics.enable=false`, so nothing else will create them — see `k8s/kafka.yaml`'s `KAFKA_AUTO_CREATE_TOPICS_ENABLE`).
+
+## Frequency configuration
+
+The interval between automatic catalog runs is configured in `JPPhotoManagerWeb/backend/src/main/resources/application.yml`:
+
+```yaml
+photomanager:
+  catalog-cooldown-minutes: 2
+```
+
+It is consumed in `CatalogScheduler.java` (`infrastructure/service/CatalogScheduler.java:25-40`) via `@Value("${photomanager.catalog-cooldown-minutes:2}")`, which schedules `executeCatalogRun()` with a fixed delay of that many minutes, starting on `ApplicationReadyEvent`. It can be overridden with the `photomanager.catalog-cooldown-minutes` property (default 2 minutes if unset).
 
 ## Configuration
 

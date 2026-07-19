@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Usage: ./migrate-db.sh   (run from anywhere; the script cds to JPPhotoManagerWeb/,
+# where docker-compose.yml lives, before running any docker compose command)
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$ROOT_DIR"
+
 PGHOST=${PGHOST:-localhost}
 PGPORT=${PGPORT:-5432}
 PGUSER=${PGUSER:-postgres}

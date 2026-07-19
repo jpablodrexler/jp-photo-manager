@@ -338,7 +338,7 @@ not covered by Phase 2's review. Ask the user whether to:
 ## Phase 4 — Build & Deploy (Subagent 5)
 
 This project can be deployed via Kubernetes (`JPPhotoManagerWeb/k8s/` +
-`kustomization.yaml`, driven by `JPPhotoManagerWeb/build-and-deploy-k8s.sh`)
+`kustomization.yaml`, driven by `JPPhotoManagerWeb/scripts/build-and-deploy-k8s.sh`)
 or Docker Compose (`JPPhotoManagerWeb/docker-compose.yml`) — both build the
 same `photomanager-backend`/`photomanager-frontend` images. Kubernetes takes
 priority when both are present, because running docker-compose's `frontend`
@@ -377,10 +377,10 @@ prompt:
 >
 > **Step 3K — Kubernetes build & deploy via script**
 >
-> 1. Run the deploy script from the repo root (it `cd`s to its own directory
+> 1. Run the deploy script from the repo root (it `cd`s to `JPPhotoManagerWeb/`
 >    internally, so this works regardless of current working directory):
 >    ```
->    bash JPPhotoManagerWeb/build-and-deploy-k8s.sh
+>    bash JPPhotoManagerWeb/scripts/build-and-deploy-k8s.sh
 >    ```
 >    Allow up to 20 minutes total before treating it as a failure — it builds
 >    both images (up to 10 min each), may install the ingress-nginx

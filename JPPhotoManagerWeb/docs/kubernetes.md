@@ -43,26 +43,26 @@ All resources live in a dedicated `photomanager` namespace (`k8s/namespace.yaml`
   ```
   On Docker Desktop this creates a `LoadBalancer` Service that binds directly to `localhost` — no extra tunneling needed. On minikube, run `minikube tunnel` in a separate terminal to get the same effect; kind needs a cluster created with `extraPortMappings` for 80/443 (see the [kind docs](https://kind.sigs.k8s.io/docs/user/ingress/)). If you'd rather skip the controller entirely, `kubectl port-forward` still works for everything (see [Accessing services](#accessing-services)).
 
-  `./build-and-deploy-k8s.sh` (see [Setup](#setup)) runs this install command for you — safe to skip typing it out by hand.
-- The backend and frontend images built and available to the cluster. `./build-and-deploy-k8s.sh` (see below) does this for you on local clusters (Docker Desktop, kind, minikube); for a remote cluster, push both images to a registry instead and update the `image:` field (and set `imagePullPolicy: Always`) in `k8s/backend.yaml` and `k8s/frontend.yaml`.
+  `./scripts/build-and-deploy-k8s.sh` (see [Setup](#setup)) runs this install command for you — safe to skip typing it out by hand.
+- The backend and frontend images built and available to the cluster. `./scripts/build-and-deploy-k8s.sh` (see below) does this for you on local clusters (Docker Desktop, kind, minikube); for a remote cluster, push both images to a registry instead and update the `image:` field (and set `imagePullPolicy: Always`) in `k8s/backend.yaml` and `k8s/frontend.yaml`.
 
 ## Setup
 
-Steps 1–2 below are one-time, manual setup — they need real values (secrets, your photo directory paths) that can't be safely scripted with placeholders. Once they're done, `build-and-deploy-k8s.sh` (in this directory) automates step 3 below plus building the images and the ingress-nginx install from [Prerequisites](#prerequisites) — safe to re-run any time you want to rebuild and reapply the latest configuration:
+Steps 1–2 below are one-time, manual setup — they need real values (secrets, your photo directory paths) that can't be safely scripted with placeholders. Once they're done, `scripts/build-and-deploy-k8s.sh` automates step 3 below plus building the images and the ingress-nginx install from [Prerequisites](#prerequisites) — safe to re-run any time you want to rebuild and reapply the latest configuration:
 ```bash
 cd JPPhotoManagerWeb
-./build-and-deploy-k8s.sh
+./scripts/build-and-deploy-k8s.sh
 ```
 It checks that `k8s/secret.yaml` and `k8s/catalog-volumes.yaml` exist (failing loudly with the exact `cp` command if not, rather than silently deploying broken config), builds the backend and frontend images and makes them visible to the cluster (`kind load docker-image` / `minikube image load` on those providers, nothing extra needed on Docker Desktop), installs/updates ingress-nginx, waits for it to be ready, applies the secret and the kustomized stack, then restarts the backend/frontend Deployments so they pick up the freshly built images (`imagePullPolicy: IfNotPresent` won't repull a `:latest` tag it already has cached, even after a rebuild).
 
-> **Running `build-and-deploy-k8s.sh` on Windows:** it's a bash script — double-clicking it in Explorer or running it from plain `cmd.exe`/PowerShell (`.\build-and-deploy-k8s.sh`) won't work, since neither knows how to interpret bash syntax. Use one of:
-> - **Git Bash** (recommended — already installed if you have Git for Windows, and `kubectl`/`docker` from Docker Desktop are already on its `PATH` with no extra setup): right-click inside `JPPhotoManagerWeb` in Explorer → **"Git Bash Here"** (or open Git Bash from the Start menu and `cd` there), then run `./build-and-deploy-k8s.sh` — or `bash build-and-deploy-k8s.sh` if it complains about permissions.
-> - **From PowerShell without switching shells**: `& "C:\Program Files\Git\bin\bash.exe" build-and-deploy-k8s.sh` (adjust the path if Git is installed elsewhere).
-> - **WSL**, if installed: `wsl bash build-and-deploy-k8s.sh` from PowerShell, or `./build-and-deploy-k8s.sh` from inside a WSL terminal. Beyond `kubectl`, this script also calls `docker build`, so `docker` must resolve inside WSL too (enable **Docker Desktop → Settings → Resources → WSL Integration** for your distro if it doesn't). WSL commonly has no working kubeconfig for `kubectl` even when the binary itself resolves fine — two failure modes we've hit in practice:
+> **Running `build-and-deploy-k8s.sh` on Windows:** it's a bash script — double-clicking it in Explorer or running it from plain `cmd.exe`/PowerShell (`.\scripts\build-and-deploy-k8s.sh`) won't work, since neither knows how to interpret bash syntax. Use one of:
+> - **Git Bash** (recommended — already installed if you have Git for Windows, and `kubectl`/`docker` from Docker Desktop are already on its `PATH` with no extra setup): right-click inside `JPPhotoManagerWeb` in Explorer → **"Git Bash Here"** (or open Git Bash from the Start menu and `cd` there), then run `./scripts/build-and-deploy-k8s.sh` — or `bash scripts/build-and-deploy-k8s.sh` if it complains about permissions.
+> - **From PowerShell without switching shells**: `& "C:\Program Files\Git\bin\bash.exe" scripts/build-and-deploy-k8s.sh` (adjust the path if Git is installed elsewhere).
+> - **WSL**, if installed: `wsl bash scripts/build-and-deploy-k8s.sh` from PowerShell, or `./scripts/build-and-deploy-k8s.sh` from inside a WSL terminal. Beyond `kubectl`, this script also calls `docker build`, so `docker` must resolve inside WSL too (enable **Docker Desktop → Settings → Resources → WSL Integration** for your distro if it doesn't). WSL commonly has no working kubeconfig for `kubectl` even when the binary itself resolves fine — two failure modes we've hit in practice:
 >   - `kubectl: command not found` — `kubectl` isn't installed inside this WSL distro at all. Either install it there directly, or enable **Docker Desktop → Settings → Resources → WSL Integration** for your distro (which installs it and wires up the kubeconfig automatically).
 >   - Every command fails with `dial tcp 127.0.0.1:8080: connect: connection refused` — `kubectl` exists but has no kubeconfig, so it silently falls back to the legacy `localhost:8080` default instead of erroring clearly. `build-and-deploy-k8s.sh` handles this itself: it detects WSL (via `/proc/version`), and if `$KUBECONFIG` is unset and `~/.kube/config` doesn't exist, falls back to the Windows-side kubeconfig that Git Bash/PowerShell already use successfully (translated from `%USERPROFILE%` via `wslpath`, so it works regardless of username or Windows drive letter). No manual setup needed for the script itself.
 >
->     For running `kubectl` commands directly in an interactive WSL terminal (outside the script), set this once in `~/.bashrc` — note it won't help the script above, since `wsl bash build-and-deploy-k8s.sh` is a non-interactive invocation and non-interactive non-login shells never source `~/.bashrc`:
+>     For running `kubectl` commands directly in an interactive WSL terminal (outside the script), set this once in `~/.bashrc` — note it won't help the script above, since `wsl bash scripts/build-and-deploy-k8s.sh` is a non-interactive invocation and non-interactive non-login shells never source `~/.bashrc`:
 >     ```bash
 >     export KUBECONFIG="/mnt/c/Users/<you>/.kube/config"
 >     ```
@@ -81,7 +81,7 @@ It checks that `k8s/secret.yaml` and `k8s/catalog-volumes.yaml` exist (failing l
 
    > **Docker Desktop Kubernetes on Windows:** unlike `docker-compose`, which auto-translates a `C:/Users/...` bind mount, `hostPath` is resolved by the kubelet running *inside* the Docker Desktop VM — it does not see Windows drive letters directly. The VM exposes them at `/run/desktop/mnt/host/<lowercase-drive-letter>/...`, so `C:/Users/you/Pictures` becomes `/run/desktop/mnt/host/c/Users/you/Pictures`. minikube and kind have their own equivalents (`minikube mount`, or a `hostPath`/`extraMounts` entry in the kind cluster config) instead of this Docker Desktop-specific path.
 
-3. **Build the images and apply everything** — `./build-and-deploy-k8s.sh` automates this step (plus the ingress-nginx install from Prerequisites); by hand, run from `JPPhotoManagerWeb/` (same Dockerfiles docker-compose uses):
+3. **Build the images and apply everything** — `./scripts/build-and-deploy-k8s.sh` automates this step (plus the ingress-nginx install from Prerequisites); by hand, run from `JPPhotoManagerWeb/` (same Dockerfiles docker-compose uses):
    ```bash
    docker build -t photomanager-backend:latest ./backend
    docker build -t photomanager-frontend:latest ./frontend
@@ -165,7 +165,7 @@ Fix it the same way the Ingress section above resolves `photomanager.local` — 
 
 Then use `kafka:9094` — not `localhost:9094` — as the bootstrap server in your client (KafkIO's **Bootstrap servers** field, or `--bootstrap-server kafka:9094` for the CLI tools from [Installing a Kafka client/admin tool](docker-compose.md#installing-a-kafka-clientadmin-tool-on-windows-and-connecting-to-the-broker)).
 
-For Grafana, PostgreSQL, MongoDB, and Kafka specifically, `./port-forward-k8s.sh` runs those four commands for you in the background in one step and is safe to re-run (a port already forwarded is left alone, not duplicated). `./build-and-deploy-k8s.sh` already calls it automatically after deploying — run it standalone afterward any time a tunnel needs to be re-established (a machine reboot, a Docker Desktop restart, or one of those pods being replaced all kill the tunnel without killing the pod behind it), without needing to rebuild images or reapply manifests. The script starts Kafka's tunnel too, but can't safely edit your hosts file for you (that needs admin rights) — it prints the one-time hosts-file step above as a reminder each time it runs.
+For Grafana, PostgreSQL, MongoDB, and Kafka specifically, `./scripts/port-forward-k8s.sh` runs those four commands for you in the background in one step and is safe to re-run (a port already forwarded is left alone, not duplicated). `./scripts/build-and-deploy-k8s.sh` already calls it automatically after deploying — run it standalone afterward any time a tunnel needs to be re-established (a machine reboot, a Docker Desktop restart, or one of those pods being replaced all kill the tunnel without killing the pod behind it), without needing to rebuild images or reapply manifests. The script starts Kafka's tunnel too, but can't safely edit your hosts file for you (that needs admin rights) — it prints the one-time hosts-file step above as a reminder each time it runs.
 
 ## Common commands
 
