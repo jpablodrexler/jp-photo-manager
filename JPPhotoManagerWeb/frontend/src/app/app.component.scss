@@ -1,0 +1,33 @@
+.app-toolbar {
+  background-color: var(--accent-color) !important;
+  color: white !important;
+}
+
+.app-sidenav-container {
+  flex: 1;
+  min-height: 0;
+}
+
+.app-content {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.video-sidenav {
+  width: 420px;
+  background-color: #000;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+app-audio-player {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+a.active {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}

@@ -1,0 +1,40 @@
+<div class="player-bar">
+  <div class="player-track-info">
+    <img [src]="audioPlayer.currentTrack()?.thumbnailUrl"
+         [alt]="audioPlayer.currentTrack()?.fileName"
+         class="player-thumb" />
+    <div class="player-meta">
+      <span class="player-title">{{ audioPlayer.currentTrack()?.fileName }}</span>
+    </div>
+  </div>
+
+  <div class="player-controls">
+    <button mat-icon-button (click)="audioPlayer.prev()" title="Previous">
+      <mat-icon>skip_previous</mat-icon>
+    </button>
+    <button mat-icon-button (click)="audioPlayer.stop()" title="Stop">
+      <mat-icon>stop</mat-icon>
+    </button>
+    <button mat-icon-button (click)="audioPlayer.togglePause()" title="Play/Pause">
+      <mat-icon>{{ audioPlayer.isPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
+    </button>
+    <button mat-icon-button (click)="audioPlayer.next()" title="Next">
+      <mat-icon>skip_next</mat-icon>
+    </button>
+    <button mat-icon-button (click)="audioPlayer.isAudioFullscreen.set(true)" title="Fullscreen">
+      <mat-icon>fullscreen</mat-icon>
+    </button>
+  </div>
+
+  <div class="player-progress">
+    <span class="player-time">{{ formatTime(audioPlayer.currentTime()) }}</span>
+    <input type="range"
+           class="player-slider"
+           [min]="0"
+           [max]="audioPlayer.duration()"
+           [value]="audioPlayer.currentTime()"
+           step="1"
+           (input)="onSeek($event)" />
+    <span class="player-time">{{ formatTime(audioPlayer.duration()) }}</span>
+  </div>
+</div>

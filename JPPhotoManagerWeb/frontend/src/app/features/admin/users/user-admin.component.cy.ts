@@ -1,0 +1,54 @@
+import { of } from 'rxjs';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
+import { provideRouter } from '@angular/router';
+import { UserAdminComponent } from './user-admin.component';
+import { UserAdminService } from '../../../core/services/user-admin.service';
+import { UserAdmin } from '../../../core/models/user-admin.model';
+
+describe('UserAdminComponent', () => {
+  const mockUsers: UserAdmin[] = [
+    { id: '11111111-1111-1111-1111-111111111111', username: 'admin', createdAt: '2024-01-01T00:00:00Z' },
+    { id: '22222222-2222-2222-2222-222222222222', username: 'alice', createdAt: '2024-02-01T00:00:00Z' }
+  ];
+
+  function mountAdmin(userAdminServiceOverrides: Partial<UserAdminService> = {}) {
+    const serviceStub: Partial<UserAdminService> = {
+      getUsers: cy.stub().returns(of(mockUsers)),
+      deleteUser: cy.stub().returns(of(undefined)),
+      createUser: cy.stub().returns(of(mockUsers[0])),
+      updatePassword: cy.stub().returns(of(undefined)),
+      ...userAdminServiceOverrides
+    };
+    return cy.mount(UserAdminComponent, {
+      providers: [
+        { provide: UserAdminService, useValue: serviceStub },
+        provideNoopAnimations(),
+        provideRouter([])
+      ]
+    }).then(({ component }) => ({ component, serviceStub }));
+  }
+
+  it('should display the list of users on init', () => {
+    mountAdmin();
+    cy.get('table').should('exist');
+    cy.get('tr.mat-mdc-row').should('have.length', 2);
+    cy.contains('admin').should('exist');
+    cy.contains('alice').should('exist');
+  });
+
+  it('should call the delete service when deletion is confirmed in the dialog', () => {
+    mountAdmin().then(({ serviceStub }) => {
+      cy.get('button[title="Delete user"]').first().click();
+      cy.get('mat-dialog-container').contains('button', 'Delete').click();
+      cy.wrap(serviceStub.deleteUser).should('have.been.calledWith', mockUsers[0].id);
+    });
+  });
+
+  it('should not call the delete service when deletion is cancelled in the dialog', () => {
+    mountAdmin().then(({ serviceStub }) => {
+      cy.get('button[title="Delete user"]').first().click();
+      cy.get('mat-dialog-container').contains('button', 'Cancel').click();
+      cy.wrap(serviceStub.deleteUser).should('not.have.been.called');
+    });
+  });
+});

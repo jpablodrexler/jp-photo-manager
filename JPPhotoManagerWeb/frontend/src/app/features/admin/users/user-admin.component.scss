@@ -1,0 +1,47 @@
+.admin-container {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.toolbar {
+  margin-bottom: 16px;
+}
+
+.add-form {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: var(--mat-sys-surface-variant, rgba(255, 255, 255, 0.05));
+  border-radius: 8px;
+}
+
+.users-table {
+  width: 100%;
+}
+
+.inline-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.password-field {
+  width: 180px;
+}
+
+.error-message {
+  color: var(--mat-sys-error, #f44336);
+  font-size: 0.875rem;
+  margin-bottom: 12px;
+}
+
+.no-users {
+  text-align: center;
+  padding: 32px;
+  opacity: 0.6;
+}

@@ -1,0 +1,80 @@
+<mat-toolbar>
+  <span>Albums</span>
+  <span style="flex: 1"></span>
+  <button mat-icon-button (click)="showCreateForm = !showCreateForm" title="New album">
+    <mat-icon>add</mat-icon>
+  </button>
+</mat-toolbar>
+
+@if (showCreateForm) {
+  <div class="create-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Album name</mat-label>
+      <input matInput [(ngModel)]="newAlbumName" (keyup.enter)="createAlbum(newAlbumName)" />
+    </mat-form-field>
+    <mat-slide-toggle [(ngModel)]="makeSmartAlbum">Make smart</mat-slide-toggle>
+    @if (makeSmartAlbum) {
+      <div class="smart-filter-fields">
+        <mat-form-field appearance="outline">
+          <mat-label>Search</mat-label>
+          <input matInput [(ngModel)]="smartSearch" placeholder="Filename keyword" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Date from</mat-label>
+          <input matInput [matDatepicker]="pickerFrom" [(ngModel)]="smartDateFrom" />
+          <mat-datepicker-toggle matIconSuffix [for]="pickerFrom"></mat-datepicker-toggle>
+          <mat-datepicker #pickerFrom></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Date to</mat-label>
+          <input matInput [matDatepicker]="pickerTo" [(ngModel)]="smartDateTo" />
+          <mat-datepicker-toggle matIconSuffix [for]="pickerTo"></mat-datepicker-toggle>
+          <mat-datepicker #pickerTo></mat-datepicker>
+        </mat-form-field>
+        <div class="filter-rating">
+          @for (star of [1,2,3,4,5]; track star) {
+            <mat-icon class="filter-star" [class.active]="smartMinRating >= star"
+                      (click)="smartMinRating = (smartMinRating === star ? 0 : star)">
+              {{ smartMinRating >= star ? 'star' : 'star_border' }}
+            </mat-icon>
+          }
+          <span class="filter-rating-label">{{ smartMinRating > 0 ? smartMinRating + '★ +' : 'Any rating' }}</span>
+        </div>
+      </div>
+    }
+    <div class="create-form-actions">
+      <button mat-raised-button color="primary" (click)="createAlbum(newAlbumName)">Create</button>
+      <button mat-button (click)="showCreateForm = false">Cancel</button>
+    </div>
+  </div>
+}
+
+<div class="albums-grid">
+  @for (album of albums; track album.albumId) {
+    <mat-card class="album-card">
+      <mat-card-header>
+        <mat-card-title>
+          {{ album.name }}
+          @if (isSmartAlbum(album)) {
+            <mat-chip [matTooltip]="formatFilterSummary(album.filterJson)">Smart</mat-chip>
+          }
+        </mat-card-title>
+        <mat-card-subtitle>{{ album.assetCount }} photo{{ album.assetCount === 1 ? '' : 's' }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        @if (album.description) {
+          <p>{{ album.description }}</p>
+        }
+      </mat-card-content>
+      <mat-card-actions>
+        <a mat-button color="primary" [routerLink]="['/albums', album.albumId]">Open</a>
+        <button mat-icon-button color="warn" (click)="deleteAlbum(album)" title="Delete album">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  }
+  @if (albums.length === 0) {
+    <div class="empty-state">No albums yet. Create one to get started.</div>
+  }
+</div>

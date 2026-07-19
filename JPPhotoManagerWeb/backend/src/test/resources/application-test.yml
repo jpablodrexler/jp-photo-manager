@@ -1,0 +1,45 @@
+spring:
+  main:
+    banner-mode: "off"
+
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: sse-broadcaster-${HOSTNAME:${random.uuid}}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.jpablodrexler.photomanager.application.dto"
+
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: never
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+photomanager:
+  initial-directory: /tmp/photos
+  root-catalog-folders: /tmp/photos
+  thumbnails-directory: /tmp/thumbnails
+  thumbnail-cache:
+    enabled: false
+  jwt-secret: "test-jwt-secret-for-testing-only-minimum-32-characters"
+  jwt-expiry-hours: 1
+  cors-allowed-origins: http://localhost:4200

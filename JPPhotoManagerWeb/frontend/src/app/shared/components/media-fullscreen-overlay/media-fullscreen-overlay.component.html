@@ -1,0 +1,40 @@
+<div class="fullscreen-overlay">
+  <button mat-icon-button class="close-btn" (click)="closed.emit()" title="Close">
+    <mat-icon>close</mat-icon>
+  </button>
+
+  <div class="overlay-content">
+    <img [src]="track?.thumbnailUrl"
+         [alt]="track?.fileName"
+         class="album-art" />
+
+    <div class="track-title">{{ track?.fileName }}</div>
+
+    <div class="overlay-progress">
+      <span class="overlay-time">{{ formatTime(currentTime) }}</span>
+      <input type="range"
+             class="overlay-slider"
+             [min]="0"
+             [max]="duration"
+             [value]="currentTime"
+             step="1"
+             (input)="onSeek($event)" />
+      <span class="overlay-time">{{ formatTime(duration) }}</span>
+    </div>
+
+    <div class="overlay-controls">
+      <button mat-icon-button (click)="previous.emit()" title="Previous">
+        <mat-icon>skip_previous</mat-icon>
+      </button>
+      <button mat-icon-button (click)="stopped.emit()" title="Stop">
+        <mat-icon>stop</mat-icon>
+      </button>
+      <button mat-icon-button class="play-btn" (click)="playPauseToggled.emit()" title="Play/Pause">
+        <mat-icon>{{ isPlaying ? 'pause' : 'play_arrow' }}</mat-icon>
+      </button>
+      <button mat-icon-button (click)="nextTrack.emit()" title="Next">
+        <mat-icon>skip_next</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>

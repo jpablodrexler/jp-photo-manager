@@ -1,0 +1,435 @@
+<mat-sidenav-container class="gallery-layout full-height">
+
+  <mat-sidenav
+    [mode]="isMobile ? 'over' : 'side'"
+    [opened]="sidenavOpen"
+    (closedStart)="sidenavOpen = false"
+    class="folder-sidenav">
+    <app-folder-nav (folderSelected)="onFolderSelected($event)" />
+  </mat-sidenav>
+
+  <mat-sidenav-content class="flex-col">
+
+    <!-- Toolbar -->
+    <mat-toolbar class="gallery-toolbar">
+      @if (isMobile) {
+        <button mat-icon-button (click)="toggleSidenav()" aria-label="Toggle folder panel">
+          <mat-icon>menu</mat-icon>
+        </button>
+      }
+      <span class="current-folder">{{ currentFolder || 'Select a folder' }}</span>
+      <span style="flex: 1"></span>
+
+      @if (viewMode === 'thumbnails') {
+        <button mat-icon-button [class.active]="viewType === 'grid'" (click)="setViewType('grid')" title="Grid view">
+          <mat-icon>grid_view</mat-icon>
+        </button>
+        <button mat-icon-button [class.active]="viewType === 'timeline'" (click)="setViewType('timeline')" title="Timeline view">
+          <mat-icon>view_timeline</mat-icon>
+        </button>
+
+        @if (authService.isAdmin()) {
+          <button mat-icon-button (click)="startCatalog()" title="Run catalog">
+            <mat-icon>manage_search</mat-icon>
+          </button>
+        }
+
+        @if (viewType === 'grid') {
+        <mat-select [(ngModel)]="sortCriteria" (ngModelChange)="onSortChange()" class="sort-select">
+          @for (opt of sortOptions; track opt.value) {
+            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+          }
+        </mat-select>
+
+        @if (selectedCount > 0) {
+          <button mat-icon-button [matMenuTriggerFor]="actionsMenu" title="Actions">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #actionsMenu="matMenu">
+            <button mat-menu-item (click)="openBulkTagDialog()">
+              <mat-icon>label</mat-icon> Tag selected
+            </button>
+            @if (viewMode === 'thumbnails') {
+              <button mat-menu-item (click)="renameSelectedAssets()">
+                <mat-icon>drive_file_rename_outline</mat-icon> Rename selected…
+              </button>
+            }
+            @if (authService.isAdmin()) {
+              <button mat-menu-item (click)="moveSelectedAssets('move')">
+                <mat-icon>drive_file_move</mat-icon> Move to folder…
+              </button>
+              <button mat-menu-item (click)="moveSelectedAssets('copy')">
+                <mat-icon>file_copy</mat-icon> Copy to folder…
+              </button>
+            }
+            <button mat-menu-item (click)="downloadSelected()">
+              <mat-icon>download</mat-icon> Download
+            </button>
+            @if (authService.isAdmin()) {
+              <button mat-menu-item (click)="deleteSelected(false)">
+                <mat-icon>delete_outline</mat-icon> Remove from catalog
+              </button>
+              <button mat-menu-item (click)="deleteSelected(true)">
+                <mat-icon>delete_forever</mat-icon> Delete files
+              </button>
+            }
+          </mat-menu>
+        }
+
+        @if (assets.length > 0) {
+          <button mat-icon-button (click)="startSlideshow(0)" title="Start slideshow">
+            <mat-icon>slideshow</mat-icon>
+          </button>
+          <button mat-icon-button (click)="playAllAudio()" title="Play all audio in folder">
+            <mat-icon>library_music</mat-icon>
+          </button>
+        }
+        }
+      }
+
+      @if (viewMode === 'viewer') {
+        @if (!isMobile) {
+          <button mat-icon-button (click)="zoomOut()" title="Zoom out"><mat-icon>zoom_out</mat-icon></button>
+          <button mat-icon-button (click)="resetZoom()" [disabled]="viewerZoom === 1" title="Reset zoom"><mat-icon>zoom_out_map</mat-icon></button>
+          <button mat-icon-button (click)="zoomIn()" title="Zoom in"><mat-icon>zoom_in</mat-icon></button>
+          @for (star of [1,2,3,4,5]; track star) {
+            <button mat-icon-button (click)="rateCurrentAsset(star)">
+              <mat-icon>{{ (currentViewerAsset?.rating ?? 0) >= star ? 'star' : 'star_border' }}</mat-icon>
+            </button>
+          }
+          @if (currentViewerAsset?.fileType === 'IMAGE') {
+            <button mat-icon-button (click)="toggleCropOverlay()" [class.active]="showCropOverlay" title="Crop for social media">
+              <mat-icon>content_cut</mat-icon>
+            </button>
+          }
+          <button mat-icon-button (click)="toggleExifPanel()" [class.active]="showExifPanel" title="EXIF info">
+            <mat-icon>info</mat-icon>
+          </button>
+          <button mat-icon-button (click)="startSlideshow(currentViewerIndex)" title="Slideshow">
+            <mat-icon>slideshow</mat-icon>
+          </button>
+        } @else {
+          <button mat-icon-button [matMenuTriggerFor]="viewerMenu" title="More actions">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #viewerMenu="matMenu">
+            <button mat-menu-item (click)="zoomOut()">
+              <mat-icon>zoom_out</mat-icon> Zoom out
+            </button>
+            <button mat-menu-item (click)="resetZoom()" [disabled]="viewerZoom === 1">
+              <mat-icon>zoom_out_map</mat-icon> Reset zoom
+            </button>
+            <button mat-menu-item (click)="zoomIn()">
+              <mat-icon>zoom_in</mat-icon> Zoom in
+            </button>
+            @for (star of [1,2,3,4,5]; track star) {
+              <button mat-menu-item (click)="rateCurrentAsset(star)">
+                <mat-icon>{{ (currentViewerAsset?.rating ?? 0) >= star ? 'star' : 'star_border' }}</mat-icon>
+                Rate {{ star }}★
+              </button>
+            }
+            @if (currentViewerAsset?.fileType === 'IMAGE') {
+              <button mat-menu-item (click)="toggleCropOverlay()">
+                <mat-icon>content_cut</mat-icon> Crop for social media
+              </button>
+            }
+            <button mat-menu-item (click)="toggleExifPanel()">
+              <mat-icon>info</mat-icon> EXIF info
+            </button>
+            <button mat-menu-item (click)="startSlideshow(currentViewerIndex)">
+              <mat-icon>slideshow</mat-icon> Slideshow
+            </button>
+          </mat-menu>
+        }
+        <button mat-icon-button (click)="closeViewer()"><mat-icon>grid_view</mat-icon></button>
+      }
+
+      @if (viewMode === 'slideshow') {
+        <button mat-icon-button (click)="toggleSlideshowPlay()" [title]="slideshowPlaying ? 'Pause' : 'Play'">
+          <mat-icon>{{ slideshowPlaying ? 'pause' : 'play_arrow' }}</mat-icon>
+        </button>
+        <mat-select [(ngModel)]="slideshowInterval" (ngModelChange)="onIntervalChange()" class="interval-select" title="Interval">
+          @for (opt of intervalOptions; track opt) {
+            <mat-option [value]="opt">{{ opt }}s</mat-option>
+          }
+        </mat-select>
+        <button mat-icon-button (click)="exitSlideshow()" title="Exit slideshow">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-toolbar>
+
+    <!-- Filter Toolbar -->
+    @if (viewMode === 'thumbnails') {
+      <div class="filter-toolbar">
+        <mat-form-field appearance="outline" class="filter-search">
+          <mat-label>Search by filename</mat-label>
+          <input matInput [value]="searchTerm" (input)="onSearchChange($event)" />
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-date">
+          <mat-label>Date from</mat-label>
+          <input matInput [matDatepicker]="pickerFrom" [(ngModel)]="dateFrom" (dateChange)="onDateChange()" />
+          <mat-datepicker-toggle matIconSuffix [for]="pickerFrom" />
+          <mat-datepicker #pickerFrom />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-date">
+          <mat-label>Date to</mat-label>
+          <input matInput [matDatepicker]="pickerTo" [(ngModel)]="dateTo" (dateChange)="onDateChange()" />
+          <mat-datepicker-toggle matIconSuffix [for]="pickerTo" />
+          <mat-datepicker #pickerTo />
+        </mat-form-field>
+
+        <div class="filter-rating">
+          @for (star of [1,2,3,4,5]; track star) {
+            <mat-icon class="filter-star" [class.active]="minRating >= star"
+                      (click)="minRating = (minRating === star ? 0 : star); onMinRatingChange()">
+              {{ minRating >= star ? 'star' : 'star_border' }}
+            </mat-icon>
+          }
+          <span class="filter-rating-label">{{ minRating > 0 ? minRating + '★ +' : 'Any rating' }}</span>
+        </div>
+
+        <mat-select [(ngModel)]="selectedPresetId"
+                    (ngModelChange)="onPresetSelected($event)"
+                    placeholder="Load preset"
+                    class="preset-select">
+          @for (preset of presets; track preset.presetId) {
+            <mat-option [value]="preset.presetId">
+              {{ preset.name }}
+              <button mat-icon-button class="preset-delete-btn"
+                      (click)="deletePreset(preset, $event)">
+                <mat-icon>close</mat-icon>
+              </button>
+            </mat-option>
+          }
+        </mat-select>
+
+        <button mat-icon-button (click)="saveCurrentFiltersAsPreset()" title="Save as preset">
+          <mat-icon>bookmark_add</mat-icon>
+        </button>
+
+        <button mat-icon-button (click)="clearFilters(); loadAssets()" title="Clear filters">
+          <mat-icon>filter_alt_off</mat-icon>
+        </button>
+      </div>
+
+      <!-- Tag filter row -->
+      <div class="filter-tags-row">
+        <span class="filter-tags-label">
+          <mat-icon class="filter-tags-icon">label</mat-icon>
+          Tags
+        </span>
+        <mat-chip-grid #tagFilterChipGrid aria-label="Filter by tags" class="tag-filter-chip-grid">
+          @for (tag of selectedTags; track tag) {
+            <mat-chip-row (removed)="removeTagFilter(tag)">
+              {{ tag }}
+              <button matChipRemove [attr.aria-label]="'Remove tag filter ' + tag">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </mat-chip-row>
+          }
+          <input
+            placeholder="Filter by tag…"
+            [formControl]="tagFilterControl"
+            [matChipInputFor]="tagFilterChipGrid"
+            [matChipInputSeparatorKeyCodes]="tagSeparatorKeysCodes"
+            [matAutocomplete]="tagFilterAuto"
+            (matChipInputTokenEnd)="addTagFilter($event)"
+            class="tag-filter-input"
+          />
+        </mat-chip-grid>
+        <mat-autocomplete #tagFilterAuto="matAutocomplete" (optionSelected)="addTagFilterFromAutocomplete($event)">
+          @for (suggestion of tagSuggestions; track suggestion) {
+            <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
+          }
+        </mat-autocomplete>
+      </div>
+    }
+
+    <!-- Thumbnails View -->
+    @if (viewMode === 'thumbnails' && viewType === 'grid') {
+      <div class="thumbnail-list-container flex-1">
+        @if (currentFolder && authService.isAdmin()) {
+          <app-drop-zone [folderPath]="currentFolder" (uploadComplete)="onUploadComplete()" />
+        }
+        @if (isLoading) {
+          <div class="loading-row">
+            <mat-progress-bar mode="indeterminate" />
+          </div>
+        }
+        @if (!isLoading && assets.length === 0 && currentFolder) {
+          <div class="empty-state">No images found in this folder.</div>
+        }
+        <cdk-virtual-scroll-viewport itemSize="80" class="asset-virtual-viewport">
+          <div *cdkVirtualFor="let asset of assets; trackBy: trackByAssetId; let i = index"
+               class="asset-list-row"
+               [class.asset-list-row--selected]="isSelected(asset)"
+               (click)="toggleSelection(asset)"
+               (dblclick)="openViewer(i)">
+            <div class="thumb-wrapper">
+              <img [src]="asset.thumbnailUrl" [alt]="asset.fileName" class="list-thumb" />
+              @if (isVideoFile(asset)) {
+                <mat-icon class="video-overlay-icon">play_circle</mat-icon>
+              }
+            </div>
+            <div class="list-meta">
+              <span class="list-filename" [title]="asset.fileName">{{ asset.fileName }}</span>
+              <span class="list-details">
+                {{ asset.fileSize | fileSize }}
+                @if (asset.fileCreationDateTime) {
+                  · {{ asset.fileCreationDateTime | date:'mediumDate' }}
+                }
+              </span>
+            </div>
+            @if (asset.fileType === 'AUDIO' || asset.fileType === 'PLAYLIST') {
+              <button mat-icon-button class="list-play-btn"
+                      (click)="playAsset(asset, $event)"
+                      [title]="asset.fileType === 'AUDIO' ? 'Play' : 'Play playlist'">
+                <mat-icon>{{ asset.fileType === 'AUDIO' ? 'play_arrow' : 'queue_music' }}</mat-icon>
+              </button>
+            }
+            @if (isVideoFile(asset)) {
+              <button mat-icon-button class="list-play-btn"
+                      (click)="playAsset(asset, $event)"
+                      title="Play video">
+                <mat-icon>play_arrow</mat-icon>
+              </button>
+            }
+            <button mat-icon-button class="list-album-btn"
+                    (click)="$event.stopPropagation(); addToAlbum(asset)"
+                    title="Add to album">
+              <mat-icon>collections_bookmark</mat-icon>
+            </button>
+          </div>
+        </cdk-virtual-scroll-viewport>
+        @if (allLoaded && assets.length > 0) {
+          <div class="end-of-list">All photos loaded</div>
+        }
+      </div>
+    }
+
+    <!-- Timeline View -->
+    @if (viewMode === 'thumbnails' && viewType === 'timeline') {
+      <div class="timeline-view-container flex-1">
+        <app-timeline-view [groups]="timelineGroups" (thumbnailClick)="openViewerFromTimeline($event)" />
+        @if (isLoading) {
+          <div class="loading-row">
+            <mat-progress-bar mode="indeterminate" />
+          </div>
+        }
+        @if (timelineAllLoaded && timelineGroups.length > 0) {
+          <div class="end-of-list">All photos loaded</div>
+        }
+      </div>
+    }
+
+    @if (viewMode === 'thumbnails' && viewType === 'timeline') {
+      <div #scrollSentinel class="scroll-sentinel"></div>
+    }
+
+    <!-- Viewer -->
+    @if (viewMode === 'viewer' && currentViewerAsset) {
+      <div class="viewer-layout">
+        <div class="image-viewer flex-1"
+           #imageViewerContainer
+           [class.dragging]="isDragging"
+           (mousedown)="onViewerMouseDown($event)"
+           (mousemove)="onViewerMouseMove($event)"
+           (mouseup)="onViewerMouseUp()"
+           (mouseleave)="onViewerMouseLeave()"
+           (touchstart)="onViewerTouchStart($event)"
+           (touchmove)="onViewerTouchMove($event)"
+           (touchend)="onViewerTouchEnd()">
+          <button mat-icon-button class="viewer-nav viewer-nav--prev" (click)="viewerPrev()" [disabled]="currentViewerIndex === 0">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          @if (currentViewerAsset.fileType === 'AUDIO') {
+            <div class="audio-viewer">
+              <img [src]="currentViewerAsset.thumbnailUrl" [alt]="currentViewerAsset.fileName" class="audio-album-art" />
+              <audio controls [src]="'/api/assets/' + currentViewerAsset.assetId + '/stream'" class="audio-player">
+                Your browser does not support the audio element.
+              </audio>
+              <div class="audio-meta">
+                @if (currentViewerAsset.fileName) {
+                  <div class="audio-filename">{{ currentViewerAsset.fileName }}</div>
+                }
+              </div>
+            </div>
+          } @else if (isVideoFile(currentViewerAsset)) {
+            <video [src]="'/api/assets/' + currentViewerAsset.assetId + '/stream'" controls class="viewer-video"></video>
+          } @else if (showCropOverlay) {
+            <app-social-media-crop
+              [asset]="currentViewerAsset"
+              (cancelled)="showCropOverlay = false" />
+          } @else {
+            <img
+              [src]="currentViewerAsset.imageUrl"
+              [alt]="currentViewerAsset.fileName"
+              [style.transform]="'scale(' + viewerZoom + ') translate(' + panX + 'px, ' + panY + 'px)'"
+              class="viewer-image"
+              draggable="false"
+            />
+          }
+          <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="viewerNext()" [disabled]="currentViewerIndex >= assets.length - 1">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+        <app-exif-panel
+          [asset]="currentViewerAsset"
+          [visible]="showExifPanel"
+          (closed)="showExifPanel = false"
+        />
+      </div>
+    }
+
+    <!-- Slideshow -->
+    @if (viewMode === 'slideshow' && currentViewerAsset) {
+      <div class="image-viewer flex-1">
+        <button mat-icon-button class="viewer-nav viewer-nav--prev" (click)="stepSlideshow(-1)" [disabled]="currentViewerIndex === 0">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <img
+          [src]="currentViewerAsset.imageUrl"
+          [alt]="currentViewerAsset.fileName"
+        />
+        <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="stepSlideshow(1)" [disabled]="currentViewerIndex >= assets.length - 1">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+      @if (slideshowResetTick) {
+        <div class="slideshow-progress-bar"
+             [style.animation-duration]="slideshowInterval + 's'"
+             [style.animation-play-state]="slideshowPlaying ? 'running' : 'paused'">
+        </div>
+      } @else {
+        <div class="slideshow-progress-bar"
+             [style.animation-duration]="slideshowInterval + 's'"
+             [style.animation-play-state]="slideshowPlaying ? 'running' : 'paused'">
+        </div>
+      }
+    }
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      @if (currentFolder && totalItems > 0) {
+        @if (viewMode === 'viewer' || viewMode === 'slideshow') {
+          <span>{{ currentViewerIndex + 1 }} of {{ totalItems }} photos</span>
+        } @else {
+          <span>{{ totalItems }} photos</span>
+        }
+      } @else {
+        <span>{{ currentFolder }}</span>
+      }
+      @if (selectedCount > 0) {
+        <span>{{ selectedCount }} selected</span>
+      }
+      @if (statusMessage) {
+        <span>{{ statusMessage }}</span>
+      }
+    </div>
+
+  </mat-sidenav-content>
+</mat-sidenav-container>

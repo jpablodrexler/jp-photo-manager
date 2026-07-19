@@ -1,0 +1,21 @@
+@if (groups.length === 0) {
+  <div class="timeline-empty">No photos to display</div>
+} @else {
+  <div class="timeline-container">
+    @for (group of groups; track group.localDate; let i = $index) {
+      @if (currentMonth(group, i); as month) {
+        <div class="timeline-month-header">{{ formatMonthHeader(group.localDate) }}</div>
+      }
+      <div class="timeline-day-section">
+        <div class="timeline-day-header">{{ formatDayHeader(group.localDate) }}</div>
+        <div class="timeline-thumbnail-row">
+          @for (asset of group.assets; track asset.assetId) {
+            <div class="timeline-thumbnail-cell" (click)="thumbnailClick.emit(asset)">
+              <app-thumbnail [asset]="asset" [rating]="asset.rating" />
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}

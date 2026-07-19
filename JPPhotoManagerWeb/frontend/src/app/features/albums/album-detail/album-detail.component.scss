@@ -1,0 +1,49 @@
+.smart-album-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin: 8px 16px;
+  background-color: rgba(103, 80, 164, 0.15);
+  border-left: 3px solid #7c4dff;
+}
+
+.thumbnail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+.asset-wrapper {
+  position: relative;
+
+  .remove-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    color: #f44336;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  &:hover .remove-btn {
+    opacity: 1;
+  }
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+}
+
+.empty-state {
+  color: rgba(255, 255, 255, 0.5);
+  padding: 32px;
+  text-align: center;
+  grid-column: 1 / -1;
+}

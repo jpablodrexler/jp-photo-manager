@@ -1,0 +1,2 @@
+-- Default admin user is seeded at application startup by DataInitializer
+-- (no SQL seeding needed here because BCrypt hashing requires the application)

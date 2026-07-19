@@ -1,0 +1,30 @@
+<div class="status-bar catalog-footer">
+  <mat-icon class="catalog-icon" [class.spinning]="state === 'running'">
+    {{ state === 'running' ? 'sync' : 'check_circle' }}
+  </mat-icon>
+
+  @if (state === 'running') {
+    <span class="catalog-status-text" [title]="currentStatusText">
+      {{ currentStatusText || 'Starting…' }}
+    </span>
+    <mat-progress-bar mode="determinate" [value]="percentCompleted" class="catalog-progress-bar" />
+    <span class="catalog-percent">{{ percentCompleted }}%</span>
+  } @else {
+    <span class="catalog-status-text">
+      @if (lastCompletedAt) {
+        Catalog &middot; Idle &middot; {{ lastCompletedAt | date:'HH:mm' }}
+      } @else {
+        Catalog &middot; Idle
+      }
+    </span>
+  }
+
+  <button mat-icon-button
+          class="catalog-refresh-btn"
+          [disabled]="state === 'running'"
+          (click)="reconnect.emit()"
+          matTooltip="Reconnect to catalog stream"
+          aria-label="Reconnect to catalog stream">
+    <mat-icon>refresh</mat-icon>
+  </button>
+</div>

@@ -1,0 +1,39 @@
+.recycle-bin-layout {
+  height: 100%;
+  overflow: hidden;
+}
+
+.recycle-bin-toolbar {
+  font-size: 14px;
+}
+
+.thumbnail-grid-container {
+  overflow-y: auto;
+}
+
+.thumbnail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  padding: 16px;
+}
+
+.asset-cell {
+  cursor: pointer;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px;
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 18px;
+}
+
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+}

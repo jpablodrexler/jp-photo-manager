@@ -1,0 +1,71 @@
+# Deploy the whole Kubernetes stack with (run from the JPPhotoManagerWeb
+# directory, same as `docker compose up`):
+#
+#   kubectl apply -k .
+#
+# This root-level kustomization exists (rather than living inside k8s/)
+# so the configMapGenerator entries below can reference prometheus.yml and
+# grafana/provisioning/* directly — kustomize refuses to read files outside
+# its own root, and those files are shared with docker-compose.yml so they
+# must not be copied/duplicated under k8s/.
+#
+# secret.yaml is intentionally NOT listed below — copy k8s/secret.yaml.example
+# to k8s/secret.yaml first (see that file's header) and apply it separately:
+#   cp k8s/secret.yaml.example k8s/secret.yaml
+#   # edit k8s/secret.yaml with real values
+#   kubectl apply -f k8s/secret.yaml
+#
+# k8s/catalog-volumes.yaml (referenced in patches: below) does NOT ship in
+# this repo either — copy k8s/catalog-volumes.yaml.example to
+# k8s/catalog-volumes.yaml first and edit it with your real photo directory
+# path(s):
+#   cp k8s/catalog-volumes.yaml.example k8s/catalog-volumes.yaml
+#   # edit k8s/catalog-volumes.yaml with your real path(s)
+# Unlike secret.yaml, this one IS wired into `patches:` below, so
+# `kubectl apply -k .` fails outright with "no such file" until you create
+# it — the same fail-loudly behavior as docker-compose.yml's
+# `${HOST_IMAGE_DIR:?Set HOST_IMAGE_DIR in .env}`.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: photomanager
+
+resources:
+  - k8s/namespace.yaml
+  - k8s/configmap.yaml
+  - k8s/postgres.yaml
+  - k8s/kafka.yaml
+  - k8s/redis.yaml
+  - k8s/mongo.yaml
+  - k8s/backend.yaml
+  - k8s/frontend.yaml
+  - k8s/prometheus.yaml
+  - k8s/grafana.yaml
+  - k8s/ingress.yaml
+
+patches:
+  - path: k8s/catalog-volumes.yaml
+
+# Generate the Prometheus/Grafana ConfigMaps straight from the same files
+# docker-compose bind-mounts, instead of duplicating ~5,000 lines of
+# dashboard JSON inside a hand-written manifest. Editing the source files
+# under prometheus.yml and grafana/provisioning is enough — no manifest
+# changes needed.
+configMapGenerator:
+  - name: prometheus-config
+    files:
+      - prometheus.yml=prometheus.yml
+  - name: grafana-datasources
+    files:
+      - prometheus.yml=grafana/provisioning/datasources/prometheus.yml
+  - name: grafana-dashboards
+    files:
+      - dashboard.yml=grafana/provisioning/dashboards/dashboard.yml
+      - photomanager.json=grafana/provisioning/dashboards/photomanager.json
+      - jvm-micrometer.json=grafana/provisioning/dashboards/jvm-micrometer.json
+      - spring-boot-3-stats.json=grafana/provisioning/dashboards/spring-boot-3-stats.json
+
+# Keep predictable names (no content-hash suffix) so the plain manifests
+# above can reference "prometheus-config", "grafana-datasources", and
+# "grafana-dashboards" directly.
+generatorOptions:
+  disableNameSuffixHash: true

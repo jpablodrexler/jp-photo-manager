@@ -1,0 +1,96 @@
+<div class="sync-container p-16">
+  <h2>Sync Assets</h2>
+
+  @if (step === 'configure') {
+    <mat-card>
+      <mat-card-content>
+        <table mat-table [dataSource]="definitions" class="full-width">
+          <ng-container matColumnDef="sourceDirectory">
+            <th mat-header-cell *matHeaderCellDef>Source Directory</th>
+            <td mat-cell *matCellDef="let def">
+              <mat-form-field>
+                <input matInput [(ngModel)]="def.sourceDirectory" placeholder="/path/to/source" />
+              </mat-form-field>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="destinationDirectory">
+            <th mat-header-cell *matHeaderCellDef>Destination Directory</th>
+            <td mat-cell *matCellDef="let def">
+              <mat-form-field>
+                <input matInput [(ngModel)]="def.destinationDirectory" placeholder="/path/to/destination" />
+              </mat-form-field>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="includeSubFolders">
+            <th mat-header-cell *matHeaderCellDef>Include Subfolders</th>
+            <td mat-cell *matCellDef="let def">
+              <mat-checkbox [(ngModel)]="def.includeSubFolders" />
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="deleteAssetsNotInSource">
+            <th mat-header-cell *matHeaderCellDef>Delete Missing</th>
+            <td mat-cell *matCellDef="let def">
+              <mat-checkbox [(ngModel)]="def.deleteAssetsNotInSource" />
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Actions</th>
+            <td mat-cell *matCellDef="let def; let i = index">
+              <button mat-icon-button (click)="moveUp(i)" [disabled]="i === 0"><mat-icon>arrow_upward</mat-icon></button>
+              <button mat-icon-button (click)="moveDown(i)" [disabled]="i === definitions.length - 1"><mat-icon>arrow_downward</mat-icon></button>
+              <button mat-icon-button color="warn" (click)="removeDefinition(i)"><mat-icon>delete</mat-icon></button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </mat-card-content>
+
+      <mat-card-actions>
+        <button mat-button (click)="addDefinition()"><mat-icon>add</mat-icon> Add</button>
+        <button mat-raised-button color="primary" (click)="saveAndRun()" [disabled]="definitions.length === 0 || !authService.isAdmin()">
+          <mat-icon>play_arrow</mat-icon> Save & Run
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  }
+
+  @if (step === 'running') {
+    <mat-card>
+      <mat-card-content>
+        <mat-progress-bar mode="indeterminate" />
+        <p>Syncing in progress...</p>
+        <mat-list>
+          @for (msg of statusMessages; track $index) {
+            <mat-list-item>{{ msg }}</mat-list-item>
+          }
+        </mat-list>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  @if (step === 'results') {
+    <mat-card>
+      <mat-card-header><mat-card-title>Results</mat-card-title></mat-card-header>
+      <mat-card-content>
+        @for (result of results; track $index) {
+          <div class="result-item" [class.result-error]="!result.success">
+            <strong>{{ result.sourceDirectory }} → {{ result.destinationDirectory }}</strong>
+            <span>Copied: {{ result.syncedCount }}, Deleted: {{ result.deletedCount }}</span>
+            @if (result.message) {
+              <span class="result-message">{{ result.message }}</span>
+            }
+          </div>
+        }
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-button (click)="backToConfigure()"><mat-icon>arrow_back</mat-icon> Back</button>
+      </mat-card-actions>
+    </mat-card>
+  }
+</div>

@@ -1,0 +1,60 @@
+# Template for the machine-specific catalog directory mounts — mirrors
+# ../.env.example's HOST_IMAGE_DIR / HOST_IMAGE_DIR_2. Copy this file to
+# catalog-volumes.yaml (already git-ignored, see ../../.gitignore) and edit
+# the paths before applying:
+#
+#   cp catalog-volumes.yaml.example catalog-volumes.yaml
+#   # edit catalog-volumes.yaml with your real path(s)
+#   kubectl apply -k ..
+#
+# This is a Kustomize strategic-merge patch, applied on top of backend.yaml
+# by ../kustomization.yaml's `patches:` entry. backend.yaml deliberately
+# declares no catalog hostPath volumes of its own — a real filesystem path
+# is machine-specific and must never sit in a versioned file, even as a
+# placeholder. If this file doesn't exist, `kubectl apply -k .` fails
+# outright rather than silently cataloging nothing, the same way
+# docker-compose.yml hard-fails with "Set HOST_IMAGE_DIR in .env" when
+# HOST_IMAGE_DIR is unset.
+#
+# Leave catalog2/catalog3 pointed at an empty/unused directory if you only
+# catalog one root — but keep all three entries, since CATALOG_DIR in
+# k8s/configmap.yaml expects /catalog;/catalog2;/catalog3 to all resolve.
+#
+# NOTE for Docker Desktop Kubernetes on Windows: unlike docker-compose,
+# which auto-translates "C:/Users/..." bind mounts, hostPath here is
+# resolved by the kubelet running inside the Docker Desktop VM, which
+# exposes Windows drives at /run/desktop/mnt/host/<lowercase-drive>/...
+# So "C:/Users/you/Pictures" becomes
+# "/run/desktop/mnt/host/c/Users/you/Pictures" below. minikube and kind have
+# their own equivalents (minikube mount, or a hostPath/extraMounts entry in
+# the kind cluster config) instead of this Docker Desktop-specific path.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: photomanager
+spec:
+  template:
+    spec:
+      containers:
+        - name: backend
+          volumeMounts:
+            - name: catalog
+              mountPath: /catalog
+            - name: catalog2
+              mountPath: /catalog2
+            - name: catalog3
+              mountPath: /catalog3
+      volumes:
+        - name: catalog
+          hostPath:
+            path: /path/to/your/pictures
+            type: DirectoryOrCreate
+        - name: catalog2
+          hostPath:
+            path: /tmp/catalog2-unused
+            type: DirectoryOrCreate
+        - name: catalog3
+          hostPath:
+            path: /tmp/catalog3-unused
+            type: DirectoryOrCreate

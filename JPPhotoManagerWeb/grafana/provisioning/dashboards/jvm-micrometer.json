@@ -1,0 +1,1700 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "limit": 100,
+        "name": "Annotations & Alerts",
+        "showIn": 0,
+        "type": "dashboard"
+      },
+      {
+        "datasource": "prometheus",
+        "enable": true,
+        "expr": "resets(process_uptime_seconds{application=\"$application\", instance=\"$instance\"}[1m]) > 0",
+        "iconColor": "rgba(255, 96, 96, 1)",
+        "name": "Restart Detection",
+        "showIn": 0,
+        "step": "1m",
+        "tagKeys": "restart-tag",
+        "textFormat": "uptime reset",
+        "titleFormat": "Restart"
+      }
+    ]
+  },
+  "description": "Dashboard for Micrometer instrumented applications (Java, Spring Boot, Micronaut)",
+  "editable": true,
+  "gnetId": 4701,
+  "graphTooltip": 1,
+  "hideControls": false,
+  "id": null,
+  "links": [],
+  "refresh": "30s",
+  "rows": [
+    {
+      "collapse": false,
+      "height": "100px",
+      "panels": [
+        {
+          "id": 63,
+          "title": "Uptime",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "process_uptime_seconds{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "",
+              "metric": "",
+              "refId": "A",
+              "step": 14400
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "type": "stat",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            }
+          }
+        },
+        {
+          "id": 92,
+          "title": "Start time",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "process_start_time_seconds{application=\"$application\", instance=\"$instance\"}*1000",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "",
+              "metric": "",
+              "refId": "A",
+              "step": 14400
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "type": "stat",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "dateTimeAsIso",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            }
+          }
+        },
+        {
+          "id": 65,
+          "title": "Heap used",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "sum(jvm_memory_used_bytes{application=\"$application\", instance=\"$instance\", area=\"heap\"})*100/sum(jvm_memory_max_bytes{application=\"$application\",instance=\"$instance\", area=\"heap\"})",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "",
+              "refId": "A",
+              "step": 14400
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "type": "stat",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 70.0
+                  },
+                  {
+                    "color": "red",
+                    "value": 90.0
+                  }
+                ]
+              },
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            }
+          }
+        },
+        {
+          "id": 75,
+          "title": "Non-Heap used",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "sum(jvm_memory_used_bytes{application=\"$application\", instance=\"$instance\", area=\"nonheap\"})*100/sum(jvm_memory_max_bytes{application=\"$application\",instance=\"$instance\", area=\"nonheap\"})",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "",
+              "refId": "A",
+              "step": 14400
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "type": "stat",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 70.0
+                  },
+                  {
+                    "color": "red",
+                    "value": 90.0
+                  }
+                ]
+              },
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            }
+          }
+        }
+      ],
+      "repeat": null,
+      "repeatIteration": null,
+      "repeatRowId": null,
+      "showTitle": true,
+      "title": "Quick Facts",
+      "titleSize": "h6"
+    },
+    {
+      "collapse": false,
+      "height": 250,
+      "panels": [
+        {
+          "id": 111,
+          "title": "Rate",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\", instance=\"$instance\"}[1m]))",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "HTTP",
+              "refId": "A"
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 112,
+          "title": "Errors",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\", instance=\"$instance\", status=~\"5..\"}[1m]))",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "HTTP - 5xx",
+              "refId": "A"
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 113,
+          "title": "Duration",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "sum(rate(http_server_requests_seconds_sum{application=\"$application\", instance=\"$instance\", status!~\"5..\"}[1m]))/sum(rate(http_server_requests_seconds_count{application=\"$application\", instance=\"$instance\", status!~\"5..\"}[1m]))",
+              "format": "time_series",
+              "hide": false,
+              "intervalFactor": 1,
+              "legendFormat": "HTTP - AVG",
+              "refId": "A"
+            },
+            {
+              "expr": "max(http_server_requests_seconds_max{application=\"$application\", instance=\"$instance\", status!~\"5..\"})",
+              "format": "time_series",
+              "hide": false,
+              "intervalFactor": 1,
+              "legendFormat": "HTTP - MAX",
+              "refId": "B"
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 119,
+          "title": "Utilisation",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "tomcat_threads_busy_threads{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "hide": false,
+              "intervalFactor": 2,
+              "legendFormat": "TOMCAT - BSY",
+              "refId": "A"
+            },
+            {
+              "expr": "tomcat_threads_current_threads{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "hide": false,
+              "intervalFactor": 2,
+              "legendFormat": "TOMCAT - CUR",
+              "refId": "B"
+            },
+            {
+              "expr": "tomcat_threads_config_max_threads{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "hide": false,
+              "intervalFactor": 2,
+              "legendFormat": "TOMCAT - MAX",
+              "refId": "C"
+            }
+          ],
+          "links": [],
+          "description": "",
+          "span": 3,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        }
+      ],
+      "repeat": null,
+      "repeatIteration": null,
+      "repeatRowId": null,
+      "showTitle": true,
+      "title": "I/O Overview",
+      "titleSize": "h6"
+    },
+    {
+      "collapse": false,
+      "height": "250px",
+      "panels": [
+        {
+          "id": 24,
+          "title": "JVM Heap",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "sum(jvm_memory_used_bytes{application=\"$application\", instance=\"$instance\", area=\"heap\"})",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "used",
+              "metric": "",
+              "refId": "A",
+              "step": 2400
+            },
+            {
+              "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", instance=\"$instance\", area=\"heap\"})",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "committed",
+              "refId": "B",
+              "step": 2400
+            },
+            {
+              "expr": "sum(jvm_memory_max_bytes{application=\"$application\", instance=\"$instance\", area=\"heap\"})",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "max",
+              "refId": "C",
+              "step": 2400
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 25,
+          "title": "JVM Non-Heap",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "sum(jvm_memory_used_bytes{application=\"$application\", instance=\"$instance\", area=\"nonheap\"})",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 2,
+              "legendFormat": "used",
+              "metric": "",
+              "refId": "A",
+              "step": 2400
+            },
+            {
+              "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", instance=\"$instance\", area=\"nonheap\"})",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "committed",
+              "refId": "B",
+              "step": 2400
+            },
+            {
+              "expr": "sum(jvm_memory_max_bytes{application=\"$application\", instance=\"$instance\", area=\"nonheap\"})",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "max",
+              "refId": "C",
+              "step": 2400
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 26,
+          "title": "JVM Total",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "sum(jvm_memory_used_bytes{application=\"$application\", instance=\"$instance\"})",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "used",
+              "metric": "",
+              "refId": "A",
+              "step": 2400
+            },
+            {
+              "expr": "sum(jvm_memory_committed_bytes{application=\"$application\", instance=\"$instance\"})",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "committed",
+              "refId": "B",
+              "step": 2400
+            },
+            {
+              "expr": "sum(jvm_memory_max_bytes{application=\"$application\", instance=\"$instance\"})",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "max",
+              "refId": "C",
+              "step": 2400
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 86,
+          "title": "JVM Process Memory",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "process_memory_vss_bytes{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "hide": true,
+              "intervalFactor": 2,
+              "legendFormat": "vss",
+              "metric": "",
+              "refId": "A",
+              "step": 2400
+            },
+            {
+              "expr": "process_memory_rss_bytes{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "rss",
+              "refId": "B"
+            },
+            {
+              "expr": "process_memory_swap_bytes{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "swap",
+              "refId": "C"
+            },
+            {
+              "expr": "process_memory_rss_bytes{application=\"$application\", instance=\"$instance\"} + process_memory_swap_bytes{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "total",
+              "refId": "D"
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        }
+      ],
+      "repeat": null,
+      "repeatIteration": null,
+      "repeatRowId": null,
+      "showTitle": true,
+      "title": "JVM Memory",
+      "titleSize": "h6"
+    },
+    {
+      "collapse": false,
+      "height": 250,
+      "panels": [
+        {
+          "id": 106,
+          "title": "CPU Usage",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "system_cpu_usage{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "hide": false,
+              "intervalFactor": 1,
+              "legendFormat": "system",
+              "metric": "",
+              "refId": "A",
+              "step": 2400
+            },
+            {
+              "expr": "process_cpu_usage{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "hide": false,
+              "intervalFactor": 1,
+              "legendFormat": "process",
+              "refId": "B"
+            },
+            {
+              "expr": "avg_over_time(process_cpu_usage{application=\"$application\", instance=\"$instance\"}[15m])",
+              "format": "time_series",
+              "hide": false,
+              "intervalFactor": 1,
+              "legendFormat": "process-15m",
+              "refId": "C"
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0,
+              "max": 1.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 93,
+          "title": "Load",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "system_load_average_1m{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "system-1m",
+              "metric": "",
+              "refId": "A",
+              "step": 2400
+            },
+            {
+              "expr": "system_cpu_count{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "cpus",
+              "refId": "B"
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 32,
+          "title": "Threads",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "jvm_threads_live_threads{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "live",
+              "metric": "",
+              "refId": "A",
+              "step": 2400
+            },
+            {
+              "expr": "jvm_threads_daemon_threads{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "daemon",
+              "metric": "",
+              "refId": "B",
+              "step": 2400
+            },
+            {
+              "expr": "jvm_threads_peak_threads{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "peak",
+              "refId": "C",
+              "step": 2400
+            },
+            {
+              "expr": "process_threads{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 2,
+              "legendFormat": "process",
+              "refId": "D",
+              "step": 2400
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 124,
+          "title": "Thread States",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "jvm_threads_states_threads{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "{{state}}",
+              "refId": "A"
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 138,
+          "title": "GC Pressure",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "sum(rate(jvm_gc_pause_seconds_sum{application=\"$application\", instance=\"$instance\"}[1m])) by (application, instance) / on(application, instance) system_cpu_count",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "CPU time spent on GC",
+              "refId": "A"
+            }
+          ],
+          "links": [],
+          "description": "The percent of time spent on Garbage Collection over all CPUs assigned to the JVM process.",
+          "span": 3,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0,
+              "max": 1.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 91,
+          "title": "Log Events",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "increase(logback_events_total{application=\"$application\", instance=\"$instance\"}[1m])",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 2,
+              "legendFormat": "{{level}}",
+              "metric": "",
+              "refId": "A",
+              "step": 1200
+            }
+          ],
+          "links": [],
+          "span": 6,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "opm",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 61,
+          "title": "File Descriptors",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "process_files_open_files{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "hide": false,
+              "intervalFactor": 2,
+              "legendFormat": "open",
+              "metric": "",
+              "refId": "A",
+              "step": 2400
+            },
+            {
+              "expr": "process_files_max_files{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "hide": false,
+              "intervalFactor": 2,
+              "legendFormat": "max",
+              "metric": "",
+              "refId": "B",
+              "step": 2400
+            }
+          ],
+          "links": [],
+          "span": 3,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        }
+      ],
+      "repeat": null,
+      "repeatIteration": null,
+      "repeatRowId": null,
+      "showTitle": true,
+      "title": "JVM Misc",
+      "titleSize": "h6"
+    },
+    {
+      "collapse": false,
+      "height": "250px",
+      "panels": [
+        {
+          "id": 3,
+          "title": "$jvm_memory_pool_heap",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "jvm_memory_used_bytes{application=\"$application\", instance=\"$instance\", id=~\"$jvm_memory_pool_heap\"}",
+              "format": "time_series",
+              "hide": false,
+              "interval": "",
+              "intervalFactor": 2,
+              "legendFormat": "used",
+              "metric": "",
+              "refId": "A",
+              "step": 1800
+            },
+            {
+              "expr": "jvm_memory_committed_bytes{application=\"$application\", instance=\"$instance\", id=~\"$jvm_memory_pool_heap\"}",
+              "format": "time_series",
+              "hide": false,
+              "interval": "",
+              "intervalFactor": 2,
+              "legendFormat": "commited",
+              "metric": "",
+              "refId": "B",
+              "step": 1800
+            },
+            {
+              "expr": "jvm_memory_max_bytes{application=\"$application\", instance=\"$instance\", id=~\"$jvm_memory_pool_heap\"}",
+              "format": "time_series",
+              "hide": false,
+              "interval": "",
+              "intervalFactor": 2,
+              "legendFormat": "max",
+              "metric": "",
+              "refId": "C",
+              "step": 1800
+            }
+          ],
+          "links": [],
+          "span": 4,
+          "timeFrom": null,
+          "timeShift": null,
+          "repeat": "jvm_memory_pool_heap",
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        }
+      ],
+      "repeat": "persistence_counts",
+      "repeatIteration": null,
+      "repeatRowId": null,
+      "showTitle": true,
+      "title": "JVM Memory Pools (Heap)",
+      "titleSize": "h6"
+    },
+    {
+      "collapse": false,
+      "height": 250,
+      "panels": [
+        {
+          "id": 78,
+          "title": "$jvm_memory_pool_nonheap",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "jvm_memory_used_bytes{application=\"$application\", instance=\"$instance\", id=~\"$jvm_memory_pool_nonheap\"}",
+              "format": "time_series",
+              "hide": false,
+              "interval": "",
+              "intervalFactor": 2,
+              "legendFormat": "used",
+              "metric": "",
+              "refId": "A",
+              "step": 1800
+            },
+            {
+              "expr": "jvm_memory_committed_bytes{application=\"$application\", instance=\"$instance\", id=~\"$jvm_memory_pool_nonheap\"}",
+              "format": "time_series",
+              "hide": false,
+              "interval": "",
+              "intervalFactor": 2,
+              "legendFormat": "commited",
+              "metric": "",
+              "refId": "B",
+              "step": 1800
+            },
+            {
+              "expr": "jvm_memory_max_bytes{application=\"$application\", instance=\"$instance\", id=~\"$jvm_memory_pool_nonheap\"}",
+              "format": "time_series",
+              "hide": false,
+              "interval": "",
+              "intervalFactor": 2,
+              "legendFormat": "max",
+              "metric": "",
+              "refId": "C",
+              "step": 1800
+            }
+          ],
+          "links": [],
+          "span": 4,
+          "timeFrom": null,
+          "timeShift": null,
+          "repeat": "jvm_memory_pool_nonheap",
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        }
+      ],
+      "repeat": null,
+      "repeatIteration": null,
+      "repeatRowId": null,
+      "showTitle": true,
+      "title": "JVM Memory Pools (Non-Heap)",
+      "titleSize": "h6"
+    },
+    {
+      "collapse": false,
+      "height": 250,
+      "panels": [
+        {
+          "id": 98,
+          "title": "Collections",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "rate(jvm_gc_pause_seconds_count{application=\"$application\", instance=\"$instance\"}[1m])",
+              "format": "time_series",
+              "hide": false,
+              "intervalFactor": 1,
+              "legendFormat": "{{action}} ({{cause}})",
+              "refId": "A"
+            }
+          ],
+          "links": [],
+          "span": 4,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 101,
+          "title": "Pause Durations",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "rate(jvm_gc_pause_seconds_sum{application=\"$application\", instance=\"$instance\"}[1m])/rate(jvm_gc_pause_seconds_count{application=\"$application\", instance=\"$instance\"}[1m])",
+              "format": "time_series",
+              "hide": false,
+              "instant": false,
+              "intervalFactor": 1,
+              "legendFormat": "avg {{action}} ({{cause}})",
+              "refId": "A"
+            },
+            {
+              "expr": "jvm_gc_pause_seconds_max{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "hide": false,
+              "instant": false,
+              "intervalFactor": 1,
+              "legendFormat": "max {{action}} ({{cause}})",
+              "refId": "B"
+            }
+          ],
+          "links": [],
+          "span": 4,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 99,
+          "title": "Allocated/Promoted",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "rate(jvm_gc_memory_allocated_bytes_total{application=\"$application\", instance=\"$instance\"}[1m])",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "allocated",
+              "refId": "A"
+            },
+            {
+              "expr": "rate(jvm_gc_memory_promoted_bytes_total{application=\"$application\", instance=\"$instance\"}[1m])",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "promoted",
+              "refId": "B"
+            }
+          ],
+          "links": [],
+          "span": 4,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "Bps",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        }
+      ],
+      "repeat": null,
+      "repeatIteration": null,
+      "repeatRowId": null,
+      "showTitle": true,
+      "title": "Garbage Collection",
+      "titleSize": "h6"
+    },
+    {
+      "collapse": false,
+      "height": "250px",
+      "panels": [
+        {
+          "id": 37,
+          "title": "Classes loaded",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "jvm_classes_loaded_classes{application=\"$application\", instance=\"$instance\"}",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "loaded",
+              "metric": "",
+              "refId": "A",
+              "step": 1200
+            }
+          ],
+          "links": [],
+          "span": 6,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 38,
+          "title": "Class delta",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "delta(jvm_classes_loaded_classes{application=\"$application\",instance=\"$instance\"}[1m])",
+              "format": "time_series",
+              "hide": false,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "delta-1m",
+              "metric": "",
+              "refId": "A",
+              "step": 1200
+            }
+          ],
+          "links": [],
+          "span": 6,
+          "timeFrom": null,
+          "timeShift": null,
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        }
+      ],
+      "repeat": null,
+      "repeatIteration": null,
+      "repeatRowId": null,
+      "showTitle": true,
+      "title": "Classloading",
+      "titleSize": "h6"
+    },
+    {
+      "collapse": false,
+      "height": "250px",
+      "panels": [
+        {
+          "id": 131,
+          "title": "$jvm_buffer_pool",
+          "datasource": "prometheus",
+          "targets": [
+            {
+              "expr": "jvm_buffer_memory_used_bytes{application=\"$application\", instance=\"$instance\", id=~\"$jvm_buffer_pool\"}",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "used",
+              "refId": "A"
+            },
+            {
+              "expr": "jvm_buffer_total_capacity_bytes{application=\"$application\", instance=\"$instance\", id=~\"$jvm_buffer_pool\"}",
+              "format": "time_series",
+              "intervalFactor": 2,
+              "legendFormat": "capacity",
+              "refId": "B"
+            },
+            {
+              "expr": "jvm_buffer_count_buffers{application=\"$application\", instance=\"$instance\", id=~\"$jvm_buffer_pool\"}",
+              "format": "time_series",
+              "hide": false,
+              "intervalFactor": 2,
+              "legendFormat": "buffers",
+              "refId": "C"
+            }
+          ],
+          "links": [],
+          "span": 4,
+          "timeFrom": null,
+          "timeShift": null,
+          "repeat": "jvm_buffer_pool",
+          "type": "timeseries",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "decbytes",
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 10
+              },
+              "min": 0.0
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        }
+      ],
+      "repeat": null,
+      "repeatIteration": null,
+      "repeatRowId": null,
+      "showTitle": true,
+      "title": "Buffer Pools",
+      "titleSize": "h6"
+    }
+  ],
+  "schemaVersion": 14,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "allValue": null,
+        "current": {},
+        "datasource": "prometheus",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Application",
+        "multi": false,
+        "name": "application",
+        "options": [],
+        "query": "label_values(application)",
+        "refresh": 2,
+        "regex": "",
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allFormat": "glob",
+        "allValue": null,
+        "current": {},
+        "datasource": "prometheus",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Instance",
+        "multi": false,
+        "multiFormat": "glob",
+        "name": "instance",
+        "options": [],
+        "query": "label_values(jvm_memory_used_bytes{application=\"$application\"}, instance)",
+        "refresh": 2,
+        "regex": "",
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allFormat": "glob",
+        "allValue": null,
+        "current": {},
+        "datasource": "prometheus",
+        "hide": 2,
+        "includeAll": true,
+        "label": "JVM Memory Pools Heap",
+        "multi": false,
+        "multiFormat": "glob",
+        "name": "jvm_memory_pool_heap",
+        "options": [],
+        "query": "label_values(jvm_memory_used_bytes{application=\"$application\", instance=\"$instance\", area=\"heap\"},id)",
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allFormat": "glob",
+        "allValue": null,
+        "current": {},
+        "datasource": "prometheus",
+        "hide": 2,
+        "includeAll": true,
+        "label": "JVM Memory Pools Non-Heap",
+        "multi": false,
+        "multiFormat": "glob",
+        "name": "jvm_memory_pool_nonheap",
+        "options": [],
+        "query": "label_values(jvm_memory_used_bytes{application=\"$application\", instance=\"$instance\", area=\"nonheap\"},id)",
+        "refresh": 1,
+        "regex": "",
+        "sort": 2,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allFormat": "glob",
+        "allValue": null,
+        "current": {},
+        "datasource": "prometheus",
+        "hide": 2,
+        "includeAll": true,
+        "label": "JVM Buffer Pools",
+        "multi": false,
+        "multiFormat": "glob",
+        "name": "jvm_buffer_pool",
+        "options": [],
+        "query": "label_values(jvm_buffer_memory_used_bytes{application=\"$application\", instance=\"$instance\"},id)",
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {
+    "now": true,
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d",
+      "30d"
+    ]
+  },
+  "timezone": "browser",
+  "title": "JVM (Micrometer)",
+  "version": 33,
+  "uid": "jvm-micrometer"
+}

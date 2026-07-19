@@ -1,0 +1,73 @@
+<div class="analytics-container">
+  @if (loading) {
+    <div class="analytics-spinner">
+      <mat-spinner />
+    </div>
+  } @else if (error) {
+    <mat-card class="analytics-error">
+      <mat-card-content>
+        <mat-icon color="warn">error</mat-icon>
+        <p>Failed to load analytics data. Please try again later.</p>
+      </mat-card-content>
+    </mat-card>
+  } @else if (data) {
+    <div class="analytics-grid">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Storage per Folder</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ngx-charts-tree-map
+            [results]="folderStorageSeries"
+          />
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>File Format Distribution</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ngx-charts-pie-chart
+            [results]="formatSeries"
+            [legend]="true"
+          />
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Photos per Month</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ngx-charts-bar-vertical
+            [results]="photosPerMonthSeries"
+            [xAxisLabel]="'Month'"
+            [yAxisLabel]="'Count'"
+            [showXAxisLabel]="true"
+            [showYAxisLabel]="true"
+            [xAxis]="true"
+            [yAxis]="true"
+          />
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Rating Distribution</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <ngx-charts-bar-vertical
+            [results]="ratingSeriesBarData"
+            [xAxisLabel]="'Stars'"
+            [yAxisLabel]="'Count'"
+            [showXAxisLabel]="true"
+            [showYAxisLabel]="true"
+            [xAxis]="true"
+            [yAxis]="true"
+          />
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</div>

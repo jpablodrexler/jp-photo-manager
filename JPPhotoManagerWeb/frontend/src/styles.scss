@@ -1,0 +1,291 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+$dark-green-theme: mat.define-theme((
+  color: (
+    theme-type: dark,
+    primary: mat.$green-palette,
+  ),
+  typography: (
+    brand-family: 'Roboto',
+    plain-family: 'Roboto',
+  ),
+));
+
+$light-green-theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$green-palette,
+  ),
+  typography: (
+    brand-family: 'Roboto',
+    plain-family: 'Roboto',
+  ),
+));
+
+html.theme-dark {
+  @include mat.all-component-themes($dark-green-theme);
+  background-color: #121212;
+  color: rgba(255, 255, 255, 0.87);
+  --surface-sidebar: #1a1a1a;
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-faint: rgba(255, 255, 255, 0.06);
+  --text-primary: rgba(255, 255, 255, 0.87);
+  --text-secondary: rgba(255, 255, 255, 0.6);
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --text-disabled: rgba(255, 255, 255, 0.38);
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --hover-overlay: rgba(255, 255, 255, 0.06);
+  --thumbnail-bg: #1a1a1a;
+  --chip-text: #fff;
+  --chip-bg: rgba(255, 255, 255, 0.15);
+  --chip-icon: rgba(255, 255, 255, 0.7);
+  --input-text: #fff;
+  --input-placeholder: rgba(255, 255, 255, 0.4);
+  --accent-color: #2e7d32;
+
+  // Override Material primary-colour components to follow --accent-color.
+  // These rules share the same specificity as the @include above and appear
+  // later in the cascade, so they always win.
+  .mat-mdc-raised-button.mat-primary {
+    --mdc-protected-button-container-color: var(--accent-color);
+    --mdc-protected-button-label-text-color: white;
+  }
+
+  // All uncolored text buttons use the accent colour. The .mat-primary rule
+  // repeats at higher specificity to beat the theme's .mat-primary override.
+  .mat-mdc-button {
+    --mdc-text-button-label-text-color: var(--accent-color);
+  }
+
+  .mat-mdc-button.mat-primary {
+    --mdc-text-button-label-text-color: var(--accent-color);
+  }
+
+  .mat-mdc-outlined-button {
+    --mdc-outlined-button-label-text-color: var(--accent-color);
+  }
+
+  mat-progress-bar {
+    --mdc-linear-progress-active-indicator-color: var(--accent-color);
+  }
+
+  mat-spinner, mat-progress-spinner {
+    --mdc-circular-progress-active-indicator-color: var(--accent-color);
+  }
+
+  // Toolbar buttons live on the accent-colour background → use white for text,
+  // state-layer, and ripple so interactions stay visible.
+  .app-toolbar .mat-mdc-button {
+    --mdc-text-button-label-text-color: white;
+    --mat-text-button-state-layer-color: white;
+    --mat-text-button-ripple-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .app-toolbar .mat-mdc-icon-button {
+    --mat-icon-button-state-layer-color: white;
+    --mat-icon-button-ripple-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .folder-tree {
+    border-right: 1px solid var(--border-subtle);
+    background-color: var(--surface-sidebar);
+  }
+
+  .status-bar {
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    background: var(--surface-sidebar);
+  }
+
+  .thumbnail-card img {
+    background: var(--thumbnail-bg);
+  }
+}
+
+html.theme-light {
+  @include mat.all-component-themes($light-green-theme);
+  background-color: #fafafa;
+  color: rgba(0, 0, 0, 0.87);
+  --surface-sidebar: #f5f5f5;
+  --border-subtle: rgba(0, 0, 0, 0.12);
+  --border-faint: rgba(0, 0, 0, 0.08);
+  --text-primary: rgba(0, 0, 0, 0.87);
+  --text-secondary: rgba(0, 0, 0, 0.6);
+  --text-muted: rgba(0, 0, 0, 0.54);
+  --text-disabled: rgba(0, 0, 0, 0.38);
+  --hover-bg: rgba(0, 0, 0, 0.04);
+  --hover-overlay: rgba(0, 0, 0, 0.06);
+  --thumbnail-bg: #e8e8e8;
+  --chip-text: rgba(0, 0, 0, 0.87);
+  --chip-bg: rgba(0, 0, 0, 0.08);
+  --chip-icon: rgba(0, 0, 0, 0.6);
+  --input-text: rgba(0, 0, 0, 0.87);
+  --input-placeholder: rgba(0, 0, 0, 0.4);
+  --accent-color: #2e7d32;
+
+  // Mirror the same overrides for the light theme.
+  .mat-mdc-raised-button.mat-primary {
+    --mdc-protected-button-container-color: var(--accent-color);
+    --mdc-protected-button-label-text-color: white;
+  }
+
+  .mat-mdc-button {
+    --mdc-text-button-label-text-color: var(--accent-color);
+  }
+
+  .mat-mdc-button.mat-primary {
+    --mdc-text-button-label-text-color: var(--accent-color);
+  }
+
+  .mat-mdc-outlined-button {
+    --mdc-outlined-button-label-text-color: var(--accent-color);
+  }
+
+  mat-progress-bar {
+    --mdc-linear-progress-active-indicator-color: var(--accent-color);
+  }
+
+  mat-spinner, mat-progress-spinner {
+    --mdc-circular-progress-active-indicator-color: var(--accent-color);
+  }
+
+  .app-toolbar .mat-mdc-button {
+    --mdc-text-button-label-text-color: white;
+    --mat-text-button-state-layer-color: white;
+    --mat-text-button-ripple-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .app-toolbar .mat-mdc-icon-button {
+    --mat-icon-button-state-layer-color: white;
+    --mat-icon-button-ripple-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .folder-tree {
+    border-right: 1px solid var(--border-subtle);
+    background-color: var(--surface-sidebar);
+  }
+
+  .status-bar {
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    background: var(--surface-sidebar);
+  }
+
+  .thumbnail-card img {
+    background: var(--thumbnail-bg);
+  }
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.full-height {
+  height: 100%;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.gap-8 {
+  gap: 8px;
+}
+
+.gap-16 {
+  gap: 16px;
+}
+
+.p-16 {
+  padding: 16px;
+}
+
+.mat-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.thumbnail-card {
+  cursor: pointer;
+  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+  &:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+
+  &.selected {
+    outline: 3px solid var(--accent-color);
+  }
+
+  img {
+    width: 100%;
+    height: 150px;
+    object-fit: contain;
+  }
+}
+
+/* Folder navigation */
+.folder-tree {
+  width: 280px;
+  min-width: 280px;
+  overflow-y: auto;
+}
+
+/* Status bar */
+.status-bar {
+  height: 32px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+}
+
+/* Viewer */
+.image-viewer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  overflow: hidden;
+
+  img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.2s;
+  }
+}
+
+@media (max-width: 767px) {
+  .thumbnail-card img {
+    height: 110px;
+  }
+
+  .gallery-toolbar .current-folder {
+    max-width: 120px;
+  }
+}

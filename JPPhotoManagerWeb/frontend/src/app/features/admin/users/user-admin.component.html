@@ -1,0 +1,75 @@
+<div class="admin-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>User Administration</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      @if (errorMessage) {
+        <p class="error-message">{{ errorMessage }}</p>
+      }
+
+      <div class="toolbar">
+        <button mat-raised-button color="primary" (click)="showAddForm = !showAddForm">
+          <mat-icon>person_add</mat-icon> Add User
+        </button>
+      </div>
+
+      @if (showAddForm) {
+        <form [formGroup]="addForm" (ngSubmit)="submitAdd()" class="add-form">
+          <mat-form-field appearance="outline">
+            <mat-label>Username</mat-label>
+            <input matInput formControlName="username" autocomplete="off" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Password</mat-label>
+            <input matInput type="password" formControlName="password" autocomplete="new-password" />
+          </mat-form-field>
+          <button mat-raised-button color="primary" type="submit">Create</button>
+          <button mat-button type="button" (click)="showAddForm = false">Cancel</button>
+        </form>
+      }
+
+      <table mat-table [dataSource]="users" class="users-table">
+        <ng-container matColumnDef="username">
+          <th mat-header-cell *matHeaderCellDef>Username</th>
+          <td mat-cell *matCellDef="let user">{{ user.username }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="createdAt">
+          <th mat-header-cell *matHeaderCellDef>Created</th>
+          <td mat-cell *matCellDef="let user">{{ user.createdAt | date:'medium' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let user">
+            @if (editingPasswordId === user.id) {
+              <form [formGroup]="passwordForm" (ngSubmit)="submitPasswordChange(user.id)" class="inline-form">
+                <mat-form-field appearance="outline" class="password-field">
+                  <mat-label>New Password</mat-label>
+                  <input matInput type="password" formControlName="password" autocomplete="new-password" />
+                </mat-form-field>
+                <button mat-raised-button color="primary" type="submit" size="small">Save</button>
+                <button mat-button type="button" (click)="editingPasswordId = null">Cancel</button>
+              </form>
+            } @else {
+              <button mat-icon-button title="Change password" (click)="startEditPassword(user.id)">
+                <mat-icon>lock_reset</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" title="Delete user" (click)="deleteUser(user.id)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      @if (users.length === 0) {
+        <p class="no-users">No users found.</p>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

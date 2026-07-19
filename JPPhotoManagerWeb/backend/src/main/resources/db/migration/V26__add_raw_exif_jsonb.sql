@@ -1,0 +1,1 @@
+ALTER TABLE asset_exif ADD COLUMN raw_exif JSONB NULL;

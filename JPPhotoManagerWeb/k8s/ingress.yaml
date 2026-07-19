@@ -1,0 +1,34 @@
+# Ingress — exposes the frontend (and, through its nginx reverse proxy, the
+# backend's /api and SSE endpoints) the way docker-compose exposes it on
+# host port 80. Requires an ingress controller (e.g. ingress-nginx) already
+# installed in the cluster.
+#
+# If your cluster has no ingress controller (a bare kind/minikube cluster
+# without one enabled), skip this file and use `kubectl port-forward` or
+# change the `frontend` Service in frontend.yaml to `type: NodePort` /
+# `type: LoadBalancer` instead.
+#
+# The proxy-read-timeout annotation matters: SSE streams (catalog/sync/
+# convert progress, upload progress) are long-lived HTTP responses — the
+# default ingress-nginx timeout (60s) would cut them off mid-stream.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: photomanager
+  namespace: photomanager
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: photomanager.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

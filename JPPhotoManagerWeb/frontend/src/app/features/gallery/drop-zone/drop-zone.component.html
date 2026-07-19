@@ -1,0 +1,38 @@
+@if (isDragging) {
+  <div class="drop-overlay">Drop images here</div>
+}
+
+<button mat-icon-button (click)="triggerFileInput()" title="Upload images">
+  <mat-icon>upload</mat-icon>
+</button>
+
+<input
+  #fileInput
+  type="file"
+  accept="image/*"
+  multiple
+  style="display: none"
+  (change)="onFileInputChange($event)"
+/>
+
+@if (uploadQueue.length > 0) {
+  <div class="upload-queue">
+    @for (item of uploadQueue; track item.file.name) {
+      <div class="upload-item">
+        <span class="upload-filename">{{ item.file.name }}</span>
+        @if (item.status === 'uploading' || item.status === 'pending') {
+          <mat-progress-bar mode="determinate" [value]="item.progress" />
+        }
+        @if (item.status === 'processing') {
+          <span class="status-processing">Processing…</span>
+        }
+        @if (item.status === 'done') {
+          <mat-icon class="status-icon status-done">check_circle</mat-icon>
+        }
+        @if (item.status === 'error') {
+          <mat-icon class="status-icon status-error">error</mat-icon>
+        }
+      </div>
+    }
+  </div>
+}

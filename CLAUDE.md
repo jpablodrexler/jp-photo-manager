@@ -89,3 +89,7 @@ Test data files (images, folders) live under `JPPhotoManager.Tests/TestFiles/`.
 - **Logging:** log4net throughout; use the existing logger pattern, not `Console.WriteLine`.
 - **DI registration:** New services should be registered as Singletons in `App.xaml.cs ConfigureServices()` following the existing pattern.
 - **MVVM:** All UI logic belongs in ViewModels; code-behind (`.xaml.cs`) is only for wiring or WPF-specific concerns.
+
+## Web Application
+
+The web rewrite under `JPPhotoManagerWeb/` is a separate sub-project with its own `JPPhotoManagerWeb/CLAUDE.md` — see that file for its commands, architecture, and conventions.

@@ -1,0 +1,63 @@
+<h2 mat-dialog-title>Tag {{ data.assetIds.length }} asset(s)</h2>
+
+<mat-dialog-content>
+  <p class="bulk-tag-desc">Tags to <strong>add</strong>:</p>
+  <mat-chip-grid #addChipGrid aria-label="Tags to add">
+    @for (tag of tagsToAdd; track tag) {
+      <mat-chip-row (removed)="removeTagToAdd(tag)">
+        {{ tag }}
+        <button matChipRemove [attr.aria-label]="'Remove ' + tag">
+          <mat-icon>cancel</mat-icon>
+        </button>
+      </mat-chip-row>
+    }
+    <input
+      placeholder="Add tag…"
+      [formControl]="addInputControl"
+      [matChipInputFor]="addChipGrid"
+      [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+      [matAutocomplete]="addAuto"
+      (matChipInputTokenEnd)="addTagToAdd($event)"
+    />
+  </mat-chip-grid>
+  <mat-autocomplete #addAuto="matAutocomplete" (optionSelected)="addTagToAddFromAutocomplete($event)">
+    @for (suggestion of addSuggestions; track suggestion) {
+      <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
+    }
+  </mat-autocomplete>
+
+  <p class="bulk-tag-desc" style="margin-top: 16px;">Tags to <strong>remove</strong>:</p>
+  <mat-chip-grid #removeChipGrid aria-label="Tags to remove">
+    @for (tag of tagsToRemove; track tag) {
+      <mat-chip-row (removed)="removeTagToRemove(tag)">
+        {{ tag }}
+        <button matChipRemove [attr.aria-label]="'Remove ' + tag">
+          <mat-icon>cancel</mat-icon>
+        </button>
+      </mat-chip-row>
+    }
+    <input
+      placeholder="Remove tag…"
+      [formControl]="removeInputControl"
+      [matChipInputFor]="removeChipGrid"
+      [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+      [matAutocomplete]="removeAuto"
+      (matChipInputTokenEnd)="addTagToRemove($event)"
+    />
+  </mat-chip-grid>
+  <mat-autocomplete #removeAuto="matAutocomplete" (optionSelected)="addTagToRemoveFromAutocomplete($event)">
+    @for (suggestion of removeSuggestions; track suggestion) {
+      <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
+    }
+  </mat-autocomplete>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  @if (isSaving) {
+    <mat-spinner diameter="24" style="margin-right: 12px;"></mat-spinner>
+  }
+  <button mat-button (click)="cancel()" [disabled]="isSaving">Cancel</button>
+  <button mat-flat-button color="primary" (click)="confirm()" [disabled]="isSaving">
+    Apply
+  </button>
+</mat-dialog-actions>

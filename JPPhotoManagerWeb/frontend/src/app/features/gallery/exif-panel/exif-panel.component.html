@@ -1,0 +1,130 @@
+<div class="exif-panel">
+  <div class="exif-header">
+    <span class="exif-title">EXIF Info</span>
+    <button mat-icon-button class="exif-close" (click)="close()" aria-label="Close">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Tag chip editor -->
+  <div class="exif-tags-section">
+    <div class="exif-section-label">Tags</div>
+    <mat-chip-grid #chipGrid aria-label="Asset tags" class="exif-chip-grid">
+      @for (tag of asset.tags; track tag) {
+        <mat-chip-row (removed)="removeTag(tag)">
+          {{ tag }}
+          <button matChipRemove [attr.aria-label]="'Remove tag ' + tag">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </mat-chip-row>
+      }
+      <input
+        placeholder="Add tag…"
+        [formControl]="tagInputControl"
+        [matChipInputFor]="chipGrid"
+        [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+        [matAutocomplete]="auto"
+        (matChipInputTokenEnd)="addTag($event)"
+        class="exif-tag-input"
+      />
+    </mat-chip-grid>
+    <mat-autocomplete #auto="matAutocomplete" (optionSelected)="addTagFromAutocomplete($event)">
+      @for (suggestion of tagSuggestions; track suggestion) {
+        <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
+      }
+    </mat-autocomplete>
+  </div>
+
+  @if (loading) {
+    <div class="exif-loading">
+      <mat-spinner diameter="24"></mat-spinner>
+    </div>
+  } @else if (exif) {
+    <div class="exif-grid">
+      @if (exif.cameraMake || exif.cameraModel) {
+        <div class="exif-row">
+          <mat-icon class="exif-icon">camera_alt</mat-icon>
+          <span class="exif-label">Camera</span>
+          <span class="exif-value">{{ exif.cameraMake }} {{ exif.cameraModel }}</span>
+        </div>
+      }
+      @if (exif.lensModel) {
+        <div class="exif-row">
+          <mat-icon class="exif-icon">lens</mat-icon>
+          <span class="exif-label">Lens</span>
+          <span class="exif-value">{{ exif.lensModel }}</span>
+        </div>
+      }
+      @if (exif.exposureTime) {
+        <div class="exif-row">
+          <mat-icon class="exif-icon">shutter_speed</mat-icon>
+          <span class="exif-label">Exposure</span>
+          <span class="exif-value">{{ exif.exposureTime }}</span>
+        </div>
+      }
+      @if (exif.fNumber !== null) {
+        <div class="exif-row">
+          <mat-icon class="exif-icon">camera</mat-icon>
+          <span class="exif-label">Aperture</span>
+          <span class="exif-value">f/{{ exif.fNumber }}</span>
+        </div>
+      }
+      @if (exif.isoSpeed !== null) {
+        <div class="exif-row">
+          <mat-icon class="exif-icon">iso</mat-icon>
+          <span class="exif-label">ISO</span>
+          <span class="exif-value">{{ exif.isoSpeed }}</span>
+        </div>
+      }
+      @if (exif.focalLength !== null) {
+        <div class="exif-row">
+          <mat-icon class="exif-icon">center_focus_strong</mat-icon>
+          <span class="exif-label">Focal Length</span>
+          <span class="exif-value">{{ exif.focalLength }}mm</span>
+        </div>
+      }
+      @if (exif.dateTaken) {
+        <div class="exif-row">
+          <mat-icon class="exif-icon">event</mat-icon>
+          <span class="exif-label">Date Taken</span>
+          <span class="exif-value">{{ exif.dateTaken | date:'medium' }}</span>
+        </div>
+      }
+      @if (exif.widthPixels !== null && exif.heightPixels !== null) {
+        <div class="exif-row">
+          <mat-icon class="exif-icon">photo_size_select_large</mat-icon>
+          <span class="exif-label">Dimensions</span>
+          <span class="exif-value">{{ exif.widthPixels }} × {{ exif.heightPixels }}</span>
+        </div>
+      }
+      @if (exif.gpsLatitude !== null && exif.gpsLongitude !== null) {
+        <div class="exif-row">
+          <mat-icon class="exif-icon">location_on</mat-icon>
+          <span class="exif-label">GPS</span>
+          <span class="exif-value">{{ exif.gpsLatitude | number:'1.4-4' }}, {{ exif.gpsLongitude | number:'1.4-4' }}</span>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="exif-empty">No EXIF data available</div>
+  }
+
+  @if (exif?.rawExif) {
+    <mat-expansion-panel class="exif-raw-panel">
+      <mat-expansion-panel-header>
+        <mat-panel-title>All EXIF data</mat-panel-title>
+      </mat-expansion-panel-header>
+      <mat-form-field class="exif-filter-field" appearance="outline">
+        <input matInput placeholder="Search fields..." [(ngModel)]="filterText" />
+      </mat-form-field>
+      <div class="exif-raw-list">
+        @for (entry of filteredRawExif(); track entry.key) {
+          <div class="exif-raw-row">
+            <span class="exif-raw-key">{{ entry.key }}</span>
+            <span class="exif-raw-value">{{ entry.value }}</span>
+          </div>
+        }
+      </div>
+    </mat-expansion-panel>
+  }
+</div>

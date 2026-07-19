@@ -1,0 +1,78 @@
+# MongoDB — equivalent of the `mongo` service in ../docker-compose.yml.
+# Stores the asset_exif and asset_audit_log collections (see
+# MongoIndexInitializer, which ensures the required indexes at backend
+# startup). Headless Service + single-replica StatefulSet with a PVC in
+# place of the `mongodata` named Docker volume.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  namespace: photomanager
+  labels:
+    app: mongo
+spec:
+  clusterIP: None
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo
+  namespace: photomanager
+spec:
+  serviceName: mongo
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:8
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongodata
+              mountPath: /data/db
+          readinessProbe:
+            exec:
+              # mongosh's own Node.js startup is slow to spawn — under CPU
+              # contention (e.g. a small Docker Desktop VM sharing 4 CPUs
+              # across the whole stack while the backend's initial catalog
+              # run is hashing/EXIF-extracting/thumbnailing real photos)
+              # even a 15s timeout was observed failing, so this needs a
+              # generous timeoutSeconds. A flapping readiness here doesn't
+              # restart the pod, but it does drop mongo out of its headless
+              # Service's endpoints while NotReady, which can surface as
+              # transient errors on any backend request that touches Mongo.
+              command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 25
+          # Liveness uses a cheap TCP check rather than mongosh: forking a
+          # full Node.js process to answer "is Mongo alive" is itself heavy
+          # enough, under contention, to time out and trigger the very
+          # restart it's supposed to prevent. A closed/refused socket is a
+          # reliable enough signal that the process has actually died.
+          livenessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 20
+            periodSeconds: 20
+            timeoutSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: mongodata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi

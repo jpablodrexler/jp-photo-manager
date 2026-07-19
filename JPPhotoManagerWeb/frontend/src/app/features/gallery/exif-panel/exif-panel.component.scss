@@ -1,0 +1,200 @@
+:host {
+  width: 320px;
+  flex-shrink: 0;
+  flex-direction: column;
+  height: 100%;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.exif-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: #fff;
+  font-size: 13px;
+}
+
+.exif-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.exif-title {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.exif-close {
+  color: rgba(255, 255, 255, 0.7);
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+}
+
+.exif-loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.exif-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.exif-row {
+  display: grid;
+  grid-template-columns: 20px 90px 1fr;
+  align-items: center;
+  gap: 6px;
+}
+
+.exif-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.exif-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.exif-value {
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exif-empty {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  text-align: center;
+  padding: 24px 12px;
+}
+
+.exif-tags-section {
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.exif-section-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.exif-chip-grid {
+  width: 100%;
+  --mdc-chip-label-text-color: #fff;
+  --mdc-chip-container-color: rgba(255, 255, 255, 0.15);
+  --mdc-chip-with-icon-icon-color: rgba(255, 255, 255, 0.7);
+}
+
+.exif-tag-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 13px;
+  min-width: 80px;
+  padding: 4px 0;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+}
+
+.exif-raw-panel {
+  margin: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+
+  ::ng-deep .mat-expansion-panel-header-title {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  ::ng-deep .mat-expansion-indicator::after {
+    color: rgba(255, 255, 255, 0.6);
+  }
+}
+
+.exif-filter-field {
+  width: 100%;
+  font-size: 12px;
+
+  ::ng-deep .mat-mdc-text-field-wrapper {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  ::ng-deep input {
+    color: #fff;
+  }
+
+  ::ng-deep .mat-mdc-form-field-label,
+  ::ng-deep .mdc-floating-label {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  ::ng-deep .mdc-notched-outline__leading,
+  ::ng-deep .mdc-notched-outline__notch,
+  ::ng-deep .mdc-notched-outline__trailing {
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.exif-raw-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.exif-raw-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  font-size: 11px;
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.exif-raw-key {
+  color: rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exif-raw-value {
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  :host {
+    width: 100%;
+    height: auto;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+  }
+}

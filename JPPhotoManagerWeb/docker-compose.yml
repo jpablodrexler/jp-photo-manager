@@ -1,0 +1,140 @@
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-photomanager}
+      POSTGRES_USER: ${POSTGRES_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PGDATA: /var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USERNAME:-postgres} -d ${POSTGRES_DB:-photomanager}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: apache/kafka:3.9.0
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,EXTERNAL://:9094,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+
+  backend:
+    build:
+      context: ./backend
+    # Explicit name (matches k8s/backend.yaml) so it doesn't depend on the
+    # directory docker compose is invoked from — compose otherwise derives
+    # it from the project folder name (e.g. jpphotomanagerweb-backend).
+    image: photomanager-backend:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+      redis:
+        condition: service_started
+      mongo:
+        condition: service_started
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-photomanager}
+      POSTGRES_USERNAME: ${POSTGRES_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      CATALOG_DIR: /catalog;/catalog2;/catalog3
+      THUMBNAILS_DIR: /thumbnails
+      JWT_SECRET: "${JWT_SECRET:?Set JWT_SECRET in .env - run: openssl rand -base64 32}"
+      KAFKA_BOOTSTRAP: kafka:9092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MONGO_URI: mongodb://mongo:27017/photomanager
+    ports:
+      - "8080:8080"
+    volumes:
+      - type: bind
+        source: ${HOST_IMAGE_DIR:?Set HOST_IMAGE_DIR in .env (e.g. HOST_IMAGE_DIR=/home/user/Pictures)}
+        target: /catalog
+      - type: bind
+        source: ${HOST_IMAGE_DIR_2:-/tmp/catalog2-unused}
+        target: /catalog2
+      - type: bind
+        source: ${HOST_IMAGE_DIR_3:-/tmp/catalog3-unused}
+        target: /catalog3
+      - thumbnails:/thumbnails
+
+  frontend:
+    build:
+      context: ./frontend
+    # Explicit name (matches k8s/frontend.yaml) — see the backend service's
+    # comment above for why.
+    image: photomanager-frontend:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - backend
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-admin}"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+
+volumes:
+  pgdata:
+  thumbnails:
+  grafana_data:
+  mongodata:

@@ -1,0 +1,113 @@
+package com.jpablodrexler.photomanager.infrastructure.service;
+
+import com.jpablodrexler.photomanager.domain.model.ExifMetadata;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+class StorageServiceImplExifTest {
+
+    StorageServiceAdapter sut;
+
+    @TempDir
+    Path tempDir;
+
+    @BeforeEach
+    void setUp() {
+        sut = new StorageServiceAdapter(new SimpleMeterRegistry());
+    }
+
+    @Test
+    void getExifMetadata_jpegWithExif_returnsCameraMakeAndModel() throws IOException {
+        Path fixture = copyFixture("fixtures/test-with-exif.jpg", "test-with-exif.jpg");
+
+        ExifMetadata result = sut.getExifMetadata(fixture.toString());
+
+        assertThat(result).isNotNull();
+        assertThat(result.cameraMake()).isEqualTo("TestCamera");
+        assertThat(result.cameraModel()).isEqualTo("ModelX");
+    }
+
+    @Test
+    void getExifMetadata_pngFile_returnsAllNullFields() throws IOException {
+        Path pngFile = createPngFile();
+
+        ExifMetadata result = sut.getExifMetadata(pngFile.toString());
+
+        assertThat(result).isNotNull();
+        assertThat(result.cameraMake()).isNull();
+        assertThat(result.cameraModel()).isNull();
+        assertThat(result.dateTaken()).isNull();
+        assertThat(result.fNumber()).isNull();
+        assertThat(result.isoSpeed()).isNull();
+        assertThat(result.focalLength()).isNull();
+        assertThat(result.gpsLatitude()).isNull();
+        assertThat(result.gpsLongitude()).isNull();
+    }
+
+    @Test
+    void getExifMetadata_nonExistentFile_returnsAllNullRecord() {
+        ExifMetadata result = sut.getExifMetadata(tempDir.resolve("nonexistent.jpg").toString());
+
+        assertThat(result).isNotNull();
+        assertThat(result.cameraMake()).isNull();
+        assertThat(result.cameraModel()).isNull();
+    }
+
+    private Path copyFixture(String resourcePath, String targetName) throws IOException {
+        try (InputStream in = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
+            assertThat(in).as("Fixture resource not found: " + resourcePath).isNotNull();
+            Path target = tempDir.resolve(targetName);
+            Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+            return target;
+        }
+    }
+
+    @Test
+    void getExifMetadata_jpegWithExif_populatesRawExif() throws IOException {
+        Path fixture = copyFixture("fixtures/test-with-exif.jpg", "test-with-exif.jpg");
+
+        ExifMetadata result = sut.getExifMetadata(fixture.toString());
+
+        assertThat(result.rawExif()).isNotNull();
+        assertThat(result.rawExif()).isNotEmpty();
+    }
+
+    @Test
+    void getExifMetadata_jpegWithExif_rawExifValuesDoNotExceed1000Chars() throws IOException {
+        Path fixture = copyFixture("fixtures/test-with-exif.jpg", "test-with-exif.jpg");
+
+        ExifMetadata result = sut.getExifMetadata(fixture.toString());
+
+        assertThat(result.rawExif()).isNotNull();
+        result.rawExif().values().forEach(value ->
+                assertThat(value.length()).as("rawExif value exceeds 1000 chars").isLessThanOrEqualTo(1000));
+    }
+
+    @Test
+    void getExifMetadata_pngFile_rawExifIsNull() throws IOException {
+        Path pngFile = createPngFile();
+
+        ExifMetadata result = sut.getExifMetadata(pngFile.toString());
+
+        assertThat(result.rawExif()).isNull();
+    }
+
+    private Path createPngFile() throws IOException {
+        BufferedImage img = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
+        Path pngPath = tempDir.resolve("test.png");
+        ImageIO.write(img, "PNG", pngPath.toFile());
+        return pngPath;
+    }
+}
