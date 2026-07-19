@@ -201,7 +201,7 @@ erDiagram
         timestamp deleted_at
     }
     asset_exif {
-        bigint asset_id PK_FK
+        bigint asset_id PK, FK
         text camera_make
         text camera_model
         text lens_model
@@ -277,7 +277,7 @@ erDiagram
         bigint tag_id FK
     }
     user_preferences {
-        uuid user_id PK_FK
+        uuid user_id PK, FK
         varchar theme_mode
         timestamptz updated_at
     }
@@ -752,35 +752,37 @@ Long-running operations (catalog, sync, convert) use the browser's native `Event
 
 **SSE (Server-Sent Events)** is a web standard where the server pushes a stream of text events to the client over a single long-lived HTTP connection. It is one-way (server → client only), HTTP-based — the client makes a regular `GET` request and the response stays open while the server writes `data: ...` lines as events occur — and browsers handle reconnection automatically if the connection drops.
 
-**Kafka-mediated SSE pipeline:** progress events are not sent directly from the use case to the HTTP response. Instead, the catalog/sync/convert code publishes messages to a Kafka topic, and a dedicated `KafkaProgressListener` (consumer group `sse-broadcaster`) looks up the registered `SseEmitter` for the run and forwards each message to the client. This decouples the long-running work from the HTTP layer and makes the pipeline observable by any downstream consumer.
+**Kafka-mediated SSE pipeline:** progress events are not sent directly from the use case to the HTTP response. Instead, the catalog/sync/convert code publishes messages to a Kafka topic, and `KafkaProgressListener` looks up the registered `SseEmitter` for the run and forwards each message to the client. Unlike the audit-log/cache-invalidation consumers (which use a fixed, shared consumer group so exactly one backend instance processes each event), `KafkaProgressListener` relies on the default consumer group `spring.kafka.consumer.group-id: sse-broadcaster-${HOSTNAME}` — unique **per backend instance** — so that whichever replica is actually holding the client's SSE connection always gets its own copy of every progress message, regardless of which instance's `JobLauncher` is running the batch job. This decouples the long-running work from the HTTP layer and from any particular instance, and makes the pipeline observable by any downstream consumer.
+
+For the catalog case specifically, the actual scanning/persisting happens inside a Spring Batch job with no `catalog_run_state`-style lock or heartbeat (see [Catalog Process](#catalog-process) for the full picture — that custom table was dropped years ago in favor of Spring Batch's own job repository):
 
 ```mermaid
 sequenceDiagram
     participant Angular
     participant Controller as Spring Boot Controller
     participant Registry as KafkaProgressRegistry
-    participant UseCase as Catalog Use Case / Spring Batch
+    participant UseCase as CatalogAssetsUseCaseImpl
+    participant Batch as Spring Batch (partitioned job)
     participant Kafka as Apache Kafka
     participant Listener as KafkaProgressListener
     participant DB as PostgreSQL
 
     Angular->>Controller: GET /api/assets/catalog (EventSource)
     Controller->>Registry: registerEmitter(runId, SseEmitter)
-    Controller->>UseCase: execute(runId) [async]
+    Controller->>UseCase: execute(runId, userId)
     UseCase->>Registry: registerCompletion(runId, CompletableFuture)
-    UseCase->>DB: Acquire catalog_run_state lock
+    UseCase->>Batch: JobLauncher.run(catalogJob) [async, returns immediately]
 
-    loop Per file batch (catalog-batch-size assets)
-        UseCase->>DB: Upsert Asset records + heartbeat
-        UseCase->>Kafka: publish CatalogProgressMessage to job.catalog.progress
+    loop Per asset saved, across every folder partition running in parallel
+        Batch->>DB: Save Asset/AssetExif/AssetAudio
+        Batch->>Kafka: publish CatalogProgressMessage to job.catalog.progress
         Kafka->>Listener: onCatalogProgress(message)
         Listener->>Registry: getEmitter(runId)
         Listener-->>Angular: SseEmitter.send("catalog" event)
         Angular-->>Angular: Update progress bar
     end
 
-    UseCase->>DB: Release catalog_run_state lock
-    UseCase->>Kafka: publish CatalogProgressMessage{done=true}
+    Batch->>Kafka: publish CatalogProgressMessage{done=true} (once every partition has finished)
     Kafka->>Listener: onCatalogProgress(done message)
     Listener->>Registry: complete(runId) → CompletableFuture.complete()
     Listener-->>Angular: SseEmitter.complete() — stream closed
@@ -1705,7 +1707,7 @@ sequenceDiagram
     Angular->>API: POST /api/auth/login {username, password}
     API->>DB: Look up user, verify BCrypt hash
     DB-->>API: User record
-    API-->>Angular: Set-Cookie: jwt=<token>; refreshToken=<token> (HttpOnly, SameSite=Strict) + {username, expiresAt}
+    API-->>Angular: Set-Cookie jwt=[token] and refreshToken=[token] (HttpOnly, SameSite=Strict) + {username, expiresAt}
     Angular->>API: GET /api/auth/me (cookie sent by browser)
     API-->>Angular: {username, role}
     Angular->>Angular: Store {username, expiresAt, role} in localStorage
@@ -1719,7 +1721,7 @@ sequenceDiagram
     API-->>Angular: 200 OK + data
 
     Angular->>API: POST /api/auth/logout
-    API-->>Angular: Set-Cookie: jwt=; refreshToken=; Max-Age=0 (clears both cookies)
+    API-->>Angular: Clears jwt and refreshToken cookies (Max-Age=0)
     Angular->>Angular: Clear localStorage + cancel refresh timer
     Angular-->>User: Redirect to /login
 ```
