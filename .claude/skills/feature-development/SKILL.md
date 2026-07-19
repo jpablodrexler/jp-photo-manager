@@ -9,11 +9,11 @@ description: >
   a live cluster deployment exists) or Docker Compose (if Docker is running),
   then archives the SDD change and marks the feature as implemented. Use
   when you want a fully automated feature development cycle with minimal
-  manual steps.
+  manual steps. TRIGGER when the user asks to develop a feature.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "1.1"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -31,7 +31,7 @@ Five phases executed by six dedicated subagents (3a and 3b run in parallel):
 
 | Phase                  | Subagent   | Skills / actions                                                                                                                                  |
 | ---------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 — Select & Propose   | Subagent 1 | `features-next` (confirm only) → `openspec-propose` (if artifacts missing)                                                                        |
+| 1 — Select & Propose   | Subagent 1 | `features-next` (confirm only) → create `feature/<change-name>` branch from `develop` → `openspec-propose` (if artifacts missing)                 |
 | 2 — Implement & Review | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `database-reviewer` + `security-reviewer` (conditional, findings fixed before done)          |
 | 3a — Backend tests     | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test` until passing                                                                                     |
 | 3b — Frontend tests    | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                                                    |
@@ -59,6 +59,27 @@ prompt (substitute `<input>` with the argument passed to this skill, if any):
 > `CHANGE_NAME: <change-name>` line. Capture that value and proceed to Step 2.
 > If the skill returns without a `CHANGE_NAME:` line, the user cancelled —
 > end your response with `CANCELLED` and stop.
+>
+> **Step 1.5 — Create the feature branch**
+> Before creating or modifying any file in the repository (including SDD
+> artifacts in Step 3 below), make sure work happens on a dedicated branch
+> cut from `develop`:
+>
+> 1. Run: `git status --porcelain`
+>    If this prints anything (uncommitted changes present), end your
+>    response with `PROPOSE_BLOCKED — uncommitted changes present, cannot
+>    create feature branch` and stop.
+> 2. Run: `git rev-parse --verify --quiet feature/<change-name>`
+>    - If it prints a commit hash, the branch already exists (resuming a
+>      prior run): run `git checkout feature/<change-name>` and continue on
+>      that branch.
+>    - If it fails (branch doesn't exist yet): run `git checkout develop`
+>      then `git checkout -b feature/<change-name> develop` to cut the new
+>      branch from `develop`.
+> 3. Run `git branch --show-current` and confirm the output is exactly
+>    `feature/<change-name>` before proceeding. If it is not, end your
+>    response with `PROPOSE_BLOCKED — could not switch to feature branch`
+>    and stop.
 >
 > **Step 2 — Check whether SDD artifacts exist**
 > Run:
@@ -577,11 +598,22 @@ After all phases complete, display:
   reviewing one change's files, not the whole app. Subagent 2 fixes
   findings itself and updates the resulting report's checkboxes directly
   (see Step 4 above).
+- **Work always happens on a `feature/<change-name>` branch cut from
+  `develop`.** Phase 1's Step 1.5 is the only place a branch is created or
+  switched — it creates (or resumes) `feature/<change-name>` from `develop`
+  before any file in the repository is created or modified, including the
+  SDD artifacts written by `openspec-propose`. Phases 2–5 must stay on that
+  branch; none of them may run `git checkout`, `git switch`, or create
+  another branch. If a subagent finds itself on a different branch, that is
+  a bug in the workflow — surface it to the user rather than silently
+  switching.
 - **No git commits at any point.** Neither this skill nor any subagent it
   spawns may run `git commit`, `git push`, or any other git write command
   at any point in the workflow. This applies to all phases, including after
   tests pass and during archiving. If a subagent or invoked skill attempts
-  to commit, block it and continue without committing.
+  to commit, block it and continue without committing. Branch creation
+  (`git checkout`, `git checkout -b`) in Phase 1's Step 1.5 is the sole
+  exception to this rule.
 - **No destructive Docker commands.** Do not run `docker compose down`,
   `docker rm`, `docker rmi`, or any command that stops or removes containers
   or images beyond what is strictly required to restart the application
