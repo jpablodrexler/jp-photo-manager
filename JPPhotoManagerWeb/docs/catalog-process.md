@@ -112,6 +112,17 @@ The catalog job's Postgres writes never depend on Kafka — hash/thumbnail/EXIF 
 
 All topics are declared as `NewTopic` beans in `config/KafkaTopicConfig.java`; Spring's auto-configured `KafkaAdmin` creates them against the broker once at application startup (the broker itself has `auto.create.topics.enable=false`, so nothing else will create them — see `k8s/kafka.yaml`'s `KAFKA_AUTO_CREATE_TOPICS_ENABLE`).
 
+## Frequency configuration
+
+The interval between automatic catalog runs is configured in `JPPhotoManagerWeb/backend/src/main/resources/application.yml`:
+
+```yaml
+photomanager:
+  catalog-cooldown-minutes: 2
+```
+
+It is consumed in `CatalogScheduler.java` (`infrastructure/service/CatalogScheduler.java:25-40`) via `@Value("${photomanager.catalog-cooldown-minutes:2}")`, which schedules `executeCatalogRun()` with a fixed delay of that many minutes, starting on `ApplicationReadyEvent`. It can be overridden with the `photomanager.catalog-cooldown-minutes` property (default 2 minutes if unset).
+
 ## Configuration
 
 | Property | Default | Description |
