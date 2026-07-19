@@ -1416,6 +1416,12 @@ kubectl delete pvc --all -n photomanager
 
 **`kafka-0` is `CrashLoopBackOff` with `UnknownHostException: kafka` in the logs.** Already fixed in `k8s/kafka.yaml` (`publishNotReadyAddresses: true` on the headless Service — see [Architecture differences](#architecture-differences-from-docker-compose)), but if you ever see this again after editing the manifest yourself, that flag is the first thing to check.
 
+**Docker Desktop's Kubernetes tab shows no Deployment for Kafka (or PostgreSQL, or MongoDB).** Not a bug — Docker Desktop's "Deployments" view filters strictly by the `Deployment` kind, and `db`, `kafka`, and `mongo` are all `StatefulSet`s instead (see [Architecture differences](#architecture-differences-from-docker-compose) for why: they need a stable network identity and a PVC that survives pod rescheduling). Only `backend`, `frontend`, `prometheus`, and `grafana` are actual Deployments and will show up there. To see Kafka's pod, check Docker Desktop's **Pods** view (or a **StatefulSets** view, if present) for `kafka-0`, or from the command line:
+```bash
+kubectl get statefulset,pods -n photomanager -l app=kafka
+```
+`1/1 Running` there means it's healthy — it's just invisible from the Deployments filter by design.
+
 **Backend, mongo, or redis pods restart repeatedly on a fresh `kubectl apply -k .`, or the browser shows `504 Gateway Timeout` on login.** On a resource-constrained cluster (e.g. Docker Desktop's default 4-CPU / ~4 GB VM) running the full 8-service stack at once — plus the backend's first catalog scan of your real photo library — genuinely starves the CPU. We measured Spring Boot startup that normally takes ~15 seconds taking 5+ minutes under this contention. The manifests already budget for this (see the probe-tuning bullet in [Architecture differences](#architecture-differences-from-docker-compose)), but if it's still not enough for your machine:
 - Check actual resource usage: `docker stats` (per-container) and `docker info --format '{{.NCPU}} CPUs, {{.MemTotal}} bytes RAM'` (total VM capacity).
 - Give Docker Desktop more CPU/RAM: Settings → Resources.
@@ -1528,52 +1534,68 @@ Each workflow has separate jobs for the backend (Java 21 + Maven) and frontend (
 
 ## Catalog Process
 
-The catalog process scans all configured root folders (`photomanager.root-catalog-folders`), generates thumbnails, computes SHA-256 hashes, and persists asset metadata to the database.
+The catalog process scans all configured root folders (`photomanager.root-catalog-folders`), generates thumbnails, computes SHA-256 hashes and EXIF/audio metadata, and persists asset metadata to the database. It is implemented as a **Spring Batch job** (`infrastructure/batch/`), replacing an earlier custom `@Async` loop + hand-rolled distributed-lock design (`catalog_run_state` table, heartbeat, stale-run detection) — that table was dropped by `V16__spring_batch_schema.sql`; if you see it mentioned elsewhere (older docs, comments), it no longer exists. See `openspec/changes/archive/2026-05-24-catalog-spring-batch/` for the migration history.
 
-### Lifecycle
+### Lifecycle / triggers
 
-The backend owns the catalog lifecycle entirely. The gallery frontend no longer triggers catalog runs on page load.
+The backend owns the catalog lifecycle entirely — the gallery frontend does not trigger catalog runs on page load.
 
-**Startup:** `CatalogScheduler` listens for `ApplicationReadyEvent` and immediately submits the first catalog run to a dedicated single-thread `ThreadPoolTaskScheduler`.
+- **Startup + periodic repetition:** `CatalogScheduler` listens for `ApplicationReadyEvent` and immediately submits the first run to a dedicated single-thread `ThreadPoolTaskScheduler` (`AppConfig.catalogTaskScheduler`, pool size 1). After each run's `CompletableFuture` resolves, it waits `photomanager.catalog-cooldown-minutes` (default 2) before the next (`scheduleWithFixedDelay` — delay measured from the **end** of the previous run, so the scheduler never fires a second run on top of itself). This path authenticates as `system-scheduler` (`ROLE_ADMIN`) and passes `userId=null` — there's no real user to attribute a scheduled run to (the `CATALOG_RUN` audit entry it eventually produces, see below, simply has a `null` `userId`).
+- **Manual trigger:** `GET /api/assets/catalog` (admin-only, SSE) calls `CatalogAssetsUseCase.execute(runId, userId)` with a fresh `runId = System.currentTimeMillis()` and the caller's resolved user id, then registers an `SseEmitter` keyed by that `runId` in `KafkaProgressRegistry` so the HTTP caller gets a live stream of their own run.
+- **Observe-only:** `GET /api/assets/catalog/observe` doesn't start a run; it just registers the caller's `SseEmitter` as a "catalog observer" (`KafkaProgressRegistry.addCatalogObserver`) that receives a broadcast of every catalog/catalog-done event from whichever run is currently in progress (scheduled or manual) — used by the gallery to show live progress without having triggered the run itself.
 
-**Periodic repetition:** After each run completes, the scheduler waits `photomanager.catalog-cooldown-minutes` (default: 2 minutes) before starting the next run. The delay is measured from the **end** of the previous run (fixed delay, not fixed rate), so runs never overlap.
+**Concurrency, honestly:** `CatalogAssetsUseCaseImpl.execute()` catches `JobExecutionAlreadyRunningException` from `JobLauncher.run()` and treats it as "already running, skip" — but since `runId` is unique per launch (a millisecond timestamp) and it's the job's identifying parameter, Spring Batch's `JobRepository` sees every launch as a brand-new `JobInstance`, so that exception in practice never actually fires. The only real protection against overlapping runs is that the scheduler's `ThreadPoolTaskScheduler` has a single thread and each tick blocks (`.get()`) on the previous run's completion future before the next `Runnable` can execute — so the *scheduler* never overlaps with itself, but nothing stops an admin's manual trigger from launching a second job concurrently with a scheduled one.
 
-**Manual trigger:** The `GET /api/assets/catalog` SSE endpoint remains available for manual or troubleshooting use. If a run is already in progress the request is silently skipped and the SSE stream completes immediately.
+### Spring Batch job structure
 
-### Distributed Lock
+```
+catalogJob (JobExecutionListener: CatalogItemWriteListener.afterJob)
+└── catalogPartitionStep
+    ├── partitions by folder: CatalogFolderPartitioner walks every root in
+    │   `photomanager.root-catalog-folders` (semicolon-separated) recursively,
+    │   one partition per folder (including the roots themselves)
+    ├── parallelism: TaskExecutorPartitionHandler, gridSize =
+    │   `photomanager.catalog-partition-grid-size` (default 4) threads
+    └── catalogWorkerStep (one execution per partition/folder), chunk size =
+        `photomanager.catalog-chunk-size` (default 50)
+        ├── reader:    CatalogFileItemReader    — lists files in the folder via StoragePort,
+        │              filters out filenames already catalogued for that Folder
+        ├── processor: CatalogAssetItemProcessor — per file, synchronously (no Kafka involved):
+        │              SHA-256 hash, 200×150 thumbnail, EXIF (images), audio metadata + album
+        │              art (audio files), or a placeholder thumbnail (playlists)
+        └── writer:    CatalogAssetItemWriter    — saves Asset + AssetExif + AssetAudio (JPA) and
+                       the thumbnail (ThumbnailPort); also a StepExecutionListener — after each
+                       partition's files are processed (afterStep), compares the Folder's
+                       catalogued Assets against what's still on disk and deletes any Asset whose
+                       file has disappeared (stale-file cleanup)
+```
 
-A single-row `catalog_run_state` table acts as a distributed lock across all JVM instances:
+After the whole job finishes, `CatalogItemWriteListener.afterJob()` calls `PruneDeletedFoldersUseCase.execute(null)` (silently deletes any Folder — and its Assets/thumbnails — whose directory no longer exists on disk at all; no Kafka event is published for this, unlike the per-asset stale-file cleanup above), tallies `foldersScanned`/`assetsAdded` across every `catalogWorkerStep*` execution, and publishes the final `job.catalog.progress` `done` message (see below).
 
-| Column | Type | Description |
-|---|---|---|
-| `id` | integer (always 1) | Single-row primary key |
-| `is_running` | boolean | Whether a run is active |
-| `started_at` | timestamptz | When the current run started |
-| `last_heartbeat_at` | timestamptz | Last heartbeat from the running instance |
-| `instance_id` | varchar | UUID of the JVM that holds the lock |
+### Kafka messages
 
-Before each run the backend executes an atomic `UPDATE … WHERE id=1 AND is_running=false`. Only one instance succeeds; all others skip. The lock is released in a `finally` block using `WHERE instance_id = :thisInstance` to avoid accidentally releasing another instance's lock.
+The catalog job's Postgres writes never depend on Kafka — hash/thumbnail/EXIF computation and the `Asset`/`AssetExif`/`AssetAudio` saves all happen synchronously in `CatalogAssetItemProcessor`/`CatalogAssetItemWriter` against JPA repositories. Kafka is used purely for **fan-out after the fact**: telling the SSE layer, the audit trail, and the search cache that something changed, without coupling the batch job to any of them directly. Every `kafkaTemplate.send(...)` call in the catalog path goes through a `safeSend()` helper that catches and logs (`WARN`) any publish failure instead of propagating it — a Kafka hiccup (broker restart, topic not yet created) can no longer fail the batch step and roll back an asset that was already persisted. This matters in practice: on Kubernetes, if `k8s/kafka.yaml`'s `log.dirs` isn't pointed at the mounted PVC, every Kafka pod restart wipes all topics, and without `safeSend()` the very next catalog write would time out publishing to a now-missing topic and abort the whole run with zero assets saved.
 
-### Heartbeat
+| Topic | Partitions / retention | Produced by | Consumed by |
+|---|---|---|---|
+| `job.catalog.progress` | 3 partitions, 1h retention | `CatalogAssetItemWriter.write()` (per-asset `ASSET_CREATED` progress, in `ensureFolderExists()` for `FOLDER_CREATED`, in `afterStep()` for `ASSET_DELETED` stale-cleanup progress) and `CatalogItemWriteListener.afterJob()` (final `done` message: `foldersScanned`, `assetsAdded`, `durationMs`, `userId`) | `KafkaProgressListener.onCatalogProgress` (default per-instance consumer group — forwards non-`done` messages to the triggering run's `SseEmitter` and to every catalog observer; on `done`, completes the emitter, calls `KafkaProgressRegistry.complete(runId)` which resolves the `CompletableFuture` `CatalogAssetsUseCaseImpl.execute()` returned, and broadcasts `catalog-done` to observers) and `AuditLogKafkaListener.onCatalogProgress` (dedicated `audit-log-writer` group — ignores non-`done` messages, writes one `CATALOG_RUN` audit entry per completed run) |
+| `asset.cataloged` | 3 partitions, 7d retention | `CatalogAssetItemWriter.write()` — one event per newly-saved asset (`assetId`, `folderPath`, `timestamp`, `userId`) | `AssetSearchCacheInvalidationListener.onAssetCataloged` (dedicated `asset-search-cache-invalidator` group — resolves the folder id from `folderPath` and evicts that folder's `assets:{folderId}:*` Redis cache entries) and `AuditLogKafkaListener.onAssetCataloged` (`audit-log-writer` group — writes one `ASSET_CATALOGED` audit entry per asset) |
+| `asset.deleted` | 3 partitions, 7d retention | `CatalogAssetItemWriter.afterStep()` — one event per asset removed because its file vanished from disk since the last scan (`assetId`, `folderId`, `folderPath`, `timestamp`, `permanent=false`, `userId`); **not** produced by the explicit `DELETE /api/assets` admin endpoint or the recycle bin — those don't publish to Kafka at all today | `AssetSearchCacheInvalidationListener.onAssetDeleted` (evicts the folder's cache directly using `event.folderId()`) and `AuditLogKafkaListener.onAssetDeleted` (writes one `ASSET_DELETED` audit entry, metadata `folderId`/`permanent`) |
 
-To keep long-running catalog runs alive, `last_heartbeat_at` is refreshed after every `photomanager.catalog-batch-size` (default: 1000) assets are saved. The heartbeat update runs in its own transaction (`propagation = REQUIRES_NEW`) so it is immediately visible to all JVM instances, even while the enclosing folder transaction is still open.
+`asset.uploaded` and `job.upload.progress` (consumed by `AssetHashProcessor`/`AssetExifProcessor`/`AssetThumbnailProcessor` and `KafkaProgressListener.onUploadProgress` respectively) belong to the separate single-file **upload** pipeline (`POST /api/assets/upload`), not the recursive folder catalog scan — mentioned here only to avoid confusing the two when reading `KafkaTopicConfig`.
 
-### Stale Run Detection
-
-A `@Scheduled` task runs every 60 seconds. It computes `threshold = now - catalog-timeout minutes` (default: 60 minutes) and:
-
-1. If this JVM holds the lock and `last_heartbeat_at < threshold`: interrupts the catalog thread and releases the DB lock.
-2. Releases any locks held by other (crashed) instances whose heartbeat is also older than the threshold.
-
-The catalog folder loop checks `Thread.currentThread().isInterrupted()` at the start of each folder iteration and returns early if set, ensuring clean shutdown on interruption.
+All topics are declared as `NewTopic` beans in `config/KafkaTopicConfig.java`; Spring's auto-configured `KafkaAdmin` creates them against the broker once at application startup (the broker itself has `auto.create.topics.enable=false`, so nothing else will create them — see `k8s/kafka.yaml`'s `KAFKA_AUTO_CREATE_TOPICS_ENABLE`).
 
 ### Configuration
 
 | Property | Default | Description |
 |---|---|---|
+| `photomanager.root-catalog-folders` | `${user.home}/Pictures` | Semicolon-separated list of root directories scanned recursively |
 | `photomanager.catalog-cooldown-minutes` | `2` | Minutes to wait between catalog runs (fixed delay from end of previous run) |
-| `photomanager.catalog-batch-size` | `1000` | Assets saved between heartbeat refreshes |
-| `photomanager.catalog-timeout` | `60` | Minutes without a heartbeat before a run is considered stale |
+| `photomanager.catalog-chunk-size` | `50` | Spring Batch chunk size (files read/processed/written per transaction) within each folder's step |
+| `photomanager.catalog-partition-grid-size` | `4` | Number of folders processed in parallel per catalog run |
+
+`photomanager.catalog-batch-size` (default `1000`) and `photomanager.catalog-timeout` (default `60`) still exist in `application.yml` but are vestiges of the pre-Spring-Batch heartbeat design described above — `catalog-timeout` isn't read by any code at all, and `catalog-batch-size` is only read by the unrelated `CatalogFolderServiceAdapter` (used by asset cropping, not catalog scanning) into a field that's never actually used. Safe to ignore.
 
 ---
 
