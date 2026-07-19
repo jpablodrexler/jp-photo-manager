@@ -1536,6 +1536,64 @@ Each workflow has separate jobs for the backend (Java 21 + Maven) and frontend (
 
 The catalog process scans all configured root folders (`photomanager.root-catalog-folders`), generates thumbnails, computes SHA-256 hashes and EXIF/audio metadata, and persists asset metadata to the database. It is implemented as a **Spring Batch job** (`infrastructure/batch/`), replacing an earlier custom `@Async` loop + hand-rolled distributed-lock design (`catalog_run_state` table, heartbeat, stale-run detection) — that table was dropped by `V16__spring_batch_schema.sql`; if you see it mentioned elsewhere (older docs, comments), it no longer exists. See `openspec/changes/archive/2026-05-24-catalog-spring-batch/` for the migration history.
 
+### Summary — two engines, two jobs
+
+It helps to think of this as **two separate engines that never block each other**:
+
+- **Spring Batch does all the real work.** Something starts a run (a timer, or an admin clicking a button). From that point, Spring Batch owns the whole scan: walking folders, reading files, hashing them, generating thumbnails, reading EXIF/audio tags, and writing `Asset`/`AssetExif`/`AssetAudio` rows to PostgreSQL. This is a normal, synchronous, transactional Spring Batch job — if Kafka didn't exist at all, every asset would still get catalogued exactly the same way.
+- **Kafka only fans out *after the fact*.** Every time Spring Batch does something notable (asset written, folder's stale files removed, whole run finished), it drops a message on a Kafka topic and moves on — it never waits for anyone to read that message. Three independent consumers pick those messages up on their own schedule to do things that are *not* part of cataloguing itself: streaming live progress to the browser over SSE, writing an entry to the MongoDB audit log, and evicting stale entries from the Redis search cache. If Kafka is down, assets still get catalogued — you just don't see live progress, and the audit/cache side-effects lag until Kafka comes back (see `safeSend()` below).
+
+So: **"how does a run start?"** → `CatalogScheduler` (automatic, every few minutes) or `GET /api/assets/catalog` (an admin, manually). **"What does Spring Batch do?"** → the actual scanning and database writes, via a partitioned job (one worker thread per folder). **"What does Kafka do?"** → nothing that affects whether an asset gets saved; it's the notification bus for everything downstream of that.
+
+```mermaid
+graph TB
+    subgraph triggers["1 — What starts a run"]
+        Scheduler["CatalogScheduler\n(ApplicationReadyEvent, then every\ncatalog-cooldown-minutes, default 2)"]
+        Manual["Admin: GET /api/assets/catalog (SSE)"]
+    end
+
+    UC["CatalogAssetsUseCaseImpl\nlaunches the job and returns\nimmediately — does not wait for it"]
+
+    subgraph batch["2 — Spring Batch does the actual work (no Kafka involved here)"]
+        Partition["CatalogFolderPartitioner\none partition per folder"]
+        Worker["catalogWorkerStep × grid-size (default 4), in parallel\nReader → Processor → Writer\nhash · thumbnail · EXIF/audio · save"]
+        AfterJob["CatalogItemWriteListener.afterJob\nprune deleted folders, tally totals"]
+    end
+
+    PG[("PostgreSQL\nassets · asset_exif · asset_audio · folders")]
+
+    subgraph kafka["3 — Kafka: fan-out only, after the fact"]
+        T1["job.catalog.progress"]
+        T2["asset.cataloged"]
+        T3["asset.deleted"]
+    end
+
+    subgraph consumers["4 — Independent consumers, each optional"]
+        SSE["KafkaProgressListener\n→ live progress over SSE"]
+        Audit["AuditLogKafkaListener\n→ MongoDB asset_audit_log"]
+        Cache["AssetSearchCacheInvalidationListener\n→ evict stale Redis cache entries"]
+    end
+
+    Scheduler --> UC
+    Manual --> UC
+    UC -->|"JobLauncher.run()"| Partition
+    Partition --> Worker
+    Worker -->|"assetRepository.save() etc."| PG
+    Worker -.->|"safeSend(): best-effort,\nnever blocks a save"| T1
+    Worker -.-> T2
+    Worker -.-> T3
+    Worker --> AfterJob
+    AfterJob -.->|"done"| T1
+    T1 --> SSE
+    T1 --> Audit
+    T2 --> Audit
+    T2 --> Cache
+    T3 --> Audit
+    T3 --> Cache
+```
+
+The sections below go into the detail behind each numbered box in the diagram.
+
 ### Lifecycle / triggers
 
 The backend owns the catalog lifecycle entirely — the gallery frontend does not trigger catalog runs on page load.
