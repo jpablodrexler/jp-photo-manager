@@ -55,7 +55,9 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import com.jpablodrexler.photomanager.domain.model.User;
 
 import org.mockito.invocation.InvocationOnMock;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -254,7 +256,7 @@ class AssetControllerTest {
 
     @Test
     void catalogAssets_initiatesAsyncProcessing_returns200() throws Exception {
-        when(catalogAssetsUseCase.execute(anyLong())).thenReturn(CompletableFuture.completedFuture(null));
+        when(catalogAssetsUseCase.execute(anyLong(), any())).thenReturn(CompletableFuture.completedFuture(null));
         doAnswer((InvocationOnMock inv) -> { inv.<SseEmitter>getArgument(1).complete(); return null; })
                 .when(kafkaProgressRegistry).registerEmitter(anyLong(), any(SseEmitter.class));
 
@@ -267,8 +269,24 @@ class AssetControllerTest {
     }
 
     @Test
+    void catalogAssets_passesResolvedUserIdToUseCase() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(getCurrentUserUseCase.execute()).thenReturn(User.builder().id(userId).build());
+        when(catalogAssetsUseCase.execute(anyLong(), any())).thenReturn(CompletableFuture.completedFuture(null));
+        doAnswer((InvocationOnMock inv) -> { inv.<SseEmitter>getArgument(1).complete(); return null; })
+                .when(kafkaProgressRegistry).registerEmitter(anyLong(), any(SseEmitter.class));
+
+        MvcResult result = mockMvc.perform(get("/api/assets/catalog"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        mockMvc.perform(asyncDispatch(result));
+
+        verify(catalogAssetsUseCase).execute(anyLong(), eq(userId));
+    }
+
+    @Test
     void catalogAssets_sseGauge_incrementsOnOpen() throws Exception {
-        when(catalogAssetsUseCase.execute(anyLong())).thenReturn(CompletableFuture.completedFuture(null));
+        when(catalogAssetsUseCase.execute(anyLong(), any())).thenReturn(CompletableFuture.completedFuture(null));
 
         double before = meterRegistry.get("photomanager_active_sse_connections").gauge().value();
 

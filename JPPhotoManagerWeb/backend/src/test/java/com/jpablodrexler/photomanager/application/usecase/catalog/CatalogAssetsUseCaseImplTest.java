@@ -13,6 +13,7 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -24,6 +25,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CatalogAssetsUseCaseImplTest {
+
+    private static final UUID USER_ID = UUID.randomUUID();
 
     @Mock JobLauncher asyncCatalogJobLauncher;
     @Mock Job catalogJob;
@@ -41,10 +44,30 @@ class CatalogAssetsUseCaseImplTest {
     void execute_startsJobAndRegistersCompletion() throws Exception {
         when(asyncCatalogJobLauncher.run(eq(catalogJob), any(JobParameters.class))).thenReturn(jobExecution);
 
-        sut.execute(42L);
+        sut.execute(42L, USER_ID);
 
         verify(progressPort).registerCompletion(eq(42L), any(CompletableFuture.class));
         verify(asyncCatalogJobLauncher).run(eq(catalogJob), any(JobParameters.class));
+    }
+
+    @Test
+    void execute_includesUserIdInJobParameters() throws Exception {
+        ArgumentCaptor<JobParameters> paramsCaptor = ArgumentCaptor.forClass(JobParameters.class);
+        when(asyncCatalogJobLauncher.run(eq(catalogJob), paramsCaptor.capture())).thenReturn(jobExecution);
+
+        sut.execute(42L, USER_ID);
+
+        assertThat(paramsCaptor.getValue().getString("userId")).isEqualTo(USER_ID.toString());
+    }
+
+    @Test
+    void execute_nullUserId_omitsUserIdJobParameter() throws Exception {
+        ArgumentCaptor<JobParameters> paramsCaptor = ArgumentCaptor.forClass(JobParameters.class);
+        when(asyncCatalogJobLauncher.run(eq(catalogJob), paramsCaptor.capture())).thenReturn(jobExecution);
+
+        sut.execute(42L, null);
+
+        assertThat(paramsCaptor.getValue().getString("userId")).isNull();
     }
 
     @Test
@@ -57,7 +80,7 @@ class CatalogAssetsUseCaseImplTest {
             return jobExecution;
         });
 
-        sut.execute(42L);
+        sut.execute(42L, USER_ID);
 
         assertThat(completionRegistered.get()).isTrue();
     }
@@ -67,7 +90,7 @@ class CatalogAssetsUseCaseImplTest {
         when(asyncCatalogJobLauncher.run(any(), any()))
                 .thenThrow(new JobExecutionAlreadyRunningException("already running"));
 
-        CompletableFuture<Void> result = sut.execute(42L);
+        CompletableFuture<Void> result = sut.execute(42L, USER_ID);
 
         assertThat(result.isDone()).isTrue();
         assertThat(result.isCompletedExceptionally()).isFalse();
@@ -79,7 +102,7 @@ class CatalogAssetsUseCaseImplTest {
         ArgumentCaptor<CompletableFuture<Void>> futureCaptor = ArgumentCaptor.forClass(CompletableFuture.class);
         doNothing().when(progressPort).registerCompletion(anyLong(), futureCaptor.capture());
 
-        CompletableFuture<Void> result = sut.execute(42L);
+        CompletableFuture<Void> result = sut.execute(42L, USER_ID);
 
         assertThat(result).isSameAs(futureCaptor.getValue());
     }

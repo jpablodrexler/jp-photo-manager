@@ -26,7 +26,7 @@ class AssetSearchCacheInvalidationListenerTest {
 
     @Test
     void onAssetDeleted_evictsUsingEventFolderId() {
-        sut.onAssetDeleted(new AssetDeletedEvent(1L, 5L, "/photos", Instant.now(), false));
+        sut.onAssetDeleted(new AssetDeletedEvent(1L, 5L, "/photos", Instant.now(), false, null));
 
         verify(assetSearchCachePort).evictFolder(5L);
         verify(getFolderIdByPathUseCase, never()).execute(any());
@@ -36,7 +36,7 @@ class AssetSearchCacheInvalidationListenerTest {
     void onAssetCataloged_resolvesFolderIdViaUseCaseThenEvicts() {
         when(getFolderIdByPathUseCase.execute("/photos/vacation")).thenReturn(7L);
 
-        sut.onAssetCataloged(new AssetCatalogedEvent(1L, "/photos/vacation", Instant.now()));
+        sut.onAssetCataloged(new AssetCatalogedEvent(1L, "/photos/vacation", Instant.now(), null));
 
         verify(getFolderIdByPathUseCase).execute("/photos/vacation");
         verify(assetSearchCachePort).evictFolder(7L);
@@ -46,7 +46,7 @@ class AssetSearchCacheInvalidationListenerTest {
     void onAssetCataloged_unresolvableFolderPath_skipsEvictionWithoutThrowing() {
         when(getFolderIdByPathUseCase.execute("/unknown")).thenReturn(null);
 
-        sut.onAssetCataloged(new AssetCatalogedEvent(1L, "/unknown", Instant.now()));
+        sut.onAssetCataloged(new AssetCatalogedEvent(1L, "/unknown", Instant.now(), null));
 
         verify(assetSearchCachePort, never()).evictFolder(any());
     }

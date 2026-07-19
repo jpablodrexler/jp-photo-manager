@@ -100,7 +100,7 @@ class KafkaProgressListenerTest {
 
     @Test
     void onSyncProgress_doneMessage_sendsResultsEventAndCompletesEmitter() throws IOException {
-        SyncProgressMessage message = SyncProgressMessage.done(42L, List.of());
+        SyncProgressMessage message = SyncProgressMessage.done(42L, List.of(), null);
 
         sut.onSyncProgress(message);
 
@@ -123,7 +123,7 @@ class KafkaProgressListenerTest {
     @Test
     void onSyncProgress_doneMessage_unknownRunId_stillCompletesRegistry() {
         when(registry.getEmitter(99L)).thenReturn(null);
-        SyncProgressMessage message = SyncProgressMessage.done(99L, List.of());
+        SyncProgressMessage message = SyncProgressMessage.done(99L, List.of(), null);
 
         sut.onSyncProgress(message);
 
@@ -145,7 +145,7 @@ class KafkaProgressListenerTest {
 
     @Test
     void onConvertProgress_doneMessage_sendsResultsEventAndCompletesEmitter() throws IOException {
-        ConvertProgressMessage message = ConvertProgressMessage.done(42L, List.of());
+        ConvertProgressMessage message = ConvertProgressMessage.done(42L, List.of(), null);
 
         sut.onConvertProgress(message);
 
@@ -168,7 +168,7 @@ class KafkaProgressListenerTest {
     @Test
     void onConvertProgress_doneMessage_unknownRunId_stillCompletesRegistry() {
         when(registry.getEmitter(99L)).thenReturn(null);
-        ConvertProgressMessage message = ConvertProgressMessage.done(99L, List.of());
+        ConvertProgressMessage message = ConvertProgressMessage.done(99L, List.of(), null);
 
         sut.onConvertProgress(message);
 

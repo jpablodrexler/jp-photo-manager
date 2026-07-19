@@ -43,6 +43,7 @@ public class AuditLogKafkaListener {
             containerFactory = "kafkaListenerContainerFactory")
     public void onAssetCataloged(AssetCatalogedEvent event) {
         writeAuditEvent(AuditEvent.builder()
+                .userId(event.userId())
                 .action(AuditAction.ASSET_CATALOGED)
                 .entityType(AuditEntityType.ASSET)
                 .entityId(String.valueOf(event.assetId()))
@@ -58,6 +59,7 @@ public class AuditLogKafkaListener {
         metadata.put("permanent", event.permanent());
 
         writeAuditEvent(AuditEvent.builder()
+                .userId(event.userId())
                 .action(AuditAction.ASSET_DELETED)
                 .entityType(AuditEntityType.ASSET)
                 .entityId(String.valueOf(event.assetId()))
@@ -79,6 +81,7 @@ public class AuditLogKafkaListener {
         metadata.put("durationMs", message.durationMs());
 
         writeAuditEvent(AuditEvent.builder()
+                .userId(message.userId())
                 .action(AuditAction.CATALOG_RUN)
                 .entityType(AuditEntityType.CATALOG_RUN)
                 .entityId(String.valueOf(message.runId()))
@@ -95,6 +98,7 @@ public class AuditLogKafkaListener {
         }
 
         writeAuditEvent(AuditEvent.builder()
+                .userId(message.userId())
                 .action(AuditAction.SYNC_RUN)
                 .entityType(AuditEntityType.SYNC_RUN)
                 .entityId(String.valueOf(message.runId()))
@@ -111,6 +115,7 @@ public class AuditLogKafkaListener {
         }
 
         writeAuditEvent(AuditEvent.builder()
+                .userId(message.userId())
                 .action(AuditAction.CONVERT_RUN)
                 .entityType(AuditEntityType.CONVERT_RUN)
                 .entityId(String.valueOf(message.runId()))

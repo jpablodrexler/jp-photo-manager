@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -30,28 +31,32 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class AuditLogKafkaListenerTest {
 
+    private static final UUID USER_ID = UUID.randomUUID();
+
     @Mock AuditLogRepository auditLogRepository;
     @InjectMocks AuditLogKafkaListener sut;
 
     @Test
     void onAssetCataloged_writesAuditEventWithAssetCatalogedAction() {
-        sut.onAssetCataloged(new AssetCatalogedEvent(7L, "/photos/2024", Instant.now()));
+        sut.onAssetCataloged(new AssetCatalogedEvent(7L, "/photos/2024", Instant.now(), USER_ID));
 
         ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
         verify(auditLogRepository).log(captor.capture());
         assertThat(captor.getValue().getAction()).isEqualTo(AuditAction.ASSET_CATALOGED);
         assertThat(captor.getValue().getEntityId()).isEqualTo("7");
+        assertThat(captor.getValue().getUserId()).isEqualTo(USER_ID);
     }
 
     @Test
     void onAssetDeleted_writesAuditEventWithFolderIdAndPermanentMetadata() {
-        sut.onAssetDeleted(new AssetDeletedEvent(9L, 3L, "/photos", Instant.now(), true));
+        sut.onAssetDeleted(new AssetDeletedEvent(9L, 3L, "/photos", Instant.now(), true, USER_ID));
 
         ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
         verify(auditLogRepository).log(captor.capture());
         assertThat(captor.getValue().getAction()).isEqualTo(AuditAction.ASSET_DELETED);
         assertThat(captor.getValue().getEntityId()).isEqualTo("9");
         assertThat(captor.getValue().getMetadata()).containsEntry("folderId", 3L).containsEntry("permanent", true);
+        assertThat(captor.getValue().getUserId()).isEqualTo(USER_ID);
     }
 
     @Test
@@ -63,7 +68,7 @@ class AuditLogKafkaListenerTest {
 
     @Test
     void onCatalogProgress_doneTrue_writesSingleRunLevelAuditEvent() {
-        sut.onCatalogProgress(CatalogProgressMessage.done(42L, 3, 120L, 5340L));
+        sut.onCatalogProgress(CatalogProgressMessage.done(42L, 3, 120L, 5340L, USER_ID));
 
         ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
         verify(auditLogRepository).log(captor.capture());
@@ -73,6 +78,7 @@ class AuditLogKafkaListenerTest {
                 .containsEntry("foldersScanned", 3)
                 .containsEntry("assetsAdded", 120L)
                 .containsEntry("durationMs", 5340L);
+        assertThat(captor.getValue().getUserId()).isEqualTo(USER_ID);
     }
 
     @Test
@@ -88,7 +94,7 @@ class AuditLogKafkaListenerTest {
         result.setSyncedCount(5);
         result.setDeletedCount(2);
 
-        sut.onSyncProgress(SyncProgressMessage.done(8L, List.of(result)));
+        sut.onSyncProgress(SyncProgressMessage.done(8L, List.of(result), USER_ID));
 
         ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
         verify(auditLogRepository).log(captor.capture());
@@ -99,6 +105,7 @@ class AuditLogKafkaListenerTest {
                 .containsEntry("targetDir", "/dst")
                 .containsEntry("filesCopied", 5)
                 .containsEntry("filesDeleted", 2);
+        assertThat(captor.getValue().getUserId()).isEqualTo(USER_ID);
     }
 
     @Test
@@ -113,7 +120,7 @@ class AuditLogKafkaListenerTest {
         ConvertAssetsResult result = new ConvertAssetsResult("/src", "/dst");
         result.setConvertedCount(4);
 
-        sut.onConvertProgress(ConvertProgressMessage.done(11L, List.of(result)));
+        sut.onConvertProgress(ConvertProgressMessage.done(11L, List.of(result), USER_ID));
 
         ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
         verify(auditLogRepository).log(captor.capture());
@@ -123,13 +130,14 @@ class AuditLogKafkaListenerTest {
                 .containsEntry("sourceDir", "/src")
                 .containsEntry("targetDir", "/dst")
                 .containsEntry("filesConverted", 4);
+        assertThat(captor.getValue().getUserId()).isEqualTo(USER_ID);
     }
 
     @Test
     void onAssetCataloged_auditWriteThrows_doesNotPropagate() {
         doThrow(new RuntimeException("mongo down")).when(auditLogRepository).log(any());
 
-        assertThatCode(() -> sut.onAssetCataloged(new AssetCatalogedEvent(1L, "/photos", Instant.now())))
+        assertThatCode(() -> sut.onAssetCataloged(new AssetCatalogedEvent(1L, "/photos", Instant.now(), USER_ID)))
                 .doesNotThrowAnyException();
     }
 }

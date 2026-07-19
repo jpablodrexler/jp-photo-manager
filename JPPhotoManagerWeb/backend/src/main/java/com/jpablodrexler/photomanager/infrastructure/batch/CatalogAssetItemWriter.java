@@ -28,12 +28,14 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, StepExecutionListener {
 
     private final long runId;
+    private final UUID userId;
     private final String folderPath;
     private final AssetRepository assetRepository;
     private final AssetExifRepository assetExifRepository;
@@ -46,7 +48,7 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
 
     private Folder cachedFolder;
 
-    public CatalogAssetItemWriter(long runId, String folderPath,
+    public CatalogAssetItemWriter(long runId, String userId, String folderPath,
                                    AssetRepository assetRepository,
                                    AssetExifRepository assetExifRepository,
                                    AssetAudioRepository assetAudioRepository,
@@ -56,6 +58,7 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
                                    KafkaTemplate<String, Object> kafkaTemplate,
                                    MeterRegistry meterRegistry) {
         this.runId = runId;
+        this.userId = userId != null ? UUID.fromString(userId) : null;
         this.folderPath = folderPath;
         this.assetRepository = assetRepository;
         this.assetExifRepository = assetExifRepository;
@@ -95,10 +98,10 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
 
             CatalogChangeNotification notification =
                     new CatalogChangeNotification(Reason.ASSET_CREATED, saved, 0);
-            kafkaTemplate.send("job.catalog.progress", String.valueOf(runId),
+            safeSend("job.catalog.progress", String.valueOf(runId),
                     CatalogProgressMessage.progress(runId, notification));
-            kafkaTemplate.send("asset.cataloged", String.valueOf(saved.getAssetId()),
-                    new AssetCatalogedEvent(saved.getAssetId(), folderPath, Instant.now()));
+            safeSend("asset.cataloged", String.valueOf(saved.getAssetId()),
+                    new AssetCatalogedEvent(saved.getAssetId(), folderPath, Instant.now(), userId));
         }
     }
 
@@ -124,10 +127,11 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
 
                     CatalogChangeNotification notification =
                             new CatalogChangeNotification(Reason.ASSET_DELETED, asset, 0);
-                    kafkaTemplate.send("job.catalog.progress", String.valueOf(runId),
+                    safeSend("job.catalog.progress", String.valueOf(runId),
                             CatalogProgressMessage.progress(runId, notification));
-                    kafkaTemplate.send("asset.deleted", String.valueOf(asset.getAssetId()),
-                            new AssetDeletedEvent(asset.getAssetId(), folder.getFolderId(), folderPath, Instant.now(), false));
+                    safeSend("asset.deleted", String.valueOf(asset.getAssetId()),
+                            new AssetDeletedEvent(asset.getAssetId(), folder.getFolderId(), folderPath, Instant.now(),
+                                    false, userId));
                 }
             }
         } catch (Exception e) {
@@ -144,10 +148,21 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
                 Folder saved = folderRepository.save(f);
                 CatalogChangeNotification notification =
                         new CatalogChangeNotification(Reason.FOLDER_CREATED, folderPath, 0);
-                kafkaTemplate.send("job.catalog.progress", String.valueOf(runId),
+                safeSend("job.catalog.progress", String.valueOf(runId),
                         CatalogProgressMessage.progress(runId, notification));
                 return saved;
             });
+        }
+    }
+
+    // Progress notifications are best-effort: a Kafka hiccup (broker restart,
+    // topic not yet ready) must never fail the batch step and roll back an
+    // asset that was already successfully persisted to Postgres.
+    private void safeSend(String topic, String key, Object payload) {
+        try {
+            kafkaTemplate.send(topic, key, payload);
+        } catch (Exception e) {
+            log.warn("Failed to publish {} message (key={}): {}", topic, key, e.getMessage());
         }
     }
 }

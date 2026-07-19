@@ -14,6 +14,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -36,14 +37,17 @@ public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
     @Override
     @PreAuthorize("hasRole('ADMIN')")
     @CacheEvict(value = {"home-stats", "sub-folders", "asset-exif"}, allEntries = true)
-    public CompletableFuture<Void> execute(long runId) {
+    public CompletableFuture<Void> execute(long runId, UUID userId) {
         try {
             CompletableFuture<Void> completion = new CompletableFuture<>();
             progressPort.registerCompletion(runId, completion);
 
-            JobParameters params = new JobParametersBuilder()
-                    .addLong("runId", runId)
-                    .toJobParameters();
+            JobParametersBuilder paramsBuilder = new JobParametersBuilder()
+                    .addLong("runId", runId);
+            if (userId != null) {
+                paramsBuilder.addString("userId", userId.toString());
+            }
+            JobParameters params = paramsBuilder.toJobParameters();
 
             JobExecution execution = asyncCatalogJobLauncher.run(catalogJob, params);
             log.debug("Started catalog job execution id={} runId={}", execution.getId(), runId);

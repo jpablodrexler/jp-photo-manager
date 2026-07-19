@@ -152,7 +152,7 @@ class GetHomeStatsUseCaseCachingTest {
         ArgumentCaptor<CompletableFuture<Void>> completionCaptor = ArgumentCaptor.forClass(CompletableFuture.class);
         doNothing().when(kafkaProgressRegistry).registerCompletion(anyLong(), completionCaptor.capture());
 
-        catalogAssetsUseCase.execute(1L);
+        catalogAssetsUseCase.execute(1L, null);
         completionCaptor.getValue().complete(null);
 
         getHomeStatsUseCase.execute();

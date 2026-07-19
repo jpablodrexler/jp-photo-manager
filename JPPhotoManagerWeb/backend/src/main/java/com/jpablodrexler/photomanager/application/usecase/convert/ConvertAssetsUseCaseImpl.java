@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -31,7 +32,7 @@ public class ConvertAssetsUseCaseImpl implements ConvertAssetsUseCase {
     @Async("taskExecutor")
     @Override
     @PreAuthorize("hasRole('ADMIN')")
-    public CompletableFuture<Void> execute(long runId) {
+    public CompletableFuture<Void> execute(long runId, UUID userId) {
         try {
             List<ConvertDirectoriesDefinition> definitions = convertConfigRepository.findAllOrderByOrder();
             List<ConvertAssetsResult> results = new ArrayList<>();
@@ -41,7 +42,7 @@ public class ConvertAssetsUseCaseImpl implements ConvertAssetsUseCase {
             }
 
             kafkaTemplate.send("job.convert.progress", String.valueOf(runId),
-                    ConvertProgressMessage.done(runId, results));
+                    ConvertProgressMessage.done(runId, results, userId));
             return CompletableFuture.completedFuture(null);
         } catch (Exception e) {
             log.error("Convert run {} failed", runId, e);

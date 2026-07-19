@@ -2,9 +2,11 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpablodrexler.photomanager.domain.model.SyncDirectoriesDefinition;
+import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.in.sync.GetSyncConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.sync.SaveSyncConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.sync.SyncAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.shared.SyncDirectoryPairDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.SyncWebMapper;
@@ -20,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -46,6 +49,8 @@ class SyncControllerTest {
     KafkaProgressRegistry kafkaProgressRegistry;
     @MockitoBean
     SyncWebMapper syncWebMapper;
+    @MockitoBean
+    GetCurrentUserUseCase getCurrentUserUseCase;
 
     // --- GET /api/sync/configuration ---
 
@@ -113,6 +118,21 @@ class SyncControllerTest {
 
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void run_passesResolvedUserIdToUseCase() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(getCurrentUserUseCase.execute()).thenReturn(User.builder().id(userId).build());
+        doAnswer((InvocationOnMock inv) -> { inv.<SseEmitter>getArgument(1).complete(); return null; })
+                .when(kafkaProgressRegistry).registerEmitter(anyLong(), any(SseEmitter.class));
+
+        MvcResult mvcResult = mockMvc.perform(get("/api/sync/run"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        mockMvc.perform(asyncDispatch(mvcResult));
+
+        verify(syncAssetsUseCase).execute(anyLong(), eq(userId));
     }
 
     // --- helpers ---

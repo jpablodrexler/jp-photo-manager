@@ -2,9 +2,11 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpablodrexler.photomanager.domain.model.ConvertDirectoriesDefinition;
+import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.in.convert.ConvertAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.convert.GetConvertConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.convert.SaveConvertConfigUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.shared.ConvertDirectoryPairDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.ConvertWebMapper;
@@ -20,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -46,6 +49,8 @@ class ConvertControllerTest {
     KafkaProgressRegistry kafkaProgressRegistry;
     @MockitoBean
     ConvertWebMapper convertWebMapper;
+    @MockitoBean
+    GetCurrentUserUseCase getCurrentUserUseCase;
 
     // --- GET /api/convert/configuration ---
 
@@ -113,6 +118,21 @@ class ConvertControllerTest {
 
         mockMvc.perform(asyncDispatch(mvcResult))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void run_passesResolvedUserIdToUseCase() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(getCurrentUserUseCase.execute()).thenReturn(User.builder().id(userId).build());
+        doAnswer((InvocationOnMock inv) -> { inv.<SseEmitter>getArgument(1).complete(); return null; })
+                .when(kafkaProgressRegistry).registerEmitter(anyLong(), any(SseEmitter.class));
+
+        MvcResult mvcResult = mockMvc.perform(get("/api/convert/run"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+        mockMvc.perform(asyncDispatch(mvcResult));
+
+        verify(convertAssetsUseCase).execute(anyLong(), eq(userId));
     }
 
     // --- helpers ---
