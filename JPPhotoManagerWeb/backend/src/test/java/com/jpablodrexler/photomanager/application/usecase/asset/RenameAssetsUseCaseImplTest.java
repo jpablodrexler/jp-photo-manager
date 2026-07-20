@@ -133,6 +133,56 @@ class RenameAssetsUseCaseImplTest {
         verify(storagePort, never()).moveFile(any(), any());
     }
 
+    @Test
+    void execute_uncatalogedFileAlreadyOnDiskAtTargetName_throwsIllegalArgumentExceptionAndDoesNotOverwriteIt() throws Exception {
+        Asset batchAsset = buildAsset(1L, "old.png", null);
+        when(assetRepository.findAllById(List.of(1L))).thenReturn(List.of(batchAsset));
+        when(assetRepository.findByFolder(batchAsset.getFolder())).thenReturn(List.of(batchAsset));
+        // logo.png exists on disk but was never catalogued, so the DB-only check alone would miss it
+        when(storagePort.listFiles(FOLDER_PATH)).thenReturn(List.of(FOLDER_PATH + "/logo.png"));
+
+        assertThatThrownBy(() -> sut.execute(new Long[]{1L}, "logo.{ext}", true))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("ASSET_NAME_COLLISION");
+
+        verify(storagePort, never()).moveFile(any(), any());
+    }
+
+    @Test
+    void execute_renameOntoOwnCurrentFileName_doesNotFlagFalseCollisionFromDisk() throws Exception {
+        // A no-op rename (pattern happens to reproduce the current file name) must not be
+        // treated as a collision against the asset's own file already present on disk.
+        Asset asset = buildAsset(1L, "old.jpg", null);
+        when(assetRepository.findAllById(List.of(1L))).thenReturn(List.of(asset));
+        when(assetRepository.findByFolder(asset.getFolder())).thenReturn(List.of(asset));
+        when(storagePort.listFiles(FOLDER_PATH)).thenReturn(List.of(FOLDER_PATH + "/old.jpg"));
+        when(assetRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        RenameAssetsResult result = sut.execute(new Long[]{1L}, "old.{ext}", true);
+
+        assertThat(result.applied()).isTrue();
+        verify(storagePort).moveFile(FOLDER_PATH + "/old.jpg", FOLDER_PATH + "/old.jpg");
+    }
+
+    @Test
+    void execute_multipleAssetsInSameFolder_checksCollisionsForEachAssetWithoutError() throws Exception {
+        // Regression test: checkFolderCollisions used to remove a folder's entry from its
+        // lookup map after checking the first asset, so a second batch member in the same
+        // folder would hit a NullPointerException instead of being checked at all.
+        Asset a1 = buildAsset(1L, "a.jpg", null);
+        Asset a2 = buildAsset(2L, "b.jpg", null);
+        Asset unrelated = buildAsset(99L, "keepme.jpg", null);
+        when(assetRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(a1, a2));
+        when(assetRepository.findByFolder(a1.getFolder())).thenReturn(List.of(a1, a2, unrelated));
+        when(assetRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        RenameAssetsResult result = sut.execute(new Long[]{1L, 2L}, "new_{index:01d}.{ext}", true);
+
+        assertThat(result.applied()).isTrue();
+        verify(storagePort).moveFile(FOLDER_PATH + "/a.jpg", FOLDER_PATH + "/new_1.jpg");
+        verify(storagePort).moveFile(FOLDER_PATH + "/b.jpg", FOLDER_PATH + "/new_2.jpg");
+    }
+
     // --- preview-only mode ---
 
     @Test
