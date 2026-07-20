@@ -14,6 +14,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -144,18 +145,27 @@ public class RenameAssetsUseCaseImpl implements RenameAssetsUseCase {
     private void checkFolderCollisions(List<RenamePreview> previews, List<Asset> assets) {
         Set<Long> batchIds = assets.stream().map(Asset::getAssetId).collect(Collectors.toSet());
 
-        // Group target names by folder path to make one DB call per folder
+        // Group target names and vacated (old) names by folder path
         Map<String, Set<String>> targetNamesByFolderPath = new HashMap<>();
+        Map<String, Set<String>> vacatedNamesByFolderPath = new HashMap<>();
         for (int i = 0; i < assets.size(); i++) {
             String folderPath = assets.get(i).getFolder().getPath();
             targetNamesByFolderPath
                     .computeIfAbsent(folderPath, k -> new HashSet<>())
                     .add(previews.get(i).newName());
+            vacatedNamesByFolderPath
+                    .computeIfAbsent(folderPath, k -> new HashSet<>())
+                    .add(assets.get(i).getFileName());
         }
 
-        for (int i = 0; i < assets.size(); i++) {
-            Asset asset = assets.get(i);
-            Set<String> folderTargets = targetNamesByFolderPath.get(asset.getFolder().getPath());
+        Set<String> checkedFolderPaths = new HashSet<>();
+        for (Asset asset : assets) {
+            String folderPath = asset.getFolder().getPath();
+            if (!checkedFolderPaths.add(folderPath)) {
+                continue; // this folder was already checked for a previous asset in the batch
+            }
+            Set<String> folderTargets = targetNamesByFolderPath.get(folderPath);
+
             List<Asset> folderAssets = assetRepository.findByFolder(asset.getFolder());
             for (Asset existing : folderAssets) {
                 if (!batchIds.contains(existing.getAssetId())
@@ -163,8 +173,17 @@ public class RenameAssetsUseCaseImpl implements RenameAssetsUseCase {
                     throw new IllegalArgumentException("ASSET_NAME_COLLISION");
                 }
             }
-            // Only query each folder once
-            targetNamesByFolderPath.remove(asset.getFolder().getPath());
+
+            // Also guard against files that exist on disk but aren't catalogued yet —
+            // storagePort.moveFile() overwrites its destination unconditionally, so without
+            // this check an un-catalogued file sharing a target name is silently destroyed.
+            Set<String> vacatedNames = vacatedNamesByFolderPath.get(folderPath);
+            for (String existingFilePath : storagePort.listFiles(folderPath)) {
+                String existingFileName = Paths.get(existingFilePath).getFileName().toString();
+                if (!vacatedNames.contains(existingFileName) && folderTargets.contains(existingFileName)) {
+                    throw new IllegalArgumentException("ASSET_NAME_COLLISION");
+                }
+            }
         }
     }
 

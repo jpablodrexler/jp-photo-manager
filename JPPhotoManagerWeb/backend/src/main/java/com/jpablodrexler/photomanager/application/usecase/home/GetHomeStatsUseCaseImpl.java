@@ -38,7 +38,7 @@ public class GetHomeStatsUseCaseImpl implements GetHomeStatsUseCase {
                         a.getAssetId(),
                         a.getFileName(),
                         a.getFolder().getPath(),
-                        "/api/assets/" + a.getAssetId() + "/thumbnail",
+                        a.getThumbnailUrl(),
                         a.getFileSize()))
                 .toList();
         Instant lastCatalogCompletedAt = catalogRunHistoryPort.findLastCompletedCatalogRunTime().orElse(null);
