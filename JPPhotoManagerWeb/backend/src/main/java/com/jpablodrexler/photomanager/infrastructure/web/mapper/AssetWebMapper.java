@@ -24,8 +24,7 @@ public interface AssetWebMapper {
 
     @Mapping(source = "folder.folderId", target = "folderId")
     @Mapping(source = "folder.path", target = "folderPath")
-    @Mapping(target = "thumbnailUrl",
-             expression = "java(\"/api/assets/\" + asset.getAssetId() + \"/thumbnail\")")
+    @Mapping(target = "thumbnailUrl", expression = "java(asset.getThumbnailUrl())")
     @Mapping(target = "imageUrl",
              expression = "java(\"/api/assets/\" + asset.getAssetId() + \"/image\")")
     @Mapping(source = "tags", target = "tags", qualifiedByName = "tagsSetToList")

@@ -55,7 +55,8 @@ class WebMappersTest {
         assertThat(dto.getImageRotation()).isEqualTo(ImageRotation.ROTATE_0);
         assertThat(dto.getHash()).isEqualTo("abc123");
         assertThat(dto.getRating()).isEqualTo(4);
-        assertThat(dto.getThumbnailUrl()).isEqualTo("/api/assets/42/thumbnail");
+        long expectedVersion = LocalDateTime.of(2024, 1, 1, 0, 0).toEpochSecond(java.time.ZoneOffset.UTC);
+        assertThat(dto.getThumbnailUrl()).isEqualTo("/api/assets/42/thumbnail?v=" + expectedVersion);
         assertThat(dto.getImageUrl()).isEqualTo("/api/assets/42/image");
     }
 
@@ -67,6 +68,15 @@ class WebMappersTest {
 
         assertThat(dto.getFolderId()).isNull();
         assertThat(dto.getFolderPath()).isNull();
+    }
+
+    @Test
+    void assetWebMapper_toDto_noThumbnailCreationDateTime_omitsVersionQueryParam() {
+        Asset asset = Asset.builder().assetId(1L).fileName("a.jpg").build();
+
+        AssetResponseDto dto = assetWebMapper.toDto(asset);
+
+        assertThat(dto.getThumbnailUrl()).isEqualTo("/api/assets/1/thumbnail");
     }
 
     @Test

@@ -138,13 +138,15 @@ class HomeStatsIntegrationTest {
         folder = folderRepository.save(folder);
 
         Asset saved = saveAsset(folder, "recent.jpg", 500L, "hash-recent-" + System.nanoTime(), LocalDateTime.now());
+        long expectedVersion = saved.getThumbnailCreationDateTime().toEpochSecond(java.time.ZoneOffset.UTC);
 
         mockMvc.perform(get("/api/home/stats"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.recentAssets").isArray())
                 .andExpect(jsonPath("$.recentAssets[0].fileName").value("recent.jpg"))
                 .andExpect(jsonPath("$.recentAssets[0].folderPath").value(folder.getPath()))
-                .andExpect(jsonPath("$.recentAssets[0].thumbnailUrl").value("/api/assets/" + saved.getAssetId() + "/thumbnail"));
+                .andExpect(jsonPath("$.recentAssets[0].thumbnailUrl")
+                        .value("/api/assets/" + saved.getAssetId() + "/thumbnail?v=" + expectedVersion));
     }
 
     private Asset saveAsset(Folder folder, String fileName, long fileSize, String hash, LocalDateTime thumbnailCreationDateTime) {
