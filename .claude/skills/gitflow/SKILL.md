@@ -38,7 +38,7 @@ Map the user's request to one of:
 - **finish hotfix** (operates on the current hotfix branch, or one named explicitly)
 - **tag release** `<version>` / **tag hotfix** `<version>`
 
-If the name/version wasn't given and can't be inferred from the current branch, ask for it.
+If the name/version wasn't given and can't be inferred from the current branch, ask for it. For **finish feature** specifically, if no name is given explicitly, infer it from the current branch name by stripping the `feature/` prefix (e.g. current branch `feature/skills-gitflow` → name `skills-gitflow`) — no need to ask the user in this case.
 
 ### 2. Check working tree state
 
