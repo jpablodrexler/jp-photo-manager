@@ -13,7 +13,7 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.4"
+  version: "1.2"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using

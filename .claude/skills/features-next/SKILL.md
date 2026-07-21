@@ -4,7 +4,7 @@ description: Recommends which feature to implement next based on openspec/featur
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.3"
+  version: "1.2"
 ---
 
 Recommend the next feature to implement and return the confirmed change name to the caller.

@@ -4,7 +4,7 @@ description: Encapsulates the Gitflow branching workflow for this repo (develop 
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.4"
+  version: "1.1"
 ---
 
 Perform one Gitflow action: start a feature/release/hotfix branch, finish (open a PR for) a feature, finish (open PRs for) a release/hotfix, tag main after a release/hotfix PR has merged, or clean up already-merged feature/release/hotfix branches.

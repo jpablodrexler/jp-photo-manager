@@ -4,7 +4,7 @@ description: Mark features as implemented in openspec/features.md and move them 
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.3"
+  version: "1.2"
 ---
 
 Archive one or more implemented features from `openspec/features.md` into `openspec/features-implemented.md`.
