@@ -13,7 +13,7 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.3"
+  version: "1.4"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -153,10 +153,10 @@ following prompt:
 > If you encounter a blocker during implementation, end your response with
 > `IMPLEMENT_BLOCKED — <brief reason>` and stop.
 >
-> **Determining "the files changed by `<change-name>`" — compute this once, reuse it everywhere below**
-> Before Step 2, run `git status --porcelain` and parse every line's file
-> path — including untracked (`??`) entries, not just modified/staged ones
-> — into a concrete list; call it `CHANGED_FILES`. Do not use
+> **Determining "the files changed by `<change-name>`" — recompute fresh immediately before every single use, never cache one snapshot**
+> Run `git status --porcelain` and parse every line's file path —
+> including untracked (`??`) entries, not just modified/staged ones — into
+> a concrete list; call it `CHANGED_FILES`. Do not use
 > `git diff --name-only HEAD` for this, alone or as an alternative: it only
 > reports changes to already-tracked files, so it silently misses any
 > brand-new file — and a brand-new Flyway migration or a brand-new JPA
@@ -168,19 +168,31 @@ following prompt:
 > identical to `develop` throughout — a branch-to-branch diff would always
 > show zero files.
 >
-> `CHANGED_FILES` must be passed as an explicit argument to every reviewer
-> invocation in Steps 2–4 below — never just described in prose as "the
-> files changed by `<change-name>`" and left for the invoked skill to
-> re-derive on its own. A skill that re-derives scope itself might reach
-> for its own branch-diff logic and reintroduce the exact zero-files
+> **Do not compute this once and reuse it across Steps 2–4.** The working
+> tree keeps changing throughout Phase 2 — Step 2's fix-and-re-review loop
+> (up to 3 rounds), Step 3's, and Step 4's each modify or create files, and
+> a fix can easily be exactly the kind of file the *next* step's trigger
+> check needs to see (e.g. a Step 2 fix that adds a new entity or
+> migration must be visible to Step 3's database-review trigger). A
+> `CHANGED_FILES` snapshot taken once before Step 2 and reused afterward
+> would silently miss all of that. Instead, re-run `git status --porcelain`
+> and recompute `CHANGED_FILES` fresh immediately before **every** point
+> below marked "(recompute `CHANGED_FILES`)" — every trigger check, every
+> initial reviewer invocation, every re-check after a fix round, and every
+> "final pass" after a conditional step's fixes — and pass that freshly
+> computed list as an explicit argument each time. Never just describe
+> scope in prose as "the files changed by `<change-name>`" and let the
+> invoked skill re-derive it itself: a skill that re-derives scope might
+> reach for its own branch-diff logic and reintroduce the exact zero-files
 > failure mode this computation exists to avoid — one layer down, invisibly
 > to this skill, which would otherwise believe the problem was already
 > solved.
 >
 > **Step 2 — Code review**
-> Invoke `code-reviewer` via the Skill tool using its **Review** workflow,
-> passing `CHANGED_FILES` (computed above) as the explicit scope — do not
-> describe the scope in prose and let the skill re-derive it (this subagent runs
+> (recompute `CHANGED_FILES`) Invoke `code-reviewer` via the Skill tool
+> using its **Review** workflow, passing the freshly recomputed
+> `CHANGED_FILES` as the explicit scope — do not describe the scope in
+> prose and let the skill re-derive it (this subagent runs
 > unattended — do not invoke the skill's interactive Fix Workflow, which is
 > designed for a human to steer turn-by-turn across a conversation). This is
 > a scoped review of one change, not a full-codebase sweep of the whole web
@@ -197,10 +209,12 @@ following prompt:
 summary of what changed>` note appended to the same line — the same
 >   convention the code-reviewer skill's Fix Workflow uses — so the report is
 >   left as an accurate record of what this session resolved rather than a
->   stale "nothing done" snapshot. Then re-invoke `code-reviewer` to confirm
->   no new findings were introduced; this writes a fresh report for the
->   re-check (the original report already reflects what was fixed). Repeat
->   until the re-check report is clean.
+>   stale "nothing done" snapshot. Then (recompute `CHANGED_FILES` — the
+>   fixes just applied changed the working tree) re-invoke `code-reviewer`,
+>   passing the freshly recomputed list, to confirm no new findings were
+>   introduced; this writes a fresh report for the re-check (the original
+>   report already reflects what was fixed). Repeat until the re-check
+>   report is clean.
 >   If after 3 rounds of fix-and-re-review findings are still present, end
 >   your response with `REVIEW_BLOCKED — repeated review cycles` and stop.
 > - If you encounter a finding you cannot fix without human input: end your
@@ -209,18 +223,20 @@ summary of what changed>` note appended to the same line — the same
 > Do not proceed to Step 3 until all Critical and Warning findings are resolved.
 >
 > **Step 3 — Database review (conditional)**
-> Check whether any path in `CHANGED_FILES` (computed above) falls under
-> any of these database-schema areas: a Flyway migration under
-> `db/migration/`, a JPA entity under `infrastructure/persistence/entity/`,
-> or a repository query (`@Query`, derived query method, or native query)
-> under `infrastructure/persistence/jpa/` or
+> (recompute `CHANGED_FILES` — Step 2's fix rounds have modified the
+> working tree since it was last computed) Check whether any path in the
+> freshly recomputed `CHANGED_FILES` falls under any of these
+> database-schema areas: a Flyway migration under `db/migration/`, a JPA
+> entity under `infrastructure/persistence/entity/`, or a repository query
+> (`@Query`, derived query method, or native query) under
+> `infrastructure/persistence/jpa/` or
 > `infrastructure/persistence/adapter/`.
 >
 > - If **none** of these areas were touched: skip this step.
 > - If **any** were touched: invoke `database-reviewer` via the Skill tool
->   using its **Review** workflow, passing `CHANGED_FILES` as the explicit
->   scope — do not describe the scope in prose and let the skill re-derive
->   it (this subagent runs unattended — do not invoke the
+>   using its **Review** workflow, passing that same `CHANGED_FILES` as the
+>   explicit scope — do not describe the scope in prose and let the skill
+>   re-derive it (this subagent runs unattended — do not invoke the
 >   skill's interactive Fix Workflow, which is designed for a human to steer
 >   turn-by-turn across a conversation). This is a scoped review of one
 >   change, not a full migration-history audit — do not request or expect
@@ -229,8 +245,9 @@ summary of what changed>` note appended to the same line — the same
 >   gitignored). After the review completes, fix every 🔴 Critical and 🟡
 >   Warning finding in the source files — check each off in that report file
 >   (`- [ ]` → `- [x]`) with a `**Fixed:**` note as you go, the same
->   convention `code-reviewer`'s Fix Workflow uses — then re-invoke
->   `database-reviewer` to confirm no new findings were introduced; this
+>   convention `code-reviewer`'s Fix Workflow uses — then (recompute
+>   `CHANGED_FILES`) re-invoke `database-reviewer`, passing the freshly
+>   recomputed list, to confirm no new findings were introduced; this
 >   writes a fresh report for the re-check. Repeat until the re-check report
 >   is clean.
 >   Remember that a fix to an already-applied Flyway migration is never an
@@ -242,23 +259,28 @@ summary of what changed>` note appended to the same line — the same
 >   If you encounter a finding you cannot fix without human input (e.g. it
 >   requires a data-backfill/locking strategy decision): end your response
 >   with `DATABASE_BLOCKED — <brief reason>` and stop.
->   Once the database report is clean, re-invoke `code-reviewer` (Review
->   workflow, same non-interactive and scoped-not-full-sweep caveats as
->   Step 2) for a final pass scoped to the database fixes — apply any 🔴
->   Critical or 🟡 Warning findings, checking each off in that pass's report
->   file with a `**Fixed:**` note as in Step 2, before proceeding.
+>   Once the database report is clean, (recompute `CHANGED_FILES` — the
+>   database fixes just applied changed the working tree again) re-invoke
+>   `code-reviewer` (Review workflow, same non-interactive and
+>   scoped-not-full-sweep caveats as Step 2), passing the freshly
+>   recomputed list as scope, for a final pass covering the database fixes
+>   — apply any 🔴 Critical or 🟡 Warning findings, checking each off in
+>   that pass's report file with a `**Fixed:**` note as in Step 2, before
+>   proceeding.
 >
 > **Step 4 — Security review (conditional)**
-> Check whether any path in `CHANGED_FILES` (computed above) falls under
-> any of these security-sensitive areas: authentication, authorization,
-> file I/O, user input handling, dependency changes (`pom.xml` /
-> `package.json`), or data persistence.
+> (recompute `CHANGED_FILES` — Step 3's fixes, if any, have modified the
+> working tree since it was last computed) Check whether any path in the
+> freshly recomputed `CHANGED_FILES` falls under any of these
+> security-sensitive areas: authentication, authorization, file I/O, user
+> input handling, dependency changes (`pom.xml` / `package.json`), or data
+> persistence.
 >
 > - If **none** of these areas were touched: skip this step.
 > - If **any** were touched: invoke `security-reviewer` via the Skill tool
->   using its **Review** workflow, passing `CHANGED_FILES` as the explicit
->   scope — do not describe the scope in prose and let the skill re-derive
->   it (this subagent runs unattended — do not invoke the
+>   using its **Review** workflow, passing that same `CHANGED_FILES` as the
+>   explicit scope — do not describe the scope in prose and let the skill
+>   re-derive it (this subagent runs unattended — do not invoke the
 >   skill's interactive Fix Workflow, which is designed for a human to steer
 >   turn-by-turn across a conversation). This is a scoped review of one
 >   change, not a full-codebase sweep of the whole web application — the
@@ -269,18 +291,21 @@ summary of what changed>` note appended to the same line — the same
 >   root, gitignored). After the review completes, fix every 🔴 Critical and
 >   🟡 Warning finding in the source files — check each off in that report
 >   file (`- [ ]` → `- [x]`) with a `**Fixed:**` note as you go, the same
->   convention `code-reviewer`'s Fix Workflow uses — then re-invoke
->   `security-reviewer` to confirm no new findings were introduced; this
+>   convention `code-reviewer`'s Fix Workflow uses — then (recompute
+>   `CHANGED_FILES`) re-invoke `security-reviewer`, passing the freshly
+>   recomputed list, to confirm no new findings were introduced; this
 >   writes a fresh report for the re-check. Repeat until the re-check report
 >   is clean.
 >   If after 3 rounds of fix-and-re-review findings are still present, end
 >   your response with `SECURITY_BLOCKED — repeated review cycles` and stop.
 >   If you encounter a finding you cannot fix without human input: end your
 >   response with `SECURITY_BLOCKED — <brief reason>` and stop.
->   Once the security report is clean, re-invoke `code-reviewer` (Review
->   workflow, same non-interactive and scoped-not-full-sweep caveats as
->   Step 2) for a final pass scoped to the security fixes — apply any 🔴
->   Critical or 🟡 Warning findings, checking each off in that pass's report
+>   Once the security report is clean, (recompute `CHANGED_FILES` — the
+>   security fixes just applied changed the working tree again) re-invoke
+>   `code-reviewer` (Review workflow, same non-interactive and
+>   scoped-not-full-sweep caveats as Step 2), passing the freshly
+>   recomputed list as scope, for a final pass covering the security fixes
+>   — apply any 🔴 Critical or 🟡 Warning findings, checking each off in that pass's report
 >   file with a `**Fixed:**` note as in Step 2, before proceeding.
 >
 > Do not proceed to Step 5 until all Critical and Warning code-review,
