@@ -4,7 +4,7 @@ description: Mark features as implemented in openspec/features.md and move them 
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.2"
+  version: "1.3"
 ---
 
 Archive one or more implemented features from `openspec/features.md` into `openspec/features-implemented.md`.
@@ -52,9 +52,9 @@ In the `features.md` table find the row whose `#` column matches. If the row alr
 
 Steps 4–8 below are ordered deliberately: everything is *extracted (read-only)* first, then written to the **destination** file (`features-implemented.md`), and only after that save succeeds is the **source** file (`features.md`) mutated — once, in a single save. This is a data-safety ordering, not an arbitrary one: if the skill gets interrupted (crash, killed session, disk error) between extraction and the final `features.md` save, the worst case is that content is already safely duplicated in `features-implemented.md`, never that it existed only in memory and got lost when both files were already mutated. Do not reorder this so that `features.md` is edited before `features-implemented.md` has been successfully saved.
 
-### 4. Extract the row from features.md (read-only)
+### 4. Extract the row from features.md (read-only) and flip it in that copy
 
-Copy the full table row (the `|` delimited line) for each selected feature. Do not edit `features.md` yet.
+Copy the full table row (the `|` delimited line) for each selected feature. **In that copy** — not in the actual file — change the Implementation column from `| ⬜ Pending |` to `| ✅ Implemented |`. This transformed copy is what step 7 writes into `features-implemented.md`, so it must already read `✅ Implemented` at that point; do not defer the flip to step 8, since the row `features.md` holds is about to be deleted there regardless and any change made to it at that stage has no lasting effect. Do not edit the actual `openspec/features.md` file yet.
 
 ### 5. Extract associated dependency / implementation notes (read-only)
 
@@ -87,7 +87,7 @@ Save `openspec/features-implemented.md`. **Confirm this save succeeded before pr
 
 With the destination safely written, make all of the following changes to `openspec/features.md` and save it **once**:
 
-1. For each selected feature's table row, change `| ⬜ Pending |` to `| ✅ Implemented |`, then delete that row entirely from the `## Feature List` table (it now lives in `features-implemented.md`).
+1. Delete each selected feature's table row entirely from the `## Feature List` table (the `✅ Implemented` version of it already landed in `features-implemented.md` in step 7 — this row, still showing `⬜ Pending`, is simply removed, not flipped).
 2. Delete the dependency/note blocks extracted in step 5 — but **only the ones whose heading numbers are a full subset of the features being archived this run**. If a block's heading references any feature number that is *not* being archived now (e.g. archiving #46 alone out of a `**Features 46, 50, 53 …**` block), leave that block in `features.md` untouched — the features still pending there need it.
 3. Remove the migration rows extracted in step 6 from the **Deployment (migration) dependencies** table.
 4. Update the **Recommended implementation order** block if it lists the archived features — remove them from the ordered list.
@@ -113,7 +113,7 @@ Migration rows moved: <count>
 ## Guardrails
 
 - **Destination before source, always.** Never edit or save `features.md` (flipping its Implementation column, deleting rows, or removing note/migration content) until the corresponding write to `features-implemented.md` in step 7 has been made and confirmed saved. This ordering (steps 4–6 extract read-only, step 7 writes the destination, step 8 is the sole mutation of the source) exists specifically so an interruption mid-run leaves data duplicated rather than lost — do not collapse or reorder it, and do not perform two separate saves to `features.md` (one flipping the column, one removing content) — step 8 is one edit, one save.
-- If a selected feature's row still shows `⬜ Pending` when step 8 runs, that's expected — step 8 is what flips it to `✅ Implemented`, immediately before deleting the row (which now lives in `features-implemented.md` from step 7).
+- **The flip happens in step 4's in-memory copy, not in `features.md`.** Step 4 must produce a copy that already reads `✅ Implemented` before step 7 writes it to `features-implemented.md` — flipping later (e.g. deferring it to step 8, against the actual `features.md` row) would only mutate a copy that step 8 deletes moments later, leaving the row permanently archived as `⬜ Pending` in `features-implemented.md`. The row that stays behind in `features.md` at step 8 is expected to still show `⬜ Pending` right up until it's deleted — it is never itself flipped, only removed.
 - If a selected feature number does not exist in `features.md`, report an error for that entry and continue with the rest.
 - Preserve the exact Markdown table formatting (column widths, pipe characters) in both files.
 - Keep the section headers and structure of both files intact — only add/remove rows and note blocks, never rewrite entire sections.

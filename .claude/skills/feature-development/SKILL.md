@@ -13,7 +13,7 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.2"
+  version: "1.3"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -153,22 +153,34 @@ following prompt:
 > If you encounter a blocker during implementation, end your response with
 > `IMPLEMENT_BLOCKED — <brief reason>` and stop.
 >
-> **Determining "the files changed by `<change-name>`"**
-> Wherever a step below needs to know which files this change touched
-> (scoping a review, or checking whether a schema/security area was
-> touched), determine it from the **uncommitted working-tree diff** —
-> `git status --porcelain` and/or `git diff --name-only HEAD` — never a
-> branch-to-branch diff like `git diff develop..HEAD`. This branch was cut
-> from `develop` and per this skill's "No git commits at any point"
-> guardrail nothing gets committed during this workflow, so the branch's
-> committed history stays identical to `develop` throughout — a
-> branch-to-branch diff would always show zero files and silently defeat
-> every check below that depends on it.
+> **Determining "the files changed by `<change-name>`" — compute this once, reuse it everywhere below**
+> Before Step 2, run `git status --porcelain` and parse every line's file
+> path — including untracked (`??`) entries, not just modified/staged ones
+> — into a concrete list; call it `CHANGED_FILES`. Do not use
+> `git diff --name-only HEAD` for this, alone or as an alternative: it only
+> reports changes to already-tracked files, so it silently misses any
+> brand-new file — and a brand-new Flyway migration or a brand-new JPA
+> entity (untracked until ever committed) is exactly the case Step 3 below
+> most needs to catch. Never substitute a branch-to-branch diff like
+> `git diff develop..HEAD` either: this branch was cut from `develop` and
+> per this skill's "No git commits at any point" guardrail nothing gets
+> committed during this workflow, so the branch's committed history stays
+> identical to `develop` throughout — a branch-to-branch diff would always
+> show zero files.
+>
+> `CHANGED_FILES` must be passed as an explicit argument to every reviewer
+> invocation in Steps 2–4 below — never just described in prose as "the
+> files changed by `<change-name>`" and left for the invoked skill to
+> re-derive on its own. A skill that re-derives scope itself might reach
+> for its own branch-diff logic and reintroduce the exact zero-files
+> failure mode this computation exists to avoid — one layer down, invisibly
+> to this skill, which would otherwise believe the problem was already
+> solved.
 >
 > **Step 2 — Code review**
 > Invoke `code-reviewer` via the Skill tool using its **Review** workflow,
-> scoped to the files changed by `<change-name>` (per "Determining 'the
-> files changed by `<change-name>`'" above) (this subagent runs
+> passing `CHANGED_FILES` (computed above) as the explicit scope — do not
+> describe the scope in prose and let the skill re-derive it (this subagent runs
 > unattended — do not invoke the skill's interactive Fix Workflow, which is
 > designed for a human to steer turn-by-turn across a conversation). This is
 > a scoped review of one change, not a full-codebase sweep of the whole web
@@ -197,17 +209,18 @@ summary of what changed>` note appended to the same line — the same
 > Do not proceed to Step 3 until all Critical and Warning findings are resolved.
 >
 > **Step 3 — Database review (conditional)**
-> Check whether the files changed by `<change-name>` (per "Determining 'the
-> files changed by `<change-name>`'" above) touch any of these
-> database-schema areas: a Flyway migration under `db/migration/`, a JPA
-> entity under `infrastructure/persistence/entity/`, or a repository query
-> (`@Query`, derived query method, or native query) under
-> `infrastructure/persistence/jpa/` or `infrastructure/persistence/adapter/`.
+> Check whether any path in `CHANGED_FILES` (computed above) falls under
+> any of these database-schema areas: a Flyway migration under
+> `db/migration/`, a JPA entity under `infrastructure/persistence/entity/`,
+> or a repository query (`@Query`, derived query method, or native query)
+> under `infrastructure/persistence/jpa/` or
+> `infrastructure/persistence/adapter/`.
 >
 > - If **none** of these areas were touched: skip this step.
 > - If **any** were touched: invoke `database-reviewer` via the Skill tool
->   using its **Review** workflow, scoped to the files changed by
->   `<change-name>` (this subagent runs unattended — do not invoke the
+>   using its **Review** workflow, passing `CHANGED_FILES` as the explicit
+>   scope — do not describe the scope in prose and let the skill re-derive
+>   it (this subagent runs unattended — do not invoke the
 >   skill's interactive Fix Workflow, which is designed for a human to steer
 >   turn-by-turn across a conversation). This is a scoped review of one
 >   change, not a full migration-history audit — do not request or expect
@@ -236,15 +249,16 @@ summary of what changed>` note appended to the same line — the same
 >   file with a `**Fixed:**` note as in Step 2, before proceeding.
 >
 > **Step 4 — Security review (conditional)**
-> Check whether the files changed by `<change-name>` (per "Determining 'the
-> files changed by `<change-name>`'" above) touch any of these
-> security-sensitive areas: authentication, authorization, file I/O, user input
-> handling, dependency changes (`pom.xml` / `package.json`), or data persistence.
+> Check whether any path in `CHANGED_FILES` (computed above) falls under
+> any of these security-sensitive areas: authentication, authorization,
+> file I/O, user input handling, dependency changes (`pom.xml` /
+> `package.json`), or data persistence.
 >
 > - If **none** of these areas were touched: skip this step.
 > - If **any** were touched: invoke `security-reviewer` via the Skill tool
->   using its **Review** workflow, scoped to the files changed by
->   `<change-name>` (this subagent runs unattended — do not invoke the
+>   using its **Review** workflow, passing `CHANGED_FILES` as the explicit
+>   scope — do not describe the scope in prose and let the skill re-derive
+>   it (this subagent runs unattended — do not invoke the
 >   skill's interactive Fix Workflow, which is designed for a human to steer
 >   turn-by-turn across a conversation). This is a scoped review of one
 >   change, not a full-codebase sweep of the whole web application — the
