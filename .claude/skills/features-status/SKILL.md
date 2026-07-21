@@ -4,7 +4,7 @@ description: Reports feature tracking progress by counting rows in openspec/feat
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "1.2"
 ---
 
 Report feature-tracking progress by counting rows in `openspec/features.md`
@@ -39,10 +39,19 @@ step 1.
 
 ### 3. Compute totals
 
+If either `openspec/features.md` or `openspec/features-implemented.md` was reported unavailable in step 1/2 (missing file, or no `## Feature List` table), do not compute `total`/`percent` at all — one of the two counts is unknown, so a number here would misrepresent it as zero rather than "unknown." Report the total/progress line as unavailable too, and say which file caused it, then still display whatever counts and breakdowns *are* available from the readable file.
+
+Otherwise:
+
 ```
-total     = pending + implemented
-percent   = round(100 * implemented / total, 1)
+total = pending + implemented
+if total == 0:
+    percent = "0% — no features tracked yet"  (both files are legitimately empty; do not divide by zero)
+else:
+    percent = "<round(100 * implemented / total, 1)>%"
 ```
+
+Either way, `percent` above is the exact, display-ready string for the **Progress** row in step 5 — it already includes the `%` sign (or the "no features tracked yet" note), so don't append another `%` when displaying it.
 
 ### 4. Priority breakdown
 
@@ -57,7 +66,7 @@ vs `⬜ Pending`.
 
 ### 5. Display the report
 
-Always display both the summary table and the detail breakdown:
+Always display both the summary table and the detail breakdown. If step 3 could not compute totals (a file was unavailable), replace the `Total features`/`Progress` rows with a one-line note naming which file was unavailable, and still show whichever of `Implemented`/`Pending` came from the readable file:
 
 ```
 ## Feature Tracker Status
@@ -67,7 +76,7 @@ Always display both the summary table and the detail breakdown:
 | Total features        | <total> |
 | ✅ Implemented         | <implemented> |
 | ⬜ Pending             | <pending> |
-| **Progress**           | **<percent>%** |
+| **Progress**           | **<percent>** |
 
 ### Pending breakdown by priority
 

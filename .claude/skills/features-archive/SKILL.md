@@ -50,27 +50,13 @@ Read:
 
 In the `features.md` table find the row whose `#` column matches. If the row already shows `✅ Implemented` warn the user and skip it.
 
-### 4. Update the Implementation column in features.md
+Steps 4–8 below are ordered deliberately: everything is *extracted (read-only)* first, then written to the **destination** file (`features-implemented.md`), and only after that save succeeds is the **source** file (`features.md`) mutated — once, in a single save. This is a data-safety ordering, not an arbitrary one: if the skill gets interrupted (crash, killed session, disk error) between extraction and the final `features.md` save, the worst case is that content is already safely duplicated in `features-implemented.md`, never that it existed only in memory and got lost when both files were already mutated. Do not reorder this so that `features.md` is edited before `features-implemented.md` has been successfully saved.
 
-For each selected feature, change its table row from:
+### 4. Extract the row from features.md (read-only)
 
-```
-| ⬜ Pending      |
-```
+Copy the full table row (the `|` delimited line) for each selected feature. Do not edit `features.md` yet.
 
-to:
-
-```
-| ✅ Implemented |
-```
-
-Save the change to `openspec/features.md`.
-
-### 5. Extract the row from features.md
-
-Copy the full table row (the `|` delimited line) for each selected feature.
-
-### 6. Extract associated dependency / implementation notes
+### 5. Extract associated dependency / implementation notes (read-only)
 
 Scan the **Dependencies** and **Implementation notes** sections of `openspec/features.md` for any blocks that reference the selected feature numbers. A block is:
 
@@ -79,33 +65,35 @@ Scan the **Dependencies** and **Implementation notes** sections of `openspec/fea
 
 Some blocks span many paragraphs separated by blank lines and use nested italic sub-headers (e.g. `*dev.samstevens.totp:totp (Maven, latest stable: 1.7.1)*`) as internal structure rather than starting a new block — stopping at the first blank line would truncate the block and strand its remaining paragraphs behind in `features.md` with no parent heading. Only a line matching the `**Feature N ...**` heading pattern ends the current block.
 
-**Some headings reference more than one feature number** (e.g. `**Features 41, 42, 43 — no schema changes**`, `**Features 46, 50, 53 — no schema changes**`). For each block, record every feature number its heading mentions, not just the one that led you to it — this determines how it's handled in step 7.
+**Some headings reference more than one feature number** (e.g. `**Features 41, 42, 43 — no schema changes**`, `**Features 46, 50, 53 — no schema changes**`). For each block, record every feature number its heading mentions, not just the one that led you to it — this determines how it's handled in step 8.
 
-Collect these blocks; they will be appended to `openspec/features-implemented.md`.
+Collect these blocks in memory. Do not edit `features.md` yet.
 
-### 7. Remove extracted content from features.md
+### 6. Extract migration table rows (read-only)
 
-Delete:
-1. The table row(s) for the selected features from the `## Feature List` table.
-2. The dependency / note blocks collected in step 6 — but **only the ones whose heading numbers are a full subset of the features being archived this run**. If a block's heading references any feature number that is *not* being archived now (e.g. archiving #46 alone out of a `**Features 46, 50, 53 …**` block), leave that block in `features.md` untouched — the features still pending there need it — even though a copy of it is also being appended to `features-implemented.md` per step 8. Duplication across the two files is fine; losing a still-pending feature's only note is not.
+In the **Deployment (migration) dependencies** table, find the row(s) mapping a Flyway migration to a selected feature and copy them in memory. Not every feature has one — some are noted "no schema change" instead. Do not edit `features.md` yet.
 
-Also update the **Recommended implementation order** block if it lists the archived features — remove them from the ordered list.
+### 7. Write everything to features-implemented.md first
 
-Update the **Deployment (migration) dependencies** table — remove rows for migrations belonging to the archived features.
+At the end of the `## Feature List` table in `openspec/features-implemented.md`, insert the table row(s) extracted in step 4.
 
-Also remove the archived features from the **no hard dependencies** list in the Dependencies section if they appear there.
+Under `## Dependencies (Historical)` → `### Implementation notes`, append the note blocks extracted in step 5 (including any multi-feature-heading block that also stays in `features.md` per step 8 — duplication across the two files is fine).
+
+For each migration row extracted in step 6, append it to the **Deployment (migration) dependencies (applied)** table in `features-implemented.md`.
+
+Save `openspec/features-implemented.md`. **Confirm this save succeeded before proceeding to step 8** — per the Guardrails, `features.md` must never be mutated until this is confirmed.
+
+### 8. Now mutate features.md — a single edit, a single save
+
+With the destination safely written, make all of the following changes to `openspec/features.md` and save it **once**:
+
+1. For each selected feature's table row, change `| ⬜ Pending |` to `| ✅ Implemented |`, then delete that row entirely from the `## Feature List` table (it now lives in `features-implemented.md`).
+2. Delete the dependency/note blocks extracted in step 5 — but **only the ones whose heading numbers are a full subset of the features being archived this run**. If a block's heading references any feature number that is *not* being archived now (e.g. archiving #46 alone out of a `**Features 46, 50, 53 …**` block), leave that block in `features.md` untouched — the features still pending there need it.
+3. Remove the migration rows extracted in step 6 from the **Deployment (migration) dependencies** table.
+4. Update the **Recommended implementation order** block if it lists the archived features — remove them from the ordered list.
+5. Remove the archived features from the **no hard dependencies** list in the Dependencies section if they appear there.
 
 Save the updated `openspec/features.md`.
-
-### 8. Append to features-implemented.md
-
-At the end of the `## Feature List` table in `openspec/features-implemented.md`, insert the extracted table row(s).
-
-Then, under `## Dependencies (Historical)` → `### Implementation notes`, append the extracted dependency / note blocks.
-
-If the feature has a Flyway migration, append its row to the **Deployment (migration) dependencies (applied)** table in `features-implemented.md`.
-
-Save `openspec/features-implemented.md`.
 
 ### 9. Display summary
 
@@ -124,8 +112,8 @@ Migration rows moved: <count>
 
 ## Guardrails
 
-- Never archive a feature that still shows `⬜ Pending` without first updating it to `✅ Implemented` in `features.md`.
-- Never remove content from `features.md` without first confirming the writes to `features-implemented.md` succeeded.
+- **Destination before source, always.** Never edit or save `features.md` (flipping its Implementation column, deleting rows, or removing note/migration content) until the corresponding write to `features-implemented.md` in step 7 has been made and confirmed saved. This ordering (steps 4–6 extract read-only, step 7 writes the destination, step 8 is the sole mutation of the source) exists specifically so an interruption mid-run leaves data duplicated rather than lost — do not collapse or reorder it, and do not perform two separate saves to `features.md` (one flipping the column, one removing content) — step 8 is one edit, one save.
+- If a selected feature's row still shows `⬜ Pending` when step 8 runs, that's expected — step 8 is what flips it to `✅ Implemented`, immediately before deleting the row (which now lives in `features-implemented.md` from step 7).
 - If a selected feature number does not exist in `features.md`, report an error for that entry and continue with the rest.
 - Preserve the exact Markdown table formatting (column widths, pipe characters) in both files.
 - Keep the section headers and structure of both files intact — only add/remove rows and note blocks, never rewrite entire sections.

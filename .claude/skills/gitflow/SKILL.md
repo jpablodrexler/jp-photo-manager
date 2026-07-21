@@ -4,7 +4,7 @@ description: Encapsulates the Gitflow branching workflow for this repo (develop 
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "1.2"
 ---
 
 Perform one Gitflow action: start a feature/release/hotfix branch, finish (open a PR for) a feature, finish (open PRs for) a release/hotfix, tag main after a release/hotfix PR has merged, or clean up already-merged feature/release/hotfix branches.
@@ -110,12 +110,13 @@ Note in the summary: once the PR into `main` is merged, run the **tag release/ho
 
 Every PR opened by this skill needs a description detailed enough for a reviewer to understand what's actually changing, not a placeholder:
 
-1. Inspect the actual content of the change: `git log <base>..<branch> --oneline` for the commit list, and `git diff <base>..<branch> --stat` for the files touched. Read individual commit messages (and diffs, for anything non-obvious) rather than guessing from branch/file names alone.
-2. Write the PR body using this structure:
+1. Refresh the base branch first: `git fetch origin <base>`. Local `<base>` (`develop` or `main`) was only guaranteed fresh at branch-creation time (3a's `git pull`) — by the time you're finishing a feature, other PRs may have merged into it since, and diffing against a stale local branch skews what "new" means. Do not run `git pull origin <base>` here — that would switch/update the checked-out branch; a plain `fetch` is enough since the next step diffs against `origin/<base>` directly.
+2. Inspect the actual content of the change: `git log origin/<base>..<branch> --oneline` for the commit list, and `git diff origin/<base>..<branch> --stat` for the files touched — against the freshly fetched `origin/<base>`, not local `<base>`. Read individual commit messages (and diffs, for anything non-obvious) rather than guessing from branch/file names alone.
+3. Write the PR body using this structure:
    - **Summary** — 2-4 bullet points describing the substantive changes (what behavior changed and why, not a mechanical commit list).
    - **Changes** — grouped by area/component if the diff spans multiple concerns (e.g. domain, UI, migrations).
    - **Test plan** — how this was verified (tests run, manual checks) if that's discoverable from the commits; omit rather than fabricate if it isn't.
-3. Do not use a generic placeholder body like `"..."`, `"Merge <branch>"`, or the PR title repeated — the description must reflect the real diff.
+4. Do not use a generic placeholder body like `"..."`, `"Merge <branch>"`, or the PR title repeated — the description must reflect the real diff.
 
 ### 3d. Tag release / Tag hotfix
 
@@ -142,7 +143,7 @@ Finds `feature/*`, `release/*`, and `hotfix/*` branches that have already been m
    - `release/<version>` or `hotfix/<version>`: merged if **both** hold — checking merge status per "Checking PR merge status" above (with `head: <branch>`, `base: main`) returns a merged result, **and** `git merge-base --is-ancestor origin/<branch> origin/develop` exits 0 (confirms `develop` also has the commits, whether via its own merged PR or because `develop` already contained them).
    - A branch with no merged PR found this way is **not** a candidate — leave it alone and don't list it, even if it looks stale. This only recognizes merges that went through a PR; branches merged some other way won't be flagged, which is the safe direction to be wrong in.
 4. If no merged branches are found, report that and stop — nothing to clean up.
-5. List every merged candidate to the user: branch name, type (feature/release/hotfix), and where it exists (local/remote/both). If there's more than one, ask whether to delete **all** of them or **specific** ones (and if specific, which — let the user pick from the list). If there's exactly one, still confirm before deleting it.
+5. Print every merged candidate to the user as plain text (not through `AskUserQuestion`'s options — a repo that's accumulated several merged-but-undeleted branches can easily produce more candidates than the tool's 4-option-per-question limit allows): branch name, type (feature/release/hotfix), and where it exists (local/remote/both). Then, if there's more than one, use **AskUserQuestion** with a small fixed set of options — "Delete all listed", "Delete specific ones (I'll list the names)", "Cancel" — and resolve "specific ones" from the user's free-text follow-up matched against the printed list, rather than trying to enumerate every branch as its own option. If there's exactly one candidate, a plain yes/no/cancel confirmation is enough.
 6. For whichever branches the user selected, ask whether to delete the **local** branch, the **remote** branch, or **both** — per branch if they exist in different places, or once for the whole batch if that's simpler for the user to answer.
 7. Do one final explicit confirmation of exactly what's about to be deleted (branch names × local/remote) before running anything — deletion of a shared remote branch is hard to reverse.
 8. Delete only what was confirmed:
