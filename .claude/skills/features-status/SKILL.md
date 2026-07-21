@@ -4,7 +4,7 @@ description: Reports feature tracking progress by counting rows in openspec/feat
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "1.2"
 ---
 
 Report feature-tracking progress by counting rows in `openspec/features.md`
@@ -21,34 +21,52 @@ artifacts-readiness breakdown of pending features.
 
 Read `openspec/features.md`. Count the rows in the `## Feature List` table —
 each row starts with `| <number> ` where `<number>` is the `#` column value.
-Every row in this file represents a pending feature (its Implementation
-column always shows `⬜ Pending`), so the row count is the pending count.
+Every row in this file is expected to be pending (its Implementation column
+should always show `⬜ Pending`, since `features-archive` moves a row to
+`features-implemented.md` in the same pass it flips the column). Don't just
+assume this — read the Implementation column value for each row and count
+only rows actually showing `⬜ Pending`; if any row shows `✅ Implemented`
+here, it means that pass was interrupted before the row was moved, so report
+it separately rather than silently folding it into the pending count.
 
 ### 2. Count implemented features
 
 Read `openspec/features-implemented.md`. Count the rows in the `## Feature
-List` table the same way. Every row here is `✅ Implemented`, so the row
-count is the implemented count.
+List` table the same way, checking the Implementation column value rather
+than assuming — every row here is expected to be `✅ Implemented`. Flag (but
+still count) any row that isn't, for the same interrupted-archive reason as
+step 1.
 
 ### 3. Compute totals
 
+If either `openspec/features.md` or `openspec/features-implemented.md` was reported unavailable in step 1/2 (missing file, or no `## Feature List` table), do not compute `total`/`percent` at all — one of the two counts is unknown, so a number here would misrepresent it as zero rather than "unknown." Report the total/progress line as unavailable too, and say which file caused it, then still display whatever counts and breakdowns *are* available from the readable file.
+
+Otherwise:
+
 ```
-total     = pending + implemented
-percent   = round(100 * implemented / total, 1)
+total = pending + implemented
+if total == 0:
+    percent = "0% — no features tracked yet"  (both files are legitimately empty; do not divide by zero)
+else:
+    percent = "<round(100 * implemented / total, 1)>%"
 ```
+
+Either way, `percent` above is the exact, display-ready string for the **Progress** row in step 5 — it already includes the `%` sign (or the "no features tracked yet" note), so don't append another `%` when displaying it.
 
 ### 4. Priority breakdown
 
-Scan the `### Hard implementation dependencies` and the `P0`/`P1`/`P2`/`P3`
-labeled subsections under `## Dependencies` in `openspec/features.md`. Tally
-how many pending features fall under each explicit priority tier, and how
-many have no explicit tier. Also count how many pending features have
-`Artifacts` = `✅ Created` (SDD artifacts already exist, ready to implement
-immediately) vs `⬜ Pending`.
+Scan the `P0`/`P1`/`P2`/`P3` labeled subsections under `## Dependencies` in
+`openspec/features.md` (the `### Hard implementation dependencies`
+subsection is unrelated to priority — it lists blocking prerequisites
+between features, not tier labels; don't scan it here). Tally how many
+pending features fall under each explicit priority tier, and how many have
+no explicit tier. Also count how many pending features have `Artifacts` =
+`✅ Created` (SDD artifacts already exist, ready to implement immediately)
+vs `⬜ Pending`.
 
 ### 5. Display the report
 
-Always display both the summary table and the detail breakdown:
+Always display both the summary table and the detail breakdown. If step 3 could not compute totals (a file was unavailable), replace the `Total features`/`Progress` rows with a one-line note naming which file was unavailable, and still show whichever of `Implemented`/`Pending` came from the readable file:
 
 ```
 ## Feature Tracker Status
@@ -58,7 +76,7 @@ Always display both the summary table and the detail breakdown:
 | Total features        | <total> |
 | ✅ Implemented         | <implemented> |
 | ⬜ Pending             | <pending> |
-| **Progress**           | **<percent>%** |
+| **Progress**           | **<percent>** |
 
 ### Pending breakdown by priority
 

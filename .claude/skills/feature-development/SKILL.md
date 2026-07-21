@@ -13,7 +13,7 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "1.2"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -42,8 +42,12 @@ Five phases executed by six dedicated subagents (3a and 3b run in parallel):
 
 ## Phase 1 — Select & Propose (Subagent 1)
 
-Spawn a **general-purpose subagent** via the Agent tool with the following
-prompt (substitute `<input>` with the argument passed to this skill, if any):
+Spawn a **general-purpose subagent** via the Agent tool, with
+`run_in_background: false` (this phase's result gates every later phase, and
+it embeds an interactive `AskUserQuestion` confirmation via `features-next`
+that a backgrounded agent cannot reliably surface — see the foreground
+guardrail below), with the following prompt (substitute `<input>` with the
+argument passed to this skill, if any):
 
 > Perform these steps in sequence. Do NOT skip any step.
 >
@@ -63,24 +67,42 @@ prompt (substitute `<input>` with the argument passed to this skill, if any):
 > **Step 1.5 — Create the feature branch**
 > Before creating or modifying any file in the repository (including SDD
 > artifacts in Step 3 below), make sure work happens on a dedicated branch
-> cut from `develop`:
+> cut from `develop`. Check resume status *before* checking for uncommitted
+> changes — not the other way around: a resumed session (e.g. this skill
+> being re-run after an interruption mid-Phase-2) is typically already
+> checked out on `feature/<change-name>` with the in-progress
+> implementation sitting there uncommitted, since this workflow never
+> commits until a human reviews it. That's expected, resumable state, not
+> a blocker — but if the uncommitted-changes check ran first, it would
+> misfire on exactly that state and block the resume before the
+> already-on-the-right-branch check ever got a chance to short-circuit it.
 >
-> 1. Run: `git status --porcelain`
+> 1. Run: `git branch --show-current`.
+>    - If the output is already exactly `feature/<change-name>`: we're
+>      already on the target branch — this is a resume. Uncommitted
+>      changes here are expected (they're the prior work being resumed),
+>      so skip steps 2 and 3 below entirely and proceed straight to Step 2
+>      of this prompt.
+>    - Otherwise, continue to step 2 below.
+> 2. Run: `git status --porcelain`
 >    If this prints anything (uncommitted changes present), end your
 >    response with `PROPOSE_BLOCKED — uncommitted changes present, cannot
->    create feature branch` and stop.
-> 2. Run: `git rev-parse --verify --quiet feature/<change-name>`
->    - If it prints a commit hash, the branch already exists (resuming a
->      prior run): run `git checkout feature/<change-name>` and continue on
->      that branch — do not invoke `gitflow` for this case, it only creates
->      new branches.
+>    create feature branch` and stop. This check only applies here — we're
+>    about to check out `develop` and either cut a new branch from it or
+>    switch to an existing one, both of which need a clean tree; it does
+>    not apply once step 1 has already confirmed we're on the target branch.
+> 3. Run: `git rev-parse --verify --quiet feature/<change-name>`
+>    - If it prints a commit hash, the branch already exists locally but
+>      isn't currently checked out: run `git checkout feature/<change-name>`
+>      and continue on that branch — do not invoke `gitflow` for this case,
+>      it only creates new branches.
 >    - If it fails (branch doesn't exist yet): use the Skill tool to invoke
 >      `gitflow` with the action "start feature `<change-name>`". It checks
 >      out `develop`, pulls the latest, and creates `feature/<change-name>`
 >      from it. If it reports a blocker (e.g. `develop` doesn't fast-forward
 >      cleanly), end your response with `PROPOSE_BLOCKED — <the gitflow
 >      blocker>` and stop.
-> 3. Run `git branch --show-current` and confirm the output is exactly
+> 4. Run `git branch --show-current` and confirm the output is exactly
 >    `feature/<change-name>` before proceeding. If it is not, end your
 >    response with `PROPOSE_BLOCKED — could not switch to feature branch`
 >    and stop.
@@ -131,8 +153,10 @@ extracted from Phase 1.
 
 ## Phase 2 — Implement & Review (Subagent 2)
 
-Spawn a **general-purpose subagent** via the Agent tool with the following
-prompt:
+Spawn a **general-purpose subagent** via the Agent tool, with
+`run_in_background: false` (Phase 3 cannot start until this subagent
+returns `IMPLEMENT: DONE` — see the foreground guardrail below), with the
+following prompt:
 
 > Perform these steps in sequence:
 >
@@ -147,9 +171,46 @@ prompt:
 > If you encounter a blocker during implementation, end your response with
 > `IMPLEMENT_BLOCKED — <brief reason>` and stop.
 >
+> **Determining "the files changed by `<change-name>`" — recompute fresh immediately before every single use, never cache one snapshot**
+> Run `git status --porcelain` and parse every line's file path —
+> including untracked (`??`) entries, not just modified/staged ones — into
+> a concrete list; call it `CHANGED_FILES`. Do not use
+> `git diff --name-only HEAD` for this, alone or as an alternative: it only
+> reports changes to already-tracked files, so it silently misses any
+> brand-new file — and a brand-new Flyway migration or a brand-new JPA
+> entity (untracked until ever committed) is exactly the case Step 3 below
+> most needs to catch. Never substitute a branch-to-branch diff like
+> `git diff develop..HEAD` either: this branch was cut from `develop` and
+> per this skill's "No git commits at any point" guardrail nothing gets
+> committed during this workflow, so the branch's committed history stays
+> identical to `develop` throughout — a branch-to-branch diff would always
+> show zero files.
+>
+> **Do not compute this once and reuse it across Steps 2–4.** The working
+> tree keeps changing throughout Phase 2 — Step 2's fix-and-re-review loop
+> (up to 3 rounds), Step 3's, and Step 4's each modify or create files, and
+> a fix can easily be exactly the kind of file the *next* step's trigger
+> check needs to see (e.g. a Step 2 fix that adds a new entity or
+> migration must be visible to Step 3's database-review trigger). A
+> `CHANGED_FILES` snapshot taken once before Step 2 and reused afterward
+> would silently miss all of that. Instead, re-run `git status --porcelain`
+> and recompute `CHANGED_FILES` fresh immediately before **every** point
+> below marked "(recompute `CHANGED_FILES`)" — every trigger check, every
+> initial reviewer invocation, every re-check after a fix round, and every
+> "final pass" after a conditional step's fixes — and pass that freshly
+> computed list as an explicit argument each time. Never just describe
+> scope in prose as "the files changed by `<change-name>`" and let the
+> invoked skill re-derive it itself: a skill that re-derives scope might
+> reach for its own branch-diff logic and reintroduce the exact zero-files
+> failure mode this computation exists to avoid — one layer down, invisibly
+> to this skill, which would otherwise believe the problem was already
+> solved.
+>
 > **Step 2 — Code review**
-> Invoke `code-reviewer` via the Skill tool using its **Review** workflow,
-> scoped to the files changed by `<change-name>` (this subagent runs
+> (recompute `CHANGED_FILES`) Invoke `code-reviewer` via the Skill tool
+> using its **Review** workflow, passing the freshly recomputed
+> `CHANGED_FILES` as the explicit scope — do not describe the scope in
+> prose and let the skill re-derive it (this subagent runs
 > unattended — do not invoke the skill's interactive Fix Workflow, which is
 > designed for a human to steer turn-by-turn across a conversation). This is
 > a scoped review of one change, not a full-codebase sweep of the whole web
@@ -166,10 +227,12 @@ prompt:
 summary of what changed>` note appended to the same line — the same
 >   convention the code-reviewer skill's Fix Workflow uses — so the report is
 >   left as an accurate record of what this session resolved rather than a
->   stale "nothing done" snapshot. Then re-invoke `code-reviewer` to confirm
->   no new findings were introduced; this writes a fresh report for the
->   re-check (the original report already reflects what was fixed). Repeat
->   until the re-check report is clean.
+>   stale "nothing done" snapshot. Then (recompute `CHANGED_FILES` — the
+>   fixes just applied changed the working tree) re-invoke `code-reviewer`,
+>   passing the freshly recomputed list, to confirm no new findings were
+>   introduced; this writes a fresh report for the re-check (the original
+>   report already reflects what was fixed). Repeat until the re-check
+>   report is clean.
 >   If after 3 rounds of fix-and-re-review findings are still present, end
 >   your response with `REVIEW_BLOCKED — repeated review cycles` and stop.
 > - If you encounter a finding you cannot fix without human input: end your
@@ -178,16 +241,20 @@ summary of what changed>` note appended to the same line — the same
 > Do not proceed to Step 3 until all Critical and Warning findings are resolved.
 >
 > **Step 3 — Database review (conditional)**
-> Check whether all changes made so far (Steps 1–2) touch any of these
+> (recompute `CHANGED_FILES` — Step 2's fix rounds have modified the
+> working tree since it was last computed) Check whether any path in the
+> freshly recomputed `CHANGED_FILES` falls under any of these
 > database-schema areas: a Flyway migration under `db/migration/`, a JPA
 > entity under `infrastructure/persistence/entity/`, or a repository query
 > (`@Query`, derived query method, or native query) under
-> `infrastructure/persistence/jpa/` or `infrastructure/persistence/adapter/`.
+> `infrastructure/persistence/jpa/` or
+> `infrastructure/persistence/adapter/`.
 >
 > - If **none** of these areas were touched: skip this step.
 > - If **any** were touched: invoke `database-reviewer` via the Skill tool
->   using its **Review** workflow, scoped to the files changed by
->   `<change-name>` (this subagent runs unattended — do not invoke the
+>   using its **Review** workflow, passing that same `CHANGED_FILES` as the
+>   explicit scope — do not describe the scope in prose and let the skill
+>   re-derive it (this subagent runs unattended — do not invoke the
 >   skill's interactive Fix Workflow, which is designed for a human to steer
 >   turn-by-turn across a conversation). This is a scoped review of one
 >   change, not a full migration-history audit — do not request or expect
@@ -196,8 +263,9 @@ summary of what changed>` note appended to the same line — the same
 >   gitignored). After the review completes, fix every 🔴 Critical and 🟡
 >   Warning finding in the source files — check each off in that report file
 >   (`- [ ]` → `- [x]`) with a `**Fixed:**` note as you go, the same
->   convention `code-reviewer`'s Fix Workflow uses — then re-invoke
->   `database-reviewer` to confirm no new findings were introduced; this
+>   convention `code-reviewer`'s Fix Workflow uses — then (recompute
+>   `CHANGED_FILES`) re-invoke `database-reviewer`, passing the freshly
+>   recomputed list, to confirm no new findings were introduced; this
 >   writes a fresh report for the re-check. Repeat until the re-check report
 >   is clean.
 >   Remember that a fix to an already-applied Flyway migration is never an
@@ -209,21 +277,28 @@ summary of what changed>` note appended to the same line — the same
 >   If you encounter a finding you cannot fix without human input (e.g. it
 >   requires a data-backfill/locking strategy decision): end your response
 >   with `DATABASE_BLOCKED — <brief reason>` and stop.
->   Once the database report is clean, re-invoke `code-reviewer` (Review
->   workflow, same non-interactive and scoped-not-full-sweep caveats as
->   Step 2) for a final pass scoped to the database fixes — apply any 🔴
->   Critical or 🟡 Warning findings, checking each off in that pass's report
->   file with a `**Fixed:**` note as in Step 2, before proceeding.
+>   Once the database report is clean, (recompute `CHANGED_FILES` — the
+>   database fixes just applied changed the working tree again) re-invoke
+>   `code-reviewer` (Review workflow, same non-interactive and
+>   scoped-not-full-sweep caveats as Step 2), passing the freshly
+>   recomputed list as scope, for a final pass covering the database fixes
+>   — apply any 🔴 Critical or 🟡 Warning findings, checking each off in
+>   that pass's report file with a `**Fixed:**` note as in Step 2, before
+>   proceeding.
 >
 > **Step 4 — Security review (conditional)**
-> Check whether all changes made so far (Steps 1 and 2) touch any of these
-> security-sensitive areas: authentication, authorization, file I/O, user input
-> handling, dependency changes (`pom.xml` / `package.json`), or data persistence.
+> (recompute `CHANGED_FILES` — Step 3's fixes, if any, have modified the
+> working tree since it was last computed) Check whether any path in the
+> freshly recomputed `CHANGED_FILES` falls under any of these
+> security-sensitive areas: authentication, authorization, file I/O, user
+> input handling, dependency changes (`pom.xml` / `package.json`), or data
+> persistence.
 >
 > - If **none** of these areas were touched: skip this step.
 > - If **any** were touched: invoke `security-reviewer` via the Skill tool
->   using its **Review** workflow, scoped to the files changed by
->   `<change-name>` (this subagent runs unattended — do not invoke the
+>   using its **Review** workflow, passing that same `CHANGED_FILES` as the
+>   explicit scope — do not describe the scope in prose and let the skill
+>   re-derive it (this subagent runs unattended — do not invoke the
 >   skill's interactive Fix Workflow, which is designed for a human to steer
 >   turn-by-turn across a conversation). This is a scoped review of one
 >   change, not a full-codebase sweep of the whole web application — the
@@ -234,18 +309,21 @@ summary of what changed>` note appended to the same line — the same
 >   root, gitignored). After the review completes, fix every 🔴 Critical and
 >   🟡 Warning finding in the source files — check each off in that report
 >   file (`- [ ]` → `- [x]`) with a `**Fixed:**` note as you go, the same
->   convention `code-reviewer`'s Fix Workflow uses — then re-invoke
->   `security-reviewer` to confirm no new findings were introduced; this
+>   convention `code-reviewer`'s Fix Workflow uses — then (recompute
+>   `CHANGED_FILES`) re-invoke `security-reviewer`, passing the freshly
+>   recomputed list, to confirm no new findings were introduced; this
 >   writes a fresh report for the re-check. Repeat until the re-check report
 >   is clean.
 >   If after 3 rounds of fix-and-re-review findings are still present, end
 >   your response with `SECURITY_BLOCKED — repeated review cycles` and stop.
 >   If you encounter a finding you cannot fix without human input: end your
 >   response with `SECURITY_BLOCKED — <brief reason>` and stop.
->   Once the security report is clean, re-invoke `code-reviewer` (Review
->   workflow, same non-interactive and scoped-not-full-sweep caveats as
->   Step 2) for a final pass scoped to the security fixes — apply any 🔴
->   Critical or 🟡 Warning findings, checking each off in that pass's report
+>   Once the security report is clean, (recompute `CHANGED_FILES` — the
+>   security fixes just applied changed the working tree again) re-invoke
+>   `code-reviewer` (Review workflow, same non-interactive and
+>   scoped-not-full-sweep caveats as Step 2), passing the freshly
+>   recomputed list as scope, for a final pass covering the security fixes
+>   — apply any 🔴 Critical or 🟡 Warning findings, checking each off in that pass's report
 >   file with a `**Fixed:**` note as in Step 2, before proceeding.
 >
 > Do not proceed to Step 5 until all Critical and Warning code-review,
@@ -264,7 +342,12 @@ ready. Do not start Phase 3 until this subagent returns `IMPLEMENT: DONE`.
 ## Phase 3 — Test (Subagents 3 & 4 — launch in parallel)
 
 Spawn **two general-purpose subagents in a single message** (both Agent tool
-calls in the same response) so they run in parallel.
+calls in the same response) so they run in parallel. Both calls must set
+`run_in_background: false` — Phase 4 cannot start until both report `PASS`
+or `BLOCKED` (see the foreground guardrail below), and `false` still runs
+them concurrently when issued together in one message; it only means this
+skill waits for both results before continuing rather than defaulting to
+background execution.
 
 ### Subagent 3 — Backend tests
 
@@ -331,11 +414,15 @@ If either subagent's response contains one or more `PROD_CODE_FIXED:` lines,
 surface them to the user with a note that those production source changes were
 not covered by Phase 2's review. Ask the user whether to:
 
-- **Proceed** — continue to Phase 4 without additional review.
+- **Proceed** — continue to Phase 4 without additional review. If chosen,
+  record this (e.g. `UNREVIEWED_PROD_FIXES: <the PROD_CODE_FIXED lines>`) —
+  the Final Summary below must surface it, since those files shipped without
+  going through code-review.
 - **Re-run Phase 2** — spawn a new Subagent 2 with the same prompt to review
   and code-review the production fixes, then re-run Phase 3 (spawn new
   Subagents 3 and 4) to confirm all tests still pass before continuing to
-  Phase 4.
+  Phase 4. If this path is taken, there is nothing left to caveat in the
+  Final Summary — the fixes did go through review.
 
 ---
 
@@ -359,7 +446,9 @@ README's "Running with Kubernetes" section) and is idempotent, safe to
 re-run. Do not inline `docker build` / `kubectl apply` steps here that
 duplicate what the script already does.
 
-Spawn a **general-purpose subagent** via the Agent tool with the following
+Spawn a **general-purpose subagent** via the Agent tool, with
+`run_in_background: false` (Phase 5 cannot start until this subagent
+completes — see the foreground guardrail below), with the following
 prompt:
 
 > **Step 1 — Check whether Docker is running**
@@ -370,14 +459,35 @@ prompt:
 > - If Docker is running: proceed to Step 2.
 >
 > **Step 2 — Determine the deploy target: Kubernetes or Docker Compose**
-> Run: `kubectl get deployment backend frontend -n photomanager --no-headers`
+> First check whether `kubectl` even has a context to work with: run
+> `kubectl config current-context`.
 >
-> - If this succeeds and lists both `backend` and `frontend`: a live
->   Kubernetes deployment exists. Follow **Step 3K** below, then stop — do
->   not perform Steps 3–7.
-> - If it fails for any reason (`kubectl` not installed, no cluster context
->   configured, the namespace or deployments don't exist): there is no live
->   Kubernetes deployment. Continue with **Step 3** below.
+> - If this fails (`kubectl` not installed, or installed with no current
+>   context configured): there is no live Kubernetes deployment intended
+>   for this machine. Continue with **Step 3** below (Docker Compose).
+> - If this succeeds (a context is configured): Kubernetes is the intended
+>   deploy target on this machine, so a failure from here on is a blocker,
+>   not a signal to fall back — the surrounding rationale above is explicit
+>   that a stray Compose deploy alongside a live K8s environment is
+>   dangerous (host port 80 conflict, or silently deploying to a
+>   disconnected instance while the real environment everyone tests
+>   against stays on the old image). Run:
+>   `kubectl get deployment backend frontend -n photomanager --no-headers`
+>   - If this succeeds and lists both `backend` and `frontend`: a live
+>     Kubernetes deployment exists. Follow **Step 3K** below, then stop —
+>     do not perform Steps 3–7.
+>   - If this fails because the `photomanager` namespace or its
+>     `backend`/`frontend` deployments simply don't exist yet (a first-time
+>     setup, not an error talking to the cluster): treat this the same as
+>     "no live deployment" and continue with **Step 3** below.
+>   - If it fails any other way (cluster unreachable, auth/RBAC error,
+>     timeout, or any error message that isn't clearly "these deployments
+>     don't exist"): a context is configured but the query itself is
+>     broken. Do **not** silently fall back to Step 3 — end your response
+>     with `DOCKER: BLOCKED — kubectl context '<context>' is configured
+>     but querying deployments failed: <error>` and stop; this needs a
+>     human to confirm whether Kubernetes is actually the intended target
+>     before Compose touches anything.
 >
 > **Step 3K — Kubernetes build & deploy via script**
 >
@@ -506,8 +616,10 @@ surfacing the issue to the user before continuing.
 
 ## Phase 5 — Archive (Subagent 6)
 
-Spawn a **general-purpose subagent** via the Agent tool with the following
-prompt:
+Spawn a **general-purpose subagent** via the Agent tool, with
+`run_in_background: false` (the Final Summary cannot be displayed until this
+subagent returns `ARCHIVE: DONE` — see the foreground guardrail below), with
+the following prompt:
 
 > Perform these two steps in sequence using the Skill tool:
 >
@@ -543,6 +655,10 @@ After all phases complete, display:
 **Security review:** ✓ All findings resolved (or N/A — no security-sensitive changes)
 **Backend tests:** ✓ All passing
 **Frontend tests:** ✓ All passing
+[if UNREVIEWED_PROD_FIXES was recorded in Phase 3, insert this line here:]
+**⚠ Unreviewed production fixes:** <the PROD_CODE_FIXED lines> — fixed while
+chasing test failures in Phase 3; the user chose to proceed without routing
+them back through Phase 2's code review.
 **Docker:** ✓ <value from DOCKER signal, e.g. "Deployed — build-and-deploy-k8s.sh (namespace photomanager)", "Deployed — backend, frontend", or "Skipped — Docker not running">
 **SDD change:** ✓ Archived
 **Feature:** ✓ Marked as implemented
@@ -574,6 +690,21 @@ After all phases complete, display:
 - Do not display the Final Summary until Phase 5 subagent returns `ARCHIVE: DONE`.
 - Subagents 3 and 4 must be launched in the same message (parallel). Do not
   launch one before the other.
+- **Foreground guardrail**: every Agent tool call in this skill (Subagents
+  1–6) must pass `run_in_background: false`. Every phase in this workflow is
+  gated on the prior phase's subagent actually finishing ("do not start
+  Phase N until Subagent M returns ..."), but the Agent tool defaults to
+  background execution, which returns immediately with no result. Spawning
+  any of these subagents in the background risks the orchestrator
+  advancing to the next phase — or worse, fabricating a phase result —
+  before the subagent has actually completed, which the Agent tool's own
+  guidance explicitly warns against. This applies even to Subagents 3 and 4:
+  issuing both calls with `run_in_background: false` in the same message
+  still runs them concurrently: it means this skill waits for both results
+  before proceeding, rather than defaulting to background execution. Phase
+  1's foreground requirement is doubly important because it embeds
+  `features-next`'s interactive `AskUserQuestion` confirmation, which a
+  backgrounded agent cannot reliably surface to the user.
 - **Missing signal fallback**: if any subagent returns without its expected
   signal, treat it as `BLOCKED`, surface the subagent's raw response to the
   user, and wait for guidance before proceeding to the next phase.
