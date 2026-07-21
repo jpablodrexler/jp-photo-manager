@@ -72,8 +72,10 @@ Copy the full table row (the `|` delimited line) for each selected feature.
 
 Scan the **Dependencies** and **Implementation notes** sections of `openspec/features.md` for any blocks that reference the selected feature numbers. A block is:
 
-- A heading or bold label that mentions the feature number (e.g. `**Feature 30 — …**`, `**Feature 30 → …**`)
-- The paragraph(s) immediately following that heading until the next heading or blank separator
+- A top-level heading or bold label that mentions the feature number (e.g. `**Feature 30 — …**`, `**Feature 30 → …**`)
+- Everything after that heading up to (but not including) the **next top-level `**Feature N …**`-style heading** — not simply the next blank line.
+
+Some blocks span many paragraphs separated by blank lines and use nested italic sub-headers (e.g. `*dev.samstevens.totp:totp (Maven, latest stable: 1.7.1)*`) as internal structure rather than starting a new block — stopping at the first blank line would truncate the block and strand its remaining paragraphs behind in `features.md` with no parent heading. Only a line matching the `**Feature N ...**` heading pattern ends the current block.
 
 Collect these blocks; they will be appended to `openspec/features-implemented.md`.
 
@@ -118,7 +120,7 @@ Migration rows moved: <count>
 
 ## Guardrails
 
-- Never archive an feature that still shows `⬜ Pending` without first updating it to `✅ Implemented` in `features.md`.
+- Never archive a feature that still shows `⬜ Pending` without first updating it to `✅ Implemented` in `features.md`.
 - Never remove content from `features.md` without first confirming the writes to `features-implemented.md` succeeded.
 - If a selected feature number does not exist in `features.md`, report an error for that entry and continue with the rest.
 - Preserve the exact Markdown table formatting (column widths, pipe characters) in both files.

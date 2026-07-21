@@ -41,6 +41,8 @@ Map the user's request to one of:
 
 If the name/version wasn't given and can't be inferred from the current branch, ask for it. For **finish feature** specifically, if no name is given explicitly, infer it from the current branch name by stripping the `feature/` prefix (e.g. current branch `feature/skills-gitflow` → name `skills-gitflow`) — no need to ask the user in this case.
 
+For **finish feature** / **finish release** / **finish hotfix** with an explicit name/version given (rather than inferred from the current branch), accept either form — the bare name (`skills-gitflow`) or the full branch name (`feature/skills-gitflow`) — and normalize to the full `<prefix>/<name-or-version>` form before using it as `<branch>` in the steps below: if the given value doesn't already start with `feature/`, `release/`, or `hotfix/`, prepend the prefix matching the action.
+
 ### 2. Check working tree state
 
 Run `git status`. If there are uncommitted changes, stop and tell the user — do not stash or discard automatically. (For **cleanup branches**, this only matters if the current branch is itself a deletion candidate — see 3e.)

@@ -21,14 +21,21 @@ artifacts-readiness breakdown of pending features.
 
 Read `openspec/features.md`. Count the rows in the `## Feature List` table —
 each row starts with `| <number> ` where `<number>` is the `#` column value.
-Every row in this file represents a pending feature (its Implementation
-column always shows `⬜ Pending`), so the row count is the pending count.
+Every row in this file is expected to be pending (its Implementation column
+should always show `⬜ Pending`, since `features-archive` moves a row to
+`features-implemented.md` in the same pass it flips the column). Don't just
+assume this — read the Implementation column value for each row and count
+only rows actually showing `⬜ Pending`; if any row shows `✅ Implemented`
+here, it means that pass was interrupted before the row was moved, so report
+it separately rather than silently folding it into the pending count.
 
 ### 2. Count implemented features
 
 Read `openspec/features-implemented.md`. Count the rows in the `## Feature
-List` table the same way. Every row here is `✅ Implemented`, so the row
-count is the implemented count.
+List` table the same way, checking the Implementation column value rather
+than assuming — every row here is expected to be `✅ Implemented`. Flag (but
+still count) any row that isn't, for the same interrupted-archive reason as
+step 1.
 
 ### 3. Compute totals
 
@@ -39,12 +46,14 @@ percent   = round(100 * implemented / total, 1)
 
 ### 4. Priority breakdown
 
-Scan the `### Hard implementation dependencies` and the `P0`/`P1`/`P2`/`P3`
-labeled subsections under `## Dependencies` in `openspec/features.md`. Tally
-how many pending features fall under each explicit priority tier, and how
-many have no explicit tier. Also count how many pending features have
-`Artifacts` = `✅ Created` (SDD artifacts already exist, ready to implement
-immediately) vs `⬜ Pending`.
+Scan the `P0`/`P1`/`P2`/`P3` labeled subsections under `## Dependencies` in
+`openspec/features.md` (the `### Hard implementation dependencies`
+subsection is unrelated to priority — it lists blocking prerequisites
+between features, not tier labels; don't scan it here). Tally how many
+pending features fall under each explicit priority tier, and how many have
+no explicit tier. Also count how many pending features have `Artifacts` =
+`✅ Created` (SDD artifacts already exist, ready to implement immediately)
+vs `⬜ Pending`.
 
 ### 5. Display the report
 

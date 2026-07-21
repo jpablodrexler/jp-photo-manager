@@ -42,8 +42,12 @@ Five phases executed by six dedicated subagents (3a and 3b run in parallel):
 
 ## Phase 1 — Select & Propose (Subagent 1)
 
-Spawn a **general-purpose subagent** via the Agent tool with the following
-prompt (substitute `<input>` with the argument passed to this skill, if any):
+Spawn a **general-purpose subagent** via the Agent tool, with
+`run_in_background: false` (this phase's result gates every later phase, and
+it embeds an interactive `AskUserQuestion` confirmation via `features-next`
+that a backgrounded agent cannot reliably surface — see the foreground
+guardrail below), with the following prompt (substitute `<input>` with the
+argument passed to this skill, if any):
 
 > Perform these steps in sequence. Do NOT skip any step.
 >
@@ -131,8 +135,10 @@ extracted from Phase 1.
 
 ## Phase 2 — Implement & Review (Subagent 2)
 
-Spawn a **general-purpose subagent** via the Agent tool with the following
-prompt:
+Spawn a **general-purpose subagent** via the Agent tool, with
+`run_in_background: false` (Phase 3 cannot start until this subagent
+returns `IMPLEMENT: DONE` — see the foreground guardrail below), with the
+following prompt:
 
 > Perform these steps in sequence:
 >
@@ -264,7 +270,12 @@ ready. Do not start Phase 3 until this subagent returns `IMPLEMENT: DONE`.
 ## Phase 3 — Test (Subagents 3 & 4 — launch in parallel)
 
 Spawn **two general-purpose subagents in a single message** (both Agent tool
-calls in the same response) so they run in parallel.
+calls in the same response) so they run in parallel. Both calls must set
+`run_in_background: false` — Phase 4 cannot start until both report `PASS`
+or `BLOCKED` (see the foreground guardrail below), and `false` still runs
+them concurrently when issued together in one message; it only means this
+skill waits for both results before continuing rather than defaulting to
+background execution.
 
 ### Subagent 3 — Backend tests
 
@@ -359,7 +370,9 @@ README's "Running with Kubernetes" section) and is idempotent, safe to
 re-run. Do not inline `docker build` / `kubectl apply` steps here that
 duplicate what the script already does.
 
-Spawn a **general-purpose subagent** via the Agent tool with the following
+Spawn a **general-purpose subagent** via the Agent tool, with
+`run_in_background: false` (Phase 5 cannot start until this subagent
+completes — see the foreground guardrail below), with the following
 prompt:
 
 > **Step 1 — Check whether Docker is running**
@@ -506,8 +519,10 @@ surfacing the issue to the user before continuing.
 
 ## Phase 5 — Archive (Subagent 6)
 
-Spawn a **general-purpose subagent** via the Agent tool with the following
-prompt:
+Spawn a **general-purpose subagent** via the Agent tool, with
+`run_in_background: false` (the Final Summary cannot be displayed until this
+subagent returns `ARCHIVE: DONE` — see the foreground guardrail below), with
+the following prompt:
 
 > Perform these two steps in sequence using the Skill tool:
 >
@@ -574,6 +589,21 @@ After all phases complete, display:
 - Do not display the Final Summary until Phase 5 subagent returns `ARCHIVE: DONE`.
 - Subagents 3 and 4 must be launched in the same message (parallel). Do not
   launch one before the other.
+- **Foreground guardrail**: every Agent tool call in this skill (Subagents
+  1–6) must pass `run_in_background: false`. Every phase in this workflow is
+  gated on the prior phase's subagent actually finishing ("do not start
+  Phase N until Subagent M returns ..."), but the Agent tool defaults to
+  background execution, which returns immediately with no result. Spawning
+  any of these subagents in the background risks the orchestrator
+  advancing to the next phase — or worse, fabricating a phase result —
+  before the subagent has actually completed, which the Agent tool's own
+  guidance explicitly warns against. This applies even to Subagents 3 and 4:
+  issuing both calls with `run_in_background: false` in the same message
+  still runs them concurrently: it means this skill waits for both results
+  before proceeding, rather than defaulting to background execution. Phase
+  1's foreground requirement is doubly important because it embeds
+  `features-next`'s interactive `AskUserQuestion` confirmation, which a
+  backgrounded agent cannot reliably surface to the user.
 - **Missing signal fallback**: if any subagent returns without its expected
   signal, treat it as `BLOCKED`, surface the subagent's raw response to the
   user, and wait for guidance before proceeding to the next phase.
