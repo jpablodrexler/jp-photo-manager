@@ -67,24 +67,42 @@ argument passed to this skill, if any):
 > **Step 1.5 — Create the feature branch**
 > Before creating or modifying any file in the repository (including SDD
 > artifacts in Step 3 below), make sure work happens on a dedicated branch
-> cut from `develop`:
+> cut from `develop`. Check resume status *before* checking for uncommitted
+> changes — not the other way around: a resumed session (e.g. this skill
+> being re-run after an interruption mid-Phase-2) is typically already
+> checked out on `feature/<change-name>` with the in-progress
+> implementation sitting there uncommitted, since this workflow never
+> commits until a human reviews it. That's expected, resumable state, not
+> a blocker — but if the uncommitted-changes check ran first, it would
+> misfire on exactly that state and block the resume before the
+> already-on-the-right-branch check ever got a chance to short-circuit it.
 >
-> 1. Run: `git status --porcelain`
+> 1. Run: `git branch --show-current`.
+>    - If the output is already exactly `feature/<change-name>`: we're
+>      already on the target branch — this is a resume. Uncommitted
+>      changes here are expected (they're the prior work being resumed),
+>      so skip steps 2 and 3 below entirely and proceed straight to Step 2
+>      of this prompt.
+>    - Otherwise, continue to step 2 below.
+> 2. Run: `git status --porcelain`
 >    If this prints anything (uncommitted changes present), end your
 >    response with `PROPOSE_BLOCKED — uncommitted changes present, cannot
->    create feature branch` and stop.
-> 2. Run: `git rev-parse --verify --quiet feature/<change-name>`
->    - If it prints a commit hash, the branch already exists (resuming a
->      prior run): run `git checkout feature/<change-name>` and continue on
->      that branch — do not invoke `gitflow` for this case, it only creates
->      new branches.
+>    create feature branch` and stop. This check only applies here — we're
+>    about to check out `develop` and either cut a new branch from it or
+>    switch to an existing one, both of which need a clean tree; it does
+>    not apply once step 1 has already confirmed we're on the target branch.
+> 3. Run: `git rev-parse --verify --quiet feature/<change-name>`
+>    - If it prints a commit hash, the branch already exists locally but
+>      isn't currently checked out: run `git checkout feature/<change-name>`
+>      and continue on that branch — do not invoke `gitflow` for this case,
+>      it only creates new branches.
 >    - If it fails (branch doesn't exist yet): use the Skill tool to invoke
 >      `gitflow` with the action "start feature `<change-name>`". It checks
 >      out `develop`, pulls the latest, and creates `feature/<change-name>`
 >      from it. If it reports a blocker (e.g. `develop` doesn't fast-forward
 >      cleanly), end your response with `PROPOSE_BLOCKED — <the gitflow
 >      blocker>` and stop.
-> 3. Run `git branch --show-current` and confirm the output is exactly
+> 4. Run `git branch --show-current` and confirm the output is exactly
 >    `feature/<change-name>` before proceeding. If it is not, end your
 >    response with `PROPOSE_BLOCKED — could not switch to feature branch`
 >    and stop.
