@@ -31,7 +31,7 @@ Five phases executed by six dedicated subagents (3a and 3b run in parallel):
 
 | Phase                  | Subagent   | Skills / actions                                                                                                                                  |
 | ---------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 — Select & Propose   | Subagent 1 | `features-next` (confirm only) → create `feature/<change-name>` branch from `develop` → `openspec-propose` (if artifacts missing)                 |
+| 1 — Select & Propose   | Subagent 1 | `features-next` (confirm only) → `gitflow` (start feature) to create `feature/<change-name>` branch from `develop` → `openspec-propose` (if artifacts missing) |
 | 2 — Implement & Review | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `database-reviewer` + `security-reviewer` (conditional, findings fixed before done)          |
 | 3a — Backend tests     | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test` until passing                                                                                     |
 | 3b — Frontend tests    | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                                                    |
@@ -72,10 +72,14 @@ prompt (substitute `<input>` with the argument passed to this skill, if any):
 > 2. Run: `git rev-parse --verify --quiet feature/<change-name>`
 >    - If it prints a commit hash, the branch already exists (resuming a
 >      prior run): run `git checkout feature/<change-name>` and continue on
->      that branch.
->    - If it fails (branch doesn't exist yet): run `git checkout develop`
->      then `git checkout -b feature/<change-name> develop` to cut the new
->      branch from `develop`.
+>      that branch — do not invoke `gitflow` for this case, it only creates
+>      new branches.
+>    - If it fails (branch doesn't exist yet): use the Skill tool to invoke
+>      `gitflow` with the action "start feature `<change-name>`". It checks
+>      out `develop`, pulls the latest, and creates `feature/<change-name>`
+>      from it. If it reports a blocker (e.g. `develop` doesn't fast-forward
+>      cleanly), end your response with `PROPOSE_BLOCKED — <the gitflow
+>      blocker>` and stop.
 > 3. Run `git branch --show-current` and confirm the output is exactly
 >    `feature/<change-name>` before proceeding. If it is not, end your
 >    response with `PROPOSE_BLOCKED — could not switch to feature branch`
@@ -600,11 +604,13 @@ After all phases complete, display:
   (see Step 4 above).
 - **Work always happens on a `feature/<change-name>` branch cut from
   `develop`.** Phase 1's Step 1.5 is the only place a branch is created or
-  switched — it creates (or resumes) `feature/<change-name>` from `develop`
-  before any file in the repository is created or modified, including the
-  SDD artifacts written by `openspec-propose`. Phases 2–5 must stay on that
-  branch; none of them may run `git checkout`, `git switch`, or create
-  another branch. If a subagent finds itself on a different branch, that is
+  switched — it invokes the `gitflow` skill (start feature) to create
+  `feature/<change-name>` from `develop`, or resumes it directly if it
+  already exists from a prior run, before any file in the repository is
+  created or modified, including the SDD artifacts written by
+  `openspec-propose`. Phases 2–5 must stay on that branch; none of them may
+  run `git checkout`, `git switch`, invoke `gitflow`, or create another
+  branch. If a subagent finds itself on a different branch, that is
   a bug in the workflow — surface it to the user rather than silently
   switching.
 - **No git commits at any point.** Neither this skill nor any subagent it
