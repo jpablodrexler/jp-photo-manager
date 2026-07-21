@@ -4,7 +4,7 @@ description: Encapsulates the Gitflow branching workflow for this repo (develop 
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "1.1"
 ---
 
 Perform one Gitflow action: start a feature/release/hotfix branch, finish (open a PR for) a feature, finish (open PRs for) a release/hotfix, tag main after a release/hotfix PR has merged, or clean up already-merged feature/release/hotfix branches.
@@ -22,6 +22,28 @@ Perform one Gitflow action: start a feature/release/hotfix branch, finish (open 
 | hotfix      | `main`       | `hotfix/`    | `main` **and** `develop` via PR |
 
 Version tags on `main` use the `v<major>.<minor>.<patch>` format (e.g. `v2.1.0`), matching this repo's existing tag history.
+
+---
+
+## GitHub access method
+
+This skill needs to open pull requests and check PR merge status on GitHub. Before the first action that touches GitHub in a given invocation (i.e. before 3b, 3c, 3d, or 3e), determine which access method is available:
+
+1. Run `gh --version`. If it succeeds, use the **gh CLI** for every GitHub operation below — it already knows the repo from the current working directory.
+2. If `gh --version` fails or `gh` is not found, use the **GitHub MCP tools** (`mcp__github__create_pull_request`, `mcp__github__list_pull_requests`, `mcp__github__pull_request_read`) instead. This is the required path in Claude Code Remote / web sessions, which have no `gh` binary. These tools take explicit `owner`/`repo` parameters — derive them once by running `git remote get-url origin` and parsing the `owner/repo` portion out of the URL (works for the `https://github.com/<owner>/<repo>.git` form, the `git@github.com:<owner>/<repo>.git` form, and the local proxy rewrite used in some sandboxed environments, `.../git/<owner>/<repo>`).
+3. If neither is available, stop and tell the user GitHub access isn't configured for this session — do not fall back to raw REST/curl calls.
+
+Wherever a step below says "open a PR" or "check merge status," use whichever method was selected here, per the equivalences below.
+
+### Opening a PR
+
+- **gh CLI**: `gh pr create --base <base> --head <branch> --title "<title>" --body "<description>"`. Capture the printed PR URL.
+- **GitHub MCP**: `mcp__github__create_pull_request` with `owner`, `repo`, `head: <branch>`, `base: <base>`, `title: "<title>"`, `body: "<description>"`. The result includes the PR URL and number.
+
+### Checking PR merge status
+
+- **gh CLI**: `gh pr list --state merged --head <branch> --base <base> --json number,mergedAt`. A non-empty result means merged. For a single known PR number, `gh pr view <number> --json state,mergedAt` is equivalent.
+- **GitHub MCP**: `mcp__github__list_pull_requests` with `owner`, `repo`, `head: <branch>`, `base: <base>`, `state: "closed"`, then check each returned PR's `merged_at` — a PR that's `closed` but not `merged` doesn't count (GitHub's API has no native "merged" state; `gh pr list --state merged` is itself just wrapping this closed-plus-merged_at check, so this reproduces it exactly). For a single known PR number, `mcp__github__pull_request_read` with `method: "get"`, `owner`, `repo`, `pullNumber` is equivalent to `gh pr view <number> --json state,mergedAt` — check the returned `merged`/`merged_at` field.
 
 ---
 
@@ -63,7 +85,7 @@ Preconditions:
 
 Steps:
 1. Build the PR description (see "Writing the PR description" below).
-2. `gh pr create --base develop --head <branch> --title "Feature <name>" --body "<description>"` — PR into `develop`.
+2. Open a PR into `develop` per "Opening a PR" above, with `base: develop`, `head: <branch>`, title `"Feature <name>"`, and the description from step 1.
 3. Report the PR URL to the user.
 
 This step **only opens the PR** — it does not merge it. Merging goes through normal GitHub review. Do not auto-merge. Feature branches never target `main` directly and are never tagged — only `release/*` and `hotfix/*` branches that land on `main` get a version tag.
@@ -76,8 +98,8 @@ Preconditions:
 
 Steps:
 1. Build the PR description (see "Writing the PR description" below) — the same description is used for both PRs since they carry the same commits.
-2. `gh pr create --base main --head <branch> --title "<Release|Hotfix> <version>" --body "<description>"` — PR into `main`.
-3. `gh pr create --base develop --head <branch> --title "<Release|Hotfix> <version>" --body "<description>"` — PR into `develop`.
+2. Open a PR into `main` per "Opening a PR" above, with `base: main`, `head: <branch>`, and title `"<Release|Hotfix> <version>"`.
+3. Open a PR into `develop` per "Opening a PR" above, with `base: develop`, `head: <branch>`, and the same title.
 4. Report both PR URLs to the user.
 
 This step **only opens the PRs** — it does not merge them. Merging goes through normal GitHub review. Do not auto-merge.
@@ -99,7 +121,7 @@ Every PR opened by this skill needs a description detailed enough for a reviewer
 
 This step must run **after** the PR into `main` has actually been merged — it tags the resulting commit on `main`, matching Gitflow's convention of tagging production merges.
 
-1. Verify the merge happened: `gh pr list --state merged --base main --head <release/hotfix-branch> --json number,mergedAt`. If no merged PR is found, stop and tell the user to merge the PR into `main` first — do not tag speculatively.
+1. Verify the merge happened: check merge status per "Checking PR merge status" above, with `base: main`, `head: <release/hotfix-branch>`. If no merged PR is found, stop and tell the user to merge the PR into `main` first — do not tag speculatively.
 2. `git checkout main`
 3. `git pull origin main`
 4. Confirm the tag name with the user: `v<version>` (strip any `release/`/`hotfix/` prefix and leading `v` from the input, then re-add a single `v`).
@@ -116,8 +138,8 @@ Finds `feature/*`, `release/*`, and `hotfix/*` branches that have already been m
 1. `git fetch origin --prune` — sync remote-tracking refs so branches already deleted on GitHub (e.g. auto-deleted on merge) aren't listed as candidates.
 2. Enumerate candidates: local branches via `git branch --list 'feature/*' 'release/*' 'hotfix/*' --format='%(refname:short)'`, remote via `git branch -r --list 'origin/feature/*' 'origin/release/*' 'origin/hotfix/*' --format='%(refname:short)'` (strip the `origin/` prefix). Union the two lists by name — note whether each exists locally, remotely, or both.
 3. For each candidate branch, determine merged status with a direct check (per the repo-state guardrail below — never infer this from timing or narrative):
-   - `feature/<name>`: merged if `gh pr list --state merged --head <branch> --base develop --json number,mergedAt` returns at least one result.
-   - `release/<version>` or `hotfix/<version>`: merged if **both** hold — `gh pr list --state merged --head <branch> --base main --json number,mergedAt` returns a result, **and** `git merge-base --is-ancestor origin/<branch> origin/develop` exits 0 (confirms `develop` also has the commits, whether via its own merged PR or because `develop` already contained them).
+   - `feature/<name>`: merged if checking merge status per "Checking PR merge status" above (with `head: <branch>`, `base: develop`) returns at least one merged result.
+   - `release/<version>` or `hotfix/<version>`: merged if **both** hold — checking merge status per "Checking PR merge status" above (with `head: <branch>`, `base: main`) returns a merged result, **and** `git merge-base --is-ancestor origin/<branch> origin/develop` exits 0 (confirms `develop` also has the commits, whether via its own merged PR or because `develop` already contained them).
    - A branch with no merged PR found this way is **not** a candidate — leave it alone and don't list it, even if it looks stale. This only recognizes merges that went through a PR; branches merged some other way won't be flagged, which is the safe direction to be wrong in.
 4. If no merged branches are found, report that and stop — nothing to clean up.
 5. List every merged candidate to the user: branch name, type (feature/release/hotfix), and where it exists (local/remote/both). If there's more than one, ask whether to delete **all** of them or **specific** ones (and if specific, which — let the user pick from the list). If there's exactly one, still confirm before deleting it.
@@ -136,9 +158,10 @@ Finds `feature/*`, `release/*`, and `hotfix/*` branches that have already been m
 - Cleanup branches never deletes anything without the user explicitly confirming: which branches (from the listed candidates), and for each, whether to delete local, remote, or both. Do not skip either confirmation step or bundle them into a single implicit approval.
 - Never merge a PR automatically — "finish feature/release/hotfix" only creates the PR(s); merging is a human review step.
 - Never open a PR with a placeholder or generic body — always derive the description from the actual commits/diff on the branch, per "Writing the PR description" above.
-- Never tag `main` without first confirming (via `gh pr list --state merged`) that the corresponding release/hotfix PR into `main` has actually merged.
+- Never tag `main` without first confirming (via "Checking PR merge status" above) that the corresponding release/hotfix PR into `main` has actually merged.
 - Never tag without explicit user confirmation immediately before the `git push origin <tag>` — pushing a tag is visible to the whole team and awkward to undo.
-- Never state whether a PR has or hasn't merged based on local git state (e.g. `git log`/`git diff` against a local branch, or `git pull` reporting "already up to date"). Local branches can be stale or a PR can be merged manually on GitHub outside of any local fetch. Always check directly with `gh pr view <number> --json state,mergedAt` or `gh pr list --state merged --base <base> --head <branch>` before reporting merge status to the user.
+- Never state whether a PR has or hasn't merged based on local git state (e.g. `git log`/`git diff` against a local branch, or `git pull` reporting "already up to date"). Local branches can be stale or a PR can be merged manually on GitHub outside of any local fetch. Always check directly per "Checking PR merge status" above before reporting merge status to the user.
+- Never shell out to raw GitHub REST/curl calls as a substitute for `gh` or the GitHub MCP tools — use whichever of those two was selected under "GitHub access method" above.
 - More generally, never assert any repo-state claim (a branch contains/is missing a given change, two branches have diverged or are identical, a commit is or isn't an ancestor of another) from a narrative of prior actions or timing assumptions. Run the direct check in the moment: `git log A..B --oneline` / `git diff A..B --stat` to compare branches, `git branch --contains <sha>` to check ancestry. A fix scoped to one specific claim (e.g. PR-merged status) does not generalize on its own — re-verify every distinct kind of claim the same way.
 - If the working tree has uncommitted changes at the start of any action, stop and report — never stash or discard automatically.
 - If `git pull` on the base branch doesn't fast-forward cleanly, stop and report — never force-merge or rebase automatically.
