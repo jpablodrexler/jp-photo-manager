@@ -4,7 +4,7 @@ description: Recommends which feature to implement next based on openspec/featur
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.2"
+  version: "1.3"
 ---
 
 Recommend the next feature to implement and return the confirmed change name to the caller.
@@ -115,7 +115,7 @@ CHANGE_NAME: <change-name>
 
 - Always read the full `features.md` before scoring — never guess which feature is next from memory.
 - Do not invoke `opsx:apply`, `opsx:propose`, or any other skill. This skill's sole responsibility is recommendation, confirmation, and returning the change name. The caller decides what to do next.
-- **Resolving a feature by number or name**: whenever a specific feature number or name is available — whether it's the skill's initial input, or a free-text answer typed into the "Other" option of step 6's `AskUserQuestion` — look it up directly as the row in `features.md` whose `#` or `Change name` column matches, rather than re-running the scoring pass. If it's the skill's initial input, skip steps 2–5 and go directly to step 6 with that feature pre-selected (but still confirm). If it's a step-6 "Other" answer, treat it as the user's final selection (re-confirming isn't necessary — they already answered the confirmation question).
+- **Resolving a feature by number or name**: whenever a specific feature number or name is available — whether it's the skill's initial input, or a free-text answer typed into the "Other" option of step 6's `AskUserQuestion` — look it up directly as the row in `features.md` whose `#` or `Change name` column matches, rather than re-running the scoring pass. If it's the skill's initial input, skip steps 2–5 and go directly to step 6 with that feature pre-selected (but still confirm). If it's a step-6 "Other" answer, treat it as the user's final selection (re-confirming isn't necessary — they already answered the confirmation question) — but only once it resolves to a real row: if the typed value matches no row at all, or matches a row already showing `✅ Implemented` (which must never be recommended, per the guardrail below — a manually-typed answer doesn't get an exception), report the mismatch to the user and ask again rather than returning a `CHANGE_NAME:` for something that isn't actually a valid pending feature.
 - A feature already showing `✅ Implemented` in the Implementation column must never be recommended.
 - If ALL unblocked features have `artifacts_ready = false`, the recommendation will still be returned — the caller handles artifact creation.
 - If ALL pending features are blocked, inform the user which blocking prerequisites need to be implemented first, and surface those prerequisites as the recommendation instead.

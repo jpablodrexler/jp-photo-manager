@@ -4,7 +4,7 @@ description: Encapsulates the Gitflow branching workflow for this repo (develop 
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.3"
+  version: "1.4"
 ---
 
 Perform one Gitflow action: start a feature/release/hotfix branch, finish (open a PR for) a feature, finish (open PRs for) a release/hotfix, tag main after a release/hotfix PR has merged, or clean up already-merged feature/release/hotfix branches.
@@ -64,6 +64,8 @@ Map the user's request to one of:
 If the name/version wasn't given and can't be inferred from the current branch, ask for it. For **finish feature** specifically, if no name is given explicitly, infer it from the current branch name by stripping the `feature/` prefix (e.g. current branch `feature/skills-gitflow` → name `skills-gitflow`) — no need to ask the user in this case.
 
 For **finish feature** / **finish release** / **finish hotfix** with an explicit name/version given (rather than inferred from the current branch), accept either form — the bare name (`skills-gitflow`) or the full branch name (`feature/skills-gitflow`) — and normalize to the full `<prefix>/<name-or-version>` form before using it as `<branch>` in the steps below: if the given value doesn't already start with `feature/`, `release/`, or `hotfix/`, prepend the prefix matching the action.
+
+The same normalization applies to **start feature** / **start release** / **start hotfix**: if the given `<name>`/`<version>` already starts with `feature/`, `release/`, or `hotfix/` (e.g. the user says "start a feature called `feature/foo`"), strip that prefix before using the value in step 3a's `git checkout -b <prefix>/<name-or-version>` — otherwise the branch would end up double-prefixed (`feature/feature/foo`).
 
 ### 2. Check working tree state
 
