@@ -115,3 +115,55 @@ A Kubernetes deployment (manifests under `JPPhotoManagerWeb/k8s/`) is also avail
 * [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)
 * [Kubernetes](https://kubernetes.io/)
 * [Prometheus](https://prometheus.io/) + [Grafana](https://grafana.com/)
+
+---
+
+## Branching Strategy
+
+This project follows a [Gitflow](https://nvie.com/posts/a-successful-git-branching-model/)-based branching model, encapsulated in the project's [`gitflow` Claude Code skill](.claude/skills/gitflow/SKILL.md):
+
+* `main` — always reflects production-ready code. Every commit on `main` is tagged with a version (`vX.Y.Z`).
+* `develop` — integration branch where finished features accumulate between releases.
+* `feature/*` — created from `develop`; finished by opening a pull request back into `develop`. Never merged into `main` directly, and never tagged.
+* `release/*` — created from `develop` when preparing a release; finished by opening pull requests into **both** `main` and `develop`. Tagged on `main` once the PR into `main` has merged.
+* `hotfix/*` — created from `main` for urgent production fixes; finished the same way as a release (PRs into both `main` and `develop`, tagged on `main` once merged).
+
+### Diagram
+
+```mermaid
+gitGraph
+    commit id: "v2.0.0" tag: "v2.0.0"
+    branch develop
+    checkout develop
+    commit id: "sync with main"
+    branch feature/branching-doc
+    checkout feature/branching-doc
+    commit id: "add README section"
+    checkout develop
+    merge feature/branching-doc id: "merge feature PR"
+    branch release/2.1.0
+    checkout release/2.1.0
+    commit id: "release prep"
+    checkout main
+    merge release/2.1.0 tag: "v2.1.0"
+    checkout develop
+    merge release/2.1.0
+    branch hotfix/2.1.1
+    checkout hotfix/2.1.1
+    commit id: "urgent fix"
+    checkout main
+    merge hotfix/2.1.1 tag: "v2.1.1"
+    checkout develop
+    merge hotfix/2.1.1
+```
+
+### Workflow
+
+1. **Start a feature** — branch `feature/<name>` from `develop`.
+2. **Finish a feature** — open a pull request from `feature/<name>` into `develop`. Merging is always a manual review step, never automated.
+3. **Start a release** — branch `release/<version>` from `develop`.
+4. **Finish a release** — open pull requests from `release/<version>` into both `main` and `develop`.
+5. **Tag a release** — once the pull request into `main` has merged, tag that commit on `main` as `v<version>` and push the tag.
+6. **Hotfixes** follow the same finish/tag steps as releases, but branch from `main` instead of `develop`, for fixes that can't wait for the next scheduled release.
+
+All of the above is automated by the `gitflow` skill, which handles branch creation, derives pull request descriptions from the actual commits/diff, and only tags `main` after confirming the corresponding pull request has merged — merging pull requests themselves always remains a human decision.
