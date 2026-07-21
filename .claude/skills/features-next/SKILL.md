@@ -4,7 +4,7 @@ description: Recommends which feature to implement next based on openspec/featur
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "1.2"
 ---
 
 Recommend the next feature to implement and return the confirmed change name to the caller.
@@ -81,19 +81,23 @@ Display:
 **Artifacts:** <✅ Created / ⬜ Not yet created>
 ```
 
-Also show the next 2–3 runners-up with a one-line reason each so the user can override.
+Also show the top 3 runners-up (by score) with a one-line reason each so the user can override.
 
 ### 6. Ask for user confirmation
+
+`AskUserQuestion` only accepts 2–4 options per question — never enumerate the full unblocked list through it. With a large backlog (this repo's `features.md` currently has dozens of unblocked pending features), only the recommendation plus its top few runners-up fit; anything beyond that must be a free-text answer.
 
 Use the **AskUserQuestion tool** with a single question:
 
 - **Question**: "Proceed with implementing `<name>`?"
-- **Options**:
-  1. "Yes, proceed" — confirm the recommended feature
-  2. "Choose a different feature" — show the full ranked list and let the user pick
-  3. "Cancel" — stop here
+- **Options** (at most 4 total — the recommended feature plus up to 3 runners-up from step 5; if step 5 found fewer than 3 runners-up, that's fine, just use however many exist):
+  1. "Yes, proceed with `<name>`" — confirm the recommended feature
+  2. "`<runner-up 1 name>`" — one-line reason from step 5
+  3. "`<runner-up 2 name>`" (if present)
+  4. "`<runner-up 3 name>`" (if present, and only if the total stays at or under 4)
+  - "Cancel" — stop here (use one of the slots above for this; drop the lowest-ranked runner-up if all 4 slots would otherwise be full)
 
-If the user selects option 2, use **AskUserQuestion** again to present the full ranked unblocked list (show number, name, and one-line brief for each) and let the user select one.
+Do not add a separate "Choose a different feature" option that tries to show the rest of the list — the tool's built-in "Other" choice already lets the user type any number or name directly, including one that didn't make the shortlist. Resolve that free-text answer per "Resolving a feature by number or name" in the Guardrails below.
 
 If the user selects "Cancel", stop and return without a change name.
 
@@ -111,7 +115,7 @@ CHANGE_NAME: <change-name>
 
 - Always read the full `features.md` before scoring — never guess which feature is next from memory.
 - Do not invoke `opsx:apply`, `opsx:propose`, or any other skill. This skill's sole responsibility is recommendation, confirmation, and returning the change name. The caller decides what to do next.
-- If the user provided a specific feature number or name as input, skip steps 2–5 and go directly to step 6 with that feature pre-selected (but still confirm).
+- **Resolving a feature by number or name**: whenever a specific feature number or name is available — whether it's the skill's initial input, or a free-text answer typed into the "Other" option of step 6's `AskUserQuestion` — look it up directly as the row in `features.md` whose `#` or `Change name` column matches, rather than re-running the scoring pass. If it's the skill's initial input, skip steps 2–5 and go directly to step 6 with that feature pre-selected (but still confirm). If it's a step-6 "Other" answer, treat it as the user's final selection (re-confirming isn't necessary — they already answered the confirmation question).
 - A feature already showing `✅ Implemented` in the Implementation column must never be recommended.
 - If ALL unblocked features have `artifacts_ready = false`, the recommendation will still be returned — the caller handles artifact creation.
 - If ALL pending features are blocked, inform the user which blocking prerequisites need to be implemented first, and surface those prerequisites as the recommendation instead.

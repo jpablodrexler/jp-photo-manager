@@ -13,7 +13,7 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "1.2"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -153,9 +153,22 @@ following prompt:
 > If you encounter a blocker during implementation, end your response with
 > `IMPLEMENT_BLOCKED — <brief reason>` and stop.
 >
+> **Determining "the files changed by `<change-name>`"**
+> Wherever a step below needs to know which files this change touched
+> (scoping a review, or checking whether a schema/security area was
+> touched), determine it from the **uncommitted working-tree diff** —
+> `git status --porcelain` and/or `git diff --name-only HEAD` — never a
+> branch-to-branch diff like `git diff develop..HEAD`. This branch was cut
+> from `develop` and per this skill's "No git commits at any point"
+> guardrail nothing gets committed during this workflow, so the branch's
+> committed history stays identical to `develop` throughout — a
+> branch-to-branch diff would always show zero files and silently defeat
+> every check below that depends on it.
+>
 > **Step 2 — Code review**
 > Invoke `code-reviewer` via the Skill tool using its **Review** workflow,
-> scoped to the files changed by `<change-name>` (this subagent runs
+> scoped to the files changed by `<change-name>` (per "Determining 'the
+> files changed by `<change-name>`'" above) (this subagent runs
 > unattended — do not invoke the skill's interactive Fix Workflow, which is
 > designed for a human to steer turn-by-turn across a conversation). This is
 > a scoped review of one change, not a full-codebase sweep of the whole web
@@ -184,7 +197,8 @@ summary of what changed>` note appended to the same line — the same
 > Do not proceed to Step 3 until all Critical and Warning findings are resolved.
 >
 > **Step 3 — Database review (conditional)**
-> Check whether all changes made so far (Steps 1–2) touch any of these
+> Check whether the files changed by `<change-name>` (per "Determining 'the
+> files changed by `<change-name>`'" above) touch any of these
 > database-schema areas: a Flyway migration under `db/migration/`, a JPA
 > entity under `infrastructure/persistence/entity/`, or a repository query
 > (`@Query`, derived query method, or native query) under
@@ -222,7 +236,8 @@ summary of what changed>` note appended to the same line — the same
 >   file with a `**Fixed:**` note as in Step 2, before proceeding.
 >
 > **Step 4 — Security review (conditional)**
-> Check whether all changes made so far (Steps 1 and 2) touch any of these
+> Check whether the files changed by `<change-name>` (per "Determining 'the
+> files changed by `<change-name>`'" above) touch any of these
 > security-sensitive areas: authentication, authorization, file I/O, user input
 > handling, dependency changes (`pom.xml` / `package.json`), or data persistence.
 >
@@ -342,11 +357,15 @@ If either subagent's response contains one or more `PROD_CODE_FIXED:` lines,
 surface them to the user with a note that those production source changes were
 not covered by Phase 2's review. Ask the user whether to:
 
-- **Proceed** — continue to Phase 4 without additional review.
+- **Proceed** — continue to Phase 4 without additional review. If chosen,
+  record this (e.g. `UNREVIEWED_PROD_FIXES: <the PROD_CODE_FIXED lines>`) —
+  the Final Summary below must surface it, since those files shipped without
+  going through code-review.
 - **Re-run Phase 2** — spawn a new Subagent 2 with the same prompt to review
   and code-review the production fixes, then re-run Phase 3 (spawn new
   Subagents 3 and 4) to confirm all tests still pass before continuing to
-  Phase 4.
+  Phase 4. If this path is taken, there is nothing left to caveat in the
+  Final Summary — the fixes did go through review.
 
 ---
 
@@ -383,14 +402,35 @@ prompt:
 > - If Docker is running: proceed to Step 2.
 >
 > **Step 2 — Determine the deploy target: Kubernetes or Docker Compose**
-> Run: `kubectl get deployment backend frontend -n photomanager --no-headers`
+> First check whether `kubectl` even has a context to work with: run
+> `kubectl config current-context`.
 >
-> - If this succeeds and lists both `backend` and `frontend`: a live
->   Kubernetes deployment exists. Follow **Step 3K** below, then stop — do
->   not perform Steps 3–7.
-> - If it fails for any reason (`kubectl` not installed, no cluster context
->   configured, the namespace or deployments don't exist): there is no live
->   Kubernetes deployment. Continue with **Step 3** below.
+> - If this fails (`kubectl` not installed, or installed with no current
+>   context configured): there is no live Kubernetes deployment intended
+>   for this machine. Continue with **Step 3** below (Docker Compose).
+> - If this succeeds (a context is configured): Kubernetes is the intended
+>   deploy target on this machine, so a failure from here on is a blocker,
+>   not a signal to fall back — the surrounding rationale above is explicit
+>   that a stray Compose deploy alongside a live K8s environment is
+>   dangerous (host port 80 conflict, or silently deploying to a
+>   disconnected instance while the real environment everyone tests
+>   against stays on the old image). Run:
+>   `kubectl get deployment backend frontend -n photomanager --no-headers`
+>   - If this succeeds and lists both `backend` and `frontend`: a live
+>     Kubernetes deployment exists. Follow **Step 3K** below, then stop —
+>     do not perform Steps 3–7.
+>   - If this fails because the `photomanager` namespace or its
+>     `backend`/`frontend` deployments simply don't exist yet (a first-time
+>     setup, not an error talking to the cluster): treat this the same as
+>     "no live deployment" and continue with **Step 3** below.
+>   - If it fails any other way (cluster unreachable, auth/RBAC error,
+>     timeout, or any error message that isn't clearly "these deployments
+>     don't exist"): a context is configured but the query itself is
+>     broken. Do **not** silently fall back to Step 3 — end your response
+>     with `DOCKER: BLOCKED — kubectl context '<context>' is configured
+>     but querying deployments failed: <error>` and stop; this needs a
+>     human to confirm whether Kubernetes is actually the intended target
+>     before Compose touches anything.
 >
 > **Step 3K — Kubernetes build & deploy via script**
 >
@@ -558,6 +598,10 @@ After all phases complete, display:
 **Security review:** ✓ All findings resolved (or N/A — no security-sensitive changes)
 **Backend tests:** ✓ All passing
 **Frontend tests:** ✓ All passing
+[if UNREVIEWED_PROD_FIXES was recorded in Phase 3, insert this line here:]
+**⚠ Unreviewed production fixes:** <the PROD_CODE_FIXED lines> — fixed while
+chasing test failures in Phase 3; the user chose to proceed without routing
+them back through Phase 2's code review.
 **Docker:** ✓ <value from DOCKER signal, e.g. "Deployed — build-and-deploy-k8s.sh (namespace photomanager)", "Deployed — backend, frontend", or "Skipped — Docker not running">
 **SDD change:** ✓ Archived
 **Feature:** ✓ Marked as implemented

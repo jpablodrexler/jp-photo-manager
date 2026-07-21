@@ -4,7 +4,7 @@ description: Mark features as implemented in openspec/features.md and move them 
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "1.2"
 ---
 
 Archive one or more implemented features from `openspec/features.md` into `openspec/features-implemented.md`.
@@ -34,9 +34,11 @@ a. **List archived SDD changes**: read all directory names under `openspec/chang
 
 b. **Cross-reference with features.md**: read `openspec/features.md`. For each archived change name, look for a row in the `## Feature List` table whose `Change name` column (the backtick-wrapped value, e.g. `` `accent-color-customization` ``) matches. Collect only the rows still showing `⬜ Pending` in the Implementation column — rows already showing `✅ Implemented` are excluded.
 
-c. **Present candidates to the user**: if one or more matches are found, use the **AskUserQuestion tool** to show them and ask which to archive (multi-select). Pre-select all detected matches as the default recommendation.
+c. **Present candidates to the user**: `AskUserQuestion` only accepts 2–4 options per question (even with `multiSelect`), so how to present candidates depends on the count:
+   - **4 or fewer matches**: use the **AskUserQuestion tool** with `multiSelect: true`, one option per candidate (number + name), and ask which to archive.
+   - **More than 4 matches**: don't try to cram them into `AskUserQuestion`. Print the full numbered list as plain text first, then use **AskUserQuestion** with a small fixed set of options — "Archive all listed", "Archive specific ones (I'll list the numbers)", "Cancel" — and resolve "specific ones" from the user's free-text follow-up (matched against the printed list) rather than a second attempt to enumerate them through the tool.
 
-d. **Fallback**: if no matches are found (all archived SDD changes either have no corresponding feature row or are already marked `✅ Implemented`), fall back to reading `openspec/features.md` and displaying all `⬜ Pending` features via **AskUserQuestion tool** so the user can pick manually.
+d. **Fallback**: if no matches are found (all archived SDD changes either have no corresponding feature row or are already marked `✅ Implemented`), fall back to reading `openspec/features.md` and listing all `⬜ Pending` features. Given the size of this backlog (see the same 4-option cap noted in step c), do not attempt to present dozens of pending features as `AskUserQuestion` options — print the full list as plain text and let the user pick by naming number(s)/name(s) directly, using **AskUserQuestion** only for the surrounding yes/no/cancel framing if needed.
 
 ### 2. Read both files
 
@@ -77,13 +79,15 @@ Scan the **Dependencies** and **Implementation notes** sections of `openspec/fea
 
 Some blocks span many paragraphs separated by blank lines and use nested italic sub-headers (e.g. `*dev.samstevens.totp:totp (Maven, latest stable: 1.7.1)*`) as internal structure rather than starting a new block — stopping at the first blank line would truncate the block and strand its remaining paragraphs behind in `features.md` with no parent heading. Only a line matching the `**Feature N ...**` heading pattern ends the current block.
 
+**Some headings reference more than one feature number** (e.g. `**Features 41, 42, 43 — no schema changes**`, `**Features 46, 50, 53 — no schema changes**`). For each block, record every feature number its heading mentions, not just the one that led you to it — this determines how it's handled in step 7.
+
 Collect these blocks; they will be appended to `openspec/features-implemented.md`.
 
 ### 7. Remove extracted content from features.md
 
 Delete:
 1. The table row(s) for the selected features from the `## Feature List` table.
-2. The dependency / note blocks collected in step 6.
+2. The dependency / note blocks collected in step 6 — but **only the ones whose heading numbers are a full subset of the features being archived this run**. If a block's heading references any feature number that is *not* being archived now (e.g. archiving #46 alone out of a `**Features 46, 50, 53 …**` block), leave that block in `features.md` untouched — the features still pending there need it — even though a copy of it is also being appended to `features-implemented.md` per step 8. Duplication across the two files is fine; losing a still-pending feature's only note is not.
 
 Also update the **Recommended implementation order** block if it lists the archived features — remove them from the ordered list.
 
