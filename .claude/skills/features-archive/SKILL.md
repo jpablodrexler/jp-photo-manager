@@ -48,7 +48,7 @@ Read:
 
 ### 3. For each selected feature — validate it exists and is pending
 
-In the `features.md` table find the row whose `#` column matches. If the row already shows `✅ Implemented` warn the user and skip it.
+In the `features.md` table find the matching row: for a numeric selection, match the `#` column; for a name (e.g. `image-rotation-viewer`, including how `feature-development`'s Phase 5 always calls this skill — with a name, never a number), match the `Change name` column (the backtick-wrapped value), the same way step 1b's auto-detection already does. If the row already shows `✅ Implemented` warn the user and skip it.
 
 Steps 4–8 below are ordered deliberately: everything is *extracted (read-only)* first, then written to the **destination** file (`features-implemented.md`), and only after that save succeeds is the **source** file (`features.md`) mutated — once, in a single save. This is a data-safety ordering, not an arbitrary one: if the skill gets interrupted (crash, killed session, disk error) between extraction and the final `features.md` save, the worst case is that content is already safely duplicated in `features-implemented.md`, never that it existed only in memory and got lost when both files were already mutated. Do not reorder this so that `features.md` is edited before `features-implemented.md` has been successfully saved.
 
