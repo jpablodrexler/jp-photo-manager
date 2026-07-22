@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import com.jpablodrexler.photomanager.domain.port.out.JwtTokenPort;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -46,6 +47,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(auth);
+            // RequestCorrelationFilter (registered at Ordered.HIGHEST_PRECEDENCE, ahead of the
+            // whole Spring Security filter chain) already put "anonymous" into MDC before the
+            // SecurityContext existed. Now that the real principal is known, correct the MDC
+            // entry in place so every log line from this point on in the request is correlated
+            // to the authenticated user instead of "anonymous".
+            MDC.put("username", username);
         }
 
         filterChain.doFilter(request, response);

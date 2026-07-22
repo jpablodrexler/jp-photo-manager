@@ -108,7 +108,9 @@ infrastructure/
                         see `docs/backend.md` for the full list
     dto/              → HTTP request/response DTOs
     mapper/           → MapStruct domain ↔ HTTP DTO mappers
-    filter/           → JwtAuthenticationFilter, RateLimitFilter (Bucket4j + Redis)
+    filter/           → JwtAuthenticationFilter, RateLimitFilter (Bucket4j + Redis),
+                        RequestCorrelationFilter (tags every request with an MDC
+                        requestId/username and an X-Request-ID response header)
     exception/        → GlobalExceptionHandler and HTTP exceptions
   service/            → Service adapters (StorageServiceAdapter, ThumbnailStorageServiceAdapter,
                         JwtTokenServiceAdapter, RefreshTokenServiceAdapter, CatalogScheduler, …)
@@ -257,7 +259,9 @@ src/app/
     services/                  → Angular services wrapping the backend API
     guards/                    → auth.guard.ts — redirects unauthenticated users to /login
     interceptors/              → auth.interceptor.ts — handles 401 → refresh-and-retry or redirect
-                                 to /login; also shows a MatSnackBar with the backend's error message
+                                 to /login; also shows a MatSnackBar with the backend's error message,
+                                 appending "[Request ID: <id>]" when the response carries an
+                                 X-Request-ID header
     error-handler/             → global-error-handler.ts — Angular ErrorHandler override; shows a
                                  MatSnackBar for unhandled component errors
   features/
