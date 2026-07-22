@@ -173,13 +173,6 @@ erDiagram
         boolean include_sub_folders
         boolean delete_assets_not_in_source
     }
-    catalog_run_state {
-        integer id PK
-        boolean is_running
-        varchar instance_id
-        timestamp started_at
-        timestamp last_heartbeat_at
-    }
     tags {
         serial tag_id PK
         varchar name UK

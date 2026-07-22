@@ -180,6 +180,73 @@
           "refId": "B"
         }
       ]
+    },
+    {
+      "id": 8,
+      "title": "Assets Cataloged (rate)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 32 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": { "lineWidth": 2 }
+        },
+        "overrides": []
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "expr": "rate(photomanager_catalog_assets_total{job=\"photomanager-backend\"}[5m])",
+          "legendFormat": "assets/sec",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "Thumbnail Generation Latency (avg)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 32 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "lineWidth": 2 }
+        },
+        "overrides": []
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "expr": "rate(photomanager_thumbnail_generation_seconds_sum{job=\"photomanager-backend\"}[5m]) / rate(photomanager_thumbnail_generation_seconds_count{job=\"photomanager-backend\"}[5m])",
+          "legendFormat": "avg generation time",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Active SSE Connections",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 32 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": { "lineWidth": 2 }
+        },
+        "overrides": []
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "expr": "photomanager_active_sse_connections{job=\"photomanager-backend\"}",
+          "legendFormat": "active connections",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "refresh": "30s",
@@ -190,5 +257,5 @@
   "timezone": "browser",
   "title": "JP Photo Manager",
   "uid": "photomanager-main",
-  "version": 1
+  "version": 2
 }

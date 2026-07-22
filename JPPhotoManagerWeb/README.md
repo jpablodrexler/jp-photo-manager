@@ -12,7 +12,7 @@ This README is split into topic-specific files under [`docs/`](docs/):
 |---|---|
 | [Features](docs/features.md) | Gallery, albums, duplicate detection, sync, conversion, recycle bin, dashboard, analytics, audio playback, cataloging, real-time progress, authentication |
 | [Architecture](docs/architecture.md) | System architecture diagram, backend hexagonal architecture, database schema, frontend component hierarchy, project structure |
-| [Backend](docs/backend.md) | Technologies, internal architecture, key services, persistence, REST API, configuration, running/testing the backend, CI/CD, logging |
+| [Backend](docs/backend.md) | Technologies, internal architecture, key services, persistence, observability/custom metrics, REST API, configuration, running/testing the backend, CI/CD, logging |
 | [Frontend](docs/frontend.md) | Technologies, application structure, gallery modes, real-time progress (SSE), running/building/testing the frontend, installing as a PWA |
 | [Running with Docker Compose](docs/docker-compose.md) | Prerequisites, setup, first-time migration, services, monitoring (Grafana + Prometheus), common commands, running without Docker |
 | [Running with Kubernetes](docs/kubernetes.md) | Manifests, architecture differences from Docker Compose, prerequisites, setup, accessing services, common commands, troubleshooting |
