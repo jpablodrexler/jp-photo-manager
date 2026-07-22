@@ -250,12 +250,16 @@ Angular 19 SPA using **standalone components** and **lazy-loaded routes**. No Ng
 src/app/
   app.component.ts/html/scss   → Shell with top navigation bar (shows nav only when logged in)
   app.routes.ts                → Lazy routes; all except /login protected by authGuard
-  app.config.ts                → ApplicationConfig (HttpClient with interceptor, Router, Animations)
+  app.config.ts                → ApplicationConfig (HttpClient with interceptor, Router, Animations,
+                                 global ErrorHandler)
   core/
     models/                    → TypeScript interfaces (Asset, Folder, PaginatedData, …)
     services/                  → Angular services wrapping the backend API
     guards/                    → auth.guard.ts — redirects unauthenticated users to /login
-    interceptors/              → auth.interceptor.ts — handles 401 → redirect to /login
+    interceptors/              → auth.interceptor.ts — handles 401 → refresh-and-retry or redirect
+                                 to /login; also shows a MatSnackBar with the backend's error message
+    error-handler/             → global-error-handler.ts — Angular ErrorHandler override; shows a
+                                 MatSnackBar for unhandled component errors
   features/
     auth/login/                → LoginComponent (/login)
     home/                      → HomeComponent (/home) — dashboard with stats

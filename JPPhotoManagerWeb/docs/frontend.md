@@ -25,12 +25,17 @@ src/app/
   app.component.ts/html/scss   → Shell with top navigation bar (shown only when logged in)
   app.routes.ts                → Lazy routes: /home, /gallery, /sync, /convert, /duplicates,
                                  /albums, /albums/:id, /recycle-bin, /admin/users, /analytics
-  app.config.ts                → ApplicationConfig (HttpClient + interceptor, Router, Animations)
+  app.config.ts                → ApplicationConfig (HttpClient + interceptor, Router, Animations,
+                                 global ErrorHandler)
   core/
     models/                    → TypeScript interfaces (Asset, Folder, PaginatedData, …)
     services/                  → Angular services wrapping the backend REST API
     guards/                    → auth.guard.ts — redirects unauthenticated users to /login
-    interceptors/              → auth.interceptor.ts — handles 401 → redirect to /login
+    interceptors/              → auth.interceptor.ts — handles 401 → refresh-and-retry or redirect
+                                 to /login; also shows a MatSnackBar with the backend's error
+                                 message (or a generic fallback) for terminal HTTP errors
+    error-handler/             → global-error-handler.ts — Angular ErrorHandler override; shows a
+                                 MatSnackBar with the error message for any unhandled component error
   features/
     auth/login/                → LoginComponent (/login)
     home/                      → HomeComponent (/home) — dashboard with stats
