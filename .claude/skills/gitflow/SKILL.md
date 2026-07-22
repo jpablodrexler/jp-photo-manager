@@ -1,10 +1,10 @@
 ---
 name: gitflow
-description: Encapsulates the Gitflow branching workflow for this repo (develop as integration branch, main as production branch). TRIGGER when the user asks to start/create a new feature, release, or hotfix branch, when asking to merge/finish a feature, release, or hotfix, when asking to tag a release or hotfix after it has been merged, or when asking to clean up/delete already-merged branches. Phrases like "start a new feature", "create a release branch", "start a hotfix", "merge the feature", "finish the feature", "merge the release", "finish the hotfix", "tag the release", "clean up the branches", "delete merged branches" all trigger this skill. Also drafts CHANGELOG.md release notes right after tagging a release/hotfix.
+description: Encapsulates the Gitflow branching workflow for this repo (develop as integration branch, main as production branch). TRIGGER when the user asks to start/create a new feature, release, or hotfix branch, when asking to merge/finish a feature, release, or hotfix, when asking to tag a release or hotfix after it has been merged, or when asking to clean up/delete already-merged branches. Phrases like "start a new feature", "create a release branch", "start a hotfix", "merge the feature", "finish the feature", "merge the release", "finish the hotfix", "tag the release", "clean up the branches", "delete merged branches" all trigger this skill. Also drafts CHANGELOG.md release notes on the release/hotfix branch itself, before its PR is opened, so the entry ships through normal PR review instead of landing on main after the tag.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.2"
+  version: "1.3"
 ---
 
 Perform one Gitflow action: start a feature/release/hotfix branch, finish (open a PR for) a feature, finish (open PRs for) a release/hotfix, tag main after a release/hotfix PR has merged, or clean up already-merged feature/release/hotfix branches.
@@ -96,17 +96,18 @@ This step **only opens the PR** — it does not merge it. Merging goes through n
 
 Preconditions:
 - Current branch (or the one named explicitly) must start with `release/` or `hotfix/` matching the action.
-- Branch must exist on the remote — if not, push it first: `git push -u origin <branch>` (confirm with the user before pushing if this is the first push of the branch).
 
 Steps:
-1. Build the PR description (see "Writing the PR description" below) — the same description is used for both PRs since they carry the same commits.
-2. Open a PR into `main` per "Opening a PR" above, with `base: main`, `head: <branch>`, and title `"<Release|Hotfix> <version>"`.
-3. Open a PR into `develop` per "Opening a PR" above, with `base: develop`, `head: <branch>`, and the same title.
-4. Report both PR URLs to the user.
+1. Draft or update the `CHANGELOG.md` entry for this release/hotfix on the current `release/`/`hotfix/` branch itself, per "Drafting release notes" below, using the version embedded in the branch name (e.g. `release/v2.3.0` → `v2.3.0`). Do this **before** the branch is pushed and before either PR is opened. This is the one thing this step changed about the old flow: the changelog entry used to get drafted after the tag, which meant committing it directly to `main` with no PR/review in front of it. Drafting it here instead means it ships as an ordinary commit on the branch under review, like everything else in the release/hotfix — no more out-of-band `main` commits.
+2. Push the branch (including the changelog commit from step 1, if the user chose to write one): `git push -u origin <branch>` if the branch doesn't exist on the remote yet, or a plain `git push` if it does (e.g. this branch was already pushed earlier in the session and step 1 just added a new commit on top) — confirm with the user before the first push of the branch either way.
+3. Build the PR description (see "Writing the PR description" below) — the same description is used for both PRs since they carry the same commits. The description's diff/commit inspection will naturally include the changelog commit from step 1; that's fine, it's a real part of what the branch changed.
+4. Open a PR into `main` per "Opening a PR" above, with `base: main`, `head: <branch>`, and title `"<Release|Hotfix> <version>"`.
+5. Open a PR into `develop` per "Opening a PR" above, with `base: develop`, `head: <branch>`, and the same title.
+6. Report both PR URLs to the user.
 
 This step **only opens the PRs** — it does not merge them. Merging goes through normal GitHub review. Do not auto-merge.
 
-Note in the summary: once the PR into `main` is merged, run the **tag release/hotfix** action to tag `main` with the version.
+Note in the summary: once the PR into `main` is merged, run the **tag release/hotfix** action to tag `main` with the version. The changelog entry is already merged at that point via step 1 above — 3d below only tags; it drafts release notes itself solely as a fallback for the rare case where step 1 was declined or the branch was tagged without ever going through this step.
 
 ### Writing the PR description
 
@@ -133,20 +134,38 @@ This step must run **after** the PR into `main` has actually been merged — it 
 7. `git tag -a v<version> -m "<Release|Hotfix> <version>"`
 8. `git push origin v<version>`
 9. Report the pushed tag.
-10. Draft release notes (see "Drafting release notes" below) and offer to record them in `CHANGELOG.md`.
+10. Check whether `CHANGELOG.md` already documents this version — look for a `v<version>` heading (`grep`/read the file). This should normally already be true: 3c drafts and merges the entry as part of the release/hotfix PR, before this tagging step ever runs.
+    - **If found**: nothing further to do — report that release notes for this version were already included in the merge. Do not draft a second entry.
+    - **If not found** (3c's draft was declined at the time, or `main` was tagged without going through 3c at all): fall back to drafting it now per "Drafting release notes" below, called from this post-tag context — the resulting commit has no PR/review step in front of it, so treat it with the heavier care described there for this call site.
 
 ### Drafting release notes
 
-After a tag is pushed, draft a changelog entry for it — this is the only point in the workflow where a version is "done," so it's the natural place to capture what shipped before that context is lost.
+Draft a changelog entry for a release/hotfix version. This runs from two possible call sites, and which one you're in changes where the commit lands and how much confirmation weight that carries:
 
-1. Find the previous tag: `git tag --sort=-v:refname` and take the entry immediately before `v<version>` in the list (skip this step, and treat everything as new, if `v<version>` is the first tag in the repo).
-2. List the commits it contains: `git log <previous-tag>..v<version> --oneline` (or `--oneline` from the repo root if there's no previous tag). Read individual commit messages — don't just dump the oneline list verbatim, since commit subjects vary in how self-explanatory they are.
-3. Group the entries into **Added**, **Changed**, **Fixed**, and **Removed** (omit any category with nothing in it) based on what each commit actually did, not its raw message text — a commit titled "update X" might be a fix, a feature, or a removal depending on the diff; check the diff for anything ambiguous rather than guessing from the subject line.
-4. Check whether `CHANGELOG.md` exists at the repo root.
+- **Normally, from 3c step 1**, on the `release/`/`hotfix/` branch itself, before its PR is opened — the commit is just another commit on a branch about to go through normal PR review.
+- **As a fallback, from 3d step 10**, directly on `main`, only when no entry exists yet for the version being tagged — there is no PR/review step protecting `main`, so this path needs the heavier treatment noted in step 6 below.
+
+Steps (the same either way except where noted):
+
+1. Determine the version and the commit range to draft from:
+   - **From 3c**: the version is embedded in the current branch name (`release/v2.3.0`/`hotfix/v2.3.0` → `v2.3.0`); the tag for it doesn't exist yet.
+   - **From 3d's fallback**: the version is the `<version>` already confirmed and tagged in step 4 of that section.
+2. Find the previous tag: `git tag --sort=-v:refname`.
+   - **From 3c** (tag doesn't exist yet): take the first (most recent) entry in that list as the previous tag.
+   - **From 3d's fallback** (tag already exists, since it was just pushed in step 8): take the entry immediately after `v<version>` in the list (i.e. the one before it chronologically).
+   - Either way, skip this step and treat everything as new if there is no usable previous tag (this is the first release ever).
+3. List the commits it contains:
+   - **From 3c**: `git log <previous-tag>..HEAD --oneline`, where `HEAD` is the tip of the current release/hotfix branch.
+   - **From 3d's fallback**: `git log <previous-tag>..v<version> --oneline`.
+   - Read individual commit messages — don't just dump the oneline list verbatim, since commit subjects vary in how self-explanatory they are.
+4. Group the entries into **Added**, **Changed**, **Fixed**, and **Removed** (omit any category with nothing in it) based on what each commit actually did, not its raw message text — a commit titled "update X" might be a fix, a feature, or a removal depending on the diff; check the diff for anything ambiguous rather than guessing from the subject line.
+5. Check whether `CHANGELOG.md` exists at the repo root.
    - **If it exists**: read its existing format (heading style, section ordering) and match it. Insert the new version's section in the same position newer entries already occupy (top-of-file "Keep a Changelog" style is the common convention — follow whatever this file already does, don't impose a different structure).
-   - **If it doesn't exist**: don't create it silently — this is a new top-level file and a one-time structural decision the user should make, not something to add as a side effect of tagging. Show the drafted entry in chat instead and ask whether to create `CHANGELOG.md` now. If they decline, stop here — the drafted entry stays in the chat response, not in the repo.
-5. If writing to the file (existing or newly approved), stage and show the diff, then ask for explicit confirmation before committing — a commit here lands directly on `main`, which carries the same "shared, hard-to-reverse, visible to everyone" weight as the tag push in step 6 above. On confirmation: `git add CHANGELOG.md && git commit -m "docs: add v<version> release notes"`, then ask separately whether to push it (`git push origin main`) — don't bundle the commit and push confirmations into one yes, since a local commit is still easy to amend/undo but a push is not.
-6. Report what was recorded (or, if the user declined, that the drafted notes were not saved anywhere).
+   - **If it doesn't exist**: don't create it silently — this is a new top-level file and a one-time structural decision the user should make, not something to add as a side effect of finishing a release or tagging one. Show the drafted entry in chat instead and ask whether to create `CHANGELOG.md` now. If they decline, stop here — the drafted entry stays in the chat response, not in the repo (from 3c, this means the branch proceeds to its PR without a changelog commit; from 3d's fallback, it means `main` is left without one).
+6. If writing to the file (existing or newly approved), stage and show the diff, then ask for explicit confirmation before committing:
+   - **From 3c** (on the release/hotfix branch): confirm before committing, the same as any other commit this skill makes on a branch under review — `git add CHANGELOG.md && git commit -m "docs: add v<version> release notes"`. No separate push confirmation is needed here beyond 3c step 2's existing branch-push confirmation, since the changelog commit is just one of the commits that push carries.
+   - **From 3d's fallback** (on `main`): treat this with the same care as the tag push in 3d — a commit here lands directly on `main` with no PR/review step in front of it. `git add CHANGELOG.md && git commit -m "docs: add v<version> release notes"`, then ask **separately** whether to push it (`git push origin main`) — don't bundle the commit and push confirmations into one yes, since a local commit is still easy to amend/undo but a push is not.
+7. Report what was recorded (or, if the user declined, that the drafted notes were not saved anywhere).
 
 ### 3e. Cleanup branches
 
@@ -177,7 +196,7 @@ Finds `feature/*`, `release/*`, and `hotfix/*` branches that have already been m
 - Never open a PR with a placeholder or generic body — always derive the description from the actual commits/diff on the branch, per "Writing the PR description" above.
 - Never tag `main` without first confirming (via "Checking PR merge status" above) that the corresponding release/hotfix PR into `main` has actually merged.
 - Never tag without explicit user confirmation immediately before the `git push origin <tag>` — pushing a tag is visible to the whole team and awkward to undo.
-- Never create `CHANGELOG.md` silently, and never commit or push a release-notes update without separate explicit confirmation for the commit and for the push — see "Drafting release notes" under 3d. A commit lands directly on `main`; treat it with the same care as the tag push.
+- Never create `CHANGELOG.md` silently, on either call site — see "Drafting release notes". From 3c (the normal path, on the release/hotfix branch before its PR), a changelog commit is an ordinary commit under review, so a single commit confirmation is enough. From 3d's fallback (writing directly to `main`, only when 3c's draft was skipped or declined), there is no PR/review step protecting it, so commit and push need separate explicit confirmations, with the same care as the tag push.
 - Never state whether a PR has or hasn't merged based on local git state (e.g. `git log`/`git diff` against a local branch, or `git pull` reporting "already up to date"). Local branches can be stale or a PR can be merged manually on GitHub outside of any local fetch. Always check directly per "Checking PR merge status" above before reporting merge status to the user.
 - Never shell out to raw GitHub REST/curl calls as a substitute for `gh` or the GitHub MCP tools — use whichever of those two was selected under "GitHub access method" above.
 - More generally, never assert any repo-state claim (a branch contains/is missing a given change, two branches have diverged or are identical, a commit is or isn't an ancestor of another) from a narrative of prior actions or timing assumptions. Run the direct check in the moment: `git log A..B --oneline` / `git diff A..B --stat` to compare branches, `git branch --contains <sha>` to check ancestry. A fix scoped to one specific claim (e.g. PR-merged status) does not generalize on its own — re-verify every distinct kind of claim the same way.
