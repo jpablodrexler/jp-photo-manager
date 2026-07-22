@@ -7,13 +7,17 @@ description: >
   (findings fixed before continuing), runs backend and frontend tests until
   they pass, builds updated Docker images and deploys them via Kubernetes (if
   a live cluster deployment exists) or Docker Compose (if Docker is running),
-  then archives the SDD change and marks the feature as implemented. Use
-  when you want a fully automated feature development cycle with minimal
-  manual steps. TRIGGER when the user asks to develop a feature.
+  syncs the web app's documentation (CLAUDE.md + docs/*.md) against what
+  actually shipped, verifies the implementation actually satisfies the
+  change's spec scenarios (not just that tasks are checked off) before
+  archiving, then archives the SDD change and marks the feature as
+  implemented. Use when you want a fully automated feature development
+  cycle with minimal manual steps. TRIGGER when the user asks to develop a
+  feature.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.2"
+  version: "1.3"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -129,6 +133,15 @@ argument passed to this skill, if any):
 > and confirm every artifact ID in `applyRequires` now has `"status": "done"`.
 > If any are still missing, end your response with
 > `PROPOSE_BLOCKED — artifacts incomplete after propose` and stop.
+>
+> Now that artifacts are confirmed `done`, reflect that in the backlog: open
+> `JPPhotoManagerWeb/docs/backlog/features-planned.md`, find the row in the
+> `## Feature List` table whose `Change name` column (backtick-wrapped)
+> matches `<change-name>`, and if its `SDD Artifacts` column shows `⬜ Pending`,
+> change it to `✅ Created` and save the file. If the row already shows
+> `✅ Created`, leave it unchanged. If no matching row exists (e.g. the
+> change was proposed ad hoc, outside the tracked backlog), skip this
+> silently — it is not an error.
 >
 > **Step 4 — Return the change name**
 > End your response with exactly this line so the orchestrator can extract it:
@@ -527,13 +540,40 @@ line>` verbatim so the user can create it from the matching
 >    kubectl get pods -n photomanager -l 'app in (backend,frontend)'
 >    ```
 >    Both should show `1/1` and `Running`.
+> 5. **Post-deploy smoke test.** `Running` pods and a passing readiness probe
+>    only prove `/actuator/health` responds inside the backend pod — they
+>    don't prove a real request routes through Spring Security and a
+>    controller correctly, or that the frontend's nginx `/api` proxy_pass to
+>    the backend Service actually resolves. Verify with a transient
+>    port-forward, torn down immediately after (never left running):
+>    ```
+>    kubectl port-forward -n photomanager svc/backend 18080:8080 &
+>    PF_PID=$!
+>    sleep 2
+>    curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:18080/api/home/stats
+>    kill $PF_PID
+>    ```
+>    Expect `401` or `403` (unauthenticated) — this proves the Spring
+>    context, security filter chain, and a real controller round-trip all
+>    work, not just the actuator health indicator. A connection error,
+>    timeout, or `500` here is a real regression the rollout/pod checks
+>    above cannot see; treat it as a smoke-test failure.
+>
+>    Also try the ingress path, but treat it as informational only — a
+>    missing local DNS entry for `photomanager.local` is an environment gap,
+>    not a deploy failure:
+>    ```
+>    curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://photomanager.local/
+>    ```
+>    Note the result either way in the final summary, but only the
+>    port-forward check above can fail the smoke test.
 >
 > End your response with one of:
 >
 > - `DOCKER: DEPLOYED — build-and-deploy-k8s.sh (namespace photomanager)`
-> - `DOCKER: BLOCKED — <brief reason>` if the script, or the rollout wait
->   after it, failed (or `kubectl rollout status` timed out) and you cannot
->   resolve it without human input.
+> - `DOCKER: BLOCKED — <brief reason>` if the script, the rollout wait after
+>   it, or Step 5's port-forward smoke test failed (or `kubectl rollout
+>   status` timed out) and you cannot resolve it without human input.
 >
 > **Step 3 — Probe Docker Compose version**
 > Determine which compose command is available:
@@ -601,12 +641,27 @@ line>` verbatim so the user can create it from the matching
 > **Step 7 — Verify**
 > Run `docker ps` and confirm the updated containers are listed as running.
 >
+> **Step 8 — Post-deploy smoke test**
+> Containers showing `Up` doesn't prove the app actually serves a correct
+> response — verify with the same authenticated-endpoint check `e2e-testing`
+> §5 uses:
+> ```
+> curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:8080/api/home/stats
+> curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:80/
+> ```
+> Expect `401`/`403` from the first (an unauthenticated API call reaching a
+> real controller, not just a raw TCP accept) and `200` from the second
+> (frontend serving). A connection error, timeout, or `500`/`502` from either
+> is a real regression Step 7's `docker ps` check cannot see; treat it as a
+> smoke-test failure. Adjust the ports if the compose file maps them
+> differently than the defaults above.
+>
 > End your response with one of:
 >
 > - `DOCKER: DEPLOYED — <list of images built and containers restarted>`
 > - `DOCKER: SKIPPED — <reason>`
-> - `DOCKER: BLOCKED — <brief reason>` if a build or restart failed and you
->   cannot resolve it without human input.
+> - `DOCKER: BLOCKED — <brief reason>` if a build, restart, or Step 8's smoke
+>   test failed and you cannot resolve it without human input.
 
 Do not start Phase 5 until this subagent completes. A `DOCKER: SKIPPED` result
 is not a failure — proceed to Phase 5 normally. Only `DOCKER: BLOCKED` requires
@@ -621,22 +676,58 @@ Spawn a **general-purpose subagent** via the Agent tool, with
 subagent returns `ARCHIVE: DONE` — see the foreground guardrail below), with
 the following prompt:
 
-> Perform these two steps in sequence using the Skill tool:
+> Perform these steps in sequence using the Skill tool:
 >
-> **Step 1** — Invoke `openspec-archive-change <change-name>`. Wait for it to
+> **Step 1** — Invoke `spec-compliance-check` for `<change-name>`. It reads
+> `openspec/changes/<change-name>/specs/**/spec.md` and `tasks.md`
+> (unmodified — this skill is read-only against `openspec/`) and reports
+> each acceptance scenario as Verified, Failing, or Unverified; it does not
+> invoke `openspec-archive-change` itself and does not edit any files.
+> - **If the report has any Failing scenario:** stop immediately — do not
+>   proceed to Step 2. End your response with
+>   `ARCHIVE_BLOCKED: spec-compliance-check found <N> failing scenario(s) — <one-line summary>`.
+>   A failing scenario means shipped behavior contradicts the spec; this is
+>   not something to route through Steps 2–4 unattended.
+> - **If the report has only Unverified scenarios (no Failing ones):** this
+>   is a judgment call for a human, not an automatic block — continue to
+>   Step 2, but carry the list of unverified scenarios forward; it must
+>   appear as a caveat in the Final Summary (see below), the same way
+>   `UNREVIEWED_PROD_FIXES` surfaces from Phase 3.
+> - **If everything is Verified:** continue to Step 2 with nothing to carry
+>   forward.
+>
+> **Step 2** — Invoke `web-docs-sync` in its scoped-sync mode for the
+> current branch's changes (it diffs against `origin/develop` itself — no
+> need to pass a file list). This keeps `JPPhotoManagerWeb/CLAUDE.md` and
+> `JPPhotoManagerWeb/docs/*.md` from drifting behind whatever this feature
+> just shipped (a new endpoint, config property, cache, Kafka topic, route,
+> deploy-manifest env var, or custom metric). This step is **best-effort,
+> not blocking**: if the skill reports nothing to sync, or the diff is
+> outside its scope (e.g. a WPF-only or tooling-only change), continue to
+> Step 3 regardless. Only stop and surface details to the user if the skill
+> itself errors out in a way that leaves files in a broken state.
+>
+> **Step 3** — Invoke `openspec-archive-change <change-name>`. Wait for it to
 > complete fully (the SDD change directory must be moved to
 > `openspec/changes/archive/`). This skill may prompt you about delta spec sync
 > or incomplete tasks — respond to those prompts normally; they are part of the
 > archiving workflow.
 >
-> **Step 2** — Invoke `features-archive <change-name>`. Wait for it to
+> **Step 4** — Invoke `features-archive <change-name>`. Wait for it to
 > complete fully (the feature row must be updated to `✅ Implemented` in
-> `openspec/features.md`).
+> `JPPhotoManagerWeb/docs/backlog/features-planned.md`).
 >
-> After both steps complete, end your response with exactly this line:
+> After all four steps complete, end your response with exactly this line
+> (append the `UNVERIFIED_SCENARIOS:` line only if Step 1 found any):
 > `ARCHIVE: DONE`
+> `UNVERIFIED_SCENARIOS: <count> — <one-line summary of which scenarios, from Step 1's report>`
 
-Do not display the Final Summary until this subagent returns `ARCHIVE: DONE`.
+Do not display the Final Summary until this subagent returns `ARCHIVE: DONE`
+or `ARCHIVE_BLOCKED`. An `ARCHIVE_BLOCKED` result means the feature is
+implemented and tested but **not archived** — surface the failing
+scenario(s) to the user and wait for guidance (fix the code, fix the spec
+via the normal `openspec-*` workflow, or override and archive manually)
+rather than proceeding or retrying automatically.
 
 ---
 
@@ -648,7 +739,7 @@ After all phases complete, display:
 ## Feature Development Complete
 
 **Change:** <change-name>
-**Artifacts:** ✓ Created
+**SDD Artifacts:** ✓ Created
 **Implementation:** ✓ All tasks complete
 **Code review:** ✓ All findings resolved
 **Database review:** ✓ All findings resolved (or N/A — no schema changes)
@@ -660,6 +751,8 @@ After all phases complete, display:
 chasing test failures in Phase 3; the user chose to proceed without routing
 them back through Phase 2's code review.
 **Docker:** ✓ <value from DOCKER signal, e.g. "Deployed — build-and-deploy-k8s.sh (namespace photomanager)", "Deployed — backend, frontend", or "Skipped — Docker not running">
+**Spec compliance:** ✓ All scenarios verified (or, if `UNVERIFIED_SCENARIOS` was recorded in Phase 5: **⚠ <count> scenario(s) unverified:** <the one-line summary> — no automated test or manual check found; consider closing the gap with `spec-compliance-check`)
+**Docs sync:** ✓ <one-line summary from `web-docs-sync`, e.g. "Updated docs/backend.md REST API table + CLAUDE.md config pointer" or "Nothing to sync">
 **SDD change:** ✓ Archived
 **Feature:** ✓ Marked as implemented
 ```
@@ -688,6 +781,14 @@ them back through Phase 2's code review.
   `DOCKER: SKIPPED`. If it reports `DOCKER: BLOCKED`, surface the details to
   the user and wait for guidance before continuing.
 - Do not display the Final Summary until Phase 5 subagent returns `ARCHIVE: DONE`.
+  If it returns `ARCHIVE_BLOCKED` instead (Step 1's `spec-compliance-check`
+  found a failing scenario), the change stays unarchived — surface the
+  failing scenario(s) to the user and wait for guidance instead of
+  retrying Phase 5 automatically or treating it as equivalent to
+  `DOCKER: BLOCKED`'s deploy-retry framing; a spec/behavior mismatch isn't
+  something a re-run fixes by itself. If it returns `ARCHIVE: DONE` with an
+  `UNVERIFIED_SCENARIOS:` line, that's not blocking — carry the line into
+  the Final Summary's "Spec compliance" field verbatim.
 - Subagents 3 and 4 must be launched in the same message (parallel). Do not
   launch one before the other.
 - **Foreground guardrail**: every Agent tool call in this skill (Subagents
