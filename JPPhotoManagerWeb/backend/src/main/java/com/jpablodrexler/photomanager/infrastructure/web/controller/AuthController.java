@@ -18,10 +18,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -68,20 +66,16 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody AuthRequestDto request,
                                                HttpServletResponse response) {
-        try {
-            LoginUseCase.LoginResult result = loginUseCase.execute(request.username(), request.password());
+        LoginUseCase.LoginResult result = loginUseCase.execute(request.username(), request.password());
 
-            ResponseCookie jwtCookie = authCookieFactory.jwtCookie(result.jwtToken(),
-                    Duration.between(Instant.now(), result.jwtExpiresAt()));
-            ResponseCookie refreshCookie = authCookieFactory.refreshCookie(result.refreshTokenValue(),
-                    Duration.ofDays(30));
+        ResponseCookie jwtCookie = authCookieFactory.jwtCookie(result.jwtToken(),
+                Duration.between(Instant.now(), result.jwtExpiresAt()));
+        ResponseCookie refreshCookie = authCookieFactory.refreshCookie(result.refreshTokenValue(),
+                Duration.ofDays(30));
 
-            response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
-            response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
-            return ResponseEntity.ok(new LoginResponseDto(result.username(), result.jwtExpiresAt()));
-        } catch (BadCredentialsException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+        return ResponseEntity.ok(new LoginResponseDto(result.username(), result.jwtExpiresAt()));
     }
 
     @Operation(summary = "Rotate refresh token and issue new JWT")
@@ -91,25 +85,19 @@ public class AuthController {
     })
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponseDto> refresh(HttpServletRequest request, HttpServletResponse response) {
-        String tokenValue = extractCookieValue(request, "refreshToken").orElse(null);
-        if (tokenValue == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        String tokenValue = extractCookieValue(request, "refreshToken")
+                .orElseThrow(() -> new InvalidRefreshTokenException("Refresh token cookie is missing"));
 
-        try {
-            RefreshTokenUseCase.RefreshResult result = refreshTokenUseCase.execute(tokenValue);
+        RefreshTokenUseCase.RefreshResult result = refreshTokenUseCase.execute(tokenValue);
 
-            ResponseCookie jwtCookie = authCookieFactory.jwtCookie(result.jwtToken(),
-                    Duration.between(Instant.now(), result.jwtExpiresAt()));
-            ResponseCookie refreshCookie = authCookieFactory.refreshCookie(result.newRefreshTokenValue(),
-                    Duration.ofDays(30));
+        ResponseCookie jwtCookie = authCookieFactory.jwtCookie(result.jwtToken(),
+                Duration.between(Instant.now(), result.jwtExpiresAt()));
+        ResponseCookie refreshCookie = authCookieFactory.refreshCookie(result.newRefreshTokenValue(),
+                Duration.ofDays(30));
 
-            response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
-            response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
-            return ResponseEntity.ok(new LoginResponseDto(result.username(), result.jwtExpiresAt()));
-        } catch (InvalidRefreshTokenException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
+        response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+        return ResponseEntity.ok(new LoginResponseDto(result.username(), result.jwtExpiresAt()));
     }
 
     @Operation(summary = "Logout and clear JWT cookie")
