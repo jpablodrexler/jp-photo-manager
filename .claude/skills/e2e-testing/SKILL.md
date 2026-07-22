@@ -5,8 +5,10 @@ description: >
   3.4 / Java 21 backend + Angular 19 frontend). TRIGGER when asked to run or
   verify E2E behaviour after completing a feature — especially for UI-facing
   changes to the dashboard, gallery, or any user flow. Covers: starting
-  prerequisites, API response verification, visual screenshot capture via
-  Puppeteer, and interactive navigation checks.
+  prerequisites, API response verification, SSE progress-stream
+  verification, visual screenshot capture via Puppeteer, interactive
+  navigation checks, and an optional multi-replica Kafka/Redis consistency
+  check for changes touching consumer-group or cache-invalidation logic.
 metadata:
   scope: [JPPhotoManagerWeb]
 ---
@@ -51,7 +53,105 @@ Verify with:
 PGPASSWORD=postgres psql -U postgres -h localhost -p 5432 -l 2>&1 | grep photomanager
 ```
 
-### 1.2 Verify real data exists
+### 1.2 MongoDB
+
+The backend requires MongoDB for `asset_audit_log` (written by
+`AuditLogKafkaListener`/direct `AuditLogRepository.log(...)` calls). Check
+first:
+
+```bash
+ss -tlnp | grep 27017
+```
+
+If nothing is listening, start the local Docker container:
+
+```bash
+docker start photomanager-mongo 2>/dev/null || \
+  docker run -d --name photomanager-mongo -p 27017:27017 mongo:8
+```
+
+No manual index setup needed — `MongoIndexInitializer` ensures the
+compound `userId`/`timestamp` index and the 365-day TTL index on
+`asset_audit_log` at backend startup.
+
+### 1.3 Redis
+
+The backend requires Redis for the Spring Cache abstraction (`home-stats`,
+`sub-folders`, `asset-exif`, `assets`, `tags` caches — see
+`redis-caching-conventions`), the thumbnail L2 cache, the refresh-token
+mirror, and rate limiting. Check first:
+
+```bash
+ss -tlnp | grep 6379
+```
+
+If nothing is listening, start the local Docker container **with the
+`allkeys-lru` eviction policy** — several of the above features assume
+bounded, self-evicting growth rather than an unbounded keyspace:
+
+```bash
+docker start photomanager-redis 2>/dev/null || \
+  docker run -d --name photomanager-redis -p 6379:6379 \
+    redis:7-alpine redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+```
+
+**Pitfall:** every Redis-backed code path in this app fails open (catches
+and logs `WARN` rather than failing the request — see
+`redis-caching-conventions` §4), so a *missing* Redis won't produce an
+obvious startup error. Symptoms are subtler: cached endpoints always take
+the slow (uncached) path, thumbnails always hit disk, and rate limiting is
+effectively disabled. If E2E behavior seems to ignore caching entirely,
+confirm Redis is actually up before assuming the feature is broken.
+
+### 1.4 Kafka
+
+The backend requires Kafka for catalog/sync/convert/upload progress
+streaming and the `asset.cataloged`/`asset.deleted`/`asset.uploaded`
+domain events (see `kafka-events-conventions`). Check first:
+
+```bash
+ss -tlnp | grep 9092
+```
+
+If nothing is listening, start a local single-node KRaft broker (no
+Zookeeper needed):
+
+```bash
+docker start photomanager-kafka 2>/dev/null || \
+  docker run -d --name photomanager-kafka -p 9092:9092 -p 9094:9094 \
+    -e KAFKA_NODE_ID=1 \
+    -e KAFKA_PROCESS_ROLES=broker,controller \
+    -e KAFKA_LISTENERS=PLAINTEXT://:9092,EXTERNAL://:9094,CONTROLLER://:9093 \
+    -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092,EXTERNAL://localhost:9094 \
+    -e KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093 \
+    -e KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER \
+    -e KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT \
+    -e KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT \
+    -e KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
+    -e KAFKA_AUTO_CREATE_TOPICS_ENABLE=false \
+    apache/kafka:3.9.0
+```
+
+**Pitfall:** `KAFKA_AUTO_CREATE_TOPICS_ENABLE=false` means the broker itself
+won't create a topic on first use — but this is not a manual setup step you
+need to perform. Spring's `KafkaAdmin` (via the `NewTopic` beans in
+`config/KafkaTopicConfig.java`) creates all seven topics automatically the
+first time the backend starts against this broker. If a listener never
+receives anything, confirm the *backend* actually started successfully
+against this broker (check `/tmp/backend.log` for `KafkaAdmin` errors)
+before suspecting a missing topic.
+
+**Alternative:** `JPPhotoManagerWeb/docker-compose.yml` defines all four
+infrastructure services (`db`, `kafka`, `redis`, `mongo`) together —
+`docker compose up -d db kafka redis mongo` starts just the infra, not the
+app, and can replace 1.1–1.4 in one command. **Port note:** compose maps
+Postgres to host port `5433` (`"5433:5432"`), not `5432` — if you use
+compose for infra, point `mvn spring-boot:run` at `POSTGRES_PORT=5433`
+rather than reusing §1.1's commands verbatim, or stick to the individual
+`docker run` commands above for a setup that matches this skill's other
+port assumptions exactly.
+
+### 1.5 Verify real data exists
 
 A meaningful E2E test requires catalogued assets. Check counts before
 proceeding:
@@ -188,7 +288,76 @@ Assertions to make manually:
 
 ---
 
-## 6. Visual Verification via Puppeteer
+## 6. Verify SSE Progress Streams
+
+Catalog, sync, convert, and upload all report progress over Server-Sent
+Events rather than a single request/response, so verifying them needs a
+different approach than §5's one-shot `curl | json.tool`: the connection
+must stay open and each event needs to be captured as it arrives.
+
+### 6.1 Capture events with curl
+
+`curl -N` (no buffering) keeps the connection open and prints each SSE
+frame as it's received. Run with a timeout so the command terminates once
+the operation completes (or after a sane upper bound if it doesn't):
+
+```bash
+timeout 30 curl -N -s -b /tmp/cookies.txt http://localhost:8080/api/assets/catalog
+```
+
+Expected output is a stream of `event: <name>` / `data: <payload>` frames
+ending in a terminal event (`catalog-done` for catalog; `results`/`status`
+for sync and convert — see `KafkaProgressListener` for the exact event names
+each stream emits). No terminal event before the timeout means the backend
+never received (or never processed) the completion message — check
+`/tmp/backend.log` for a stuck `@KafkaListener` or a Kafka consumer that
+never received the message (cross-check the consumer-group shape against
+`kafka-events-conventions` §2 if progress is reaching some but not all
+expected observers).
+
+### 6.2 What to assert
+
+- At least one intermediate progress event arrives before the terminal one
+  (a stream that jumps straight to done on a non-trivial catalog run
+  suggests progress messages aren't being published, not that the operation
+  is unusually fast).
+- The terminal event's payload matches reality: for catalog, the
+  `foldersScanned`/`assetsAdded` counts in the final notification should be
+  checked against the DB state from §1.2 taken before and after the run; for
+  sync/convert, the `results` payload's counts should match files actually
+  present in the destination directory.
+- The stream actually closes after the terminal event (`emitter.complete()`
+  server-side) — a `curl -N` that hangs past the terminal event instead of
+  the connection closing indicates the emitter wasn't completed.
+
+### 6.3 Verify via the browser (Puppeteer)
+
+`EventSource` isn't directly inspectable via `curl` from the page's own
+session (cookies, same-origin behavior differ from a raw `curl` call), so
+also confirm the frontend actually renders the streamed updates: trigger the
+operation from the UI (e.g. click the catalog button), then poll the DOM for
+the progress indicator's text/value at a couple of points before it reaches
+100%/done, in addition to the final screenshot from §7. A screenshot only at
+completion can't distinguish "progress rendered correctly throughout" from
+"the UI silently waited and only updated once at the end."
+
+### 6.4 Common SSE pitfalls
+
+- **Wrong consumer group swallows events for this instance.** If only a
+  single backend instance is running locally this won't reproduce, but when
+  verifying against a multi-instance deployment, confirm progress reaches
+  every instance's SSE observers, not just one — see
+  `kafka-events-conventions` §2 for why this depends on the listener's
+  consumer-group configuration.
+- **Async dispatch security rejection.** A `403`/`401` mid-stream instead of
+  a clean terminal event usually means `SecurityConfig` is missing
+  `.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()` as its first
+  rule (see `java-developer` §15.2) — check `/tmp/backend.log` for
+  `AuthorizationDeniedException` if a stream cuts off unexpectedly.
+
+---
+
+## 7. Visual Verification via Puppeteer
 
 Puppeteer may be available in the npx cache. Locate it first:
 
@@ -262,7 +431,7 @@ the HttpOnly JWT cookie.
 
 ---
 
-## 7. Verify Interactive Navigation
+## 8. Verify Interactive Navigation
 
 Test click-to-navigate behaviour by clicking a UI element and checking the
 resulting URL.
@@ -312,7 +481,7 @@ where `<user>` is the OS user who owns the catalogued photo library.
 
 ---
 
-## 8. CSS Selector Reference
+## 9. CSS Selector Reference
 
 These selectors are used for targeting elements with Puppeteer in this project:
 
@@ -329,7 +498,7 @@ These selectors are used for targeting elements with Puppeteer in this project:
 
 ---
 
-## 9. Teardown
+## 10. Teardown
 
 After verification, stop the background servers:
 
@@ -342,16 +511,102 @@ Or kill by PID if you recorded them at startup.
 
 ---
 
-## 10. Checklist Summary
+## 11. Checklist Summary
 
 Use this as a quick reference for any E2E session:
 
 - [ ] PostgreSQL is running and `photomanager` database exists
+- [ ] MongoDB, Redis, and Kafka are all running (§1.2–1.4)
 - [ ] Database has catalogued assets (non-zero count)
 - [ ] Backend started; `curl localhost:8080/api/home/stats` returns `403`
 - [ ] Frontend started; `curl localhost:4200/` returns `200`
 - [ ] Login succeeds (`HTTP/1.1 200` from `/api/auth/login`)
 - [ ] API response contains all expected fields with correct values
+- [ ] For SSE-driven features (catalog/sync/convert/upload): intermediate progress events arrive and the terminal event's payload matches DB/filesystem state
 - [ ] Puppeteer screenshot shows all UI sections rendered
 - [ ] Clicking an interactive element produces the correct URL and view
 - [ ] No console errors visible in the Puppeteer session
+
+---
+
+## 12. Multi-Replica Consistency Check (Optional, Occasional)
+
+Not part of the default checklist above — this verifies a claim the app
+makes about itself (`k8s/backend.yaml`: "Scaling beyond 1 replica is
+supported by the app... plus persistent Kafka consumer groups") rather than
+a specific feature. Run it when a change touches
+`kafka-events-conventions`-governed consumer-group logic, the
+`redis-caching-conventions`-governed cache invalidation paths, or before a
+release where multi-instance deployment is actually expected — not on every
+session.
+
+### 12.1 Getting two backend instances running locally
+
+Neither default local setup supports this out of the box; pick one:
+
+- **Docker Compose** — the checked-in `docker-compose.yml` publishes a fixed
+  host port for `backend` (`"8080:8080"`), which makes
+  `docker compose up -d --scale backend=2` fail outright (two containers
+  can't both bind host port 8080). Don't edit the checked-in file to work
+  around this — use a local override instead:
+  ```bash
+  cat > docker-compose.override.yml <<'EOF'
+  services:
+    backend:
+      ports: []
+  EOF
+  docker compose up -d --scale backend=2
+  ```
+  Compose named volumes (`thumbnails`) are natively shared read-write across
+  containers on the same host, so — unlike the Kubernetes path below —
+  there's no PVC access-mode caveat here; this is the simpler path for a
+  local consistency check specifically. Delete `docker-compose.override.yml`
+  when done; it's for this check only, not a normal dev setup.
+- **Kubernetes** — `kubectl scale deployment/backend -n photomanager --replicas=2`,
+  but per `k8s/backend.yaml`'s own comment, the `thumbnails` PVC must already
+  use a `ReadWriteMany`-capable storage class — the default `ReadWriteOnce`
+  class on a single-node dev cluster (Docker Desktop, kind, minikube) will
+  leave the second pod stuck `Pending`. Only worth setting up if you're
+  specifically validating the Kubernetes-realistic path; Compose is enough
+  to verify the application-level consumer-group/cache logic in isolation.
+
+### 12.2 What to verify
+
+**Kafka consumer-group shape** (cross-check `kafka-events-conventions` §2):
+```bash
+# Per-instance group: expect ONE member per running backend instance,
+# each with a *different* generated group id (sse-broadcaster-<hostname-or-uuid>)
+docker compose exec kafka /opt/kafka/bin/kafka-consumer-groups.sh \
+  --bootstrap-server localhost:9092 --list | grep sse-broadcaster
+
+# Shared groups: expect exactly ONE of these regardless of replica count,
+# with member count == number of running instances (partition-assignment
+# balances across them, but the group itself is singular)
+docker compose exec kafka /opt/kafka/bin/kafka-consumer-groups.sh \
+  --bootstrap-server localhost:9092 --describe --group asset-search-cache-invalidator
+docker compose exec kafka /opt/kafka/bin/kafka-consumer-groups.sh \
+  --bootstrap-server localhost:9092 --describe --group audit-log-writer
+```
+A second `sse-broadcaster-*` group appearing confirms progress events reach
+every instance's own SSE observers (§6.4's consumer-group pitfall, now
+actually exercised with a real second instance instead of inferred from
+config).
+
+**Cross-instance cache invalidation** (cross-check
+`redis-caching-conventions` §3): trigger a write that should evict the
+`assets` cache for a folder (e.g. add a tag to an asset in that folder)
+through **one** instance's port, then immediately read that folder's asset
+list through the **other** instance's port and confirm the tag/updated data
+is present — not stale. If both instances are behind the same load balancer
+(the normal case via `frontend`'s nginx / the K8s Service), this happens
+automatically across requests; hitting each backend port directly (Compose:
+whatever host ports the two scaled containers landed on, `docker compose ps`
+to find them) is what actually isolates *which* instance served which
+request, which a single shared front door would hide.
+
+### 12.3 Teardown
+
+```bash
+docker compose up -d --scale backend=1   # or: kubectl scale deployment/backend --replicas=1
+rm -f docker-compose.override.yml        # if created for §12.1
+```

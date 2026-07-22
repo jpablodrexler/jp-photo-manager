@@ -18,6 +18,20 @@ read instead when documenting or reasoning about their structure.
 - **`backend/`** — Java 21 + Spring Boot 3.4 REST API
 - **`frontend/`** — Angular 19 SPA
 
+## Documentation
+
+This file covers commands, package layout, and coding conventions — enough
+to start working in the code. The detailed reference material (REST API
+table, full configuration property table, system/database diagrams,
+authentication flow, the Kafka-driven catalog pipeline, Docker Compose /
+Kubernetes deployment, and a `curl` command per endpoint) lives under
+`JPPhotoManagerWeb/docs/` instead of being duplicated inline here — see
+`JPPhotoManagerWeb/README.md`'s Documentation table for the full index, or
+jump straight to `docs/backend.md`, `docs/authentication.md`,
+`docs/architecture.md`, or `docs/catalog-process.md`. Keeping this split is
+the `web-docs-sync` skill's job — see that skill if either this file or
+`docs/*.md` drifts from the actual code.
+
 ---
 
 ## Backend
@@ -69,23 +83,17 @@ Hexagonal (Ports and Adapters) architecture in a single Maven module (`com.jpabl
 domain/
   model/              → Pure POJO domain objects (no framework imports)
   port/
-    in/               → Use-case interfaces (one interface, one method each)
-      asset/          → GetAssetsUseCase, GetAssetImageUseCase, …
-      catalog/        → CatalogAssetsUseCase, GetDuplicatedAssetsUseCase
-      album/          → GetAlbumsUseCase, CreateAlbumUseCase, …
-      sync/           → GetSyncConfigUseCase, SaveSyncConfigUseCase, SyncAssetsUseCase
-      convert/        → GetConvertConfigUseCase, SaveConvertConfigUseCase, ConvertAssetsUseCase
-      folder/         → GetSubFoldersUseCase, GetDrivesUseCase, …
-      recycle/        → GetDeletedAssetsUseCase, RestoreAssetsUseCase, PurgeAssetsUseCase
-      search/         → GetSearchPresetsUseCase, CreateSearchPresetUseCase, DeleteSearchPresetUseCase
-      home/           → GetHomeStatsUseCase
-      user/           → ListUsersUseCase, CreateUserUseCase, UpdatePasswordUseCase, DeleteUserUseCase
+    in/               → Use-case interfaces (one interface, one method each), grouped by
+                        subdomain: album, analytics, asset, audit, auth, catalog, convert,
+                        folder, home, preference, recycle, search, sync, tag, user
     out/              → Repository and service port interfaces (driven ports)
   enums/              → ImageRotation, SortCriteria, WallpaperStyle, ReasonEnum
 
 application/
-  dto/                → Framework-free application DTOs (AssetFilter, PaginatedResult, …)
-  usecase/            → One implementation class per use-case interface (@Service @Transactional)
+  dto/                → Framework-free application DTOs (AssetFilter, PaginatedResult,
+                        CatalogProgressMessage, SyncProgressMessage, ConvertProgressMessage, …)
+  usecase/            → One implementation class per use-case interface (@Service @Transactional),
+                        grouped the same way as port/in/
 
 infrastructure/
   persistence/
@@ -93,13 +101,25 @@ infrastructure/
     jpa/              → Spring Data JPA interfaces (JpaXxxRepository)
     adapter/          → Implements domain/port/out/ repository interfaces (XxxRepositoryImpl)
     mapper/           → MapStruct entity ↔ domain model mappers
+    mongo/            → MongoAuditLogRepository (`asset_audit_log` collection)
+    redis/            → RedisRefreshTokenStore (refresh-token mirror)
   web/
-    controller/       → @RestController classes (HTTP primary adapters)
+    controller/       → @RestController classes (HTTP primary adapters) — 15 controllers;
+                        see `docs/backend.md` for the full list
     dto/              → HTTP request/response DTOs
     mapper/           → MapStruct domain ↔ HTTP DTO mappers
+    filter/           → JwtAuthenticationFilter, RateLimitFilter (Bucket4j + Redis)
     exception/        → GlobalExceptionHandler and HTTP exceptions
-  service/            → Service adapters (StorageServiceAdapter, ThumbnailStorageServiceAdapter, …)
-  config/             → AppConfig, SecurityConfig, UserConfig, DataInitializer
+  service/            → Service adapters (StorageServiceAdapter, ThumbnailStorageServiceAdapter,
+                        JwtTokenServiceAdapter, RefreshTokenServiceAdapter, CatalogScheduler, …)
+  kafka/              → KafkaProgressListener (SSE bridge), AuditLogKafkaListener,
+                        AssetSearchCacheInvalidationListener, upload-pipeline processors —
+                        see `kafka-events-conventions` skill and `docs/catalog-process.md`
+  batch/              → Spring Batch catalog job config and item readers/writers/listeners —
+                        see `docs/catalog-process.md`
+  health/             → Custom Actuator health indicators (thumbnail storage, geocoding)
+  config/             → AppConfig, SecurityConfig, UserConfig, MongoConfig, KafkaTopicConfig,
+                        DataInitializer
 ```
 
 **Dependency flow:** `infrastructure/web → application/usecase → domain ← infrastructure/persistence | infrastructure/service`
@@ -116,80 +136,38 @@ infrastructure/
 - `ThumbnailPort` / `ThumbnailStorageServiceAdapter` — thumbnail read/write/delete on disk, fronted by a Redis L2 cache (`redis-thumbnail-cache`)
 - `JwtTokenPort` / `JwtTokenAdapter` — JWT generation and validation (delegates to `JwtUtil`)
 
-**Persistence:** PostgreSQL via Spring Data JPA + Hibernate. Schema managed by **Flyway**; migrations live in `src/main/resources/db/migration/`. Connection is configured via environment variables (see table below). `asset_exif` lives in PostgreSQL like every other table (`AssetExifRepositoryImpl` / `JpaAssetExifRepository`, keyed on `asset_id BIGINT PRIMARY KEY REFERENCES assets(asset_id) ON DELETE CASCADE`, with a `raw_exif JSONB` column for the full EXIF tag map). This table briefly moved to MongoDB under `mongodb-exif-store` (#72) and was reverted back to PostgreSQL by `revert-exif-postgres-jsonb` (#84) once `gps-map-view` — the feature that had motivated a `2dsphere` geospatial index on `asset_exif` — was cancelled; see `openspec/changes/archive/2026-07-05-mongodb-exif-store/` and `openspec/changes/revert-exif-postgres-jsonb/` for the history. The MongoDB `asset_exif` data from that period was not migrated back — assets catalogued during that window get their EXIF data repopulated the next time their folder is re-catalogued. Refresh tokens (`refresh_tokens` table) are dual-written to PostgreSQL and Redis: `RefreshTokenRepositoryImpl` mirrors every `save()` into `RedisRefreshTokenStore` (`refresh_token:{token}` hash, `refresh_tokens:user:{userId}` set, `refresh_token:id:{tokenId}` index) alongside the existing JPA write. This is Phase 1 of the `redis-refresh-tokens` migration — PostgreSQL remains authoritative for reads (`findByToken`/`deleteByUserId`/`deleteById`); a follow-up change will cut reads over to Redis-only and drop the PostgreSQL table. User-action history is stored append-only in a MongoDB `asset_audit_log` collection (via `AuditLogRepositoryImpl` / `MongoAuditLogRepository`), populated by `AuditLogKafkaListener` (a dedicated `audit-log-writer` Kafka consumer group) for already-published `asset.cataloged`/`asset.deleted`/`job.*.progress` events, and by direct `AuditLogRepository.log(...)` calls from the tag, rating, view, and download use cases for actions with no existing topic; a compound `userId`/`timestamp` index and a 365-day TTL index are ensured at startup by `MongoIndexInitializer`.
+**Persistence, caching, thumbnails, and real-time progress:** covered in
+detail in `docs/backend.md` (Persistence, key services) and
+`docs/architecture.md` (system + database diagrams) — including the
+Postgres/MongoDB/Redis split, the `asset_exif` store-migration history, the
+refresh-token dual-write, and the Redis query-cache/thumbnail-cache
+mechanics. Kafka topics and the catalog job's Spring Batch pipeline are
+covered in `docs/catalog-process.md`. Local dev requires PostgreSQL, MongoDB,
+Redis, and Kafka all running — quickstart commands are in `docs/backend.md`
+("Running the backend") and the `e2e-testing` skill §1.
 
-**Server-side caching (Redis, `server-side-spring-cache` / `redis-search-tag-cache`):** `AppConfig.cacheManager()` is a `RedisCacheManager` (Lettuce, sharing the `RedisConnectionFactory` used by the refresh-token store and thumbnail cache) — moved off a per-JVM `CaffeineCacheManager` so a write on one backend instance correctly invalidates the copy served by another. Five named caches, each with its own TTL and a `Jackson2JsonRedisSerializer` built for its exact declared type (deliberately not one shared `GenericJackson2JsonRedisSerializer` with polymorphic `@class` hints — see `AppConfig.typedConfig`'s Javadoc for why that broke the `tags` cache during development): `home-stats` (10 min), `sub-folders` (5 min), `asset-exif` (30 min), `assets` (5 min), `tags` (5 min). Keys are prefixed `<cacheName>:` (single colon) so `assets` entries can be pattern-matched per folder. A `LoggingCacheErrorHandler` catches and logs (`WARN`) any Redis error during a cache get/put/evict, so a Redis outage degrades to always querying the source of truth rather than failing the request. `GetAssetsUseCaseImpl.execute(AssetFilter)` is cached under `assets`, keyed `{folderId}:{sha256 of the remaining filter fields}` via `AssetSearchCacheKeyGenerator`. `ListTagsUseCaseImpl.execute(String query)` is cached under `tags` at the fixed key `all` only when `query` is null/blank. The `assets` cache is invalidated per folder two ways: an `@KafkaListener` (`AssetSearchCacheInvalidationListener`, consumer group `asset-search-cache-invalidator`) on `asset.cataloged`/`asset.deleted`, and synchronously from `AddTagToAssetUseCaseImpl`/`RemoveTagFromAssetUseCaseImpl`/`BulkAddTagUseCaseImpl`/`BulkRemoveTagUseCaseImpl` (a tag mutation has no Kafka event of its own but can equally change a folder's tag-filtered results). Both paths share the same cursor-based `SCAN`/`DEL` (never `KEYS`) eviction logic via `AssetSearchCachePort`/`AssetSearchCacheServiceAdapter`; the same four tag-mutating use cases also declaratively evict `tags:all`.
-
-**Local development prerequisite:** PostgreSQL 18+ and MongoDB must be running. Quickstart:
-```bash
-docker run -d --name photomanager-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=photomanager -p 5432:5432 postgres:18
-docker run -d --name photomanager-mongo -p 27017:27017 mongo:8
-```
-
-**Thumbnails:** stored as `{assetId}.bin` files under `~/.photomanager/thumbnails/` managed by `ThumbnailStorageServiceAdapter`. A Redis L2 cache (`redis-thumbnail-cache`) sits in front of the disk store: `loadThumbnail` checks `asset:thumbnail:{assetId}` before reading disk, `saveThumbnail`/`loadThumbnail` (on a disk-read repopulate) write it with a 24-hour TTL, and `deleteThumbnail` evicts it. Requires the Redis deployment shared with `redis-distributed-rate-limiting` (#78) and `redis-refresh-tokens` (#79) to run with the `allkeys-lru` eviction policy so cache growth stays bounded. Every Redis call fails open (caught, logged at `WARN`, falls back to disk) and the whole tier can be disabled via `photomanager.thumbnail-cache.enabled=false`.
-
-**Real-time progress:** long-running operations (catalog, sync, convert) use Spring's `SseEmitter` to stream status events to the frontend.
-
-**Configuration:** `src/main/resources/application.yml`. Key properties:
-
-| Property | Default | Description |
-|---|---|---|
-| `photomanager.initial-directory` | `~/Pictures` | Starting folder shown in the UI |
-| `photomanager.root-catalog-folders` | `~/Pictures` | Semicolon-separated roots to catalog |
-| `photomanager.catalog-batch-size` | `1000` | Files processed per catalog pass |
-| `photomanager.thumbnails-directory` | `~/.photomanager/thumbnails` | Thumbnail storage path |
-| `photomanager.thumbnail-cache.enabled` | `true` | Enables the Redis L2 thumbnail cache (`redis-thumbnail-cache`); `false` reverts to disk-only |
-| `photomanager.thumbnail-cache.ttl-seconds` | `86400` | TTL for cached thumbnail bytes at `asset:thumbnail:{assetId}` (requires the Redis deployment's `allkeys-lru` eviction policy) |
-| `POSTGRES_HOST` | `localhost` | PostgreSQL host |
-| `POSTGRES_PORT` | `5432` | PostgreSQL port |
-| `POSTGRES_DB` | `photomanager` | Database name |
-| `POSTGRES_USERNAME` | `postgres` | Database user |
-| `POSTGRES_PASSWORD` | `postgres` | Database password |
-| `MONGO_URI` | `mongodb://localhost:27017/photomanager` | MongoDB connection URI (`asset_audit_log` collection) |
+**Configuration:** `src/main/resources/application.yml`. The full,
+up-to-date property table (every `photomanager.*` property, every
+infrastructure env var, and the actuator/metrics settings) lives in
+`docs/backend.md` under "Configuration" — kept there instead of duplicated
+here so there's exactly one place to update when a property is added or
+its default changes.
 
 ### REST API
 
-| Method | Path | Auth required | Description |
-|---|---|---|---|
-| `POST` | `/api/auth/login` | No | Authenticate; sets `jwt` HttpOnly cookie |
-| `POST` | `/api/auth/logout` | No | Clears `jwt` cookie |
-| `GET` | `/api/admin/users` | Yes | List all users |
-| `POST` | `/api/admin/users` | Yes | Create a user |
-| `PATCH` | `/api/admin/users/{id}/password` | Yes | Change a user's password |
-| `DELETE` | `/api/admin/users/{id}` | Yes | Delete a user |
-| `GET` | `/api/assets` | Yes | Paginated assets for a folder (`folderPath`, `page`, `sort`) |
-| `GET` | `/api/assets/{id}/thumbnail` | Yes | 200×150 JPEG thumbnail |
-| `GET` | `/api/assets/{id}/image` | Yes | Full-size original image |
-| `GET` | `/api/assets/catalog` | Yes | SSE stream: catalog progress events |
-| `GET` | `/api/assets/duplicates` | Yes | Grouped duplicate assets |
-| `POST` | `/api/assets/move` | Yes | Move/copy assets to a destination folder |
-| `DELETE` | `/api/assets` | Yes | Remove assets from catalog (optionally delete files) |
-| `GET` | `/api/audit-log` | Yes | Paginated audit trail (`userId`, `entityId`, `from`, `to`, `page`, `size`); non-admins are scoped to their own `userId` |
-| `GET` | `/api/folders` | Yes | Catalogued folders (optionally filtered by `parentPath`) |
-| `GET` | `/api/folders/drives` | Yes | Available filesystem roots |
-| `GET` | `/api/folders/initial` | Yes | Configured initial folder |
-| `GET` | `/api/folders/recent-paths` | Yes | Recently used destination paths |
-| `GET` | `/api/sync/configuration` | Yes | Load sync directory pairs |
-| `PUT` | `/api/sync/configuration` | Yes | Save sync directory pairs |
-| `GET` | `/api/sync/run` | Yes | SSE stream: run sync and stream status |
-| `GET` | `/api/convert/configuration` | Yes | Load convert directory pairs |
-| `PUT` | `/api/convert/configuration` | Yes | Save convert directory pairs |
-| `GET` | `/api/convert/run` | Yes | SSE stream: run convert and stream status |
+Full endpoint table (all 15 controllers, auth requirements per endpoint) is
+in `docs/backend.md` under "REST API"; runnable `curl` examples for every
+endpoint are in `docs/curl-reference.md`. Interactive docs are served at
+`/swagger-ui.html` when the backend is running.
 
 ### Authentication & Security
 
-The app uses **JWT stored in an HttpOnly cookie** (`SameSite=Strict`, `Path=/`).
-
-- **Why HttpOnly cookie:** The browser sends cookies automatically with all same-origin requests — including `<img src="...">` and the native `EventSource` API — which do not support custom `Authorization` headers. Storing the token in `localStorage` and injecting it as a header would break image loading and SSE.
-- **Login flow:** `POST /api/auth/login` validates credentials and sets the `jwt` cookie. The response body contains `{username, expiresAt}` only — the token is never returned to JavaScript.
-- **Logout flow:** `POST /api/auth/logout` returns a `Set-Cookie: jwt=; Max-Age=0` header to clear the cookie. The Angular `AuthService` also removes the session metadata from `localStorage`.
-- **SSE + Spring Security:** Tomcat creates a new async dispatch thread for `SseEmitter` writes. Spring Security's filter chain re-runs on that thread where `SecurityContextHolder` is empty. Fix: `.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()` must appear as the first rule in `SecurityFilterChain`.
-- **Default admin user:** `DataInitializer` seeds `admin`/`admin` on first startup if no users exist. Change this password immediately after first login.
-- **Security configuration classes:**
-  - `config/SecurityConfig.java` — `SecurityFilterChain` bean; `@Profile("!test")`
-  - `config/UserConfig.java` — `UserDetailsService` + `BCryptPasswordEncoder` beans; kept separate from `SecurityConfig` to avoid circular dependency
-  - `infrastructure/service/JwtAuthenticationFilter.java` — reads `jwt` cookie on every request
-  - `infrastructure/service/JwtUtil.java` — HMAC-SHA256 token generation/validation
+JWT stored in an HttpOnly cookie (`SameSite=Strict`, `Path=/`), plus a
+separate longer-lived `refreshToken` HttpOnly cookie. Full flow diagram,
+the SSE/Spring-Security async-dispatch gotcha, `JWT_SECRET` generation, and
+the default admin account are documented in `docs/authentication.md` — read
+that before touching `SecurityConfig`, `JwtAuthenticationFilter`, or
+anything under `infrastructure/service/*Token*`.
 
 ### Testing Conventions
 
@@ -272,12 +250,16 @@ Angular 19 SPA using **standalone components** and **lazy-loaded routes**. No Ng
 src/app/
   app.component.ts/html/scss   → Shell with top navigation bar (shows nav only when logged in)
   app.routes.ts                → Lazy routes; all except /login protected by authGuard
-  app.config.ts                → ApplicationConfig (HttpClient with interceptor, Router, Animations)
+  app.config.ts                → ApplicationConfig (HttpClient with interceptor, Router, Animations,
+                                 global ErrorHandler)
   core/
     models/                    → TypeScript interfaces (Asset, Folder, PaginatedData, …)
     services/                  → Angular services wrapping the backend API
     guards/                    → auth.guard.ts — redirects unauthenticated users to /login
-    interceptors/              → auth.interceptor.ts — handles 401 → redirect to /login
+    interceptors/              → auth.interceptor.ts — handles 401 → refresh-and-retry or redirect
+                                 to /login; also shows a MatSnackBar with the backend's error message
+    error-handler/             → global-error-handler.ts — Angular ErrorHandler override; shows a
+                                 MatSnackBar for unhandled component errors
   features/
     auth/login/                → LoginComponent (/login)
     home/                      → HomeComponent (/home) — dashboard with stats
@@ -286,13 +268,18 @@ src/app/
     sync/                      → Sync configuration and execution
     convert/                   → Convert configuration and execution
     duplicates/                → Duplicate detection and cleanup
-    admin/users/               → UserAdminComponent (/admin/users) — add/change password/delete users
+    albums/                    → AlbumsComponent + AlbumDetailComponent (/albums, /albums/:id)
+    recycle-bin/                → Restore/purge soft-deleted assets
+    analytics/                  → Storage/format/rating charts (ngx-charts)
+    audio-player/                → Playback controls for streamed audio assets
+    admin/users/                → UserAdminComponent (/admin/users) — add/change password/delete users
   shared/
     components/thumbnail/      → Reusable thumbnail card component
     pipes/file-size.pipe.ts    → Human-readable file size formatting
 ```
 
-**Routing:**
+**Routing:** full table with descriptions is in `docs/frontend.md`. Quick
+reference:
 
 | Path | Component | Auth | Description |
 |---|---|---|---|
@@ -302,6 +289,9 @@ src/app/
 | `/sync` | `SyncComponent` | Yes | Configure and run directory sync |
 | `/convert` | `ConvertComponent` | Yes | Configure and run PNG→JPEG conversion |
 | `/duplicates` | `DuplicatesComponent` | Yes | Find and remove duplicate images |
+| `/albums`, `/albums/:id` | `AlbumsComponent`, `AlbumDetailComponent` | Yes | Albums list and detail |
+| `/recycle-bin` | `RecycleBinComponent` | Yes | Restore or purge soft-deleted assets |
+| `/analytics` | `AnalyticsComponent` | Yes | Storage/format/rating charts |
 | `/admin/users` | `UserAdminComponent` | Yes | User administration |
 
 **API communication:**

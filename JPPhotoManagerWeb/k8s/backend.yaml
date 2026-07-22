@@ -52,10 +52,14 @@ metadata:
   name: backend
   namespace: photomanager
 spec:
-  # Scaling beyond 1 replica is supported by the app (catalog_run_state
-  # distributed lock + persistent Kafka consumer groups), but the
-  # `thumbnails` PVC above must then use a ReadWriteMany-capable storage
-  # class instead of the default ReadWriteOnce.
+  # Scaling beyond 1 replica is supported by the app (Spring Batch's own
+  # JobRepository serializes overlapping catalog runs — the older
+  # catalog_run_state distributed-lock table this comment used to
+  # reference was dropped by V16__spring_batch_schema.sql; see
+  # docs/catalog-process.md — plus persistent Kafka consumer groups for the
+  # audit/cache listeners), but the `thumbnails` PVC above must then use a
+  # ReadWriteMany-capable storage class instead of the default
+  # ReadWriteOnce.
   replicas: 1
   selector:
     matchLabels:

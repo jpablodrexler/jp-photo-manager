@@ -50,6 +50,37 @@ sequenceDiagram
     Angular-->>User: Redirect to /login
 ```
 
+## Security configuration classes
+
+| Class | Role |
+|---|---|
+| `config/SecurityConfig.java` | `SecurityFilterChain` bean; `@Profile("!test")` |
+| `config/UserConfig.java` | `UserDetailsService` + `BCryptPasswordEncoder` beans; kept separate from `SecurityConfig` to avoid a circular dependency |
+| `infrastructure/service/JwtAuthenticationFilter.java` | Reads the `jwt` cookie on every request |
+| `infrastructure/service/JwtTokenServiceAdapter.java` | HMAC-SHA256 token generation/validation |
+
+## SSE + Spring Security async dispatch
+
+`SseEmitter` writes happen on a Tomcat async dispatch thread, not the
+original request thread. Spring Security's filter chain re-runs on that
+thread, where `SecurityContextHolder` is empty — without a fix, every SSE
+write fails with `AuthorizationDeniedException` ("response is already
+committed"). The fix is a rule that must come **first** in
+`SecurityFilterChain`:
+
+```java
+.authorizeHttpRequests(auth -> auth
+        .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()   // must be first
+        .requestMatchers("/api/auth/login", "/api/auth/logout", "/api/auth/refresh").permitAll()
+        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+        .requestMatchers("/api/**").authenticated()
+        .anyRequest().permitAll()
+)
+```
+
+This affects every SSE endpoint: catalog, sync, convert, and upload
+progress streams.
+
 ## Configuration properties
 
 | Property | Default | Description |

@@ -103,12 +103,100 @@ Controllers are thin: they delegate immediately to use-case interfaces and never
 
 ## Persistence
 
-- **Primary database:** PostgreSQL 18 — assets, folders, users, albums, refresh tokens, search presets, sync/convert configuration, and the `catalog_run_state` distributed lock.
+- **Primary database:** PostgreSQL 18 — assets, folders, users, albums, refresh tokens, search presets, and sync/convert configuration.
   - **Schema migrations:** Flyway, scripts in `src/main/resources/db/migration/`
   - **ORM:** Spring Data JPA with the Hibernate PostgreSQL dialect
   - **Connection:** configured via `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USERNAME`, `POSTGRES_PASSWORD` (defaults: `localhost`, `5432`, `photomanager`, `postgres`, `postgres`)
-- **MongoDB:** append-only store for the `asset_audit_log` collection (user-action history), populated by `AuditLogKafkaListener` and direct `AuditLogRepository.log(...)` calls. Configured via `MONGO_URI`.
-- **Redis:** thumbnail L2 cache, query-result caches (`assets`, `tags`, `home-stats`, `sub-folders`, `asset-exif`), the refresh-token mirror, and the Bucket4j rate-limit counters. Every Redis call fails open — a Redis outage degrades to always querying PostgreSQL/disk rather than failing the request. Configured via `REDIS_HOST`, `REDIS_PORT`.
+  - `asset_exif` lives here too (`asset_id BIGINT PRIMARY KEY REFERENCES assets(asset_id) ON DELETE CASCADE`, `raw_exif JSONB` for the full EXIF tag map) — it briefly moved to MongoDB under the `mongodb-exif-store` change and was reverted back to PostgreSQL by `revert-exif-postgres-jsonb` once `gps-map-view` (the feature that had motivated a `2dsphere` geospatial index on it) was cancelled; see `openspec/changes/archive/` for both change folders. MongoDB `asset_exif` data from that period wasn't migrated back — assets catalogued during that window get their EXIF data repopulated the next time their folder is re-catalogued.
+- **MongoDB:** append-only store for the `asset_audit_log` collection (user-action history), populated by `AuditLogKafkaListener` and direct `AuditLogRepository.log(...)` calls. Configured via `MONGO_URI`. A compound `userId`/`timestamp` index and a 365-day TTL index are ensured at startup by `MongoIndexInitializer`.
+- **Redis:** thumbnail L2 cache, query-result caches (`assets`, `tags`, `home-stats`, `sub-folders`, `asset-exif`), the refresh-token mirror, and the Bucket4j rate-limit counters. Every Redis call fails open — a Redis outage degrades to always querying PostgreSQL/disk rather than failing the request. Configured via `REDIS_HOST`, `REDIS_PORT`. See [Caching](#caching) below for the query-cache/thumbnail-cache mechanics.
+  - **Refresh tokens** are dual-written: `RefreshTokenRepositoryImpl` mirrors every `save()` into `RedisRefreshTokenStore` (`refresh_token:{token}` hash, `refresh_tokens:user:{userId}` set, `refresh_token:id:{tokenId}` index) alongside the JPA write. This is Phase 1 of the `redis-refresh-tokens` migration — **PostgreSQL remains authoritative for reads** (`findByToken`/`deleteByUserId`/`deleteById`); a follow-up change will cut reads over to Redis-only and drop the PostgreSQL table.
+
+Note: an earlier revision of this doc (and some older comments/manifests) mentioned a `catalog_run_state` table used as a distributed lock for the catalog job. That table was dropped by `V16__spring_batch_schema.sql` — Spring Batch's own `JobRepository` handles run coordination now. See [Catalog Process](catalog-process.md#catalog-process) for the current mechanism; if you see `catalog_run_state` referenced anywhere else, it's stale.
+
+## Caching
+
+`AppConfig.cacheManager()` is a `RedisCacheManager` (Lettuce, sharing the
+`RedisConnectionFactory` used by the refresh-token store and thumbnail
+cache) — moved off a per-JVM `CaffeineCacheManager` so a write on one
+backend instance correctly invalidates the copy served by another.
+
+Five named caches, each with its own TTL and a `Jackson2JsonRedisSerializer`
+built for its exact declared type — **deliberately not** one shared
+`GenericJackson2JsonRedisSerializer` with polymorphic `@class` hints (see
+`AppConfig.typedConfig`'s Javadoc): enabling default typing mutates the
+shared `ObjectMapper` in place, and Jackson writes the type hint
+differently for a top-level JSON object vs. a top-level JSON array — this
+combination silently broke the `tags` cache (a bare `List<Tag>`) during
+development, since it deserialized into the wrong shape and effectively
+never hit.
+
+| Cache | TTL | Backs |
+|---|---|---|
+| `home-stats` | 10 min | Dashboard statistics |
+| `sub-folders` | 5 min | Folder tree |
+| `asset-exif` | 30 min | EXIF metadata lookups |
+| `assets` | 5 min | `GetAssetsUseCaseImpl.execute(AssetFilter)`, keyed `{folderId}:{sha256 of the remaining filter fields}` via `AssetSearchCacheKeyGenerator` |
+| `tags` | 5 min | `ListTagsUseCaseImpl.execute(String query)`, fixed key `all`, only when `query` is null/blank |
+
+Keys are prefixed `<cacheName>:` (single colon) so `assets` entries can be
+pattern-matched per folder. A `LoggingCacheErrorHandler` catches and logs
+(`WARN`) any Redis error during a cache get/put/evict — the same fail-open
+convention as everywhere else Redis is used in this app.
+
+**Invalidation:** the `assets` cache is invalidated per folder two ways —
+an `@KafkaListener` (`AssetSearchCacheInvalidationListener`, consumer group
+`asset-search-cache-invalidator`) on `asset.cataloged`/`asset.deleted`, and
+synchronously from the tag-mutation use cases (`AddTagToAssetUseCaseImpl`,
+`RemoveTagFromAssetUseCaseImpl`, `BulkAddTagUseCaseImpl`,
+`BulkRemoveTagUseCaseImpl` — a tag mutation has no Kafka event of its own).
+Both paths share the same cursor-based `SCAN`/`DEL` (never `KEYS`) eviction
+logic via `AssetSearchCachePort`/`AssetSearchCacheServiceAdapter`; the same
+four tag-mutating use cases also declaratively evict `tags:all`.
+
+**Thumbnails:** a separate Redis L2 cache (not the `RedisCacheManager`
+above — a dedicated `thumbnailRedisTemplate` bean) fronts the on-disk
+thumbnail store. `loadThumbnail` checks `asset:thumbnail:{assetId}` before
+reading disk; `saveThumbnail`/a disk-read repopulate write it with a
+24-hour TTL (`photomanager.thumbnail-cache.ttl-seconds`); `deleteThumbnail`
+evicts it. Requires the Redis deployment to run with the `allkeys-lru`
+eviction policy (see [Running with Docker Compose](docker-compose.md) — the
+`redis` service is already configured this way) so cache growth stays
+bounded, and can be disabled entirely via
+`photomanager.thumbnail-cache.enabled=false`.
+
+Full development conventions for adding to or changing any of the above
+live in the `redis-caching-conventions` skill.
+
+## Observability
+
+Auto-instrumented metrics (JVM, HTTP request rate/latency, CPU, Spring
+Batch job duration, process memory/thread counts via
+`micrometer-jvm-extras`) are scraped from `/actuator/prometheus` — see
+[Monitoring](docker-compose.md#monitoring-grafana--prometheus) for the
+Grafana/Prometheus setup.
+
+**Custom application metrics** are registered via an injected
+`MeterRegistry`, named `photomanager_<name>` with a Prometheus-appropriate
+unit suffix (`_total` for counters, `_seconds` for timers) and a
+`.description(...)` call — follow this pattern for any new one:
+
+| Metric | Type | Registered in | What it measures |
+|---|---|---|---|
+| `photomanager_catalog_assets_total` | Counter | `CatalogAssetItemWriter` | Total assets cataloged |
+| `photomanager_thumbnail_generation_seconds` | Timer | `StorageServiceAdapter` | Thumbnail generation latency |
+| `photomanager_active_sse_connections` | Gauge | `AssetController` | Active SSE connections |
+
+All three have panels in the custom `JP Photo Manager` Grafana dashboard
+(`grafana/provisioning/dashboards/photomanager.json`) — a new custom metric
+with no matching panel is a gap the `web-docs-sync` skill checks for.
+
+**Health indicators:** `ThumbnailStorageHealthIndicator` and
+`GeocodingHealthIndicator` extend the default `/actuator/health` set with
+app-specific checks. Full health details require the `ADMIN` role
+(`management.endpoint.health.show-details: when-authorized`); an
+unauthenticated caller still gets a bare UP/DOWN, which is what the
+Kubernetes readiness/liveness probes in `k8s/backend.yaml` rely on.
 
 ## REST API
 

@@ -67,8 +67,7 @@
 
 - The backend automatically scans all configured root folders on startup and then re-scans after a configurable cooldown (default: 2 minutes).
 - Generates 200×150 JPEG thumbnails, computes SHA-256 hashes, and extracts EXIF metadata for every discovered image.
-- A distributed lock (`catalog_run_state` table) prevents overlapping runs across multiple backend instances.
-- A heartbeat mechanism and stale-run detection recover from crashed catalog processes.
+- Implemented as a Spring Batch job, partitioned by folder for parallelism; Spring Batch's own `JobRepository` coordinates runs — see [Catalog Process](catalog-process.md#catalog-process) for the full pipeline.
 
 ## Real-Time Progress
 

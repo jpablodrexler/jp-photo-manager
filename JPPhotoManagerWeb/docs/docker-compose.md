@@ -220,7 +220,7 @@ Set `GRAFANA_ADMIN_PASSWORD` in `.env` before the first run. Changing it afterwa
 
 | Dashboard | Grafana ID | What it covers |
 |---|---|---|
-| JP Photo Manager | (custom) | HTTP rate, latency, JVM heap, CPU, Spring Batch catalog job |
+| JP Photo Manager | (custom) | HTTP rate, latency, JVM heap, CPU, Spring Batch catalog job, and the app's own `photomanager_*` metrics (assets cataloged rate, thumbnail generation latency, active SSE connections) |
 | JVM (Micrometer) | 4701 | GC pauses, memory pools, threads, classloading, buffer pools |
 | Spring Boot 3.x Statistics | 19004 | Basic stats, CPU, load average, JVM memory/GC, HikariCP pool, HTTP server stats, Logback |
 
