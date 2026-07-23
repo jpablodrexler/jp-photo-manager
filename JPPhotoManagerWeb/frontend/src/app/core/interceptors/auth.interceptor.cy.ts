@@ -105,6 +105,25 @@ describe('authInterceptor', () => {
     );
   });
 
+  it('should append the request ID to the snackbar message when the X-Request-ID header is present', () => {
+    setup(of(undefined));
+
+    http.get('/api/assets/1').subscribe({ error: () => {} });
+    const req = httpMock.expectOne('/api/assets/1');
+    req.flush({ status: 404, message: 'Asset not found', timestamp: new Date().toISOString() }, {
+      status: 404,
+      statusText: 'Not Found',
+      headers: { 'X-Request-ID': 'abc-123' },
+    });
+
+    cy.wrap(snackBarOpenStub).should(
+      'have.been.calledWith',
+      'Asset not found [Request ID: abc-123]',
+      'Dismiss',
+      { duration: 5000 }
+    );
+  });
+
   it('should not show a snackbar for a login failure, since the login form already shows its own inline error', () => {
     setup(of(undefined));
 

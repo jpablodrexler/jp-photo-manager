@@ -9,10 +9,13 @@ const DEFAULT_ERROR_MESSAGE = 'An unexpected error occurred';
 
 function extractErrorMessage(error: HttpErrorResponse): string {
   const body: unknown = error.error;
-  if (body && typeof body === 'object' && 'message' in body && typeof (body as { message: unknown }).message === 'string') {
-    return (body as { message: string }).message;
-  }
-  return DEFAULT_ERROR_MESSAGE;
+  const baseMessage =
+    body && typeof body === 'object' && 'message' in body && typeof (body as { message: unknown }).message === 'string'
+      ? (body as { message: string }).message
+      : DEFAULT_ERROR_MESSAGE;
+
+  const requestId = error.headers?.get('X-Request-ID');
+  return requestId ? `${baseMessage} [Request ID: ${requestId}]` : baseMessage;
 }
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {

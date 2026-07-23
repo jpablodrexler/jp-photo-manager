@@ -9,6 +9,7 @@ import com.jpablodrexler.photomanager.domain.model.HomeStats;
 import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Tag;
 import com.jpablodrexler.photomanager.infrastructure.web.filter.RateLimitFilter;
+import com.jpablodrexler.photomanager.infrastructure.web.filter.RequestCorrelationFilter;
 import io.github.bucket4j.redis.lettuce.cas.LettuceBasedProxyManager;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
@@ -23,8 +24,10 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.annotation.CachingConfigurer;
 import org.springframework.cache.interceptor.CacheErrorHandler;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
@@ -225,10 +228,30 @@ public class AppConfig implements CachingConfigurer {
         config.setAllowedOrigins(corsAllowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("X-Request-ID"));
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", config);
         return new CorsFilter(source);
+    }
+
+    /**
+     * Registered at {@link Ordered#HIGHEST_PRECEDENCE} so the {@code requestId} (and the
+     * {@code X-Request-ID} response header) are present before any other servlet filter runs —
+     * including the entire Spring Security filter chain (its auto-configured order is -100, well
+     * after {@code HIGHEST_PRECEDENCE}) — so that security audit/failure log lines are correlated
+     * too, and so every response carries the header even if a later filter (e.g. {@code RateLimitFilter})
+     * short-circuits the request. Because this filter runs before authentication is established, its
+     * own {@code username} MDC value starts as {@code "anonymous"} for every request; see
+     * {@code JwtAuthenticationFilter}, which corrects that entry to the real principal once the JWT
+     * cookie is validated.
+     */
+    @Bean
+    public FilterRegistrationBean<RequestCorrelationFilter> requestCorrelationFilter() {
+        FilterRegistrationBean<RequestCorrelationFilter> registration =
+                new FilterRegistrationBean<>(new RequestCorrelationFilter());
+        registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return registration;
     }
 }

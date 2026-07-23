@@ -33,7 +33,8 @@ src/app/
     guards/                    → auth.guard.ts — redirects unauthenticated users to /login
     interceptors/              → auth.interceptor.ts — handles 401 → refresh-and-retry or redirect
                                  to /login; also shows a MatSnackBar with the backend's error
-                                 message (or a generic fallback) for terminal HTTP errors
+                                 message (or a generic fallback) for terminal HTTP errors, appending
+                                 "[Request ID: <id>]" when the response has an X-Request-ID header
     error-handler/             → global-error-handler.ts — Angular ErrorHandler override; shows a
                                  MatSnackBar with the error message for any unhandled component error
   features/

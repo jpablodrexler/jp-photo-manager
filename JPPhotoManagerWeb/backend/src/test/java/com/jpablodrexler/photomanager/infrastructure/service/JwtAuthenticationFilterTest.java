@@ -5,11 +5,13 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.MDC;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -36,6 +38,11 @@ class JwtAuthenticationFilterTest {
     void setUp() {
         sut = new JwtAuthenticationFilter(jwtUtil, userDetailsService);
         SecurityContextHolder.clearContext();
+    }
+
+    @AfterEach
+    void tearDown() {
+        MDC.clear();
     }
 
     @Test
@@ -86,6 +93,25 @@ class JwtAuthenticationFilterTest {
         verify(filterChain).doFilter(request, response);
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
         assertThat(SecurityContextHolder.getContext().getAuthentication().getName()).isEqualTo("alice");
+    }
+
+    @Test
+    void doFilterInternal_validToken_correctsMdcUsernameFromAnonymousToRealPrincipal() throws Exception {
+        // Simulates RequestCorrelationFilter (registered ahead of the whole Spring Security
+        // chain) having already put "anonymous" into MDC before authentication was established.
+        MDC.put("username", "anonymous");
+
+        String token = "valid-token";
+        Cookie[] cookies = {new Cookie("jwt", token)};
+        UserDetails userDetails = new User("alice", "", List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        when(request.getCookies()).thenReturn(cookies);
+        when(jwtUtil.isTokenValid(token)).thenReturn(true);
+        when(jwtUtil.extractUsername(token)).thenReturn("alice");
+        when(userDetailsService.loadUserByUsername("alice")).thenReturn(userDetails);
+
+        sut.doFilterInternal(request, response, filterChain);
+
+        assertThat(MDC.get("username")).isEqualTo("alice");
     }
 
     @Test

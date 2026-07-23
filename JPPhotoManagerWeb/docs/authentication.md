@@ -58,6 +58,7 @@ sequenceDiagram
 | `config/UserConfig.java` | `UserDetailsService` + `BCryptPasswordEncoder` beans; kept separate from `SecurityConfig` to avoid a circular dependency |
 | `infrastructure/service/JwtAuthenticationFilter.java` | Reads the `jwt` cookie on every request |
 | `infrastructure/service/JwtTokenServiceAdapter.java` | HMAC-SHA256 token generation/validation |
+| `infrastructure/web/filter/RequestCorrelationFilter.java` | Registered at `Ordered.HIGHEST_PRECEDENCE`, ahead of the whole Spring Security chain; see [Request correlation & MDC logging](#request-correlation--mdc-logging) |
 
 ## SSE + Spring Security async dispatch
 
@@ -80,6 +81,28 @@ committed"). The fix is a rule that must come **first** in
 
 This affects every SSE endpoint: catalog, sync, convert, and upload
 progress streams.
+
+## Request correlation & MDC logging
+
+`RequestCorrelationFilter` runs at `Ordered.HIGHEST_PRECEDENCE` — before
+Spring Security's own filter chain (auto-configured order `-100`) — so a
+`requestId` (UUID) and `username` are already in SLF4J MDC, and the
+`X-Request-ID` response header already set, no matter how far the request
+gets (including a `RateLimitFilter` short-circuit or a Security denial).
+Because authentication hasn't happened yet at that point, `username` starts
+as `"anonymous"`; once `JwtAuthenticationFilter` validates the `jwt` cookie
+and establishes the `SecurityContext`, it overwrites the MDC `username`
+entry in place with the real principal, so log lines from that point on in
+the request are correlated to the authenticated user rather than
+`"anonymous"`. MDC is cleared in a `finally` block once the filter chain
+returns.
+
+The `requestId` is echoed back as the `X-Request-ID` response header
+(exposed to the browser via CORS `exposedHeaders` in `AppConfig`) so the
+Angular `authInterceptor` can append `[Request ID: <id>]` to the error
+snackbar it shows the user — giving them something to quote when reporting
+an issue, which support can then grep for directly in the JSON log file
+(`logstash-logback-encoder` includes both MDC fields in every log line).
 
 ## Configuration properties
 

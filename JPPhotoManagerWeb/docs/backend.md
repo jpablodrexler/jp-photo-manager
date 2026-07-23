@@ -57,7 +57,8 @@ infrastructure/
     controller/          → REST controllers (AssetController, AlbumController, AuthController, …)
     dto/                  → HTTP request/response DTOs
     mapper/               → MapStruct HTTP DTO ↔ domain mappers
-    filter/               → JwtAuthenticationFilter, RateLimitFilter (Bucket4j, backed by Redis)
+    filter/               → JwtAuthenticationFilter, RateLimitFilter (Bucket4j, backed by Redis),
+                            RequestCorrelationFilter (requestId/username MDC + X-Request-ID header)
     exception/            → GlobalExceptionHandler
   persistence/
     entity/               → @Entity JPA classes
@@ -98,6 +99,7 @@ Controllers are thin: they delegate immediately to use-case interfaces and never
 | `ThumbnailStorageServiceAdapter` | Stores and retrieves thumbnails as `{assetId}.bin` files under the configured thumbnails directory, fronted by a Redis L2 cache with a 24-hour TTL. |
 | `JwtTokenServiceAdapter` / `RefreshTokenServiceAdapter` | Issue and validate the JWT access token and the longer-lived refresh token; refresh tokens are dual-written to PostgreSQL and mirrored into Redis (`RedisRefreshTokenStore`). |
 | `RateLimitFilter` | Servlet filter backed by Bucket4j + Redis; throttles requests per client IP (or the trusted `X-Forwarded-For` value behind a reverse proxy). |
+| `RequestCorrelationFilter` | Servlet filter registered at `Ordered.HIGHEST_PRECEDENCE` (ahead of the entire Spring Security chain); generates a UUID `requestId` per request, puts it and `username` (`"anonymous"` until `JwtAuthenticationFilter` corrects it to the real principal) into SLF4J MDC, echoes the `requestId` back as the `X-Request-ID` response header, and clears MDC in a `finally` block. The `logstash-logback-encoder` file appender includes both MDC fields in every JSON log line for the request, so `requestId` and `username` are directly correlatable end to end. See [Authentication → Request correlation & MDC logging](authentication.md#request-correlation--mdc-logging). |
 | `AssetSearchCacheServiceAdapter` | Evicts the Redis-backed `assets`/`tags` query caches per folder via cursor-based `SCAN`/`DEL`, triggered by `AssetSearchCacheInvalidationListener` (Kafka) and directly by the tag-mutation use cases. |
 | `AuditLogKafkaListener` | Consumes `asset.cataloged`/`asset.deleted`/`job.*.progress` events and appends them to the MongoDB `asset_audit_log` collection; tag/rating/view/download actions are logged directly by their use cases. |
 
