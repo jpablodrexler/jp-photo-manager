@@ -1,5 +1,6 @@
 package com.jpablodrexler.photomanager.application.usecase.user;
 
+import com.jpablodrexler.photomanager.application.service.PasswordValidationService;
 import com.jpablodrexler.photomanager.domain.model.UserSummary;
 import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.in.user.CreateUserUseCase;
@@ -18,6 +19,7 @@ public class CreateUserUseCaseImpl implements CreateUserUseCase {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordValidationService passwordValidationService;
 
     @Override
     @Transactional
@@ -27,6 +29,7 @@ public class CreateUserUseCaseImpl implements CreateUserUseCase {
         if (userRepository.findByUsername(normalized).isPresent()) {
             throw new IllegalArgumentException("Username already taken: " + normalized);
         }
+        passwordValidationService.validate(password);
         User user = new User();
         user.setUsername(normalized);
         user.setPasswordHash(passwordEncoder.encode(password));

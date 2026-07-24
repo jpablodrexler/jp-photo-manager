@@ -57,6 +57,7 @@ The **Priority**, **Schema Change**, **Effort**, and **Area** columns were intro
 | 82  | `redis-search-tag-cache`          | — | — | — | — | Cache the two highest-frequency gallery read paths in Redis: (1) paginated asset search results (`GET /api/assets`) keyed by `assets:{sha256(folderPath+page+sort+filters)}` with a 5-minute TTL, invalidated on `asset.cataloged` and `asset.deleted` Kafka events from #75; (2) the tag list with counts (`GET /api/tags`) keyed `tags:all` with a 5-minute TTL, invalidated on `AddTagToAssetUseCase` and `RemoveTagFromAssetUseCase`; extends `server-side-spring-cache` (#28) which targets home stats, folder tree, and EXIF lookups with per-JVM Caffeine — this feature covers the two hottest gallery endpoints and uses Redis for distributed invalidation that works correctly across multiple instances; the `@Cacheable`/`@CacheEvict` annotations from #28 can be reused by switching the Spring cache manager from `CaffeineCacheManager` to a Lettuce-backed `RedisCacheManager` | ✅ Created | ✅ Implemented |
 | 36  | `global-error-handler`      | P0 | No | M | Full-stack | Override Angular's `ErrorHandler` to display a `MatSnackBar` notification for all unhandled component errors; extend the existing backend `GlobalExceptionHandler` to return a consistent `{ status, message, timestamp }` JSON body for every 4xx and 5xx response so the frontend interceptor can surface a human-readable message rather than showing a raw HTTP status | ✅ Created | ✅ Implemented |
 | 43  | `request-correlation-mdc`   | P0 | No | S | Backend | Add a servlet `Filter` that injects a `requestId` UUID and the authenticated `username` into SLF4J `MDC` at the start of each request and clears it on completion; `logstash-logback-encoder` is already configured in `logback-spring.xml` and will automatically include both fields in every JSON log line; also set `X-Request-ID` on the response so the Angular frontend can log the correlation ID alongside client-side errors from `global-error-handler` (#36) | ✅ Created | ✅ Implemented |
+| 53  | `password-strength-policy`  | P0 | No | S | Full-stack | Enforce minimum password complexity on user creation and password change using the `Passay` library (configurable rules: minimum length 12, at least one uppercase, one digit, one special character); the Angular user-admin form and profile page show a live strength meter powered by the same rule set mirrored client-side; returns a structured `400` with per-rule violation details so the frontend can highlight exactly which rules failed; no schema change | ✅ Created | ✅ Implemented |
 
 ---
 
@@ -533,3 +534,11 @@ The cache key `asset:thumbnail:{assetId}` is stable because thumbnails are conte
 **Features 41, 42, 43 — no schema changes**
 
 `actuator-health-indicators`, `metrics-prometheus`, and `request-correlation-mdc` were all purely operational: no Flyway migrations, no domain model changes, and no new API endpoints visible to end users.
+
+**Features 46, 50, 53 — no schema changes**
+
+`session-management` (beyond the optional `user_agent` column), `image-comparison-viewer`, and `password-strength-policy` require no Flyway migrations. (Note: this block is duplicated from `features-planned.md`, where it remains because #46 and #50 are still pending.)
+
+**Features 50, 53 — no new backend endpoints**
+
+`image-comparison-viewer` reuses the existing `GET /api/assets/{id}/image` endpoint. `password-strength-policy` adds validation logic to existing endpoints only. (Note: this block is duplicated from `features-planned.md`, where it remains because #50 is still pending.)

@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.application.usecase.user;
 
 import com.jpablodrexler.photomanager.application.exception.UserNotFoundException;
+import com.jpablodrexler.photomanager.application.service.PasswordValidationService;
 import com.jpablodrexler.photomanager.domain.port.in.user.UpdatePasswordUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class UpdatePasswordUseCaseImpl implements UpdatePasswordUseCase {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordValidationService passwordValidationService;
 
     @Override
     @Transactional
@@ -24,6 +26,7 @@ public class UpdatePasswordUseCaseImpl implements UpdatePasswordUseCase {
     public void execute(UUID userId, String newPassword) {
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
+        passwordValidationService.validate(newPassword);
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }

@@ -1,6 +1,8 @@
 package com.jpablodrexler.photomanager.application.usecase.user;
 
+import com.jpablodrexler.photomanager.application.exception.PasswordPolicyException;
 import com.jpablodrexler.photomanager.application.exception.UserNotFoundException;
+import com.jpablodrexler.photomanager.application.service.PasswordValidationService;
 import com.jpablodrexler.photomanager.domain.model.UserSummary;
 import com.jpablodrexler.photomanager.domain.model.User;
 import com.jpablodrexler.photomanager.domain.port.out.UserRepository;
@@ -22,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,6 +37,7 @@ class UserUseCasesTest {
 
         @Mock UserRepository userRepository;
         @Mock PasswordEncoder passwordEncoder;
+        @Mock PasswordValidationService passwordValidationService;
         @InjectMocks CreateUserUseCaseImpl sut;
 
         @Test
@@ -44,6 +48,17 @@ class UserUseCasesTest {
             assertThatThrownBy(() -> sut.execute("Alice", "pass", null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("alice");
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        void execute_passwordFailsPolicy_propagatesPasswordPolicyExceptionAndDoesNotSave() {
+            when(userRepository.findByUsername("alice")).thenReturn(Optional.empty());
+            doThrow(new PasswordPolicyException(List.of("Must be at least 12 characters")))
+                    .when(passwordValidationService).validate("weak");
+
+            assertThatThrownBy(() -> sut.execute("Alice", "weak", null))
+                    .isInstanceOf(PasswordPolicyException.class);
             verify(userRepository, never()).save(any());
         }
 
@@ -84,6 +99,7 @@ class UserUseCasesTest {
 
         @Mock UserRepository userRepository;
         @Mock PasswordEncoder passwordEncoder;
+        @Mock PasswordValidationService passwordValidationService;
         @InjectMocks UpdatePasswordUseCaseImpl sut;
 
         @Test
@@ -107,6 +123,19 @@ class UserUseCasesTest {
 
             assertThat(user.getPasswordHash()).isEqualTo("newhash");
             verify(userRepository).save(user);
+        }
+
+        @Test
+        void execute_passwordFailsPolicy_propagatesPasswordPolicyExceptionAndDoesNotSave() {
+            UUID userId = UUID.randomUUID();
+            User user = User.builder().id(userId).username("alice").build();
+            when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+            doThrow(new PasswordPolicyException(List.of("Must be at least 12 characters")))
+                    .when(passwordValidationService).validate("weak");
+
+            assertThatThrownBy(() -> sut.execute(userId, "weak"))
+                    .isInstanceOf(PasswordPolicyException.class);
+            verify(userRepository, never()).save(any());
         }
     }
 

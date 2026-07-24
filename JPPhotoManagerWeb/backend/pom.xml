@@ -82,6 +82,13 @@
             <version>${mapstruct.version}</version>
         </dependency>
 
+        <!-- Password strength/complexity validation -->
+        <dependency>
+            <groupId>org.passay</groupId>
+            <artifactId>passay</artifactId>
+            <version>1.6.6</version>
+        </dependency>
+
         <!-- Audio metadata extraction -->
         <dependency>
             <groupId>net.jthink</groupId>
