@@ -8,7 +8,7 @@ Password creation and change endpoints enforce a minimum complexity policy. The 
 
 ### Requirement: Password creation enforces a minimum complexity policy
 
-User creation and password change endpoints SHALL reject passwords that do not meet all four rules: minimum 12 characters, at least one uppercase letter, at least one digit, at least one special character.
+User creation and admin-initiated password change endpoints SHALL reject passwords that do not meet all four rules: minimum 12 characters, at least one uppercase letter, at least one digit, at least one special character. This release scopes password changes to the admin-only user-management flow; there is no separate self-service "change my own password" endpoint.
 
 #### Scenario: Weak password is rejected with per-rule violations
 
@@ -24,8 +24,8 @@ User creation and password change endpoints SHALL reject passwords that do not m
 
 #### Scenario: Password change with weak password is rejected
 
-- **GIVEN** an authenticated user attempts to change their password to `"weak"`
-- **WHEN** `PUT /api/profile/password` is called
+- **GIVEN** an admin attempts to change a user's password to `"weak"`
+- **WHEN** `PATCH /api/admin/users/{id}/password` is called
 - **THEN** the response is `400 Bad Request` with the violations list
 
 ### Requirement: Frontend shows a live password strength meter

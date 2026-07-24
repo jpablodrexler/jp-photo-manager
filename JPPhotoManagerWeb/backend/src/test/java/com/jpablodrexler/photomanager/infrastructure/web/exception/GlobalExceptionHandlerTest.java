@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.AssetNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.PasswordPolicyException;
 import com.jpablodrexler.photomanager.application.exception.SearchPresetNotFoundException;
 import com.jpablodrexler.photomanager.domain.port.in.home.GetHomeStatsUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.controller.HomeController;
@@ -21,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -106,6 +108,23 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.error").value("Bad Request"))
                 .andExpect(jsonPath("$.message").value("Bad input"));
+    }
+
+    @Test
+    void passwordPolicyException_returns400WithViolationsArray() throws Exception {
+        when(getHomeStatsUseCase.execute()).thenThrow(new PasswordPolicyException(List.of(
+                "Must be at least 12 characters",
+                "Must contain at least one uppercase character",
+                "Must contain at least one special character")));
+
+        mockMvc.perform(get("/api/home/stats"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(jsonPath("$.message").value("Password does not meet requirements"))
+                .andExpect(jsonPath("$.violations").isArray())
+                .andExpect(jsonPath("$.violations.length()").value(3))
+                .andExpect(jsonPath("$.violations[0]").value("Must be at least 12 characters"));
     }
 
     @Test

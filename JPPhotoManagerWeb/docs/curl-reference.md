@@ -304,16 +304,17 @@ These endpoints require an authenticated administrator account.
 # List all users
 curl -b cookies.txt http://localhost:8080/api/admin/users
 
-# Create a new user
+# Create a new user (password must satisfy the complexity policy: 12+ chars, an uppercase
+# letter, a digit, and a special character — see docs/backend.md's password-strength note)
 curl -b cookies.txt -X POST http://localhost:8080/api/admin/users \
   -H "Content-Type: application/json" \
-  -d '{"username":"alice","password":"s3cr3t!"}'
+  -d '{"username":"alice","password":"S3cur3P@ssw0rd!"}'
 
-# Change a user's password (replace UUID with the actual user id)
+# Change a user's password (replace UUID with the actual user id; same complexity policy applies)
 curl -b cookies.txt -X PATCH \
   http://localhost:8080/api/admin/users/a1b2c3d4-e5f6-7890-abcd-ef1234567890/password \
   -H "Content-Type: application/json" \
-  -d '{"password":"newpassword"}'
+  -d '{"password":"N3wP@ssw0rd123!"}'
 
 # Delete a user
 curl -b cookies.txt -X DELETE \

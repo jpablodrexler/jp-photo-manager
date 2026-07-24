@@ -3,12 +3,14 @@ package com.jpablodrexler.photomanager.infrastructure.web.exception;
 import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.AssetNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.FolderNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.PasswordPolicyException;
 import com.jpablodrexler.photomanager.application.exception.SearchPresetNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.SmartAlbumMembershipException;
 import com.jpablodrexler.photomanager.application.exception.TagNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.UnsupportedAssetTypeException;
 import com.jpablodrexler.photomanager.application.exception.UserNotFoundException;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.ErrorResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.PasswordPolicyErrorResponseDto;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
@@ -123,6 +125,14 @@ public class GlobalExceptionHandler {
         log.warn("Unreadable request body: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorResponseDto(Instant.now().toString(), 400, "Bad Request", "Request body is missing or malformed."));
+    }
+
+    @ExceptionHandler(PasswordPolicyException.class)
+    public ResponseEntity<PasswordPolicyErrorResponseDto> handlePasswordPolicy(PasswordPolicyException ex) {
+        log.warn("Password policy violation: {}", ex.getViolations());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new PasswordPolicyErrorResponseDto(Instant.now().toString(), 400, "Bad Request",
+                        ex.getMessage(), ex.getViolations()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

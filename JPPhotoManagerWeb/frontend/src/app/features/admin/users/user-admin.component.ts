@@ -11,12 +11,14 @@ import { MatDialog } from '@angular/material/dialog';
 import { UserAdminService } from '../../../core/services/user-admin.service';
 import { UserAdmin } from '../../../core/models/user-admin.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { PasswordStrengthComponent } from '../../../shared/components/password-strength/password-strength.component';
 
 @Component({
   selector: 'app-user-admin',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, MatTableModule, MatButtonModule,
-            MatFormFieldModule, MatInputModule, MatIconModule, MatCardModule],
+            MatFormFieldModule, MatInputModule, MatIconModule, MatCardModule,
+            PasswordStrengthComponent],
   templateUrl: './user-admin.component.html',
   styleUrl: './user-admin.component.scss'
 })
@@ -44,6 +46,14 @@ export class UserAdminComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadUsers();
+  }
+
+  get addPasswordValue(): string {
+    return this.addForm.controls.password.value;
+  }
+
+  get changePasswordValue(): string {
+    return this.passwordForm.controls.password.value;
   }
 
   loadUsers(): void {

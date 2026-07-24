@@ -25,6 +25,7 @@
 | MongoDB | 8 (via Docker) |
 | JJWT (JWT signing/verification) | 0.12.6 |
 | Bucket4j + Bucket4j Redis (rate limiting) | 8.10.1 |
+| Passay (password complexity validation) | 1.6.6 |
 | springdoc-openapi (Swagger UI) | 2.8.9 |
 | Lombok | 1.18.46 |
 | MapStruct | 1.6.3 |
@@ -44,6 +45,11 @@ The backend follows the same Hexagonal (Ports and Adapters) layout described in 
 application/
   dto/                   → Application DTOs: progress messages (CatalogProgressMessage,
                            SyncProgressMessage, ConvertProgressMessage), AssetFilter, PaginatedResult…
+  exception/              → Domain/application exceptions (AssetNotFoundException,
+                           UserNotFoundException, PasswordPolicyException, …), handled centrally by
+                           `infrastructure/web/exception/GlobalExceptionHandler`
+  service/                → Framework-free application services shared across use cases
+                           (PasswordValidationService, backed by Passay)
   usecase/                → One implementation class per port/in interface, grouped by subdomain:
                            album, analytics, asset, audit, auth, catalog, convert, folder, home,
                            preference, recycle, search, sync, tag, user
@@ -293,6 +299,14 @@ All endpoints below except the three under **Auth** marked *Public* require the 
 | `POST` | `/api/admin/users` | Create a user |
 | `PATCH` | `/api/admin/users/{id}/password` | Change a user's password |
 | `DELETE` | `/api/admin/users/{id}` | Delete a user |
+
+`POST /api/admin/users` and `PATCH /api/admin/users/{id}/password` both enforce a password
+complexity policy (`application/service/PasswordValidationService`, backed by
+[Passay](https://www.passay.org/)): minimum 12 characters, at least one uppercase letter, one
+digit, and one special character. A password failing any rule returns `400 Bad Request` with a
+`violations` array — one entry per failing rule — via a dedicated `PasswordPolicyException` handler
+in `GlobalExceptionHandler`. The frontend mirrors these same four rules client-side in
+`PasswordStrengthComponent` (see `docs/frontend.md`) for live feedback without an API round-trip.
 
 The full interactive contract is served by Swagger UI (`/swagger-ui.html`) — see [Running the backend](#running-the-backend) below.
 

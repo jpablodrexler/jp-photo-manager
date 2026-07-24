@@ -279,6 +279,7 @@ src/app/
     admin/users/                → UserAdminComponent (/admin/users) — add/change password/delete users
   shared/
     components/thumbnail/      → Reusable thumbnail card component
+    components/password-strength/ → Live password strength meter (colour bar + rule checklist)
     pipes/file-size.pipe.ts    → Human-readable file size formatting
 ```
 
