@@ -44,6 +44,7 @@ import com.jpablodrexler.photomanager.domain.model.RenameAssetsResult;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.TimelineGroupResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.UploadAssetResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
+import com.jpablodrexler.photomanager.infrastructure.web.SseCleanup;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.swagger.v3.oas.annotations.Operation;
@@ -211,9 +212,7 @@ public class AssetController {
     public SseEmitter catalogAssets() {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
         sseConnectionCount.incrementAndGet();
-        emitter.onCompletion(sseConnectionCount::decrementAndGet);
-        emitter.onTimeout(sseConnectionCount::decrementAndGet);
-        emitter.onError(t -> sseConnectionCount.decrementAndGet());
+        SseCleanup.registerOnce(emitter, sseConnectionCount::decrementAndGet);
         long runId = System.currentTimeMillis();
         kafkaProgressRegistry.registerEmitter(runId, emitter);
         catalogAssetsUseCase.execute(runId, resolveUserId());
@@ -229,13 +228,10 @@ public class AssetController {
     public SseEmitter observeCatalog() {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
         sseConnectionCount.incrementAndGet();
-        Runnable cleanup = () -> {
+        SseCleanup.registerOnce(emitter, () -> {
             kafkaProgressRegistry.removeCatalogObserver(emitter);
             sseConnectionCount.decrementAndGet();
-        };
-        emitter.onCompletion(cleanup);
-        emitter.onTimeout(cleanup);
-        emitter.onError(t -> cleanup.run());
+        });
         kafkaProgressRegistry.addCatalogObserver(emitter);
         return emitter;
     }
@@ -374,13 +370,10 @@ public class AssetController {
         // before job.upload.progress ever reports done=true — otherwise the emitter would be
         // orphaned in KafkaProgressRegistry forever, since only the done=true path in
         // KafkaProgressListener.onUploadProgress removes it.
-        Runnable cleanup = () -> {
+        SseCleanup.registerOnce(emitter, () -> {
             kafkaProgressRegistry.remove(assetId);
             sseConnectionCount.decrementAndGet();
-        };
-        emitter.onCompletion(cleanup);
-        emitter.onTimeout(cleanup);
-        emitter.onError(t -> cleanup.run());
+        });
         kafkaProgressRegistry.registerEmitter(assetId, emitter);
         return emitter;
     }

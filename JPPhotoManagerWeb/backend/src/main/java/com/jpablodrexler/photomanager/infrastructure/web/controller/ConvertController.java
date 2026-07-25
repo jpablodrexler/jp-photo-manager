@@ -5,6 +5,7 @@ import com.jpablodrexler.photomanager.domain.port.in.convert.GetConvertConfigUse
 import com.jpablodrexler.photomanager.domain.port.in.convert.SaveConvertConfigUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.user.GetCurrentUserUseCase;
 import com.jpablodrexler.photomanager.infrastructure.service.KafkaProgressRegistry;
+import com.jpablodrexler.photomanager.infrastructure.web.SseCleanup;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.shared.ConvertDirectoryPairDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.ConvertWebMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -66,10 +67,7 @@ public class ConvertController {
     public SseEmitter run() {
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
         long runId = System.currentTimeMillis();
-        Runnable cleanup = () -> kafkaProgressRegistry.remove(runId);
-        emitter.onCompletion(cleanup);
-        emitter.onTimeout(cleanup);
-        emitter.onError(t -> cleanup.run());
+        SseCleanup.registerOnce(emitter, () -> kafkaProgressRegistry.remove(runId));
         kafkaProgressRegistry.registerEmitter(runId, emitter);
         convertAssetsUseCase.execute(runId, resolveUserId());
         return emitter;
