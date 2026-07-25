@@ -332,22 +332,22 @@ public class StorageServiceAdapter implements StoragePort {
 
             try {
                 TiffField f = exif.findField(TiffTagConstants.TIFF_TAG_MAKE);
-                if (f != null) cameraMake = f.getStringValue().trim();
+                if (f != null) cameraMake = sanitizeExifString(f.getStringValue().trim());
             } catch (Exception e) { log.debug("EXIF make read failed for {}", filePath); }
 
             try {
                 TiffField f = exif.findField(TiffTagConstants.TIFF_TAG_MODEL);
-                if (f != null) cameraModel = f.getStringValue().trim();
+                if (f != null) cameraModel = sanitizeExifString(f.getStringValue().trim());
             } catch (Exception e) { log.debug("EXIF model read failed for {}", filePath); }
 
             try {
                 TiffField f = exif.findField(ExifTagConstants.EXIF_TAG_LENS_MODEL);
-                if (f != null) lensModel = f.getStringValue().trim();
+                if (f != null) lensModel = sanitizeExifString(f.getStringValue().trim());
             } catch (Exception e) { log.debug("EXIF lens model read failed for {}", filePath); }
 
             try {
                 TiffField f = exif.findField(ExifTagConstants.EXIF_TAG_EXPOSURE_TIME);
-                if (f != null) exposureTime = f.getValueDescription();
+                if (f != null) exposureTime = sanitizeExifString(f.getValueDescription());
             } catch (Exception e) { log.debug("EXIF exposure time read failed for {}", filePath); }
 
             try {
@@ -396,7 +396,7 @@ public class StorageServiceAdapter implements StoragePort {
                 for (TiffField field : exif.getAllFields()) {
                     String value = field.getValueDescription();
                     if (value != null && value.length() <= 1000) {
-                        raw.put(field.getTagInfo().name, value);
+                        raw.put(field.getTagInfo().name, sanitizeExifString(value));
                     }
                 }
                 if (!raw.isEmpty()) rawExif = raw;
@@ -409,6 +409,16 @@ public class StorageServiceAdapter implements StoragePort {
         return new ExifMetadata(cameraMake, cameraModel, lensModel, exposureTime,
                 fNumber, isoSpeed, focalLength, dateTaken, widthPixels, heightPixels,
                 gpsLatitude, gpsLongitude, rawExif);
+    }
+
+    // EXIF string fields (especially UserComment, which some camera firmware writes as raw,
+    // sometimes malformed byte data) can contain a null character. Postgres text/jsonb columns
+    // reject it outright ("unsupported Unicode escape sequence ... cannot be converted to
+    // text"), which failed the whole partitioned catalog step for every asset in that partition,
+    // not just the offending one - strip it here, at the one place all EXIF strings pass through
+    // on their way into cameraMake/cameraModel/lensModel/exposureTime/rawExif.
+    String sanitizeExifString(String value) {
+        return value == null ? null : value.replace("\u0000", "");
     }
 
     @Override

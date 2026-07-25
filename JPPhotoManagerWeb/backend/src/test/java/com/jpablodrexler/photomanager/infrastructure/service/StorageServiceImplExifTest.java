@@ -110,4 +110,24 @@ class StorageServiceImplExifTest {
         ImageIO.write(img, "PNG", pngPath.toFile());
         return pngPath;
     }
+    @Test
+    void sanitizeExifString_valueContainsNullCharacter_stripsIt() {
+        String result = sut.sanitizeExifString("abc\u0000def");
+
+        assertThat(result).isEqualTo("abcdef");
+    }
+
+    @Test
+    void sanitizeExifString_nullValue_returnsNull() {
+        String result = sut.sanitizeExifString(null);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void sanitizeExifString_valueWithoutNullCharacter_returnsUnchanged() {
+        String result = sut.sanitizeExifString("TestCamera");
+
+        assertThat(result).isEqualTo("TestCamera");
+    }
 }
