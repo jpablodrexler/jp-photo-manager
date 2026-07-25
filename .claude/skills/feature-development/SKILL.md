@@ -9,16 +9,17 @@ description: >
   a live cluster deployment exists) or Docker Compose (if Docker is running),
   runs `e2e-testing` against the live Kubernetes deployment when one was
   actually deployed to, syncs the web app's documentation (CLAUDE.md +
-  docs/*.md) against what actually shipped, verifies the implementation
-  actually satisfies the change's spec scenarios (not just that tasks are
-  checked off) before archiving, then archives the SDD change and marks the
-  feature as implemented. Use when you want a fully automated feature
-  development cycle with minimal manual steps. TRIGGER when the user asks to
-  develop a feature.
+  docs/*.md) against what actually shipped, reviews whether the
+  `release-e2e-suite` Cypress spec suite needs a new or extended spec file
+  for what just shipped, verifies the implementation actually satisfies the
+  change's spec scenarios (not just that tasks are checked off) before
+  archiving, then archives the SDD change and marks the feature as
+  implemented. Use when you want a fully automated feature development cycle
+  with minimal manual steps. TRIGGER when the user asks to develop a feature.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.6"
+  version: "1.7"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -42,7 +43,7 @@ Six phases executed by seven dedicated subagents (3a and 3b run in parallel):
 | 3b — Frontend tests    | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                                                    |
 | 4 — Build & deploy     | Subagent 5 | deploys via `build-and-deploy-k8s.sh` if a live `photomanager` deployment exists, else Docker Compose/Dockerfiles (skipped if Docker not running) |
 | 4.5 — E2E verification | Subagent 7 | `e2e-testing` against the live Kubernetes deployment (only when Phase 4 deployed via `build-and-deploy-k8s.sh`; skipped for Docker Compose or skipped deploys) |
-| 5 — Archive            | Subagent 6 | `openspec-archive-change <name>` → `features-archive <name>`                                                                                      |
+| 5 — Archive            | Subagent 6 | `spec-compliance-check` → `web-docs-sync` → review/extend `release-e2e-suite` spec coverage → `openspec-archive-change <name>` → `features-archive <name>` |
 
 ---
 
@@ -872,20 +873,63 @@ the following prompt:
 > Step 3 regardless. Only stop and surface details to the user if the skill
 > itself errors out in a way that leaves files in a broken state.
 >
-> **Step 3** — Invoke `openspec-archive-change <change-name>`. Wait for it to
+> **Step 3** — Review whether `JPPhotoManagerWeb/frontend/cypress/e2e/release/`
+> (the `release-e2e-suite` skill's real-backend regression spec suite) needs
+> a new or extended spec file for what `<change-name>` just shipped. This
+> keeps that suite's coverage from silently falling behind the frontend's
+> real feature set over time. Read `release-e2e-suite`'s own §5
+> "Maintaining the Suite" for the exact conventions (one file per feature
+> area, the `00`→`99` filename-prefix ordering rules, reusing
+> `cypress/support/e2e-release-helpers.ts`, generating any new fixture
+> images with `scripts/generate-e2e-test-images.js`) before writing
+> anything — do not invent a different pattern.
+>
+> - First decide whether `<change-name>` is release-suite-relevant: a new
+>   top-level route/feature area under `frontend/src/app/features/`, or a
+>   materially new user-facing capability on an existing route (a new bulk
+>   action, a new field, a new dialog a user can drive end-to-end). Backend-
+>   only work with no new user-facing surface, internal refactoring, and bug
+>   fixes with no new capability are **not** release-suite-relevant — skip
+>   the rest of this step for those.
+> - **New feature area**: add a new spec file
+>   `cypress/e2e/release/NN-<feature>.cy.ts` (choose `NN` per the existing
+>   ordering rules — never before `01-seed-and-catalog` or after
+>   `99-teardown`) covering the feature's real, primary user flow, reusing
+>   the suite's already-seeded `/e2e-catalog` data where relevant rather than
+>   seeding new data of its own unless the feature genuinely needs data
+>   `01-seed-and-catalog.cy.ts` doesn't already provide.
+> - **Materially new capability on an existing route**: add one new `it()`
+>   to that route's existing spec file rather than creating a new one,
+>   matching the file's existing scope and style.
+> - **This step is best-effort, not blocking.** If you determine the change
+>   isn't release-suite-relevant, or you're genuinely unsure, say so plainly
+>   in your final response instead of guessing — it is not worth blocking
+>   archiving over. Only stop and surface details to the user if writing the
+>   spec file itself leaves the repository in a broken state (e.g. a syntax
+>   error in the new `.cy.ts` file you cannot resolve).
+> - **Never run the release suite itself here.** `release-e2e-suite` is a
+>   deliberately heavy, live-cluster, release-time-only pass invoked from
+>   `gitflow`'s release flow — not part of a single feature's automated
+>   verification (Phase 4.5's `e2e-testing` spot-check already fills that
+>   per-feature role). This step only keeps the suite's *source* in sync
+>   with what shipped; it does not execute it.
+>
+> **Step 4** — Invoke `openspec-archive-change <change-name>`. Wait for it to
 > complete fully (the SDD change directory must be moved to
 > `openspec/changes/archive/`). This skill may prompt you about delta spec sync
 > or incomplete tasks — respond to those prompts normally; they are part of the
 > archiving workflow.
 >
-> **Step 4** — Invoke `features-archive <change-name>`. Wait for it to
+> **Step 5** — Invoke `features-archive <change-name>`. Wait for it to
 > complete fully (the feature row must be updated to `✅ Implemented` in
 > `JPPhotoManagerWeb/docs/backlog/features-planned.md`).
 >
-> After all four steps complete, end your response with exactly this line
-> (append the `UNVERIFIED_SCENARIOS:` line only if Step 1 found any):
+> After all five steps complete, end your response with exactly this line
+> (append the `UNVERIFIED_SCENARIOS:` line only if Step 1 found any, and the
+> `RELEASE_E2E_COVERAGE:` line always):
 > `ARCHIVE: DONE`
 > `UNVERIFIED_SCENARIOS: <count> — <one-line summary of which scenarios, from Step 1's report>`
+> `RELEASE_E2E_COVERAGE: <one-line summary from Step 3, e.g. "Added cypress/e2e/release/12-<feature>.cy.ts" or "Extended 05-albums.cy.ts with one new it()" or "N/A — no new user-facing route/capability">`
 
 Do not display the Final Summary until this subagent returns `ARCHIVE: DONE`
 or `ARCHIVE_BLOCKED`. An `ARCHIVE_BLOCKED` result means the feature is
@@ -919,6 +963,7 @@ them back through Phase 2's code review.
 **E2E verification:** ✓ <value from E2E signal, e.g. "Pass" or "Pass — ingress check failed (missing local DNS for photomanager.local)", or "Skipped — <reason>" if Phase 4.5 didn't run>
 **Spec compliance:** ✓ All scenarios verified (or, if `UNVERIFIED_SCENARIOS` was recorded in Phase 5: **⚠ <count> scenario(s) unverified:** <the one-line summary> — no automated test or manual check found; consider closing the gap with `spec-compliance-check`)
 **Docs sync:** ✓ <one-line summary from `web-docs-sync`, e.g. "Updated docs/backend.md REST API table + CLAUDE.md config pointer" or "Nothing to sync">
+**Release E2E coverage:** ✓ <value from `RELEASE_E2E_COVERAGE` signal, e.g. "Added cypress/e2e/release/12-<feature>.cy.ts" or "N/A — no new user-facing route/capability">
 **SDD change:** ✓ Archived
 **Feature:** ✓ Marked as implemented
 ```
@@ -1062,6 +1107,17 @@ them back through Phase 2's code review.
   because they're script-owned, reviewed, and idempotent; do not additionally
   run `kubectl apply -k` or equivalent manually, outside the script, for any
   reason.
+- **Phase 5's release-e2e-suite coverage review (Step 3) never executes the
+  suite, only reviews/extends its spec files.** `release-e2e-suite` itself
+  is a heavy, live-cluster pass gated on the `gitflow` release flow, not on
+  individual features — Phase 5's step exists solely to keep
+  `cypress/e2e/release/*.cy.ts` from drifting behind the frontend's real
+  feature set, following that skill's own §5 "Maintaining the Suite"
+  conventions (file-per-feature, `00`→`99` prefix ordering, reusing
+  `e2e-release-helpers.ts`). It is best-effort and non-blocking: if
+  `<change-name>` isn't release-suite-relevant (no new user-facing
+  route/capability), the subagent records `RELEASE_E2E_COVERAGE: N/A — ...`
+  and moves on rather than inventing coverage that doesn't apply.
 - **Never touch `k8s/secret.yaml` or `k8s/catalog-volumes.yaml`.** Per
   `JPPhotoManagerWeb/CLAUDE.md`, these two files hold real secrets and
   machine-specific paths and must never be read, created, or edited by any

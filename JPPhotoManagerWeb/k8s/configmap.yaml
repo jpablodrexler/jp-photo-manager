@@ -13,10 +13,19 @@ data:
   POSTGRES_USERNAME: "postgres"
   # Semicolon-separated list of catalog roots inside the container. Must line
   # up with the /catalog, /catalog2, /catalog3 hostPath volumes mounted on
-  # the backend Deployment (see backend.yaml).
-  CATALOG_DIR: "/catalog;/catalog2;/catalog3"
+  # the backend Deployment (see backend.yaml) plus /e2e-catalog, an emptyDir
+  # (backend.yaml, versioned — no real host path, unlike the other three)
+  # reserved for release-e2e-suite's generated test images. Never point any
+  # E2E/test tooling at /catalog, /catalog2, or /catalog3 — those are real,
+  # machine-specific personal directories (see k8s/catalog-volumes.yaml.example).
+  CATALOG_DIR: "/catalog;/catalog2;/catalog3;/e2e-catalog"
   THUMBNAILS_DIR: "/thumbnails"
   KAFKA_BOOTSTRAP: "kafka:9092"
   REDIS_HOST: "redis"
   REDIS_PORT: "6379"
   MONGO_URI: "mongodb://mongo:27017/photomanager"
+  # Exempts the dedicated release-e2e-suite test account from the login and catalog
+  # rate limits (see RateLimitFilter) so repeated suite runs aren't throttled. Never
+  # add a real user account here -- see application.yml's documentation of this
+  # property for the brute-force-protection trade-off this makes for login.
+  RATE_LIMIT_EXEMPT_USERNAMES: "e2e-suite-admin"

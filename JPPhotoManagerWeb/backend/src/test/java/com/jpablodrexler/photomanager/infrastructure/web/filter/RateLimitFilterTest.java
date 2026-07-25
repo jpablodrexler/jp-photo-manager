@@ -1,6 +1,7 @@
 package com.jpablodrexler.photomanager.infrastructure.web.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jpablodrexler.photomanager.domain.port.out.JwtTokenPort;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.BucketConfiguration;
@@ -12,9 +13,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
@@ -33,12 +36,13 @@ import static org.mockito.Mockito.when;
 class RateLimitFilterTest {
 
     @Mock FilterChain chain;
+    @Mock JwtTokenPort jwtTokenPort;
 
     RateLimitFilter sut;
 
     @BeforeEach
     void setUp() {
-        sut = new RateLimitFilter(inMemoryProxyManager(), new ObjectMapper(), "");
+        sut = new RateLimitFilter(inMemoryProxyManager(), new ObjectMapper(), jwtTokenPort, "", "");
     }
 
     @Test
@@ -102,7 +106,7 @@ class RateLimitFilterTest {
 
     @Test
     void redisUnavailable_requestIsAllowedThrough() throws Exception {
-        sut = new RateLimitFilter(failingProxyManager(), new ObjectMapper(), "");
+        sut = new RateLimitFilter(failingProxyManager(), new ObjectMapper(), jwtTokenPort, "", "");
 
         MockHttpServletRequest  req  = loginRequest("10.0.0.99");
         MockHttpServletResponse resp = new MockHttpServletResponse();
@@ -110,6 +114,77 @@ class RateLimitFilterTest {
 
         assertThat(resp.getStatus()).isEqualTo(200);
         verify(chain).doFilter(any(), any());
+    }
+
+    @Test
+    void catalogEndpoint_exemptUsernameViaJwtCookie_bypassesRateLimitEntirely() throws Exception {
+        sut = new RateLimitFilter(inMemoryProxyManager(), new ObjectMapper(), jwtTokenPort, "",
+                "e2e-suite-admin");
+        when(jwtTokenPort.isTokenValid("valid-token")).thenReturn(true);
+        when(jwtTokenPort.extractUsername("valid-token")).thenReturn("e2e-suite-admin");
+
+        for (int i = 0; i < 20; i++) {
+            MockHttpServletRequest req = catalogRequest("10.0.0.50");
+            req.setCookies(new jakarta.servlet.http.Cookie("jwt", "valid-token"));
+            MockHttpServletResponse resp = new MockHttpServletResponse();
+            sut.doFilter(req, resp, chain);
+            assertThat(resp.getStatus()).isEqualTo(200);
+        }
+    }
+
+    @Test
+    void catalogEndpoint_nonExemptUsernameViaJwtCookie_stillRateLimited() throws Exception {
+        sut = new RateLimitFilter(inMemoryProxyManager(), new ObjectMapper(), jwtTokenPort, "",
+                "e2e-suite-admin");
+        when(jwtTokenPort.isTokenValid("valid-token")).thenReturn(true);
+        when(jwtTokenPort.extractUsername("valid-token")).thenReturn("someone-else");
+
+        for (int i = 0; i < 5; i++) {
+            MockHttpServletRequest req = catalogRequest("10.0.0.51");
+            req.setCookies(new jakarta.servlet.http.Cookie("jwt", "valid-token"));
+            MockHttpServletResponse resp = new MockHttpServletResponse();
+            sut.doFilter(req, resp, chain);
+            assertThat(resp.getStatus()).isEqualTo(200);
+        }
+
+        MockHttpServletRequest req6 = catalogRequest("10.0.0.51");
+        req6.setCookies(new jakarta.servlet.http.Cookie("jwt", "valid-token"));
+        MockHttpServletResponse resp6 = new MockHttpServletResponse();
+        sut.doFilter(req6, resp6, chain);
+
+        assertThat(resp6.getStatus()).isEqualTo(429);
+    }
+
+    @Test
+    void loginEndpoint_exemptUsernameInBody_bypassesRateLimitEntirely() throws Exception {
+        sut = new RateLimitFilter(inMemoryProxyManager(), new ObjectMapper(), jwtTokenPort, "",
+                "e2e-suite-admin");
+
+        for (int i = 0; i < 20; i++) {
+            MockHttpServletRequest req = loginRequestWithBody("10.0.0.60", "e2e-suite-admin");
+            MockHttpServletResponse resp = new MockHttpServletResponse();
+            sut.doFilter(req, resp, chain);
+            assertThat(resp.getStatus()).isEqualTo(200);
+        }
+    }
+
+    @Test
+    void loginEndpoint_nonExemptUsernameInBody_stillRateLimited() throws Exception {
+        sut = new RateLimitFilter(inMemoryProxyManager(), new ObjectMapper(), jwtTokenPort, "",
+                "e2e-suite-admin");
+
+        for (int i = 0; i < 10; i++) {
+            MockHttpServletRequest req = loginRequestWithBody("10.0.0.61", "regular-user");
+            MockHttpServletResponse resp = new MockHttpServletResponse();
+            sut.doFilter(req, resp, chain);
+            assertThat(resp.getStatus()).isEqualTo(200);
+        }
+
+        MockHttpServletRequest req11 = loginRequestWithBody("10.0.0.61", "regular-user");
+        MockHttpServletResponse resp11 = new MockHttpServletResponse();
+        sut.doFilter(req11, resp11, chain);
+
+        assertThat(resp11.getStatus()).isEqualTo(429);
     }
 
     // --- helpers ---
@@ -150,6 +225,15 @@ class RateLimitFilterTest {
     private MockHttpServletRequest loginRequest(String ip) {
         MockHttpServletRequest req = new MockHttpServletRequest("POST", "/api/auth/login");
         req.setRemoteAddr(ip);
+        return req;
+    }
+
+    private MockHttpServletRequest loginRequestWithBody(String ip, String username) {
+        MockHttpServletRequest req = loginRequest(ip);
+        req.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        req.setContent(
+                ("{\"username\":\"" + username + "\",\"password\":\"irrelevant\"}")
+                        .getBytes(StandardCharsets.UTF_8));
         return req;
     }
 

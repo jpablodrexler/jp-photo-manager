@@ -93,7 +93,7 @@
           <button mat-icon-button (click)="resetZoom()" [disabled]="viewerZoom === 1" title="Reset zoom"><mat-icon>zoom_out_map</mat-icon></button>
           <button mat-icon-button (click)="zoomIn()" title="Zoom in"><mat-icon>zoom_in</mat-icon></button>
           @for (star of [1,2,3,4,5]; track star) {
-            <button mat-icon-button (click)="rateCurrentAsset(star)">
+            <button mat-icon-button (click)="rateCurrentAsset(star)" [attr.data-cy]="'rate-star-' + star">
               <mat-icon>{{ (currentViewerAsset?.rating ?? 0) >= star ? 'star' : 'star_border' }}</mat-icon>
             </button>
           }
@@ -123,7 +123,7 @@
               <mat-icon>zoom_in</mat-icon> Zoom in
             </button>
             @for (star of [1,2,3,4,5]; track star) {
-              <button mat-menu-item (click)="rateCurrentAsset(star)">
+              <button mat-menu-item (click)="rateCurrentAsset(star)" [attr.data-cy]="'rate-star-' + star">
                 <mat-icon>{{ (currentViewerAsset?.rating ?? 0) >= star ? 'star' : 'star_border' }}</mat-icon>
                 Rate {{ star }}★
               </button>

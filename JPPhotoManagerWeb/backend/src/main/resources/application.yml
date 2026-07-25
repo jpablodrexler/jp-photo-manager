@@ -99,6 +99,12 @@ photomanager:
   # Comma-separated list of reverse-proxy IPs whose X-Forwarded-For header is trusted for rate limiting.
   # Leave empty (the default) when the app is not behind a proxy; set to your proxy's IP otherwise.
   trusted-proxy-ips: ${TRUSTED_PROXY_IPS:}
+  # Comma-separated list of usernames exempt from rate limiting on /api/assets/catalog (checked via
+  # the authenticated JWT cookie) and /api/auth/login (checked via the submitted username, since no
+  # JWT exists pre-authentication -- this specifically trades away brute-force protection for these
+  # usernames). Leave empty (the default) in any real deployment; intended only for a dedicated,
+  # throwaway account such as release-e2e-suite's e2e-suite-admin, never a real user account.
+  rate-limit-exempt-usernames: ${RATE_LIMIT_EXEMPT_USERNAMES:}
   recycle-bin-retention-days: 30
   geocoding-base-url: ${GEOCODING_BASE_URL:https://nominatim.openstreetmap.org}
 

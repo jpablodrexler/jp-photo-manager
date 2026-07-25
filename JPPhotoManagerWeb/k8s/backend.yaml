@@ -92,9 +92,18 @@ spec:
           # No catalog/catalog2/catalog3 volumeMounts here — see the
           # top-of-file comment. They're added by the
           # k8s/catalog-volumes.yaml patch (from catalog-volumes.yaml.example).
+          #
+          # e2e-catalog IS declared here, unlike catalog/catalog2/catalog3,
+          # because it's an emptyDir (cluster-managed ephemeral storage, wiped
+          # whenever this Pod is recreated) rather than a hostPath — it needs
+          # no real, machine-specific filesystem path, so unlike the other
+          # three it's safe to version. Reserved for release-e2e-suite's
+          # generated test images; never point it at real data.
           volumeMounts:
             - name: thumbnails
               mountPath: /thumbnails
+            - name: e2e-catalog
+              mountPath: /e2e-catalog
           # Spring Boot startup here does Flyway migrations and joins three
           # Kafka consumer groups before /actuator/health responds — slow
           # enough under load (e.g. other pods pulling multi-GB images
@@ -142,3 +151,5 @@ spec:
         - name: thumbnails
           persistentVolumeClaim:
             claimName: thumbnails
+        - name: e2e-catalog
+          emptyDir: {}

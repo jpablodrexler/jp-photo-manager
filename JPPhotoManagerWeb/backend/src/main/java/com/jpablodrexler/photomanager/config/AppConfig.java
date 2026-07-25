@@ -8,6 +8,7 @@ import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.model.HomeStats;
 import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Tag;
+import com.jpablodrexler.photomanager.domain.port.out.JwtTokenPort;
 import com.jpablodrexler.photomanager.infrastructure.web.filter.RateLimitFilter;
 import com.jpablodrexler.photomanager.infrastructure.web.filter.RequestCorrelationFilter;
 import io.github.bucket4j.redis.lettuce.cas.LettuceBasedProxyManager;
@@ -67,6 +68,9 @@ public class AppConfig implements CachingConfigurer {
     @Value("${photomanager.trusted-proxy-ips:}")
     private String trustedProxyIpsRaw;
 
+    @Value("${photomanager.rate-limit-exempt-usernames:}")
+    private String rateLimitExemptUsernamesRaw;
+
     @Bean(destroyMethod = "shutdown")
     public RedisClient rateLimitRedisClient() {
         return RedisClient.create(RedisURI.builder().withHost(redisHost).withPort(redisPort).build());
@@ -81,8 +85,9 @@ public class AppConfig implements CachingConfigurer {
 
     @Bean
     public RateLimitFilter rateLimitFilter(LettuceBasedProxyManager<String> rateLimitProxyManager,
-                                           ObjectMapper objectMapper) {
-        return new RateLimitFilter(rateLimitProxyManager, objectMapper, trustedProxyIpsRaw);
+                                           ObjectMapper objectMapper, JwtTokenPort jwtTokenPort) {
+        return new RateLimitFilter(rateLimitProxyManager, objectMapper, jwtTokenPort,
+                trustedProxyIpsRaw, rateLimitExemptUsernamesRaw);
     }
 
     @Bean

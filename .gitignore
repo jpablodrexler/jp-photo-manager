@@ -15,6 +15,11 @@
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
+# Not a .NET build output dir — real, committed Cypress E2E specs (see the
+# release-e2e-suite skill). The bare [Rr]elease/ pattern above matches any
+# directory literally named "release" anywhere in the repo, which
+# unintentionally swallows this one too.
+!JPPhotoManagerWeb/frontend/cypress/e2e/release/
 x64/
 x86/
 bld/
@@ -271,6 +276,9 @@ JPPhotoManagerWeb/frontend/dist/
 JPPhotoManagerWeb/frontend/coverage/
 JPPhotoManagerWeb/frontend/.nyc_output/
 JPPhotoManagerWeb/frontend/cypress/screenshots/
+# Real admin credentials for release-e2e-suite's live-deployment login — see
+# that skill and cypress/support/e2e-release-helpers.ts. Never committed.
+JPPhotoManagerWeb/frontend/cypress.env.json
 JPPhotoManagerWeb/.env
 JPPhotoManagerWeb/k8s/secret.yaml
 JPPhotoManagerWeb/k8s/catalog-volumes.yaml
@@ -278,3 +286,4 @@ docs/code-review/
 docs/security-review/
 docs/database-review/
 docs/spec-compliance/
+docs/release-e2e/

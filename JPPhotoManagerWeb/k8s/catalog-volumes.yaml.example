@@ -19,6 +19,9 @@
 # Leave catalog2/catalog3 pointed at an empty/unused directory if you only
 # catalog one root — but keep all three entries, since CATALOG_DIR in
 # k8s/configmap.yaml expects /catalog;/catalog2;/catalog3 to all resolve.
+# (CATALOG_DIR also includes a fourth root, /e2e-catalog — that one is an
+# emptyDir declared directly in backend.yaml, not a hostPath, so it needs no
+# entry here or in this patch.)
 #
 # NOTE for Docker Desktop Kubernetes on Windows: unlike docker-compose,
 # which auto-translates "C:/Users/..." bind mounts, hostPath here is
