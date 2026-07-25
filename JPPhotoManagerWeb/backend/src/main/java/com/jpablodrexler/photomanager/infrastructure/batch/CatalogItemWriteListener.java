@@ -9,6 +9,7 @@ import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.item.Chunk;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +29,16 @@ public class CatalogItemWriteListener implements ItemWriteListener<CatalogBatchI
         // Per-asset notifications are sent by CatalogAssetItemWriter
     }
 
+    // CatalogAssetsUseCaseImpl.execute() evicts these same caches too, but only at job *kickoff*
+    // (it's @Async and returns its CompletableFuture immediately, so Spring's @CacheEvict fires
+    // right away, not when the batch job actually finishes). Anything that reads home-stats
+    // while the job is still running re-populates the cache with pre-run data, which then serves
+    // stale results (e.g. "last catalog completed: Never") for up to the cache's full TTL even
+    // after the job genuinely completes — confirmed via 02-home-dashboard.cy.ts's
+    // homePage_afterCatalogRun_lastCatalogCompletedIsNotNever failing this way. Evict again here,
+    // at real completion, so a stat card read shortly after a run finishes gets fresh data.
     @Override
+    @CacheEvict(value = {"home-stats", "sub-folders", "asset-exif"}, allEntries = true)
     public void afterJob(JobExecution jobExecution) {
         long runId = jobExecution.getJobParameters().getLong("runId");
         String userIdParam = jobExecution.getJobParameters().getString("userId");

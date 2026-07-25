@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager.application.usecase.asset;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ class DeleteAssetsUseCaseImplTest {
     @Mock AssetRepository assetRepository;
     @Mock StoragePort storagePort;
     @Mock ThumbnailPort thumbnailPort;
+    @Mock AssetSearchCachePort assetSearchCachePort;
     @InjectMocks DeleteAssetsUseCaseImpl sut;
 
     @Test
@@ -44,6 +46,16 @@ class DeleteAssetsUseCaseImplTest {
     }
 
     @Test
+    void execute_permanently_deletesFileAndThumbnailAndRecord_evictsFolderFromAssetsCache() throws IOException {
+        Asset asset = buildAsset(1L, "/photos", "img.jpg");
+        when(assetRepository.findAllById(List.of(1L))).thenReturn(List.of(asset));
+
+        sut.execute(new Long[]{1L}, true);
+
+        verify(assetSearchCachePort).evictFolder(1L);
+    }
+
+    @Test
     void execute_permanently_fileDeleteThrows_skipsRecordDeletion() throws IOException {
         Asset asset = buildAsset(2L, "/photos", "img.jpg");
         when(assetRepository.findAllById(List.of(2L))).thenReturn(List.of(asset));
@@ -53,6 +65,17 @@ class DeleteAssetsUseCaseImplTest {
 
         verify(thumbnailPort, never()).deleteThumbnail(any());
         verify(assetRepository, never()).deleteById(2L);
+    }
+
+    @Test
+    void execute_permanently_fileDeleteThrows_doesNotEvictAssetsCache() throws IOException {
+        Asset asset = buildAsset(2L, "/photos", "img.jpg");
+        when(assetRepository.findAllById(List.of(2L))).thenReturn(List.of(asset));
+        doThrow(new IOException("disk error")).when(storagePort).deleteFile(any());
+
+        sut.execute(new Long[]{2L}, true);
+
+        verify(assetSearchCachePort, never()).evictFolder(any());
     }
 
     @Test
@@ -66,6 +89,17 @@ class DeleteAssetsUseCaseImplTest {
         ArgumentCaptor<Asset> captor = ArgumentCaptor.forClass(Asset.class);
         verify(assetRepository).save(captor.capture());
         assertThat(captor.getValue().getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    void execute_softDelete_evictsFolderFromAssetsCache() {
+        Asset asset = buildAsset(3L, "/photos", "img.jpg");
+        when(assetRepository.findAllById(List.of(3L))).thenReturn(List.of(asset));
+        when(assetRepository.save(any())).thenReturn(asset);
+
+        sut.execute(new Long[]{3L}, false);
+
+        verify(assetSearchCachePort).evictFolder(1L);
     }
 
     private static Asset buildAsset(Long id, String folderPath, String fileName) {

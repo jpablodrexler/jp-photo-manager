@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.model.RecentTargetPath;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.RecentTargetPathRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
@@ -37,6 +38,7 @@ class MoveAssetsUseCaseImplTest {
     @Mock StoragePort storagePort;
     @Mock RecentTargetPathRepository recentTargetPathRepository;
     @Mock PlatformTransactionManager transactionManager;
+    @Mock AssetSearchCachePort assetSearchCachePort;
     @InjectMocks MoveAssetsUseCaseImpl sut;
 
     private static final String ROOT = "/tmp/photos";
@@ -104,6 +106,36 @@ class MoveAssetsUseCaseImplTest {
     }
 
     @Test
+    void execute_copyFails_doesNotEvictAssetsCache() throws IOException {
+        Asset asset = buildAsset(1L, "/tmp/photos/src", "img.jpg");
+        Folder destFolder = Folder.builder().folderId(2L).path(DEST).build();
+        when(assetRepository.findAllById(List.of(1L))).thenReturn(List.of(asset));
+        when(folderRepository.findOrCreateByPath(DEST)).thenReturn(destFolder);
+        when(storagePort.directoryExists(DEST)).thenReturn(true);
+        doThrow(new IOException("disk full")).when(storagePort).copyFile(any(), any());
+
+        sut.execute(new Long[]{1L}, DEST, true);
+
+        verify(assetSearchCachePort, never()).evictFolder(any());
+    }
+
+    @Test
+    void execute_moveSucceeds_evictsSourceAndDestinationFolderCaches() throws IOException {
+        Asset asset = buildAsset(1L, "/tmp/photos/src", "img.jpg");
+        Folder destFolder = Folder.builder().folderId(2L).path(DEST).build();
+        when(assetRepository.findAllById(List.of(1L))).thenReturn(List.of(asset));
+        when(folderRepository.findOrCreateByPath(DEST)).thenReturn(destFolder);
+        when(storagePort.directoryExists(DEST)).thenReturn(true);
+        when(assetRepository.save(any())).thenReturn(asset);
+        when(recentTargetPathRepository.existsByPath(DEST)).thenReturn(true);
+
+        sut.execute(new Long[]{1L}, DEST, false);
+
+        verify(assetSearchCachePort).evictFolder(1L);
+        verify(assetSearchCachePort).evictFolder(2L);
+    }
+
+    @Test
     void execute_dbSaveFailsAfterMove_revertsFileOnDiskAndReturnsFalse() throws IOException {
         Asset asset = buildAsset(1L, "/tmp/photos/src", "img.jpg");
         Folder destFolder = Folder.builder().folderId(2L).path(DEST).build();
@@ -117,6 +149,7 @@ class MoveAssetsUseCaseImplTest {
         assertThat(result).isFalse();
         verify(storagePort).moveFile("/tmp/photos/src/img.jpg", DEST + "/img.jpg");
         verify(storagePort).moveFile(DEST + "/img.jpg", "/tmp/photos/src/img.jpg");
+        verify(assetSearchCachePort, never()).evictFolder(any());
     }
 
     @Test

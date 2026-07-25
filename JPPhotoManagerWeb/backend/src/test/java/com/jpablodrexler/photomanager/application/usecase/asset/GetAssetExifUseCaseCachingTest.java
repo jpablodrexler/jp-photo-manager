@@ -7,6 +7,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import org.junit.jupiter.api.AfterEach;
@@ -68,6 +69,11 @@ class GetAssetExifUseCaseCachingTest {
         }
 
         @Bean
+        AssetSearchCachePort assetSearchCachePort() {
+            return mock(AssetSearchCachePort.class);
+        }
+
+        @Bean
         GetAssetExifUseCaseImpl getAssetExifUseCase(AssetRepository assetRepository,
                                                      AssetExifRepository assetExifRepository) {
             return new GetAssetExifUseCaseImpl(assetRepository, assetExifRepository);
@@ -76,8 +82,9 @@ class GetAssetExifUseCaseCachingTest {
         @Bean
         DeleteAssetsUseCaseImpl deleteAssetsUseCase(AssetRepository assetRepository,
                                                      StoragePort storagePort,
-                                                     ThumbnailPort thumbnailPort) {
-            return new DeleteAssetsUseCaseImpl(assetRepository, storagePort, thumbnailPort);
+                                                     ThumbnailPort thumbnailPort,
+                                                     AssetSearchCachePort assetSearchCachePort) {
+            return new DeleteAssetsUseCaseImpl(assetRepository, storagePort, thumbnailPort, assetSearchCachePort);
         }
     }
 

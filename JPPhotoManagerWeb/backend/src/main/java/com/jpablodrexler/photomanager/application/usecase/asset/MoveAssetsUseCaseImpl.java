@@ -5,6 +5,7 @@ import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.model.RecentTargetPath;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.RecentTargetPathRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
@@ -35,6 +36,7 @@ public class MoveAssetsUseCaseImpl implements MoveAssetsUseCase {
     private final StoragePort storagePort;
     private final RecentTargetPathRepository recentTargetPathRepository;
     private final PlatformTransactionManager transactionManager;
+    private final AssetSearchCachePort assetSearchCachePort;
 
     @Value("${photomanager.root-catalog-folders:${user.home}/Pictures}")
     private String rootCatalogFolders;
@@ -52,6 +54,7 @@ public class MoveAssetsUseCaseImpl implements MoveAssetsUseCase {
         Folder destination = folderRepository.findOrCreateByPath(destinationPath);
 
         for (Asset asset : assets) {
+            Long sourceFolderId = asset.getFolder() != null ? asset.getFolder().getFolderId() : null;
             String sourcePath = asset.getFolder().getPath() + "/" + asset.getFileName();
             String destFilePath = destination.getPath() + "/" + asset.getFileName();
             try {
@@ -78,6 +81,14 @@ public class MoveAssetsUseCaseImpl implements MoveAssetsUseCase {
                 revertFileOperation(preserveOriginal, sourcePath, destFilePath, asset.getAssetId());
                 return false;
             }
+
+            // Move has no Kafka event of its own (unlike catalog/delete), and it changes what
+            // both the source and destination folder's cached "assets" search results look
+            // like — evict both synchronously, same as the tag mutation use cases, so a moved
+            // asset doesn't linger in the stale source listing or stay missing from the
+            // destination listing until TTL expiry.
+            assetSearchCachePort.evictFolder(sourceFolderId);
+            assetSearchCachePort.evictFolder(destination.getFolderId());
         }
 
         saveRecentTargetPath(destinationPath);

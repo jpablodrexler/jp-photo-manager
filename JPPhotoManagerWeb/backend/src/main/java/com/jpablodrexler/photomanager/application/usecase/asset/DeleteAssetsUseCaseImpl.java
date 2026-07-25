@@ -3,6 +3,7 @@ package com.jpablodrexler.photomanager.application.usecase.asset;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class DeleteAssetsUseCaseImpl implements DeleteAssetsUseCase {
     private final AssetRepository assetRepository;
     private final StoragePort storagePort;
     private final ThumbnailPort thumbnailPort;
+    private final AssetSearchCachePort assetSearchCachePort;
 
     @Override
     @Transactional
@@ -33,6 +35,7 @@ public class DeleteAssetsUseCaseImpl implements DeleteAssetsUseCase {
     public void execute(Long[] assetIds, boolean permanently) {
         List<Asset> assets = assetRepository.findAllById(Arrays.asList(assetIds));
         for (Asset asset : assets) {
+            Long folderId = asset.getFolder() != null ? asset.getFolder().getFolderId() : null;
             if (permanently) {
                 String filePath = asset.getFolder().getPath() + "/" + asset.getFileName();
                 try {
@@ -47,6 +50,13 @@ public class DeleteAssetsUseCaseImpl implements DeleteAssetsUseCase {
                 asset.setDeletedAt(LocalDateTime.now());
                 assetRepository.save(asset);
             }
+
+            // AssetDeletedEvent (which AssetSearchCacheInvalidationListener reacts to) is only
+            // ever published by the catalog re-scan path, not by this real "Delete files"
+            // feature — evict synchronously here (both soft- and hard-delete change what the
+            // folder's cached "assets" search results look like), same pattern as the tag
+            // mutation use cases.
+            assetSearchCachePort.evictFolder(folderId);
         }
     }
 }
