@@ -647,6 +647,114 @@ public class CatalogFolderServiceAdapter implements CatalogFolderPort {
 }
 ```
 
+### 6.8 Non-atomic find-or-create races
+
+`repository.findByX(x).orElseGet(() -> repository.save(new X(x)))` — read,
+see nothing, then insert — is **not** safe under concurrent execution unless
+`X`'s column has a `UNIQUE` constraint *and* the insert path tolerates losing
+the race. Two callers can both miss the `findByX` (neither sees the other's
+uncommitted or just-committed row) and both proceed to insert, producing
+duplicate rows. This is a real risk whenever the surrounding code can run
+concurrently with itself: Spring Batch partitioned steps, multiple
+Kubernetes replicas, a scheduled job overlapping a manually-triggered one, or
+simply a retried HTTP request.
+
+**Incident:** `FolderRepository.findByPath(path).orElseGet(() -> save(new
+Folder(path)))` was used at four call sites (catalog batch writer, catalog
+folder adapter, move-assets use case). `folders.path` had no unique
+constraint, and the catalog job's "already running" guard was silently
+ineffective (see below), so a manually-triggered catalog run could overlap
+the scheduler's run — both threads raced the same `findByPath`, both missed,
+both inserted, and the gallery started showing duplicate folders (root cause
+and fix: `database-reviewer` §3.5).
+
+**The fix — make the insert attempt genuinely atomic against the race, not
+just against `this`:**
+
+1. Add the `UNIQUE` constraint in a migration (`database-reviewer` §3.5)
+   first — without it, nothing below actually prevents the duplicate row.
+2. Run the insert attempt in its **own** transaction, isolated from whatever
+   transaction the caller might already be in — a losing insert must only
+   roll back itself, not poison the caller's transaction. Because of the
+   self-invocation pitfall (§6.7), this cannot be a same-class
+   `@Transactional(propagation = REQUIRES_NEW)` method called via `this`; use
+   a **programmatic** `TransactionTemplate` instead (the project's existing
+   pattern for a same-class isolated transaction, see
+   `MoveAssetsUseCaseImpl`'s `perAssetTransaction`) — this sidesteps proxy
+   self-invocation entirely since it doesn't rely on the AOP annotation.
+3. Catch `DataIntegrityViolationException` around the insert attempt. On the
+   losing side, re-run the `findByX` lookup and return the winner's row
+   instead of propagating the exception.
+
+```java
+// infrastructure/persistence/adapter/FolderRepositoryImpl.java — reference implementation
+public Folder findOrCreateByPath(String path) {
+    Optional<Folder> existing = jpa.findByPath(path).map(mapper::toDomain);
+    if (existing.isPresent()) {
+        return existing.get();
+    }
+
+    TransactionTemplate newFolderTransaction = new TransactionTemplate(transactionManager);
+    newFolderTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    try {
+        return newFolderTransaction.execute(status -> {
+            FolderEntity entity = new FolderEntity();
+            entity.setPath(path);
+            return mapper.toDomain(jpa.save(entity));
+        });
+    } catch (DataIntegrityViolationException e) {
+        return jpa.findByPath(path).map(mapper::toDomain)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Path conflicted on insert but is no longer resolvable: " + path, e));
+    }
+}
+```
+
+Callers use `folderRepository.findOrCreateByPath(path)` — one atomic call,
+no racy `orElseGet` at the call site.
+
+**A guard's key must actually be able to collide.** The catalog job's
+`JobExecutionAlreadyRunningException` guard was meant to stop exactly this
+kind of overlap, but never fired: `JobParameters` included `runId =
+System.currentTimeMillis()`, so every invocation had different parameters,
+and Spring Batch's duplicate-run detection only triggers on *identical*
+`JobParameters`. Whenever code exists specifically to prevent
+concurrent/duplicate execution (a Spring Batch job-uniqueness check, a
+distributed lock, an idempotency key), verify the key/condition it checks
+can actually be hit twice in practice — not just that the check compiles and
+looks right.
+
+For a Spring Batch job specifically, prefer `JobExplorer.findRunningJobExecutions(jobName)`
+over inventing a separate lock: it queries the actual execution status in the
+`JobRepository` (this project's is Postgres-backed, so it already spans
+every replica — no new lock infrastructure needed), rather than depending on
+`JobParameters` equality games. Keep `runId` (or any per-invocation value) as
+an *identifying* parameter so each run is still its own relaunchable
+`JobInstance` — do not strip it to force parameter-based dedup, that
+reintroduces `JobInstanceAlreadyCompleteException` on every later run once
+the first one has completed. Check `findRunningJobExecutions(jobName)`
+immediately before launching, and skip (returning the same "already running"
+result the caller would see from `JobExecutionAlreadyRunningException`) if
+it's non-empty:
+
+```java
+// application/usecase/catalog/CatalogAssetsUseCaseImpl.java — reference implementation
+if (!jobExplorer.findRunningJobExecutions(catalogJob.getName()).isEmpty()) {
+    log.debug("Catalog already running, skipping runId={}", runId);
+    return CompletableFuture.completedFuture(null);
+}
+```
+
+`JobExplorer` is auto-configured by Spring Boot's batch starter alongside
+`JobRepository`/`JobLauncher` — no extra bean wiring required. This check is
+still a plain read-then-launch (not atomic against a true two-in-one-instant
+race), but the residual window is now purely a performance concern — wasted
+duplicate scanning work — not a correctness one, since the affected
+find-or-create paths are already protected by a `UNIQUE` constraint and the
+atomic pattern above. Reach for an actual distributed lock (Redis
+`SETNX`/`SET ... NX PX`, this project's fail-open Redis conventions) only
+for guards that have no shared-datastore equivalent to query directly.
+
 ---
 
 ## 7. Async & Streaming
@@ -912,6 +1020,7 @@ if (result instanceof ErrorResult error) {
 - **MapStruct only** — never hand-write mappers between layers.
 - **JPA entities** belong only in `infrastructure/persistence/entity/`; domain models in `domain/model/` must be plain POJOs.
 - Never call a `@Transactional` or `@Async` method from within the same bean (`this.foo()`) — use a separate injected bean so the Spring proxy can intercept the call.
+- Never write a racy `repository.findByX(x).orElseGet(() -> repository.save(new X(x)))` find-or-create against a column without a `UNIQUE` constraint — see §6.8 for the atomic pattern and why it matters under Spring Batch partitions, multiple replicas, or overlapping scheduled/manual triggers.
 - No `System.out.println` — use `@Slf4j`.
 - No field injection (`@Autowired` on fields) — use constructor injection via `@RequiredArgsConstructor`.
 - No `open-in-view` (keep it `false`) — load associations within transactions.

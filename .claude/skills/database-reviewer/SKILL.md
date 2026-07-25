@@ -234,6 +234,45 @@ lists `ix_assets_folder_id` and `ix_assets_processing_status` but omits
 `ix_assets_deleted_at` and `ix_assets_rating`, both of which exist in
 migrations (`V10`, `V11`) — flag as 🟡 if still missing.
 
+### 3.5 Uniqueness for single-result lookups
+
+🔴 Flag any column read via a Spring Data **single-result** derived query
+(`findByX(...)` returning `Optional<T>`/`T`, `existsByX`, or an equivalent
+`@Query` expected to return at most one row) that has **no** `UNIQUE`
+constraint or unique index backing it in the migrations. Nothing in Spring
+Data enforces the "single result" assumption a method name like `findByPath`
+implies — without a DB-level constraint, two rows can legally share that
+value, and the query throws `NonUniqueResultException` (surfaced to callers
+as `IncorrectResultSizeDataAccessException`) the moment that happens, usually
+in production, under load, long after the method was written and reviewed
+clean. Cross-check every `findBy*`/`existsBy*` single-result method in
+`Jpa*Repository` interfaces against `UNIQUE`/`CREATE UNIQUE INDEX` in the
+migrations — don't accept "it's always been unique in practice" as
+justification for skipping the constraint.
+
+**Known incident:** `folders.path` had `findByPath` since `V1__initial_schema.sql`
+with no unique constraint. It was also used in an application-level
+find-or-create (`findByPath(path).orElseGet(() -> save(new Folder(path)))`)
+at four call sites. Under concurrent catalog runs (a manually-triggered run
+overlapping the scheduler's run — the "already running" guard didn't
+actually prevent this; see `java-developer` §6.8), two threads both missed
+the lookup and both inserted a row for the same path, duplicating the folder
+in the gallery UI and later 500ing every `findByPath` call for that path.
+Fixed by `V35__dedupe_folders_add_unique_constraint.sql` (dedupe existing
+rows, repointing FKs first, then `ADD CONSTRAINT UNIQUE`) plus an atomic
+`findOrCreateByPath` — see `java-developer` §6.8 for the code-side pattern.
+This should have been caught by this checklist item the moment `findByPath`
+was introduced in `V1`, not after it shipped a production bug.
+
+🟡 Flag an application-level find-or-create pattern (`repo.findByX(x)
+.orElseGet(() -> repo.save(new X(x)))`, anywhere in `application/usecase/`
+or `infrastructure/`) against a column that does have a unique constraint,
+but where the insert path doesn't handle the constraint-violation race (no
+`DataIntegrityViolationException` catch + re-fetch). A unique constraint
+alone stops duplicate rows; it does not stop the losing concurrent caller
+from crashing instead of gracefully returning the winner's row. See
+`java-developer` §6.8 for the required shape.
+
 ---
 
 ## 4. Views & Functions

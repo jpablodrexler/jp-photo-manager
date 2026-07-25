@@ -17,7 +17,7 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.4"
+  version: "1.5"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -366,12 +366,13 @@ background execution.
 
 Prompt:
 
-> Run backend unit tests for the JPPhotoManager web application.
+> Run backend tests for the JPPhotoManager web application.
 > Change being validated: `<change-name>` (focus failure diagnosis here first).
 > Only modify files under `JPPhotoManagerWeb/backend/` — do not touch frontend files.
 >
+> **Step 1 — Unit tests**
 > 1. Run (using the Bash tool): `cd JPPhotoManagerWeb/backend && mvn test`
-> 2. If all tests pass, report success with the total test count.
+> 2. If all tests pass, proceed to Step 2.
 > 3. If any tests fail:
 >    a. Read the failure output carefully.
 >    b. Identify the root cause (compilation error, assertion mismatch, missing
@@ -381,11 +382,44 @@ Prompt:
 >    source file, note it with `PROD_CODE_FIXED: <filename> — <reason>`.
 >    d. Re-run `cd JPPhotoManagerWeb/backend && mvn test`.
 >    e. Repeat until all tests pass or you reach a failure you cannot fix
->    without human input.
+>    without human input — if so, end your response with
+>    `BACKEND_TESTS: BLOCKED — <brief reason>` and stop.
+>
+> **Step 2 — Integration tests (conditional on Docker)**
+> `mvn test` alone **excludes every `*IntegrationTest.java` file** (see the
+> surefire `<excludes>` in `backend/pom.xml`) — Testcontainers-backed tests
+> covering concurrent/multi-instance behavior (e.g.
+> `CatalogBatchConcurrencyIntegrationTest`) only run under the
+> `integration-tests` Maven profile via `mvn verify -Pintegration-tests`, and
+> Step 1 alone would silently skip them every time this skill runs. Do not
+> skip this step just because Step 1 passed.
+>
+> 1. Run: `docker info`
+>    - If it fails (Docker not running): end your response with
+>      `BACKEND_TESTS: PASS (<n> unit tests) — integration tests skipped,
+>      Docker not running` and stop. This is not a blocker, but it must be
+>      visible in the final signal, not silently dropped.
+>    - If it succeeds: continue.
+> 2. Run: `cd JPPhotoManagerWeb/backend && mvn verify -Pintegration-tests`
+> 3. If all tests (unit + integration) pass, report success with the total
+>    test count from the combined run.
+> 4. If any integration test fails, follow the same fix loop as Step 1
+>    (sub-steps a–e), re-running `mvn verify -Pintegration-tests` — with one
+>    addition: before concluding a failure is unfixable, check whether it's
+>    caused by test infrastructure this environment doesn't provide (a
+>    missing Redis/Kafka the Spring context needs beyond what
+>    `PostgresIntegrationTest`'s Testcontainers-managed Postgres and
+>    `@EmbeddedKafka` already supply) rather than the change under test. If
+>    so, note which infra is missing in the `BLOCKED` reason rather than
+>    guessing at a code fix for an environment gap.
+>    If you reach a failure you cannot resolve, end your response with
+>    `BACKEND_TESTS: BLOCKED — <brief reason>` and stop.
 >
 > End your response with one of:
 >
-> - `BACKEND_TESTS: PASS (<n> tests)` if all tests pass.
+> - `BACKEND_TESTS: PASS (<n> tests)` if unit and integration tests both pass.
+> - `BACKEND_TESTS: PASS (<n> unit tests) — integration tests skipped, Docker
+>   not running` if only Step 1 could run.
 > - `BACKEND_TESTS: BLOCKED — <brief reason>` if you encountered a failure
 >   you cannot resolve.
 
@@ -769,7 +803,7 @@ After all phases complete, display:
 **Code review:** ✓ All findings resolved
 **Database review:** ✓ All findings resolved (or N/A — no schema changes)
 **Security review:** ✓ All findings resolved (or N/A — no security-sensitive changes)
-**Backend tests:** ✓ All passing
+**Backend tests:** ✓ <value from BACKEND_TESTS signal, e.g. "All passing (142 tests, unit + integration)" or "Unit passing (128 tests) — integration tests skipped, Docker not running">
 **Frontend tests:** ✓ All passing
 [if UNREVIEWED_PROD_FIXES was recorded in Phase 3, insert this line here:]
 **⚠ Unreviewed production fixes:** <the PROD_CODE_FIXED lines> — fixed while

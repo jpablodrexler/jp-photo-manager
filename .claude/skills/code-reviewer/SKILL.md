@@ -272,6 +272,30 @@ that references a detached entity may cause silent failures or
 🔴 Flag patterns where repository calls are made in sequence without a
 wrapping transaction and entities from one call are passed to another.
 
+### 2.3 Non-atomic find-or-create races
+
+🔴 Flag `repository.findByX(x).orElseGet(() -> repository.save(new X(x)))` —
+or any equivalent check-then-act read-then-insert — against a column that
+doesn't have a `UNIQUE` constraint backing it (cross-check the migrations,
+same as `database-reviewer` §3.5). Under concurrent execution (Spring Batch
+partitions, multiple replicas, an overlapping scheduled + manual trigger, a
+retried request), two callers can both miss the read and both insert,
+producing duplicate rows. See `java-developer` §6.8 for the required atomic
+pattern (`REQUIRES_NEW`-isolated insert attempt + catch
+`DataIntegrityViolationException` + re-fetch the winner).
+
+🔴 Flag any mechanism whose stated purpose is preventing concurrent/duplicate
+execution — a Spring Batch job-uniqueness check, a distributed lock, an
+idempotency key — where the *key or condition it checks* cannot actually
+collide in practice. Reviewing that the guard exists and reads correctly is
+not enough; trace how its key is constructed at every call site. Concrete
+example that shipped as a real bug: `JobParameters` including
+`runId = System.currentTimeMillis()` made every catalog-job invocation
+unique, so Spring Batch's `JobExecutionAlreadyRunningException` — the guard's
+entire mechanism — could never fire, because it only triggers on identical
+`JobParameters`. A guard that can never engage is worse than no guard: it
+reads as safety in review while providing none.
+
 ---
 
 ## 3. Backend: Annotations & Boilerplate
@@ -454,6 +478,15 @@ may run against the real database.
 🟡 Flag test methods with more than one `assertThat` that tests a different
 concept — split into separate test methods.
 
+🟡 Flag a new find-or-create method (§2.3) or a new concurrency/idempotency
+guard with no test exercising the race it's meant to handle — a unit test
+mocking a lost race (`DataIntegrityViolationException` on the losing insert)
+is cheap and catches the failure mode directly; a real concurrent
+integration test (see `CatalogBatchConcurrencyIntegrationTest` for the
+project's reference shape) is stronger where feasible. Passing tests that
+only ever exercise the uncontested path give false confidence for exactly
+this bug class.
+
 ---
 
 ## 10. Frontend: Angular Conventions
@@ -600,6 +633,8 @@ These have caused real bugs in this codebase and deserve extra attention:
 | Hand-written mapper                        | Entity ↔ domain model or HTTP DTO ↔ domain model conversion done manually instead of with a MapStruct `@Mapper(componentModel = "spring")`      |
 | DTO placed directly in `web/dto/`          | New HTTP DTO added straight to `infrastructure/web/dto/` instead of its `request/`, `response/`, or `shared/` subpackage, or named without the `RequestDto`/`ResponseDto` suffix |
 | Delegate-only port/adapter or service      | A port/adapter (backend) or service (frontend) with no logic of its own, just forwarding to another one for the same capability. The keep-or-delete test is whether it contributes its own logic — **not** whether it currently has callers; existing callers just mean they need repointing to the real implementation, not that the wrapper earns a reprieve. Backend incident: `HashCalculatorPort`/`AssetHashCalculatorAdapter` duplicated `StoragePort.computeHash`'s SHA-256 logic; the first fix made the adapter delegate to `StoragePort` instead of deleting it and migrating callers — the pair was pure pass-through and should have been deleted outright, with any real callers repointed to `StoragePort` directly. Frontend incident: `core/services/audio-player.service.ts` was a bare re-export (`export { MediaPlayerService as AudioPlayerService } from './media-player.service'`) with zero importers anywhere in the codebase — deleted outright |
+| Non-atomic find-or-create without a unique constraint | `repository.findByX(x).orElseGet(() -> repository.save(new X(x)))` against a column with no `UNIQUE` constraint — safe only if the code can never run concurrently with itself. Incident: `FolderRepository.findByPath(...).orElseGet(...)` at four call sites, `folders.path` unconstrained since `V1`; concurrent catalog runs raced it and duplicated folder rows, breaking the gallery listing and 500ing the folder-lookup endpoint. See §2.3 / `database-reviewer` §3.5 / `java-developer` §6.8 |
+| Concurrency guard whose key can't collide  | A mechanism meant to prevent concurrent/duplicate execution where the actual key/condition is unique per call, so the guard can never engage. Incident: catalog job's `JobParameters` included `runId = System.currentTimeMillis()`, defeating Spring Batch's `JobExecutionAlreadyRunningException` detection (which only fires on identical `JobParameters`) — the "already running" guard silently never fired, contributing to the folder-duplication incident above. See §2.3 |
 
 ---
 
