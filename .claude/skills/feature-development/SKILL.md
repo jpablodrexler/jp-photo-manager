@@ -17,7 +17,7 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.3"
+  version: "1.4"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -507,12 +507,37 @@ prompt:
 > 1. Run the deploy script from the repo root (it `cd`s to `JPPhotoManagerWeb/`
 >    internally, so this works regardless of current working directory):
 >    ```
->    bash JPPhotoManagerWeb/scripts/build-and-deploy-k8s.sh
+>    bash JPPhotoManagerWeb/scripts/build-and-deploy-k8s.sh > /tmp/build-deploy.log 2>&1 &
+>    echo $!
 >    ```
 >    Allow up to 20 minutes total before treating it as a failure — it builds
 >    both images (up to 10 min each), may install the ingress-nginx
 >    controller on a first run (up to ~5 min to become ready), and applies
->    the full Kubernetes stack.
+>    the full Kubernetes stack. That 20-minute ceiling is longer than the
+>    Bash tool's own 10-minute blocking cap, which is why the script is
+>    launched with a trailing `&` as shown above instead of run directly.
+>
+>    **Do not use the Bash tool's `run_in_background` parameter for this, and
+>    do not end your response after launching it.** `run_in_background: true`
+>    defers the result to a later notification — but that notification wakes
+>    whichever agent is still live and listening, and once you end your
+>    response, you are not it: the orchestrator's `run_in_background: false`
+>    Agent call for you resolves immediately with whatever you just said,
+>    treating it as your final answer even though the script is still
+>    running. Nothing automatically re-invokes you later to pick this back
+>    up — an unattended subagent that stops here simply stops, mid-deploy,
+>    until a human notices and manually resumes it.
+>
+>    Instead, stay in this same turn and poll for completion with repeated
+>    **blocking** (foreground) Bash calls against the PID you captured above:
+>    ```
+>    while kill -0 <PID> 2>/dev/null; do sleep 30; done
+>    wait <PID>; echo "EXIT_CODE=$?"
+>    ```
+>    Issue this as one or more sequential foreground Bash calls — if a single
+>    call's own timeout is reached while the process is still running,
+>    re-issue the same polling loop again — until you have the script's
+>    actual exit code in hand. Only then move on to step 2.
 > 2. If the script exits non-zero: read its output — it prints a specific
 >    `ERROR:` line for each failure mode (missing `k8s/secret.yaml` or
 >    `k8s/catalog-volumes.yaml`, `kubectl` not connected, ingress-nginx pod
@@ -809,6 +834,26 @@ them back through Phase 2's code review.
 - **Missing signal fallback**: if any subagent returns without its expected
   signal, treat it as `BLOCKED`, surface the subagent's raw response to the
   user, and wait for guidance before proceeding to the next phase.
+- **Nested backgrounding guardrail**: this failure mode isn't unique to
+  Phase 4 — any subagent in this workflow that backgrounds a long-running
+  shell command (via the Bash tool's `run_in_background: true`) and then
+  ends its response is making the same mistake, regardless of which phase
+  it's in. Ending a turn after backgrounding work resolves that subagent's
+  own `run_in_background: false` Agent-tool call back to whichever agent
+  spawned it — with the response text as-is, not with the eventual result —
+  because nothing automatically wakes an already-finished subagent back up
+  when its background child completes; only an explicit `SendMessage` from
+  a still-live parent can resume it, and nothing in this workflow does that
+  automatically. Concretely, this hit Phase 4's Step 3K in practice: the
+  subagent launched `build-and-deploy-k8s.sh` in the background and reported
+  "I'll wait for it to complete," ending its turn — twice — before the
+  script had actually finished, which the orchestrator only caught by
+  directly verifying cluster/image state itself and manually resuming the
+  subagent. Any subagent step whose real duration can exceed the Bash
+  tool's 10-minute blocking cap (Phase 4's build script chief among them, at
+  up to 20 minutes) must poll for completion with repeated **foreground**
+  Bash calls within the same, uninterrupted turn — never end the response
+  and rely on being notified later.
 - **`code-reviewer` has two workflows; Phase 2 always uses Review, never
   Fix.** The skill's interactive Fix Workflow (§17) asks the user which
   category/finding to work on next and is meant to be steered turn-by-turn
