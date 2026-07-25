@@ -80,5 +80,6 @@
 - Proactive token refresh (5 minutes before expiry) keeps sessions alive without requiring re-login.
 - **User Administration** page (`/admin/users`) — create users, change passwords, and delete users; no self-registration.
 - Default administrator account (`admin`/`admin`) is seeded automatically on first startup.
+- **Session Management** page (`/profile/sessions`) — view all active sessions with a device hint and last-used time, revoke an individual session, or sign out of every other session at once.
 
 [← Back to README](../README.md)

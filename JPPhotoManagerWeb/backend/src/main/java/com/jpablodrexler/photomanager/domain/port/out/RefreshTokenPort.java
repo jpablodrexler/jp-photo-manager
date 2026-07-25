@@ -6,7 +6,7 @@ public interface RefreshTokenPort {
 
     record RotatedToken(String newTokenValue, String username, Instant newExpiresAt) {}
 
-    String issueRefreshToken(String username);
+    String issueRefreshToken(String username, String userAgent);
 
     RotatedToken validateAndRotate(String tokenValue);
 

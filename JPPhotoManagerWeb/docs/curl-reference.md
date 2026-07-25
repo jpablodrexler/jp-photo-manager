@@ -32,6 +32,15 @@ curl -c cookies.txt -b cookies.txt \
 
 # Log out — clears both cookies server-side
 curl -b cookies.txt -X POST http://localhost:8080/api/auth/logout
+
+# List active sessions (device hint, last-used timestamp, current flag)
+curl -b cookies.txt http://localhost:8080/api/auth/sessions
+
+# Revoke a single session by id
+curl -b cookies.txt -X DELETE http://localhost:8080/api/auth/sessions/5
+
+# Sign out everywhere else (revokes every session except the current one)
+curl -b cookies.txt -X DELETE http://localhost:8080/api/auth/sessions
 ```
 
 ---

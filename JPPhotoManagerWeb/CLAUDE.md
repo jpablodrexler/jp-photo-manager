@@ -277,6 +277,7 @@ src/app/
     analytics/                  → Storage/format/rating charts (ngx-charts)
     audio-player/                → Playback controls for streamed audio assets
     admin/users/                → UserAdminComponent (/admin/users) — add/change password/delete users
+    profile/sessions/          → SessionsComponent (/profile/sessions) — view/revoke active sessions
   shared/
     components/thumbnail/      → Reusable thumbnail card component
     components/password-strength/ → Live password strength meter (colour bar + rule checklist)
@@ -298,6 +299,7 @@ reference:
 | `/recycle-bin` | `RecycleBinComponent` | Yes | Restore or purge soft-deleted assets |
 | `/analytics` | `AnalyticsComponent` | Yes | Storage/format/rating charts |
 | `/admin/users` | `UserAdminComponent` | Yes | User administration |
+| `/profile/sessions` | `SessionsComponent` | Yes | View/revoke active sessions (device hint, last-used time) |
 
 **API communication:**
 - Standard HTTP calls go through Angular's `HttpClient` in the `core/services/` classes.

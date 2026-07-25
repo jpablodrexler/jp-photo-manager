@@ -22,7 +22,7 @@ _(none)_
 
 ## Impact
 
-- `JPPhotoManagerWeb/backend/src/main/resources/db/migration/V22__add_user_agent_to_refresh_tokens.sql` — new Flyway migration
+- `JPPhotoManagerWeb/backend/src/main/resources/db/migration/V34__add_user_agent_to_refresh_tokens.sql` — new Flyway migration (renumbered from the originally-proposed `V22` to `V34`, the correct next-sequential version after `V33`, which already exists on this branch)
 - `JPPhotoManagerWeb/backend/src/main/java/com/jpablodrexler/photomanager/domain/port/in/auth/GetActiveSessionsUseCase.java` — new use case interface
 - `JPPhotoManagerWeb/backend/src/main/java/com/jpablodrexler/photomanager/domain/port/in/auth/RevokeSessionUseCase.java` — new use case interface
 - `JPPhotoManagerWeb/backend/src/main/java/com/jpablodrexler/photomanager/infrastructure/web/controller/AuthController.java` — new session endpoints

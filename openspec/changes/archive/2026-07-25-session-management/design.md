@@ -5,7 +5,7 @@ The `refresh_tokens` table already has `id`, `userId`, `tokenHash`, and `expires
 ## Goals / Non-Goals
 
 **Goals:**
-- Flyway V22: `ALTER TABLE refresh_tokens ADD COLUMN user_agent VARCHAR(512) NULL`
+- Flyway migration (implemented as `V34`, not `V22` — see `tasks.md` 1.1 for why): `ALTER TABLE refresh_tokens ADD COLUMN user_agent VARCHAR(512) NULL`
 - Store `User-Agent` header in `refresh_tokens.user_agent` when issuing a new refresh token
 - `GET /api/auth/sessions` returns non-expired tokens for the authenticated user: `[ { id, deviceHint, lastUsedAt, current: bool } ]`; `deviceHint` is a simplified parser of the User-Agent (e.g., "Chrome on macOS", "Mobile Firefox")
 - `DELETE /api/auth/sessions/{id}` deletes a single token by ID (must belong to the current user)

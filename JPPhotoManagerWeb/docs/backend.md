@@ -218,6 +218,9 @@ All endpoints below except the three under **Auth** marked *Public* require the 
 | `POST` | `/api/auth/refresh` | Public | Rotate the JWT using the refresh-token cookie |
 | `POST` | `/api/auth/logout` | Public | Clears both cookies server-side |
 | `GET` | `/api/auth/me` | Required | Current authenticated user |
+| `GET` | `/api/auth/sessions` | Required | List the caller's active sessions (device hint parsed from `User-Agent`, `lastUsedAt`, `current` flag) |
+| `DELETE` | `/api/auth/sessions/{id}` | Required | Revoke one of the caller's own sessions; `404` if the id doesn't belong to the caller |
+| `DELETE` | `/api/auth/sessions` | Required | Revoke every other active session for the caller ("sign out everywhere else") |
 
 **Assets**
 

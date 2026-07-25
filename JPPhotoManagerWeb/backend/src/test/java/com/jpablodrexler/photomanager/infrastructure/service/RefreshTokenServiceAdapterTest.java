@@ -56,12 +56,12 @@ class RefreshTokenServiceAdapterTest {
 
     @Test
     void issueRefreshToken_delegatesToRefreshTokenIssuer() {
-        when(refreshTokenIssuer.issueRefreshToken("alice")).thenReturn("issued-token");
+        when(refreshTokenIssuer.issueRefreshToken("alice", "some-agent")).thenReturn("issued-token");
 
-        String result = sut.issueRefreshToken("alice");
+        String result = sut.issueRefreshToken("alice", "some-agent");
 
         assertThat(result).isEqualTo("issued-token");
-        verify(refreshTokenIssuer).issueRefreshToken("alice");
+        verify(refreshTokenIssuer).issueRefreshToken("alice", "some-agent");
     }
 
     @Test
@@ -69,13 +69,14 @@ class RefreshTokenServiceAdapterTest {
         ReflectionTestUtils.setField(sut, "refreshTokenExpiryDays", 30);
         User user = buildUser("alice");
         RefreshToken existing = buildValidToken(user);
+        existing.setUserAgent("existing-agent");
         RefreshToken newToken = new RefreshToken();
         newToken.setToken("new-token");
         newToken.setExpiresAt(Instant.now().plusSeconds(86400));
 
         when(refreshTokenRepository.findByToken("existing-token-value")).thenReturn(Optional.of(existing));
         when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(refreshTokenIssuer.issueRefreshToken("alice")).thenReturn("new-token");
+        when(refreshTokenIssuer.issueRefreshToken("alice", "existing-agent")).thenReturn("new-token");
         when(refreshTokenRepository.findByToken(argThat(t -> !"existing-token-value".equals(t))))
                 .thenReturn(Optional.of(newToken));
 
@@ -85,7 +86,8 @@ class RefreshTokenServiceAdapterTest {
         assertThat(result.username()).isEqualTo("alice");
         assertThat(result.newExpiresAt()).isNotNull();
         assertThat(existing.isRevoked()).isTrue();
-        verify(refreshTokenIssuer).issueRefreshToken("alice");
+        assertThat(existing.getLastUsedAt()).isNotNull();
+        verify(refreshTokenIssuer).issueRefreshToken("alice", "existing-agent");
     }
 
     @Test

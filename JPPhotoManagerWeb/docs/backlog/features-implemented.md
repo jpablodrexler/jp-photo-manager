@@ -58,6 +58,7 @@ The **Priority**, **Schema Change**, **Effort**, and **Area** columns were intro
 | 36  | `global-error-handler`      | P0 | No | M | Full-stack | Override Angular's `ErrorHandler` to display a `MatSnackBar` notification for all unhandled component errors; extend the existing backend `GlobalExceptionHandler` to return a consistent `{ status, message, timestamp }` JSON body for every 4xx and 5xx response so the frontend interceptor can surface a human-readable message rather than showing a raw HTTP status | ✅ Created | ✅ Implemented |
 | 43  | `request-correlation-mdc`   | P0 | No | S | Backend | Add a servlet `Filter` that injects a `requestId` UUID and the authenticated `username` into SLF4J `MDC` at the start of each request and clears it on completion; `logstash-logback-encoder` is already configured in `logback-spring.xml` and will automatically include both fields in every JSON log line; also set `X-Request-ID` on the response so the Angular frontend can log the correlation ID alongside client-side errors from `global-error-handler` (#36) | ✅ Created | ✅ Implemented |
 | 53  | `password-strength-policy`  | P0 | No | S | Full-stack | Enforce minimum password complexity on user creation and password change using the `Passay` library (configurable rules: minimum length 12, at least one uppercase, one digit, one special character); the Angular user-admin form and profile page show a live strength meter powered by the same rule set mirrored client-side; returns a structured `400` with per-rule violation details so the frontend can highlight exactly which rules failed; no schema change | ✅ Created | ✅ Implemented |
+| 46  | `session-management`        | P0 | No | M | Full-stack | The `refresh_tokens` table already stores `userId`, `tokenHash`, and `expiresAt`; add an optional `user_agent` column and expose `GET /api/auth/sessions` (list active sessions with device hint and last-used time), `DELETE /api/auth/sessions/{id}` (revoke one), and `DELETE /api/auth/sessions` (revoke all others); frontend `/profile/sessions` page lists sessions in a `MatTable` with a revoke button per row and a "sign out everywhere" action | ✅ Created | ✅ Implemented |
 
 ---
 
@@ -96,6 +97,7 @@ Migrations V7–V13, V24, and V27 have been applied. The following table documen
 | V26       | `raw-exif-jsonb` — `raw_exif` JSONB column on `asset_exif`  |
 | V27       | `catalog-spring-batch` — 9 Spring Batch schema tables; drop `catalog_run_state` |
 | V33       | `revert-exif-postgres-jsonb` — recreate `asset_exif` table (original `V7` schema + `V26` `raw_exif` column), empty, no data migration; supersedes `V27__drop_asset_exif.sql` |
+| V34       | `session-management` — `user_agent`, `last_used_at` columns on `refresh_tokens` (supersedes the reserved `V22`; added directly to PostgreSQL rather than the Redis-hash approach `redis-refresh-tokens` (#79) had recommended — see "Feature 46 — actual migration diverged from the V22/Redis plan" below) |
 
 ### Implementation notes
 
@@ -537,8 +539,20 @@ The cache key `asset:thumbnail:{assetId}` is stable because thumbnails are conte
 
 **Features 46, 50, 53 — no schema changes**
 
-`session-management` (beyond the optional `user_agent` column), `image-comparison-viewer`, and `password-strength-policy` require no Flyway migrations. (Note: this block is duplicated from `features-planned.md`, where it remains because #46 and #50 are still pending.)
+`session-management` (beyond the optional `user_agent` column), `image-comparison-viewer`, and `password-strength-policy` require no Flyway migrations. (Note: this block is duplicated from `features-planned.md`, where it remains because #50 is still pending. #46 is now implemented — see the applied migrations table above and "Feature 46 — actual migration diverged from the V22/Redis plan" below: the feature ended up requiring a real migration, `V34`, contrary to what this note originally assumed.)
 
 **Features 50, 53 — no new backend endpoints**
 
 `image-comparison-viewer` reuses the existing `GET /api/assets/{id}/image` endpoint. `password-strength-policy` adds validation logic to existing endpoints only. (Note: this block is duplicated from `features-planned.md`, where it remains because #50 is still pending.)
+
+**Feature 79 → Feature 46** (prerequisite already implemented)
+
+`redis-refresh-tokens` (#79) is now implemented — every refresh token is mirrored into Redis via a hash at `refresh_token:{token}` with `userId`, `tokenId`, and `issuedAt` fields (dual-write phase; PostgreSQL remains the read source of truth). When implementing `session-management` (#46), store `userAgent` as an additional field on that same Redis hash (`HSET refresh_token:{token} userAgent {ua}`) instead of adding a `user_agent` column to the PostgreSQL `refresh_tokens` table — this makes the V22 migration unnecessary. (Note: this block is duplicated from `features-planned.md`, where it remains because #79 is referenced in the heading. The actual `session-management` implementation did **not** follow this recommendation — see the next note.)
+
+**Feature 46 — actual migration diverged from the V22/Redis plan**
+
+The dependency note above (`Feature 79 → Feature 46`) recommended storing `userAgent` as a Redis hash field instead of adding a PostgreSQL column, to avoid a schema migration entirely. The actual `session-management` implementation instead added `user_agent` and `last_used_at` directly to the PostgreSQL `refresh_tokens` table via a real Flyway migration; `RefreshTokenRepositoryImpl`'s Redis mirror was left unchanged (still only `userId`, `tokenId`, `issuedAt`), since `GetActiveSessionsUseCaseImpl` and `RevokeSessionUseCaseImpl` read exclusively from PostgreSQL — the authoritative store per `redis-refresh-tokens`' Deploy 1 design — and adding a third field to the Redis hash would have added complexity with no corresponding read-path benefit. The migration originally reserved as `V22` was authored and immediately renumbered to `V34__add_user_agent_to_refresh_tokens.sql`, since `V33` was already the highest applied migration by the time #46 was implemented — see the applied migrations table above.
+
+**Feature 47 → Feature 46**
+
+Revoking all sessions (`DELETE /api/auth/sessions`) is the recommended recovery action when a user suspects their account is compromised. Implementing `session-management` (#46) before or alongside #47 gives users the tools to respond to a potential account takeover. (Note: this block is duplicated from `features-planned.md`, where it remains because #47 is still pending.)
