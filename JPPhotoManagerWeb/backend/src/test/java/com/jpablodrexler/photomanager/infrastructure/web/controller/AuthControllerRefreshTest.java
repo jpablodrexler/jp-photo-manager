@@ -1,11 +1,14 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
+import com.jpablodrexler.photomanager.domain.port.in.auth.GetActiveSessionsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.auth.LoginUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.auth.LogoutUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.auth.RefreshTokenUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.auth.RevokeSessionUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.AuthCookieFactory;
 import com.jpablodrexler.photomanager.infrastructure.web.exception.GlobalExceptionHandler;
 import com.jpablodrexler.photomanager.infrastructure.web.exception.InvalidRefreshTokenException;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.SessionWebMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -34,6 +37,12 @@ class AuthControllerRefreshTest {
         RefreshTokenUseCase refreshTokenUseCase;
         @MockitoBean
         LogoutUseCase logoutUseCase;
+        @MockitoBean
+        GetActiveSessionsUseCase getActiveSessionsUseCase;
+        @MockitoBean
+        RevokeSessionUseCase revokeSessionUseCase;
+        @MockitoBean
+        SessionWebMapper sessionWebMapper;
 
         // --- POST /api/auth/refresh ---
 

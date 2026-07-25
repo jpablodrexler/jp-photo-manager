@@ -1,13 +1,17 @@
 package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
+import com.jpablodrexler.photomanager.domain.port.in.auth.GetActiveSessionsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.auth.LoginUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.auth.LogoutUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.auth.RefreshTokenUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.auth.RevokeSessionUseCase;
 import com.jpablodrexler.photomanager.infrastructure.web.AuthCookieFactory;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.request.AuthRequestDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.LoginResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.MeResponseDto;
+import com.jpablodrexler.photomanager.infrastructure.web.dto.response.SessionResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.exception.InvalidRefreshTokenException;
+import com.jpablodrexler.photomanager.infrastructure.web.mapper.SessionWebMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -27,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 @Tag(name = "Authentication", description = "Login, logout, and token refresh")
@@ -38,7 +43,10 @@ public class AuthController {
     private final LoginUseCase loginUseCase;
     private final RefreshTokenUseCase refreshTokenUseCase;
     private final LogoutUseCase logoutUseCase;
+    private final GetActiveSessionsUseCase getActiveSessionsUseCase;
+    private final RevokeSessionUseCase revokeSessionUseCase;
     private final AuthCookieFactory authCookieFactory;
+    private final SessionWebMapper sessionWebMapper;
 
     @Operation(summary = "Get the current authenticated user's username and role")
     @ApiResponses({
@@ -65,8 +73,10 @@ public class AuthController {
     })
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody AuthRequestDto request,
+                                               HttpServletRequest httpRequest,
                                                HttpServletResponse response) {
-        LoginUseCase.LoginResult result = loginUseCase.execute(request.username(), request.password());
+        String userAgent = httpRequest.getHeader(HttpHeaders.USER_AGENT);
+        LoginUseCase.LoginResult result = loginUseCase.execute(request.username(), request.password(), userAgent);
 
         ResponseCookie jwtCookie = authCookieFactory.jwtCookie(result.jwtToken(),
                 Duration.between(Instant.now(), result.jwtExpiresAt()));
@@ -115,6 +125,41 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, jwtClear.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshClear.toString());
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "List the authenticated user's active sessions")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Active sessions"),
+        @ApiResponse(responseCode = "401", description = "Not authenticated")
+    })
+    @GetMapping("/sessions")
+    public ResponseEntity<List<SessionResponseDto>> sessions(HttpServletRequest request) {
+        String currentRefreshTokenValue = extractCookieValue(request, "refreshToken").orElse(null);
+        return ResponseEntity.ok(sessionWebMapper.toDtoList(getActiveSessionsUseCase.execute(currentRefreshTokenValue)));
+    }
+
+    @Operation(summary = "Revoke a single session")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Session revoked"),
+        @ApiResponse(responseCode = "401", description = "Not authenticated"),
+        @ApiResponse(responseCode = "404", description = "Session not found")
+    })
+    @DeleteMapping("/sessions/{id}")
+    public ResponseEntity<Void> revokeSession(@PathVariable long id) {
+        revokeSessionUseCase.revokeOne(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Revoke all sessions except the current one (sign out everywhere else)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Other sessions revoked"),
+        @ApiResponse(responseCode = "401", description = "Not authenticated")
+    })
+    @DeleteMapping("/sessions")
+    public ResponseEntity<Void> revokeOtherSessions(HttpServletRequest request) {
+        String currentRefreshTokenValue = extractCookieValue(request, "refreshToken").orElse(null);
+        revokeSessionUseCase.revokeAllOthers(currentRefreshTokenValue);
+        return ResponseEntity.noContent().build();
     }
 
     private Optional<String> extractCookieValue(HttpServletRequest request, String name) {

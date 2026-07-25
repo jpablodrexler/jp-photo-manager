@@ -32,4 +32,10 @@ public class RefreshTokenEntity {
 
     @Column(nullable = false, updatable = false)
     private Instant issuedAt;
+
+    @Column(name = "user_agent", length = 512)
+    private String userAgent;
+
+    @Column(name = "last_used_at")
+    private Instant lastUsedAt;
 }

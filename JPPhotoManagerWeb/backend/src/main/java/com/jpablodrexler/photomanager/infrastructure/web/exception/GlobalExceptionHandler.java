@@ -3,8 +3,10 @@ package com.jpablodrexler.photomanager.infrastructure.web.exception;
 import com.jpablodrexler.photomanager.application.exception.AlbumNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.AssetNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.FolderNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.MissingRefreshTokenException;
 import com.jpablodrexler.photomanager.application.exception.PasswordPolicyException;
 import com.jpablodrexler.photomanager.application.exception.SearchPresetNotFoundException;
+import com.jpablodrexler.photomanager.application.exception.SessionNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.SmartAlbumMembershipException;
 import com.jpablodrexler.photomanager.application.exception.TagNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.UnsupportedAssetTypeException;
@@ -82,6 +84,13 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponseDto(Instant.now().toString(), 404, "Not Found", ex.getMessage()));
     }
 
+    @ExceptionHandler(SessionNotFoundException.class)
+    public ResponseEntity<ErrorResponseDto> handleSessionNotFound(SessionNotFoundException ex) {
+        log.warn("Session not found: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponseDto(Instant.now().toString(), 404, "Not Found", ex.getMessage()));
+    }
+
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ErrorResponseDto> handleEntityNotFound(EntityNotFoundException ex) {
         log.warn("Entity not found: {}", ex.getMessage());
@@ -152,6 +161,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidRefreshTokenException.class)
     public ResponseEntity<ErrorResponseDto> handleInvalidRefreshToken(InvalidRefreshTokenException ex) {
         log.warn("Invalid refresh token: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponseDto(Instant.now().toString(), 401, "Unauthorized", ex.getMessage()));
+    }
+
+    @ExceptionHandler(MissingRefreshTokenException.class)
+    public ResponseEntity<ErrorResponseDto> handleMissingRefreshToken(MissingRefreshTokenException ex) {
+        log.warn("Missing refresh token: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponseDto(Instant.now().toString(), 401, "Unauthorized", ex.getMessage()));
     }

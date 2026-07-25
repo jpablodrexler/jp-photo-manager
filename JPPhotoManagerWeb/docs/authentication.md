@@ -242,4 +242,16 @@ Navigate to **Users** in the navigation bar (or `/admin/users`) to:
 
 There is no self-registration; all user management is done by an authenticated administrator.
 
+## Session Management
+
+Navigate to **Sessions** in the navigation bar (or `/profile/sessions`) to view and manage your own active sessions — each refresh token issued to your account is one "session."
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/auth/sessions` | List the caller's non-expired, non-revoked sessions: `id`, `deviceHint`, `lastUsedAt`, `current` |
+| `DELETE` | `/api/auth/sessions/{id}` | Revoke one session by id; `404` if it doesn't belong to the caller |
+| `DELETE` | `/api/auth/sessions` | Revoke every other active session ("sign out everywhere else"); requires the `refreshToken` cookie to identify which session to keep — `400` if that cookie is missing |
+
+`deviceHint` is derived from the `User-Agent` header stored on the `refresh_tokens` row at token-issue time (e.g. `"Chrome on macOS"`, `"Mobile Safari"`) via a keyword heuristic (`DeviceHintParser`), not a full UA-parsing library. `lastUsedAt` is updated on every `/api/auth/refresh` call. The session matching the request's own `refreshToken` cookie value is marked `current: true` and its "Revoke" button is disabled in the UI — a session can only be ended remotely, not from itself, to avoid a confusing self-logout mid-list.
+
 [← Back to README](../README.md)

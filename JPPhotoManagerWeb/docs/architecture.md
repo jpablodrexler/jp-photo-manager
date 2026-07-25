@@ -151,6 +151,8 @@ erDiagram
         uuid user_id FK
         text token_hash
         timestamp expires_at
+        varchar user_agent
+        timestamptz last_used_at
     }
     search_presets {
         bigserial preset_id PK

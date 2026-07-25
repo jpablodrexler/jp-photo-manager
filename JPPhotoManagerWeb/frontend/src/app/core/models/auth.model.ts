@@ -13,3 +13,10 @@ export interface Session {
   expiresAt: number;
   role: string;
 }
+
+export interface SessionInfo {
+  id: number;
+  deviceHint: string;
+  lastUsedAt: string;
+  current: boolean;
+}

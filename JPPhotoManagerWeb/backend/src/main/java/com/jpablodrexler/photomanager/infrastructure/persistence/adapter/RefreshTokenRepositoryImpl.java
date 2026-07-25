@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,6 +28,20 @@ public class RefreshTokenRepositoryImpl implements RefreshTokenRepository {
     @Transactional(readOnly = true)
     public Optional<RefreshToken> findByToken(String token) {
         return jpa.findByToken(token).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<RefreshToken> findById(Long tokenId) {
+        return jpa.findById(tokenId).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RefreshToken> findActiveByUserId(UUID userId, Instant now) {
+        return jpa.findByUser_IdAndRevokedFalseAndExpiresAtAfter(userId, now).stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 
     @Override

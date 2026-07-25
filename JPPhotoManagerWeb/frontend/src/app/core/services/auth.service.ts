@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, catchError, map, of, switchMap, tap } from 'rxjs';
 import { PreferenceService } from './preference.service';
-import { LoginResponse, MeResponse, Session } from '../models/auth.model';
+import { LoginResponse, MeResponse, Session, SessionInfo } from '../models/auth.model';
 
 const SESSION_KEY = 'photomanager_session';
 
@@ -64,6 +64,18 @@ export class AuthService {
   logout(): Observable<void> {
     this.clearSession();
     return this.http.post<void>('/api/auth/logout', {});
+  }
+
+  getSessions(): Observable<SessionInfo[]> {
+    return this.http.get<SessionInfo[]>('/api/auth/sessions');
+  }
+
+  revokeSession(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/auth/sessions/${id}`);
+  }
+
+  revokeAllOtherSessions(): Observable<void> {
+    return this.http.delete<void>('/api/auth/sessions');
   }
 
   clearSession(): void {

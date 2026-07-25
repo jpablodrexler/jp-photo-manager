@@ -28,8 +28,8 @@ public class RefreshTokenServiceAdapter implements RefreshTokenPort {
     private int refreshTokenExpiryDays;
 
     @Override
-    public String issueRefreshToken(String username) {
-        return refreshTokenIssuer.issueRefreshToken(username);
+    public String issueRefreshToken(String username, String userAgent) {
+        return refreshTokenIssuer.issueRefreshToken(username, userAgent);
     }
 
     @Override
@@ -43,10 +43,11 @@ public class RefreshTokenServiceAdapter implements RefreshTokenPort {
         }
 
         String username = existing.getUser().getUsername();
+        existing.setLastUsedAt(Instant.now());
         existing.setRevoked(true);
         refreshTokenRepository.save(existing);
 
-        String newTokenValue = refreshTokenIssuer.issueRefreshToken(username);
+        String newTokenValue = refreshTokenIssuer.issueRefreshToken(username, existing.getUserAgent());
         Instant newExpiresAt = refreshTokenRepository.findByToken(newTokenValue)
                 .map(RefreshToken::getExpiresAt)
                 .orElse(Instant.now().plus(refreshTokenExpiryDays, ChronoUnit.DAYS));

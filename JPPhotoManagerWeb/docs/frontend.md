@@ -24,7 +24,8 @@
 src/app/
   app.component.ts/html/scss   → Shell with top navigation bar (shown only when logged in)
   app.routes.ts                → Lazy routes: /home, /gallery, /sync, /convert, /duplicates,
-                                 /albums, /albums/:id, /recycle-bin, /admin/users, /analytics
+                                 /albums, /albums/:id, /recycle-bin, /admin/users, /analytics,
+                                 /profile/sessions
   app.config.ts                → ApplicationConfig (HttpClient + interceptor, Router, Animations,
                                  global ErrorHandler)
   core/
@@ -50,6 +51,8 @@ src/app/
     analytics/                  → Storage/format/rating charts (ngx-charts)
     audio-player/                → Playback controls for streamed audio assets
     admin/users/                → UserAdminComponent (/admin/users) — add/change password/delete users
+    profile/sessions/           → SessionsComponent (/profile/sessions) — list active sessions with
+                                 device hint and last-used time; revoke one or all-other sessions
   shared/
     components/thumbnail/      → Reusable thumbnail card component
     components/password-strength/ → Live password strength meter (colour bar + 4-rule checklist),
@@ -74,6 +77,7 @@ All components are **standalone** (no NgModules). Routes are lazy-loaded and, ex
 | `/recycle-bin` | Recycle Bin | Restore or purge soft-deleted assets |
 | `/admin/users` | User Administration | Add, change password, delete users |
 | `/analytics` | Analytics | Storage, format, monthly, and rating charts |
+| `/profile/sessions` | Sessions | View active sessions (device hint, last-used time), revoke one or sign out everywhere else |
 
 ## Gallery modes
 

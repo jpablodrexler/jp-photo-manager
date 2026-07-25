@@ -18,6 +18,8 @@ import java.util.Base64;
 @RequiredArgsConstructor
 public class RefreshTokenIssuer {
 
+    private static final int USER_AGENT_MAX_LENGTH = 512;
+
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
 
@@ -27,7 +29,7 @@ public class RefreshTokenIssuer {
     private final SecureRandom secureRandom = new SecureRandom();
 
     @Transactional
-    public String issueRefreshToken(String username) {
+    public String issueRefreshToken(String username, String userAgent) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
 
@@ -42,8 +44,19 @@ public class RefreshTokenIssuer {
         refreshToken.setExpiresAt(now.plus(refreshTokenExpiryDays, ChronoUnit.DAYS));
         refreshToken.setRevoked(false);
         refreshToken.setIssuedAt(now);
+        refreshToken.setUserAgent(truncate(userAgent, USER_AGENT_MAX_LENGTH));
+        refreshToken.setLastUsedAt(now);
 
         refreshTokenRepository.save(refreshToken);
         return tokenValue;
+    }
+
+    /**
+     * The {@code user_agent} column is {@code VARCHAR(512)}; a client-supplied header longer than
+     * that would otherwise fail the insert with a DB-level length violation, turning a valid login
+     * into an opaque 500 instead of succeeding.
+     */
+    private static String truncate(String value, int maxLength) {
+        return value != null && value.length() > maxLength ? value.substring(0, maxLength) : value;
     }
 }
