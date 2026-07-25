@@ -102,4 +102,27 @@ class CatalogBatchIntegrationTest extends PostgresIntegrationTest {
         assertThat(future.isDone()).isTrue();
         assertThat(future.isCompletedExceptionally()).isFalse();
     }
+
+    @Test
+    void catalogJob_secondCallWhileFirstStillRunning_skipsWithoutLaunchingSecondJob() throws Exception {
+        // asyncCatalogJobLauncher.run(...) inside execute() blocks until the JobExecution is
+        // created and persisted as STARTING (JobRepository-backed, visible to JobExplorer)
+        // before the actual step processing runs asynchronously — so by the time this call
+        // returns, the first run is already observable as "running". Calling execute() again
+        // immediately afterwards, on the same thread with no sleep, is a reliable (not
+        // timing-dependent) way to hit the CatalogAssetsUseCaseImpl guard's skip branch.
+        CompletableFuture<Void> first = catalogAssetsUseCase.execute(System.currentTimeMillis(), null);
+        CompletableFuture<Void> second = catalogAssetsUseCase.execute(System.currentTimeMillis() + 1, null);
+
+        // The real launch path hands back a fresh CompletableFuture that only completes later,
+        // once KafkaProgressListener signals the job is done; the guard's skip path returns an
+        // already-completed future synchronously. `second` being done immediately proves the
+        // guard actually engaged, not just that the job happened to finish fast.
+        assertThat(second.isDone()).isTrue();
+        assertThat(second.isCompletedExceptionally()).isFalse();
+
+        first.get(30, TimeUnit.SECONDS);
+        List<Asset> assets = assetRepository.findAll();
+        assertThat(assets).hasSize(3);
+    }
 }

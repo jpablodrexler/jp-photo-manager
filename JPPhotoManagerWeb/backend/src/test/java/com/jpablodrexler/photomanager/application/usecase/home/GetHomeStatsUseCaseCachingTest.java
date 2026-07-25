@@ -14,6 +14,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -24,6 +25,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -89,10 +91,17 @@ class GetHomeStatsUseCaseCachingTest {
         }
 
         @Bean
+        JobExplorer jobExplorer() {
+            return mock(JobExplorer.class);
+        }
+
+        @Bean
         CatalogAssetsUseCaseImpl catalogAssetsUseCase(JobLauncher asyncCatalogJobLauncher,
                                                        Job catalogJob,
-                                                       KafkaProgressRegistry kafkaProgressRegistry) {
-            return new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob, kafkaProgressRegistry);
+                                                       KafkaProgressRegistry kafkaProgressRegistry,
+                                                       JobExplorer jobExplorer) {
+            return new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob, kafkaProgressRegistry,
+                    jobExplorer);
         }
     }
 
@@ -112,8 +121,12 @@ class GetHomeStatsUseCaseCachingTest {
         assetRepository = context.getBean(AssetRepository.class);
         CatalogRunHistoryPort catalogRunHistoryPort = context.getBean(CatalogRunHistoryPort.class);
         JobLauncher asyncCatalogJobLauncher = context.getBean(JobLauncher.class);
+        Job catalogJob = context.getBean(Job.class);
         kafkaProgressRegistry = context.getBean(KafkaProgressRegistry.class);
+        JobExplorer jobExplorer = context.getBean(JobExplorer.class);
 
+        when(catalogJob.getName()).thenReturn("catalogJob");
+        when(jobExplorer.findRunningJobExecutions("catalogJob")).thenReturn(Set.of());
         when(folderRepository.count()).thenReturn(1L);
         when(assetRepository.count()).thenReturn(1L);
         when(assetRepository.sumFileSize()).thenReturn(0L);

@@ -98,4 +98,22 @@ describe("FolderNavComponent", () => {
     });
     cy.get("mat-spinner").should("not.exist");
   });
+
+  it("should render only one node when the backend returns duplicate folder paths", () => {
+    const duplicatedFolders: Folder[] = [
+      { folderId: 1, path: "/catalog", name: "catalog" },
+      { folderId: 2, path: "/catalog", name: "catalog" },
+    ];
+
+    const getFolders = cy.stub().returns(of(duplicatedFolders));
+    cy.mount(FolderNavComponent, {
+      providers: [
+        provideNoopAnimations(),
+        { provide: FolderService, useValue: { getFolders } },
+      ],
+    });
+
+    cy.get("mat-tree-node").should("have.length", 1);
+    cy.contains("mat-tree-node", "catalog").should("exist");
+  });
 });

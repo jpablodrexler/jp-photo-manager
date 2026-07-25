@@ -10,9 +10,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,17 +30,21 @@ import static org.mockito.Mockito.*;
 class CatalogAssetsUseCaseImplTest {
 
     private static final UUID USER_ID = UUID.randomUUID();
+    private static final String JOB_NAME = "catalogJob";
 
     @Mock JobLauncher asyncCatalogJobLauncher;
     @Mock Job catalogJob;
     @Mock ProgressPort progressPort;
     @Mock JobExecution jobExecution;
+    @Mock JobExplorer jobExplorer;
 
     CatalogAssetsUseCaseImpl sut;
 
     @BeforeEach
     void setUp() {
-        sut = new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob, progressPort);
+        when(catalogJob.getName()).thenReturn(JOB_NAME);
+        when(jobExplorer.findRunningJobExecutions(JOB_NAME)).thenReturn(Collections.emptySet());
+        sut = new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob, progressPort, jobExplorer);
     }
 
     @Test
@@ -94,6 +101,17 @@ class CatalogAssetsUseCaseImplTest {
 
         assertThat(result.isDone()).isTrue();
         assertThat(result.isCompletedExceptionally()).isFalse();
+    }
+
+    @Test
+    void execute_jobAlreadyRunningAccordingToJobExplorer_skipsWithoutStartingJob() {
+        when(jobExplorer.findRunningJobExecutions(JOB_NAME)).thenReturn(Set.of(mock(JobExecution.class)));
+
+        CompletableFuture<Void> result = sut.execute(42L, USER_ID);
+
+        assertThat(result.isDone()).isTrue();
+        assertThat(result.isCompletedExceptionally()).isFalse();
+        verifyNoInteractions(asyncCatalogJobLauncher);
     }
 
     @Test

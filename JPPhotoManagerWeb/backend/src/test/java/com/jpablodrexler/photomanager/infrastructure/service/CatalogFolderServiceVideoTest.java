@@ -53,7 +53,7 @@ class CatalogFolderServiceVideoTest {
     @Test
     void createAsset_videoFile_setsIsVideoTrue() throws IOException {
         Folder folder = buildFolder(1L, "/videos");
-        when(folderRepository.findByPath("/videos")).thenReturn(Optional.of(folder));
+        when(folderRepository.findOrCreateByPath("/videos")).thenReturn(folder);
         when(storageService.isVideoFile("clip.mp4")).thenReturn(true);
         stubVideoAssetCreationOk("/videos/clip.mp4");
 
@@ -65,7 +65,7 @@ class CatalogFolderServiceVideoTest {
     @Test
     void createAsset_videoFile_setsFileTypeToVideo() throws IOException {
         Folder folder = buildFolder(1L, "/videos");
-        when(folderRepository.findByPath("/videos")).thenReturn(Optional.of(folder));
+        when(folderRepository.findOrCreateByPath("/videos")).thenReturn(folder);
         when(storageService.isVideoFile("clip.mp4")).thenReturn(true);
         stubVideoAssetCreationOk("/videos/clip.mp4");
 
@@ -77,7 +77,7 @@ class CatalogFolderServiceVideoTest {
     @Test
     void createAsset_imageFile_setsIsVideoFalse() throws IOException {
         Folder folder = buildFolder(1L, "/photos");
-        when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
+        when(folderRepository.findOrCreateByPath("/photos")).thenReturn(folder);
         when(storageService.isVideoFile("photo.jpg")).thenReturn(false);
         stubImageAssetCreationOk("/photos/photo.jpg");
 

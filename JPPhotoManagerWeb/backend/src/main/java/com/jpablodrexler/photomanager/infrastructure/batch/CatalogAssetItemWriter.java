@@ -108,11 +108,7 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
     @Override
     public ExitStatus afterStep(StepExecution stepExecution) {
         try {
-            Folder folder = folderRepository.findByPath(folderPath).orElseGet(() -> {
-                Folder f = new Folder();
-                f.setPath(folderPath);
-                return folderRepository.save(f);
-            });
+            Folder folder = folderRepository.findOrCreateByPath(folderPath);
 
             Set<String> filesOnDisk = storagePort.listFiles(folderPath).stream()
                     .map(p -> Paths.get(p).getFileName().toString())
@@ -142,16 +138,14 @@ public class CatalogAssetItemWriter implements ItemWriter<CatalogBatchItem>, Ste
 
     private void ensureFolderExists() {
         if (cachedFolder == null) {
-            cachedFolder = folderRepository.findByPath(folderPath).orElseGet(() -> {
-                Folder f = new Folder();
-                f.setPath(folderPath);
-                Folder saved = folderRepository.save(f);
+            boolean existedBefore = folderRepository.existsByPath(folderPath);
+            cachedFolder = folderRepository.findOrCreateByPath(folderPath);
+            if (!existedBefore) {
                 CatalogChangeNotification notification =
                         new CatalogChangeNotification(Reason.FOLDER_CREATED, folderPath, 0);
                 safeSend("job.catalog.progress", String.valueOf(runId),
                         CatalogProgressMessage.progress(runId, notification));
-                return saved;
-            });
+            }
         }
     }
 

@@ -30,7 +30,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -69,7 +68,7 @@ class CatalogFolderServiceAdapterTest {
     @Test
     void createAsset_existingFolder_doesNotSaveFolder() throws IOException {
         Folder folder = buildFolder(1L, "/photos");
-        when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
+        when(folderRepository.findOrCreateByPath("/photos")).thenReturn(folder);
         stubAssetCreationOk(folder, "/photos/photo.jpg");
 
         sut.createAsset("/photos", "photo.jpg");
@@ -80,7 +79,7 @@ class CatalogFolderServiceAdapterTest {
     @Test
     void createAsset_existingFolder_populatesAssetWithCorrectFileNameAndFolder() throws IOException {
         Folder folder = buildFolder(1L, "/photos");
-        when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
+        when(folderRepository.findOrCreateByPath("/photos")).thenReturn(folder);
         stubAssetCreationOk(folder, "/photos/photo.jpg");
 
         sut.createAsset("/photos", "photo.jpg");
@@ -94,20 +93,19 @@ class CatalogFolderServiceAdapterTest {
     @Test
     void createAsset_newFolder_createsFolderThenPersistsAsset() throws IOException {
         Folder newFolder = buildFolder(2L, "/new-folder");
-        when(folderRepository.findByPath("/new-folder")).thenReturn(Optional.empty());
-        when(folderRepository.save(any())).thenReturn(newFolder);
+        when(folderRepository.findOrCreateByPath("/new-folder")).thenReturn(newFolder);
         stubAssetCreationOk(newFolder, "/new-folder/photo.jpg");
 
         sut.createAsset("/new-folder", "photo.jpg");
 
-        verify(folderRepository).save(argThat(f -> f.getPath().equals("/new-folder")));
+        verify(folderRepository).findOrCreateByPath("/new-folder");
         verify(assetRepository).save(any());
     }
 
     @Test
     void createAsset_mp3File_routesThroughAudioMetadataService() throws IOException {
         Folder folder = buildFolder(1L, "/music");
-        when(folderRepository.findByPath("/music")).thenReturn(Optional.of(folder));
+        when(folderRepository.findOrCreateByPath("/music")).thenReturn(folder);
         when(storageService.isAudioFile("song.mp3")).thenReturn(true);
         stubAudioAssetCreationOk(folder, "/music/song.mp3");
 

@@ -49,8 +49,7 @@ public class MoveAssetsUseCaseImpl implements MoveAssetsUseCase {
         TransactionTemplate perAssetTransaction = new TransactionTemplate(transactionManager);
         perAssetTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
-        Folder destination = perAssetTransaction.execute(status -> folderRepository.findByPath(destinationPath)
-                .orElseGet(() -> folderRepository.save(Folder.builder().path(destinationPath).build())));
+        Folder destination = folderRepository.findOrCreateByPath(destinationPath);
 
         for (Asset asset : assets) {
             String sourcePath = asset.getFolder().getPath() + "/" + asset.getFileName();

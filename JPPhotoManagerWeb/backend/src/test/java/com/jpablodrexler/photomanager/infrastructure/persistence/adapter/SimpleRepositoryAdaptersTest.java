@@ -12,14 +12,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionStatus;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,6 +37,7 @@ class SimpleRepositoryAdaptersTest {
 
         @Mock JpaFolderRepository jpa;
         @Mock FolderEntityMapper mapper;
+        @Mock PlatformTransactionManager transactionManager;
         @InjectMocks FolderRepositoryImpl sut;
 
         @Test
@@ -100,6 +107,58 @@ class SimpleRepositoryAdaptersTest {
         void count_delegatesToJpa() {
             when(jpa.count()).thenReturn(10L);
             assertThat(sut.count()).isEqualTo(10L);
+        }
+
+        @Test
+        void findOrCreateByPath_existingPath_returnsWithoutStartingTransaction() {
+            FolderEntity entity = new FolderEntity();
+            Folder domain = Folder.builder().folderId(1L).path("/photos").build();
+            when(jpa.findByPath("/photos")).thenReturn(Optional.of(entity));
+            when(mapper.toDomain(entity)).thenReturn(domain);
+
+            assertThat(sut.findOrCreateByPath("/photos")).isEqualTo(domain);
+            verify(transactionManager, never()).getTransaction(any());
+        }
+
+        @Test
+        void findOrCreateByPath_newPath_insertsInsideItsOwnTransaction() {
+            FolderEntity savedEntity = new FolderEntity();
+            Folder domain = Folder.builder().folderId(2L).path("/new-folder").build();
+            TransactionStatus status = mock(TransactionStatus.class);
+            when(jpa.findByPath("/new-folder")).thenReturn(Optional.empty());
+            when(transactionManager.getTransaction(any())).thenReturn(status);
+            when(jpa.save(any(FolderEntity.class))).thenReturn(savedEntity);
+            when(mapper.toDomain(savedEntity)).thenReturn(domain);
+
+            assertThat(sut.findOrCreateByPath("/new-folder")).isEqualTo(domain);
+            verify(transactionManager).commit(status);
+        }
+
+        @Test
+        void findOrCreateByPath_insertLosesRace_fallsBackToWinnersRow() {
+            FolderEntity winnerEntity = new FolderEntity();
+            Folder winnerDomain = Folder.builder().folderId(3L).path("/contested").build();
+            TransactionStatus status = mock(TransactionStatus.class);
+            when(jpa.findByPath("/contested"))
+                    .thenReturn(Optional.empty())
+                    .thenReturn(Optional.of(winnerEntity));
+            when(transactionManager.getTransaction(any())).thenReturn(status);
+            when(jpa.save(any(FolderEntity.class))).thenThrow(new DataIntegrityViolationException("duplicate path"));
+            when(mapper.toDomain(winnerEntity)).thenReturn(winnerDomain);
+
+            assertThat(sut.findOrCreateByPath("/contested")).isEqualTo(winnerDomain);
+            verify(transactionManager).rollback(status);
+        }
+
+        @Test
+        void findOrCreateByPath_insertLosesRaceAndWinnerRowGone_throwsIllegalState() {
+            TransactionStatus status = mock(TransactionStatus.class);
+            when(jpa.findByPath("/vanished")).thenReturn(Optional.empty());
+            when(transactionManager.getTransaction(any())).thenReturn(status);
+            when(jpa.save(any(FolderEntity.class))).thenThrow(new DataIntegrityViolationException("duplicate path"));
+
+            assertThatThrownBy(() -> sut.findOrCreateByPath("/vanished"))
+                    .isInstanceOf(IllegalStateException.class);
         }
     }
 

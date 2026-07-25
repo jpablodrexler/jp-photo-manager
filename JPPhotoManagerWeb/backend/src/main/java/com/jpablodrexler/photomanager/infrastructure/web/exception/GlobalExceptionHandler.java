@@ -16,6 +16,7 @@ import com.jpablodrexler.photomanager.infrastructure.web.dto.response.PasswordPo
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSourceResolvable;
+import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -183,6 +184,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(new ErrorResponseDto(Instant.now().toString(), 403, "Forbidden", "Access denied."));
+    }
+
+    // Defense-in-depth: a single-result repository lookup (e.g. FolderRepository.findByPath)
+    // finding more than one row means duplicate data slipped past a UNIQUE constraint that
+    // should prevent it. Surface this as a clean 409 rather than an opaque 500, and log at
+    // ERROR since it always indicates a data-integrity bug worth investigating.
+    @ExceptionHandler(IncorrectResultSizeDataAccessException.class)
+    public ResponseEntity<ErrorResponseDto> handleIncorrectResultSize(IncorrectResultSizeDataAccessException ex) {
+        log.error("Non-unique result for a single-result lookup - duplicate data present", ex);
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponseDto(Instant.now().toString(), 409, "Conflict",
+                        "Duplicate data was found for this request. Please contact an administrator."));
     }
 
     @ExceptionHandler(Exception.class)

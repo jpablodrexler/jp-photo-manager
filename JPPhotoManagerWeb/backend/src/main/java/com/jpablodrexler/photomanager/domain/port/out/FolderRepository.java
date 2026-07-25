@@ -13,6 +13,8 @@ public interface FolderRepository {
 
     boolean existsByPath(String path);
 
+    Folder findOrCreateByPath(String path);
+
     List<Folder> findAll();
 
     List<Folder> findSubFolders(String parentPath);

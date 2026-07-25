@@ -7,6 +7,7 @@ import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -24,20 +25,33 @@ public class CatalogAssetsUseCaseImpl implements CatalogAssetsUseCase {
     private final JobLauncher asyncCatalogJobLauncher;
     private final Job catalogJob;
     private final ProgressPort progressPort;
+    private final JobExplorer jobExplorer;
 
     public CatalogAssetsUseCaseImpl(
             @Qualifier("asyncCatalogJobLauncher") JobLauncher asyncCatalogJobLauncher,
             Job catalogJob,
-            ProgressPort progressPort) {
+            ProgressPort progressPort,
+            JobExplorer jobExplorer) {
         this.asyncCatalogJobLauncher = asyncCatalogJobLauncher;
         this.catalogJob = catalogJob;
         this.progressPort = progressPort;
+        this.jobExplorer = jobExplorer;
     }
 
     @Override
     @PreAuthorize("hasRole('ADMIN')")
     @CacheEvict(value = {"home-stats", "sub-folders", "asset-exif"}, allEntries = true)
     public CompletableFuture<Void> execute(long runId, UUID userId) {
+        // JobParameters (including runId) are unique per invocation so each catalog run gets its
+        // own JobInstance and can be relaunched after completing — that means Spring Batch's own
+        // JobExecutionAlreadyRunningException guard, which only fires on *identical*
+        // JobParameters, can never trigger here. findRunningJobExecutions instead queries actual
+        // execution status in the shared JobRepository (Postgres, spanning every replica), so it
+        // reflects whether the job is really running regardless of JobParameters.
+        if (!jobExplorer.findRunningJobExecutions(catalogJob.getName()).isEmpty()) {
+            log.debug("Catalog already running, skipping runId={}", runId);
+            return CompletableFuture.completedFuture(null);
+        }
         try {
             CompletableFuture<Void> completion = new CompletableFuture<>();
             progressPort.registerCompletion(runId, completion);

@@ -52,11 +52,7 @@ public class CatalogFolderServiceAdapter implements CatalogFolderPort {
 
     @Transactional
     public Asset createAsset(String directoryPath, String fileName) {
-        Folder folder = folderRepository.findByPath(directoryPath).orElseGet(() -> {
-            Folder f = new Folder();
-            f.setPath(directoryPath);
-            return folderRepository.save(f);
-        });
+        Folder folder = folderRepository.findOrCreateByPath(directoryPath);
         return createAsset(folder, directoryPath, fileName);
     }
 

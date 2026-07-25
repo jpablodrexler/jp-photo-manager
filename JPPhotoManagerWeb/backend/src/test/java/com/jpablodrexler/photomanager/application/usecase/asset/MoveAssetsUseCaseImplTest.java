@@ -19,7 +19,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -60,7 +59,7 @@ class MoveAssetsUseCaseImplTest {
         Asset asset = buildAsset(1L, "/tmp/photos/src", "img.jpg");
         Folder destFolder = Folder.builder().folderId(2L).path(DEST).build();
         when(assetRepository.findAllById(List.of(1L))).thenReturn(List.of(asset));
-        when(folderRepository.findByPath(DEST)).thenReturn(Optional.of(destFolder));
+        when(folderRepository.findOrCreateByPath(DEST)).thenReturn(destFolder);
         when(storagePort.directoryExists(DEST)).thenReturn(true);
         when(assetRepository.save(any())).thenReturn(asset);
         when(recentTargetPathRepository.existsByPath(DEST)).thenReturn(true);
@@ -78,7 +77,7 @@ class MoveAssetsUseCaseImplTest {
         Asset asset = buildAsset(1L, "/tmp/photos/src", "img.jpg");
         Folder destFolder = Folder.builder().folderId(2L).path(DEST).build();
         when(assetRepository.findAllById(List.of(1L))).thenReturn(List.of(asset));
-        when(folderRepository.findByPath(DEST)).thenReturn(Optional.of(destFolder));
+        when(folderRepository.findOrCreateByPath(DEST)).thenReturn(destFolder);
         when(storagePort.directoryExists(DEST)).thenReturn(false);
         when(assetRepository.save(any())).thenReturn(asset);
         when(recentTargetPathRepository.existsByPath(DEST)).thenReturn(true);
@@ -95,7 +94,7 @@ class MoveAssetsUseCaseImplTest {
         Asset asset = buildAsset(1L, "/tmp/photos/src", "img.jpg");
         Folder destFolder = Folder.builder().folderId(2L).path(DEST).build();
         when(assetRepository.findAllById(List.of(1L))).thenReturn(List.of(asset));
-        when(folderRepository.findByPath(DEST)).thenReturn(Optional.of(destFolder));
+        when(folderRepository.findOrCreateByPath(DEST)).thenReturn(destFolder);
         when(storagePort.directoryExists(DEST)).thenReturn(true);
         doThrow(new IOException("disk full")).when(storagePort).copyFile(any(), any());
 
@@ -109,7 +108,7 @@ class MoveAssetsUseCaseImplTest {
         Asset asset = buildAsset(1L, "/tmp/photos/src", "img.jpg");
         Folder destFolder = Folder.builder().folderId(2L).path(DEST).build();
         when(assetRepository.findAllById(List.of(1L))).thenReturn(List.of(asset));
-        when(folderRepository.findByPath(DEST)).thenReturn(Optional.of(destFolder));
+        when(folderRepository.findOrCreateByPath(DEST)).thenReturn(destFolder);
         when(storagePort.directoryExists(DEST)).thenReturn(true);
         when(assetRepository.save(any())).thenThrow(new RuntimeException("db unavailable"));
 
@@ -126,7 +125,7 @@ class MoveAssetsUseCaseImplTest {
         Asset second = buildAsset(2L, "/tmp/photos/src", "b.jpg");
         Folder destFolder = Folder.builder().folderId(2L).path(DEST).build();
         when(assetRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(first, second));
-        when(folderRepository.findByPath(DEST)).thenReturn(Optional.of(destFolder));
+        when(folderRepository.findOrCreateByPath(DEST)).thenReturn(destFolder);
         when(storagePort.directoryExists(DEST)).thenReturn(true);
         when(assetRepository.save(first)).thenReturn(first);
         doAnswer(invocation -> {
@@ -149,7 +148,7 @@ class MoveAssetsUseCaseImplTest {
         Asset asset = buildAsset(1L, "/tmp/photos/src", "img.jpg");
         Folder destFolder = Folder.builder().folderId(2L).path(DEST).build();
         when(assetRepository.findAllById(List.of(1L))).thenReturn(List.of(asset));
-        when(folderRepository.findByPath(DEST)).thenReturn(Optional.of(destFolder));
+        when(folderRepository.findOrCreateByPath(DEST)).thenReturn(destFolder);
         when(storagePort.directoryExists(DEST)).thenReturn(true);
         when(assetRepository.save(any())).thenReturn(asset);
         when(recentTargetPathRepository.existsByPath(DEST)).thenReturn(false);
@@ -165,7 +164,7 @@ class MoveAssetsUseCaseImplTest {
         Asset asset = buildAsset(1L, "/tmp/photos/src", "img.jpg");
         Folder destFolder = Folder.builder().folderId(2L).path(DEST).build();
         when(assetRepository.findAllById(List.of(1L))).thenReturn(List.of(asset));
-        when(folderRepository.findByPath(DEST)).thenReturn(Optional.of(destFolder));
+        when(folderRepository.findOrCreateByPath(DEST)).thenReturn(destFolder);
         when(storagePort.directoryExists(DEST)).thenReturn(true);
         when(assetRepository.save(any())).thenReturn(asset);
         when(recentTargetPathRepository.existsByPath(DEST)).thenReturn(false);

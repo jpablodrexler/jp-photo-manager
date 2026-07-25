@@ -73,11 +73,12 @@ export class FolderNavComponent implements OnInit {
   }
 
   private buildTree(folders: Folder[]): Folder[] {
+    const deduped = this.dedupeByPath(folders);
     const byParent = new Map<string, Folder[]>();
-    const existingPaths = new Set(folders.map((folder) => folder.path));
+    const existingPaths = new Set(deduped.map((folder) => folder.path));
     const roots: Folder[] = [];
 
-    for (const f of folders) {
+    for (const f of deduped) {
       if (f.parentPath && existingPaths.has(f.parentPath)) {
         const siblings = byParent.get(f.parentPath) ?? [];
         siblings.push(f);
@@ -95,5 +96,19 @@ export class FolderNavComponent implements OnInit {
     };
     attach(roots);
     return roots;
+  }
+
+  // Defense-in-depth: the backend enforces a UNIQUE constraint on folder path, but a duplicate
+  // path here would otherwise render as two indistinguishable tree nodes with no visible way
+  // to tell them apart, so guard against it independently on the frontend too.
+  private dedupeByPath(folders: Folder[]): Folder[] {
+    const seen = new Set<string>();
+    return folders.filter((folder) => {
+      if (seen.has(folder.path)) {
+        return false;
+      }
+      seen.add(folder.path);
+      return true;
+    });
   }
 }
