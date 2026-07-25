@@ -7,17 +7,18 @@ description: >
   (findings fixed before continuing), runs backend and frontend tests until
   they pass, builds updated Docker images and deploys them via Kubernetes (if
   a live cluster deployment exists) or Docker Compose (if Docker is running),
-  syncs the web app's documentation (CLAUDE.md + docs/*.md) against what
-  actually shipped, verifies the implementation actually satisfies the
-  change's spec scenarios (not just that tasks are checked off) before
-  archiving, then archives the SDD change and marks the feature as
-  implemented. Use when you want a fully automated feature development
-  cycle with minimal manual steps. TRIGGER when the user asks to develop a
-  feature.
+  runs `e2e-testing` against the live Kubernetes deployment when one was
+  actually deployed to, syncs the web app's documentation (CLAUDE.md +
+  docs/*.md) against what actually shipped, verifies the implementation
+  actually satisfies the change's spec scenarios (not just that tasks are
+  checked off) before archiving, then archives the SDD change and marks the
+  feature as implemented. Use when you want a fully automated feature
+  development cycle with minimal manual steps. TRIGGER when the user asks to
+  develop a feature.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.5"
+  version: "1.6"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -31,15 +32,16 @@ confirmation for that feature.
 
 ## Overview
 
-Five phases executed by six dedicated subagents (3a and 3b run in parallel):
+Six phases executed by seven dedicated subagents (3a and 3b run in parallel):
 
 | Phase                  | Subagent   | Skills / actions                                                                                                                                  |
 | ---------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1 — Select & Propose   | Subagent 1 | `features-next` (confirm only) → `gitflow` (start feature) to create `feature/<change-name>` branch from `develop` → `openspec-propose` (if artifacts missing) |
 | 2 — Implement & Review | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `database-reviewer` + `security-reviewer` (conditional, findings fixed before done)          |
-| 3a — Backend tests     | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test` until passing                                                                                     |
+| 3a — Backend tests     | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test`, plus `mvn verify -Pintegration-tests` when Docker is available, until passing                  |
 | 3b — Frontend tests    | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                                                    |
 | 4 — Build & deploy     | Subagent 5 | deploys via `build-and-deploy-k8s.sh` if a live `photomanager` deployment exists, else Docker Compose/Dockerfiles (skipped if Docker not running) |
+| 4.5 — E2E verification | Subagent 7 | `e2e-testing` against the live Kubernetes deployment (only when Phase 4 deployed via `build-and-deploy-k8s.sh`; skipped for Docker Compose or skipped deploys) |
 | 5 — Archive            | Subagent 6 | `openspec-archive-change <name>` → `features-archive <name>`                                                                                      |
 
 ---
@@ -722,9 +724,113 @@ line>` verbatim so the user can create it from the matching
 > - `DOCKER: BLOCKED — <brief reason>` if a build, restart, or Step 8's smoke
 >   test failed and you cannot resolve it without human input.
 
-Do not start Phase 5 until this subagent completes. A `DOCKER: SKIPPED` result
-is not a failure — proceed to Phase 5 normally. Only `DOCKER: BLOCKED` requires
-surfacing the issue to the user before continuing.
+Do not start Phase 4.5 until this subagent completes. A `DOCKER: SKIPPED`
+result is not a failure — proceed to Phase 4.5, which will itself skip its
+own E2E checks (see below) since there's nothing live to verify. Only
+`DOCKER: BLOCKED` requires surfacing the issue to the user before continuing.
+
+---
+
+## Phase 4.5 — E2E Verification (Subagent 7)
+
+`e2e-testing` targets the live Kubernetes deployment specifically — it has
+no Docker Compose or local-process target. This phase only runs when Phase 4
+actually deployed via `build-and-deploy-k8s.sh`:
+
+- If Phase 4 returned `DOCKER: DEPLOYED — build-and-deploy-k8s.sh (namespace
+  photomanager)`: run this phase.
+- If Phase 4 returned `DOCKER: DEPLOYED` via the Docker Compose path,
+  `DOCKER: SKIPPED`, or Phase 4 was never reached because an earlier phase
+  blocked: skip this phase entirely — proceed straight to Phase 5 — and
+  record `E2E: SKIPPED — <reason>` for the Final Summary. This is not a
+  failure and does not require user confirmation to skip.
+
+When Phase 4.5 does run, spawn a **general-purpose subagent** via the Agent
+tool, with `run_in_background: false` (Phase 5 cannot start until this
+subagent returns `E2E: PASS` or `E2E: BLOCKED` — see the foreground
+guardrail below), with the following prompt:
+
+> Perform these steps in sequence.
+>
+> **Step 1 — Verify prerequisites**
+> Read `.claude/skills/e2e-testing/SKILL.md` in the repo for the full text
+> of every section referenced below — don't guess at commands, follow the
+> skill's own instructions exactly, including its port numbers (`18080` for
+> backend, `14200` for frontend) and its port-forward PID capture/teardown
+> pattern.
+>
+> Run e2e-testing §1 (verify the live deployment: kubectl context, `backend`/
+> `frontend` deployments exist, pods ready) and §2 (set up and verify both
+> port-forwards). If §1 fails (no live deployment found — this shouldn't
+> happen given Phase 4 just reported `DOCKER: DEPLOYED` via Kubernetes, but
+> verify rather than assume), end your response with
+> `E2E: BLOCKED — <brief reason>` and stop; do not proceed to later steps or
+> attempt teardown of port-forwards that were never established.
+>
+> **Step 2 — Authenticate and verify the API**
+> Run e2e-testing §3 (authenticate) and §4 (verify the backend API response),
+> scoping the field/value checks in §4 to what `<change-name>` is expected to
+> affect — read the change's spec/tasks under `openspec/changes/<change-name>/`
+> (or, if already archived by a prior partial run, `openspec/changes/archive/`)
+> to know which fields matter. If §4 reveals a value that doesn't match what
+> the change should have produced, that's a real E2E failure — end your
+> response with `E2E: BLOCKED — <brief reason>` and stop (after running
+> Step 6's teardown first).
+>
+> **Step 3 — SSE verification (conditional)**
+> Check whether `<change-name>` touches catalog/sync/convert/upload
+> progress-streaming behavior (changed files under `infrastructure/batch/**`,
+> `infrastructure/kafka/**`, or any `SseEmitter`/`EventSource` usage in the
+> frontend). If so, run e2e-testing §5. If not, skip this step.
+>
+> **Step 4 — Visual and navigation verification (conditional)**
+> Check whether `<change-name>` is UI-facing (any changed file under
+> `frontend/src/app/**`). If so, run e2e-testing §6 (Puppeteer screenshot)
+> and §7 (interactive navigation), adapting the login/navigation steps to
+> whatever page or flow `<change-name>` actually added or changed rather
+> than only the home dashboard shown in the skill's example script. Read the
+> screenshot(s) via the Read tool and check for layout breaks, missing
+> sections, or console errors before deciding this step passed. If not
+> UI-facing, skip this step.
+>
+> **Step 5 — Ingress check (always, informational only)**
+> Run e2e-testing §8. Note the result in your final report but never let it
+> alone cause `E2E: BLOCKED` — per the skill's own guidance, a missing local
+> DNS entry for `photomanager.local` is an environment gap, not a deployment
+> failure.
+>
+> **Step 6 — Teardown**
+> Run e2e-testing §10 (kill both port-forwards). Do this even if an earlier
+> step failed and you are about to report `E2E: BLOCKED` — never leave a
+> port-forward running past this subagent's turn.
+>
+> **Do not run e2e-testing §12 (multi-replica check)** in this phase — it's
+> explicitly optional/occasional per the skill's own guidance, not part of a
+> routine feature's automated verification. If you believe `<change-name>`
+> specifically warrants it (touches `kafka-events-conventions`- or
+> `redis-caching-conventions`-governed code), note that recommendation in
+> your final report instead of running it unattended — it scales a
+> deployment and is worth a human's explicit go-ahead.
+>
+> If you encounter a failure you cannot resolve without human input at any
+> step (excluding §8's informational-only ingress check): run Step 6's
+> teardown first, then end your response with `E2E: BLOCKED — <brief
+> reason>` and stop.
+>
+> End your response with one of:
+>
+> - `E2E: PASS` if every required check (Steps 1–4 as applicable) passed.
+> - `E2E: PASS — <caveat>` if everything required passed but §5's ingress
+>   check failed (informational only) or Step 4 surfaced something
+>   worth a human's attention without being an outright failure.
+> - `E2E: BLOCKED — <brief reason>` if a required check failed and you
+>   cannot resolve it without human input.
+
+Do not start Phase 5 until this subagent completes (or Phase 4.5 was skipped
+per the rule above). If it reports `E2E: BLOCKED`, surface the details to
+the user and wait for guidance before continuing — do not proceed to Phase 5
+or retry automatically. An `E2E: PASS` (with or without a caveat) is not
+blocking; carry any caveat forward into the Final Summary.
 
 ---
 
@@ -810,6 +916,7 @@ After all phases complete, display:
 chasing test failures in Phase 3; the user chose to proceed without routing
 them back through Phase 2's code review.
 **Docker:** ✓ <value from DOCKER signal, e.g. "Deployed — build-and-deploy-k8s.sh (namespace photomanager)", "Deployed — backend, frontend", or "Skipped — Docker not running">
+**E2E verification:** ✓ <value from E2E signal, e.g. "Pass" or "Pass — ingress check failed (missing local DNS for photomanager.local)", or "Skipped — <reason>" if Phase 4.5 didn't run>
 **Spec compliance:** ✓ All scenarios verified (or, if `UNVERIFIED_SCENARIOS` was recorded in Phase 5: **⚠ <count> scenario(s) unverified:** <the one-line summary> — no automated test or manual check found; consider closing the gap with `spec-compliance-check`)
 **Docs sync:** ✓ <one-line summary from `web-docs-sync`, e.g. "Updated docs/backend.md REST API table + CLAUDE.md config pointer" or "Nothing to sync">
 **SDD change:** ✓ Archived
@@ -821,8 +928,9 @@ them back through Phase 2's code review.
 ## Guardrails
 
 - Always capture and propagate the change name from Phase 1 to all later
-  phases. Before spawning any subagent in Phases 2–5, substitute every
-  `<change-name>` occurrence in its prompt with the actual value from Phase 1.
+  phases. Before spawning any subagent in Phases 2 through 5 (including
+  Phase 4.5), substitute every `<change-name>` occurrence in its prompt with
+  the actual value from Phase 1.
 - **Cancellation detection**: if Subagent 1's response contains no `CHANGE_NAME:`
   line (or contains `CANCELLED`), treat it as user cancellation — stop the
   workflow immediately and inform the user.
@@ -836,9 +944,19 @@ them back through Phase 2's code review.
   either reports `BLOCKED`, surface the details to the user and wait for
   guidance before continuing. If either reports `PROD_CODE_FIXED:` lines,
   surface them to the user and confirm whether to proceed or re-run Phase 2.
-- Do not start Phase 5 until Phase 4 subagent reports `DOCKER: DEPLOYED` or
+- Do not start Phase 4.5 until Phase 4 subagent reports `DOCKER: DEPLOYED` or
   `DOCKER: SKIPPED`. If it reports `DOCKER: BLOCKED`, surface the details to
   the user and wait for guidance before continuing.
+- Phase 4.5 only actually runs its subagent when Phase 4 deployed via
+  `build-and-deploy-k8s.sh` (`DOCKER: DEPLOYED — build-and-deploy-k8s.sh
+  (namespace photomanager)`) — `e2e-testing` has no Docker Compose or local
+  target. Any other Phase 4 result skips Phase 4.5's subagent entirely
+  (record `E2E: SKIPPED — <reason>`, not a failure) and proceeds straight to
+  Phase 5.
+- Do not start Phase 5 until Phase 4.5 reports `E2E: PASS` (with or without
+  a caveat) or was skipped per the rule above. If it reports `E2E: BLOCKED`,
+  surface the details to the user and wait for guidance before continuing —
+  do not proceed to Phase 5 or retry automatically.
 - Do not display the Final Summary until Phase 5 subagent returns `ARCHIVE: DONE`.
   If it returns `ARCHIVE_BLOCKED` instead (Step 1's `spec-compliance-check`
   found a failing scenario), the change stays unarchived — surface the
@@ -851,7 +969,7 @@ them back through Phase 2's code review.
 - Subagents 3 and 4 must be launched in the same message (parallel). Do not
   launch one before the other.
 - **Foreground guardrail**: every Agent tool call in this skill (Subagents
-  1–6) must pass `run_in_background: false`. Every phase in this workflow is
+  1–7) must pass `run_in_background: false`. Every phase in this workflow is
   gated on the prior phase's subagent actually finishing ("do not start
   Phase N until Subagent M returns ..."), but the Agent tool defaults to
   background execution, which returns immediately with no result. Spawning
@@ -951,3 +1069,13 @@ them back through Phase 2's code review.
   one being missing. If the script reports either missing, surface its exact
   `ERROR:` line to the user and stop; the user must copy the `.example`
   template and fill it in themselves.
+- **Phase 4.5's `kubectl port-forward` processes must always be torn down.**
+  `e2e-testing` §2 starts two port-forwards (backend, frontend) as the sole
+  exception to "no destructive/reconciling kubectl commands beyond the
+  script" above — they're read-only, additive, and local to the subagent's
+  own session. §10's teardown (`kill` on the captured PIDs) must run even
+  when an earlier e2e-testing step fails and the subagent is about to report
+  `E2E: BLOCKED`; never end a Phase 4.5 subagent's turn with a port-forward
+  still running. Phase 4.5 must never run `kubectl scale` itself (e2e-testing
+  §12) — per the phase's own instructions, that's a recommendation for a
+  human to act on, not something to execute unattended.
