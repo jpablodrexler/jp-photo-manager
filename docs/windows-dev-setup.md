@@ -41,6 +41,25 @@ git --version
 # Expected: git version 2.x.x.windows.x
 ```
 
+### Line endings: silence the "LF will be replaced by CRLF" warning
+
+The installer option above sets `core.autocrlf=true` globally, which is the right default for
+most repos. This repo, though, already normalizes line endings itself via `.gitattributes`
+(`* text=auto`) — combining that with a global `autocrlf=true` means every `git add`/`git commit`
+prints a noisy `warning: ... LF will be replaced by CRLF the next time Git touches it` for nearly
+every text file, even though nothing is actually wrong.
+
+To silence it **for this repo only** (your global Git settings, and other repos, are unaffected):
+
+```powershell
+git config --local core.autocrlf false
+git config --local core.eol lf
+```
+
+Both settings are needed — `autocrlf=false` alone isn't enough, since `.gitattributes`' bare
+`text=auto` (no explicit `eol=`) still falls back to `core.eol`'s default of "native" (CRLF on
+Windows) at checkout time independently of `autocrlf`.
+
 ---
 
 ## 2. Chocolatey (Windows Package Manager)
