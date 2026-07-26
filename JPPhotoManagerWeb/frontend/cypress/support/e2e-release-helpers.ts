@@ -94,7 +94,14 @@ export function uploadFixturesToFolder(folderPath: string, fixturePaths: string[
   // whatever backlog a busy broker has built up from repeated suite runs.
   cy.get('.upload-item', { timeout: 30000 }).should('have.length', fixturePaths.length);
   fixturePaths.forEach((_, i) => {
-    cy.get('.upload-item').eq(i).find('.status-icon', { timeout: 60000 }).should('exist');
+    // 90s, not 60s: the live deployment's CatalogScheduler runs a real scan of /catalog +
+    // /catalog2 + /catalog3 (~800 real files) every couple of minutes on a resource-constrained
+    // single-node dev cluster, and an in-flight scan can delay this upload's own async
+    // hash/EXIF/thumbnail pipeline or its SSE push past 60s even though the backend genuinely
+    // finishes the work (confirmed via direct Postgres query in a prior run: all items reached
+    // processing_status = COMPLETED, the test just gave up waiting too soon) - see
+    // release-e2e-suite report history.
+    cy.get('.upload-item').eq(i).find('.status-icon', { timeout: 90000 }).should('exist');
   });
   cy.get('.upload-item .status-error').should('not.exist');
 }

@@ -10,7 +10,15 @@ describe('Gallery (real backend)', () => {
 
   it('folderNav_afterCatalog_listsE2eCatalogTripAndEventsSubfolders', () => {
     cy.visit('/gallery');
-    cy.contains('mat-tree-node', 'trip', { timeout: 15000 }).should('exist');
+    // FolderNavComponent's tree is collapsed by default (Angular CDK Tree, no expandAll on init -
+    // see folder-nav.component.ts) - trip/events are children of e2e-catalog and won't exist in
+    // the DOM at all until that parent node's own toggle button is clicked. On a live deployment
+    // with many real top-level folders (/catalog, /catalog2, /catalog3, ...) this matters far more
+    // than on an empty/synthetic one, where every node might coincidentally already be visible.
+    cy.contains('mat-tree-node', 'e2e-catalog', { timeout: 15000 })
+      .find('button[aria-label="Toggle e2e-catalog"]')
+      .click();
+    cy.contains('mat-tree-node', 'trip').should('exist');
     cy.contains('mat-tree-node', 'events').should('exist');
   });
 

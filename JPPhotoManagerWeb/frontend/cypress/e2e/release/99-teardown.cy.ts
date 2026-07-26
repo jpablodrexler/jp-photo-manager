@@ -21,12 +21,21 @@ import {
 
 function hardDeleteEverythingInFolder(folderPath: string): void {
   visitGalleryFolder(folderPath);
+  // GalleryComponent shows a mat-progress-bar while its own async GET /api/assets fetch is in
+  // flight (isLoading) and only renders .asset-list-row / the "No images found" empty state once
+  // it resolves. Snapshotting the body immediately after visitGalleryFolder's .current-folder
+  // check (which only confirms the route loaded, not that the asset list fetch has) can catch
+  // this folder mid-fetch and misread "not rendered yet" as "genuinely empty", silently skipping
+  // real deletion - the same masking-bug shape teardown_runsFreshCatalogFirst's own comment
+  // documents for a different root cause (stale cache instead of a load race). Wait for loading to
+  // finish before treating an empty snapshot as authoritative.
+  cy.get('mat-progress-bar', { timeout: 10000 }).should('not.exist');
   cy.get('body').then(($body) => {
     const rows = $body.find('.asset-list-row');
     if (rows.length === 0) {
-      // Legitimate only because teardown_runsFreshCatalogFirst (above) just forced every
-      // folder's "assets" search-cache entry to be re-evicted, so this reflects real DB state,
-      // not a stale cached page — see that test's comment for the incident this guards against.
+      // Legitimate now that we've waited for the fetch to actually resolve, and because
+      // teardown_runsFreshCatalogFirst (above) just forced every folder's "assets" search-cache
+      // entry to be re-evicted, so this reflects real DB state, not a stale cached page.
       cy.log(`hardDeleteEverythingInFolder: ${folderPath} already empty, nothing to delete`);
       return;
     }
@@ -41,7 +50,17 @@ function hardDeleteEverythingInFolder(folderPath: string): void {
 }
 
 describe('Release suite teardown (real backend)', () => {
-  before(() => {
+  // beforeEach, not before: Cypress's default test isolation clears cookies (including the JWT)
+  // between every it() block within a spec file, not just between spec files - a before()-once
+  // login only survives the first test (see 01-seed-and-catalog.cy.ts's identical comment). This
+  // file used before() until now, which meant every test after the first silently ran
+  // unauthenticated: some failed outright (teardown_hardDeletesAllRemainingTestAssets's
+  // .current-folder check correctly caught the redirect-to-login), while others with lenient
+  // "if empty, skip" logic (teardown_purgesRecycleBinOfAnyStragglers) falsely reported "passing"
+  // because an unauthenticated /recycle-bin redirect also has zero .asset-cell elements - the
+  // exact same masking-bug shape as the stale-cache incident teardown_runsFreshCatalogFirst's own
+  // comment documents, just from a different root cause.
+  beforeEach(() => {
     realLogin();
   });
 
@@ -64,6 +83,17 @@ describe('Release suite teardown (real backend)', () => {
     cy.get('.catalog-icon.spinning', { timeout: 10000 }).should('exist');
     cy.get('.catalog-icon.spinning', { timeout: 120000 }).should('not.exist');
     cy.get('.catalog-status-text').should('contain.text', 'Idle');
+  });
+
+  it('teardown_clearsSyncAndConvertConfigurations', () => {
+    // Sync/Convert directory-pair configurations are persisted server-side, independent of any
+    // asset or folder, so hardDeleteEverythingInFolder below never touches them - left uncleared,
+    // a run's own Add'd row silently accumulates and breaks the next run's
+    // 06-sync.cy.ts/07-convert.cy.ts, both of which assume the config table starts empty (confirmed:
+    // a leftover row from an earlier run made cy.get('tbody tr').should('have.length', 1) see 2
+    // rows after that spec's own "Add" click).
+    cy.request('PUT', '/api/sync/configuration', []);
+    cy.request('PUT', '/api/convert/configuration', []);
   });
 
   it('teardown_hardDeletesAllRemainingTestAssets', () => {

@@ -32,10 +32,17 @@ describe('Home dashboard (real backend)', () => {
     cy.url().should('include', '/gallery?folder=');
   });
 
-  it('homePage_topFoldersList_includesE2eCatalogSubfolder', () => {
-    cy.get('.folder-row .folder-path').should(($els) => {
-      const paths = $els.toArray().map((el) => el.getAttribute('title') ?? '');
-      expect(paths.some((p) => p.includes('/e2e-catalog'))).to.be.true;
+  // The Top Folders widget shows only the top 5 folders by asset count (see
+  // HomeComponent/GetHomeStatsUseCaseImpl) - on a live deployment with substantial real personal
+  // libraries, /e2e-catalog's 2-3 seeded assets per subfolder will never outrank real folders with
+  // hundreds of files, so asserting e2e-catalog appears in this specific widget doesn't hold
+  // (confirmed via release-e2e-suite history). The recent-photos-strip tests above already cover
+  // the dashboard reflecting freshly seeded data; this one is scoped to what's actually achievable
+  // regardless of how much real data coexists: the widget renders real folder rows at all.
+  it('homePage_topFoldersList_rendersRealFolderRowsWithValidPaths', () => {
+    cy.get('.folder-row .folder-path', { timeout: 15000 }).should('have.length.greaterThan', 0);
+    cy.get('.folder-row .folder-path').each(($el) => {
+      expect($el.attr('title')).to.match(/^\//);
     });
   });
 });

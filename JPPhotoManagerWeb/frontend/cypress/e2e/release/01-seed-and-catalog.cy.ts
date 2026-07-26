@@ -29,6 +29,21 @@ import {
   EVENTS_FOLDER,
 } from '../../support/e2e-release-helpers';
 
+// cy.request() is a one-shot command - chaining .should(...) off it re-checks the same already-
+// fetched response on retry, it does not re-issue the request. Polling a value that only changes
+// server-side (like lastCatalogCompletedAt, once the real backend catalog job finishes) needs an
+// explicit retry loop that re-fetches each time instead.
+function waitForLastCatalogCompletedAtToChange(before: string, attemptsLeft = 20): void {
+  cy.request('/api/home/stats').then((res) => {
+    if (res.body.lastCatalogCompletedAt !== before || attemptsLeft <= 0) {
+      expect(res.body.lastCatalogCompletedAt).not.to.eq(before);
+      return;
+    }
+    cy.wait(1000);
+    waitForLastCatalogCompletedAtToChange(before, attemptsLeft - 1);
+  });
+}
+
 describe('Seed data upload + catalog run (real backend)', () => {
   // beforeEach, not before: Cypress's default test isolation clears cookies
   // (including the JWT) between every `it()` block within a spec file, not
@@ -73,22 +88,26 @@ describe('Seed data upload + catalog run (real backend)', () => {
     cy.get('.asset-list-row', { timeout: 15000 }).should('have.length', 3);
   });
 
-  it('catalogRun_triggeredFromGalleryToolbar_showsSseProgressAndCompletes', () => {
-    visitGalleryFolder(TRIP_FOLDER);
+  it('catalogRun_triggeredFromGalleryToolbar_completesAndAdvancesLastCatalogCompletedAt', () => {
+    // CatalogProgressFooterComponent's spinner only flips to the running state upon receiving at
+    // least one real, server-driven 'catalog' SSE progress event (see app.component.ts) - a run
+    // over an already-fully-catalogued /e2e-catalog tree with nothing new to process can complete
+    // with zero such intermediate ticks, so the spinner may never visibly appear even though the
+    // job genuinely executes and completes (confirmed via direct Postgres query across many runs:
+    // job executions land COMPLETED in ~4-5s every time, with no rate-limiting or orphaned-execution
+    // issue - see CatalogAssetsUseCaseImpl's staleness recovery). Assert completion via the durable
+    // lastCatalogCompletedAt timestamp advancing instead of the transient spinner state, which
+    // this suite's own history shows is not a reliable signal for a no-op scan.
+    cy.request('/api/home/stats').its('body.lastCatalogCompletedAt').then((before) => {
+      visitGalleryFolder(TRIP_FOLDER);
 
-    // Admin-only catalog trigger button (manage_search icon) in the gallery toolbar.
-    cy.get('button[title="Run catalog"]').click();
+      // Admin-only catalog trigger button (manage_search icon) in the gallery toolbar.
+      cy.get('button[title="Run catalog"]').click();
 
-    // CatalogProgressFooterComponent flips to the running state and shows a
-    // real, server-driven progress bar (see catalog-progress-footer.component.html).
-    cy.get('.catalog-icon.spinning', { timeout: 10000 }).should('exist');
-
-    // A real catalog run over an already-fully-catalogued /e2e-catalog tree
-    // finds no new files but still executes the full job — completes
-    // quickly, but give it a generous window since Spring Batch job startup
-    // can be slow on a constrained cluster (see k8s/backend.yaml's
-    // startupProbe comment for the class of latency this cluster can see).
-    cy.get('.catalog-icon.spinning', { timeout: 60000 }).should('not.exist');
-    cy.get('.catalog-status-text').should('contain.text', 'Idle');
+      // Generous window since Spring Batch job startup can be slow on a constrained cluster (see
+      // k8s/backend.yaml's startupProbe comment for the class of latency this cluster can see).
+      cy.get('.catalog-status-text', { timeout: 60000 }).should('contain.text', 'Idle');
+      waitForLastCatalogCompletedAtToChange(before);
+    });
   });
 });
