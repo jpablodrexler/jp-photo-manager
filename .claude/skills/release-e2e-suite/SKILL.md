@@ -24,7 +24,7 @@ description: >
   under test (see §0's documented incident for exactly what that risks).
   The dedicated e2e-suite-admin account is exempt from login/catalog rate
   limiting (see §1.3) so repeated runs aren't throttled. Every run writes a
-  dated pass/fail report to docs/release-e2e/ (gitignored), mirroring the
+  dated pass/fail report to docs/reports/release-e2e/ (gitignored), mirroring the
   code-reviewer skill's report convention (see §3.1).
 metadata:
   scope: [JPPhotoManagerWeb]
@@ -323,13 +323,17 @@ Every run — pass, fail, or partial — also gets written to a markdown file,
 the same way `code-reviewer` writes `CODE_REVIEW_FINDINGS_*.md`, so a run's
 outcome can be revisited later without re-deriving it from scrollback.
 
-- **Path:** `docs/release-e2e/RELEASE_E2E_REPORT_{YYYY-MM-DD}.md` (repo root,
-  today's date, ISO 8601). If a file for that date already exists (e.g. a
-  second run the same day), append `-2`, `-3`, etc. before `.md` rather than
-  overwriting the earlier run's report. Create the directory if it doesn't
-  exist yet — it's gitignored (`docs/release-e2e/`), same as
-  `docs/code-review/`: these are local working artifacts, not committed
-  history.
+- **Path:** `docs/reports/release-e2e/RELEASE_E2E_REPORT_{YYYY-MM-DD}.md`, today's
+  date, ISO 8601. **This `docs/` is the top-level repository root's
+  `docs/` — the one sibling to `JPPhotoManager/` and `JPPhotoManagerWeb/`
+  and containing `.git` — never `JPPhotoManagerWeb/docs/`,** even though
+  every other step in this skill runs from inside `JPPhotoManagerWeb/`.
+  Verify with `git rev-parse --show-toplevel` if unsure before writing.
+  If a file for that date already exists (e.g. a second run the same day),
+  append `-2`, `-3`, etc. before `.md` rather than overwriting the earlier
+  run's report. Create the directory if it doesn't exist yet — it's
+  gitignored (`docs/reports/release-e2e/`), same as `docs/reports/code-review/`: these are
+  local working artifacts, not committed history.
 - **Header:** the git branch and commit hash under test (`git rev-parse
   HEAD`), confirmation that §0's redeploy ran, and which admin account was
   used.

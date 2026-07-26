@@ -282,8 +282,9 @@ JPPhotoManagerWeb/frontend/cypress.env.json
 JPPhotoManagerWeb/.env
 JPPhotoManagerWeb/k8s/secret.yaml
 JPPhotoManagerWeb/k8s/catalog-volumes.yaml
-docs/code-review/
-docs/security-review/
-docs/database-review/
-docs/spec-compliance/
-docs/release-e2e/
+# Local working reports written by review/audit skills (code-reviewer,
+# security-reviewer, database-reviewer, spec-compliance-check,
+# release-e2e-suite, incident-response, ...) — one subfolder per skill,
+# never committed history. See each skill's SKILL.md "Write the report"
+# section.
+docs/reports/

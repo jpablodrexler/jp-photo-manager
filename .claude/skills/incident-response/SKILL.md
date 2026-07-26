@@ -215,10 +215,15 @@ is gone, not just that the process is running.
 ## 7. Write an Incident Note
 
 After resolution, write a short note to
-`docs/incident-response/INCIDENT_{YYYY-MM-DD}_{short-slug}.md` (this
-directory is gitignored, same convention as `docs/database-review/` and
-`docs/security-review/` — a local working record, not committed history
-unless the user explicitly asks to commit it):
+`docs/reports/incident-response/INCIDENT_{YYYY-MM-DD}_{short-slug}.md` (this
+directory is gitignored, same convention as `docs/reports/database-review/` and
+`docs/reports/security-review/` — a local working record, not committed history
+unless the user explicitly asks to commit it). **This `docs/` is the
+top-level repository root's `docs/` — the one sibling to `JPPhotoManager/`
+and `JPPhotoManagerWeb/` and containing `.git` — never
+`JPPhotoManagerWeb/docs/`,** even though the incident under investigation
+is almost always in `JPPhotoManagerWeb/`. Verify with
+`git rev-parse --show-toplevel` if unsure before writing:
 
 - **Signal** — what was observed and since when (§1).
 - **Root cause** — the classification from §3 and what evidence supported it.

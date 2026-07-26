@@ -233,8 +233,10 @@ following prompt:
 > application — the code-reviewer skill's per-layer report split and
 > subagent dispatch only apply to whole-app sweeps, so do not request or
 > expect multiple reports or additional subagents here. Every invocation
-> writes a single dated `docs/code-review/CODE_REVIEW_FINDINGS_*.md` report
-> (repo root, gitignored). After the review completes, examine the findings:
+> writes a single dated `docs/reports/code-review/CODE_REVIEW_FINDINGS_*.md` report
+> (the top-level repo root's `docs/`, sibling to `JPPhotoManagerWeb/` —
+> never `JPPhotoManagerWeb/docs/` — gitignored). After the review completes,
+> examine the findings:
 >
 > - If the report contains **no 🔴 Critical or 🟡 Warning findings**: proceed.
 > - If the report contains any 🔴 Critical or 🟡 Warning findings: fix every
@@ -275,8 +277,10 @@ summary of what changed>` note appended to the same line — the same
 >   turn-by-turn across a conversation). This is a scoped review of one
 >   change, not a full migration-history audit — do not request or expect
 >   additional subagents here. Every invocation writes a single dated
->   `docs/database-review/DATABASE_REVIEW_FINDINGS_*.md` report (repo root,
->   gitignored). After the review completes, fix every 🔴 Critical and 🟡
+>   `docs/reports/database-review/DATABASE_REVIEW_FINDINGS_*.md` report (the
+>   top-level repo root's `docs/`, sibling to `JPPhotoManagerWeb/` — never
+>   `JPPhotoManagerWeb/docs/` — gitignored). After the review completes,
+>   fix every 🔴 Critical and 🟡
 >   Warning finding in the source files — check each off in that report file
 >   (`- [ ]` → `- [x]`) with a `**Fixed:**` note as you go, the same
 >   convention `code-reviewer`'s Fix Workflow uses — then (recompute
@@ -321,8 +325,10 @@ summary of what changed>` note appended to the same line — the same
 >   security-reviewer skill's per-layer report split and subagent dispatch
 >   only apply to whole-app sweeps, so do not request or expect multiple
 >   reports or additional subagents here. Every invocation writes a single
->   dated `docs/security-review/SECURITY_REVIEW_FINDINGS_*.md` report (repo
->   root, gitignored). After the review completes, fix every 🔴 Critical and
+>   dated `docs/reports/security-review/SECURITY_REVIEW_FINDINGS_*.md` report (the
+>   top-level repo root's `docs/`, sibling to `JPPhotoManagerWeb/` — never
+>   `JPPhotoManagerWeb/docs/` — gitignored). After the review completes,
+>   fix every 🔴 Critical and
 >   🟡 Warning finding in the source files — check each off in that report
 >   file (`- [ ]` → `- [x]`) with a `**Fixed:**` note as you go, the same
 >   convention `code-reviewer`'s Fix Workflow uses — then (recompute

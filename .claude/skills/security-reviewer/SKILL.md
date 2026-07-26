@@ -95,7 +95,7 @@ is what actually keeps the sweep within session limits: each subagent starts
 cold, reads only its own layer's files, writes its own report, and never
 touches the orchestrating conversation's context.
 
-1. Before starting, check `docs/security-review/` for layer report files
+1. Before starting, check `docs/reports/security-review/` for layer report files
    already dated today. If a sweep was interrupted in an earlier session,
    resume by only dispatching subagents for the layers that don't have a
    report yet for today's date — don't redo layers already completed.
@@ -113,7 +113,7 @@ touches the orchestrating conversation's context.
      Report Format & Output File" section (§8) — don't restate the whole
      checklist in the prompt, point the subagent at the file.
    - The exact output path to write:
-     `docs/security-review/SECURITY_REVIEW_FINDINGS_{today's date}_{layer suffix}.md`
+     `docs/reports/security-review/SECURITY_REVIEW_FINDINGS_{today's date}_{layer suffix}.md`
      (apply the `-2`/`-3` collision rule from §8 itself if the file already
      exists).
    - An explicit instruction to only read/review files under that layer's own
@@ -474,16 +474,22 @@ without re-deriving context.
 
 **Scoped review (single file, PR, feature, or one sub-project) — one file:**
 
-- **Path:** `docs/security-review/SECURITY_REVIEW_FINDINGS_{YYYY-MM-DD}.md`
-  (repo root, today's date, ISO 8601). If a file for that date already exists
-  (e.g., a second review the same day), append `-2`, `-3`, etc. before `.md`
-  rather than overwriting the earlier run's report.
+- **Path:** `docs/reports/security-review/SECURITY_REVIEW_FINDINGS_{YYYY-MM-DD}.md`,
+  today's date, ISO 8601. **This `docs/` is the top-level repository root's
+  `docs/` — the one sibling to `JPPhotoManager/` and `JPPhotoManagerWeb/`
+  and containing `.git` — never `JPPhotoManagerWeb/docs/`,** even when the
+  review scope is a single file or sub-project under `JPPhotoManagerWeb/`.
+  Verify with `git rev-parse --show-toplevel` if unsure before writing. If
+  a file for that date already exists (e.g., a second review the same
+  day), append `-2`, `-3`, etc. before `.md` rather than overwriting the
+  earlier run's report.
 
 **Full-codebase sweep (§"Full-Codebase Sweeps: Review by Layer") — one file
 per layer:**
 
 - **Path:**
-  `docs/security-review/SECURITY_REVIEW_FINDINGS_{YYYY-MM-DD}_{layer}.md`,
+  `docs/reports/security-review/SECURITY_REVIEW_FINDINGS_{YYYY-MM-DD}_{layer}.md`
+  (same top-level repo-root `docs/` as above — never `JPPhotoManagerWeb/docs/`),
   where `{layer}` is the report suffix from the layer table (e.g.
   `backend-infrastructure`, `frontend-core`, `cross-cutting`). Same `-2`,
   `-3` collision rule, applied per date+layer combination.
@@ -526,7 +532,7 @@ tree for the user to review and commit themselves.
 1. If the user names a specific report file, skip straight to §9.2 with that
    file. Otherwise resolve a **date**: the date the user asked for, or
    (default) the most recent date that has any
-   `docs/security-review/SECURITY_REVIEW_FINDINGS_*.md` file. If none exists,
+   `docs/reports/security-review/SECURITY_REVIEW_FINDINGS_*.md` file. If none exists,
    say so and stop — there is nothing to fix.
 2. List every report file for that date (there may be several `-2`/`-3`
    reruns per layer — treat each filename, suffix included, as a distinct
