@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.domain.model.PaginatedResult;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
 import org.junit.jupiter.api.Nested;
@@ -98,6 +99,7 @@ class RecycleBinUseCasesTest {
     class RestoreAssetsUseCaseImplTest {
 
         @Mock AssetRepository assetRepository;
+        @Mock AssetSearchCachePort assetSearchCachePort;
         @InjectMocks RestoreAssetsUseCaseImpl sut;
 
         @Test
@@ -111,6 +113,20 @@ class RecycleBinUseCasesTest {
             ArgumentCaptor<Asset> captor = ArgumentCaptor.forClass(Asset.class);
             verify(assetRepository).save(captor.capture());
             assertThat(captor.getValue().getDeletedAt()).isNull();
+        }
+
+        @Test
+        void execute_restoredAsset_evictsFolderAssetsCache() {
+            // No Kafka event covers this path (see RestoreAssetsUseCaseImpl's own comment) - the
+            // folder's cached "assets" search results must be evicted synchronously, or the
+            // just-restored asset stays invisible in the gallery.
+            Asset asset = buildDeletedAsset(1L);
+            when(assetRepository.findAllById(List.of(1L))).thenReturn(List.of(asset));
+            when(assetRepository.save(any())).thenReturn(asset);
+
+            sut.execute(List.of(1L));
+
+            verify(assetSearchCachePort).evictFolder(1L);
         }
 
         private Asset buildDeletedAsset(Long id) {

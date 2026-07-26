@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.CropRegion;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,7 @@ class CropAssetUseCaseImplTest {
     @Mock AssetRepository assetRepository;
     @Mock StoragePort storagePort;
     @Mock CatalogFolderPort catalogFolderPort;
+    @Mock AssetSearchCachePort assetSearchCachePort;
     @InjectMocks CropAssetUseCaseImpl sut;
 
     private Folder folder;

@@ -5,6 +5,7 @@ import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.CropRegion;
 import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.CatalogFolderPort;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class CropAssetUseCaseImpl implements CropAssetUseCase {
     private final AssetRepository assetRepository;
     private final StoragePort storagePort;
     private final CatalogFolderPort catalogFolderPort;
+    private final AssetSearchCachePort assetSearchCachePort;
 
     @Override
     @Transactional
@@ -80,11 +82,18 @@ public class CropAssetUseCaseImpl implements CropAssetUseCase {
             Files.deleteIfExists(tempFile);
         }
 
-        return assetRepository.findByFolderAndFileName(asset.getFolder(), outputFileName)
+        Asset croppedAsset = assetRepository.findByFolderAndFileName(asset.getFolder(), outputFileName)
                 .orElseGet(() -> {
                     log.info("Cropped asset {} as {} → {}", assetId, request.formatKey(), outputFileName);
                     return catalogFolderPort.createAsset(folderPath, outputFileName);
                 });
+
+        // New asset in the folder either way (freshly created, or an already-catalogued file this
+        // crop overwrote) - same gap class as Delete/Move/Restore/Rate/Rename (see
+        // DeleteAssetsUseCaseImpl), no Kafka event covers this path either.
+        assetSearchCachePort.evictFolder(asset.getFolder().getFolderId());
+
+        return croppedAsset;
     }
 
     private void validateCropBounds(CropRegion request, int imgWidth, int imgHeight) {

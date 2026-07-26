@@ -8,6 +8,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetProcessingStatusUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetThumbnailUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseCase;
@@ -94,6 +95,8 @@ class AssetControllerSearchTest {
     @MockitoBean
     GetFolderIdByPathUseCase getFolderIdByPathUseCase;
     @MockitoBean
+    GetAssetProcessingStatusUseCase getAssetProcessingStatusUseCase;
+    @MockitoBean
     AssetWebMapper assetWebMapper;
     @MockitoBean
     MeterRegistry meterRegistry;
@@ -108,7 +111,7 @@ class AssetControllerSearchTest {
 
     @Test
     void getAssets_noFilters_callsUseCaseWithNullSearch() throws Exception {
-        when(getFolderIdByPathUseCase.execute(any())).thenReturn(null);
+        when(getFolderIdByPathUseCase.execute(any())).thenReturn(1L);
         when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(emptyPage());
 
         mockMvc.perform(get("/api/assets")
@@ -124,7 +127,7 @@ class AssetControllerSearchTest {
 
     @Test
     void getAssets_withSearchParam_callsUseCaseWithSearch() throws Exception {
-        when(getFolderIdByPathUseCase.execute(any())).thenReturn(null);
+        when(getFolderIdByPathUseCase.execute(any())).thenReturn(1L);
         when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(emptyPage());
 
         mockMvc.perform(get("/api/assets")
@@ -137,7 +140,7 @@ class AssetControllerSearchTest {
 
     @Test
     void getAssets_withDateParams_callsUseCaseWithParsedLocalDates() throws Exception {
-        when(getFolderIdByPathUseCase.execute(any())).thenReturn(null);
+        when(getFolderIdByPathUseCase.execute(any())).thenReturn(1L);
         when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(emptyPage());
 
         mockMvc.perform(get("/api/assets")
@@ -153,7 +156,7 @@ class AssetControllerSearchTest {
 
     @Test
     void getAssets_withTagsParam_passesTagSetToUseCase() throws Exception {
-        when(getFolderIdByPathUseCase.execute(any())).thenReturn(null);
+        when(getFolderIdByPathUseCase.execute(any())).thenReturn(1L);
         when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(emptyPage());
 
         mockMvc.perform(get("/api/assets")

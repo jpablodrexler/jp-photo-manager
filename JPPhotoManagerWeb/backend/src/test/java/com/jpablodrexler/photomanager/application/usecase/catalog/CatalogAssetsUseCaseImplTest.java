@@ -7,13 +7,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
@@ -37,6 +41,7 @@ class CatalogAssetsUseCaseImplTest {
     @Mock ProgressPort progressPort;
     @Mock JobExecution jobExecution;
     @Mock JobExplorer jobExplorer;
+    @Mock JobRepository jobRepository;
 
     CatalogAssetsUseCaseImpl sut;
 
@@ -44,7 +49,8 @@ class CatalogAssetsUseCaseImplTest {
     void setUp() {
         when(catalogJob.getName()).thenReturn(JOB_NAME);
         when(jobExplorer.findRunningJobExecutions(JOB_NAME)).thenReturn(Collections.emptySet());
-        sut = new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob, progressPort, jobExplorer);
+        sut = new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob, progressPort, jobExplorer, jobRepository);
+        ReflectionTestUtils.setField(sut, "staleExecutionThresholdMinutes", 15L);
     }
 
     @Test
@@ -105,13 +111,50 @@ class CatalogAssetsUseCaseImplTest {
 
     @Test
     void execute_jobAlreadyRunningAccordingToJobExplorer_skipsWithoutStartingJob() {
-        when(jobExplorer.findRunningJobExecutions(JOB_NAME)).thenReturn(Set.of(mock(JobExecution.class)));
+        JobExecution runningExecution = mock(JobExecution.class);
+        when(runningExecution.getStartTime()).thenReturn(LocalDateTime.now().minusMinutes(1));
+        when(jobExplorer.findRunningJobExecutions(JOB_NAME)).thenReturn(Set.of(runningExecution));
 
         CompletableFuture<Void> result = sut.execute(42L, USER_ID);
 
         assertThat(result.isDone()).isTrue();
         assertThat(result.isCompletedExceptionally()).isFalse();
         verifyNoInteractions(asyncCatalogJobLauncher);
+        verifyNoInteractions(jobRepository);
+    }
+
+    @Test
+    void execute_runningExecutionHasNoStartTimeYet_treatedAsGenuinelyRunning() {
+        // JobExecution.getStartTime() is null between JobRepository.createJobExecution() and the
+        // launcher actually invoking the job - unstubbed (null) must not be misread as "old enough
+        // to be stale", or a job that's merely mid-launch would be wrongly abandoned.
+        JobExecution runningExecution = mock(JobExecution.class);
+        when(jobExplorer.findRunningJobExecutions(JOB_NAME)).thenReturn(Set.of(runningExecution));
+
+        CompletableFuture<Void> result = sut.execute(42L, USER_ID);
+
+        assertThat(result.isDone()).isTrue();
+        verifyNoInteractions(asyncCatalogJobLauncher);
+        verifyNoInteractions(jobRepository);
+    }
+
+    @Test
+    void execute_runningExecutionIsStale_abandonsItAndStartsNewJobAnyway() throws Exception {
+        // Simulates an execution orphaned by a crashed/killed process (pod restart, OOM): left in
+        // STARTED forever, which would otherwise permanently block every future catalog run
+        // (scheduled and manual) with no error surfaced anywhere - see execute()'s own comment.
+        JobExecution staleExecution = mock(JobExecution.class);
+        when(staleExecution.getStartTime()).thenReturn(LocalDateTime.now().minusMinutes(30));
+        when(jobExplorer.findRunningJobExecutions(JOB_NAME)).thenReturn(Set.of(staleExecution));
+        when(asyncCatalogJobLauncher.run(eq(catalogJob), any(JobParameters.class))).thenReturn(jobExecution);
+
+        CompletableFuture<Void> result = sut.execute(42L, USER_ID);
+
+        verify(staleExecution).setStatus(BatchStatus.ABANDONED);
+        verify(staleExecution).setEndTime(any(LocalDateTime.class));
+        verify(jobRepository).update(staleExecution);
+        verify(asyncCatalogJobLauncher).run(eq(catalogJob), any(JobParameters.class));
+        assertThat(result.isDone()).isFalse();
     }
 
     @Test

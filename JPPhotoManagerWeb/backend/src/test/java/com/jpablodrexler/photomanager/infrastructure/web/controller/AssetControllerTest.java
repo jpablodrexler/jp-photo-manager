@@ -29,6 +29,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.ReprocessAssetUseCase
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetProcessingStatusUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.folder.GetFolderIdByPathUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkAddTagUseCase;
@@ -118,6 +119,8 @@ class AssetControllerTest {
     @MockitoBean
     GetFolderIdByPathUseCase getFolderIdByPathUseCase;
     @MockitoBean
+    GetAssetProcessingStatusUseCase getAssetProcessingStatusUseCase;
+    @MockitoBean
     AssetWebMapper assetWebMapper;
     @Autowired
     MeterRegistry meterRegistry;
@@ -157,10 +160,14 @@ class AssetControllerTest {
     }
 
     @Test
-    void getAssets_emptyFolder_returns200WithEmptyItems() throws Exception {
-        PaginatedResult<Asset> page = new PaginatedResult<>(List.of(), 0L, 0, 50);
+    void getAssets_folderNotYetCatalogued_returns200WithEmptyItemsWithoutCallingUseCase() throws Exception {
+        // folderPath resolving to a null folderId means this folder doesn't exist in the catalog
+        // yet (e.g. a brand-new subfolder navigated into before its first Upload/Move) - must
+        // short-circuit to empty rather than reach GetAssetsUseCaseImpl, whose AssetFilter
+        // treats a null folderId as "no folder restriction at all" (see AlbumAssetFilterFactory)
+        // and would otherwise return - and cache under a key shared by every other
+        // not-yet-catalogued folder - the entire catalog's assets across every folder.
         when(getFolderIdByPathUseCase.execute("/empty")).thenReturn(null);
-        when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(page);
 
         mockMvc.perform(get("/api/assets")
                         .param("folderPath", "/empty")
@@ -168,6 +175,8 @@ class AssetControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items").isEmpty())
                 .andExpect(jsonPath("$.totalItems").value(0));
+
+        verifyNoInteractions(getAssetsUseCase);
     }
 
     // --- GET /api/assets/{id}/thumbnail ---
@@ -434,7 +443,7 @@ class AssetControllerTest {
     @Test
     void getAssets_withMinRating_callsUseCaseWithMinRating() throws Exception {
         PaginatedResult<Asset> page = new PaginatedResult<>(List.of(), 0L, 0, 50);
-        when(getFolderIdByPathUseCase.execute("/photos")).thenReturn(null);
+        when(getFolderIdByPathUseCase.execute("/photos")).thenReturn(1L);
         when(getAssetsUseCase.execute(any(AssetFilter.class))).thenReturn(page);
 
         mockMvc.perform(get("/api/assets")
@@ -474,12 +483,9 @@ class AssetControllerTest {
     }
 
     @Test
-    void getTimeline_emptyFolder_returns200WithEmptyItems() throws Exception {
-        com.jpablodrexler.photomanager.domain.model.PaginatedResult<TimelineGroup> result =
-                new com.jpablodrexler.photomanager.domain.model.PaginatedResult<>(List.of(), 0L, 0, 30);
-
+    void getTimeline_folderNotYetCatalogued_returns200WithEmptyItemsWithoutCallingUseCase() throws Exception {
+        // Same short-circuit as getAssets() above, and for the identical reason - see that test.
         when(getFolderIdByPathUseCase.execute("/empty")).thenReturn(null);
-        when(getAssetsTimelineUseCase.execute(any(AssetFilter.class))).thenReturn(result);
 
         mockMvc.perform(get("/api/assets/timeline")
                         .param("folderPath", "/empty")
@@ -488,6 +494,8 @@ class AssetControllerTest {
                 .andExpect(jsonPath("$.items").isEmpty())
                 .andExpect(jsonPath("$.totalItems").value(0))
                 .andExpect(jsonPath("$.totalPages").value(0));
+
+        verifyNoInteractions(getAssetsTimelineUseCase);
     }
 
     // --- POST /api/assets/{id}/crop ---

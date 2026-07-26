@@ -2,11 +2,13 @@ package com.jpablodrexler.photomanager.infrastructure.web.controller;
 
 import com.jpablodrexler.photomanager.application.exception.FolderNotFoundException;
 import com.jpablodrexler.photomanager.application.exception.UnsupportedAssetTypeException;
+import com.jpablodrexler.photomanager.domain.enums.ProcessingStatus;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.in.asset.CropAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DeleteAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetProcessingStatusUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetThumbnailUseCase;
@@ -36,6 +38,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;
@@ -44,6 +47,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -96,6 +100,8 @@ class AssetControllerUploadTest {
     GetAssetThumbnailUseCase getAssetThumbnailUseCase;
     @MockitoBean
     GetFolderIdByPathUseCase getFolderIdByPathUseCase;
+    @MockitoBean
+    GetAssetProcessingStatusUseCase getAssetProcessingStatusUseCase;
     @MockitoBean
     AssetWebMapper assetWebMapper;
     @MockitoBean
@@ -201,10 +207,56 @@ class AssetControllerUploadTest {
 
     @Test
     void observeUpload_registersEmitterAndReturns200() throws Exception {
+        when(getAssetProcessingStatusUseCase.execute(42L)).thenReturn(ProcessingStatus.PENDING);
+
         mockMvc.perform(get("/api/assets/upload/42/observe"))
                 .andExpect(request().asyncStarted());
 
         verify(kafkaProgressRegistry).registerEmitter(eq(42L), any());
+    }
+
+    // Closes the race documented on AssetController.observeUpload: for small/fast assets the
+    // kafka-async-upload pipeline can finish and broadcast job.upload.progress's terminal message
+    // before this SSE connection is even established, so a late subscriber must learn the outcome
+    // from the durable DB status rather than waiting forever on an event that already fired.
+    @Test
+    void observeUpload_assetAlreadyCompleted_immediatelySendsDoneEventAndCompletes() throws Exception {
+        when(getAssetProcessingStatusUseCase.execute(42L)).thenReturn(ProcessingStatus.COMPLETED);
+
+        MvcResult mvcResult = mockMvc.perform(get("/api/assets/upload/42/observe"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("event:done")));
+
+        verify(kafkaProgressRegistry).remove(42L);
+    }
+
+    @Test
+    void observeUpload_assetAlreadyFailed_immediatelySendsFailedEventAndCompletes() throws Exception {
+        when(getAssetProcessingStatusUseCase.execute(42L)).thenReturn(ProcessingStatus.FAILED);
+
+        MvcResult mvcResult = mockMvc.perform(get("/api/assets/upload/42/observe"))
+                .andExpect(request().asyncStarted())
+                .andReturn();
+
+        mockMvc.perform(asyncDispatch(mvcResult))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("event:failed")));
+
+        verify(kafkaProgressRegistry).remove(42L);
+    }
+
+    @Test
+    void observeUpload_assetStillProcessing_doesNotCompleteEmitterImmediately() throws Exception {
+        when(getAssetProcessingStatusUseCase.execute(42L)).thenReturn(ProcessingStatus.PROCESSING);
+
+        mockMvc.perform(get("/api/assets/upload/42/observe"))
+                .andExpect(request().asyncStarted());
+
+        verify(kafkaProgressRegistry, org.mockito.Mockito.never()).remove(42L);
     }
 
     // --- POST /api/assets/{id}/reprocess ---

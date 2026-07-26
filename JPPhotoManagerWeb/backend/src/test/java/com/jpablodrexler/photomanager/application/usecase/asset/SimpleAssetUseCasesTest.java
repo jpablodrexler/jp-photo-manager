@@ -9,6 +9,7 @@ import com.jpablodrexler.photomanager.domain.model.AssetExif;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.out.AssetExifRepository;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.AuditLogRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import com.jpablodrexler.photomanager.domain.port.out.ThumbnailPort;
@@ -285,6 +286,7 @@ class SimpleAssetUseCasesTest {
 
         @Mock AssetRepository assetRepository;
         @Mock AuditLogRepository auditLogRepository;
+        @Mock AssetSearchCachePort assetSearchCachePort;
         @InjectMocks RateAssetUseCaseImpl sut;
 
         @Test
@@ -298,6 +300,20 @@ class SimpleAssetUseCasesTest {
 
             assertThat(asset.getRating()).isEqualTo(4);
             verify(assetRepository).save(asset);
+        }
+
+        @Test
+        void execute_assetFound_evictsFolderAssetsCache() {
+            // A folder view filtered by minRating can change membership when a rating changes -
+            // see RateAssetUseCaseImpl's own comment for why this must be evicted synchronously.
+            Long assetId = 1L;
+            Asset asset = buildAsset(assetId);
+            when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+            when(assetRepository.save(any())).thenReturn(asset);
+
+            sut.execute(assetId, 4, null);
+
+            verify(assetSearchCachePort).evictFolder(1L);
         }
 
         @Test

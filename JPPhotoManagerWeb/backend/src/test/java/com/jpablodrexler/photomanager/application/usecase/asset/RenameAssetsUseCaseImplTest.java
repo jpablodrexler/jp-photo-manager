@@ -4,6 +4,7 @@ import com.jpablodrexler.photomanager.domain.model.RenameAssetsResult;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +28,7 @@ class RenameAssetsUseCaseImplTest {
     @Mock AssetRepository assetRepository;
     @Mock StoragePort storagePort;
     @Mock PlatformTransactionManager transactionManager;
+    @Mock AssetSearchCachePort assetSearchCachePort;
     @InjectMocks RenameAssetsUseCaseImpl sut;
 
     private static final String FOLDER_PATH = "/photos";

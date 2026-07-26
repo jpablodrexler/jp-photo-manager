@@ -5,6 +5,7 @@ import com.jpablodrexler.photomanager.domain.enums.AuditEntityType;
 import com.jpablodrexler.photomanager.domain.model.AuditEvent;
 import com.jpablodrexler.photomanager.domain.port.in.asset.RateAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.AuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ public class RateAssetUseCaseImpl implements RateAssetUseCase {
 
     private final AssetRepository assetRepository;
     private final AuditLogRepository auditLogRepository;
+    private final AssetSearchCachePort assetSearchCachePort;
 
     @Override
     @Transactional
@@ -33,6 +35,12 @@ public class RateAssetUseCaseImpl implements RateAssetUseCase {
                 .orElseThrow(() -> new NoSuchElementException("Asset not found: " + assetId));
         asset.setRating(rating);
         assetRepository.save(asset);
+
+        // A folder view filtered by minRating (see AssetFilter) can change membership when an
+        // asset's rating changes - same gap class as Delete/Move/Restore (see
+        // DeleteAssetsUseCaseImpl), no Kafka event covers this path either.
+        Long folderId = asset.getFolder() != null ? asset.getFolder().getFolderId() : null;
+        assetSearchCachePort.evictFolder(folderId);
 
         logAudit(assetId, rating, userId);
     }

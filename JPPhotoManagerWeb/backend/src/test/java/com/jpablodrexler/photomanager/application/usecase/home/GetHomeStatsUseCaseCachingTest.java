@@ -16,6 +16,7 @@ import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
@@ -96,12 +97,18 @@ class GetHomeStatsUseCaseCachingTest {
         }
 
         @Bean
+        JobRepository jobRepository() {
+            return mock(JobRepository.class);
+        }
+
+        @Bean
         CatalogAssetsUseCaseImpl catalogAssetsUseCase(JobLauncher asyncCatalogJobLauncher,
                                                        Job catalogJob,
                                                        KafkaProgressRegistry kafkaProgressRegistry,
-                                                       JobExplorer jobExplorer) {
+                                                       JobExplorer jobExplorer,
+                                                       JobRepository jobRepository) {
             return new CatalogAssetsUseCaseImpl(asyncCatalogJobLauncher, catalogJob, kafkaProgressRegistry,
-                    jobExplorer);
+                    jobExplorer, jobRepository);
         }
     }
 

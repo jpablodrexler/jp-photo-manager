@@ -17,6 +17,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.ReprocessAssetUseCase
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.CatalogAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.catalog.GetDuplicatedAssetsUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetProcessingStatusUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.folder.GetFolderIdByPathUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.AddTagToAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.tag.BulkAddTagUseCase;
@@ -92,6 +93,8 @@ class RoleBasedAccessControlTest {
     GetAssetThumbnailUseCase getAssetThumbnailUseCase;
     @MockitoBean
     GetFolderIdByPathUseCase getFolderIdByPathUseCase;
+    @MockitoBean
+    GetAssetProcessingStatusUseCase getAssetProcessingStatusUseCase;
     @MockitoBean
     AssetWebMapper assetWebMapper;
     @MockitoBean

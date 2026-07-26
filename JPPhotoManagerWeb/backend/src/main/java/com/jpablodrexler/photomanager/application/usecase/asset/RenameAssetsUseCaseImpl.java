@@ -5,6 +5,7 @@ import com.jpablodrexler.photomanager.domain.model.RenamePreview;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.port.in.asset.RenameAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,7 @@ public class RenameAssetsUseCaseImpl implements RenameAssetsUseCase {
     private final AssetRepository assetRepository;
     private final StoragePort storagePort;
     private final PlatformTransactionManager transactionManager;
+    private final AssetSearchCachePort assetSearchCachePort;
 
     @Override
     public RenameAssetsResult execute(Long[] assetIds, String pattern, boolean applied) {
@@ -214,6 +216,13 @@ public class RenameAssetsUseCaseImpl implements RenameAssetsUseCase {
                 revertRename(newPath, oldPath, asset.getAssetId());
                 throw e;
             }
+
+            // A renamed asset's folder view (default sort is FILE_NAME, and "search by filename"
+            // filters directly on it) would keep showing the old name otherwise - same gap class
+            // as Delete/Move/Restore/Rate (see DeleteAssetsUseCaseImpl), no Kafka event covers
+            // this path either.
+            Long folderId = asset.getFolder() != null ? asset.getFolder().getFolderId() : null;
+            assetSearchCachePort.evictFolder(folderId);
         }
     }
 

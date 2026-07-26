@@ -25,6 +25,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.time.Instant;
@@ -196,6 +197,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ErrorResponseDto(Instant.now().toString(), 409, "Conflict",
                         "Duplicate data was found for this request. Please contact an administrator."));
+    }
+
+    // The servlet container raises this when an SSE client has already disconnected (e.g. broken
+    // pipe); the response's Content-Type is already committed to text/event-stream at that point,
+    // so no HttpMessageConverter can write a JSON error body on it - attempting to (as the generic
+    // handler below does) throws a second, masking HttpMessageNotWritableException. There's also no
+    // client left to receive a body, so just log and let the request end without writing one.
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleAsyncRequestNotUsable(AsyncRequestNotUsableException ex) {
+        log.debug("Async request no longer usable (client disconnected): {}", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

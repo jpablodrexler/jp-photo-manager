@@ -9,6 +9,7 @@ import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.in.asset.UploadAssetUseCase;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class UploadAssetUseCaseImpl implements UploadAssetUseCase {
     private final StoragePort storagePort;
     private final AssetRepository assetRepository;
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final AssetSearchCachePort assetSearchCachePort;
 
     @Override
     @Transactional
@@ -70,12 +72,19 @@ public class UploadAssetUseCaseImpl implements UploadAssetUseCase {
             asset = assetRepository.save(asset);
 
             AssetUploadedEvent event = new AssetUploadedEvent(asset.getAssetId(), destPath, folderPath, fileName);
+            Long folderId = folder.getFolderId();
             // Deferred until commit: a consumer that reads asset.uploaded before this transaction
-            // commits would race against the placeholder row's visibility.
+            // commits would race against the placeholder row's visibility. Evicting the
+            // destination folder's "assets" search cache here too (not just on Move/Delete/tag
+            // mutations - see AssetSearchCachePort) closes a real gap: without this, a folder whose
+            // (possibly empty) asset list was ever cached before this upload would keep serving
+            // that stale result and never show the newly uploaded file until an unrelated Move,
+            // Delete, or catalog run happened to touch the same folder.
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
                     kafkaTemplate.send("asset.uploaded", String.valueOf(event.assetId()), event);
+                    assetSearchCachePort.evictFolder(folderId);
                 }
             });
 

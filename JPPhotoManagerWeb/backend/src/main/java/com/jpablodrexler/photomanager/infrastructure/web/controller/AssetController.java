@@ -15,6 +15,7 @@ import com.jpablodrexler.photomanager.domain.port.in.asset.DownloadAssetsUseCase
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetExifUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetImageUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetThumbnailUseCase;
+import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetProcessingStatusUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsTimelineUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.GetAssetsUseCase;
 import com.jpablodrexler.photomanager.domain.port.in.asset.MoveAssetsUseCase;
@@ -45,6 +46,8 @@ import com.jpablodrexler.photomanager.infrastructure.web.dto.response.TimelineGr
 import com.jpablodrexler.photomanager.infrastructure.web.dto.response.UploadAssetResponseDto;
 import com.jpablodrexler.photomanager.infrastructure.web.mapper.AssetWebMapper;
 import com.jpablodrexler.photomanager.infrastructure.web.SseCleanup;
+import com.jpablodrexler.photomanager.application.dto.UploadProgressMessage;
+import com.jpablodrexler.photomanager.domain.enums.ProcessingStatus;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.swagger.v3.oas.annotations.Operation;
@@ -103,6 +106,7 @@ public class AssetController {
     private final BulkRemoveTagUseCase bulkRemoveTagUseCase;
     private final GetAssetThumbnailUseCase getAssetThumbnailUseCase;
     private final GetFolderIdByPathUseCase getFolderIdByPathUseCase;
+    private final GetAssetProcessingStatusUseCase getAssetProcessingStatusUseCase;
     private final AssetWebMapper assetWebMapper;
     private final MeterRegistry meterRegistry;
     private final KafkaProgressRegistry kafkaProgressRegistry;
@@ -136,6 +140,19 @@ public class AssetController {
             @RequestParam(required = false) Integer minRating,
             @RequestParam(required = false) String tags) {
         Long folderId = getFolderIdByPathUseCase.execute(folderPath);
+        // A folderPath that hasn't been catalogued yet (e.g. a brand-new subfolder the UI lets you
+        // navigate into before its first Upload/Move — see GalleryComponent's currentFolder, which
+        // does no existence check) resolves to a null folderId here. GetAssetsUseCaseImpl's own
+        // AssetFilter.folderId()==null instead means "no folder restriction at all" for the Albums
+        // smart-search feature (see AlbumAssetFilterFactory) — passing this endpoint's "not found"
+        // null through to that same cached, folder-unscoped query would return (and cache, under a
+        // shared "none" key keyed only by the remaining filter fields — see
+        // AssetSearchCacheKeyGenerator) the entire catalog's assets, real personal libraries
+        // included, for what should be an empty "this folder has nothing yet" result. Short-circuit
+        // here instead of ever reaching that ambiguous null-folderId path.
+        if (folderId == null) {
+            return ResponseEntity.ok(new PaginatedData<>(List.of(), page, 0, 0));
+        }
         Set<String> tagSet = parseTags(tags);
         AssetFilter filter = new AssetFilter(folderId, search, dateFrom, dateTo, minRating, sort, page, 50, false, tagSet);
         PaginatedResult<Asset> result = getAssetsUseCase.execute(filter);
@@ -159,6 +176,11 @@ public class AssetController {
             @RequestParam(required = false) Integer minRating,
             @RequestParam(required = false) String tags) {
         Long folderId = getFolderIdByPathUseCase.execute(folderPath);
+        // See the identical short-circuit in getAssets() above for why a null folderId here must
+        // not be passed through to the shared, folder-unscoped cached query.
+        if (folderId == null) {
+            return ResponseEntity.ok(new PaginatedData<>(List.of(), page, 0, 0));
+        }
         Set<String> tagSet = parseTags(tags);
         AssetFilter filter = new AssetFilter(folderId, search, dateFrom, dateTo, minRating, null, page, 0, false, tagSet);
         PaginatedResult<com.jpablodrexler.photomanager.domain.model.TimelineGroup> result = getAssetsTimelineUseCase.execute(filter);
@@ -375,7 +397,46 @@ public class AssetController {
             sseConnectionCount.decrementAndGet();
         });
         kafkaProgressRegistry.registerEmitter(assetId, emitter);
+
+        // Closes a real race: for small assets the three kafka-async-upload stage processors can
+        // finish and broadcast job.upload.progress's terminal done/failed message before this SSE
+        // connection is even established (upload POST response -> browser opens EventSource ->
+        // network round-trip -> this registration), since KafkaProgressListener.onUploadProgress
+        // silently drops that message when no emitter is registered yet. Without this check, a
+        // subscriber that loses that race waits forever on an event that already fired, even though
+        // the asset itself finished processing correctly (confirmed as the cause of a stuck upload
+        // in the release-e2e-suite: 1 of 6 tiny fixture images never left "Processing…" in the UI).
+        // Re-checking the durable DB status right after registering closes the window.
+        sendTerminalStatusIfAlreadyFinished(emitter, assetId);
+
         return emitter;
+    }
+
+    private void sendTerminalStatusIfAlreadyFinished(SseEmitter emitter, Long assetId) {
+        ProcessingStatus status = getAssetProcessingStatusUseCase.execute(assetId);
+        if (status != ProcessingStatus.COMPLETED && status != ProcessingStatus.FAILED) {
+            return;
+        }
+        try {
+            if (status == ProcessingStatus.COMPLETED) {
+                emitter.send(SseEmitter.event().name("done").data(UploadProgressMessage.done(assetId)));
+            } else {
+                emitter.send(SseEmitter.event().name("failed").data(UploadProgressMessage.failed(assetId, null)));
+            }
+        } catch (IOException e) {
+            log.warn("Failed to send immediate terminal upload status for assetId={}: {}", assetId, e.getMessage());
+        } finally {
+            // A genuine job.upload.progress message may already be in flight from the Kafka
+            // listener thread (it flips the DB row to COMPLETED/FAILED before publishing) - completing
+            // an already-completed SseEmitter throws IllegalStateException, so tolerate that as a
+            // harmless double-completion rather than a real error.
+            try {
+                emitter.complete();
+            } catch (IllegalStateException e) {
+                log.debug("Emitter for assetId={} was already completed by the Kafka listener", assetId);
+            }
+            kafkaProgressRegistry.remove(assetId);
+        }
     }
 
     @Operation(summary = "Re-trigger hash/EXIF/thumbnail processing for an asset (e.g. after a partial failure)")

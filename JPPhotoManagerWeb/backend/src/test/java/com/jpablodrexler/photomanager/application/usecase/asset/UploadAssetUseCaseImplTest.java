@@ -7,6 +7,7 @@ import com.jpablodrexler.photomanager.domain.enums.ProcessingStatus;
 import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.domain.port.out.AssetRepository;
+import com.jpablodrexler.photomanager.domain.port.out.AssetSearchCachePort;
 import com.jpablodrexler.photomanager.domain.port.out.FolderRepository;
 import com.jpablodrexler.photomanager.domain.port.out.StoragePort;
 import org.junit.jupiter.api.AfterEach;
@@ -40,6 +41,7 @@ class UploadAssetUseCaseImplTest {
     @Mock StoragePort storagePort;
     @Mock AssetRepository assetRepository;
     @Mock KafkaTemplate<String, Object> kafkaTemplate;
+    @Mock AssetSearchCachePort assetSearchCachePort;
     @InjectMocks UploadAssetUseCaseImpl sut;
 
     @BeforeEach
@@ -165,5 +167,29 @@ class UploadAssetUseCaseImplTest {
         sut.execute("/photos", "img.jpg", "image/jpeg", new byte[]{1, 2, 3});
 
         verify(kafkaTemplate, never()).send(any(), any(), any());
+        verify(assetSearchCachePort, never()).evictFolder(any());
+    }
+
+    @Test
+    void execute_afterCommit_evictsDestinationFolderAssetsCache() throws IOException {
+        // Without this, a folder whose (possibly empty) asset list was ever cached before this
+        // upload would keep serving that stale result and never show the newly uploaded file
+        // until an unrelated Move, Delete, or catalog run happened to touch the same folder -
+        // confirmed as a real bug via release-e2e-suite (see AssetSearchCachePort).
+        Folder folder = Folder.builder().folderId(1L).path("/photos").build();
+        when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
+        when(storagePort.isVideoFile("img.jpg")).thenReturn(false);
+        when(assetRepository.save(any(Asset.class))).thenAnswer(inv -> {
+            Asset a = inv.getArgument(0);
+            a.setAssetId(10L);
+            return a;
+        });
+
+        sut.execute("/photos", "img.jpg", "image/jpeg", new byte[]{1, 2, 3});
+        verify(assetSearchCachePort, never()).evictFolder(any());
+
+        triggerAfterCommit();
+
+        verify(assetSearchCachePort).evictFolder(1L);
     }
 }
