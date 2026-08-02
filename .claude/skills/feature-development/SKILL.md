@@ -17,7 +17,7 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.4"
+  version: "1.5"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -35,7 +35,7 @@ Five phases executed by six dedicated subagents (3a and 3b run in parallel):
 
 | Phase                  | Subagent   | Skills / actions                                                                                                                                  |
 | ---------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 — Select & Propose   | Subagent 1 | `features-next` (confirm only) → `gitflow` (start feature) to create `feature/<change-name>` branch from `develop` → `openspec-propose` (if artifacts missing) |
+| 1 — Select & Propose   | Subagent 1 | `features-next` (confirm only) → `gitflow` (start feature to create `feature/<change-name>` from `develop`, or sync feature to catch up an existing one) → `openspec-propose` (if artifacts missing) |
 | 2 — Implement & Review | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `database-reviewer` + `security-reviewer` (conditional, findings fixed before done)          |
 | 3a — Backend tests     | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test` until passing                                                                                     |
 | 3b — Frontend tests    | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                                                    |
@@ -97,9 +97,21 @@ argument passed to this skill, if any):
 >    not apply once step 1 has already confirmed we're on the target branch.
 > 3. Run: `git rev-parse --verify --quiet feature/<change-name>`
 >    - If it prints a commit hash, the branch already exists locally but
->      isn't currently checked out: run `git checkout feature/<change-name>`
->      and continue on that branch — do not invoke `gitflow` for this case,
->      it only creates new branches.
+>      isn't currently checked out — this is a resume of a change that's
+>      been sitting idle, possibly while other work (including a release)
+>      merged into `develop` in the meantime: run
+>      `git checkout feature/<change-name>`, then use the Skill tool to
+>      invoke `gitflow` with the action "sync feature `<change-name>`" to
+>      bring it up to date with `develop` before continuing. `develop` is
+>      the *only* branch this may ever be synced from — never `main`, even
+>      though right after a release merges into both, they're momentarily
+>      identical and it's tempting to treat either as equivalent; see
+>      `gitflow`'s guardrails for why that's still wrong. If `gitflow`
+>      reports a merge conflict it can't resolve automatically, end your
+>      response with `PROPOSE_BLOCKED — feature branch sync conflict with
+>      develop, needs manual resolution` and stop. Otherwise, if it reports
+>      any other blocker, end your response with `PROPOSE_BLOCKED — <the
+>      gitflow blocker>` and stop.
 >    - If it fails (branch doesn't exist yet): use the Skill tool to invoke
 >      `gitflow` with the action "start feature `<change-name>`". It checks
 >      out `develop`, pulls the latest, and creates `feature/<change-name>`
@@ -880,23 +892,36 @@ them back through Phase 2's code review.
   findings itself and updates the resulting report's checkboxes directly
   (see Step 4 above).
 - **Work always happens on a `feature/<change-name>` branch cut from
-  `develop`.** Phase 1's Step 1.5 is the only place a branch is created or
-  switched — it invokes the `gitflow` skill (start feature) to create
-  `feature/<change-name>` from `develop`, or resumes it directly if it
-  already exists from a prior run, before any file in the repository is
-  created or modified, including the SDD artifacts written by
-  `openspec-propose`. Phases 2–5 must stay on that branch; none of them may
-  run `git checkout`, `git switch`, invoke `gitflow`, or create another
-  branch. If a subagent finds itself on a different branch, that is
-  a bug in the workflow — surface it to the user rather than silently
-  switching.
+  `develop`.** Phase 1's Step 1.5 is the only place a branch is created,
+  switched, or synced — it invokes the `gitflow` skill (start feature) to
+  create `feature/<change-name>` from `develop`, or, if it already exists
+  from a prior run, resumes it (checking it out and, via `gitflow`'s sync
+  feature action, bringing it up to date with `develop`), before any file
+  in the repository is created or modified, including the SDD artifacts
+  written by `openspec-propose`. Phases 2–5 must stay on that branch; none
+  of them may run `git checkout`, `git switch`, `git merge`, invoke
+  `gitflow`, or create another branch. If a subagent finds itself on a
+  different branch, that is a bug in the workflow — surface it to the user
+  rather than silently switching.
+- **The feature branch is never synced from `main`, only `develop`.**
+  Step 1.5's resume path uses `gitflow`'s sync feature action exclusively,
+  which merges `origin/develop` and nothing else — matching `gitflow`'s own
+  guardrail that `main` is never a valid source for a feature branch's
+  content, even right after a release/hotfix has merged into both `main`
+  and `develop` and the two look momentarily interchangeable. No phase in
+  this workflow may merge, rebase, or pull `main` into the feature branch
+  under any circumstance.
 - **No git commits at any point.** Neither this skill nor any subagent it
   spawns may run `git commit`, `git push`, or any other git write command
   at any point in the workflow. This applies to all phases, including after
   tests pass and during archiving. If a subagent or invoked skill attempts
-  to commit, block it and continue without committing. Branch creation
-  (`git checkout`, `git checkout -b`) in Phase 1's Step 1.5 is the sole
-  exception to this rule.
+  to commit, block it and continue without committing. Branch creation and
+  branch sync (`git checkout`, `git checkout -b`, `git merge origin/develop`
+  — all via `gitflow`'s start-feature/sync-feature actions, and only in
+  Phase 1's Step 1.5) are the sole exceptions to this rule. A sync-feature
+  merge commit brings in already-reviewed upstream work from `develop`; it
+  is not uncommitted implementation of this change, so it doesn't conflict
+  with the reason this guardrail exists.
 - **No destructive Docker commands.** Do not run `docker compose down`,
   `docker rm`, `docker rmi`, or any command that stops or removes containers
   or images beyond what is strictly required to restart the application
