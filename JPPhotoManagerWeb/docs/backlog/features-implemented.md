@@ -547,7 +547,7 @@ The cache key `asset:thumbnail:{assetId}` is stable because thumbnails are conte
 
 **Feature 79 → Feature 46** (prerequisite already implemented)
 
-`redis-refresh-tokens` (#79) is now implemented — every refresh token is mirrored into Redis via a hash at `refresh_token:{token}` with `userId`, `tokenId`, and `issuedAt` fields (dual-write phase; PostgreSQL remains the read source of truth). When implementing `session-management` (#46), store `userAgent` as an additional field on that same Redis hash (`HSET refresh_token:{token} userAgent {ua}`) instead of adding a `user_agent` column to the PostgreSQL `refresh_tokens` table — this makes the V22 migration unnecessary. (Note: this block is duplicated from `features-planned.md`, where it remains because #79 is referenced in the heading. The actual `session-management` implementation did **not** follow this recommendation — see the next note.)
+`redis-refresh-tokens` (#79) is now implemented — every refresh token is mirrored into Redis via a hash at `refresh_token:{token}` with `userId`, `tokenId`, and `issuedAt` fields (dual-write phase; PostgreSQL remains the read source of truth). When implementing `session-management` (#46), store `userAgent` as an additional field on that same Redis hash (`HSET refresh_token:{token} userAgent {ua}`) instead of adding a `user_agent` column to the PostgreSQL `refresh_tokens` table — this makes the V22 migration unnecessary. The actual `session-management` implementation did **not** follow this recommendation — see the next note.
 
 **Feature 46 — actual migration diverged from the V22/Redis plan**
 

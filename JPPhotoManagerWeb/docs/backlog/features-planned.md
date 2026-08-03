@@ -72,10 +72,6 @@ This document records all **pending** features to the JPPhotoManagerWeb applicat
 
 `keyboard-shortcuts` extends the viewer shortcuts already present in `slideshow-mode`. Implementing 8 first avoids re-doing viewer key handling.
 
-**Feature 79 → Feature 46** (prerequisite already implemented)
-
-`redis-refresh-tokens` (#79) is now implemented — every refresh token is mirrored into Redis via a hash at `refresh_token:{token}` with `userId`, `tokenId`, and `issuedAt` fields (dual-write phase; PostgreSQL remains the read source of truth). When implementing `session-management` (#46), store `userAgent` as an additional field on that same Redis hash (`HSET refresh_token:{token} userAgent {ua}`) instead of adding a `user_agent` column to the PostgreSQL `refresh_tokens` table — this makes the V22 migration unnecessary.
-
 ### Recommended implementation order
 
 For the pending dependent clusters:
