@@ -134,11 +134,12 @@ describe('DuplicatesComponent', () => {
   it('should set a tooltip with the full path on every asset item', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
+      const allAssets = mockDuplicateGroups.flat();
       cy.get('.asset-item').each(($item, index) => {
-        const allAssets = mockDuplicateGroups.flat();
         const asset = allAssets[index];
-        cy.wrap($item)
-          .should('have.attr', 'ng-reflect-message', `${asset.folderPath}/${asset.fileName}`);
+        cy.wrap($item).trigger('mouseenter', { bubbles: true });
+        cy.get('.mat-mdc-tooltip').should('contain', `${asset.folderPath}/${asset.fileName}`);
+        cy.wrap($item).trigger('mouseleave', { bubbles: true });
       });
     });
   });

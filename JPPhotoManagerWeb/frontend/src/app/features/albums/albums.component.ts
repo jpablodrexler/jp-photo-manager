@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -35,6 +35,7 @@ import { AlbumSummary, AlbumFilterJson } from '../../core/models/album.model';
     MatNativeDateModule
   ],
   templateUrl: './albums.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './albums.component.scss'
 })
 export class AlbumsComponent implements OnInit {

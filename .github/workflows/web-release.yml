@@ -39,7 +39,7 @@ jobs:
           path: JPPhotoManagerWeb/backend/target/*.jar
 
   frontend:
-    name: Frontend (Angular 19)
+    name: Frontend (Angular 22)
     runs-on: ubuntu-latest
 
     steps:
@@ -49,17 +49,30 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+          cache-dependency-path: JPPhotoManagerWeb/frontend/package-lock.json
+
+      # See web-test.yml for why this is cached separately from npm's own cache.
+      - name: Cache Cypress binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('JPPhotoManagerWeb/frontend/package-lock.json') }}
 
       - name: Install dependencies
         run: npm install
         working-directory: JPPhotoManagerWeb/frontend
 
-      - name: Build
-        run: npm run build:prod
+      - name: Run unit/component tests (Cypress)
+        run: npm run test
         working-directory: JPPhotoManagerWeb/frontend
 
-      - name: Test
-        run: npm test -- --watch=false --browsers=ChromeHeadless
+      - name: Run mocked E2E smoke tests
+        run: npm run test:e2e:mocked
+        working-directory: JPPhotoManagerWeb/frontend
+
+      - name: Build
+        run: npm run build:prod
         working-directory: JPPhotoManagerWeb/frontend
 
       - name: Archive dist

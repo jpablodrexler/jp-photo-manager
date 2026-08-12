@@ -1,6 +1,6 @@
 import { provideRouter } from '@angular/router';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { of, Observable } from 'rxjs';
 import { signal } from '@angular/core';
@@ -50,7 +50,7 @@ function buildProviders(isLoggedIn: boolean, isDark: Observable<boolean>) {
     providers: [
       provideRouter([]),
       provideNoopAnimations(),
-      provideHttpClient(),
+      provideHttpClient(withXhr()),
       { provide: AuthService, useValue: authServiceStub },
       { provide: BreakpointObserver, useValue: bpObsStub },
       { provide: MediaPlayerService, useValue: mediaPlayerStub },
@@ -112,7 +112,7 @@ describe('AppComponent', () => {
       providers: [
         provideRouter([]),
         provideNoopAnimations(),
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         { provide: BreakpointObserver, useValue: bpObs },
         { provide: AuthService, useValue: authServiceStub },
         { provide: MediaPlayerService, useValue: mediaPlayerStub },
@@ -167,7 +167,7 @@ describe('AppComponent', () => {
       providers: [
         provideRouter([]),
         provideNoopAnimations(),
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         { provide: AuthService, useValue: authServiceStub },
         { provide: BreakpointObserver, useValue: { observe: cy.stub().returns(of({ matches: false, breakpoints: {} })) } },
         { provide: MediaPlayerService, useValue: mediaPlayerStub },
@@ -193,7 +193,7 @@ describe('AppComponent', () => {
       providers: [
         provideRouter([]),
         provideNoopAnimations(),
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         { provide: AuthService, useValue: { isLoggedIn: () => true, isAdmin: cy.stub().returns(false), logout: cy.stub() } },
         { provide: BreakpointObserver, useValue: { observe: cy.stub().returns(of({ matches: false, breakpoints: {} })) } },
         { provide: MediaPlayerService, useValue: mediaPlayerStub },

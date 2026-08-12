@@ -1,4 +1,4 @@
-import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -27,6 +27,7 @@ import { BatchRenameDialogData } from '../../../core/models/dialog.model';
     MatTableModule,
   ],
   templateUrl: './batch-rename-dialog.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './batch-rename-dialog.component.scss',
 })
 export class BatchRenameDialogComponent implements OnInit, OnDestroy {

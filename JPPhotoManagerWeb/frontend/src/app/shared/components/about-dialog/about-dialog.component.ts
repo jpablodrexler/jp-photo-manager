@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
   standalone: true,
   imports: [MatDialogModule, MatButtonModule, MatIconModule],
   templateUrl: './about-dialog.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './about-dialog.component.scss',
 })
 export class AboutDialogComponent {

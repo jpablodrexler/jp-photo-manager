@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient, withInterceptors, HttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, HttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { provideRouter, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -22,7 +22,7 @@ describe('authInterceptor', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(withInterceptors([authInterceptor])),
+        provideHttpClient(withXhr(), withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
         provideRouter([]),
         {

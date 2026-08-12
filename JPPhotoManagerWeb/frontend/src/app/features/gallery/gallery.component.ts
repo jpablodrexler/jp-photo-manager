@@ -6,6 +6,7 @@ import {
   OnDestroy,
   OnInit,
   ViewChild,
+  ChangeDetectionStrategy
 } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
 import { CommonModule } from "@angular/common";
@@ -84,6 +85,7 @@ type ViewType = "grid" | "timeline";
     SocialMediaCropComponent,
   ],
   templateUrl: "./gallery.component.html",
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: "./gallery.component.scss",
 })
 export class GalleryComponent implements OnInit, OnDestroy {

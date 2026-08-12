@@ -1,5 +1,5 @@
 import { AsyncPipe } from '@angular/common';
-import { Component, DoCheck, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, DoCheck, inject, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -45,6 +45,7 @@ import { CatalogProgressFooterComponent } from './shared/components/catalog-prog
     CatalogProgressFooterComponent,
   ],
   templateUrl: './app.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './app.component.scss'
 })
 export class AppComponent implements OnInit, OnDestroy, DoCheck {

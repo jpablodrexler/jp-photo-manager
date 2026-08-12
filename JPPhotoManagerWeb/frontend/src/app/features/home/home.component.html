@@ -16,7 +16,7 @@
       Run Sync
     </button>
     <button mat-raised-button routerLink="/duplicates"
-            [matBadge]="stats?.duplicateCount"
+            [matBadge]="$safeNavigationMigration(stats?.duplicateCount)"
             [matBadgeHidden]="!stats || stats.duplicateCount === 0"
             matBadgeColor="warn">
       <mat-icon>content_copy</mat-icon>

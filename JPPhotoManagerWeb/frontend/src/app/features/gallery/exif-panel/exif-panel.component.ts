@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostBinding, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, HostBinding, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -34,6 +34,7 @@ import { ExifMetadata } from '../../../core/models/exif-metadata.model';
     MatInputModule,
   ],
   templateUrl: './exif-panel.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './exif-panel.component.scss'
 })
 export class ExifPanelComponent implements OnChanges, OnInit, OnDestroy {

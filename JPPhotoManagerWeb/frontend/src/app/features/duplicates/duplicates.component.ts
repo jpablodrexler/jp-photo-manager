@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -26,6 +26,7 @@ import { FileSizePipe } from '../../shared/pipes/file-size.pipe';
     FileSizePipe
   ],
   templateUrl: './duplicates.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './duplicates.component.scss'
 })
 export class DuplicatesComponent implements OnInit {

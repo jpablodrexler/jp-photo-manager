@@ -7,6 +7,7 @@ import {
   OnDestroy,
   Output,
   ViewChild,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -31,6 +32,7 @@ type CornerName = 'TL' | 'TR' | 'BL' | 'BR';
   standalone: true,
   imports: [FormsModule, MatButtonModule, MatSelectModule],
   templateUrl: './social-media-crop.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './social-media-crop.component.scss',
 })
 export class SocialMediaCropComponent implements AfterViewInit, OnDestroy {

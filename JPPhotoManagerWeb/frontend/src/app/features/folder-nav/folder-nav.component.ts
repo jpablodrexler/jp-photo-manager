@@ -1,4 +1,4 @@
-import { Component, OnInit, Output, EventEmitter } from "@angular/core";
+import { Component, OnInit, Output, EventEmitter, ChangeDetectionStrategy } from "@angular/core";
 import {
   MatTreeModule,
   MatTreeFlatDataSource,
@@ -21,6 +21,7 @@ import { Folder, FlatFolder } from "../../core/models/folder.model";
     MatProgressSpinnerModule,
   ],
   templateUrl: "./folder-nav.component.html",
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: "./folder-nav.component.scss",
 })
 export class FolderNavComponent implements OnInit {

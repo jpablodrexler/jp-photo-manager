@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -55,6 +55,7 @@ import { AddToAlbumDialogData, AddToAlbumDialogResult } from '../../../core/mode
       </button>
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.Eager,
   styles: [`.album-radio-group { display: flex; flex-direction: column; gap: 8px; }`]
 })
 export class AddToAlbumDialogComponent {

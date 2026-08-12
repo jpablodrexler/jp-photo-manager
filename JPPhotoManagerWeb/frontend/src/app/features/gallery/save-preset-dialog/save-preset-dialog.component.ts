@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -9,6 +9,7 @@ import { MatInputModule } from '@angular/material/input';
   selector: 'app-save-preset-dialog',
   standalone: true,
   imports: [FormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <h2 mat-dialog-title>Save Filter Preset</h2>
     <mat-dialog-content>

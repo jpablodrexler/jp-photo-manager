@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { FolderService } from './folder.service';
 import { Folder } from '../models/folder.model';
@@ -17,7 +17,7 @@ describe('FolderService', () => {
     TestBed.configureTestingModule({
       providers: [
         FolderService,
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     });

@@ -1,4 +1,4 @@
-import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -28,6 +28,7 @@ import { BulkTagDialogData } from '../../../core/models/dialog.model';
     MatDialogModule,
     MatProgressSpinnerModule,
   ],
+  changeDetection: ChangeDetectionStrategy.Eager,
   templateUrl: './bulk-tag-dialog.component.html',
 })
 export class BulkTagDialogComponent implements OnInit, OnDestroy {

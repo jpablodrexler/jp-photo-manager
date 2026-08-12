@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -30,6 +30,7 @@ type ProcessStep = 'configure' | 'running' | 'results';
     MatListModule
   ],
   templateUrl: './sync.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './sync.component.scss'
 })
 export class SyncComponent implements OnInit, OnDestroy {

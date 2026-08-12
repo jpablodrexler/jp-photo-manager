@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
@@ -20,6 +20,7 @@ import { PasswordStrengthComponent } from '../../../shared/components/password-s
             MatFormFieldModule, MatInputModule, MatIconModule, MatCardModule,
             PasswordStrengthComponent],
   templateUrl: './user-admin.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './user-admin.component.scss'
 })
 export class UserAdminComponent implements OnInit {

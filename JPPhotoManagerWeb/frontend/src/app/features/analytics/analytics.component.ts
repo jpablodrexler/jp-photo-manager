@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,6 +18,7 @@ import { AnalyticsData, ChartEntry } from '../../core/models/analytics.model';
     BarChartModule,
   ],
   templateUrl: './analytics.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './analytics.component.scss',
 })
 export class AnalyticsComponent implements OnInit {

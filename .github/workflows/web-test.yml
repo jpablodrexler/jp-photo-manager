@@ -32,7 +32,7 @@ jobs:
         working-directory: JPPhotoManagerWeb/backend
 
   frontend:
-    name: Frontend (Angular 19)
+    name: Frontend (Angular 22)
     runs-on: ubuntu-latest
 
     steps:
@@ -42,9 +42,29 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+          cache-dependency-path: JPPhotoManagerWeb/frontend/package-lock.json
+
+      # Cypress's own binary (Electron) lives outside node_modules and isn't
+      # covered by setup-node's npm cache - cache it separately so CI doesn't
+      # re-download ~150MB on every run. Keyed on the pinned cypress version
+      # in package-lock.json so a version bump naturally invalidates it.
+      - name: Cache Cypress binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('JPPhotoManagerWeb/frontend/package-lock.json') }}
 
       - name: Install dependencies
         run: npm install
+        working-directory: JPPhotoManagerWeb/frontend
+
+      - name: Run unit/component tests (Cypress)
+        run: npm run test
+        working-directory: JPPhotoManagerWeb/frontend
+
+      - name: Run mocked E2E smoke tests
+        run: npm run test:e2e:mocked
         working-directory: JPPhotoManagerWeb/frontend
 
       - name: Build

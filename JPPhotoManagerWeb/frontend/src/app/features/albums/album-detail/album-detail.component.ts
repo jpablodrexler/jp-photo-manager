@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -23,6 +23,7 @@ import { EditAlbumFilterDialogComponent } from './edit-album-filter-dialog.compo
     ThumbnailComponent
   ],
   templateUrl: './album-detail.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './album-detail.component.scss'
 })
 export class AlbumDetailComponent implements OnInit {

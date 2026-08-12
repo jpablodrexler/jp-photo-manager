@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,6 +15,7 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
   standalone: true,
   imports: [CommonModule, MatTableModule, MatButtonModule, MatIconModule, MatCardModule],
   templateUrl: './sessions.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './sessions.component.scss'
 })
 export class SessionsComponent implements OnInit {

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,6 +18,7 @@ import { PaginatedData } from '../../core/models/paginated-data.model';
     ThumbnailComponent
   ],
   templateUrl: './recycle-bin.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './recycle-bin.component.scss'
 })
 export class RecycleBinComponent implements OnInit {

@@ -7,6 +7,7 @@ import {
   OnDestroy,
   Output,
   ViewChild,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,6 +24,7 @@ const ACCEPTED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff',
   standalone: true,
   imports: [MatButtonModule, MatIconModule, MatProgressBarModule],
   templateUrl: './drop-zone.component.html',
+  changeDetection: ChangeDetectionStrategy.Eager,
   styleUrl: './drop-zone.component.scss',
 })
 export class DropZoneComponent implements OnDestroy {
