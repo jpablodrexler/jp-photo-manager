@@ -56,6 +56,7 @@
     "istanbul-lib-instrument": "^6.0.3",
     "start-server-and-test": "^3.0.12",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.67.0"
+    "typescript-eslint": "^8.67.0",
+    "zone.js": "^0.15.1"
   }
 }
