@@ -74,7 +74,7 @@ once.
 | Frontend core             | `frontend-core`           | `frontend/src/app/core/**`                                                                                                                | §10.2, §11, §12                                                  |
 | Frontend features         | `frontend-features`       | `frontend/src/app/features/**`                                                                                                            | §10.1, §10.3, §11, §12                                           |
 | Frontend shared           | `frontend-shared`         | `frontend/src/app/shared/**`                                                                                                              | §1.3, §10.1, §11, §12                                            |
-| Cross-cutting             | `cross-cutting`           | Both sub-projects; no single directory                                                                                                    | §9, §13, §14, delegate-only port/adapter or service pairs (§1.2/§10.2), dependency-direction violations, systemic naming patterns |
+| Cross-cutting             | `cross-cutting`           | Both sub-projects; no single directory                                                                                                    | §9, §13, §14, §18, delegate-only port/adapter or service pairs (§1.2/§10.2), dependency-direction violations, systemic naming patterns |
 
 If only the backend (or only the frontend) is in scope, skip the layers that
 don't apply — e.g. a "review the whole backend" request produces 4 reports
@@ -638,6 +638,7 @@ These have caused real bugs in this codebase and deserve extra attention:
 | Hand-written mapper                        | Entity ↔ domain model or HTTP DTO ↔ domain model conversion done manually instead of with a MapStruct `@Mapper(componentModel = "spring")`      |
 | DTO placed directly in `web/dto/`          | New HTTP DTO added straight to `infrastructure/web/dto/` instead of its `request/`, `response/`, or `shared/` subpackage, or named without the `RequestDto`/`ResponseDto` suffix |
 | Delegate-only port/adapter or service      | A port/adapter (backend) or service (frontend) with no logic of its own, just forwarding to another one for the same capability. The keep-or-delete test is whether it contributes its own logic — **not** whether it currently has callers; existing callers just mean they need repointing to the real implementation, not that the wrapper earns a reprieve. Backend incident: `HashCalculatorPort`/`AssetHashCalculatorAdapter` duplicated `StoragePort.computeHash`'s SHA-256 logic; the first fix made the adapter delegate to `StoragePort` instead of deleting it and migrating callers — the pair was pure pass-through and should have been deleted outright, with any real callers repointed to `StoragePort` directly. Frontend incident: `core/services/audio-player.service.ts` was a bare re-export (`export { MediaPlayerService as AudioPlayerService } from './media-player.service'`) with zero importers anywhere in the codebase — deleted outright |
+| Method/function past the complexity threshold | `mvn pmd:check` (backend) or `npm run complexity` (frontend) reports something over 15 — see §18 |
 
 ---
 
@@ -756,7 +757,8 @@ For the selected scope, work through each unchecked finding one at a time:
    of the surrounding code before changing anything — the report is a
    pointer, not a substitute for reading the code.
 2. Apply the fix. The report tells you what's wrong; the checklist sections
-   above (1–15) tell you what "right" looks like for that category of issue.
+   above (1–15, 18) tell you what "right" looks like for that category of
+   issue.
 3. If a fix hinges on a real design decision rather than just applying a
    known pattern — e.g. a live-data/migration-compatibility risk, a public
    API/contract change, or several equally valid approaches — stop and ask
@@ -806,3 +808,73 @@ checked off.
 Do not run `git add`, `git commit`, or any other state-changing git command as
 part of this workflow, not even implicitly. Leave all changes uncommitted so
 the user can review the diff and commit it themselves.
+
+---
+
+## 18. Cyclomatic Complexity (both sub-projects)
+
+Every reviewed scope — backend, frontend, or both — gets a McCabe cyclomatic
+complexity pass, in addition to the manual checklists above. Complexity is
+measured per method/function (each starts at 1; +1 for each `if`, ternary,
+loop, `catch`/switch-`case`, and short-circuit operator — `&&`, `||`, `??`
+on the frontend; PMD's equivalent counting on the backend). **Max allowed
+complexity is 15 per method/function**, in both sub-projects.
+
+Don't count this by hand — each sub-project has its own checked-in analyzer.
+
+### 18.1 Frontend (TypeScript)
+
+Run from `frontend/`:
+
+```
+npm run complexity
+```
+
+(equivalent to `node scripts/cyclomatic-complexity.js src/app`, which walks
+every non-`.cy.ts` `.ts` file under a given directory via the TypeScript
+compiler API — see `frontend/scripts/cyclomatic-complexity.js`, same
+decision-point rules as ESLint's built-in `complexity` rule). It exits
+non-zero and lists every offending function (file, line, name, complexity)
+when anything exceeds the threshold. For a scoped review, either run it
+against the whole tree and filter the output to the changed files, or pass a
+narrower directory directly, e.g.
+`node scripts/cyclomatic-complexity.js src/app/features/gallery`.
+
+### 18.2 Backend (Java)
+
+Run from `backend/`:
+
+```
+mvn pmd:check
+```
+
+This invokes the `maven-pmd-plugin` (configured in `backend/pom.xml`,
+version 3.28.0, bundling PMD 7.17.0) against `backend/pmd-complexity-ruleset.xml`,
+which enables only PMD's built-in `CyclomaticComplexity` rule with
+`methodReportLevel` set to 16 (PMD reports a violation when complexity is
+**greater than or equal to** the configured level, so 16 is what flags
+"over 15") and `classReportLevel` effectively disabled — this check is
+scoped to individual methods, not a class's combined total. The plugin is
+declared with no `<executions>` binding, so it never runs as part of the
+normal build/test/CI lifecycle (`mvn verify`, `mvn package`, ...) — it's
+opt-in, invoked only when this check is run, the same way the frontend's
+`npm run complexity` isn't part of `npm run build`/`test`. `mvn pmd:check`
+fails the command (non-zero exit) and writes `target/pmd.xml` when anything
+exceeds the threshold — read that file, or the console output, for the
+offending class/method/line.
+
+### 18.3 Flagging
+
+🟡 Flag any method/function reported over complexity 15 — this is a
+maintainability problem (deep, hard-to-test branching), not a correctness
+bug, so it's a WARNING rather than CRITICAL, but it should be fixed: extract
+guard clauses, split the method/function by responsibility, or replace a
+long `if`/`else if` chain with a lookup table/strategy map (backend:
+consider a `switch` on an enum, a `Map<Key, Handler>`, or splitting the
+use-case into smaller collaborators respecting §1.1/§1.2's port boundaries).
+Note the reported complexity number and location in the finding so a fix
+can be verified by re-running the relevant command.
+
+🟢 A method/function in the 10–15 range is worth a passing mention if an
+obvious, low-effort split exists, but isn't required to be flagged — the
+threshold that matters is 15.

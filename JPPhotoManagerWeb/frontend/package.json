@@ -15,7 +15,8 @@
     "cy:e2e:mocked:run": "cypress run --e2e --config-file cypress.mocked.config.ts",
     "cypress:open": "cypress open --component",
     "cypress:e2e": "cypress open --e2e",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "complexity": "node scripts/cyclomatic-complexity.js src/app"
   },
   "private": true,
   "dependencies": {

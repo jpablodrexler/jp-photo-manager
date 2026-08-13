@@ -307,6 +307,22 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+            <plugin>
+                <!-- Not bound to any lifecycle phase: invoked on demand via `mvn pmd:check`,
+                     same as the frontend's `npm run complexity` — see the code-reviewer skill §Cyclomatic Complexity. -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>3.28.0</version>
+                <configuration>
+                    <targetJdk>${java.version}</targetJdk>
+                    <rulesets>
+                        <ruleset>pmd-complexity-ruleset.xml</ruleset>
+                    </rulesets>
+                    <excludeRoots>
+                        <excludeRoot>target/generated-sources</excludeRoot>
+                    </excludeRoots>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
