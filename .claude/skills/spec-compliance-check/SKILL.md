@@ -196,8 +196,8 @@ convention as the project's other reviewer skills).
 
 `docs/reports/spec-compliance/SPEC_COMPLIANCE_{change-name}_{YYYY-MM-DD}.md` (repo
 root, gitignored — a local working artifact, not committed history, same
-convention as `docs/code-review/`, `docs/security-review/`,
-`docs/database-review/`). If a file for that change+date already exists,
+convention as `docs/reports/code-review/`, `docs/reports/security-review/`,
+`docs/reports/database-review/`). If a file for that change+date already exists,
 append `-2`, `-3`, etc. rather than overwriting.
 
 ---

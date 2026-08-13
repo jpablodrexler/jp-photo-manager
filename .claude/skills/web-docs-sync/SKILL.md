@@ -215,3 +215,12 @@ existing `HTTP p95/p99 Latency` panels' shape).
 - Manifest-parity and dashboard-panel fixes (§2, §3) are config edits, not
   prose — call them out distinctly in the chat summary rather than folding
   them silently into the same list as a typo fix in `docs/features.md`.
+- This skill's scope is `CLAUDE.md`, `README.md`, and the files directly
+  under `docs/` (§1's table), plus the manifest-parity and metrics checks
+  (§2, §3). It does not touch `docs/decisions/*.md` (owned by
+  `decision-record` — an append-only decision history, not current-state
+  reference material this skill keeps synced against the code) or any of
+  the gitignored `docs/reports/{code-review,security-review,database-review,spec-compliance,incident-response}/`
+  report directories (owned by their respective skills) — those are
+  tracked/managed elsewhere, not part of this skill's "keep the docs
+  honest" job.
