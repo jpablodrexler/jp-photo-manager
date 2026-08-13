@@ -1,16 +1,16 @@
 <div class="analytics-container">
-  @if (loading) {
+  @if (loading()) {
     <div class="analytics-spinner">
       <mat-spinner />
     </div>
-  } @else if (error) {
+  } @else if (error()) {
     <mat-card class="analytics-error">
       <mat-card-content>
         <mat-icon color="warn">error</mat-icon>
         <p>Failed to load analytics data. Please try again later.</p>
       </mat-card-content>
     </mat-card>
-  } @else if (data) {
+  } @else if (data()) {
     <div class="analytics-grid">
       <mat-card>
         <mat-card-header>
@@ -18,7 +18,7 @@
         </mat-card-header>
         <mat-card-content>
           <ngx-charts-tree-map
-            [results]="folderStorageSeries"
+            [results]="folderStorageSeries()"
           />
         </mat-card-content>
       </mat-card>
@@ -29,7 +29,7 @@
         </mat-card-header>
         <mat-card-content>
           <ngx-charts-pie-chart
-            [results]="formatSeries"
+            [results]="formatSeries()"
             [legend]="true"
           />
         </mat-card-content>
@@ -41,7 +41,7 @@
         </mat-card-header>
         <mat-card-content>
           <ngx-charts-bar-vertical
-            [results]="photosPerMonthSeries"
+            [results]="photosPerMonthSeries()"
             [xAxisLabel]="'Month'"
             [yAxisLabel]="'Count'"
             [showXAxisLabel]="true"
@@ -58,7 +58,7 @@
         </mat-card-header>
         <mat-card-content>
           <ngx-charts-bar-vertical
-            [results]="ratingSeriesBarData"
+            [results]="ratingSeriesBarData()"
             [xAxisLabel]="'Stars'"
             [yAxisLabel]="'Count'"
             [showXAxisLabel]="true"

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -30,16 +30,16 @@ type ProcessStep = 'configure' | 'running' | 'results';
     MatListModule
   ],
   templateUrl: './sync.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './sync.component.scss'
 })
 export class SyncComponent implements OnInit, OnDestroy {
 
-  step: ProcessStep = 'configure';
-  definitions: SyncAssetsDirectoriesDefinition[] = [];
-  statusMessages: string[] = [];
-  results: SyncAssetsResult[] = [];
-  running = false;
+  readonly step = signal<ProcessStep>('configure');
+  readonly definitions = signal<SyncAssetsDirectoriesDefinition[]>([]);
+  readonly statusMessages = signal<string[]>([]);
+  readonly results = signal<SyncAssetsResult[]>([]);
+  readonly running = signal(false);
 
   private eventSource?: EventSource;
 
@@ -53,7 +53,7 @@ export class SyncComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.syncService.getConfiguration().subscribe({
-      next: defs => this.definitions = defs,
+      next: defs => this.definitions.set(defs),
       error: () => this.snackBar.open('Failed to load configuration', 'Dismiss', { duration: 3000 })
     });
   }
@@ -63,70 +63,73 @@ export class SyncComponent implements OnInit, OnDestroy {
   }
 
   addDefinition(): void {
-    this.definitions = [...this.definitions, {
+    this.definitions.update(defs => [...defs, {
       sourceDirectory: '',
       destinationDirectory: '',
       includeSubFolders: false,
       deleteAssetsNotInSource: false,
-      order: this.definitions.length
-    }];
+      order: defs.length
+    }]);
   }
 
   removeDefinition(index: number): void {
-    this.definitions = this.definitions.filter((_, i) => i !== index);
+    this.definitions.update(defs => defs.filter((_, i) => i !== index));
   }
 
   moveUp(index: number): void {
     if (index > 0) {
-      const updated = [...this.definitions];
-      [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
-      this.definitions = updated;
+      this.definitions.update(defs => {
+        const updated = [...defs];
+        [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+        return updated;
+      });
     }
   }
 
   moveDown(index: number): void {
-    if (index < this.definitions.length - 1) {
-      const updated = [...this.definitions];
+    this.definitions.update(defs => {
+      if (index >= defs.length - 1) return defs;
+      const updated = [...defs];
       [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
-      this.definitions = updated;
-    }
+      return updated;
+    });
   }
 
   saveAndRun(): void {
-    this.syncService.setConfiguration(this.definitions).subscribe({
+    this.syncService.setConfiguration(this.definitions()).subscribe({
       next: () => this.runSync(),
       error: () => this.snackBar.open('Failed to save configuration', 'Dismiss', { duration: 3000 })
     });
   }
 
   private runSync(): void {
-    this.step = 'running';
-    this.running = true;
-    this.statusMessages = [];
-    this.results = [];
+    this.step.set('running');
+    this.running.set(true);
+    this.statusMessages.set([]);
+    this.results.set([]);
 
     const eventSource = this.syncService.run();
     this.eventSource = eventSource;
 
     eventSource.addEventListener('status', (event: MessageEvent) => {
-      this.statusMessages.push(event.data);
+      this.statusMessages.update(msgs => [...msgs, event.data]);
     });
 
     eventSource.addEventListener('results', (event: MessageEvent) => {
-      this.results = JSON.parse(event.data as string) as SyncAssetsResult[];
-      this.step = 'results';
-      this.running = false;
+      this.results.set(JSON.parse(event.data as string) as SyncAssetsResult[]);
+      this.step.set('results');
+      this.running.set(false);
       eventSource.close();
     });
 
     eventSource.addEventListener('error', () => {
-      this.running = false;
-      this.step = 'results';
+      this.running.set(false);
+      this.step.set('results');
       eventSource.close();
     });
   }
 
   backToConfigure(): void {
-    this.step = 'configure';
+    this.step.set('configure');
   }
 }

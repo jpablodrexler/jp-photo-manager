@@ -1,10 +1,10 @@
 <div class="sync-container p-16">
   <h2>Sync Assets</h2>
 
-  @if (step === 'configure') {
+  @if (step() === 'configure') {
     <mat-card>
       <mat-card-content>
-        <table mat-table [dataSource]="definitions" class="full-width">
+        <table mat-table [dataSource]="definitions()" class="full-width">
           <ng-container matColumnDef="sourceDirectory">
             <th mat-header-cell *matHeaderCellDef>Source Directory</th>
             <td mat-cell *matCellDef="let def">
@@ -41,7 +41,7 @@
             <th mat-header-cell *matHeaderCellDef>Actions</th>
             <td mat-cell *matCellDef="let def; let i = index">
               <button mat-icon-button (click)="moveUp(i)" [disabled]="i === 0"><mat-icon>arrow_upward</mat-icon></button>
-              <button mat-icon-button (click)="moveDown(i)" [disabled]="i === definitions.length - 1"><mat-icon>arrow_downward</mat-icon></button>
+              <button mat-icon-button (click)="moveDown(i)" [disabled]="i === definitions().length - 1"><mat-icon>arrow_downward</mat-icon></button>
               <button mat-icon-button color="warn" (click)="removeDefinition(i)"><mat-icon>delete</mat-icon></button>
             </td>
           </ng-container>
@@ -53,20 +53,20 @@
 
       <mat-card-actions>
         <button mat-button (click)="addDefinition()"><mat-icon>add</mat-icon> Add</button>
-        <button mat-raised-button color="primary" (click)="saveAndRun()" [disabled]="definitions.length === 0 || !authService.isAdmin()">
+        <button mat-raised-button color="primary" (click)="saveAndRun()" [disabled]="definitions().length === 0 || !authService.isAdmin()">
           <mat-icon>play_arrow</mat-icon> Save & Run
         </button>
       </mat-card-actions>
     </mat-card>
   }
 
-  @if (step === 'running') {
+  @if (step() === 'running') {
     <mat-card>
       <mat-card-content>
         <mat-progress-bar mode="indeterminate" />
         <p>Syncing in progress...</p>
         <mat-list>
-          @for (msg of statusMessages; track $index) {
+          @for (msg of statusMessages(); track $index) {
             <mat-list-item>{{ msg }}</mat-list-item>
           }
         </mat-list>
@@ -74,11 +74,11 @@
     </mat-card>
   }
 
-  @if (step === 'results') {
+  @if (step() === 'results') {
     <mat-card>
       <mat-card-header><mat-card-title>Results</mat-card-title></mat-card-header>
       <mat-card-content>
-        @for (result of results; track $index) {
+        @for (result of results(); track $index) {
           <div class="result-item" [class.result-error]="!result.success">
             <strong>{{ result.sourceDirectory }} → {{ result.destinationDirectory }}</strong>
             <span>Copied: {{ result.syncedCount }}, Deleted: {{ result.deletedCount }}</span>

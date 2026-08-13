@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -23,14 +23,14 @@ import { EditAlbumFilterDialogComponent } from './edit-album-filter-dialog.compo
     ThumbnailComponent
   ],
   templateUrl: './album-detail.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './album-detail.component.scss'
 })
 export class AlbumDetailComponent implements OnInit {
 
-  album: Album | null = null;
+  readonly album = signal<Album | null>(null);
   albumId = 0;
-  currentPage = 0;
+  readonly currentPage = signal(0);
 
   constructor(
     private route: ActivatedRoute,
@@ -46,9 +46,9 @@ export class AlbumDetailComponent implements OnInit {
   }
 
   loadPage(page: number): void {
-    this.currentPage = page;
+    this.currentPage.set(page);
     this.albumService.getAlbum(this.albumId, page).subscribe({
-      next: album => (this.album = album),
+      next: album => this.album.set(album),
       error: () => {
         this.snackBar.open('Failed to load album', 'Dismiss', { duration: 3000 });
         this.router.navigate(['/albums']);
@@ -57,11 +57,11 @@ export class AlbumDetailComponent implements OnInit {
   }
 
   isSmartAlbum(): boolean {
-    return this.album?.filterJson != null;
+    return this.album()?.filterJson != null;
   }
 
   filterSummary(): string {
-    const filter = this.album?.filterJson;
+    const filter = this.album()?.filterJson;
     if (!filter) return '';
     const parts: string[] = [];
     if (filter.search) parts.push(`Search: ${filter.search}`);
@@ -72,7 +72,7 @@ export class AlbumDetailComponent implements OnInit {
   }
 
   openEditFilterDialog(): void {
-    const album = this.album;
+    const album = this.album();
     if (!album) return;
 
     const ref = this.dialog.open(EditAlbumFilterDialogComponent, {
@@ -95,13 +95,13 @@ export class AlbumDetailComponent implements OnInit {
     this.albumService.removeAssets(this.albumId, [assetId]).subscribe({
       next: () => {
         this.snackBar.open('Removed from album', undefined, { duration: 2000 });
-        this.loadPage(this.currentPage);
+        this.loadPage(this.currentPage());
       },
       error: () => this.snackBar.open('Failed to remove asset', 'Dismiss', { duration: 3000 })
     });
   }
 
   get totalPages(): number {
-    return this.album?.assets.totalPages ?? 0;
+    return this.album()?.assets.totalPages ?? 0;
   }
 }

@@ -58,21 +58,21 @@ describe('DuplicatesComponent', () => {
   it('should display the correct number of duplicate groups', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
-      expect(fixture.componentInstance.groups).to.have.length(2);
+      expect(fixture.componentInstance.groups()).to.have.length(2);
     });
   });
 
   it('should calculate totalDuplicates correctly', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
-      expect(fixture.componentInstance.totalDuplicates).to.equal(3);
+      expect(fixture.componentInstance.totalDuplicates()).to.equal(3);
     });
   });
 
   it('should default keepIndex to 0 for each group', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
-      fixture.componentInstance.groups.forEach(group => {
+      fixture.componentInstance.groups().forEach(group => {
         expect(group.keepIndex).to.equal(0);
       });
     });
@@ -82,7 +82,7 @@ describe('DuplicatesComponent', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
       const component = fixture.componentInstance;
-      const group = component.groups[0];
+      const group = component.groups()[0];
       component.markAsKeep(group, 1);
       expect(group.keepIndex).to.equal(1);
     });
@@ -94,7 +94,7 @@ describe('DuplicatesComponent', () => {
     mountComponent({ deleteAssets }).then(({ fixture }) => {
       fixture.detectChanges();
       const component = fixture.componentInstance;
-      const group = component.groups[0];
+      const group = component.groups()[0];
       component.deleteGroup(group);
       cy.wrap(deleteAssets).should('have.been.calledWith', [2], true);
     });
@@ -104,9 +104,9 @@ describe('DuplicatesComponent', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
       const component = fixture.componentInstance;
-      const initialLength = component.groups.length;
-      component.deleteGroup(component.groups[0]);
-      expect(component.groups).to.have.length(initialLength - 1);
+      const initialLength = component.groups().length;
+      component.deleteGroup(component.groups()[0]);
+      expect(component.groups()).to.have.length(initialLength - 1);
     });
   });
 
@@ -116,7 +116,7 @@ describe('DuplicatesComponent', () => {
     mountComponent({ deleteAssets }).then(({ fixture }) => {
       fixture.detectChanges();
       const component = fixture.componentInstance;
-      const group = component.groups[1];
+      const group = component.groups()[1];
       component.markAsKeep(group, 1);
       component.deleteGroup(group);
       cy.wrap(deleteAssets).should('have.been.calledWith', [3, 5], true);

@@ -1,4 +1,4 @@
-import { Component, OnInit, Output, EventEmitter, ChangeDetectionStrategy } from "@angular/core";
+import { Component, OnInit, Output, EventEmitter, ChangeDetectionStrategy, signal } from "@angular/core";
 import {
   MatTreeModule,
   MatTreeFlatDataSource,
@@ -21,14 +21,14 @@ import { Folder, FlatFolder } from "../../core/models/folder.model";
     MatProgressSpinnerModule,
   ],
   templateUrl: "./folder-nav.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./folder-nav.component.scss",
 })
 export class FolderNavComponent implements OnInit {
   @Output() folderSelected = new EventEmitter<string>();
 
   selectedPath: string = "";
-  loading = false;
+  readonly loading = signal(false);
 
   private transformer = (node: Folder, level: number): FlatFolder => ({
     expandable: !!node.children && node.children.length > 0,
@@ -54,14 +54,14 @@ export class FolderNavComponent implements OnInit {
   constructor(private folderService: FolderService) {}
 
   ngOnInit(): void {
-    this.loading = true;
+    this.loading.set(true);
     this.folderService.getFolders().subscribe({
       next: (folders) => {
         this.dataSource.data = this.buildTree(folders);
-        this.loading = false;
+        this.loading.set(false);
       },
       error: () => {
-        this.loading = false;
+        this.loading.set(false);
       },
     });
   }

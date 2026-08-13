@@ -8,7 +8,7 @@ import { Asset } from '../../../core/models/asset.model';
   standalone: true,
   imports: [ThumbnailComponent],
   templateUrl: './timeline-view.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './timeline-view.component.scss',
 })
 export class TimelineViewComponent {

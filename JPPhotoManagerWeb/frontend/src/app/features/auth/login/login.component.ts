@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -12,7 +12,7 @@ import { AuthService } from '../../../core/services/auth.service';
   standalone: true,
   imports: [ReactiveFormsModule, MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule],
   templateUrl: './login.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './login.component.scss'
 })
 export class LoginComponent {
@@ -20,7 +20,7 @@ export class LoginComponent {
     username: ['', Validators.required],
     password: ['', Validators.required]
   });
-  errorMessage: string | null = null;
+  readonly errorMessage = signal<string | null>(null);
 
   constructor(
     private fb: FormBuilder,
@@ -37,7 +37,7 @@ export class LoginComponent {
         const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
         this.router.navigateByUrl(this.sanitizeReturnUrl(returnUrl));
       },
-      error: () => { this.errorMessage = 'Invalid username or password.'; }
+      error: () => { this.errorMessage.set('Invalid username or password.'); }
     });
   }
 

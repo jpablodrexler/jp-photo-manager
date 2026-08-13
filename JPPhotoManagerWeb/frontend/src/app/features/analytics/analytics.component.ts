@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,43 +18,43 @@ import { AnalyticsData, ChartEntry } from '../../core/models/analytics.model';
     BarChartModule,
   ],
   templateUrl: './analytics.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './analytics.component.scss',
 })
 export class AnalyticsComponent implements OnInit {
-  data: AnalyticsData | null = null;
-  loading = true;
-  error = false;
+  readonly data = signal<AnalyticsData | null>(null);
+  readonly loading = signal(true);
+  readonly error = signal(false);
 
-  folderStorageSeries: ChartEntry[] = [];
-  formatSeries: ChartEntry[] = [];
-  photosPerMonthSeries: ChartEntry[] = [];
-  ratingSeriesBarData: ChartEntry[] = [];
+  readonly folderStorageSeries = signal<ChartEntry[]>([]);
+  readonly formatSeries = signal<ChartEntry[]>([]);
+  readonly photosPerMonthSeries = signal<ChartEntry[]>([]);
+  readonly ratingSeriesBarData = signal<ChartEntry[]>([]);
 
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   ngOnInit(): void {
     this.analyticsService.getAnalytics().subscribe({
       next: (d) => {
-        this.data = d;
-        this.folderStorageSeries = d.folderStorage.map(e => ({
+        this.data.set(d);
+        this.folderStorageSeries.set(d.folderStorage.map(e => ({
           name: e.folderPath,
           value: e.bytes,
-        }));
-        this.formatSeries = d.formatDistribution.map(e => ({
+        })));
+        this.formatSeries.set(d.formatDistribution.map(e => ({
           name: e.extension,
           value: e.count,
-        }));
-        this.photosPerMonthSeries = d.photosPerMonth.map(e => ({ name: e.month, value: e.count }));
-        this.ratingSeriesBarData = d.ratingDistribution.map(e => ({
+        })));
+        this.photosPerMonthSeries.set(d.photosPerMonth.map(e => ({ name: e.month, value: e.count })));
+        this.ratingSeriesBarData.set(d.ratingDistribution.map(e => ({
           name: String(e.rating),
           value: e.count,
-        }));
-        this.loading = false;
+        })));
+        this.loading.set(false);
       },
       error: () => {
-        this.error = true;
-        this.loading = false;
+        this.error.set(true);
+        this.loading.set(false);
       },
     });
   }

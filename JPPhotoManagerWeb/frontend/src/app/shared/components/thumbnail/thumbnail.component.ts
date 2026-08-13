@@ -30,7 +30,7 @@ import { FileSizePipe } from '../../pipes/file-size.pipe';
       </mat-card-content>
     </mat-card>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     .thumbnail-card {
       cursor: pointer;

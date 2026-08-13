@@ -13,9 +13,9 @@
 
     <button mat-raised-button
             color="primary"
-            [disabled]="isSaving"
+            [disabled]="isSaving()"
             (click)="saveAndDownload()">
-      {{ isSaving ? 'Saving…' : 'Save & Download' }}
+      {{ isSaving() ? 'Saving…' : 'Save & Download' }}
     </button>
 
     <button mat-button (click)="cancelled.emit()">Cancel</button>

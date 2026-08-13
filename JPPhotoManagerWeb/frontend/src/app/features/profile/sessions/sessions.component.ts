@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,13 +15,13 @@ import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialo
   standalone: true,
   imports: [CommonModule, MatTableModule, MatButtonModule, MatIconModule, MatCardModule],
   templateUrl: './sessions.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './sessions.component.scss'
 })
 export class SessionsComponent implements OnInit {
-  sessions: SessionInfo[] = [];
+  readonly sessions = signal<SessionInfo[]>([]);
   displayedColumns = ['deviceHint', 'lastUsedAt', 'actions'];
-  errorMessage: string | null = null;
+  readonly errorMessage = signal<string | null>(null);
 
   constructor(
     private authService: AuthService,
@@ -35,16 +35,16 @@ export class SessionsComponent implements OnInit {
 
   loadSessions(): void {
     this.authService.getSessions().subscribe({
-      next: sessions => (this.sessions = sessions),
-      error: () => (this.errorMessage = 'Failed to load sessions.')
+      next: sessions => this.sessions.set(sessions),
+      error: () => this.errorMessage.set('Failed to load sessions.')
     });
   }
 
   revokeSession(session: SessionInfo): void {
     this.authService.revokeSession(session.id).subscribe({
       next: () => {
-        this.sessions = this.sessions.filter(s => s.id !== session.id);
-        this.errorMessage = null;
+        this.sessions.update(list => list.filter(s => s.id !== session.id));
+        this.errorMessage.set(null);
         this.snackBar.open('Session revoked', undefined, { duration: 2000 });
       },
       error: () => this.snackBar.open('Failed to revoke session', 'Dismiss', { duration: 3000 })
@@ -66,8 +66,8 @@ export class SessionsComponent implements OnInit {
       if (!confirmed) return;
       this.authService.revokeAllOtherSessions().subscribe({
         next: () => {
-          this.sessions = this.sessions.filter(s => s.current);
-          this.errorMessage = null;
+          this.sessions.update(list => list.filter(s => s.current));
+          this.errorMessage.set(null);
           this.snackBar.open('Signed out of all other sessions', undefined, { duration: 2000 });
         },
         error: () => this.snackBar.open('Failed to sign out of other sessions', 'Dismiss', { duration: 3000 })

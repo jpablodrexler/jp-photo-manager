@@ -11,7 +11,7 @@ import { CatalogState } from '../../../core/models/catalog-notification.model';
   standalone: true,
   imports: [DatePipe, MatIconModule, MatButtonModule, MatProgressBarModule, MatTooltipModule],
   templateUrl: './catalog-progress-footer.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './catalog-progress-footer.component.scss',
 })
 export class CatalogProgressFooterComponent {

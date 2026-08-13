@@ -18,7 +18,7 @@ interface PasswordRule {
   standalone: true,
   imports: [MatIconModule],
   templateUrl: './password-strength.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './password-strength.component.scss',
 })
 export class PasswordStrengthComponent {

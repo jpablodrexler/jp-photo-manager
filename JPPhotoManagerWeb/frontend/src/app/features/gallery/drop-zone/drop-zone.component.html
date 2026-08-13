@@ -15,9 +15,9 @@
   (change)="onFileInputChange($event)"
 />
 
-@if (uploadQueue.length > 0) {
+@if (uploadQueue().length > 0) {
   <div class="upload-queue">
-    @for (item of uploadQueue; track item.file.name) {
+    @for (item of uploadQueue(); track item.file.name) {
       <div class="upload-item">
         <span class="upload-filename">{{ item.file.name }}</span>
         @if (item.status === 'uploading' || item.status === 'pending') {

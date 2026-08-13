@@ -1,4 +1,4 @@
-import { Component, Inject, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -27,13 +27,13 @@ import { BatchRenameDialogData } from '../../../core/models/dialog.model';
     MatTableModule,
   ],
   templateUrl: './batch-rename-dialog.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './batch-rename-dialog.component.scss',
 })
 export class BatchRenameDialogComponent implements OnInit, OnDestroy {
   pattern = '';
-  previews: RenamePreview[] = [];
-  previewError: string | null = null;
+  readonly previews = signal<RenamePreview[]>([]);
+  readonly previewError = signal<string | null>(null);
   isApplying = false;
   readonly displayedColumns = ['oldName', 'newName'];
 
@@ -52,8 +52,8 @@ export class BatchRenameDialogComponent implements OnInit, OnDestroy {
       distinctUntilChanged(),
       switchMap(p => {
         if (!p) {
-          this.previews = [];
-          this.previewError = null;
+          this.previews.set([]);
+          this.previewError.set(null);
           return of(null);
         }
         return this.assetService.renameAssets(this.data.assetIds, p, false);
@@ -62,13 +62,13 @@ export class BatchRenameDialogComponent implements OnInit, OnDestroy {
     ).subscribe({
       next: result => {
         if (result) {
-          this.previews = result.previews;
-          this.previewError = null;
+          this.previews.set(result.previews);
+          this.previewError.set(null);
         }
       },
       error: () => {
-        this.previewError = 'Invalid pattern or name collision.';
-        this.previews = [];
+        this.previewError.set('Invalid pattern or name collision.');
+        this.previews.set([]);
       },
     });
   }
@@ -79,12 +79,12 @@ export class BatchRenameDialogComponent implements OnInit, OnDestroy {
   }
 
   onPatternChange(value: string): void {
-    this.previewError = null;
+    this.previewError.set(null);
     this.patternChange$.next(value);
   }
 
   get canApply(): boolean {
-    return !!this.pattern && !this.previewError && !this.isApplying && this.previews.length > 0;
+    return !!this.pattern && !this.previewError() && !this.isApplying && this.previews().length > 0;
   }
 
   applyRename(): void {

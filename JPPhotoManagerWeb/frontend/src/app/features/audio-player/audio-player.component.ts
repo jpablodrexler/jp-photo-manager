@@ -8,7 +8,7 @@ import { MediaPlayerService } from '../../core/services/media-player.service';
   standalone: true,
   imports: [MatButtonModule, MatIconModule],
   templateUrl: './audio-player.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './audio-player.component.scss',
 })
 export class AudioPlayerComponent {
