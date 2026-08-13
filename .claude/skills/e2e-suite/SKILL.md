@@ -14,13 +14,13 @@ description: >
   sibling, `cy.intercept`-mocked golden-path smoke tier lives at
   `cypress/e2e/mocked/` (its own `cypress.mocked.config.ts`, `npm run
   test:e2e:mocked`) — needs no running backend and is the one wired into
-  CI; see §8. TRIGGER when asked to run the E2E suite/regression tests, add
+  CI; see §9. TRIGGER when asked to run the E2E suite/regression tests, add
   an E2E test for a new feature, extend E2E coverage, or fix a
   failing/flaky E2E spec — including a mocked-tier spec.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "1.1"
   scope: [JPPhotoManagerWeb]
 ---
 
@@ -49,12 +49,12 @@ a separate, unrelated layer — see the `cypress-unit-test-developer` skill
 for those; this skill is E2E only.
 
 **Relationship to the mocked E2E smoke tier**: `cypress/e2e/mocked/` is a
-*third*, distinct E2E layer — see §8 below. Where this suite drives a real
+*third*, distinct E2E layer — see §9 below. Where this suite drives a real
 login against a real, running backend, the mocked tier fabricates a session
 via `localStorage` and stubs every API call via `cy.intercept`, trading this
 suite's full business-rule depth for something that needs no backend/
 infrastructure at all — specifically so it can run in CI, which this suite
-still deliberately doesn't (§7).
+still deliberately doesn't (§8).
 
 ---
 
@@ -195,7 +195,24 @@ even across spec files, restores the cached session instead.
 
 ---
 
-## 6. Adding a new spec
+## 6. Async assertions — two Cypress-specific gotchas
+
+- **`cy.get(selector).then(callback)` does not retry** — it snapshots the
+  DOM once, immediately, and hands it to `callback`. For anything that
+  needs to wait on async content (a page mid-fetch on first load), use a
+  function-bound `cy.get(selector).should(($el) => { ... })` instead —
+  only `.should()`'s callback form retries until the assertion inside it
+  passes or the command times out.
+- **`cy.get(selector).contains(text).should('not.exist')` throws instead
+  of asserting "not found," if `selector` itself matches zero elements** —
+  Cypress needs `.contains()` to have something to search *within*. Use
+  `cy.contains(selector, text).should('not.exist')` (contains as the
+  primary command, selector as its first argument) for "this text is
+  nowhere inside these elements" checks.
+
+---
+
+## 7. Adding a new spec
 
 1. Follow an existing spec file's shape: a `beforeEach()` calls
    `cy.login()` (and usually `cy.visit()` the relevant route), an `after()`
@@ -241,7 +258,7 @@ even across spec files, restores the cached session instead.
 
 ---
 
-## 7. What this suite deliberately does not cover (yet)
+## 8. What this suite deliberately does not cover (yet)
 
 - **Catalog-dependent features** — gallery, sync, convert, duplicates,
   analytics, recycle-bin. All of these depend on `CatalogAssetsUseCase`
@@ -260,18 +277,19 @@ even across spec files, restores the cached session instead.
   real-backend one) is not wired into `.github/workflows/web-test.yml`, and
   that's a deliberate decision, not an oversight: it needs Postgres/Mongo/
   Redis/Kafka plus a running backend, which is heavier than CI should carry
-  on every push. Run it manually before a release or after a change that
-  touches multiple features at once. CI is not *entirely* without
-  browser-level E2E signal, though — see §8: the mocked tier runs on every
-  push/PR, just at golden-path smoke depth rather than this suite's full
-  coverage.
+  on every push. Run it manually (`npm run test:e2e`) before a release or
+  after a change that touches multiple features at once. `gitflow`'s
+  finish-release/finish-hotfix actions already gate on this suite passing
+  (see that skill). CI is not *entirely* without browser-level E2E signal,
+  though — see §9: the mocked tier runs on every push/PR, just at
+  golden-path smoke depth rather than this suite's full coverage.
 
 ---
 
-## 8. The mocked E2E smoke tier — a different, CI-safe layer
+## 9. The mocked E2E smoke tier — a different, CI-safe layer
 
 `cypress/e2e/mocked/` is a sibling E2E layer, not part of this suite — it
-exists specifically to close the gap §7 describes (this suite's deliberate
+exists specifically to close the gap §8 describes (this suite's deliberate
 absence from CI), without changing this suite's own scope or config at
 all.
 
@@ -299,7 +317,7 @@ all.
   auth-guard redirect check, plus one render assertion and one
   representative CRUD interaction per major route. It is not a replacement
   for this suite's full CRUD/business-rule depth, and never will be; that
-  depth stays here, deliberately out of CI, per §7.
+  depth stays here, deliberately out of CI, per §8.
 - **When to touch it**: add a new mocked spec (or extend an existing one)
   when a new major route ships, mirroring the "one render + one CRUD
   interaction" shape of the existing files — not full coverage of that

@@ -132,9 +132,9 @@ genuinely awkward to unit-test — perform the check directly:
   the patterns in `docs/curl-reference.md`, against a running backend
   (start one per `e2e-testing` skill §1–§4 if none is running), and compare
   the real response to the scenario's `THEN`.
-- **UI-level scenarios:** use the Puppeteer approach from `e2e-testing` §7,
-  or the project's Cypress E2E conventions, to drive the actual interaction
-  and observe the actual result.
+- **UI-level scenarios:** use the Cypress scratch-spec approach from
+  `e2e-testing` §7 (start the stack per its §1–§4, sign in per its §7.1) to
+  drive the actual interaction and observe the actual result.
 - Record exactly what was run and what was observed as the evidence — not
   "looks correct," a specific command/action and its specific output.
 
@@ -194,7 +194,7 @@ convention as the project's other reviewer skills).
 
 ### Write the report to a dated file
 
-`docs/spec-compliance/SPEC_COMPLIANCE_{change-name}_{YYYY-MM-DD}.md` (repo
+`docs/reports/spec-compliance/SPEC_COMPLIANCE_{change-name}_{YYYY-MM-DD}.md` (repo
 root, gitignored — a local working artifact, not committed history, same
 convention as `docs/code-review/`, `docs/security-review/`,
 `docs/database-review/`). If a file for that change+date already exists,

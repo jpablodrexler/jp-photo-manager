@@ -215,9 +215,9 @@ is gone, not just that the process is running.
 ## 7. Write an Incident Note
 
 After resolution, write a short note to
-`docs/incident-response/INCIDENT_{YYYY-MM-DD}_{short-slug}.md` (this
-directory is gitignored, same convention as `docs/database-review/` and
-`docs/security-review/` — a local working record, not committed history
+`docs/reports/incident-response/INCIDENT_{YYYY-MM-DD}_{short-slug}.md` (this
+directory is gitignored, same convention as `docs/reports/database-review/` and
+`docs/reports/security-review/` — a local working record, not committed history
 unless the user explicitly asks to commit it):
 
 - **Signal** — what was observed and since when (§1).

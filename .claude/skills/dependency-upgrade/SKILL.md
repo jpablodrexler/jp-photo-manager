@@ -96,6 +96,13 @@ versions) — if `npm outdated` shows Angular is more than one major behind,
 plan multiple sequential `ng update` passes, each with its own test run
 (§4), rather than jumping straight to latest.
 
+**`cypress`** is also a plain npm devDependency (not wired through `ng
+update`) — bump it independently and re-run `npm run test` (component
+suite) and `npm run test:e2e` (E2E suite) to confirm both still work; a
+Cypress major can change config/CLI flags, and its Angular Component
+Testing preset (`@angular-devkit/build-angular`, kept only for that
+preset — see `angular-developer` §16) may need a matching bump too.
+
 ---
 
 ## 3. Classify & Decide

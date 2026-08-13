@@ -4,7 +4,7 @@ description: Encapsulates the Gitflow branching workflow for this repo (develop 
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.4"
+  version: "1.5"
 ---
 
 Perform one Gitflow action: start a feature/release/hotfix branch, sync an existing feature branch with develop, finish (open a PR for) a feature, finish (open PRs for) a release/hotfix, tag main after a release/hotfix PR has merged, or clean up already-merged feature/release/hotfix branches.
@@ -70,9 +70,16 @@ The same normalization applies to **start feature** / **start release** / **star
 
 ### 2. Check working tree state
 
-Run `git status`. If there are uncommitted changes, stop and tell the user — do not stash or discard automatically. (For **cleanup branches**, this only matters if the current branch is itself a deletion candidate — see 3f.)
+Run `git status`. If there are uncommitted changes, stop and tell the user — do not stash or discard automatically. (For **cleanup branches**, this only matters if the current branch is itself a deletion candidate — see 3f. For **start feature** specifically, when the current branch already starts with `feature/`, resolve 3a's branch-continuation question first, before applying this check — it may turn out this check doesn't even apply, since continuing on the current branch involves no checkout and tolerates an uncommitted tree just fine.)
 
 ### 3a. Start feature / release / hotfix
+
+**For `start feature` only — if already on a feature branch:** before anything else in this action (including the working-tree check in step 2 above — that check assumes a branch switch is about to happen, which may turn out not to be true here), check the current branch: `git branch --show-current`. If it already starts with `feature/`, this is a fork in the road for the user to resolve, not something to decide silently — jumping back to `develop` and spinning up a new branch could sideline in-progress work the user isn't ready to commit yet. Ask the user (via **AskUserQuestion**) whether they want to:
+
+- **Continue working on the current feature branch** instead of starting a separate one — appropriate when the new ask is really an extension of what's already in flight here. If chosen: skip the rest of this action entirely — no base checkout, no new branch, and step 2's working-tree check does not apply, since nothing is being switched. Then, if the current branch has **not** been pushed to the remote yet (`git rev-parse --verify --quiet origin/<current-branch>` returns nothing), ask a second, separate question: whether to **rename** it to better reflect the now-combined scope (e.g. `feature/albums-sort` → `feature/albums-sort-and-filter`). Only offer this for an unpushed branch — renaming one that's already on the remote (and possibly backing an open PR) would orphan that PR's `head` ref, so leave a pushed branch's name alone even if asked, and say why. If the user wants the rename, confirm the exact new name with them, then run `git branch -m <old-name> <new-name>` (a local-only rename; nothing is pushed as a side effect). Report the final state — still on `<branch>`, or renamed to `<new-name>` — and stop; no further steps in this action run.
+- **Start a brand-new feature branch as normal**, from `develop` — leaving the current feature branch untouched. If chosen, proceed with steps 1–5 below exactly as written, with step 2's working-tree check now applying in the usual way (the checkout to `develop` is about to happen for real).
+
+Never pick either option without asking — always let the user decide.
 
 1. Determine the base branch: `develop` for feature/release, `main` for hotfix.
 2. `git checkout <base>`
@@ -115,11 +122,14 @@ Preconditions:
 
 Steps:
 1. Draft or update the `CHANGELOG.md` entry for this release/hotfix on the current `release/`/`hotfix/` branch itself, per "Drafting release notes" below, using the version embedded in the branch name (e.g. `release/v2.3.0` → `v2.3.0`). Do this **before** the branch is pushed and before either PR is opened. This is the one thing this step changed about the old flow: the changelog entry used to get drafted after the tag, which meant committing it directly to `main` with no PR/review in front of it. Drafting it here instead means it ships as an ordinary commit on the branch under review, like everything else in the release/hotfix — no more out-of-band `main` commits.
-2. Push the branch (including the changelog commit from step 1, if the user chose to write one): `git push -u origin <branch>` if the branch doesn't exist on the remote yet, or a plain `git push` if it does (e.g. this branch was already pushed earlier in the session and step 1 just added a new commit on top) — confirm with the user before the first push of the branch either way.
-3. Build the PR description (see "Writing the PR description" below) — the same description is used for both PRs since they carry the same commits. The description's diff/commit inspection will naturally include the changelog commit from step 1; that's fine, it's a real part of what the branch changed.
-4. Open a PR into `main` per "Opening a PR" above, with `base: main`, `head: <branch>`, and title `"<Release|Hotfix> <version>"`.
-5. Open a PR into `develop` per "Opening a PR" above, with `base: develop`, `head: <branch>`, and the same title.
-6. Report both PR URLs to the user.
+2. **Run the maintained E2E suite** (see the `e2e-suite` skill) before pushing — a release/hotfix is exactly the point where full-app regression coverage matters most, and this is the one point in this whole workflow that gates on it. Check whether the full stack is up (Postgres/MongoDB/Redis/Kafka, backend, frontend — `e2e-testing` skill §1–§3):
+   - **If it's up**: invoke the `e2e-suite` skill (or run `cd JPPhotoManagerWeb/frontend && npm run test:e2e` directly) and wait for it to finish. If every test passes, continue to step 3. If any test fails, **stop here** — do not push the branch or open either PR with known-failing E2E coverage. Report the failure(s) to the user; once they're fixed (by you or the user), re-run the suite before continuing. A flaky-looking single failure should be re-run once before concluding it's real (watch specifically for the suite's own login-rate-limit note in `e2e-suite` §1 — a `429` from back-to-back runs isn't a real regression), not dismissed outright.
+   - **If it isn't**: the suite can't run without a live backend. Tell the user plainly that E2E verification is being skipped for this reason (never skip it silently) and ask (**AskUserQuestion**) whether to bring the stack up first (`docker compose up -d db kafka redis mongo`, then start the backend/frontend) or proceed without it.
+3. Push the branch (including the changelog commit from step 1, if the user chose to write one): `git push -u origin <branch>` if the branch doesn't exist on the remote yet, or a plain `git push` if it does (e.g. this branch was already pushed earlier in the session and step 1 just added a new commit on top) — confirm with the user before the first push of the branch either way.
+4. Build the PR description (see "Writing the PR description" below) — the same description is used for both PRs since they carry the same commits. The description's diff/commit inspection will naturally include the changelog commit from step 1; that's fine, it's a real part of what the branch changed. If step 2 ran the E2E suite, note that it passed in the PR's Test plan section.
+5. Open a PR into `main` per "Opening a PR" above, with `base: main`, `head: <branch>`, and title `"<Release|Hotfix> <version>"`.
+6. Open a PR into `develop` per "Opening a PR" above, with `base: develop`, `head: <branch>`, and the same title.
+7. Report both PR URLs to the user.
 
 This step **only opens the PRs** — it does not merge them. Merging goes through normal GitHub review. Do not auto-merge.
 
@@ -219,4 +229,6 @@ Finds `feature/*`, `release/*`, and `hotfix/*` branches that have already been m
 - If the working tree has uncommitted changes at the start of any action, stop and report — never stash or discard automatically.
 - If `git pull` on the base branch doesn't fast-forward cleanly, stop and report — never force-merge or rebase automatically.
 - `feature/*` branches only ever merge back into `develop`, never into `main` directly, and are never tagged — only `release/*` and `hotfix/*` branches that land on `main` get a version tag.
+- **Never silently switch away from an already-checked-out `feature/*` branch to start a new one.** `start feature` always asks first when the current branch already starts with `feature/` — per 3a's opening step — whether to continue on it or branch fresh from `develop`, and (only if the branch is unpushed) whether to rename it for the combined scope. Both are the user's call, never an automatic decision.
+- **Never push a `release/`/`hotfix/` branch or open its PRs while the E2E suite has a known failure.** Finish release/hotfix's step 2 gates on this: a failing run stops the action there — fix and re-run before continuing to push/PR. Skipping the suite entirely (stack not up) is allowed, but only after telling the user and letting them choose, never silently.
 - **Never merge, rebase, or pull `main` into a `feature/*` branch, for any reason.** `develop` is the only sanctioned upstream for a feature branch's content — use the **Sync feature** action (3b), which merges `origin/develop` and nothing else. This holds even right after a release/hotfix PR has merged into both `main` and `develop`, when the two are momentarily identical and pulling from either looks equivalent in the moment — `main` is still the wrong branch to name in the command, because the next release may fork them apart again before the feature branch is finished, silently carrying content into the feature branch that never went through `develop`.

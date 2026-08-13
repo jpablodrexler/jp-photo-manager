@@ -17,15 +17,22 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.5"
+  version: "1.6"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
 dedicated subagents for each phase.
 
-**Input**: Optional feature name or number. If provided, passes it to
-`features-next` to skip the recommendation step and jump straight to
-confirmation for that feature.
+**Input**: Optional feature name or number, optionally followed by
+`--skip-branch-setup` (e.g. `duplicate-detection --skip-branch-setup`). The
+feature name/number, if provided, is passed to `features-next` to skip the
+recommendation step and jump straight to confirmation for that feature.
+`--skip-branch-setup` is for orchestrators — e.g. the
+`features-batch-development` skill — that have already checked out a
+shared branch and are running multiple features on it without committing
+between them; see Phase 1 Step 1.5's batch-mode branch below. Omit it for
+normal single-feature use — default behavior (create/resume
+`feature/<change-name>` from `develop`) is unchanged.
 
 ---
 
@@ -69,17 +76,31 @@ argument passed to this skill, if any):
 > end your response with `CANCELLED` and stop.
 >
 > **Step 1.5 — Create the feature branch**
-> Before creating or modifying any file in the repository (including SDD
-> artifacts in Step 3 below), make sure work happens on a dedicated branch
-> cut from `develop`. Check resume status *before* checking for uncommitted
-> changes — not the other way around: a resumed session (e.g. this skill
-> being re-run after an interruption mid-Phase-2) is typically already
-> checked out on `feature/<change-name>` with the in-progress
-> implementation sitting there uncommitted, since this workflow never
-> commits until a human reviews it. That's expected, resumable state, not
-> a blocker — but if the uncommitted-changes check ran first, it would
-> misfire on exactly that state and block the resume before the
-> already-on-the-right-branch check ever got a chance to short-circuit it.
+>
+> **Batch mode (`--skip-branch-setup` was passed):** skip everything else in
+> this step. Run `git branch --show-current` once and confirm it is not
+> `main` or `develop` — if it is, end your response with `PROPOSE_BLOCKED —
+> batch mode requires an existing feature branch already checked out, not
+> main/develop` and stop. Otherwise proceed directly to Step 2 using
+> whatever branch is currently checked out. Do not check for uncommitted
+> changes here — an orchestrator running several features on one branch
+> without committing between them will always have a dirty tree by the
+> second feature onward, and that's expected, not a blocker. Do not create,
+> switch, or sync any branch in this mode; the caller is responsible for
+> branch state.
+>
+> **Normal mode (no flag passed):** before creating or modifying any file in
+> the repository (including SDD artifacts in Step 3 below), make sure work
+> happens on a dedicated branch cut from `develop`. Check resume status
+> *before* checking for uncommitted changes — not the other way around: a
+> resumed session (e.g. this skill being re-run after an interruption
+> mid-Phase-2) is typically already checked out on `feature/<change-name>`
+> with the in-progress implementation sitting there uncommitted, since this
+> workflow never commits until a human reviews it. That's expected,
+> resumable state, not a blocker — but if the uncommitted-changes check ran
+> first, it would misfire on exactly that state and block the resume before
+> the already-on-the-right-branch check ever got a chance to short-circuit
+> it.
 >
 > 1. Run: `git branch --show-current`.
 >    - If the output is already exactly `feature/<change-name>`: we're
@@ -242,7 +263,7 @@ following prompt:
 > application — the code-reviewer skill's per-layer report split and
 > subagent dispatch only apply to whole-app sweeps, so do not request or
 > expect multiple reports or additional subagents here. Every invocation
-> writes a single dated `docs/code-review/CODE_REVIEW_FINDINGS_*.md` report
+> writes a single dated `docs/reports/code-review/CODE_REVIEW_FINDINGS_*.md` report
 > (repo root, gitignored). After the review completes, examine the findings:
 >
 > - If the report contains **no 🔴 Critical or 🟡 Warning findings**: proceed.
@@ -284,7 +305,7 @@ summary of what changed>` note appended to the same line — the same
 >   turn-by-turn across a conversation). This is a scoped review of one
 >   change, not a full migration-history audit — do not request or expect
 >   additional subagents here. Every invocation writes a single dated
->   `docs/database-review/DATABASE_REVIEW_FINDINGS_*.md` report (repo root,
+>   `docs/reports/database-review/DATABASE_REVIEW_FINDINGS_*.md` report (repo root,
 >   gitignored). After the review completes, fix every 🔴 Critical and 🟡
 >   Warning finding in the source files — check each off in that report file
 >   (`- [ ]` → `- [x]`) with a `**Fixed:**` note as you go, the same
@@ -330,7 +351,7 @@ summary of what changed>` note appended to the same line — the same
 >   security-reviewer skill's per-layer report split and subagent dispatch
 >   only apply to whole-app sweeps, so do not request or expect multiple
 >   reports or additional subagents here. Every invocation writes a single
->   dated `docs/security-review/SECURITY_REVIEW_FINDINGS_*.md` report (repo
+>   dated `docs/reports/security-review/SECURITY_REVIEW_FINDINGS_*.md` report (repo
 >   root, gitignored). After the review completes, fix every 🔴 Critical and
 >   🟡 Warning finding in the source files — check each off in that report
 >   file (`- [ ]` → `- [x]`) with a `**Fixed:**` note as you go, the same
@@ -801,6 +822,23 @@ them back through Phase 2's code review.
 - Always capture and propagate the change name from Phase 1 to all later
   phases. Before spawning any subagent in Phases 2–5, substitute every
   `<change-name>` occurrence in its prompt with the actual value from Phase 1.
+- **`--skip-branch-setup` (batch mode) only ever affects Phase 1 Step 1.5.**
+  No other phase's behavior changes — Phases 2–5 already just operate on
+  "whatever branch is currently checked out" and never re-derive or assume
+  `feature/<change-name>` as the literal branch name outside that one step.
+  This flag exists solely for orchestrators like `features-batch-development`
+  that run several features on one shared branch without committing between
+  them; it is never passed by a normal, single-feature invocation of this
+  skill.
+- **Work always happens on a `feature/<change-name>` branch — except in
+  batch mode, where it's whatever branch the orchestrator already
+  established.** In normal mode, Phase 1's Step 1.5 is the only place a
+  branch is created, switched, or synced. In batch mode
+  (`--skip-branch-setup`), Step 1.5 performs none of that — it only
+  confirms the current branch isn't `main`/`develop` and otherwise leaves
+  branch state entirely to the caller. Either way, Phases 2–5 must stay on
+  whatever branch was current when Phase 1 finished; none of them may run
+  their own branch operations.
 - **Cancellation detection**: if Subagent 1's response contains no `CHANGE_NAME:`
   line (or contains `CANCELLED`), treat it as user cancellation — stop the
   workflow immediately and inform the user.
