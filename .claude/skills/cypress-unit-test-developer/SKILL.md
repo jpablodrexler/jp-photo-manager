@@ -687,6 +687,10 @@ npm run cypress:run
 
 # Run a single spec
 npx cypress run --component --spec "src/app/features/gallery/gallery.component.cy.ts"
+
+# Check line coverage against the 80% minimum (see code-reviewer skill §19.1)
+npm run test:coverage
+npm run coverage:check
 ```
 
 ---

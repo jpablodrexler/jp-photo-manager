@@ -22,6 +22,11 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <lombok.version>1.18.46</lombok.version>
         <flyway.version>11.7.2</flyway.version>
+        <!-- mvn jacoco:check defaults (see code-reviewer skill §19.2): whole-project scope,
+             80% minimum line coverage. Override -Djacoco.check.includes=<package/**> to scope
+             a review to just the classes a change touched. -->
+        <jacoco.check.includes>**/*</jacoco.check.includes>
+        <jacoco.check.minimum>0.80</jacoco.check.minimum>
     </properties>
 
     <dependencies>
@@ -246,6 +251,27 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.13</version>
+                <!-- Applies to a directly-invoked `mvn jacoco:check` (see code-reviewer skill
+                     §19.2) since that goal has no <execution> binding below, mirroring
+                     maven-pmd-plugin's opt-in `mvn pmd:check` pattern just below: it never
+                     runs as part of `mvn test`/`mvn verify`/`mvn package`. -->
+                <configuration>
+                    <includes>
+                        <include>${jacoco.check.includes}</include>
+                    </includes>
+                    <rules>
+                        <rule>
+                            <element>BUNDLE</element>
+                            <limits>
+                                <limit>
+                                    <counter>LINE</counter>
+                                    <value>COVEREDRATIO</value>
+                                    <minimum>${jacoco.check.minimum}</minimum>
+                                </limit>
+                            </limits>
+                        </rule>
+                    </rules>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

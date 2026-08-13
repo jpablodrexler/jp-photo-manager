@@ -74,7 +74,7 @@ once.
 | Frontend core             | `frontend-core`           | `frontend/src/app/core/**`                                                                                                                | §10.2, §11, §12                                                  |
 | Frontend features         | `frontend-features`       | `frontend/src/app/features/**`                                                                                                            | §10.1, §10.3, §11, §12                                           |
 | Frontend shared           | `frontend-shared`         | `frontend/src/app/shared/**`                                                                                                              | §1.3, §10.1, §11, §12                                            |
-| Cross-cutting             | `cross-cutting`           | Both sub-projects; no single directory                                                                                                    | §9, §13, §14, §18, delegate-only port/adapter or service pairs (§1.2/§10.2), dependency-direction violations, systemic naming patterns |
+| Cross-cutting             | `cross-cutting`           | Both sub-projects; no single directory                                                                                                    | §9, §13, §14, §18, §19, delegate-only port/adapter or service pairs (§1.2/§10.2), dependency-direction violations, systemic naming patterns |
 
 If only the backend (or only the frontend) is in scope, skip the layers that
 don't apply — e.g. a "review the whole backend" request produces 4 reports
@@ -639,6 +639,7 @@ These have caused real bugs in this codebase and deserve extra attention:
 | DTO placed directly in `web/dto/`          | New HTTP DTO added straight to `infrastructure/web/dto/` instead of its `request/`, `response/`, or `shared/` subpackage, or named without the `RequestDto`/`ResponseDto` suffix |
 | Delegate-only port/adapter or service      | A port/adapter (backend) or service (frontend) with no logic of its own, just forwarding to another one for the same capability. The keep-or-delete test is whether it contributes its own logic — **not** whether it currently has callers; existing callers just mean they need repointing to the real implementation, not that the wrapper earns a reprieve. Backend incident: `HashCalculatorPort`/`AssetHashCalculatorAdapter` duplicated `StoragePort.computeHash`'s SHA-256 logic; the first fix made the adapter delegate to `StoragePort` instead of deleting it and migrating callers — the pair was pure pass-through and should have been deleted outright, with any real callers repointed to `StoragePort` directly. Frontend incident: `core/services/audio-player.service.ts` was a bare re-export (`export { MediaPlayerService as AudioPlayerService } from './media-player.service'`) with zero importers anywhere in the codebase — deleted outright |
 | Method/function past the complexity threshold | `mvn pmd:check` (backend) or `npm run complexity` (frontend) reports something over 15 — see §18 |
+| Line coverage below 80%                    | `mvn jacoco:check` (backend) or `npm run coverage:check` (frontend) reports under 80% — see §19 |
 
 ---
 
@@ -878,3 +879,90 @@ can be verified by re-running the relevant command.
 🟢 A method/function in the 10–15 range is worth a passing mention if an
 obvious, low-effort split exists, but isn't required to be flagged — the
 threshold that matters is 15.
+
+---
+
+## 19. Code Coverage (both sub-projects)
+
+Every reviewed scope — backend, frontend, or both — gets a line-coverage
+pass, in addition to the manual checklists above. **Minimum line coverage is
+80%**, in both sub-projects, whether the check runs over the whole project
+or is scoped to just the files a change touched.
+
+Don't estimate this by eye — each sub-project already has a coverage tool
+wired (`cypress-unit-test-developer` §1.3; `java-unit-test-developer` §1);
+this section only adds the enforced threshold and the two ways to scope the
+check.
+
+### 19.1 Frontend (TypeScript)
+
+Run from `frontend/` (collect coverage, then check the threshold):
+
+```
+npm run test:coverage
+npm run coverage:check
+```
+
+`test:coverage` (`cypress run --component --env coverage=true`) re-runs the
+component suite with `babel-plugin-istanbul` instrumentation active and
+writes `html`/`lcov`/text-summary reports to `coverage/` (gitignored).
+`coverage:check` (`nyc check-coverage`) reads the `lines`/`branches`/
+`functions`/`statements` thresholds (80 each) from `.nycrc.json` and fails
+(non-zero exit) if any falls short.
+
+For a **scoped review** (a single component, service, or feature directory
+rather than the whole frontend), don't rely on the whole-project number —
+narrow the check with `--include`, which filters the already-collected
+coverage map down to matching paths before the threshold is evaluated:
+
+```
+npx nyc check-coverage --include "src/app/features/albums/**" --lines 80 --branches 80 --functions 80 --statements 80
+```
+
+(`test:coverage` still needs to have run first — `--include` only filters
+which already-collected files count toward the ratio, it doesn't limit
+which specs execute.)
+
+### 19.2 Backend (Java)
+
+Run from `backend/` (populate `target/jacoco.exec`, then check the threshold):
+
+```
+mvn test
+mvn jacoco:check
+```
+
+This invokes the `jacoco-maven-plugin` (configured in `backend/pom.xml`)
+against its default rule — a `BUNDLE`-level `LINE` `COVEREDRATIO` minimum
+of `${jacoco.check.minimum}` (80%) — reading the exec data `mvn test`
+already produced via the plugin's existing `prepare-agent` execution. Like
+`mvn pmd:check` (§18.2), the `check` goal has no `<executions>` binding in
+the pom, so it never runs as part of the normal build/test lifecycle
+(`mvn test`, `mvn verify`, `mvn package`) — it's opt-in, invoked only when
+this check is run. `mvn jacoco:check` fails the command (non-zero exit) and
+prints the offending counter/ratio when coverage is under threshold;
+`target/site/jacoco/index.html` (from the existing `report` execution)
+shows the breakdown per package/class.
+
+For a **scoped review**, override `jacoco.check.includes` (default `**/*`,
+the whole project) to the package(s) the change touched, so the ratio is
+computed only over those classes instead of the whole backend:
+
+```
+mvn jacoco:check -Djacoco.check.includes=com/jpablodrexler/photomanager/application/usecase/album/**
+```
+
+### 19.3 Flagging
+
+🟡 Flag any coverage run — whole-project or scoped to the reviewed change —
+that reports under 80% line coverage. This is a test-adequacy problem, not
+a correctness bug, so it's a WARNING rather than CRITICAL, matching how
+§18's complexity threshold is treated — but it should be fixed before the
+review is considered clean: add the missing test cases for the uncovered
+lines/branches the report lists (`java-unit-test-developer` for backend
+gaps, `cypress-unit-test-developer` for frontend gaps), then re-run the
+check to confirm it now clears 80%.
+
+🟢 A scope in the 75–80% range is worth a passing mention if the gap is a
+small, easily-covered handful of lines, but isn't required to be flagged —
+the threshold that matters is 80%.

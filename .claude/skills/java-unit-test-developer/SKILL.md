@@ -496,6 +496,10 @@ mvn test -Dtest="com.jpablodrexler.photomanager.infrastructure.service.*"
 
 # Skip tests during build
 mvn clean package -DskipTests
+
+# Check line coverage against the 80% minimum (see code-reviewer skill §19.2)
+mvn test
+mvn jacoco:check
 ```
 
 ---

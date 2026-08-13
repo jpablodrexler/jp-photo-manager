@@ -8,5 +8,9 @@
     "src/environments/**"
   ],
   "reporter": ["html", "text-summary", "lcov"],
-  "report-dir": "coverage"
+  "report-dir": "coverage",
+  "lines": 80,
+  "branches": 80,
+  "functions": 80,
+  "statements": 80
 }

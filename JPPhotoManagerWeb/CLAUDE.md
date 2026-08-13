@@ -75,6 +75,13 @@ cd JPPhotoManagerWeb/backend
 mvn test -Dtest=CatalogAssetsServiceImplTest#methodName
 ```
 
+**Check line coverage against the 80% minimum** (opt-in, not part of `mvn test`/`verify`/`package` — see `code-reviewer` skill §19.2):
+```bash
+cd JPPhotoManagerWeb/backend
+mvn test
+mvn jacoco:check
+```
+
 ### Architecture
 
 Hexagonal (Ports and Adapters) architecture in a single Maven module (`com.jpablodrexler.photo-manager`). Boundaries are enforced by package naming and import discipline.
@@ -236,6 +243,13 @@ npm run build:prod
 ```bash
 cd JPPhotoManagerWeb/frontend
 npm test
+```
+
+**Check line coverage against the 80% minimum** (see `code-reviewer` skill §19.1):
+```bash
+cd JPPhotoManagerWeb/frontend
+npm run test:coverage
+npm run coverage:check
 ```
 
 **Run the mocked E2E smoke tier** (no backend/infra needed — this is the E2E tier CI runs, on every push/PR):
