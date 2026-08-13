@@ -16,15 +16,15 @@
       Run Sync
     </button>
     <button mat-raised-button routerLink="/duplicates"
-            [matBadge]="$safeNavigationMigration(stats?.duplicateCount)"
-            [matBadgeHidden]="!stats || stats.duplicateCount === 0"
+            [matBadge]="$safeNavigationMigration(stats()?.duplicateCount)"
+            [matBadgeHidden]="!stats() || stats()?.duplicateCount === 0"
             matBadgeColor="warn">
       <mat-icon>content_copy</mat-icon>
       Find Duplicates
     </button>
   </div>
 
-  @if (stats) {
+  @if (stats(); as stats) {
     <!-- Library stat cards -->
     <div class="stats-grid">
       <mat-card class="stat-card">

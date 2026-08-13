@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -26,14 +26,14 @@ import { FileSizePipe } from '../../shared/pipes/file-size.pipe';
     FileSizePipe
   ],
   templateUrl: './duplicates.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './duplicates.component.scss'
 })
 export class DuplicatesComponent implements OnInit {
 
-  groups: DuplicateGroup[] = [];
-  loading = false;
-  totalDuplicates = 0;
+  readonly groups = signal<DuplicateGroup[]>([]);
+  readonly loading = signal(false);
+  readonly totalDuplicates = signal(0);
 
   constructor(
     private assetService: AssetService,
@@ -45,15 +45,15 @@ export class DuplicatesComponent implements OnInit {
   }
 
   loadDuplicates(): void {
-    this.loading = true;
+    this.loading.set(true);
     this.assetService.getDuplicatedAssets().subscribe({
       next: (duplicateGroups: Asset[][]) => {
-        this.groups = duplicateGroups.map(assets => ({ assets, keepIndex: 0 }));
-        this.totalDuplicates = duplicateGroups.reduce((sum, g) => sum + g.length - 1, 0);
-        this.loading = false;
+        this.groups.set(duplicateGroups.map(assets => ({ assets, keepIndex: 0 })));
+        this.totalDuplicates.set(duplicateGroups.reduce((sum, g) => sum + g.length - 1, 0));
+        this.loading.set(false);
       },
       error: () => {
-        this.loading = false;
+        this.loading.set(false);
         this.snackBar.open('Failed to load duplicates', 'Dismiss', { duration: 3000 });
       }
     });
@@ -70,7 +70,7 @@ export class DuplicatesComponent implements OnInit {
 
     this.assetService.deleteAssets(toDelete, true).subscribe({
       next: () => {
-        this.groups = this.groups.filter(g => g !== group);
+        this.groups.update(list => list.filter(g => g !== group));
         this.snackBar.open(`Deleted ${toDelete.length} duplicate(s)`, undefined, { duration: 2000 });
       },
       error: () => this.snackBar.open('Failed to delete', 'Dismiss', { duration: 3000 })

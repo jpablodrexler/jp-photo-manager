@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -35,12 +35,12 @@ import { AlbumSummary, AlbumFilterJson } from '../../core/models/album.model';
     MatNativeDateModule
   ],
   templateUrl: './albums.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './albums.component.scss'
 })
 export class AlbumsComponent implements OnInit {
 
-  albums: AlbumSummary[] = [];
+  readonly albums = signal<AlbumSummary[]>([]);
   showCreateForm = false;
   newAlbumName = '';
   makeSmartAlbum = false;
@@ -56,7 +56,7 @@ export class AlbumsComponent implements OnInit {
 
   ngOnInit(): void {
     this.albumService.getAlbums().subscribe({
-      next: albums => (this.albums = albums),
+      next: albums => this.albums.set(albums),
       error: () => this.snackBar.open('Failed to load albums', 'Dismiss', { duration: 3000 })
     });
   }
@@ -90,7 +90,7 @@ export class AlbumsComponent implements OnInit {
     }
     this.albumService.createAlbum({ name: name.trim(), filterJson }).subscribe({
       next: album => {
-        this.albums = [...this.albums, album];
+        this.albums.update(list => [...list, album]);
         this.newAlbumName = '';
         this.showCreateForm = false;
         this.makeSmartAlbum = false;
@@ -107,7 +107,7 @@ export class AlbumsComponent implements OnInit {
   deleteAlbum(album: AlbumSummary): void {
     this.albumService.deleteAlbum(album.albumId).subscribe({
       next: () => {
-        this.albums = this.albums.filter(a => a.albumId !== album.albumId);
+        this.albums.update(list => list.filter(a => a.albumId !== album.albumId));
         this.snackBar.open('Album deleted', undefined, { duration: 2000 });
       },
       error: () => this.snackBar.open('Failed to delete album', 'Dismiss', { duration: 3000 })

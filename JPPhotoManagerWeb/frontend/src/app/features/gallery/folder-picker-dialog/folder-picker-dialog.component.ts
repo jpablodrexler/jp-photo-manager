@@ -13,7 +13,7 @@ import { FolderPickerDialogData, FolderPickerDialogResult } from '../../../core/
     FolderNavComponent,
   ],
   templateUrl: './folder-picker-dialog.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './folder-picker-dialog.component.scss',
 })
 export class FolderPickerDialogComponent {

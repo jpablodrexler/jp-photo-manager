@@ -42,25 +42,20 @@ describe('DropZoneComponent', () => {
     cy.get('.upload-queue').should('not.exist');
   });
 
+  // Dispatched as real DOM events (not direct component.onDragOver()/onDragLeave() calls) so
+  // they go through the @HostListener-wired Renderer2 dispatch the same way a real drag
+  // interaction would, rather than mutating isDragging outside Angular's notified paths.
   it('should show the drop overlay on a dragover event', () => {
-    mountDropZone().then(({ fixture }) => {
-      const component = fixture.componentInstance;
-      const mockEvent = { preventDefault: () => {} } as DragEvent;
-      component.onDragOver(mockEvent);
-      fixture.detectChanges();
-    });
+    mountDropZone();
+    cy.get('[data-cy-root]').trigger('dragover');
     cy.get('.drop-overlay').should('be.visible');
   });
 
   it('should hide the drop overlay on a dragleave event', () => {
-    mountDropZone().then(({ fixture }) => {
-      const component = fixture.componentInstance;
-      const mockEvent = { preventDefault: () => {} } as DragEvent;
-      component.onDragOver(mockEvent);
-      fixture.detectChanges();
-      component.onDragLeave();
-      fixture.detectChanges();
-    });
+    mountDropZone();
+    cy.get('[data-cy-root]').trigger('dragover');
+    cy.get('.drop-overlay').should('be.visible');
+    cy.get('[data-cy-root]').trigger('dragleave');
     cy.get('.drop-overlay').should('not.exist');
   });
 

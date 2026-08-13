@@ -50,7 +50,7 @@
 }
 
 <div class="albums-grid">
-  @for (album of albums; track album.albumId) {
+  @for (album of albums(); track album.albumId) {
     <mat-card class="album-card">
       <mat-card-header>
         <mat-card-title>
@@ -74,7 +74,7 @@
       </mat-card-actions>
     </mat-card>
   }
-  @if (albums.length === 0) {
+  @if (albums().length === 0) {
     <div class="empty-state">No albums yet. Create one to get started.</div>
   }
 </div>

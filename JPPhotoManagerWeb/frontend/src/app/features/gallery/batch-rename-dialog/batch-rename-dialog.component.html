@@ -16,13 +16,13 @@
     Tokens: <code>&#123;date:yyyy-MM-dd&#125;</code> · <code>&#123;index:03d&#125;</code> · <code>&#123;original&#125;</code> · <code>&#123;ext&#125;</code>
   </p>
 
-  @if (previewError) {
-    <p class="preview-error">{{ previewError }}</p>
+  @if (previewError()) {
+    <p class="preview-error">{{ previewError() }}</p>
   }
 
-  @if (previews.length > 0) {
+  @if (previews().length > 0) {
     <div class="preview-table-wrapper">
-      <table mat-table [dataSource]="previews" class="preview-table">
+      <table mat-table [dataSource]="previews()" class="preview-table">
         <ng-container matColumnDef="oldName">
           <th mat-header-cell *matHeaderCellDef>Old name</th>
           <td mat-cell *matCellDef="let row">{{ row.oldName }}</td>

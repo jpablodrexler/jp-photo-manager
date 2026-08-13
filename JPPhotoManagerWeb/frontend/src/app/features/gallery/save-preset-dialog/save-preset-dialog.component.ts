@@ -9,7 +9,7 @@ import { MatInputModule } from '@angular/material/input';
   selector: 'app-save-preset-dialog',
   standalone: true,
   imports: [FormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule],
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <h2 mat-dialog-title>Save Filter Preset</h2>
     <mat-dialog-content>

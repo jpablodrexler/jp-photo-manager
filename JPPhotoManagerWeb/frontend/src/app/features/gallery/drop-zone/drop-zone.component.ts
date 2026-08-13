@@ -7,7 +7,8 @@ import {
   OnDestroy,
   Output,
   ViewChild,
-  ChangeDetectionStrategy
+  ChangeDetectionStrategy,
+  signal
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -24,7 +25,7 @@ const ACCEPTED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'bmp', 'tiff',
   standalone: true,
   imports: [MatButtonModule, MatIconModule, MatProgressBarModule],
   templateUrl: './drop-zone.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './drop-zone.component.scss',
 })
 export class DropZoneComponent implements OnDestroy {
@@ -34,7 +35,7 @@ export class DropZoneComponent implements OnDestroy {
   @ViewChild('fileInput') private fileInput!: ElementRef<HTMLInputElement>;
 
   isDragging = false;
-  uploadQueue: UploadItem[] = [];
+  readonly uploadQueue = signal<UploadItem[]>([]);
 
   constructor(private assetService: AssetService) {}
 
@@ -42,9 +43,18 @@ export class DropZoneComponent implements OnDestroy {
     // Close any still-open observe streams (files whose processing hadn't finished when the
     // component was destroyed, e.g. the user navigated away from the gallery mid-upload) so the
     // browser connection and the server-side KafkaProgressRegistry emitter entry aren't leaked.
-    for (const item of this.uploadQueue) {
+    for (const item of this.uploadQueue()) {
       item.eventSource?.close();
     }
+  }
+
+  // Upload items are mutated in place (item.status/item.progress) for the frequent
+  // per-chunk progress updates rather than rebuilt immutably every tick; this re-sets
+  // the signal to a fresh array reference (same item objects) purely so it notifies -
+  // a signal's default Object.is equality means .set()ing the same array reference
+  // back would silently be a no-op.
+  private touchQueue(): void {
+    this.uploadQueue.update(q => [...q]);
   }
 
   @HostListener('dragover', ['$event'])
@@ -80,16 +90,16 @@ export class DropZoneComponent implements OnDestroy {
         : '';
       return ACCEPTED_EXTENSIONS.has(ext);
     });
-    for (const file of accepted) {
-      this.uploadQueue.push({ file, progress: 0, status: 'pending' });
-    }
-    if (accepted.length > 0) {
-      this.processQueue();
-    }
+    if (accepted.length === 0) return;
+    this.uploadQueue.update(q => [
+      ...q,
+      ...accepted.map(file => ({ file, progress: 0, status: 'pending' as const })),
+    ]);
+    this.processQueue();
   }
 
   processQueue(): void {
-    const pending = this.uploadQueue.filter(item => item.status === 'pending');
+    const pending = this.uploadQueue().filter(item => item.status === 'pending');
     if (pending.length === 0) {
       // The multipart POST queue is drained, but files still being processed asynchronously
       // (kafka-async-upload) may not have reached a terminal state yet; checkAllComplete()
@@ -99,10 +109,12 @@ export class DropZoneComponent implements OnDestroy {
     }
     const item = pending[0];
     item.status = 'uploading';
+    this.touchQueue();
     this.assetService.uploadAsset(this.folderPath, item.file).subscribe({
       next: event => {
         if (event.type === HttpEventType.UploadProgress && event.total) {
           item.progress = Math.round((event.loaded / event.total) * 100);
+          this.touchQueue();
         } else if (event.type === HttpEventType.Response) {
           item.progress = 100;
           const body = event.body as UploadAssetResponse | null;
@@ -115,11 +127,13 @@ export class DropZoneComponent implements OnDestroy {
             // have no assetId to open.
             item.status = 'done';
           }
+          this.touchQueue();
           this.processQueue();
         }
       },
       error: () => {
         item.status = 'error';
+        this.touchQueue();
         this.processQueue();
       },
     });
@@ -131,12 +145,14 @@ export class DropZoneComponent implements OnDestroy {
 
     eventSource.addEventListener('done', () => {
       item.status = 'done';
+      this.touchQueue();
       eventSource.close();
       this.checkAllComplete();
     });
 
     eventSource.addEventListener('failed', () => {
       item.status = 'error';
+      this.touchQueue();
       eventSource.close();
       this.checkAllComplete();
     });
@@ -146,13 +162,14 @@ export class DropZoneComponent implements OnDestroy {
       // row is the durable source of truth and a subsequent gallery refresh reflects the true
       // state regardless, so don't leave the row stuck on "Processing..." forever.
       item.status = 'done';
+      this.touchQueue();
       eventSource.close();
       this.checkAllComplete();
     };
   }
 
   private checkAllComplete(): void {
-    const stillActive = this.uploadQueue.some(
+    const stillActive = this.uploadQueue().some(
       item => item.status === 'pending' || item.status === 'uploading' || item.status === 'processing'
     );
     if (!stillActive) {

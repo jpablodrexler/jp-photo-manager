@@ -8,7 +8,7 @@ import { MediaPlayerService } from '../../../core/services/media-player.service'
   standalone: true,
   imports: [MatButtonModule, MatIconModule],
   templateUrl: './video-player.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './video-player.component.scss',
 })
 export class VideoPlayerComponent implements AfterViewInit, OnDestroy {

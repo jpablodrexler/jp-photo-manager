@@ -200,7 +200,7 @@ describe('GalleryComponent', () => {
   it('should toggle asset selection', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = mockAssets;
+      component.assets.set(mockAssets);
       fixture.detectChanges();
 
       component.toggleSelection(mockAssets[0]);
@@ -214,10 +214,10 @@ describe('GalleryComponent', () => {
   it('should switch to viewer mode when openViewer is called', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = mockAssets;
+      component.assets.set(mockAssets);
       component.openViewer(1);
       expect(component.viewMode).to.equal('viewer');
-      expect(component.currentViewerIndex).to.equal(1);
+      expect(component.currentViewerIndex()).to.equal(1);
     });
   });
 
@@ -233,40 +233,40 @@ describe('GalleryComponent', () => {
   it('should navigate to previous asset in viewer', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = mockAssets;
+      component.assets.set(mockAssets);
       component.openViewer(1);
       component.viewerPrev();
-      expect(component.currentViewerIndex).to.equal(0);
+      expect(component.currentViewerIndex()).to.equal(0);
     });
   });
 
   it('should navigate to next asset in viewer', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = mockAssets;
+      component.assets.set(mockAssets);
       component.openViewer(0);
       component.viewerNext();
-      expect(component.currentViewerIndex).to.equal(1);
+      expect(component.currentViewerIndex()).to.equal(1);
     });
   });
 
   it('should not navigate before first asset in viewer', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = mockAssets;
+      component.assets.set(mockAssets);
       component.openViewer(0);
       component.viewerPrev();
-      expect(component.currentViewerIndex).to.equal(0);
+      expect(component.currentViewerIndex()).to.equal(0);
     });
   });
 
   it('should not navigate past last asset in viewer', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = mockAssets;
+      component.assets.set(mockAssets);
       component.openViewer(1);
       component.viewerNext();
-      expect(component.currentViewerIndex).to.equal(1);
+      expect(component.currentViewerIndex()).to.equal(1);
     });
   });
 
@@ -274,16 +274,16 @@ describe('GalleryComponent', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.zoomIn();
-      expect(component.viewerZoom).to.equal(1.25);
+      expect(component.viewerZoom()).to.equal(1.25);
     });
   });
 
   it('should decrease zoom within limit', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.viewerZoom = 1;
+      component.viewerZoom.set(1);
       component.zoomOut();
-      expect(component.viewerZoom).to.equal(0.75);
+      expect(component.viewerZoom()).to.equal(0.75);
     });
   });
 
@@ -293,9 +293,9 @@ describe('GalleryComponent', () => {
     mountGallery({ getAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.pageIndex = 3;
+      component.pageIndex.set(3);
       component.onSortChange();
-      expect(component.pageIndex).to.equal(0);
+      expect(component.pageIndex()).to.equal(0);
     });
   });
 
@@ -306,8 +306,8 @@ describe('GalleryComponent', () => {
     mountGallery({ deleteAssets, getAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.selectedAssets.add(1);
-      component.selectedAssets.add(2);
+      component.selectedAssets.update(s => new Set(s).add(1));
+      component.selectedAssets.update(s => new Set(s).add(2));
       component.deleteSelected(false);
       cy.wrap(deleteAssets).should('have.been.calledWith', [1, 2], false);
     });
@@ -361,9 +361,9 @@ describe('GalleryComponent', () => {
 
     mountGallery({ getAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.onFolderSelected('/new-folder');
-      expect(component.assets).to.deep.equal([]);
+      expect(component.assets()).to.deep.equal([]);
       return Promise.resolve().then(() => fixture.detectChanges());
     });
 
@@ -377,10 +377,10 @@ describe('GalleryComponent', () => {
     mountGallery({ getAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.sortCriteria = 'FILE_SIZE';
       component.onSortChange();
-      expect(component.assets).to.deep.equal([]);
+      expect(component.assets()).to.deep.equal([]);
       return Promise.resolve().then(() => fixture.detectChanges());
     });
 
@@ -391,7 +391,7 @@ describe('GalleryComponent', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.isLoading = true;
+      component.isLoading.set(true);
       fixture.detectChanges();
     });
 
@@ -401,8 +401,8 @@ describe('GalleryComponent', () => {
   it('should show the end-of-list indicator when allLoaded is true', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
-      component.allLoaded = true;
+      component.assets.set([...mockAssets]);
+      component.allLoaded.set(true);
       fixture.detectChanges();
     });
 
@@ -418,7 +418,7 @@ describe('GalleryComponent', () => {
 
     mountGallery({ downloadAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.selectedAssets.add(1);
+      component.selectedAssets.update(s => new Set(s).add(1));
       component.downloadSelected();
       cy.wrap(downloadAssets).should('have.been.calledWith', [1]);
     });
@@ -429,7 +429,7 @@ describe('GalleryComponent', () => {
 
     mountGallery({ downloadAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.selectedAssets.add(1);
+      component.selectedAssets.update(s => new Set(s).add(1));
       component.downloadSelected();
     });
 
@@ -442,7 +442,7 @@ describe('GalleryComponent', () => {
     mountGallery({ getAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.allLoaded = true;
+      component.allLoaded.set(true);
       component.loadNextPage();
     });
 
@@ -478,31 +478,31 @@ describe('GalleryComponent', () => {
   it('should increment the current viewer index when the slideshow advances', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.startSlideshow(0);
       fixture.detectChanges();
-      expect(component.currentViewerIndex).to.equal(0);
+      expect(component.currentViewerIndex()).to.equal(0);
       component.advanceSlideshow();
-      expect(component.currentViewerIndex).to.equal(1);
+      expect(component.currentViewerIndex()).to.equal(1);
     });
   });
 
   it('should stop advancing when the slideshow is paused while playing', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.startSlideshow(0);
       component.pauseSlideshow();
-      expect(component.slideshowPlaying).to.be.false;
+      expect(component.slideshowPlaying()).to.be.false;
       expect((component as unknown as { slideshowTimer: ReturnType<typeof setInterval> | null }).slideshowTimer).to.be.null;
-      expect(component.currentViewerIndex).to.equal(0);
+      expect(component.currentViewerIndex()).to.equal(0);
     });
   });
 
   it('should return to viewer mode when Escape is pressed during the slideshow', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.startSlideshow(0);
       fixture.detectChanges();
       component.onKeyDown(new KeyboardEvent('keydown', { key: 'Escape' }));
@@ -513,36 +513,36 @@ describe('GalleryComponent', () => {
   it('should toggle play/pause when the space key is pressed during the slideshow', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.startSlideshow(0);
-      expect(component.slideshowPlaying).to.be.true;
+      expect(component.slideshowPlaying()).to.be.true;
       component.onKeyDown(new KeyboardEvent('keydown', { key: ' ' }));
-      expect(component.slideshowPlaying).to.be.false;
+      expect(component.slideshowPlaying()).to.be.false;
       component.onKeyDown(new KeyboardEvent('keydown', { key: ' ' }));
-      expect(component.slideshowPlaying).to.be.true;
+      expect(component.slideshowPlaying()).to.be.true;
     });
   });
 
   it('should stop the slideshow and show a complete message at the last asset', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.startSlideshow(1); // last index
       component.advanceSlideshow(); // at last asset — should stop
-      expect(component.slideshowPlaying).to.be.false;
-      expect(component.statusMessage).to.equal('Slideshow complete');
+      expect(component.slideshowPlaying()).to.be.false;
+      expect(component.statusMessage()).to.equal('Slideshow complete');
     });
   });
 
   it('should keep the same index when starting the slideshow from the viewer toolbar', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.openViewer(1);
       expect(component.viewMode).to.equal('viewer');
-      component.startSlideshow(component.currentViewerIndex);
+      component.startSlideshow(component.currentViewerIndex());
       expect(component.viewMode).to.equal('slideshow');
-      expect(component.currentViewerIndex).to.equal(1);
+      expect(component.currentViewerIndex()).to.equal(1);
     });
   });
 
@@ -615,8 +615,8 @@ describe('GalleryComponent', () => {
   it('should show the toggle button with the sidenav in over mode on a mobile viewport', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.isMobile = true;
-      component.sidenavOpen = false;
+      component.isMobile.set(true);
+      component.sidenavOpen.set(false);
       fixture.detectChanges();
     });
 
@@ -659,14 +659,14 @@ describe('GalleryComponent', () => {
   it('should close the sidenav when a folder is selected on a mobile viewport', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.isMobile = true;
-      component.sidenavOpen = true;
+      component.isMobile.set(true);
+      component.sidenavOpen.set(true);
       fixture.detectChanges();
 
       component.onFolderSelected('/photos');
       fixture.detectChanges();
 
-      expect(component.sidenavOpen).to.be.false;
+      expect(component.sidenavOpen()).to.be.false;
       cy.get('mat-sidenav').should('not.have.class', 'mat-drawer-opened');
     });
   });
@@ -678,7 +678,7 @@ describe('GalleryComponent', () => {
 
     mountGallery({ rateAsset }).then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.rateAsset(mockAssets[0], 4);
       cy.wrap(rateAsset).should('have.been.calledWith', 1, 4);
     });
@@ -690,7 +690,7 @@ describe('GalleryComponent', () => {
 
     mountGallery({ rateAsset }).then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [ratedAsset, mockAssets[1]];
+      component.assets.set([ratedAsset, mockAssets[1]]);
       component.rateAsset(ratedAsset, 4);
       cy.wrap(rateAsset).should('have.been.calledWith', 1, 0);
     });
@@ -814,7 +814,7 @@ describe('GalleryComponent', () => {
       component.currentFolder = '/photos';
       component.addTagFilter({ value: 'vacation', chipInput: { clear: () => {} } } as unknown as MatChipInputEvent);
       expect(component.selectedTags).to.deep.equal(['vacation']);
-      expect(component.pageIndex).to.equal(0);
+      expect(component.pageIndex()).to.equal(0);
     });
 
     cy.wrap(getAssets).should('have.been.called');
@@ -913,7 +913,7 @@ describe('GalleryComponent', () => {
       return Promise.resolve().then(() => {
         fixture.detectChanges();
         expect(fixture.componentInstance.viewMode).to.equal('viewer');
-        expect(fixture.componentInstance.currentViewerIndex).to.equal(1);
+        expect(fixture.componentInstance.currentViewerIndex()).to.equal(1);
       });
     });
   });
@@ -979,11 +979,11 @@ describe('GalleryComponent', () => {
       component.currentFolder = '/photos';
       component.setViewType('timeline');
       return Promise.resolve().then(() => {
-        component.timelineGroups = [{ localDate: '2024-05-10', label: 'May 10, 2024', assets: [] }];
+        component.timelineGroups.set([{ localDate: '2024-05-10', label: 'May 10, 2024', assets: [] }]);
         component.searchTerm = 'beach';
         component.loadAssets();
-        expect(component.timelineGroups).to.deep.equal([]);
-        expect(component.timelinePageIndex).to.equal(0);
+        expect(component.timelineGroups()).to.deep.equal([]);
+        expect(component.timelinePageIndex()).to.equal(0);
       });
     });
   });
@@ -991,7 +991,7 @@ describe('GalleryComponent', () => {
   it('should switch to thumbnails mode when a folder is selected while in viewer mode', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.openViewer(0);
       expect(component.viewMode).to.equal('viewer');
 
@@ -1004,7 +1004,7 @@ describe('GalleryComponent', () => {
   it('should switch to thumbnails mode when a folder is selected while in slideshow mode', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.startSlideshow(0);
       expect(component.viewMode).to.equal('slideshow');
 
@@ -1020,8 +1020,8 @@ describe('GalleryComponent', () => {
       const component = fixture.componentInstance;
       cy.stub(component['dialog'], 'open').returns({ afterClosed: () => of({ destinationFolder: '/target' }) } as never);
       component.currentFolder = '/photos';
-      component.selectedAssets.add(1);
-      component.selectedAssets.add(2);
+      component.selectedAssets.update(s => new Set(s).add(1));
+      component.selectedAssets.update(s => new Set(s).add(2));
       component.moveSelectedAssets('move');
       return Promise.resolve().then(() => fixture.detectChanges());
     });
@@ -1035,7 +1035,7 @@ describe('GalleryComponent', () => {
       const component = fixture.componentInstance;
       cy.stub(component['dialog'], 'open').returns({ afterClosed: () => of({ destinationFolder: '/target' }) } as never);
       component.currentFolder = '/photos';
-      component.selectedAssets.add(1);
+      component.selectedAssets.update(s => new Set(s).add(1));
       component.moveSelectedAssets('copy');
       return Promise.resolve().then(() => fixture.detectChanges());
     });
@@ -1049,7 +1049,7 @@ describe('GalleryComponent', () => {
       const component = fixture.componentInstance;
       cy.stub(component['dialog'], 'open').returns({ afterClosed: () => of({ destinationFolder: '/target' }) } as never);
       component.currentFolder = '/photos';
-      component.selectedAssets.add(1);
+      component.selectedAssets.update(s => new Set(s).add(1));
       component.moveSelectedAssets('move');
       return Promise.resolve().then(() => fixture.detectChanges());
     });
@@ -1215,8 +1215,8 @@ describe('GalleryComponent', () => {
   it('should show position 2 of total in the status bar in slideshow mode at the second asset', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
-      component.totalItems = 2;
+      component.assets.set([...mockAssets]);
+      component.totalItems.set(2);
       component.currentFolder = '/photos';
       component.startSlideshow(1);
       fixture.detectChanges();
@@ -1274,7 +1274,7 @@ describe('GalleryComponent', () => {
 
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [videoAsset];
+      component.assets.set([videoAsset]);
       component.openViewer(0);
       fixture.detectChanges();
     });
@@ -1286,7 +1286,7 @@ describe('GalleryComponent', () => {
   it('should show an img element instead of a video for an image asset in the viewer', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.openViewer(0);
       fixture.detectChanges();
     });
@@ -1304,7 +1304,7 @@ describe('GalleryComponent', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.selectedAssets = new Set([1, 2]);
+      component.selectedAssets.set(new Set([1, 2]));
       // Replace the injected dialog with the mock after mount
       (component as unknown as { dialog: MatDialog }).dialog = mockDialog as MatDialog;
       component.renameSelectedAssets();
@@ -1321,7 +1321,7 @@ describe('GalleryComponent', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.selectedAssets = new Set([1]);
+      component.selectedAssets.set(new Set([1]));
       (component as unknown as { dialog: MatDialog }).dialog = mockDialog as MatDialog;
       component.renameSelectedAssets();
       fixture.detectChanges();
@@ -1336,7 +1336,7 @@ describe('GalleryComponent', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.isDragging = true;
-      component.viewerZoom = 1;
+      component.viewerZoom.set(1);
       component.onViewerMouseMove(new MouseEvent('mousemove', { movementX: 30, movementY: 20 }));
       expect(component.panX).to.equal(30);
       expect(component.panY).to.equal(20);
@@ -1348,7 +1348,7 @@ describe('GalleryComponent', () => {
       const component = fixture.componentInstance;
       component.panX = 50;
       component.panY = 30;
-      component.viewerZoom = 2;
+      component.viewerZoom.set(2);
       component.resetZoom();
       expect(component.panX).to.equal(0);
       expect(component.panY).to.equal(0);

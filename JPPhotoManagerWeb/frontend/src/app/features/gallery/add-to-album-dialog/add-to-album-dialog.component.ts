@@ -55,7 +55,7 @@ import { AddToAlbumDialogData, AddToAlbumDialogResult } from '../../../core/mode
       </button>
     </mat-dialog-actions>
   `,
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`.album-radio-group { display: flex; flex-direction: column; gap: 8px; }`]
 })
 export class AddToAlbumDialogComponent {

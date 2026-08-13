@@ -1,4 +1,4 @@
-@if (album) {
+@if (album(); as album) {
   <mat-toolbar>
     <button mat-icon-button routerLink="/albums" title="Back to albums">
       <mat-icon>arrow_back</mat-icon>
@@ -37,11 +37,11 @@
 
   @if (totalPages > 1) {
     <div class="pagination">
-      <button mat-icon-button [disabled]="currentPage === 0" (click)="loadPage(currentPage - 1)">
+      <button mat-icon-button [disabled]="currentPage() === 0" (click)="loadPage(currentPage() - 1)">
         <mat-icon>chevron_left</mat-icon>
       </button>
-      <span>{{ currentPage + 1 }} / {{ totalPages }}</span>
-      <button mat-icon-button [disabled]="currentPage >= totalPages - 1" (click)="loadPage(currentPage + 1)">
+      <span>{{ currentPage() + 1 }} / {{ totalPages }}</span>
+      <button mat-icon-button [disabled]="currentPage() >= totalPages - 1" (click)="loadPage(currentPage() + 1)">
         <mat-icon>chevron_right</mat-icon>
       </button>
     </div>

@@ -8,7 +8,7 @@ import { Asset } from '../../../core/models/asset.model';
   standalone: true,
   imports: [MatButtonModule, MatIconModule],
   templateUrl: './media-fullscreen-overlay.component.html',
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './media-fullscreen-overlay.component.scss',
 })
 export class MediaFullscreenOverlayComponent {

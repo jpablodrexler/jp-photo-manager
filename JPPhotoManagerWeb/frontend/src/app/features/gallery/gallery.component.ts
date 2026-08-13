@@ -6,7 +6,8 @@ import {
   OnDestroy,
   OnInit,
   ViewChild,
-  ChangeDetectionStrategy
+  ChangeDetectionStrategy,
+  signal
 } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
 import { CommonModule } from "@angular/common";
@@ -85,7 +86,7 @@ type ViewType = "grid" | "timeline";
     SocialMediaCropComponent,
   ],
   templateUrl: "./gallery.component.html",
-  changeDetection: ChangeDetectionStrategy.Eager,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: "./gallery.component.scss",
 })
 export class GalleryComponent implements OnInit, OnDestroy {
@@ -96,8 +97,8 @@ export class GalleryComponent implements OnInit, OnDestroy {
   readonly audioPlayer = inject(MediaPlayerService);
   readonly authService = inject(AuthService);
 
-  isMobile = false;
-  sidenavOpen = true;
+  readonly isMobile = signal(false);
+  readonly sidenavOpen = signal(true);
 
   currentFolder: string = "";
   viewMode: ViewMode = "thumbnails";
@@ -109,36 +110,36 @@ export class GalleryComponent implements OnInit, OnDestroy {
   dateTo: Date | null = null;
   minRating = 0;
   selectedTags: string[] = [];
-  tagSuggestions: string[] = [];
+  readonly tagSuggestions = signal<string[]>([]);
   tagFilterControl = new FormControl<string>('', { nonNullable: true });
   readonly tagSeparatorKeysCodes = [ENTER, COMMA] as const;
   private readonly searchSubject = new Subject<string>();
   private catalogEventSource?: EventSource;
   private readonly destroy$ = new Subject<void>();
 
-  assets: Asset[] = [];
-  timelineGroups: TimelineGroup[] = [];
-  timelinePageIndex = 0;
-  timelineAllLoaded = false;
-  selectedAssets: Set<number> = new Set();
-  currentViewerIndex = 0;
-  viewerZoom = 1;
+  readonly assets = signal<Asset[]>([]);
+  readonly timelineGroups = signal<TimelineGroup[]>([]);
+  readonly timelinePageIndex = signal(0);
+  readonly timelineAllLoaded = signal(false);
+  readonly selectedAssets = signal<Set<number>>(new Set());
+  readonly currentViewerIndex = signal(0);
+  readonly viewerZoom = signal(1);
   slideshowInterval = 5;
-  slideshowPlaying = false;
+  readonly slideshowPlaying = signal(false);
   private pendingViewerAssetId: number | null = null;
   private slideshowTimer: ReturnType<typeof setInterval> | null = null;
-  slideshowResetTick = false;
+  readonly slideshowResetTick = signal(false);
   readonly intervalOptions = [3, 5, 10, 15];
-  userAlbums: AlbumSummary[] = [];
-  presets: SearchPreset[] = [];
-  selectedPresetId: number | null = null;
+  readonly userAlbums = signal<AlbumSummary[]>([]);
+  readonly presets = signal<SearchPreset[]>([]);
+  readonly selectedPresetId = signal<number | null>(null);
 
-  pageIndex = 0;
-  totalItems = 0;
-  isLoading = false;
-  allLoaded = false;
+  readonly pageIndex = signal(0);
+  readonly totalItems = signal(0);
+  readonly isLoading = signal(false);
+  readonly allLoaded = signal(false);
 
-  statusMessage = "";
+  readonly statusMessage = signal("");
   showExifPanel = false;
   showCropOverlay = false;
 
@@ -172,7 +173,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.searchSubject
       .pipe(debounceTime(400), distinctUntilChanged(), takeUntil(this.destroy$))
       .subscribe(() => {
-        this.pageIndex = 0;
+        this.pageIndex.set(0);
         this.loadAssets();
       });
 
@@ -183,10 +184,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
     ).subscribe(q => {
       if (q && q.length >= 1) {
         this.tagService.searchTags(q).subscribe(tags => {
-          this.tagSuggestions = tags.filter(t => !this.selectedTags.includes(t));
+          this.tagSuggestions.set(tags.filter(t => !this.selectedTags.includes(t)));
         });
       } else {
-        this.tagSuggestions = [];
+        this.tagSuggestions.set([]);
       }
     });
 
@@ -194,8 +195,8 @@ export class GalleryComponent implements OnInit, OnDestroy {
       .observe([Breakpoints.Handset])
       .pipe(takeUntil(this.destroy$))
       .subscribe((result) => {
-        this.isMobile = result.matches;
-        this.sidenavOpen = !result.matches;
+        this.isMobile.set(result.matches);
+        this.sidenavOpen.set(!result.matches);
       });
 
     this.loadPresets();
@@ -219,20 +220,20 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   toggleSidenav(): void {
-    this.sidenavOpen = !this.sidenavOpen;
+    this.sidenavOpen.update(open => !open);
   }
 
   onFolderSelected(folderPath: string): void {
     this.currentFolder = folderPath;
     this.viewMode = 'thumbnails';
-    if (this.isMobile) {
-      this.sidenavOpen = false;
+    if (this.isMobile()) {
+      this.sidenavOpen.set(false);
     }
     this.clearFilters();
-    this.selectedAssets.clear();
+    this.selectedAssets.set(new Set());
     this.disconnectObserver();
     this.albumService.getAlbums().subscribe({
-      next: (albums) => (this.userAlbums = albums),
+      next: (albums) => this.userAlbums.set(albums),
       error: () => {},
     });
     Promise.resolve().then(() => {
@@ -252,12 +253,12 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   onDateChange(): void {
-    this.pageIndex = 0;
+    this.pageIndex.set(0);
     this.loadAssets();
   }
 
   onMinRatingChange(): void {
-    this.pageIndex = 0;
+    this.pageIndex.set(0);
     this.loadAssets();
   }
 
@@ -265,7 +266,9 @@ export class GalleryComponent implements OnInit, OnDestroy {
     const newRating = asset.rating === star ? 0 : star;
     this.assetService.rateAsset(asset.assetId, newRating).subscribe({
       next: () => {
-        asset.rating = newRating;
+        this.assets.update(list =>
+          list.map(a => (a.assetId === asset.assetId ? { ...a, rating: newRating } : a)),
+        );
       },
       error: () =>
         this.snackBar.open("Failed to rate asset", "Dismiss", {
@@ -286,20 +289,20 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.dateTo = null;
     this.minRating = 0;
     this.selectedTags = [];
-    this.tagSuggestions = [];
+    this.tagSuggestions.set([]);
     this.tagFilterControl.setValue('', { emitEvent: false });
-    this.assets = [];
-    this.pageIndex = 0;
-    this.isLoading = false;
-    this.allLoaded = false;
-    this.timelineGroups = [];
-    this.timelinePageIndex = 0;
-    this.timelineAllLoaded = false;
+    this.assets.set([]);
+    this.pageIndex.set(0);
+    this.isLoading.set(false);
+    this.allLoaded.set(false);
+    this.timelineGroups.set([]);
+    this.timelinePageIndex.set(0);
+    this.timelineAllLoaded.set(false);
   }
 
   loadNextPage(continueLoading = false): void {
-    if (this.isLoading || this.allLoaded || !this.currentFolder) return;
-    this.isLoading = true;
+    if (this.isLoading() || this.allLoaded() || !this.currentFolder) return;
+    this.isLoading.set(true);
     const search = this.searchTerm.trim() || undefined;
     const dateFrom = this.dateFrom
       ? this.dateFrom.toISOString().substring(0, 10)
@@ -312,7 +315,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.assetService
       .getAssets(
         this.currentFolder,
-        this.pageIndex,
+        this.pageIndex(),
         this.sortCriteria,
         search,
         dateFrom,
@@ -322,24 +325,24 @@ export class GalleryComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (data: PaginatedData<Asset>) => {
-          this.assets = [...this.assets, ...data.items];
-          this.totalItems = data.totalItems;
-          this.pageIndex++;
-          this.allLoaded = this.pageIndex >= data.totalPages;
-          this.isLoading = false;
+          this.assets.update(list => [...list, ...data.items]);
+          this.totalItems.set(data.totalItems);
+          this.pageIndex.update(i => i + 1);
+          this.allLoaded.set(this.pageIndex() >= data.totalPages);
+          this.isLoading.set(false);
           if (this.pendingViewerAssetId !== null) {
-            const idx = this.assets.findIndex(a => a.assetId === this.pendingViewerAssetId);
+            const idx = this.assets().findIndex(a => a.assetId === this.pendingViewerAssetId);
             if (idx >= 0) {
               this.pendingViewerAssetId = null;
               this.openViewer(idx);
             }
           }
-          if (continueLoading && !this.allLoaded) {
+          if (continueLoading && !this.allLoaded()) {
             this.loadNextPage(true);
           }
         },
         error: () => {
-          this.isLoading = false;
+          this.isLoading.set(false);
           this.snackBar.open("Failed to load assets", "Dismiss", {
             duration: 3000,
           });
@@ -365,22 +368,22 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   loadTimelinePage(): void {
-    if (this.isLoading || this.timelineAllLoaded || !this.currentFolder) return;
-    this.isLoading = true;
+    if (this.isLoading() || this.timelineAllLoaded() || !this.currentFolder) return;
+    this.isLoading.set(true);
     const search = this.searchTerm.trim() || undefined;
     const dateFrom = this.dateFrom ? this.dateFrom.toISOString().substring(0, 10) : undefined;
     const dateTo = this.dateTo ? this.dateTo.toISOString().substring(0, 10) : undefined;
     const minRating = this.minRating > 0 ? this.minRating : undefined;
-    this.assetService.getTimeline(this.currentFolder, this.timelinePageIndex, { search, dateFrom, dateTo, minRating })
+    this.assetService.getTimeline(this.currentFolder, this.timelinePageIndex(), { search, dateFrom, dateTo, minRating })
       .subscribe({
         next: (data) => {
-          this.timelineGroups = [...this.timelineGroups, ...data.items];
-          this.timelinePageIndex++;
-          this.timelineAllLoaded = this.timelinePageIndex >= data.totalPages;
-          this.isLoading = false;
+          this.timelineGroups.update(list => [...list, ...data.items]);
+          this.timelinePageIndex.update(i => i + 1);
+          this.timelineAllLoaded.set(this.timelinePageIndex() >= data.totalPages);
+          this.isLoading.set(false);
         },
         error: () => {
-          this.isLoading = false;
+          this.isLoading.set(false);
           this.snackBar.open('Failed to load timeline', 'Dismiss', { duration: 3000 });
         },
       });
@@ -391,15 +394,15 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.viewType = type;
     this.disconnectObserver();
     if (type === 'timeline') {
-      this.timelineGroups = [];
-      this.timelinePageIndex = 0;
-      this.timelineAllLoaded = false;
-      this.isLoading = false;
+      this.timelineGroups.set([]);
+      this.timelinePageIndex.set(0);
+      this.timelineAllLoaded.set(false);
+      this.isLoading.set(false);
     } else {
-      this.assets = [];
-      this.pageIndex = 0;
-      this.isLoading = false;
-      this.allLoaded = false;
+      this.assets.set([]);
+      this.pageIndex.set(0);
+      this.isLoading.set(false);
+      this.allLoaded.set(false);
     }
     Promise.resolve().then(() => {
       if (type === 'timeline') {
@@ -417,13 +420,13 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   loadAssets(): void {
-    this.assets = [];
-    this.pageIndex = 0;
-    this.isLoading = false;
-    this.allLoaded = false;
-    this.timelineGroups = [];
-    this.timelinePageIndex = 0;
-    this.timelineAllLoaded = false;
+    this.assets.set([]);
+    this.pageIndex.set(0);
+    this.isLoading.set(false);
+    this.allLoaded.set(false);
+    this.timelineGroups.set([]);
+    this.timelinePageIndex.set(0);
+    this.timelineAllLoaded.set(false);
     this.disconnectObserver();
     Promise.resolve().then(() => {
       if (this.viewType === 'timeline') {
@@ -436,30 +439,34 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   toggleSelection(asset: Asset): void {
-    if (this.selectedAssets.has(asset.assetId)) {
-      this.selectedAssets.delete(asset.assetId);
-    } else {
-      this.selectedAssets.add(asset.assetId);
-    }
+    this.selectedAssets.update(selected => {
+      const next = new Set(selected);
+      if (next.has(asset.assetId)) {
+        next.delete(asset.assetId);
+      } else {
+        next.add(asset.assetId);
+      }
+      return next;
+    });
   }
 
   isSelected(asset: Asset): boolean {
-    return this.selectedAssets.has(asset.assetId);
+    return this.selectedAssets().has(asset.assetId);
   }
 
   openViewer(index: number): void {
-    this.currentViewerIndex = index;
+    this.currentViewerIndex.set(index);
     this.viewMode = "viewer";
-    this.viewerZoom = 1;
+    this.viewerZoom.set(1);
     this.panX = 0;
     this.panY = 0;
     this.showExifPanel = false;
   }
 
   openViewerFromTimeline(asset: Asset): void {
-    const flat = this.timelineGroups.flatMap(g => g.assets);
+    const flat = this.timelineGroups().flatMap(g => g.assets);
     const idx = flat.findIndex(a => a.assetId === asset.assetId);
-    this.assets = flat;
+    this.assets.set(flat);
     this.openViewer(idx >= 0 ? idx : 0);
   }
 
@@ -510,10 +517,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   startSlideshow(index: number): void {
-    this.currentViewerIndex = index;
-    this.viewerZoom = 1;
+    this.currentViewerIndex.set(index);
+    this.viewerZoom.set(1);
     this.viewMode = "slideshow";
-    this.slideshowPlaying = true;
+    this.slideshowPlaying.set(true);
     this.slideshowTimer = setInterval(
       () => this.advanceSlideshow(),
       this.slideshowInterval * 1000,
@@ -521,15 +528,15 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   advanceSlideshow(): void {
-    if (this.currentViewerIndex < this.assets.length - 1) {
-      this.currentViewerIndex++;
-      this.viewerZoom = 1;
-      this.slideshowResetTick = !this.slideshowResetTick;
+    if (this.currentViewerIndex() < this.assets().length - 1) {
+      this.currentViewerIndex.update(i => i + 1);
+      this.viewerZoom.set(1);
+      this.slideshowResetTick.update(t => !t);
     } else {
       this.stopSlideshow();
-      this.statusMessage = "Slideshow complete";
+      this.statusMessage.set("Slideshow complete");
       setTimeout(() => {
-        this.statusMessage = "";
+        this.statusMessage.set("");
       }, 3000);
     }
   }
@@ -538,12 +545,12 @@ export class GalleryComponent implements OnInit, OnDestroy {
     if (this.slideshowTimer !== null) {
       clearInterval(this.slideshowTimer);
       this.slideshowTimer = null;
-      this.slideshowPlaying = false;
+      this.slideshowPlaying.set(false);
     }
   }
 
   resumeSlideshow(): void {
-    this.slideshowPlaying = true;
+    this.slideshowPlaying.set(true);
     this.slideshowTimer = setInterval(
       () => this.advanceSlideshow(),
       this.slideshowInterval * 1000,
@@ -551,7 +558,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   toggleSlideshowPlay(): void {
-    if (this.slideshowPlaying) {
+    if (this.slideshowPlaying()) {
       this.pauseSlideshow();
     } else {
       this.resumeSlideshow();
@@ -560,7 +567,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   stopSlideshow(): void {
     this.pauseSlideshow();
-    this.slideshowPlaying = false;
+    this.slideshowPlaying.set(false);
   }
 
   exitSlideshow(): void {
@@ -578,11 +585,11 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   onIntervalChange(): void {
-    if (this.slideshowPlaying) {
+    if (this.slideshowPlaying()) {
       this.pauseSlideshow();
       this.resumeSlideshow();
     }
-    this.slideshowResetTick = !this.slideshowResetTick;
+    this.slideshowResetTick.update(t => !t);
   }
 
   toggleExifPanel(): void {
@@ -590,37 +597,37 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   viewerPrev(): void {
-    if (this.currentViewerIndex > 0) {
-      this.currentViewerIndex--;
-      this.viewerZoom = 1;
+    if (this.currentViewerIndex() > 0) {
+      this.currentViewerIndex.update(i => i - 1);
+      this.viewerZoom.set(1);
       this.panX = 0;
       this.panY = 0;
     }
   }
 
   viewerNext(): void {
-    if (this.currentViewerIndex < this.assets.length - 1) {
-      this.currentViewerIndex++;
-      this.viewerZoom = 1;
+    if (this.currentViewerIndex() < this.assets().length - 1) {
+      this.currentViewerIndex.update(i => i + 1);
+      this.viewerZoom.set(1);
       this.panX = 0;
       this.panY = 0;
     }
   }
 
   zoomIn(): void {
-    this.viewerZoom = Math.min(this.viewerZoom + 0.25, 4);
+    this.viewerZoom.update(z => Math.min(z + 0.25, 4));
   }
 
   zoomOut(): void {
-    this.viewerZoom = Math.max(this.viewerZoom - 0.25, 0.25);
-    if (this.viewerZoom === 1) {
+    this.viewerZoom.update(z => Math.max(z - 0.25, 0.25));
+    if (this.viewerZoom() === 1) {
       this.panX = 0;
       this.panY = 0;
     }
   }
 
   resetZoom(): void {
-    this.viewerZoom = 1;
+    this.viewerZoom.set(1);
     this.panX = 0;
     this.panY = 0;
   }
@@ -637,10 +644,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   onSortChange(): void {
-    this.assets = [];
-    this.pageIndex = 0;
-    this.isLoading = false;
-    this.allLoaded = false;
+    this.assets.set([]);
+    this.pageIndex.set(0);
+    this.isLoading.set(false);
+    this.allLoaded.set(false);
     this.disconnectObserver();
     Promise.resolve().then(() => {
       this.loadNextPage(true);
@@ -648,7 +655,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   downloadSelected(): void {
-    const ids = Array.from(this.selectedAssets);
+    const ids = Array.from(this.selectedAssets());
     if (ids.length === 0) return;
 
     const snackRef = this.snackBar.open("Preparing download…", undefined, {
@@ -676,12 +683,12 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   deleteSelected(deleteFiles: boolean): void {
-    const ids = Array.from(this.selectedAssets);
+    const ids = Array.from(this.selectedAssets());
     if (ids.length === 0) return;
 
     this.assetService.deleteAssets(ids, deleteFiles).subscribe({
       next: () => {
-        this.selectedAssets.clear();
+        this.selectedAssets.set(new Set());
         this.loadAssets();
         this.snackBar.open(`Deleted ${ids.length} asset(s)`, undefined, {
           duration: 2000,
@@ -701,14 +708,14 @@ export class GalleryComponent implements OnInit, OnDestroy {
       AddToAlbumDialogResult
     >(AddToAlbumDialogComponent, {
       width: "400px",
-      data: { albums: this.userAlbums },
+      data: { albums: this.userAlbums() },
     });
     dialogRef.afterClosed().subscribe((result) => {
       if (!result) return;
       if (result.newAlbumName) {
         this.albumService.createAlbum({ name: result.newAlbumName }).subscribe({
           next: (album) => {
-            this.userAlbums = [...this.userAlbums, album];
+            this.userAlbums.update(list => [...list, album]);
             this.albumService
               .addAssets(album.albumId, [asset.assetId])
               .subscribe({
@@ -730,7 +737,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
       } else if (result.albumId) {
         this.albumService.addAssets(result.albumId, [asset.assetId]).subscribe({
           next: () => {
-            const album = this.userAlbums.find(
+            const album = this.userAlbums().find(
               (a) => a.albumId === result.albumId,
             );
             this.snackBar.open(
@@ -751,12 +758,12 @@ export class GalleryComponent implements OnInit, OnDestroy {
   loadPresets(): void {
     this.searchPresetService
       .listPresets()
-      .subscribe({ next: (p) => (this.presets = p) });
+      .subscribe({ next: (p) => this.presets.set(p) });
   }
 
   onPresetSelected(presetId: number | null): void {
     if (presetId === null) return;
-    const preset = this.presets.find((p) => p.presetId === presetId);
+    const preset = this.presets().find((p) => p.presetId === presetId);
     if (preset) this.applyPreset(preset);
   }
 
@@ -765,7 +772,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.dateFrom = preset.dateFrom ? new Date(preset.dateFrom) : null;
     this.dateTo = preset.dateTo ? new Date(preset.dateTo) : null;
     this.minRating = preset.minRating ?? 0;
-    this.pageIndex = 0;
+    this.pageIndex.set(0);
     this.loadAssets();
   }
 
@@ -791,7 +798,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
       };
       this.searchPresetService.createPreset(req).subscribe({
         next: (preset) => {
-          this.presets = [...this.presets, preset];
+          this.presets.update(list => [...list, preset]);
           this.snackBar.open("Preset saved", undefined, { duration: 2000 });
         },
       });
@@ -802,11 +809,9 @@ export class GalleryComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     this.searchPresetService.deletePreset(preset.presetId).subscribe({
       next: () => {
-        this.presets = this.presets.filter(
-          (p) => p.presetId !== preset.presetId,
-        );
-        if (this.selectedPresetId === preset.presetId) {
-          this.selectedPresetId = null;
+        this.presets.update(list => list.filter((p) => p.presetId !== preset.presetId));
+        if (this.selectedPresetId() === preset.presetId) {
+          this.selectedPresetId.set(null);
         }
         this.snackBar.open("Preset deleted", undefined, { duration: 2000 });
       },
@@ -819,28 +824,28 @@ export class GalleryComponent implements OnInit, OnDestroy {
     this.tagFilterControl.setValue('', { emitEvent: false });
     if (!name || this.selectedTags.includes(name)) return;
     this.selectedTags = [...this.selectedTags, name];
-    this.pageIndex = 0;
+    this.pageIndex.set(0);
     this.loadAssets();
   }
 
   addTagFilterFromAutocomplete(event: MatAutocompleteSelectedEvent): void {
     const name = event.option.viewValue.toLowerCase();
     this.tagFilterControl.setValue('', { emitEvent: false });
-    this.tagSuggestions = [];
+    this.tagSuggestions.set([]);
     if (!name || this.selectedTags.includes(name)) return;
     this.selectedTags = [...this.selectedTags, name];
-    this.pageIndex = 0;
+    this.pageIndex.set(0);
     this.loadAssets();
   }
 
   removeTagFilter(name: string): void {
     this.selectedTags = this.selectedTags.filter(t => t !== name);
-    this.pageIndex = 0;
+    this.pageIndex.set(0);
     this.loadAssets();
   }
 
   openBulkTagDialog(): void {
-    const ids = Array.from(this.selectedAssets);
+    const ids = Array.from(this.selectedAssets());
     if (ids.length === 0) return;
     this.dialog.open<BulkTagDialogComponent, unknown, boolean>(BulkTagDialogComponent, {
       width: '440px',
@@ -851,14 +856,14 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   renameSelectedAssets(): void {
-    const ids = Array.from(this.selectedAssets);
+    const ids = Array.from(this.selectedAssets());
     if (ids.length === 0) return;
     this.dialog.open(BatchRenameDialogComponent, {
       data: { assetIds: ids, assetCount: ids.length },
     }).afterClosed().subscribe((result: { success: boolean; count?: number; error?: string } | null) => {
       if (!result) return;
       if (result.success) {
-        this.selectedAssets.clear();
+        this.selectedAssets.set(new Set());
         this.loadAssets();
         this.snackBar.open(`Renamed ${result.count} asset(s)`, undefined, { duration: 2000 });
       } else {
@@ -868,7 +873,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   moveSelectedAssets(mode: 'move' | 'copy'): void {
-    const ids = Array.from(this.selectedAssets);
+    const ids = Array.from(this.selectedAssets());
     if (ids.length === 0) return;
     this.dialog.open<
       FolderPickerDialogComponent,
@@ -887,7 +892,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
           const folderName = result.destinationFolder.split('/').filter(Boolean).pop() ?? result.destinationFolder;
           const doneVerb = mode === 'move' ? 'Moved' : 'Copied';
           this.snackBar.open(`${doneVerb} ${ids.length} asset(s) to ${folderName}`, 'OK', { duration: 4000 });
-          this.selectedAssets.clear();
+          this.selectedAssets.set(new Set());
           this.loadAssets();
         },
         error: () => {
@@ -906,8 +911,8 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
   onViewerMouseMove(event: MouseEvent): void {
     if (!this.isDragging) return;
-    this.panX += event.movementX / this.viewerZoom;
-    this.panY += event.movementY / this.viewerZoom;
+    this.panX += event.movementX / this.viewerZoom();
+    this.panY += event.movementY / this.viewerZoom();
   }
 
   onViewerMouseUp(): void {
@@ -927,8 +932,8 @@ export class GalleryComponent implements OnInit, OnDestroy {
   onViewerTouchMove(event: TouchEvent): void {
     const dx = event.touches[0].clientX - this.lastTouchX;
     const dy = event.touches[0].clientY - this.lastTouchY;
-    this.panX += dx / this.viewerZoom;
-    this.panY += dy / this.viewerZoom;
+    this.panX += dx / this.viewerZoom();
+    this.panY += dy / this.viewerZoom();
     this.lastTouchX = event.touches[0].clientX;
     this.lastTouchY = event.touches[0].clientY;
     event.preventDefault();
@@ -980,10 +985,10 @@ export class GalleryComponent implements OnInit, OnDestroy {
   }
 
   get currentViewerAsset(): Asset | undefined {
-    return this.assets[this.currentViewerIndex];
+    return this.assets()[this.currentViewerIndex()];
   }
 
   get selectedCount(): number {
-    return this.selectedAssets.size;
+    return this.selectedAssets().size;
   }
 }
