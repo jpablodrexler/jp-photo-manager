@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { SyncService } from './sync.service';
 import { SyncAssetsDirectoriesDefinition } from '../models/sync-config.model';
@@ -22,7 +22,7 @@ describe('SyncService', () => {
     TestBed.configureTestingModule({
       providers: [
         SyncService,
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     });

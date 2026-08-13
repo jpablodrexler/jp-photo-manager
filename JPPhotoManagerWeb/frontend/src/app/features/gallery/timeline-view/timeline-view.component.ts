@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { ThumbnailComponent } from '../../../shared/components/thumbnail/thumbnail.component';
 import { TimelineGroup } from '../../../core/models/timeline-group.model';
 import { Asset } from '../../../core/models/asset.model';
@@ -8,6 +8,7 @@ import { Asset } from '../../../core/models/asset.model';
   standalone: true,
   imports: [ThumbnailComponent],
   templateUrl: './timeline-view.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './timeline-view.component.scss',
 })
 export class TimelineViewComponent {

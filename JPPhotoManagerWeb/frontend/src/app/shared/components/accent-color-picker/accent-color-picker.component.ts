@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
 @Component({
@@ -6,6 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
   standalone: true,
   imports: [MatIconModule],
   templateUrl: './accent-color-picker.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './accent-color-picker.component.scss',
 })
 export class AccentColorPickerComponent {

@@ -7,6 +7,8 @@ import {
   OnDestroy,
   Output,
   ViewChild,
+  ChangeDetectionStrategy,
+  signal
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -31,6 +33,7 @@ type CornerName = 'TL' | 'TR' | 'BL' | 'BR';
   standalone: true,
   imports: [FormsModule, MatButtonModule, MatSelectModule],
   templateUrl: './social-media-crop.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './social-media-crop.component.scss',
 })
 export class SocialMediaCropComponent implements AfterViewInit, OnDestroy {
@@ -41,7 +44,7 @@ export class SocialMediaCropComponent implements AfterViewInit, OnDestroy {
 
   readonly formats = SOCIAL_MEDIA_FORMATS;
   selectedFormat: SocialMediaFormatDef = SOCIAL_MEDIA_FORMATS[0];
-  isSaving = false;
+  readonly isSaving = signal(false);
 
   private readonly img = new Image();
   private cropBox: CropBox = { x: 0, y: 0, width: 0, height: 0 };
@@ -128,15 +131,15 @@ export class SocialMediaCropComponent implements AfterViewInit, OnDestroy {
       height: Math.round(this.cropBox.height * scaleY),
     };
 
-    this.isSaving = true;
+    this.isSaving.set(true);
     this.assetService.cropAsset(this.asset.assetId, request).subscribe({
       next: (newAsset) => {
-        this.isSaving = false;
+        this.isSaving.set(false);
         window.open('/api/assets/' + newAsset.assetId + '/image', '_blank');
         this.cancelled.emit();
       },
       error: () => {
-        this.isSaving = false;
+        this.isSaving.set(false);
         this.snackBar.open('Failed to save crop', 'Dismiss', { duration: 4000 });
       },
     });

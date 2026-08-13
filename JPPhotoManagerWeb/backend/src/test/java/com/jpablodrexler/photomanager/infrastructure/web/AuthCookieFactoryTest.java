@@ -24,13 +24,15 @@ class AuthCookieFactoryTest {
     }
 
     @Test
-    void refreshCookie_returnsHttpOnlyCookieScopedToRefreshEndpoint() {
+    void refreshCookie_returnsHttpOnlyCookieScopedToAuthEndpoints() {
         ResponseCookie cookie = sut.refreshCookie("refresh-value", Duration.ofDays(30));
 
         assertThat(cookie.getName()).isEqualTo("refreshToken");
         assertThat(cookie.getValue()).isEqualTo("refresh-value");
         assertThat(cookie.isHttpOnly()).isTrue();
-        assertThat(cookie.getPath()).isEqualTo("/api/auth/refresh");
+        // Must cover /api/auth/sessions (current-session lookup, revoke) too,
+        // not just /api/auth/refresh - see AuthCookieFactory's comment.
+        assertThat(cookie.getPath()).isEqualTo("/api/auth");
         assertThat(cookie.getSameSite()).isEqualTo("Strict");
         assertThat(cookie.getMaxAge()).isEqualTo(Duration.ofDays(30));
     }

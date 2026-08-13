@@ -232,10 +232,22 @@ cd JPPhotoManagerWeb/frontend
 npm run build:prod
 ```
 
-**Run tests:**
+**Run component/unit tests** (Cypress Component Testing, headless — what CI runs):
 ```bash
 cd JPPhotoManagerWeb/frontend
 npm test
+```
+
+**Run the mocked E2E smoke tier** (no backend/infra needed — this is the E2E tier CI runs, on every push/PR):
+```bash
+cd JPPhotoManagerWeb/frontend
+npm run test:e2e:mocked
+```
+
+**Run the maintained real-backend E2E suite** (drives a real browser against a real, locally running backend — not in CI; see `docs/frontend.md#running-the-whole-e2e-test-suite` and the `e2e-suite` skill for full prerequisites — Docker infra, `JWT_SECRET`/`POSTGRES_PORT`, and a login rate-limit interaction to know about):
+```bash
+cd JPPhotoManagerWeb/frontend
+npm run test:e2e
 ```
 
 **Lint:**

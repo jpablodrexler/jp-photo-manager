@@ -85,7 +85,7 @@ describe('AlbumDetailComponent', () => {
     const dialogRef = { afterClosed: () => of(updatedFilter) };
     mountDetail(smartAlbum).then(({ component, serviceStub }) => {
       component.albumId = ALBUM_ID;
-      component.album = smartAlbum;
+      component.album.set(smartAlbum);
       (component as unknown as { dialog: MatDialog }).dialog = { open: () => dialogRef } as unknown as MatDialog;
       component.openEditFilterDialog();
       cy.wrap(serviceStub.updateAlbum).should('have.been.calledWith', ALBUM_ID, {

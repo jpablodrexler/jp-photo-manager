@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
 export type PasswordStrengthLevel = 'weak' | 'medium' | 'strong';
@@ -18,6 +18,7 @@ interface PasswordRule {
   standalone: true,
   imports: [MatIconModule],
   templateUrl: './password-strength.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './password-strength.component.scss',
 })
 export class PasswordStrengthComponent {

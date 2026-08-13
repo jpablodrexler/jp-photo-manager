@@ -4,8 +4,8 @@
       <mat-card-title>Active Sessions</mat-card-title>
     </mat-card-header>
     <mat-card-content>
-      @if (errorMessage) {
-        <p class="error-message">{{ errorMessage }}</p>
+      @if (errorMessage()) {
+        <p class="error-message">{{ errorMessage() }}</p>
       }
 
       <div class="toolbar">
@@ -14,7 +14,7 @@
         </button>
       </div>
 
-      <table mat-table [dataSource]="sessions" class="sessions-table">
+      <table mat-table [dataSource]="sessions()" class="sessions-table">
         <ng-container matColumnDef="deviceHint">
           <th mat-header-cell *matHeaderCellDef>Device</th>
           <td mat-cell *matCellDef="let session">
@@ -44,7 +44,7 @@
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
       </table>
 
-      @if (sessions.length === 0) {
+      @if (sessions().length === 0) {
         <p class="no-sessions">No active sessions found.</p>
       }
     </mat-card-content>

@@ -49,7 +49,14 @@ describe('Gallery', () => {
     cy.intercept('GET', '/api/folders*', { body: mockFolders }).as('getFolders');
     cy.intercept('GET', '/api/folders/initial', { body: { path: '/photos' } }).as('getInitial');
     cy.intercept('GET', '/api/folders/drives', { body: [] }).as('getDrives');
-    cy.intercept('GET', '/api/assets*', {
+    // A glob string can't be used here: AssetService.getAssets() puts the
+    // folder path in the query string unencoded (folderPath=/photos -
+    // Angular's default HttpParams codec doesn't escape '/'), and Cypress's
+    // glob '*' doesn't match across '/' boundaries - '/api/assets*' silently
+    // fails to match '/api/assets?folderPath=/photos&...', falling through
+    // to a real (non-existent) network request instead of this mock. An
+    // anchored RegExp sidesteps the glob-matching ambiguity entirely.
+    cy.intercept('GET', /\/api\/assets(\?|$)/, {
       body: { items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2 },
     }).as('getAssets');
     cy.intercept('GET', '/api/assets/*/thumbnail', { fixture: 'thumbnail.jpg' }).as('getThumbnail');
@@ -66,19 +73,19 @@ describe('Gallery', () => {
 
   it('galleryPage_folderSelected_assetListRowsAreRendered', () => {
     // Click the first folder in the tree to trigger onFolderSelected
-    cy.get('mat-tree-node').first().click();
+    cy.get('mat-tree-node').first().should('be.visible').click();
     cy.wait('@getAssets');
     cy.get('.asset-list-row').should('have.length', 2);
   });
 
   it('galleryPage_folderSelected_thumbnailImagesAreRendered', () => {
-    cy.get('mat-tree-node').first().click();
+    cy.get('mat-tree-node').first().should('be.visible').click();
     cy.wait('@getAssets');
     cy.get('.asset-list-row img.list-thumb').should('have.length', 2);
   });
 
   it('galleryPage_folderSelected_thumbnailSrcPointsToApiEndpoint', () => {
-    cy.get('mat-tree-node').first().click();
+    cy.get('mat-tree-node').first().should('be.visible').click();
     cy.wait('@getAssets');
     cy.get('.asset-list-row img.list-thumb').eq(0)
       .should('have.attr', 'src', '/api/assets/1/thumbnail');

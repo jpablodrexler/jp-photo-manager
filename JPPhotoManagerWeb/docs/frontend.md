@@ -181,7 +181,7 @@ Output goes to `dist/jp-photo-manager-ui/`.
 
 ## Running frontend tests
 
-Tests are **Cypress Component Testing** (`*.cy.ts` files colocated with the code under test) plus a separate Cypress E2E suite — there is no Karma/Jasmine setup.
+Tests are **Cypress Component Testing** (`*.cy.ts` files colocated with the code under test) plus two separate Cypress E2E tiers (below) — there is no Karma/Jasmine setup.
 
 ```bash
 cd JPPhotoManagerWeb/frontend
@@ -192,18 +192,110 @@ npm test
 # Component tests with code coverage
 npm run test:coverage
 
-# End-to-end tests, headless (requires the app running — see e2e-testing skill)
-npm run test:e2e
-
 # Interactive Cypress runner (component mode)
 npm run cypress:open
-
-# Interactive Cypress runner (e2e mode)
-npm run cypress:e2e
 
 # Lint
 npm run lint
 ```
+
+Full conventions and worked examples, including the code coverage setup:
+the `cypress-unit-test-developer` skill
+(`.claude/skills/cypress-unit-test-developer/SKILL.md`).
+
+## Running E2E tests
+
+There are **two** distinct Cypress E2E tiers, in `cypress/e2e/` — don't
+confuse them, they need very different prerequisites.
+
+### The mocked E2E smoke tier (CI-safe, no backend needed)
+
+Lives at `cypress/e2e/mocked/` with its own config
+(`cypress.mocked.config.ts`, not `cypress.config.ts`'s own `e2e` block —
+that block `excludeSpecPattern`s this directory, so a plain `npm run
+test:e2e` never runs it, and vice versa). No real login, no running
+backend, no Docker: `cypress/support/mocked/seed-session.ts` writes a
+fabricated session directly into `localStorage` before the app bootstraps,
+and every `/api/**` call is stubbed via `cy.intercept`.
+
+```bash
+cd JPPhotoManagerWeb/frontend
+npm run test:e2e:mocked
+```
+
+This starts `ng serve` itself (`start-server-and-test`) and is the E2E tier
+`.github/workflows/web-test.yml` actually runs, on every push/PR. Scope is
+golden-path smoke only — one auth-guard check, one render assertion, and
+one representative CRUD interaction per major route.
+
+### The maintained real-backend E2E suite (manual, full stack required)
+
+Lives at `cypress/e2e/` (everything *except* `mocked/`) — a real
+Chrome/Electron instance driving a real login against a real, locally
+running backend (Postgres, MongoDB, Redis, Kafka). Nothing is mocked. It is
+**not** wired into CI — bringing up that much infrastructure on every push
+isn't worth it; run it manually before a release or after a change
+spanning multiple features. Full conventions, the test-data/cleanup
+pattern, and how to add a new spec: the `e2e-suite` skill
+(`.claude/skills/e2e-suite/SKILL.md`).
+
+```bash
+cd JPPhotoManagerWeb/frontend
+npm run test:e2e
+```
+
+Unlike the mocked tier's command, this does **not** start the dev server
+itself — `ng serve` (`npm start`) and the backend must already be running.
+See "Running the whole E2E test suite" below for the full startup sequence.
+
+Logs in as the seeded `admin`/`admin` account (`DataInitializer`) — fixed,
+not a secret file, since there's no email-confirmation constraint to work
+around. Every spec captures the id of whatever it creates (album, secondary
+user) and deletes it explicitly, either through the real UI as part of what
+it's testing or via a direct `cy.request` `DELETE` as an `after()` safety
+net — there's no bulk "delete everything" endpoint to sweep with.
+
+**Login rate limiting**: the backend's own `RateLimitFilter` caps `POST
+/api/auth/login` at 10 requests per 60 seconds per IP (a real anti-brute-
+force control, not a bug). Running every spec file back to back in one
+`npm run test:e2e` can consume all 10 within the run — if you see `POST 429
+/api/auth/login` on a spec that ran shortly after others, that's why. See
+the `e2e-suite` skill for the batching workaround; don't raise the backend
+limit to work around this.
+
+### Running the whole E2E test suite
+
+The real-backend suite (unlike the mocked tier) needs its prerequisites
+started by hand, in order:
+
+```bash
+# 1. Infra: Postgres, Kafka, Redis, MongoDB (from JPPhotoManagerWeb/)
+docker compose up -d db kafka redis mongo
+# Note: compose maps Postgres to host port 5433, not 5432
+
+# 2. Backend (from JPPhotoManagerWeb/backend/) — needs JWT_SECRET and,
+#    since infra came from compose, POSTGRES_PORT=5433
+JWT_SECRET=$(openssl rand -base64 32) POSTGRES_PORT=5433 mvn spring-boot:run
+
+# 3. Frontend (from JPPhotoManagerWeb/frontend/)
+npm start
+
+# 4. Component tests
+npm test
+
+# 5. Mocked E2E smoke tier
+npm run test:e2e:mocked
+
+# 6. Real-backend E2E suite (see the rate-limit note above if this fails
+#    with a 429 partway through)
+npm run test:e2e
+```
+
+`application-local.yml` (gitignored, `application-local.yml.example` is
+the template) can set `JWT_SECRET` there instead of passing it as an env
+var each time. Full backend startup detail, including the individual
+`docker run` fallback commands if you'd rather not use Compose: the
+`e2e-testing` skill §1–§2, and `docs/backend.md` ("Running the backend").
 
 ---
 

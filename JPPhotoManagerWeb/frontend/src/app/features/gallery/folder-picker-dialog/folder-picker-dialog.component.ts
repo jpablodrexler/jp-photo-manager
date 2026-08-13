@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { FolderNavComponent } from '../../folder-nav/folder-nav.component';
@@ -13,6 +13,7 @@ import { FolderPickerDialogData, FolderPickerDialogResult } from '../../../core/
     FolderNavComponent,
   ],
   templateUrl: './folder-picker-dialog.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './folder-picker-dialog.component.scss',
 })
 export class FolderPickerDialogComponent {

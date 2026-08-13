@@ -1,4 +1,4 @@
-import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -28,17 +28,18 @@ import { BulkTagDialogData } from '../../../core/models/dialog.model';
     MatDialogModule,
     MatProgressSpinnerModule,
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './bulk-tag-dialog.component.html',
 })
 export class BulkTagDialogComponent implements OnInit, OnDestroy {
   tagsToAdd: string[] = [];
   tagsToRemove: string[] = [];
-  addSuggestions: string[] = [];
-  removeSuggestions: string[] = [];
+  readonly addSuggestions = signal<string[]>([]);
+  readonly removeSuggestions = signal<string[]>([]);
   addInputControl = new FormControl<string>('', { nonNullable: true });
   removeInputControl = new FormControl<string>('', { nonNullable: true });
   readonly separatorKeysCodes = [ENTER, COMMA] as const;
-  isSaving = false;
+  readonly isSaving = signal(false);
 
   private readonly destroy$ = new Subject<void>();
 
@@ -56,10 +57,10 @@ export class BulkTagDialogComponent implements OnInit, OnDestroy {
     ).subscribe(q => {
       if (q && q.length >= 1) {
         this.tagService.searchTags(q).subscribe(tags => {
-          this.addSuggestions = tags.filter(t => !this.tagsToAdd.includes(t));
+          this.addSuggestions.set(tags.filter(t => !this.tagsToAdd.includes(t)));
         });
       } else {
-        this.addSuggestions = [];
+        this.addSuggestions.set([]);
       }
     });
 
@@ -70,10 +71,10 @@ export class BulkTagDialogComponent implements OnInit, OnDestroy {
     ).subscribe(q => {
       if (q && q.length >= 1) {
         this.tagService.searchTags(q).subscribe(tags => {
-          this.removeSuggestions = tags.filter(t => !this.tagsToRemove.includes(t));
+          this.removeSuggestions.set(tags.filter(t => !this.tagsToRemove.includes(t)));
         });
       } else {
-        this.removeSuggestions = [];
+        this.removeSuggestions.set([]);
       }
     });
   }
@@ -94,7 +95,7 @@ export class BulkTagDialogComponent implements OnInit, OnDestroy {
   addTagToAddFromAutocomplete(event: MatAutocompleteSelectedEvent): void {
     const name = event.option.viewValue.toLowerCase();
     this.addInputControl.setValue('', { emitEvent: false });
-    this.addSuggestions = [];
+    this.addSuggestions.set([]);
     if (!name || this.tagsToAdd.includes(name)) return;
     this.tagsToAdd = [...this.tagsToAdd, name];
   }
@@ -114,7 +115,7 @@ export class BulkTagDialogComponent implements OnInit, OnDestroy {
   addTagToRemoveFromAutocomplete(event: MatAutocompleteSelectedEvent): void {
     const name = event.option.viewValue.toLowerCase();
     this.removeInputControl.setValue('', { emitEvent: false });
-    this.removeSuggestions = [];
+    this.removeSuggestions.set([]);
     if (!name || this.tagsToRemove.includes(name)) return;
     this.tagsToRemove = [...this.tagsToRemove, name];
   }
@@ -128,14 +129,14 @@ export class BulkTagDialogComponent implements OnInit, OnDestroy {
       this.dialogRef.close(false);
       return;
     }
-    this.isSaving = true;
+    this.isSaving.set(true);
     const ids = this.data.assetIds;
     const addCalls = this.tagsToAdd.map(tag => this.tagService.bulkAddTag(ids, tag));
     const removeCalls = this.tagsToRemove.map(tag => this.tagService.bulkRemoveTag(ids, tag));
     forkJoin([...addCalls, ...removeCalls].length > 0 ? [...addCalls, ...removeCalls] : [of(undefined)]).subscribe({
       next: () => this.dialogRef.close(true),
       error: () => {
-        this.isSaving = false;
+        this.isSaving.set(false);
       },
     });
   }

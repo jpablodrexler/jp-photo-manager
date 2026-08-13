@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ConvertService } from './convert.service';
 import { ConvertAssetsDirectoriesDefinition } from '../models/convert-config.model';
@@ -22,7 +22,7 @@ describe('ConvertService', () => {
     TestBed.configureTestingModule({
       providers: [
         ConvertService,
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     });

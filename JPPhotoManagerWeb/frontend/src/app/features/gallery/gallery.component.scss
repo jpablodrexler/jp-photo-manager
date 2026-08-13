@@ -238,9 +238,9 @@ mat-sidenav-content {
 
 .tag-filter-chip-grid {
   width: 100%;
-  --mdc-chip-label-text-color: var(--chip-text);
-  --mdc-chip-container-color: var(--chip-bg);
-  --mdc-chip-with-icon-icon-color: var(--chip-icon);
+  --mat-chip-label-text-color: var(--chip-text);
+  --mat-chip-container-color: var(--chip-bg);
+  --mat-chip-with-icon-icon-color: var(--chip-icon);
 }
 
 .tag-filter-input {

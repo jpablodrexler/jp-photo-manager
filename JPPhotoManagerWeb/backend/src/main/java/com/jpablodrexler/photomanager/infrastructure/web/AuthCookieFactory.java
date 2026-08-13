@@ -10,7 +10,13 @@ public class AuthCookieFactory {
 
     private static final String JWT_COOKIE_NAME = "jwt";
     private static final String REFRESH_COOKIE_NAME = "refreshToken";
-    private static final String REFRESH_COOKIE_PATH = "/api/auth/refresh";
+    // Must cover every /api/auth/** endpoint that reads this cookie back
+    // (refresh, sessions, sessions/{id}) - scoping it to just /api/auth/refresh
+    // meant GET/DELETE /api/auth/sessions never received it, so "current
+    // session" was always false and "sign out everywhere else" always threw
+    // MissingRefreshTokenException. Still narrower than "/" so it isn't sent
+    // on unrelated requests.
+    private static final String REFRESH_COOKIE_PATH = "/api/auth";
 
     public ResponseCookie jwtCookie(String token, Duration maxAge) {
         return build(JWT_COOKIE_NAME, token, "/", maxAge);

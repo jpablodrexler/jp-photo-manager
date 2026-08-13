@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { MediaPlayerService } from './media-player.service';
 import { Asset } from '../models/asset.model';
@@ -29,7 +29,7 @@ describe('MediaPlayerService', () => {
     TestBed.configureTestingModule({
       providers: [
         MediaPlayerService,
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     });

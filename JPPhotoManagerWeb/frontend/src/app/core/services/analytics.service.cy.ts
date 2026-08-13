@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsData } from '../models/analytics.model';
@@ -19,7 +19,7 @@ describe('AnalyticsService', () => {
     TestBed.configureTestingModule({
       providers: [
         AnalyticsService,
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
       ],
     });
