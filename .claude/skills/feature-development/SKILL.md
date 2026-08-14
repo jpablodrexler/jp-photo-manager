@@ -5,19 +5,20 @@ description: >
   feature, proposes SDD artifacts if missing, implements all change tasks,
   runs code, security, and (when schema files changed) database reviews
   (findings fixed before continuing), runs backend and frontend tests until
-  they pass, builds updated Docker images and deploys them via Kubernetes (if
-  a live cluster deployment exists) or Docker Compose (if Docker is running),
-  syncs the web app's documentation (CLAUDE.md + docs/*.md) against what
-  actually shipped, verifies the implementation actually satisfies the
-  change's spec scenarios (not just that tasks are checked off) before
-  archiving, then archives the SDD change and marks the feature as
-  implemented. Use when you want a fully automated feature development
-  cycle with minimal manual steps. TRIGGER when the user asks to develop a
-  feature.
+  they pass, runs `e2e-testing`'s browser checks against a locally running
+  backend when the change touches auth, the gallery, or a migration, builds
+  updated Docker images and deploys them via Kubernetes (if a live cluster
+  deployment exists) or Docker Compose (if Docker is running), syncs the web
+  app's documentation (CLAUDE.md + docs/*.md) against what actually shipped,
+  verifies the implementation actually satisfies the change's spec scenarios
+  (not just that tasks are checked off) before archiving, then archives the
+  SDD change and marks the feature as implemented. Use when you want a fully
+  automated feature development cycle with minimal manual steps. TRIGGER
+  when the user asks to develop a feature.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.6"
+  version: "1.7"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -38,16 +39,17 @@ normal single-feature use — default behavior (create/resume
 
 ## Overview
 
-Five phases executed by six dedicated subagents (3a and 3b run in parallel):
+Six phases executed by seven dedicated subagents (3a and 3b run in parallel):
 
-| Phase                  | Subagent   | Skills / actions                                                                                                                                  |
-| ---------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 — Select & Propose   | Subagent 1 | `features-next` (confirm only) → `gitflow` (start feature to create `feature/<change-name>` from `develop`, or sync feature to catch up an existing one) → `openspec-propose` (if artifacts missing) |
-| 2 — Implement & Review | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `database-reviewer` + `security-reviewer` (conditional, findings fixed before done)          |
-| 3a — Backend tests     | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test` until passing                                                                                     |
-| 3b — Frontend tests    | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                                                    |
-| 4 — Build & deploy     | Subagent 5 | deploys via `build-and-deploy-k8s.sh` if a live `photomanager` deployment exists, else Docker Compose/Dockerfiles (skipped if Docker not running) |
-| 5 — Archive            | Subagent 6 | `openspec-archive-change <name>` → `features-archive <name>`                                                                                      |
+| Phase                        | Subagent   | Skills / actions                                                                                                                                  |
+| ----------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 — Select & Propose          | Subagent 1 | `features-next` (confirm only) → `gitflow` (start feature to create `feature/<change-name>` from `develop`, or sync feature to catch up an existing one) → `openspec-propose` (if artifacts missing) |
+| 2 — Implement & Review        | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `database-reviewer` + `security-reviewer` (conditional, findings fixed before done)          |
+| 3a — Backend tests            | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test` until passing                                                                                     |
+| 3b — Frontend tests           | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                                                    |
+| 4 — E2E verification (conditional) | Subagent 5 | runs `e2e-testing`'s browser checks against a locally running backend when the change touches auth, the gallery, or a migration — skipped otherwise |
+| 5 — Build & deploy            | Subagent 6 | deploys via `build-and-deploy-k8s.sh` if a live `photomanager` deployment exists, else Docker Compose/Dockerfiles (skipped if Docker not running) |
+| 6 — Archive                   | Subagent 7 | `openspec-archive-change <name>` → `features-archive <name>`                                                                                      |
 
 ---
 
@@ -185,13 +187,13 @@ After the subagent completes:
 - If the response contains `CANCELLED`: stop the entire workflow and inform the user.
 - If the response contains `PROPOSE_BLOCKED`: surface the reason to the user and stop.
 - Otherwise: extract the change name from the `CHANGE_NAME:` line. Store this
-  value — it is passed as the argument to every skill invoked in Phases 2, 3, 4, and 5.
+  value — it is passed as the argument to every skill invoked in Phases 2, 3, 4, 5, and 6.
 
 ---
 
-## Placeholder substitution (Phases 2–5)
+## Placeholder substitution (Phases 2–6)
 
-Before spawning any subagent in Phases 2–5, replace every occurrence of
+Before spawning any subagent in Phases 2–6, replace every occurrence of
 `<change-name>` in that subagent's prompt with the actual change name
 extracted from Phase 1.
 
@@ -472,7 +474,84 @@ not covered by Phase 2's review. Ask the user whether to:
 
 ---
 
-## Phase 4 — Build & Deploy (Subagent 5)
+## Phase 4 — E2E Verification (Subagent 5, conditional)
+
+Spawn a **general-purpose subagent** via the Agent tool, with
+`run_in_background: false` (Phase 5 cannot start until this subagent
+reports its signal — see the foreground guardrail below), with the
+following prompt:
+
+> Perform these steps in sequence.
+>
+> **Step 1 — Determine whether E2E verification applies to this change**
+> Run `git status --porcelain` and parse every line's file path — including
+> untracked (`??`) entries — into a concrete list; call it `CHANGED_FILES`.
+> This is the same recompute-fresh convention Phase 2 uses — never assume a
+> list from an earlier phase is still accurate.
+>
+> Check whether any path in `CHANGED_FILES` falls under one of these
+> UI-facing/data areas: authentication (`core/guards/auth.guard.ts`,
+> `core/interceptors/auth.interceptor.ts`, the `features/auth/login`
+> component), the gallery (`features/gallery/`, the app's primary
+> photo-browsing flow), or a Flyway migration under `db/migration/` (a
+> schema change can silently change what any of the above renders, or what
+> the backend serves, even with no frontend file touched).
+>
+> - If **none** of these areas were touched: end your response with exactly
+>   `E2E: SKIPPED — no auth/gallery/migration changes in this change` and
+>   stop. Do not start the backend/frontend or run Cypress for a change
+>   that doesn't touch any of these areas.
+> - If **any** were touched: continue to Step 2.
+>
+> **Step 2 — Confirm prerequisites are ready**
+> Follow `e2e-testing` §1 (PostgreSQL, MongoDB, Redis, and — only if this
+> change touches sync/convert/duplicate-detection or another
+> Kafka-consuming flow — Kafka; §1.5's check that real data exists). If any
+> required prerequisite isn't reachable, end your response with
+> `E2E_BLOCKED — <brief reason>` and stop — do not attempt to fix an
+> environment/infrastructure problem yourself.
+>
+> **Step 3 — Start the backend and frontend**
+> Follow `e2e-testing` §2 (start the backend) and §3 (start the frontend).
+> If either never comes up, end your response with `E2E_BLOCKED — backend/
+> frontend did not start` and stop.
+>
+> **Step 4 — Run the browser checks**
+> 1. Authenticate per `e2e-testing` §4 (the fixed `admin`/`admin`
+>    credential — see §4.1 for the BCrypt-reset fallback if login returns
+>    401). Confirm the session reaches `/home` and the dashboard renders.
+> 2. Follow `e2e-testing` §7 (visual verification via a throwaway Cypress
+>    spec) for whichever surface this change touched. If this change
+>    touched the gallery specifically, also exercise its relevant flow
+>    (thumbnail grid load, viewer mode, or whichever interaction changed)
+>    once through the actual UI — not just confirming the page loads — to
+>    confirm the new/changed behavior works against the real backend.
+> 3. Follow `e2e-testing` §8 (interactive navigation) to confirm routing
+>    between the touched area and at least one neighboring route works.
+> 4. Take a screenshot at the final state and read it back to confirm
+>    there's no visible layout break.
+>
+> **Step 5 — Tear down**
+> Follow `e2e-testing` §10 (stop the backend/frontend, and any infra this
+> run started that isn't part of the developer's normal always-on setup).
+>
+> End your response with one of:
+>
+> - `E2E: PASS — <one-line summary of what was exercised>` if every check in
+>   Step 4 passed.
+> - `E2E_BLOCKED — <brief reason>` if any check failed, a prerequisite
+>   wasn't ready, or a console error/visible layout break was observed.
+
+Do not start Phase 5 until this subagent reports `E2E: PASS` or
+`E2E: SKIPPED`. If it reports `E2E_BLOCKED`, surface the details to the
+user and wait for guidance before continuing — a failure here is against
+locally running infrastructure, so it may equally be an environment/data
+problem as a code defect (see `e2e-testing`'s own framing); don't assume
+it belongs back in Phase 2's code review without the user confirming that.
+
+---
+
+## Phase 5 — Build & Deploy (Subagent 6)
 
 This project can be deployed via Kubernetes (`JPPhotoManagerWeb/k8s/` +
 `kustomization.yaml`, driven by `JPPhotoManagerWeb/scripts/build-and-deploy-k8s.sh`)
@@ -493,7 +572,7 @@ re-run. Do not inline `docker build` / `kubectl apply` steps here that
 duplicate what the script already does.
 
 Spawn a **general-purpose subagent** via the Agent tool, with
-`run_in_background: false` (Phase 5 cannot start until this subagent
+`run_in_background: false` (Phase 6 cannot start until this subagent
 completes — see the foreground guardrail below), with the following
 prompt:
 
@@ -721,13 +800,13 @@ line>` verbatim so the user can create it from the matching
 > - `DOCKER: BLOCKED — <brief reason>` if a build, restart, or Step 8's smoke
 >   test failed and you cannot resolve it without human input.
 
-Do not start Phase 5 until this subagent completes. A `DOCKER: SKIPPED` result
-is not a failure — proceed to Phase 5 normally. Only `DOCKER: BLOCKED` requires
+Do not start Phase 6 until this subagent completes. A `DOCKER: SKIPPED` result
+is not a failure — proceed to Phase 6 normally. Only `DOCKER: BLOCKED` requires
 surfacing the issue to the user before continuing.
 
 ---
 
-## Phase 5 — Archive (Subagent 6)
+## Phase 6 — Archive (Subagent 7)
 
 Spawn a **general-purpose subagent** via the Agent tool, with
 `run_in_background: false` (the Final Summary cannot be displayed until this
@@ -808,8 +887,10 @@ After all phases complete, display:
 **⚠ Unreviewed production fixes:** <the PROD_CODE_FIXED lines> — fixed while
 chasing test failures in Phase 3; the user chose to proceed without routing
 them back through Phase 2's code review.
+**E2E verification:** ✓ <one-line summary from Phase 4's `E2E: PASS`> (or
+"N/A — no auth/gallery/migration changes in this change" if `E2E: SKIPPED`)
 **Docker:** ✓ <value from DOCKER signal, e.g. "Deployed — build-and-deploy-k8s.sh (namespace photomanager)", "Deployed — backend, frontend", or "Skipped — Docker not running">
-**Spec compliance:** ✓ All scenarios verified (or, if `UNVERIFIED_SCENARIOS` was recorded in Phase 5: **⚠ <count> scenario(s) unverified:** <the one-line summary> — no automated test or manual check found; consider closing the gap with `spec-compliance-check`)
+**Spec compliance:** ✓ All scenarios verified (or, if `UNVERIFIED_SCENARIOS` was recorded in Phase 6: **⚠ <count> scenario(s) unverified:** <the one-line summary> — no automated test or manual check found; consider closing the gap with `spec-compliance-check`)
 **Docs sync:** ✓ <one-line summary from `web-docs-sync`, e.g. "Updated docs/backend.md REST API table + CLAUDE.md config pointer" or "Nothing to sync">
 **SDD change:** ✓ Archived
 **Feature:** ✓ Marked as implemented
@@ -820,10 +901,10 @@ them back through Phase 2's code review.
 ## Guardrails
 
 - Always capture and propagate the change name from Phase 1 to all later
-  phases. Before spawning any subagent in Phases 2–5, substitute every
+  phases. Before spawning any subagent in Phases 2–6, substitute every
   `<change-name>` occurrence in its prompt with the actual value from Phase 1.
 - **`--skip-branch-setup` (batch mode) only ever affects Phase 1 Step 1.5.**
-  No other phase's behavior changes — Phases 2–5 already just operate on
+  No other phase's behavior changes — Phases 2–6 already just operate on
   "whatever branch is currently checked out" and never re-derive or assume
   `feature/<change-name>` as the literal branch name outside that one step.
   This flag exists solely for orchestrators like `features-batch-development`
@@ -836,7 +917,7 @@ them back through Phase 2's code review.
   branch is created, switched, or synced. In batch mode
   (`--skip-branch-setup`), Step 1.5 performs none of that — it only
   confirms the current branch isn't `main`/`develop` and otherwise leaves
-  branch state entirely to the caller. Either way, Phases 2–5 must stay on
+  branch state entirely to the caller. Either way, Phases 2–6 must stay on
   whatever branch was current when Phase 1 finished; none of them may run
   their own branch operations.
 - **Cancellation detection**: if Subagent 1's response contains no `CHANGE_NAME:`
@@ -852,22 +933,33 @@ them back through Phase 2's code review.
   either reports `BLOCKED`, surface the details to the user and wait for
   guidance before continuing. If either reports `PROD_CODE_FIXED:` lines,
   surface them to the user and confirm whether to proceed or re-run Phase 2.
-- Do not start Phase 5 until Phase 4 subagent reports `DOCKER: DEPLOYED` or
+- Do not start Phase 5 until Phase 4 reports `E2E: PASS` or `E2E: SKIPPED`.
+  If it reports `E2E_BLOCKED`, surface the details to the user and wait for
+  guidance before continuing — do not assume it belongs back in Phase 2's
+  code review without the user confirming that (a failure here can equally
+  be an environment/infrastructure problem, not a code defect).
+- Do not start Phase 6 until Phase 5 subagent reports `DOCKER: DEPLOYED` or
   `DOCKER: SKIPPED`. If it reports `DOCKER: BLOCKED`, surface the details to
   the user and wait for guidance before continuing.
-- Do not display the Final Summary until Phase 5 subagent returns `ARCHIVE: DONE`.
+- Do not display the Final Summary until Phase 6 subagent returns `ARCHIVE: DONE`.
   If it returns `ARCHIVE_BLOCKED` instead (Step 1's `spec-compliance-check`
   found a failing scenario), the change stays unarchived — surface the
   failing scenario(s) to the user and wait for guidance instead of
-  retrying Phase 5 automatically or treating it as equivalent to
+  retrying Phase 6 automatically or treating it as equivalent to
   `DOCKER: BLOCKED`'s deploy-retry framing; a spec/behavior mismatch isn't
   something a re-run fixes by itself. If it returns `ARCHIVE: DONE` with an
   `UNVERIFIED_SCENARIOS:` line, that's not blocking — carry the line into
   the Final Summary's "Spec compliance" field verbatim.
 - Subagents 3 and 4 must be launched in the same message (parallel). Do not
   launch one before the other.
+- **Phase 4 only starts the backend/frontend locally and reads/writes no
+  repository files.** It never runs a Flyway migration or any other write
+  against the database beyond what the application itself performs while
+  running — Step 2 only confirms prerequisite infrastructure is reachable.
+  Any schema fix needed to make Phase 4 pass belongs back in Phase 2's
+  conditional `database-reviewer` step, not in this phase.
 - **Foreground guardrail**: every Agent tool call in this skill (Subagents
-  1–6) must pass `run_in_background: false`. Every phase in this workflow is
+  1–7) must pass `run_in_background: false`. Every phase in this workflow is
   gated on the prior phase's subagent actually finishing ("do not start
   Phase N until Subagent M returns ..."), but the Agent tool defaults to
   background execution, which returns immediately with no result. Spawning
@@ -885,7 +977,7 @@ them back through Phase 2's code review.
   signal, treat it as `BLOCKED`, surface the subagent's raw response to the
   user, and wait for guidance before proceeding to the next phase.
 - **Nested backgrounding guardrail**: this failure mode isn't unique to
-  Phase 4 — any subagent in this workflow that backgrounds a long-running
+  Phase 5 — any subagent in this workflow that backgrounds a long-running
   shell command (via the Bash tool's `run_in_background: true`) and then
   ends its response is making the same mistake, regardless of which phase
   it's in. Ending a turn after backgrounding work resolves that subagent's
@@ -894,13 +986,13 @@ them back through Phase 2's code review.
   because nothing automatically wakes an already-finished subagent back up
   when its background child completes; only an explicit `SendMessage` from
   a still-live parent can resume it, and nothing in this workflow does that
-  automatically. Concretely, this hit Phase 4's Step 3K in practice: the
+  automatically. Concretely, this hit Phase 5's Step 3K in practice: the
   subagent launched `build-and-deploy-k8s.sh` in the background and reported
   "I'll wait for it to complete," ending its turn — twice — before the
   script had actually finished, which the orchestrator only caught by
   directly verifying cluster/image state itself and manually resuming the
   subagent. Any subagent step whose real duration can exceed the Bash
-  tool's 10-minute blocking cap (Phase 4's build script chief among them, at
+  tool's 10-minute blocking cap (Phase 5's build script chief among them, at
   up to 20 minutes) must poll for completion with repeated **foreground**
   Bash calls within the same, uninterrupted turn — never end the response
   and rely on being notified later.
@@ -936,7 +1028,7 @@ them back through Phase 2's code review.
   from a prior run, resumes it (checking it out and, via `gitflow`'s sync
   feature action, bringing it up to date with `develop`), before any file
   in the repository is created or modified, including the SDD artifacts
-  written by `openspec-propose`. Phases 2–5 must stay on that branch; none
+  written by `openspec-propose`. Phases 2–6 must stay on that branch; none
   of them may run `git checkout`, `git switch`, `git merge`, invoke
   `gitflow`, or create another branch. If a subagent finds itself on a
   different branch, that is a bug in the workflow — surface it to the user
@@ -965,7 +1057,7 @@ them back through Phase 2's code review.
   or images beyond what is strictly required to restart the application
   services being deployed.
 - **No destructive kubectl commands.** Do not run `kubectl delete` or
-  `kubectl scale --replicas=0` at any point. Phase 4's Kubernetes branch's
+  `kubectl scale --replicas=0` at any point. Phase 5's Kubernetes branch's
   only deploy action is running `build-and-deploy-k8s.sh` (plus the
   `kubectl rollout status` / `kubectl get pods` verification that follows
   it) — the script's own `kubectl apply -f`/`kubectl apply -k` calls are an
