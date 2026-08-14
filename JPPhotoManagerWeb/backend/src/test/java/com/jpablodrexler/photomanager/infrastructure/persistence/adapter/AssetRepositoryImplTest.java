@@ -7,7 +7,13 @@ import com.jpablodrexler.photomanager.domain.model.Asset;
 import com.jpablodrexler.photomanager.domain.model.Folder;
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.AssetEntity;
 import com.jpablodrexler.photomanager.infrastructure.persistence.entity.FolderEntity;
+import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.AssetSummary;
+import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.FolderAssetCount;
+import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.FolderStorageProjection;
+import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.FormatProjection;
 import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.JpaAssetRepository;
+import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.MonthlyCountProjection;
+import com.jpablodrexler.photomanager.infrastructure.persistence.jpa.RatingProjection;
 import com.jpablodrexler.photomanager.infrastructure.persistence.mapper.AssetEntityMapper;
 import com.jpablodrexler.photomanager.infrastructure.persistence.mapper.FolderEntityMapper;
 import org.junit.jupiter.api.Test;
@@ -19,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
@@ -402,5 +409,132 @@ class AssetRepositoryImplTest {
     void updateProcessingStatus_delegatesToJpa() {
         sut.updateProcessingStatus(1L, com.jpablodrexler.photomanager.domain.enums.ProcessingStatus.FAILED);
         verify(jpa).updateProcessingStatus(1L, com.jpablodrexler.photomanager.domain.enums.ProcessingStatus.FAILED);
+    }
+
+    @Test
+    void findByFileName_returnsMappedList() {
+        AssetEntity entity = new AssetEntity();
+        Asset domain = Asset.builder().assetId(8L).build();
+        when(jpa.findByFileNameNotDeleted("a.jpg")).thenReturn(List.of(entity));
+        when(assetMapper.toDomain(entity)).thenReturn(domain);
+
+        assertThat(sut.findByFileName("a.jpg")).containsExactly(domain);
+    }
+
+    @Test
+    void sumFileSize_delegatesToJpa() {
+        when(jpa.sumFileSize()).thenReturn(12345L);
+        assertThat(sut.sumFileSize()).isEqualTo(12345L);
+    }
+
+    @Test
+    void countDuplicates_delegatesToJpa() {
+        when(jpa.countDuplicates()).thenReturn(3L);
+        assertThat(sut.countDuplicates()).isEqualTo(3L);
+    }
+
+    @Test
+    void findTopFoldersByAssetCount_returnsMappedFolderStats() {
+        FolderAssetCount projection = org.mockito.Mockito.mock(FolderAssetCount.class);
+        when(projection.getFolderPath()).thenReturn("/photos");
+        when(projection.getAssetCount()).thenReturn(7L);
+        when(jpa.findTopFoldersByAssetCount(PageRequest.of(0, 5))).thenReturn(List.of(projection));
+
+        assertThat(sut.findTopFoldersByAssetCount(5))
+                .extracting(fs -> fs.path(), fs -> fs.assetCount())
+                .containsExactly(org.assertj.core.api.Assertions.tuple("/photos", 7L));
+    }
+
+    @Test
+    void findRecentAssets_buildsAssetsFromSummaryProjection() {
+        AssetSummary summary = org.mockito.Mockito.mock(AssetSummary.class);
+        when(summary.getAssetId()).thenReturn(1L);
+        when(summary.getFileName()).thenReturn("a.jpg");
+        when(summary.getFolderPath()).thenReturn("/photos");
+        when(summary.getFileSize()).thenReturn(1024L);
+        when(jpa.findRecentAssets(PageRequest.of(0, 10))).thenReturn(List.of(summary));
+
+        List<Asset> result = sut.findRecentAssets(10);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getFileName()).isEqualTo("a.jpg");
+        assertThat(result.get(0).getFolder().getPath()).isEqualTo("/photos");
+        assertThat(result.get(0).getFileSize()).isEqualTo(1024L);
+    }
+
+    @Test
+    void sumFileSizeByFolder_returnsMappedEntries() {
+        FolderStorageProjection projection = org.mockito.Mockito.mock(FolderStorageProjection.class);
+        when(projection.getFolderPath()).thenReturn("/photos");
+        when(projection.getBytes()).thenReturn(2048L);
+        when(jpa.sumFileSizeByFolder()).thenReturn(List.of(projection));
+
+        assertThat(sut.sumFileSizeByFolder())
+                .extracting(e -> e.folderPath(), e -> e.bytes())
+                .containsExactly(org.assertj.core.api.Assertions.tuple("/photos", 2048L));
+    }
+
+    @Test
+    void countByExtension_returnsMappedEntries() {
+        FormatProjection projection = org.mockito.Mockito.mock(FormatProjection.class);
+        when(projection.getExtension()).thenReturn("jpg");
+        when(projection.getCnt()).thenReturn(10L);
+        when(jpa.countByExtension()).thenReturn(List.of(projection));
+
+        assertThat(sut.countByExtension())
+                .extracting(e -> e.extension(), e -> e.count())
+                .containsExactly(org.assertj.core.api.Assertions.tuple("jpg", 10L));
+    }
+
+    @Test
+    void countByCreationMonth_returnsMappedEntries() {
+        MonthlyCountProjection projection = org.mockito.Mockito.mock(MonthlyCountProjection.class);
+        when(projection.getMonth()).thenReturn("2026-01");
+        when(projection.getCnt()).thenReturn(4L);
+        when(jpa.countByCreationMonth()).thenReturn(List.of(projection));
+
+        assertThat(sut.countByCreationMonth())
+                .extracting(e -> e.month(), e -> e.count())
+                .containsExactly(org.assertj.core.api.Assertions.tuple("2026-01", 4L));
+    }
+
+    @Test
+    void countByRating_returnsMappedEntries() {
+        RatingProjection projection = org.mockito.Mockito.mock(RatingProjection.class);
+        when(projection.getRating()).thenReturn(5);
+        when(projection.getCnt()).thenReturn(2L);
+        when(jpa.countByRating()).thenReturn(List.of(projection));
+
+        assertThat(sut.countByRating())
+                .extracting(e -> e.rating(), e -> e.count())
+                .containsExactly(org.assertj.core.api.Assertions.tuple(5, 2L));
+    }
+
+    @Test
+    void findAllFilteredSortedByDateDesc_withNonNullFolderIdAndFilters_passesAllToJpa() {
+        LocalDate from = LocalDate.of(2024, 1, 1);
+        LocalDate to = LocalDate.of(2024, 12, 31);
+        AssetFilter filter = new AssetFilter(1L, "cat", from, to, 3, null, 0, 10, false, null);
+        Page<AssetEntity> emptyPage = new PageImpl<>(List.of());
+        ArgumentCaptor<FolderEntity> folderCaptor = ArgumentCaptor.forClass(FolderEntity.class);
+        when(jpa.findWithFilters(folderCaptor.capture(), eq("%cat%"), eq(from.atStartOfDay()),
+                eq(to.atTime(LocalTime.MAX)), eq(3), isNull(), any())).thenReturn(emptyPage);
+
+        sut.findAllFilteredSortedByDateDesc(filter);
+
+        assertThat(folderCaptor.getValue().getFolderId()).isEqualTo(1L);
+    }
+
+    @Test
+    void toFolderEntityOrNull_nonNullFolderId_setsFolderIdOnEntity() {
+        AssetFilter filter = new AssetFilter(3L, null, null, null, null, null, 0, 10, false, null);
+        Page<AssetEntity> emptyPage = new PageImpl<>(List.of());
+        ArgumentCaptor<FolderEntity> folderCaptor = ArgumentCaptor.forClass(FolderEntity.class);
+        when(jpa.findWithFilters(folderCaptor.capture(), isNull(), isNull(), isNull(), isNull(), isNull(), any()))
+                .thenReturn(emptyPage);
+
+        sut.findFiltered(filter);
+
+        assertThat(folderCaptor.getValue().getFolderId()).isEqualTo(3L);
     }
 }

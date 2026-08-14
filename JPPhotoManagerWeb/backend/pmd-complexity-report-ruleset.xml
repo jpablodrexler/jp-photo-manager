@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Complexity Report Ruleset"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        Report-only variant of pmd-complexity-ruleset.xml, used exclusively by
+        scripts/complexity-report.sh (the trending hotspots snapshot — see
+        code-reviewer skill §18.2's "trending" note). methodReportLevel is set
+        to 1 so PMD reports EVERY method's complexity as a "violation",
+        letting the script rank them and take the top N, rather than only the
+        ones over the real max-15 gate's threshold. Never used by `mvn
+        pmd:check` (the actual gate) — that continues to use
+        pmd-complexity-ruleset.xml's methodReportLevel=16 unchanged.
+    </description>
+
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="1" />
+            <property name="classReportLevel" value="999999" />
+        </properties>
+    </rule>
+</ruleset>

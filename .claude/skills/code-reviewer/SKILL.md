@@ -74,7 +74,7 @@ once.
 | Frontend core             | `frontend-core`           | `frontend/src/app/core/**`                                                                                                                | §10.2, §11, §12                                                  |
 | Frontend features         | `frontend-features`       | `frontend/src/app/features/**`                                                                                                            | §10.1, §10.3, §11, §12                                           |
 | Frontend shared           | `frontend-shared`         | `frontend/src/app/shared/**`                                                                                                              | §1.3, §10.1, §11, §12                                            |
-| Cross-cutting             | `cross-cutting`           | Both sub-projects; no single directory                                                                                                    | §9, §13, §14, §18, §19, delegate-only port/adapter or service pairs (§1.2/§10.2), dependency-direction violations, systemic naming patterns |
+| Cross-cutting             | `cross-cutting`           | Both sub-projects; no single directory                                                                                                    | §9, §13, §14, §18, §19, §20, §21, §22, delegate-only port/adapter or service pairs (§1.2/§10.2), dependency-direction violations, systemic naming patterns |
 
 If only the backend (or only the frontend) is in scope, skip the layers that
 don't apply — e.g. a "review the whole backend" request produces 4 reports
@@ -640,6 +640,8 @@ These have caused real bugs in this codebase and deserve extra attention:
 | Delegate-only port/adapter or service      | A port/adapter (backend) or service (frontend) with no logic of its own, just forwarding to another one for the same capability. The keep-or-delete test is whether it contributes its own logic — **not** whether it currently has callers; existing callers just mean they need repointing to the real implementation, not that the wrapper earns a reprieve. Backend incident: `HashCalculatorPort`/`AssetHashCalculatorAdapter` duplicated `StoragePort.computeHash`'s SHA-256 logic; the first fix made the adapter delegate to `StoragePort` instead of deleting it and migrating callers — the pair was pure pass-through and should have been deleted outright, with any real callers repointed to `StoragePort` directly. Frontend incident: `core/services/audio-player.service.ts` was a bare re-export (`export { MediaPlayerService as AudioPlayerService } from './media-player.service'`) with zero importers anywhere in the codebase — deleted outright |
 | Method/function past the complexity threshold | `mvn pmd:check` (backend) or `npm run complexity` (frontend) reports something over 15 — see §18 |
 | Line coverage below 80%                    | `mvn jacoco:check` (backend) or `npm run coverage:check` (frontend) reports under 80% — see §19 |
+| Untyped (`any`) identifier (frontend)      | `npm run type-coverage:report` lists it — see §20 |
+| Unused export/file/dependency              | `npm run dead-code:report` (frontend) or `mvn dependency:analyze` (backend) lists it — see §21 |
 
 ---
 
@@ -880,6 +882,23 @@ can be verified by re-running the relevant command.
 obvious, low-effort split exists, but isn't required to be flagged — the
 threshold that matters is 15.
 
+### 18.4 Trending snapshots
+
+For a full-codebase sweep, both the pass/fail gates above have a trending
+companion that ranks every function/method by complexity instead of only
+flagging the ones over threshold — useful for spotting something climbing
+toward 15 before it becomes an actual violation.
+
+- **Frontend:** `npm run complexity:report` (`scripts/complexity-report.js`)
+  — dated snapshot under `docs/reports/complexity/`, top 20 functions by
+  complexity plus top 20 files by line count.
+- **Backend:** `bash scripts/complexity-report.sh` (run from `backend/`) —
+  same shape, under `JPPhotoManagerWeb/docs/reports/complexity/`. Uses a
+  second, report-only `maven-pmd-plugin` execution
+  (`pmd-complexity-report-ruleset.xml`, `methodReportLevel=1` so PMD
+  reports every method instead of only violations) — never touches the
+  real gate's `pmd-complexity-ruleset.xml` or its threshold.
+
 ---
 
 ## 19. Code Coverage (both sub-projects)
@@ -966,3 +985,154 @@ check to confirm it now clears 80%.
 🟢 A scope in the 75–80% range is worth a passing mention if the gap is a
 small, easily-covered handful of lines, but isn't required to be flagged —
 the threshold that matters is 80%.
+
+### 19.4 Trending snapshots
+
+For a full-codebase sweep, both `npm run coverage:report`
+(`scripts/code-coverage-report.js`, frontend) and `bash
+scripts/coverage-report.sh` (run from `backend/`, backend) wrap the same
+suite runs the gates above use into a dated snapshot under
+`docs/reports/code-coverage/`/`JPPhotoManagerWeb/docs/reports/code-coverage/`
+— the project-wide percentages plus a table of every file/class still
+below 80%. Unlike `coverage:check`/`jacoco:check`, these do not fail the
+command; they exist purely to leave a written record of the actual number
+over time, so a file that quietly backslid is visible even while the
+project-wide number stays above threshold. The backend script parses
+`target/site/jacoco/jacoco.xml` directly (via an inline Perl snippet, since
+the file is single-line, deeply-nested XML that plain `grep`/`awk` cannot
+reliably disambiguate between method/class/package/report-level counters
+sharing the same tag name) rather than adding a second JaCoCo plugin
+execution the way §18.4's backend complexity report needed — JaCoCo's
+existing `report` execution (bound to the `test` phase) already produces
+everything this needs.
+
+---
+
+## 20. Type Coverage (frontend)
+
+Every reviewed frontend scope also gets a type-coverage pass — how much of
+the TypeScript identifier surface has a real, non-`any` type, as opposed
+to `any` reached via an explicit annotation, an untyped third-party return
+value, or TypeScript inference giving up. This is the quantitative
+backstop for §11's "no `any` unless unavoidable" convention: that rule
+catches an `any` a reviewer happens to read past, this catches one that
+slipped through review entirely.
+
+Run from `frontend/`:
+
+```
+npx type-coverage --project tsconfig.app.json --detail
+```
+
+(or `npm run type-coverage:report` for a dated snapshot under
+`docs/reports/type-coverage/`, listing every uncovered identifier grouped
+by file — better for a full-codebase sweep than a scoped review).
+
+🟡 Flag any identifier the tool reports as untyped that isn't already
+caught by §11's manual `any` check. Same severity as that rule, not a
+separate threshold-based gate — a single untyped identifier is exactly as
+fixable regardless of the project-wide percentage.
+
+🟢 Don't chase the last fraction of a percent in files that are
+overwhelmingly typed already — note the project-wide percentage but only
+flag specific uncovered identifiers actually touched by the reviewed
+change (or, for a full sweep, the files with the most per the report's
+file-grouped table).
+
+---
+
+## 21. Dead Code
+
+Every full-codebase sweep also gets an unused-code pass — the automated
+counterpart to whatever "reuse/simplification" findings a manual read
+would catch, just extended to catch what a single-file read cannot: an
+export or dependency nothing references *anywhere else* in the codebase.
+
+### 21.1 Frontend (knip)
+
+Run from `frontend/`:
+
+```
+npx knip
+```
+
+(or `npm run dead-code:report` for a dated snapshot under
+`docs/reports/dead-code/`, split into unused files/exports/types/
+dependencies/unlisted-dependencies). Configured in `frontend/knip.jsonc` —
+see that file's comments for why Cypress config/spec files and a handful
+of name-resolved devDependencies (`@angular-devkit/build-angular`,
+`babel-plugin-istanbul`) need explicit entries/ignores before the tool's
+findings are trustworthy on this Angular + Cypress project.
+
+### 21.2 Backend (Maven)
+
+Run from `backend/`:
+
+```
+mvn dependency:analyze
+```
+
+(or `bash scripts/dead-code-report.sh` for a dated snapshot under
+`JPPhotoManagerWeb/docs/reports/dead-code/`). Maven's own built-in
+unused/undeclared-dependency detector — the closest backend equivalent to
+knip, though narrower in scope: it only covers dependencies, not unused
+application-source exports/classes, since Maven has no direct analog to
+knip's source-level dead-code detection.
+
+**Known, expected noise:** every `spring-boot-starter-*` "umbrella"
+dependency is reported as "unused declared" because `dependency:analyze`
+works by scanning compiled bytecode for direct class references, and a
+starter POM has no classes of its own — it exists purely to pull in a
+bundle of real dependencies transitively. This is a well-documented
+limitation of bytecode-based analysis for Spring Boot specifically, not a
+real finding — skim past every `spring-boot-starter-*` entry and focus on
+anything else in the "Unused declared dependencies" list.
+
+### 21.3 Flagging
+
+🟡 Flag an unused file, export, or type (frontend) — either it should be
+made module-private or, if nothing in the codebase needs it anymore,
+deleted outright per this project's own "no half-finished implementations"
+convention.
+
+🟡 Flag an unused declared dependency (either sub-project, excluding
+§21.2's Spring Boot starter noise) — dead weight in the build and a wider
+(if unused) attack surface for `security-reviewer` §1 to worry about.
+
+🟢 Flag an `unlisted` dependency (frontend: imported but only present
+transitively; backend: `dependency:analyze`'s "Used undeclared
+dependencies") as a suggestion — it works today only because some other
+direct dependency happens to pull it in, fragile across dependency-tree
+changes.
+
+---
+
+## 22. Performance & Accessibility (Lighthouse, frontend)
+
+Scoped narrowly today: `npm run lighthouse:report` (self-builds the
+production bundle and audits it — see
+`frontend/scripts/lighthouse-report.mjs`) only covers `/login`, the one
+route reachable without an authenticated session (every other route is
+behind `authGuard`, and there is no self-registration flow to also cover —
+accounts are admin-created via `/admin/users`). There is no equivalent to
+the mocked E2E tier's session-fabrication trick for Lighthouse, so this
+does not run against any authenticated route yet.
+
+Run from `frontend/`:
+
+```
+npm run lighthouse:report
+```
+
+Writes a dated snapshot to `docs/reports/lighthouse/` — Performance,
+Accessibility, Best Practices, and SEO scores (0–100), plus every failed
+accessibility audit by name.
+
+🟡 Flag any accessibility audit failure on a route touched by the reviewed
+change — Angular Material does not guarantee WCAG compliance for free,
+and this is the only automated a11y signal this project has.
+
+🟢 A performance/SEO score regression is worth a passing mention (note the
+before/after numbers if both are available) but isn't a hard gate the way
+§18/§19's thresholds are — there is no established baseline yet for either
+score.

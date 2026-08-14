@@ -54,7 +54,7 @@ describe('Admin users', () => {
     // Material renders an aria-hidden "*" marker in the label that
     // geometrically overlaps the resting input and trips Cypress's
     // actionability check even though a real click/type passes through it
-    // fine - same MDC quirk pablo-web's e2e-suite skill documents.
+    // fine - see the e2e-suite skill's §7 note on required-field markers.
     cy.get('input[formControlName="password"]').type(newPassword, { force: true });
     cy.contains('button[type="submit"]', 'Save').click();
 

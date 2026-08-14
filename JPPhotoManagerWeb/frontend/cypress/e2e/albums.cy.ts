@@ -6,9 +6,10 @@ import { E2E_PREFIX, uniqueSuffix } from '../support/commands';
 // photo fixtures and is deliberately out of scope here - see the e2e-suite
 // skill's "what this suite doesn't cover" section.
 //
-// Tests share state deliberately (same album, created in test 1) - mirrors
-// pablo-web's e2e-suite convention of a real user session across a spec
-// file rather than fully isolated tests.
+// Tests share state deliberately (same album, created in test 1) - a real
+// user session carried across a spec file rather than fully isolated
+// tests, per this project's e2e-suite skill (§5, "Why sequential, not
+// parallel").
 
 describe('Albums', () => {
   const albumName = `${E2E_PREFIX} album ${uniqueSuffix()}`;

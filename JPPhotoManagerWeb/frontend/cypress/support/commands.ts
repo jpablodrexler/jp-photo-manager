@@ -4,9 +4,9 @@
 
 export const E2E_PREFIX = 'zzE2E';
 
-// Timestamp + short random string, same shape pablo-web's sibling suite uses
-// - makes every piece of test data this suite creates unique and easy to
-// spot (and safe to hand-delete) if a run crashes before its own cleanup.
+// Timestamp + short random string - makes every piece of test data this
+// suite creates unique and easy to spot (and safe to hand-delete) if a run
+// crashes before its own cleanup.
 export function uniqueSuffix(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }

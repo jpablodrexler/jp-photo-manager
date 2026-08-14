@@ -7,7 +7,7 @@
     "src/main.ts",
     "src/environments/**"
   ],
-  "reporter": ["html", "text-summary", "lcov"],
+  "reporter": ["html", "text-summary", "lcov", "json-summary"],
   "report-dir": "coverage",
   "lines": 80,
   "branches": 80,

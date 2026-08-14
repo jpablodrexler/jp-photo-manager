@@ -60,6 +60,38 @@ class KafkaProgressRegistryTest {
     }
 
     @Test
+    void getCompletion_registeredRunId_returnsRegisteredFuture() {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        sut.registerCompletion(1L, future);
+
+        assertThat(sut.getCompletion(1L)).isSameAs(future);
+    }
+
+    @Test
+    void getCompletion_unknownRunId_returnsNull() {
+        assertThat(sut.getCompletion(99L)).isNull();
+    }
+
+    @Test
+    void addCatalogObserver_getCatalogObservers_containsAddedObserver() {
+        SseEmitter observer = new SseEmitter();
+
+        sut.addCatalogObserver(observer);
+
+        assertThat(sut.getCatalogObservers()).containsExactly(observer);
+    }
+
+    @Test
+    void removeCatalogObserver_removesPreviouslyAddedObserver() {
+        SseEmitter observer = new SseEmitter();
+        sut.addCatalogObserver(observer);
+
+        sut.removeCatalogObserver(observer);
+
+        assertThat(sut.getCatalogObservers()).isEmpty();
+    }
+
+    @Test
     void concurrentRegistration_doesNotLoseEntries() throws Exception {
         int count = 100;
         Thread[] threads = new Thread[count];

@@ -54,7 +54,17 @@ walking into a major-version breaking change.
 cd JPPhotoManagerWeb/backend
 mvn versions:display-dependency-updates
 mvn versions:display-plugin-updates
+mvn dependency:analyze   # or: bash scripts/dead-code-report.sh for a dated snapshot under docs/reports/dead-code/
 ```
+
+The `dependency:analyze` run is a useful pre-check, not a strict
+prerequisite: a dependency the survey lists as outdated but
+`dependency:analyze` also reports as genuinely unused is a candidate for
+removal instead of upgrade — no point spending a bump on a package nothing
+references anymore. Ignore every `spring-boot-starter-*` entry under
+"Unused declared dependencies" though — that's expected noise from
+bytecode-based analysis missing umbrella POMs with no classes of their
+own, not a real finding (see `code-reviewer` skill §21.2).
 
 Most library versions in this project are inherited from the
 `spring-boot-starter-parent` BOM (see `java-developer` §1) rather than
@@ -77,7 +87,14 @@ before removing it.
 cd JPPhotoManagerWeb/frontend
 npm outdated
 npm audit --audit-level=high
+npm run dead-code:report   # knip — see docs/reports/dead-code/ for the dated snapshot
 ```
+
+Same pre-check reasoning as the backend survey above: a dependency
+`npm outdated` lists but `dead-code:report` reports as genuinely unused
+(and not one of `knip.jsonc`'s documented, name-resolved exceptions like
+`@angular-devkit/build-angular`/`babel-plugin-istanbul`) is a candidate
+for removal instead of upgrade.
 
 **Angular packages are a special case.** Don't bump `@angular/*` packages
 with a raw `npm install <pkg>@latest` — Angular major versions ship

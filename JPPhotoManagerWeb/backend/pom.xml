@@ -348,6 +348,37 @@
                         <excludeRoot>target/generated-sources</excludeRoot>
                     </excludeRoots>
                 </configuration>
+                <executions>
+                    <!-- rulesets is a String[] parameter with no CLI-property binding, so it
+                         can't be overridden with a bare -D — a second, separately-configured
+                         execution is the only way to run PMD with a different ruleset without
+                         touching the real gate's configuration above. Goal is `pmd` (the
+                         underlying analysis/report goal), not `check` — `check` internally
+                         forks its own `pmd:pmd` execution using this plugin's *default*
+                         top-level <configuration> rather than the calling execution's, so a
+                         `check@complexity-report` invocation silently ignores this block's
+                         ruleset override and analyzes with pmd-complexity-ruleset.xml anyway
+                         (confirmed empirically via `mvn -X`). `pmd:pmd` doesn't fork and
+                         doesn't fail the build (no threshold check, just writes target/pmd.xml),
+                         which is all scripts/complexity-report.sh needs. phase=none keeps it
+                         on-demand only, invoked via `mvn pmd:pmd@complexity-report`. -->
+                    <execution>
+                        <id>complexity-report</id>
+                        <phase>none</phase>
+                        <goals>
+                            <goal>pmd</goal>
+                        </goals>
+                        <configuration>
+                            <targetJdk>${java.version}</targetJdk>
+                            <rulesets>
+                                <ruleset>pmd-complexity-report-ruleset.xml</ruleset>
+                            </rulesets>
+                            <excludeRoots>
+                                <excludeRoot>target/generated-sources</excludeRoot>
+                            </excludeRoots>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <!-- Not bound to any lifecycle phase: invoked on demand via

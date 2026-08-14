@@ -101,4 +101,16 @@ describe('AudioPlayerComponent', () => {
     cy.get('input.player-slider').invoke('val', '90').trigger('input');
     cy.wrap(stub.seek).should('have.been.calledWith', 90);
   });
+
+  it('should show 0:00 for a duration that is not finite (Infinity)', () => {
+    mountPlayer({ duration: signal(Infinity) });
+
+    cy.get('.player-time').last().should('contain', '0:00');
+  });
+
+  it('should show 0:00 for a duration that is NaN', () => {
+    mountPlayer({ duration: signal(NaN) });
+
+    cy.get('.player-time').last().should('contain', '0:00');
+  });
 });

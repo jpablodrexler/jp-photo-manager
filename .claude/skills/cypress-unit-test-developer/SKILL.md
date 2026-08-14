@@ -31,7 +31,7 @@ Cypress is a `JPPhotoManagerWeb/frontend/` devDependency; `cypress.config.ts`
 (that directory's root) already configures both the `component` and `e2e`
 blocks (the `e2e` block belongs to the `e2e-suite` skill, not this one).
 Nothing below needs to be installed or scaffolded — it already exists.
-Three things about the setup are worth understanding before writing a new
+Four things about the setup are worth understanding before writing a new
 test, because they explain why the conventions in this skill exist:
 
 1. **Bundler is `webpack`, not an esbuild/`application` bundler.** Cypress
@@ -43,8 +43,7 @@ test, because they explain why the conventions in this skill exist:
    building/serving — it exists solely to satisfy this preset.
 2. **`cy.mount` comes from plain `cypress/angular`, not
    `cypress/angular-zoneless`**, even though this app itself is zoneless
-   (`app.config.ts` calls `provideZonelessChangeDetection()`) — unlike
-   pablo-web's sibling skill, which does use the `-zoneless` mount helper.
+   (`app.config.ts` calls `provideZonelessChangeDetection()`).
    `cypress/support/component.ts` already wires the correct one up as the
    global `cy.mount` command — never import `mount` directly in a test
    file, just call `cy.mount(...)`.
@@ -56,13 +55,23 @@ test, because they explain why the conventions in this skill exist:
    run test:coverage` (`cypress run --component --env coverage=true`) runs
    the same specs and additionally writes `html`/`lcov`/text-summary
    reports to `coverage/` (gitignored); `npm run coverage:check` (`nyc
-   check-coverage`, reading `.nycrc.json`) enforces thresholds afterward.
+   check-coverage`, reading `.nycrc.json`) enforces thresholds afterward. A
+   scope under 80% is a 🟡 finding per `code-reviewer` skill §19.1 — add the
+   missing test cases for the uncovered lines/branches the report lists,
+   then re-run `coverage:check` to confirm it clears 80%.
+4. **Trending snapshot**: `npm run coverage:report`
+   (`scripts/code-coverage-report.js`) re-runs the suite itself and writes
+   a dated markdown report to `docs/reports/code-coverage/` — the
+   project-wide percentages plus a table of every file still below 80% on
+   any metric. Useful after a batch of new/expanded test files (like this
+   skill produces) to get a written record of the before/after numbers,
+   rather than re-deriving them from a raw `nyc report` run each time.
 
 If you ever need to touch this setup (rare), it lives in
 `JPPhotoManagerWeb/frontend/cypress.config.ts`,
 `JPPhotoManagerWeb/frontend/cypress/support/component.ts`, and
 `JPPhotoManagerWeb/frontend/cypress/tsconfig.json`. There is no dedicated
-`tsconfig.cy.json` here (unlike pablo-web's sibling skill) — `tsconfig.app.json`
+`tsconfig.cy.json` here — `tsconfig.app.json`
 doesn't `exclude` `*.cy.ts` files in this project, so no override was ever
 needed.
 

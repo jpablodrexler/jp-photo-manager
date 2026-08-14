@@ -133,4 +133,51 @@ describe('BatchRenameDialogComponent', () => {
     cy.contains('button', 'Apply').click();
     cy.get('@dialogClose').should('have.been.calledWith', { success: false, error: 'disk error' });
   });
+
+  it('should clear previews and any error when the pattern is cleared back to empty', () => {
+    const renameStub = cy.stub().returns(of(previewResponse([
+      { assetId: 1, oldName: 'a.jpg', newName: 'photo_001.jpg' },
+    ])));
+    const assetService: Partial<AssetService> = { renameAssets: renameStub };
+
+    cy.mount(BatchRenameDialogComponent, {
+      providers: [
+        provideNoopAnimations(),
+        { provide: AssetService, useValue: assetService },
+        { provide: MatDialogRef, useValue: defaultDialogRef() },
+        { provide: MAT_DIALOG_DATA, useValue: defaultData },
+      ],
+    });
+
+    cy.get('input[placeholder*="date"]').type('photo_{index:03d}.{ext}', { parseSpecialCharSequences: false });
+    cy.wait(450);
+    cy.get('.preview-table-wrapper').should('exist');
+
+    cy.get('input[placeholder*="date"]').clear();
+    cy.wait(450);
+    cy.get('.preview-table-wrapper').should('not.exist');
+    cy.contains('button', 'Apply').should('be.disabled');
+  });
+
+  it('should clear a previous error when the pattern is cleared back to empty', () => {
+    const renameStub = cy.stub().returns(throwError(() => ({ status: 400, error: { message: 'ASSET_NAME_COLLISION' } })));
+    const assetService: Partial<AssetService> = { renameAssets: renameStub };
+
+    cy.mount(BatchRenameDialogComponent, {
+      providers: [
+        provideNoopAnimations(),
+        { provide: AssetService, useValue: assetService },
+        { provide: MatDialogRef, useValue: defaultDialogRef() },
+        { provide: MAT_DIALOG_DATA, useValue: defaultData },
+      ],
+    });
+
+    cy.get('input[placeholder*="date"]').type('{date:yyyy-MM-dd}.{ext}', { parseSpecialCharSequences: false });
+    cy.wait(450);
+    cy.contains('Invalid pattern or name collision').should('be.visible');
+
+    cy.get('input[placeholder*="date"]').clear();
+    cy.wait(450);
+    cy.contains('Invalid pattern or name collision').should('not.exist');
+  });
 });

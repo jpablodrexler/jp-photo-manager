@@ -65,4 +65,28 @@ describe('FolderPickerDialogComponent', () => {
     cy.contains('Cancel').click();
     cy.get('@dialogClose').should('have.been.calledWith', null);
   });
+
+  it('should close the dialog with the selected destination folder when the move is confirmed', () => {
+    const dialogRef = defaultDialogRef();
+    mountDialog('move', dialogRef);
+    cy.contains('Downloads').click();
+    cy.contains('Move here').click();
+    cy.get('@dialogClose').should('have.been.calledWith', { destinationFolder: OTHER_FOLDER });
+  });
+
+  it('should close the dialog with the selected destination folder when the copy is confirmed', () => {
+    const dialogRef = defaultDialogRef();
+    mountDialog('copy', dialogRef);
+    cy.contains('Downloads').click();
+    cy.contains('Copy here').click();
+    cy.get('@dialogClose').should('have.been.calledWith', { destinationFolder: OTHER_FOLDER });
+  });
+
+  it('should not close the dialog when confirm is called while no valid folder is selected', () => {
+    const dialogRef = defaultDialogRef();
+    mountDialog('move', dialogRef).then(({ component }) => {
+      component.confirm();
+    });
+    cy.get('@dialogClose').should('not.have.been.called');
+  });
 });

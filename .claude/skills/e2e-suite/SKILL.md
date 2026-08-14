@@ -139,9 +139,9 @@ JPPhotoManagerWeb/frontend/
 Every piece of test data this suite creates (album names, secondary
 usernames) is prefixed with `E2E_PREFIX` (`"zzE2E"`, in
 `cypress/support/commands.ts`) plus `uniqueSuffix()` (a timestamp + short
-random string) — e.g. `zzE2E album 1786469088924-p48hp`. This is the same
-naming convention pablo-web's own `e2e-suite` skill uses, adapted to a
-backend with a materially different cleanup mechanic (§4 below).
+random string) — e.g. `zzE2E album 1786469088924-p48hp`. This makes every
+row this suite creates unambiguously identifiable, which the cleanup
+mechanic (§4 below) depends on.
 
 **No bulk "delete everything with this prefix" endpoint exists** in this
 backend, unlike a database client with row-level access. Every spec must
@@ -151,7 +151,7 @@ delete it explicitly — either through the real UI (the last test in a spec
 usually does this as part of what it's testing) or via a direct `cy.request`
 `DELETE` call in an `after()` hook as a safety net if the in-test delete
 didn't run (e.g. an earlier test in the file failed). This is the *default*
-pattern here, not a two-table exception like it is in pablo-web's suite.
+pattern here, for every table this backend exposes.
 
 **Never operate on the seeded `admin` account.** Confirmed via
 `DeleteUserUseCaseImpl`: the backend has no safeguard against deleting the
@@ -255,6 +255,15 @@ even across spec files, restores the cached session instead.
 7. Run the full suite (`npm run test:e2e`) once your new spec passes in
    isolation, to confirm it doesn't interact badly with specs that run
    before/after it (shared `admin` session, shared backend state).
+8. When a **new route** ships (not just a new spec for an existing one),
+   run `npm run route-coverage:report` from `frontend/` afterward — it
+   cross-references every path in `app.routes.ts` against every literal
+   `cy.visit('/path')` (real tier) or `visitWithSession('/path')` (mocked
+   tier, `cypress/support/mocked/seed-session.ts`) across both E2E tiers,
+   writing a dated route → tier-coverage table to
+   `docs/reports/route-coverage/`. Confirms the new route actually picked
+   up a visit somewhere rather than being added to `app.routes.ts` and
+   never getting E2E coverage at all.
 
 ---
 
@@ -299,8 +308,7 @@ all.
   `recycle-bin`).
 - **Its own config**: `cypress.mocked.config.ts` — a separate file from
   `cypress.config.ts`, not a `specPattern`/`excludeSpecPattern` split on
-  the same config, for the same reason pablo-web's sibling suite makes the
-  same choice: `excludeSpecPattern` is applied *before* spec selection, so
+  the same config: `excludeSpecPattern` is applied *before* spec selection, so
   putting the exclude on the real-suite config would also block a targeted
   `--spec cypress/e2e/mocked/**` invocation against that same config.
 - **Command**: `npm run test:e2e:mocked` — `start-server-and-test start

@@ -500,6 +500,10 @@ mvn clean package -DskipTests
 # Check line coverage against the 80% minimum (see code-reviewer skill §19.2)
 mvn test
 mvn jacoco:check
+
+# Trending snapshot instead of a pass/fail gate — dated report under
+# JPPhotoManagerWeb/docs/reports/code-coverage/ (see code-reviewer skill §19.4)
+bash scripts/coverage-report.sh
 ```
 
 ---

@@ -12,8 +12,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.listener.CommonErrorHandler;
+import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,5 +67,31 @@ class UploadProcessorKafkaConfigTest {
         ArgumentCaptor<UploadProgressMessage> captor = ArgumentCaptor.forClass(UploadProgressMessage.class);
         verify(kafkaTemplate).send(eq("job.upload.progress"), eq("99"), captor.capture());
         assertThat(captor.getValue().failed()).isTrue();
+    }
+
+    @Test
+    void assetHashProcessorContainerFactory_configuresConsumerFactoryAndBoundedRetryErrorHandler() {
+        ConcurrentKafkaListenerContainerFactory<Object, Object> factory = sut.assetHashProcessorContainerFactory();
+
+        assertThat(factory).isNotNull();
+        assertThat(ReflectionTestUtils.getField(factory, "consumerFactory")).isSameAs(consumerFactory);
+        CommonErrorHandler errorHandler = (CommonErrorHandler) ReflectionTestUtils.getField(factory, "commonErrorHandler");
+        assertThat(errorHandler).isInstanceOf(DefaultErrorHandler.class);
+    }
+
+    @Test
+    void assetExifProcessorContainerFactory_configuresConsumerFactoryAndErrorHandler() {
+        ConcurrentKafkaListenerContainerFactory<Object, Object> factory = sut.assetExifProcessorContainerFactory();
+
+        assertThat(factory).isNotNull();
+        assertThat(ReflectionTestUtils.getField(factory, "consumerFactory")).isSameAs(consumerFactory);
+    }
+
+    @Test
+    void assetThumbnailProcessorContainerFactory_configuresConsumerFactoryAndErrorHandler() {
+        ConcurrentKafkaListenerContainerFactory<Object, Object> factory = sut.assetThumbnailProcessorContainerFactory();
+
+        assertThat(factory).isNotNull();
+        assertThat(ReflectionTestUtils.getField(factory, "consumerFactory")).isSameAs(consumerFactory);
     }
 }

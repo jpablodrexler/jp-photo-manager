@@ -7,8 +7,7 @@ import { defineConfig } from 'cypress';
 // excludeSpecPattern *before* spec selection either way - excluding
 // cypress/e2e/mocked/** there would also silently block a targeted
 // `--spec cypress/e2e/mocked/**` run against that same config. A separate
-// config file avoids that trap entirely (mirrors pablo-web's
-// cypress.mocked.config.ts, same rationale).
+// config file avoids that trap entirely.
 export default defineConfig({
   e2e: {
     baseUrl: 'http://localhost:4200',

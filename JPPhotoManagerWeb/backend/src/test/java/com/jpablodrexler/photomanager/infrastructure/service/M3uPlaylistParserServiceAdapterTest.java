@@ -67,4 +67,40 @@ class M3uPlaylistParserServiceAdapterTest {
 
         assertThat(result).extracting(Asset::getAssetId).containsExactly(1L);
     }
+
+    @Test
+    void parse_blankLines_areSkipped() throws Exception {
+        Asset track1 = Asset.builder().assetId(1L).fileName("track1.mp3").build();
+        when(assetRepository.findByFileName("track1.mp3")).thenReturn(List.of(track1));
+
+        Path playlist = tempDir.resolve("playlist.m3u");
+        Files.writeString(playlist, "\n   \n/music/track1.mp3\n\n");
+
+        List<Asset> result = sut.parse(playlist);
+
+        assertThat(result).extracting(Asset::getAssetId).containsExactly(1L);
+    }
+
+    @Test
+    void parse_unreadablePath_returnsEmptyListInsteadOfThrowing() {
+        // A directory is not a regular file, so Files.readAllLines throws IOException.
+        List<Asset> result = sut.parse(tempDir);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void supports_m3uExtension_returnsTrue() {
+        assertThat(sut.supports("playlist.m3u")).isTrue();
+    }
+
+    @Test
+    void supports_m3u8ExtensionUpperCase_returnsTrue() {
+        assertThat(sut.supports("PLAYLIST.M3U8")).isTrue();
+    }
+
+    @Test
+    void supports_unrelatedExtension_returnsFalse() {
+        assertThat(sut.supports("playlist.pls")).isFalse();
+    }
 }

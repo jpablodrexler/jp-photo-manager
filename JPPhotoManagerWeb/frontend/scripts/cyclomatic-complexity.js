@@ -8,15 +8,16 @@
 // via backend/pmd-complexity-ruleset.xml with the same threshold.
 //
 // Usage: node scripts/cyclomatic-complexity.js [src/app] [--max=15]
+//
+// The analysis itself (walk/computeComplexity/functionName) is exported via
+// module.exports so complexity-report.js can reuse the exact same AST-based
+// computation for its trending hotspots report instead of reimplementing it
+// — the CLI behavior below (console output, exit code) is unchanged and
+// still runs when this file is invoked directly.
 
 const ts = require('typescript');
 const fs = require('fs');
 const path = require('path');
-
-const args = process.argv.slice(2);
-const maxArg = args.find((a) => a.startsWith('--max='));
-const maxComplexity = maxArg ? Number(maxArg.split('=')[1]) : 15;
-const root = path.resolve(args.find((a) => !a.startsWith('--')) || 'src/app');
 
 function walk(dir, acc) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -34,8 +35,6 @@ function walk(dir, acc) {
   }
   return acc;
 }
-
-const files = walk(root, []);
 
 const FUNCTION_KINDS = new Set([
   ts.SyntaxKind.FunctionDeclaration,
@@ -101,39 +100,53 @@ function computeComplexity(node) {
   return complexity;
 }
 
-const results = [];
+function analyzeComplexity(root) {
+  const files = walk(root, []);
+  const results = [];
 
-for (const file of files) {
-  const text = fs.readFileSync(file, 'utf8');
-  const sourceFile = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-  const rel = path.relative(process.cwd(), file).replace(/\\/g, '/');
+  for (const file of files) {
+    const text = fs.readFileSync(file, 'utf8');
+    const sourceFile = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    const rel = path.relative(process.cwd(), file).replace(/\\/g, '/');
 
-  function visitTop(node) {
-    if (FUNCTION_KINDS.has(node.kind) && node.body) {
-      const complexity = computeComplexity(node);
-      const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
-      results.push({ file: rel, name: functionName(node, sourceFile), line: line + 1, complexity });
+    function visitTop(node) {
+      if (FUNCTION_KINDS.has(node.kind) && node.body) {
+        const complexity = computeComplexity(node);
+        const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+        results.push({ file: rel, name: functionName(node, sourceFile), line: line + 1, complexity });
+      }
+      ts.forEachChild(node, visitTop);
     }
-    ts.forEachChild(node, visitTop);
+
+    visitTop(sourceFile);
   }
 
-  visitTop(sourceFile);
+  results.sort((a, b) => b.complexity - a.complexity);
+  return { files, results };
 }
 
-results.sort((a, b) => b.complexity - a.complexity);
+module.exports = { analyzeComplexity };
 
-const offenders = results.filter((r) => r.complexity > maxComplexity);
+if (require.main === module) {
+  const args = process.argv.slice(2);
+  const maxArg = args.find((a) => a.startsWith('--max='));
+  const maxComplexity = maxArg ? Number(maxArg.split('=')[1]) : 15;
+  const root = path.resolve(args.find((a) => !a.startsWith('--')) || 'src/app');
 
-console.log(`Scanned ${files.length} files, ${results.length} functions under ${path.relative(process.cwd(), root)}.`);
-console.log(`Complexity threshold: max ${maxComplexity} per function.\n`);
+  const { files, results } = analyzeComplexity(root);
+  const offenders = results.filter((r) => r.complexity > maxComplexity);
 
-if (offenders.length === 0) {
-  console.log(`No functions exceed complexity ${maxComplexity}.`);
-} else {
-  console.log(`${offenders.length} function(s) exceed complexity ${maxComplexity}:\n`);
-  for (const o of offenders) {
-    console.log(`  ${o.complexity}\t${o.file}:${o.line}\t${o.name}`);
+  console.log(`Scanned ${files.length} files, ${results.length} functions under ${path.relative(process.cwd(), root)}.`);
+  console.log(`Complexity threshold: max ${maxComplexity} per function.\n`);
+
+  if (offenders.length === 0) {
+    console.log(`No functions exceed complexity ${maxComplexity}.`);
+  } else {
+    console.log(`${offenders.length} function(s) exceed complexity ${maxComplexity}:\n`);
+    for (const o of offenders) {
+      console.log(`  ${o.complexity}\t${o.file}:${o.line}\t${o.name}`);
+    }
   }
-}
 
-process.exitCode = offenders.length > 0 ? 1 : 0;
+  process.exitCode = offenders.length > 0 ? 1 : 0;
+}

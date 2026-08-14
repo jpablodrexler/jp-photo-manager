@@ -337,6 +337,24 @@ cookies, CSRF protection via `SameSite=Strict` must be verified.
 🟡 Flag Spring Boot Actuator endpoints (`/actuator/**`) that are exposed
 without authentication in production profiles.
 
+Before doing the endpoint-by-endpoint cross-check above by hand, run
+`bash scripts/auth-coverage-report.sh` from `backend/` — it parses
+`SecurityConfig.java`'s ordered `requestMatchers` rules and every
+`@RestController`'s mapping annotations, then writes a dated table under
+`JPPhotoManagerWeb/docs/reports/auth-coverage/` showing exactly which rule
+governs every endpoint (plus any method-level `@PreAuthorize`, a separate,
+tighter restriction the table doesn't try to merge into the same column).
+It is a factual snapshot, not a judgment call — an endpoint resolving only
+to the `anyRequest` fallback isn't automatically wrong (the fallback
+itself is `permitAll()`, and some endpoints are intentionally public), but
+it's exactly the kind of gap this cross-check is meant to catch: a new
+controller silently inheriting a broader rule than intended because
+`SecurityConfig`'s ordered matcher list is easy to lose track of as
+controllers are added. The regex-based path matching it uses is an
+approximation of Spring's real `PathPattern` matcher, so treat a
+surprising row as a prompt to go read `SecurityConfig.java` directly, not
+as ground truth on its own.
+
 ### 4.3 Password Storage
 
 🔴 Flag any code that stores or compares passwords in plaintext.
