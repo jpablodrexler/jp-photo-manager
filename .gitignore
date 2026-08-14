@@ -275,4 +275,4 @@ JPPhotoManagerWeb/.env
 JPPhotoManagerWeb/k8s/secret.yaml
 JPPhotoManagerWeb/k8s/catalog-volumes.yaml
 # Claude Code skill review reports (local working artifacts, not committed history)
-docs/reports/
+JPPhotoManagerWeb/docs/reports/

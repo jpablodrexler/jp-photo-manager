@@ -16,7 +16,12 @@
     "cypress:open": "cypress open --component",
     "cypress:e2e": "cypress open --e2e",
     "lint": "ng lint",
-    "complexity": "node scripts/cyclomatic-complexity.js src/app"
+    "complexity": "node scripts/cyclomatic-complexity.js src/app",
+    "bundle:report": "node scripts/bundle-size-report.js",
+    "deps:staleness": "node scripts/dependency-staleness-report.js",
+    "test:e2e:report": "node scripts/e2e-run-report.js --real",
+    "test:e2e:mocked:report": "start-server-and-test start http://localhost:4200 cy:e2e:mocked:report",
+    "cy:e2e:mocked:report": "node scripts/e2e-run-report.js --mocked"
   },
   "private": true,
   "dependencies": {

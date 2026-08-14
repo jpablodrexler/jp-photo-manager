@@ -349,6 +349,16 @@
                     </excludeRoots>
                 </configuration>
             </plugin>
+            <plugin>
+                <!-- Not bound to any lifecycle phase: invoked on demand via
+                     `mvn versions:display-dependency-updates`, same
+                     on-demand pattern as maven-pmd-plugin above — backs the
+                     dependency-staleness metric (see
+                     scripts/dependency-staleness-report.sh). -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.18.0</version>
+            </plugin>
         </plugins>
     </build>
 
