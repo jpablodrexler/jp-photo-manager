@@ -77,6 +77,8 @@ Every metric is documented inside a skill under `.claude/skills/`, but "document
 
 ### Running every metric manually
 
+`./scripts/run-all-quality-reports.sh` (from `JPPhotoManagerWeb/`, the repo root for this project) runs both halves in one command: `npm run reports:all` in `frontend/` followed by `bash scripts/run-all-quality-reports.sh` in `backend/`, reporting a combined pass/fail summary at the end. It forwards `--with-e2e-real` to the frontend run only and `--with-mutation` to both; for scoping to a single report (`--only=<key>`), call the frontend/backend scripts below directly instead, since the two use separate key namespaces.
+
 `npm run reports:all` (from `frontend/`) runs every frontend report script above back to back, via `frontend/scripts/run-all-quality-reports.js`; `bash scripts/run-all-quality-reports.sh` (from `backend/`) does the same for the backend's bash report scripts. Each skips its slowest/most-setup-dependent report(s) by default — the frontend runner skips `test:e2e:report` (needs the full app already deployed to k8s) and `mutation:report` (a full Stryker run), pass `--with-e2e-real`/`--with-mutation` to include them or `--only=<key1>,<key2>` to run a subset; the backend runner skips `mutation-report.sh` (a full PIT run) unless `--with-mutation` is passed, and also supports `--only=<key1>,<key2>`. Neither script stops on a failing report — both print a pass/fail/skip summary at the end and exit non-zero if anything failed.
 
 Each report is also runnable on its own. From `frontend/`:
