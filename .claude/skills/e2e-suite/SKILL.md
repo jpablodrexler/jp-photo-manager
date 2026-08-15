@@ -3,8 +3,9 @@ name: e2e-suite
 description: >
   The maintained, committed end-to-end regression suite for
   JPPhotoManagerWeb's frontend — Cypress E2E driving a real Chrome/Electron
-  instance against a local `ng serve` dev server talking to a real, locally
-  running backend (Postgres + MongoDB + Redis + Kafka). Lives at
+  instance against the full application redeployed to the local Kubernetes
+  cluster (`./scripts/build-and-deploy-k8s.sh`), reached through the
+  cluster's own ingress rather than a local `ng serve` dev server. Lives at
   `JPPhotoManagerWeb/frontend/cypress/e2e/` (excluding `mocked/`), runs via
   `npm run test:e2e` from `JPPhotoManagerWeb/frontend`. Covers auth
   (login/logout/guard), albums (full CRUD), admin/users (create/change-
@@ -29,10 +30,11 @@ metadata:
 A real, maintained regression suite — not ad-hoc scripts. Every spec file
 is committed, runs the same way every time, and cleans up after itself.
 Nothing here is mocked: it drives an actual Chrome/Electron instance
-(Cypress) against a locally-running `ng serve`, which itself proxies `/api`
-to a locally-running Spring Boot backend — the same architecture the
-`e2e-testing` skill uses for its one-off verification passes, just packaged
-as a durable test tree instead of improvised per-session.
+(Cypress) against the real application — frontend and backend images built
+from current source and running as pods in the local Kubernetes cluster,
+reached through `k8s/ingress.yaml` at `http://photomanager.local` — rather
+than a local `ng serve` dev server talking to ad-hoc `docker run`
+containers.
 
 **Relationship to `e2e-testing`**: that skill is for a quick, targeted
 check right after implementing one feature — a throwaway scratch pass, no
@@ -41,12 +43,14 @@ doesn't (SSE progress-stream verification, Puppeteer screenshots, the
 multi-replica consistency check). This skill is the opposite: narrower in
 what it drives (browser interactions only, via Cypress) but broad,
 committed, repeatable CRUD/business-rule coverage you run on demand (before
-a release, after a refactor, when asked to verify nothing broke). Both
-skills share the same backend prerequisites (`e2e-testing` §1–§4: Postgres/
-Mongo/Redis/Kafka up, backend and frontend running, `admin`/`admin`
-credentials). This app's `frontend/src/**/*.cy.ts` **component** tests are
-a separate, unrelated layer — see the `cypress-unit-test-developer` skill
-for those; this skill is E2E only.
+a release, after a refactor, when asked to verify nothing broke). The two
+skills no longer share the same backend prerequisites: `e2e-testing` still
+drives a locally-running `ng serve` + ad-hoc `docker run` containers for
+its scratch checks, while this suite always runs against a fresh
+Kubernetes redeploy (§1 below) — `admin`/`admin` credentials are the one
+thing still shared between them. This app's `frontend/src/**/*.cy.ts`
+**component** tests are a separate, unrelated layer — see the
+`cypress-unit-test-developer` skill for those; this skill is E2E only.
 
 **Relationship to the mocked E2E smoke tier**: `cypress/e2e/mocked/` is a
 *third*, distinct E2E layer — see §9 below. Where this suite drives a real
@@ -60,22 +64,65 @@ still deliberately doesn't (§8).
 
 ## 1. Running the suite
 
-Bring up the full stack first (Postgres, MongoDB, Redis, Kafka, backend,
-frontend) — see the `e2e-testing` skill §1–§3 for exact commands, or
-`docker compose up -d db kafka redis mongo` for the four infra services at
-once. Then, from `JPPhotoManagerWeb/frontend`:
+**Always redeploy to the local Kubernetes cluster first — never bring up
+docker-compose or an ad-hoc `docker run` stack for this suite.** This
+project standardized on a local k8s cluster (Docker Desktop's built-in
+Kubernetes, kind, or minikube — see `docs/kubernetes.md`) as the one
+environment the real E2E tier runs against; docker-compose repeatedly hit a
+Kafka advertised-listener hostname (`kafka`) that can't resolve from the
+host when the backend runs outside the cluster, which the k8s path avoids
+entirely (backend and Kafka both run in-cluster and talk over in-cluster
+DNS — Cypress on the host only ever talks to the ingress).
+
+From `JPPhotoManagerWeb`, before every real-tier run:
+
+```bash
+./scripts/build-and-deploy-k8s.sh
+```
+
+This builds fresh backend/frontend images from current source, applies the
+full manifest set, and restarts the `backend`/`frontend` Deployments so the
+new images actually get picked up (`imagePullPolicy: IfNotPresent` won't
+repull a `:latest` tag it already has cached) — see `docs/kubernetes.md`
+for what it does step by step. It requires `k8s/secret.yaml` and
+`k8s/catalog-volumes.yaml` to already exist (copied from their `.example`
+templates and filled in once, machine-specific, git-ignored) and fails
+loudly with the exact `cp` command if either is missing rather than
+deploying broken config. It's idempotent — safe to run before every single
+E2E session, not just the first time.
+
+Wait for pods to settle before running Cypress — a fresh image can take a
+few minutes to become ready (Flyway migrations + joining Kafka consumer
+groups), and a still-`CrashLoopBackOff`/`0/1` pod means requests will just
+time out or 502 through the ingress rather than fail with anything
+Cypress-legible:
+
+```bash
+kubectl get pods -n photomanager -w
+```
+
+Ctrl-C once every pod reads `1/1 Running` with stable `RESTARTS` (a restart
+or two while dependencies start up is normal — see
+`docs/kubernetes.md`#troubleshooting). Then, from
+`JPPhotoManagerWeb/frontend`:
 
 ```bash
 npm run test:e2e
 ```
 
 This runs `cypress run --e2e` against `cypress.config.ts`'s real (non-
-mocked) `e2e` block, which already `excludeSpecPattern`s
-`cypress/e2e/mocked/**` — a plain `npm run test:e2e` never picks up the
-mocked specs. Unlike the mocked tier's `npm run test:e2e:mocked`, this
-command does **not** start the dev server itself (no `start-server-and-
-test` wrapper) — `ng serve` must already be running (`npm start` in another
-terminal), same as the backend must already be running.
+mocked) `e2e` block, whose `baseUrl` points at `http://photomanager.local`
+— the app as served through the cluster's own ingress, not a local `ng
+serve` — and which already `excludeSpecPattern`s `cypress/e2e/mocked/**`,
+so a plain `npm run test:e2e` never picks up the mocked specs. Like the
+mocked tier's `npm run test:e2e:mocked`, this command does **not** start
+anything itself — no dev server, no port-forward — since the cluster's
+ingress-nginx controller (installed by `build-and-deploy-k8s.sh`) is
+already serving the app the moment the redeploy above finishes.
+`http://photomanager.local` requires a one-time hosts-file entry
+(`127.0.0.1 photomanager.local` — see `docs/kubernetes.md`'s "Accessing
+services" section); `build-and-deploy-k8s.sh` prints the exact command if
+it's ever missing, but does not add it itself (needs admin rights).
 
 To run a single spec file directly while writing a new one:
 

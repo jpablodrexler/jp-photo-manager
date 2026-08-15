@@ -142,15 +142,19 @@ receives anything, confirm the *backend* actually started successfully
 against this broker (check `/tmp/backend.log` for `KafkaAdmin` errors)
 before suspecting a missing topic.
 
-**Alternative:** `JPPhotoManagerWeb/docker-compose.yml` defines all four
-infrastructure services (`db`, `kafka`, `redis`, `mongo`) together —
-`docker compose up -d db kafka redis mongo` starts just the infra, not the
-app, and can replace 1.1–1.4 in one command. **Port note:** compose maps
-Postgres to host port `5433` (`"5433:5432"`), not `5432` — if you use
-compose for infra, point `mvn spring-boot:run` at `POSTGRES_PORT=5433`
-rather than reusing §1.1's commands verbatim, or stick to the individual
-`docker run` commands above for a setup that matches this skill's other
-port assumptions exactly.
+**Don't use `docker compose up -d db kafka redis mongo` as a shortcut for
+1.1–1.4.** It was tried as the infra source for this skill's scratch
+verification flow and repeatedly hit a Kafka advertised-listener hostname
+(`kafka`) that can't resolve from the host once the backend runs outside
+the cluster that hostname belongs to — the individual `docker run`
+commands above (each publishing directly to `localhost`) don't have this
+problem and are the supported path for this skill. If you need the full
+application already running rather than individual host-mapped
+containers, redeploy to the local Kubernetes cluster instead (see the
+`e2e-suite` skill §1, `./scripts/build-and-deploy-k8s.sh`) and point at
+`http://photomanager.local` in place of `localhost:8080`/`localhost:4200`
+throughout this skill — backend and Kafka both run in-cluster there, so
+the hostname-resolution problem doesn't come up at all.
 
 ### 1.5 Verify real data exists
 

@@ -3,7 +3,11 @@ import codeCoverage from '@cypress/code-coverage/task';
 
 export default defineConfig({
   e2e: {
-    baseUrl: 'http://localhost:4200',
+    // Points at the app deployed to the local Kubernetes cluster (via
+    // k8s/ingress.yaml + a "127.0.0.1 photomanager.local" hosts-file
+    // entry), not a local `ng serve` dev server — see the e2e-suite
+    // skill §1 for why and how to redeploy before running this tier.
+    baseUrl: 'http://photomanager.local',
     specPattern: 'cypress/e2e/**/*.cy.ts',
     // The mocked E2E smoke tier (cypress/e2e/mocked/**) runs through its own
     // dedicated cypress.mocked.config.ts, never through this config - but
