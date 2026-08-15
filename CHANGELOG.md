@@ -1,5 +1,26 @@
 # Changelog
 
+## v2.4.0 — 2026-08-15
+
+### Added
+- Session management: view and revoke active user sessions
+- Password strength policy enforced on user creation and admin password changes
+- Request correlation ID and MDC logging on every backend request/log line
+- Real-backend E2E suite (Cypress, against a full local k8s deployment) alongside the existing mocked tier
+- Full quality-metrics reporting suite for both frontend and backend: accessibility audit (axe-core), mutation testing, secrets scanning, license compliance, dependency vulnerabilities (SCA), bundle size, dependency staleness, and E2E run/flakiness reports, plus `npm run reports:all` (frontend), `bash scripts/run-all-quality-reports.sh` (backend), and a combined top-level `scripts/run-all-quality-reports.sh` to run everything in one command
+- 80% code coverage gate and a cyclomatic-complexity gate (backend and frontend), enforced during code review
+- `gitflow` skill: `sync-feature` action, wired into `feature-development`
+- `feature-development` skill: conditional E2E verification phase
+
+### Changed
+- Frontend upgraded to Angular 22, with unit and E2E tests migrated to Cypress
+- Frontend migrated to zoneless change detection
+- The real E2E tier now runs against a local k8s redeploy instead of docker-compose
+
+### Fixed
+- Refresh-token cookie path
+- CI build hardened, keeping zone.js as a devDependency for Cypress Component Testing
+
 ## v2.3.0 — 2026-07-22
 
 ### Added
