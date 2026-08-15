@@ -16,7 +16,18 @@
 // runs its own `ng build`), so this is self-contained — no need to have
 // already run `npm run test:coverage` first.
 //
-// Usage: node scripts/code-coverage-report.js (or `npm run coverage:report`)
+// Usage: node scripts/code-coverage-report.js (or `npm run coverage:trend-report`)
+//
+// IMPORTANT: this script's package.json key must never be the literal
+// string "coverage:report" — @cypress/code-coverage's Node task
+// (node_modules/@cypress/code-coverage/dist/lib/task.js) hardcodes that
+// exact name as its own custom-report-script convention and will `npm run`
+// it automatically after every spec file if present. Since this script
+// itself re-runs the whole Cypress suite, that collision causes unbounded
+// recursive Cypress invocations (confirmed: hung/crashed real CI runs on
+// both this project and pablo-web, which independently picked the same
+// script name). Keep the key as "coverage:trend-report" or anything else
+// that isn't exactly "coverage:report".
 
 const fs = require('fs');
 const path = require('path');

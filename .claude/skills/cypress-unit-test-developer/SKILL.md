@@ -59,7 +59,7 @@ test, because they explain why the conventions in this skill exist:
    scope under 80% is a 🟡 finding per `code-reviewer` skill §19.1 — add the
    missing test cases for the uncovered lines/branches the report lists,
    then re-run `coverage:check` to confirm it clears 80%.
-4. **Trending snapshot**: `npm run coverage:report`
+4. **Trending snapshot**: `npm run coverage:trend-report`
    (`scripts/code-coverage-report.js`) re-runs the suite itself and writes
    a dated markdown report to `docs/reports/code-coverage/` — the
    project-wide percentages plus a table of every file still below 80% on

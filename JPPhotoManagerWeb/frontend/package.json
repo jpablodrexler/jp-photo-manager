@@ -22,7 +22,7 @@
     "dead-code:report": "node scripts/dead-code-report.js",
     "route-coverage:report": "node scripts/route-coverage-report.js",
     "lighthouse:report": "node scripts/lighthouse-report.mjs",
-    "coverage:report": "node scripts/code-coverage-report.js",
+    "coverage:trend-report": "node scripts/code-coverage-report.js",
     "bundle:report": "node scripts/bundle-size-report.js",
     "deps:staleness": "node scripts/dependency-staleness-report.js",
     "test:e2e:report": "node scripts/e2e-run-report.js --real",

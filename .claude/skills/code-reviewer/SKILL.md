@@ -988,7 +988,7 @@ the threshold that matters is 80%.
 
 ### 19.4 Trending snapshots
 
-For a full-codebase sweep, both `npm run coverage:report`
+For a full-codebase sweep, both `npm run coverage:trend-report`
 (`scripts/code-coverage-report.js`, frontend) and `bash
 scripts/coverage-report.sh` (run from `backend/`, backend) wrap the same
 suite runs the gates above use into a dated snapshot under
