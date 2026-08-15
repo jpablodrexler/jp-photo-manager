@@ -25,3 +25,24 @@ This README is split into topic-specific files under [`docs/`](docs/):
 ## Web Application (this project)
 
 `JPPhotoManagerWeb/` is a Java 21 + Spring Boot 3 backend (`backend/`) and an Angular 19 frontend (`frontend/`). See [Architecture](docs/architecture.md) for the system diagram and [Backend](docs/backend.md) / [Frontend](docs/frontend.md) for how to run each half locally, or [Running with Docker Compose](docs/docker-compose.md) / [Running with Kubernetes](docs/kubernetes.md) to run the full stack.
+
+---
+
+## Quality Metrics
+
+Each report below is a dated markdown snapshot written to `JPPhotoManagerWeb/docs/reports/<category>/` (gitignored, regenerated on demand — a fresh run adds a new dated file rather than overwriting the last one, so the directory accumulates a history you can diff over time). Frontend commands run from `frontend/`; backend commands run from `backend/`. A category with both a frontend and backend version writes separate `*_frontend.md` / `*_backend.md` files under the same directory.
+
+| Metric | Report location | Regenerate |
+|---|---|---|
+| Type coverage (frontend) | `docs/reports/type-coverage/` | `npm run type-coverage:report` |
+| Complexity / file size | `docs/reports/complexity/` | `npm run complexity:report` (frontend) / `bash scripts/complexity-report.sh` (backend) |
+| Dead code | `docs/reports/dead-code/` | `npm run dead-code:report` (frontend) / `bash scripts/dead-code-report.sh` (backend) |
+| Route coverage (frontend) | `docs/reports/route-coverage/` | `npm run route-coverage:report` |
+| Auth coverage — Spring Security rules (backend) | `docs/reports/auth-coverage/` | `bash scripts/auth-coverage-report.sh` |
+| Lighthouse (perf/a11y, frontend) | `docs/reports/lighthouse/` | `npm run lighthouse:report` |
+| Code coverage trend | `docs/reports/code-coverage/` | `npm run coverage:trend-report` (frontend) / `bash scripts/coverage-report.sh` (backend) |
+| Bundle size (frontend) | `docs/reports/bundle-size/` | `npm run bundle:report` |
+| Dependency staleness | `docs/reports/dependency-staleness/` | `npm run deps:staleness` (frontend) / Maven equivalent (backend) |
+| E2E run/flakiness | `docs/reports/e2e-run/` | `npm run test:e2e:mocked:report` |
+
+`docs/reports/` also holds the same-shaped output from the review skills (`code-review/`, `security-review/`, `spec-compliance/`, etc.) — not quality metrics, but written the same way.
