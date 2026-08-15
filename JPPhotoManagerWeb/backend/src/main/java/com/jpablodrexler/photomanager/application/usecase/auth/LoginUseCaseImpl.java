@@ -20,10 +20,10 @@ public class LoginUseCaseImpl implements LoginUseCase {
 
     @Override
     @Transactional
-    public LoginResult execute(String username, String password) {
+    public LoginResult execute(String username, String password, String userAgent) {
         String token = userAuthPort.authenticate(username, password);
         Instant expiresAt = jwtTokenPort.tokenExpiry(token);
-        String refreshTokenValue = refreshTokenPort.issueRefreshToken(username);
+        String refreshTokenValue = refreshTokenPort.issueRefreshToken(username, userAgent);
         return new LoginResult(username.toLowerCase(), token, expiresAt, refreshTokenValue);
     }
 }

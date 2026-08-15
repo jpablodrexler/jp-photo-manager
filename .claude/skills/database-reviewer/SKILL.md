@@ -412,7 +412,7 @@ Every time this skill runs — full audit or scoped review — also write the
 findings to a new markdown file so work can be resumed later without
 re-deriving context.
 
-- **Path:** `docs/database-review/DATABASE_REVIEW_FINDINGS_{YYYY-MM-DD}.md`
+- **Path:** `docs/reports/database-review/DATABASE_REVIEW_FINDINGS_{YYYY-MM-DD}.md`
   (repo root, today's date, ISO 8601). If a file for that date already exists
   (e.g. a second review the same day), append `-2`, `-3`, etc. before `.md`
   rather than overwriting the earlier run's report.
@@ -445,7 +445,7 @@ working tree for the user to review and commit themselves.
 1. If the user names a specific report file, skip straight to §8.2 with that
    file. Otherwise resolve a **date**: the date the user asked for, or
    (default) the most recent date that has any
-   `docs/database-review/DATABASE_REVIEW_FINDINGS_*.md` file. If none exists,
+   `docs/reports/database-review/DATABASE_REVIEW_FINDINGS_*.md` file. If none exists,
    say so and stop — there is nothing to fix.
 2. If multiple `-2`/`-3` reruns exist for that date, drop any that are fully
    checked off. If more than one remains, ask the user which to work on

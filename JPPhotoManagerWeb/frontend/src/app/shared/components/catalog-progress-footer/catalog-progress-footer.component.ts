@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,6 +11,7 @@ import { CatalogState } from '../../../core/models/catalog-notification.model';
   standalone: true,
   imports: [DatePipe, MatIconModule, MatButtonModule, MatProgressBarModule, MatTooltipModule],
   templateUrl: './catalog-progress-footer.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './catalog-progress-footer.component.scss',
 })
 export class CatalogProgressFooterComponent {

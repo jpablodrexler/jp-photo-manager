@@ -25,3 +25,93 @@ This README is split into topic-specific files under [`docs/`](docs/):
 ## Web Application (this project)
 
 `JPPhotoManagerWeb/` is a Java 21 + Spring Boot 3 backend (`backend/`) and an Angular 19 frontend (`frontend/`). See [Architecture](docs/architecture.md) for the system diagram and [Backend](docs/backend.md) / [Frontend](docs/frontend.md) for how to run each half locally, or [Running with Docker Compose](docs/docker-compose.md) / [Running with Kubernetes](docs/kubernetes.md) to run the full stack.
+
+---
+
+## Quality Metrics
+
+Each report below is a dated markdown snapshot written to `JPPhotoManagerWeb/docs/reports/<category>/` (gitignored, regenerated on demand — a fresh run adds a new dated file rather than overwriting the last one, so the directory accumulates a history you can diff over time). Frontend commands run from `frontend/`; backend commands run from `backend/`. A category with both a frontend and backend version writes separate `*_frontend.md` / `*_backend.md` files under the same directory.
+
+| Metric | Report location | Regenerate |
+|---|---|---|
+| Type coverage (frontend) | `docs/reports/type-coverage/` | `npm run type-coverage:report` |
+| Complexity / file size | `docs/reports/complexity/` | `npm run complexity:report` (frontend) / `bash scripts/complexity-report.sh` (backend) |
+| Dead code | `docs/reports/dead-code/` | `npm run dead-code:report` (frontend) / `bash scripts/dead-code-report.sh` (backend) |
+| Route coverage (frontend) | `docs/reports/route-coverage/` | `npm run route-coverage:report` |
+| Auth coverage — Spring Security rules (backend) | `docs/reports/auth-coverage/` | `bash scripts/auth-coverage-report.sh` |
+| Lighthouse (perf/a11y, frontend) | `docs/reports/lighthouse/` | `npm run lighthouse:report` |
+| Deep accessibility audit (per-route, axe-core, frontend) | `docs/reports/a11y/` | `npm run a11y:report` |
+| Code coverage trend | `docs/reports/code-coverage/` | `npm run coverage:trend-report` (frontend) / `bash scripts/coverage-report.sh` (backend) |
+| Bundle size (frontend) | `docs/reports/bundle-size/` | `npm run bundle:report` |
+| Dependency staleness | `docs/reports/dependency-staleness/` | `npm run deps:staleness` (frontend) / Maven equivalent (backend) |
+| E2E run/flakiness | `docs/reports/e2e-run/` | `npm run test:e2e:mocked:report` |
+| Mutation testing | `docs/reports/mutation/` | `npm run mutation:report` (frontend) / `bash scripts/mutation-report.sh` (backend) |
+| Secrets scanning | `docs/reports/secrets-scan/` | `npm run secrets:report` |
+| License compliance | `docs/reports/license-compliance/` | `npm run license:report` (frontend) / `bash scripts/license-report.sh` (backend) |
+| Dependency vulnerabilities (SCA) | `docs/reports/dependency-vulnerabilities/` | `npm run sca:report` (frontend) / `bash scripts/sca-report.sh` (backend) |
+
+`docs/reports/` also holds the same-shaped output from the review skills (`code-review/`, `security-review/`, `spec-compliance/`, etc.) — not quality metrics, but written the same way.
+
+### Where each metric is calculated, and whether it's automatic
+
+Every metric is documented inside a skill under `.claude/skills/`, but "documented in a skill" and "runs automatically when you use `feature-development`" are not the same thing. `feature-development` invokes `code-reviewer` (and, conditionally, `security-reviewer`) in their **scoped Review workflow** at the end of a feature — not a full-codebase sweep, and not every report script that skill's `SKILL.md` documents. Only a metric whose checklist section says outright "run this every time" actually executes as part of that scoped review; everything else is documented (with a flagging rule for if you happen to have a report in hand) but is on-demand only, run by hand or scheduled separately.
+
+| Metric | Owning skill | Runs automatically during `feature-development`? |
+|---|---|---|
+| Type coverage (frontend) | `code-reviewer` §20 | **Yes** — every scoped review |
+| Complexity / file size | `code-reviewer` §18 (frontend §18.1, backend §18.2) | **Yes** — every scoped review |
+| Code coverage (80% gate) | `code-reviewer` §19 (frontend §19.1, backend §19.2) | **Yes** — every scoped review; a sub-80% scope is a 🟡 Warning that blocks the review from being "clean" |
+| Dead code | `code-reviewer` §21 (frontend §21.1, backend §21.2) | No — full-codebase sweeps only |
+| Route coverage (frontend) | `e2e-suite` §8 | No — `feature-development` never invokes `e2e-suite`; run by hand when a new route ships |
+| Auth coverage — Spring Security rules (backend) | `security-reviewer` | **Conditional** — auto-runs when the reviewed change is security-sensitive (auth/dependency/RLS-equivalent/input-handling files touched); otherwise not invoked |
+| Lighthouse (perf/a11y, frontend) | `code-reviewer` §22 | No |
+| Deep accessibility audit (axe-core, frontend) | `code-reviewer` §23 | No |
+| Mutation testing | `code-reviewer` §24 (frontend §24.1, backend §24.2) | No — explicitly report-only, no CI/gate equivalent |
+| Secrets scanning | `code-reviewer` §25 | No |
+| License compliance | `code-reviewer` §25 | No |
+| Dependency vulnerabilities (SCA) | `code-reviewer` §25 (dated report) + `security-reviewer` (raw `npm audit`) | **Conditional** — the raw `npm audit --audit-level=high` check auto-runs when the reviewed change touches dependencies/auth/input handling; the dated trend report (`sca:report`/`sca-report.sh`) is always on-demand |
+| Code coverage trend (dated snapshot) | `code-reviewer` §19 | No — the §19 *gate* auto-runs (see above); the dated trend file itself is a full-sweep/on-demand extra |
+| Bundle size (frontend) | *(not yet referenced by any skill)* | No |
+| Dependency staleness | *(not yet referenced by any skill — `dependency-upgrade` runs raw `npm outdated`/`mvn versions:display-dependency-updates` instead of this report)* | No |
+| E2E run/flakiness | *(not yet referenced by any skill)* | No |
+
+### Running every metric manually
+
+`./scripts/run-all-quality-reports.sh` (from `JPPhotoManagerWeb/`, the repo root for this project) runs both halves in one command: `npm run reports:all` in `frontend/` followed by `bash scripts/run-all-quality-reports.sh` in `backend/`, reporting a combined pass/fail summary at the end. It forwards `--with-e2e-real` to the frontend run only and `--with-mutation` to both; for scoping to a single report (`--only=<key>`), call the frontend/backend scripts below directly instead, since the two use separate key namespaces.
+
+`npm run reports:all` (from `frontend/`) runs every frontend report script above back to back, via `frontend/scripts/run-all-quality-reports.js`; `bash scripts/run-all-quality-reports.sh` (from `backend/`) does the same for the backend's bash report scripts. Each skips its slowest/most-setup-dependent report(s) by default — the frontend runner skips `test:e2e:report` (needs the full app already deployed to k8s) and `mutation:report` (a full Stryker run), pass `--with-e2e-real`/`--with-mutation` to include them or `--only=<key1>,<key2>` to run a subset; the backend runner skips `mutation-report.sh` (a full PIT run) unless `--with-mutation` is passed, and also supports `--only=<key1>,<key2>`. Neither script stops on a failing report — both print a pass/fail/skip summary at the end and exit non-zero if anything failed.
+
+Each report is also runnable on its own. From `frontend/`:
+
+```bash
+npm run type-coverage:report
+npm run complexity:report
+npm run dead-code:report
+npm run route-coverage:report
+npm run lighthouse:report
+npm run a11y:report
+npm run coverage:trend-report
+npm run bundle:report
+npm run deps:staleness
+npm run test:e2e:report          # real backend — needs the full app deployed to k8s first, see the e2e-suite skill §1
+npm run test:e2e:mocked:report   # no backend needed
+npm run secrets:report           # scans the whole repo, not just frontend/
+npm run license:report
+npm run sca:report
+npm run mutation:report          # by far the slowest — a full Stryker run, expect it to take significantly longer than every other report combined
+```
+
+From `backend/`:
+
+```bash
+bash scripts/complexity-report.sh
+bash scripts/dead-code-report.sh
+bash scripts/auth-coverage-report.sh
+bash scripts/coverage-report.sh
+bash scripts/dependency-staleness-report.sh
+bash scripts/license-report.sh
+bash scripts/sca-report.sh
+bash scripts/mutation-report.sh   # slowest of the backend scripts — a full PIT run
+```
+
+Each writes its own dated file under `docs/reports/<category>/` and is safe to re-run — nothing here mutates source, and nothing is a CI gate except the code-coverage/complexity/type-coverage checks that already run inside `code-reviewer`.

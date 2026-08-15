@@ -1,0 +1,52 @@
+<div class="sessions-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Active Sessions</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      @if (errorMessage()) {
+        <p class="error-message">{{ errorMessage() }}</p>
+      }
+
+      <div class="toolbar">
+        <button mat-raised-button color="warn" (click)="signOutEverywhereElse()">
+          <mat-icon>logout</mat-icon> Sign out everywhere else
+        </button>
+      </div>
+
+      <table mat-table [dataSource]="sessions()" class="sessions-table">
+        <ng-container matColumnDef="deviceHint">
+          <th mat-header-cell *matHeaderCellDef>Device</th>
+          <td mat-cell *matCellDef="let session">
+            {{ session.deviceHint }}
+            @if (session.current) {
+              <span class="current-badge">This device</span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="lastUsedAt">
+          <th mat-header-cell *matHeaderCellDef>Last Used</th>
+          <td mat-cell *matCellDef="let session">{{ session.lastUsedAt | date:'medium' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let session">
+            <button mat-icon-button color="warn" title="Revoke session"
+                    [disabled]="session.current" (click)="revokeSession(session)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      @if (sessions().length === 0) {
+        <p class="no-sessions">No active sessions found.</p>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

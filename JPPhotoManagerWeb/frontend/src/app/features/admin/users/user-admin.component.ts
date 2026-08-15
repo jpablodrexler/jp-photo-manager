@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
@@ -11,21 +11,24 @@ import { MatDialog } from '@angular/material/dialog';
 import { UserAdminService } from '../../../core/services/user-admin.service';
 import { UserAdmin } from '../../../core/models/user-admin.model';
 import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { PasswordStrengthComponent } from '../../../shared/components/password-strength/password-strength.component';
 
 @Component({
   selector: 'app-user-admin',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, MatTableModule, MatButtonModule,
-            MatFormFieldModule, MatInputModule, MatIconModule, MatCardModule],
+            MatFormFieldModule, MatInputModule, MatIconModule, MatCardModule,
+            PasswordStrengthComponent],
   templateUrl: './user-admin.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './user-admin.component.scss'
 })
 export class UserAdminComponent implements OnInit {
-  users: UserAdmin[] = [];
+  readonly users = signal<UserAdmin[]>([]);
   displayedColumns = ['username', 'createdAt', 'actions'];
-  errorMessage: string | null = null;
+  readonly errorMessage = signal<string | null>(null);
   showAddForm = false;
-  editingPasswordId: string | null = null;
+  readonly editingPasswordId = signal<string | null>(null);
 
   addForm = this.fb.nonNullable.group({
     username: ['', Validators.required],
@@ -46,10 +49,18 @@ export class UserAdminComponent implements OnInit {
     this.loadUsers();
   }
 
+  get addPasswordValue(): string {
+    return this.addForm.controls.password.value;
+  }
+
+  get changePasswordValue(): string {
+    return this.passwordForm.controls.password.value;
+  }
+
   loadUsers(): void {
     this.userAdminService.getUsers().subscribe({
-      next: users => (this.users = users),
-      error: () => (this.errorMessage = 'Failed to load users.')
+      next: users => this.users.set(users),
+      error: () => this.errorMessage.set('Failed to load users.')
     });
   }
 
@@ -58,17 +69,17 @@ export class UserAdminComponent implements OnInit {
     const { username, password } = this.addForm.getRawValue();
     this.userAdminService.createUser(username, password).subscribe({
       next: user => {
-        this.users = [...this.users, user];
+        this.users.update(list => [...list, user]);
         this.addForm.reset();
         this.showAddForm = false;
-        this.errorMessage = null;
+        this.errorMessage.set(null);
       },
-      error: () => (this.errorMessage = 'Failed to create user. Username may already exist.')
+      error: () => this.errorMessage.set('Failed to create user. Username may already exist.')
     });
   }
 
   startEditPassword(id: string): void {
-    this.editingPasswordId = id;
+    this.editingPasswordId.set(id);
     this.passwordForm.reset();
   }
 
@@ -77,10 +88,10 @@ export class UserAdminComponent implements OnInit {
     const { password } = this.passwordForm.getRawValue();
     this.userAdminService.updatePassword(id, password).subscribe({
       next: () => {
-        this.editingPasswordId = null;
-        this.errorMessage = null;
+        this.editingPasswordId.set(null);
+        this.errorMessage.set(null);
       },
-      error: () => (this.errorMessage = 'Failed to update password.')
+      error: () => this.errorMessage.set('Failed to update password.')
     });
   }
 
@@ -93,10 +104,10 @@ export class UserAdminComponent implements OnInit {
       if (!confirmed) return;
       this.userAdminService.deleteUser(id).subscribe({
         next: () => {
-          this.users = this.users.filter(u => u.id !== id);
-          this.errorMessage = null;
+          this.users.update(list => list.filter(u => u.id !== id));
+          this.errorMessage.set(null);
         },
-        error: () => (this.errorMessage = 'Failed to delete user.')
+        error: () => this.errorMessage.set('Failed to delete user.')
       });
     });
   }

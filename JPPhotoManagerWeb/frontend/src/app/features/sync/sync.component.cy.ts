@@ -48,7 +48,7 @@ describe('SyncComponent', () => {
 
   it('should start on the configure step', () => {
     mountComponent().then(({ fixture }) => {
-      expect(fixture.componentInstance.step).to.equal('configure');
+      expect(fixture.componentInstance.step()).to.equal('configure');
     });
   });
 
@@ -61,17 +61,17 @@ describe('SyncComponent', () => {
   it('should populate definitions from loaded configuration', () => {
     mountComponent().then(({ fixture }) => {
       fixture.detectChanges();
-      expect(fixture.componentInstance.definitions).to.deep.equal(mockDefinitions);
+      expect(fixture.componentInstance.definitions()).to.deep.equal(mockDefinitions);
     });
   });
 
   it('should add a new empty definition', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      const initialLength = component.definitions.length;
+      const initialLength = component.definitions().length;
       component.addDefinition();
-      expect(component.definitions).to.have.length(initialLength + 1);
-      expect(component.definitions[initialLength].sourceDirectory).to.equal('');
+      expect(component.definitions()).to.have.length(initialLength + 1);
+      expect(component.definitions()[initialLength].sourceDirectory).to.equal('');
     });
   });
 
@@ -95,9 +95,9 @@ describe('SyncComponent', () => {
   it('should create a new array reference when a definition is added', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      const originalRef = component.definitions;
+      const originalRef = component.definitions();
       component.addDefinition();
-      expect(component.definitions).to.not.equal(originalRef);
+      expect(component.definitions()).to.not.equal(originalRef);
     });
   });
 
@@ -105,7 +105,7 @@ describe('SyncComponent', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.removeDefinition(0);
-      expect(component.definitions).to.have.length(0);
+      expect(component.definitions()).to.have.length(0);
     });
   });
 
@@ -121,77 +121,77 @@ describe('SyncComponent', () => {
   it('should create a new array reference when a definition is removed', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      const originalRef = component.definitions;
+      const originalRef = component.definitions();
       component.removeDefinition(0);
-      expect(component.definitions).to.not.equal(originalRef);
+      expect(component.definitions()).to.not.equal(originalRef);
     });
   });
 
   it('should move a definition up', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.definitions = [
+      component.definitions.set([
         { ...mockDefinitions[0], order: 0 },
         { sourceDirectory: '/b', destinationDirectory: '/c', includeSubFolders: false, deleteAssetsNotInSource: false, order: 1 },
-      ];
+      ]);
       component.moveUp(1);
-      expect(component.definitions[0].sourceDirectory).to.equal('/b');
+      expect(component.definitions()[0].sourceDirectory).to.equal('/b');
     });
   });
 
   it('should create a new array reference when a definition is moved up', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.definitions = [
+      component.definitions.set([
         { ...mockDefinitions[0], order: 0 },
         { sourceDirectory: '/b', destinationDirectory: '/c', includeSubFolders: false, deleteAssetsNotInSource: false, order: 1 },
-      ];
-      const originalRef = component.definitions;
+      ]);
+      const originalRef = component.definitions();
       component.moveUp(1);
-      expect(component.definitions).to.not.equal(originalRef);
+      expect(component.definitions()).to.not.equal(originalRef);
     });
   });
 
   it('should not move a definition up when already at the top', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      const first = component.definitions[0];
+      const first = component.definitions()[0];
       component.moveUp(0);
-      expect(component.definitions[0]).to.equal(first);
+      expect(component.definitions()[0]).to.equal(first);
     });
   });
 
   it('should move a definition down', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.definitions = [
+      component.definitions.set([
         { ...mockDefinitions[0], order: 0 },
         { sourceDirectory: '/b', destinationDirectory: '/c', includeSubFolders: false, deleteAssetsNotInSource: false, order: 1 },
-      ];
+      ]);
       component.moveDown(0);
-      expect(component.definitions[0].sourceDirectory).to.equal('/b');
+      expect(component.definitions()[0].sourceDirectory).to.equal('/b');
     });
   });
 
   it('should create a new array reference when a definition is moved down', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.definitions = [
+      component.definitions.set([
         { ...mockDefinitions[0], order: 0 },
         { sourceDirectory: '/b', destinationDirectory: '/c', includeSubFolders: false, deleteAssetsNotInSource: false, order: 1 },
-      ];
-      const originalRef = component.definitions;
+      ]);
+      const originalRef = component.definitions();
       component.moveDown(0);
-      expect(component.definitions).to.not.equal(originalRef);
+      expect(component.definitions()).to.not.equal(originalRef);
     });
   });
 
   it('should not move a definition down when already at the bottom', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      const last = component.definitions[component.definitions.length - 1];
-      component.moveDown(component.definitions.length - 1);
-      expect(component.definitions[component.definitions.length - 1]).to.equal(last);
+      const last = component.definitions()[component.definitions().length - 1];
+      component.moveDown(component.definitions().length - 1);
+      expect(component.definitions()[component.definitions().length - 1]).to.equal(last);
     });
   });
 
@@ -203,7 +203,7 @@ describe('SyncComponent', () => {
     mountComponent({ run, setConfiguration }).then(({ fixture }) => {
       fixture.componentInstance.saveAndRun();
       fixture.detectChanges();
-      expect(fixture.componentInstance.step).to.equal('running');
+      expect(fixture.componentInstance.step()).to.equal('running');
     });
   });
 
@@ -221,8 +221,8 @@ describe('SyncComponent', () => {
         mockSource.emitRaw('results', JSON.stringify(mockResults));
         fixture.detectChanges();
 
-        expect(fixture.componentInstance.step).to.equal('results');
-        expect(fixture.componentInstance.results).to.deep.equal(mockResults);
+        expect(fixture.componentInstance.step()).to.equal('results');
+        expect(fixture.componentInstance.results()).to.deep.equal(mockResults);
       });
   });
 
@@ -238,16 +238,16 @@ describe('SyncComponent', () => {
         mockSource.emitRaw('status', 'Processing file 2');
         fixture.detectChanges();
 
-        expect(fixture.componentInstance.statusMessages).to.deep.equal(['Processing file 1', 'Processing file 2']);
+        expect(fixture.componentInstance.statusMessages()).to.deep.equal(['Processing file 1', 'Processing file 2']);
       });
   });
 
   it('should return to configure step when backToConfigure is called', () => {
     mountComponent().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.step = 'results';
+      component.step.set('results');
       component.backToConfigure();
-      expect(component.step).to.equal('configure');
+      expect(component.step()).to.equal('configure');
     });
   });
 

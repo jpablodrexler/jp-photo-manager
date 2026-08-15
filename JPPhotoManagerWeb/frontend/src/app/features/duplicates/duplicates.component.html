@@ -1,8 +1,8 @@
 <div class="duplicates-container p-16">
   <div class="flex-row" style="align-items: center; gap: 16px; margin-bottom: 16px;">
     <h2 style="margin: 0;">Duplicate Images</h2>
-    @if (!loading) {
-      <mat-chip>{{ groups.length }} groups, {{ totalDuplicates }} duplicates</mat-chip>
+    @if (!loading()) {
+      <mat-chip>{{ groups().length }} groups, {{ totalDuplicates() }} duplicates</mat-chip>
     }
     <span style="flex: 1"></span>
     <button mat-button (click)="loadDuplicates()">
@@ -10,18 +10,18 @@
     </button>
   </div>
 
-  @if (loading) {
+  @if (loading()) {
     <mat-progress-bar mode="indeterminate" />
   }
 
-  @if (!loading && groups.length === 0) {
+  @if (!loading() && groups().length === 0) {
     <div class="empty-state">
       <mat-icon style="font-size: 64px; width: 64px; height: 64px; color: var(--accent-color);">check_circle</mat-icon>
       <p>No duplicate images found.</p>
     </div>
   }
 
-  @for (group of groups; track $index) {
+  @for (group of groups(); track $index) {
     <mat-card class="group-card">
       <mat-card-header>
         <mat-card-title>Group {{ $index + 1 }} — {{ group.assets.length }} files</mat-card-title>

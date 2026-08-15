@@ -3,7 +3,7 @@
   <span style="margin-left: 8px;">JP Photo Manager</span>
   <span style="flex: 1"></span>
   @if (isLoggedIn) {
-    @if (isMobile) {
+    @if (isMobile()) {
       <button mat-icon-button [matMenuTriggerFor]="navMenu" aria-label="Open navigation">
         <mat-icon>menu</mat-icon>
       </button>
@@ -28,11 +28,12 @@
         <div style="padding: 0 8px;">
           <app-accent-color-picker [accentColor]="(accentColor$ | async) ?? null" (accentColorSelected)="selectAccentColor($event)" />
         </div>
+        <button mat-menu-item routerLink="/profile/sessions"><mat-icon>devices</mat-icon> Sessions</button>
         <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon> Logout</button>
         <button mat-menu-item (click)="openAbout()"><mat-icon>info</mat-icon> About</button>
       </mat-menu>
     }
-    @if (!isMobile) {
+    @if (!isMobile()) {
       <a mat-button routerLink="/home" routerLinkActive="active">
         <mat-icon>home</mat-icon> Home
       </a>
@@ -73,6 +74,9 @@
       <button mat-icon-button (click)="toggleTheme()" [attr.aria-label]="(isDark$ | async) ? 'Switch to light mode' : 'Switch to dark mode'">
         <mat-icon>{{ (isDark$ | async) ? 'light_mode' : 'dark_mode' }}</mat-icon>
       </button>
+      <a mat-icon-button routerLink="/profile/sessions" routerLinkActive="active" aria-label="Sessions">
+        <mat-icon>devices</mat-icon>
+      </a>
       <button mat-button (click)="logout()">
         <mat-icon>logout</mat-icon> Logout
       </button>
@@ -98,10 +102,10 @@
 
 @if (isLoggedIn) {
   <app-catalog-progress-footer
-    [state]="catalogState"
-    [percentCompleted]="catalogPercentCompleted"
-    [currentStatusText]="catalogStatusText"
-    [lastCompletedAt]="catalogLastCompletedAt"
+    [state]="catalogState()"
+    [percentCompleted]="catalogPercentCompleted()"
+    [currentStatusText]="catalogStatusText()"
+    [lastCompletedAt]="catalogLastCompletedAt()"
     (reconnect)="connectCatalog()"
   />
 }

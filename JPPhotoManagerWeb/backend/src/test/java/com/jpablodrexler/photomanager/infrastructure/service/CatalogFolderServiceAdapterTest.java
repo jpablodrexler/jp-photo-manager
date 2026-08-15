@@ -22,11 +22,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -119,6 +123,169 @@ class CatalogFolderServiceAdapterTest {
         verify(audioMetadataService).extractAlbumArt(any());
         verify(audioMetadataService).extract(any());
         verify(assetAudioRepository).save(any(AssetAudio.class));
+    }
+
+    @Test
+    void createAsset_playlistFile_createsPlaylistAssetWithPlaceholderThumbnail() throws IOException {
+        Folder folder = buildFolder(1L, "/music");
+        String filePath = "/music/favorites.m3u";
+        when(folderRepository.findByPath("/music")).thenReturn(Optional.of(folder));
+        when(storageService.isPlaylistFile("favorites.m3u")).thenReturn(true);
+        when(storageService.getFileSize(filePath)).thenReturn(256L);
+        when(storageService.computeHash(filePath)).thenReturn("plhash");
+        when(storageService.getFileCreationDateTime(filePath)).thenReturn(LocalDateTime.of(2024, 1, 1, 0, 0));
+        when(storageService.getFileModificationDateTime(filePath)).thenReturn(LocalDateTime.of(2024, 1, 2, 0, 0));
+        when(assetRepository.save(any())).thenAnswer(inv -> {
+            Asset a = inv.getArgument(0);
+            a.setAssetId(50L);
+            return a;
+        });
+
+        sut.createAsset("/music", "favorites.m3u");
+
+        ArgumentCaptor<Asset> captor = ArgumentCaptor.forClass(Asset.class);
+        verify(assetRepository).save(captor.capture());
+        assertThat(captor.getValue().getFileType()).isEqualTo(FileType.PLAYLIST);
+        verify(thumbnailStorageService).saveThumbnail(eq("50.bin"), any(byte[].class));
+        verify(assetExifRepository, never()).findByAssetId(anyLong());
+    }
+
+    @Test
+    void createAsset_videoFile_tagsFileTypeVideo() throws IOException {
+        Folder folder = buildFolder(1L, "/videos");
+        when(folderRepository.findByPath("/videos")).thenReturn(Optional.of(folder));
+        when(storageService.isVideoFile("clip.mp4")).thenReturn(true);
+        stubAssetCreationOk(folder, "/videos/clip.mp4");
+
+        sut.createAsset("/videos", "clip.mp4");
+
+        ArgumentCaptor<Asset> captor = ArgumentCaptor.forClass(Asset.class);
+        verify(assetRepository).save(captor.capture());
+        assertThat(captor.getValue().isVideo()).isTrue();
+        assertThat(captor.getValue().getFileType()).isEqualTo(FileType.VIDEO);
+    }
+
+    @Test
+    void createAsset_ioExceptionFromStorage_wrapsInRuntimeException() throws IOException {
+        Folder folder = buildFolder(1L, "/photos");
+        when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
+        when(storageService.computeHash("/photos/broken.jpg")).thenThrow(new IOException("disk error"));
+
+        assertThatThrownBy(() -> sut.createAsset("/photos", "broken.jpg"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Failed to create asset")
+                .hasCauseInstanceOf(IOException.class);
+    }
+
+    @Test
+    void createAsset_existingExifRecordPresent_updatesExistingRecordInstead() throws IOException {
+        Folder folder = buildFolder(1L, "/photos");
+        String filePath = "/photos/photo.jpg";
+        when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
+        when(storageService.getFileSize(filePath)).thenReturn(2048L);
+        when(storageService.computeHash(filePath)).thenReturn("abc123");
+        when(storageService.getFileCreationDateTime(filePath)).thenReturn(LocalDateTime.of(2024, 1, 1, 0, 0));
+        when(storageService.getFileModificationDateTime(filePath)).thenReturn(LocalDateTime.of(2024, 1, 2, 0, 0));
+        when(storageService.getImageRotation(filePath)).thenReturn(ImageRotation.ROTATE_0);
+        when(storageService.generateThumbnail(eq(filePath), anyInt(), anyInt())).thenReturn(new byte[]{1, 2, 3});
+        when(storageService.getExifMetadata(filePath)).thenReturn(
+                new ExifMetadata(null, null, null, null, null, null, null, null, null, null, null, null, null));
+        when(assetRepository.save(any())).thenAnswer(inv -> {
+            Asset a = inv.getArgument(0);
+            a.setAssetId(99L);
+            return a;
+        });
+        AssetExif existing = AssetExif.builder().assetId(99L).cameraMake("OldMake").build();
+        when(assetExifRepository.findByAssetId(99L)).thenReturn(Optional.of(existing));
+        when(assetExifRepository.save(any(AssetExif.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        sut.createAsset("/photos", "photo.jpg");
+
+        ArgumentCaptor<AssetExif> captor = ArgumentCaptor.forClass(AssetExif.class);
+        verify(assetExifRepository).save(captor.capture());
+        assertThat(captor.getValue()).isSameAs(existing);
+        assertThat(captor.getValue().getAssetId()).isEqualTo(99L);
+    }
+
+    @Test
+    void createAsset_exifMetadataLookupThrows_logsAndDoesNotPropagate() throws IOException {
+        Folder folder = buildFolder(1L, "/photos");
+        String filePath = "/photos/photo.jpg";
+        when(folderRepository.findByPath("/photos")).thenReturn(Optional.of(folder));
+        when(storageService.getFileSize(filePath)).thenReturn(2048L);
+        when(storageService.computeHash(filePath)).thenReturn("abc123");
+        when(storageService.getFileCreationDateTime(filePath)).thenReturn(LocalDateTime.of(2024, 1, 1, 0, 0));
+        when(storageService.getFileModificationDateTime(filePath)).thenReturn(LocalDateTime.of(2024, 1, 2, 0, 0));
+        when(storageService.getImageRotation(filePath)).thenReturn(ImageRotation.ROTATE_0);
+        when(storageService.generateThumbnail(eq(filePath), anyInt(), anyInt())).thenReturn(new byte[]{1, 2, 3});
+        when(storageService.getExifMetadata(filePath)).thenThrow(new RuntimeException("corrupt exif"));
+        when(assetRepository.save(any())).thenAnswer(inv -> {
+            Asset a = inv.getArgument(0);
+            a.setAssetId(99L);
+            return a;
+        });
+
+        Asset result = sut.createAsset("/photos", "photo.jpg");
+
+        assertThat(result).isNotNull();
+        verify(assetExifRepository, never()).save(any());
+    }
+
+    @Test
+    void createAudioAsset_albumArtPresentValidImage_resizesArtworkToThumbnail() throws IOException {
+        Folder folder = buildFolder(1L, "/music");
+        when(folderRepository.findByPath("/music")).thenReturn(Optional.of(folder));
+        when(storageService.isAudioFile("song.mp3")).thenReturn(true);
+        stubAudioAssetCreationOk(folder, "/music/song.mp3");
+        when(audioMetadataService.extractAlbumArt(any())).thenReturn(Optional.of(validJpegBytes()));
+
+        sut.createAsset("/music", "song.mp3");
+
+        verify(thumbnailStorageService).saveThumbnail(eq("42.bin"), any(byte[].class));
+    }
+
+    @Test
+    void createAudioAsset_albumArtPresentButUndecodable_fallsBackToPlaceholder() throws IOException {
+        Folder folder = buildFolder(1L, "/music");
+        when(folderRepository.findByPath("/music")).thenReturn(Optional.of(folder));
+        when(storageService.isAudioFile("song.mp3")).thenReturn(true);
+        stubAudioAssetCreationOk(folder, "/music/song.mp3");
+        when(audioMetadataService.extractAlbumArt(any())).thenReturn(Optional.of(new byte[]{0, 1, 2, 3}));
+
+        sut.createAsset("/music", "song.mp3");
+
+        verify(thumbnailStorageService).saveThumbnail(eq("42.bin"), any(byte[].class));
+    }
+
+    @Test
+    void createAudioAsset_audioMetadataExtractionThrows_logsAndDoesNotPropagate() throws IOException {
+        Folder folder = buildFolder(1L, "/music");
+        String filePath = "/music/song.mp3";
+        when(folderRepository.findByPath("/music")).thenReturn(Optional.of(folder));
+        when(storageService.isAudioFile("song.mp3")).thenReturn(true);
+        when(storageService.getFileSize(filePath)).thenReturn(4096L);
+        when(storageService.computeHash(filePath)).thenReturn("audiohash");
+        when(storageService.getFileCreationDateTime(filePath)).thenReturn(LocalDateTime.of(2024, 1, 1, 0, 0));
+        when(storageService.getFileModificationDateTime(filePath)).thenReturn(LocalDateTime.of(2024, 1, 2, 0, 0));
+        when(audioMetadataService.extractAlbumArt(any())).thenReturn(Optional.empty());
+        when(audioMetadataService.extract(any())).thenThrow(new RuntimeException("tag read failure"));
+        when(assetRepository.save(any())).thenAnswer(inv -> {
+            Asset a = inv.getArgument(0);
+            a.setAssetId(42L);
+            return a;
+        });
+
+        Asset result = sut.createAsset("/music", "song.mp3");
+
+        assertThat(result).isNotNull();
+        verify(assetAudioRepository, never()).save(any());
+    }
+
+    private byte[] validJpegBytes() throws IOException {
+        BufferedImage image = new BufferedImage(10, 10, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(image, "jpg", out);
+        return out.toByteArray();
     }
 
     private void stubAssetCreationOk(Folder folder, String filePath) throws IOException {

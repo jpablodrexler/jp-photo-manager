@@ -1,6 +1,7 @@
 @use '@angular/material' as mat;
 
-@include mat.core();
+@include mat.elevation-classes();
+@include mat.app-background();
 
 $dark-green-theme: mat.define-theme((
   color: (
@@ -49,38 +50,38 @@ html.theme-dark {
   // These rules share the same specificity as the @include above and appear
   // later in the cascade, so they always win.
   .mat-mdc-raised-button.mat-primary {
-    --mdc-protected-button-container-color: var(--accent-color);
-    --mdc-protected-button-label-text-color: white;
+    --mat-button-protected-container-color: var(--accent-color);
+    --mat-button-protected-label-text-color: white;
   }
 
   // All uncolored text buttons use the accent colour. The .mat-primary rule
   // repeats at higher specificity to beat the theme's .mat-primary override.
   .mat-mdc-button {
-    --mdc-text-button-label-text-color: var(--accent-color);
+    --mat-button-text-label-text-color: var(--accent-color);
   }
 
   .mat-mdc-button.mat-primary {
-    --mdc-text-button-label-text-color: var(--accent-color);
+    --mat-button-text-label-text-color: var(--accent-color);
   }
 
   .mat-mdc-outlined-button {
-    --mdc-outlined-button-label-text-color: var(--accent-color);
+    --mat-button-outlined-label-text-color: var(--accent-color);
   }
 
   mat-progress-bar {
-    --mdc-linear-progress-active-indicator-color: var(--accent-color);
+    --mat-progress-bar-active-indicator-color: var(--accent-color);
   }
 
   mat-spinner, mat-progress-spinner {
-    --mdc-circular-progress-active-indicator-color: var(--accent-color);
+    --mat-progress-spinner-active-indicator-color: var(--accent-color);
   }
 
   // Toolbar buttons live on the accent-colour background → use white for text,
   // state-layer, and ripple so interactions stay visible.
   .app-toolbar .mat-mdc-button {
-    --mdc-text-button-label-text-color: white;
-    --mat-text-button-state-layer-color: white;
-    --mat-text-button-ripple-color: rgba(255, 255, 255, 0.2);
+    --mat-button-text-label-text-color: white;
+    --mat-button-text-state-layer-color: white;
+    --mat-button-text-ripple-color: rgba(255, 255, 255, 0.2);
   }
 
   .app-toolbar .mat-mdc-icon-button {
@@ -127,34 +128,34 @@ html.theme-light {
 
   // Mirror the same overrides for the light theme.
   .mat-mdc-raised-button.mat-primary {
-    --mdc-protected-button-container-color: var(--accent-color);
-    --mdc-protected-button-label-text-color: white;
+    --mat-button-protected-container-color: var(--accent-color);
+    --mat-button-protected-label-text-color: white;
   }
 
   .mat-mdc-button {
-    --mdc-text-button-label-text-color: var(--accent-color);
+    --mat-button-text-label-text-color: var(--accent-color);
   }
 
   .mat-mdc-button.mat-primary {
-    --mdc-text-button-label-text-color: var(--accent-color);
+    --mat-button-text-label-text-color: var(--accent-color);
   }
 
   .mat-mdc-outlined-button {
-    --mdc-outlined-button-label-text-color: var(--accent-color);
+    --mat-button-outlined-label-text-color: var(--accent-color);
   }
 
   mat-progress-bar {
-    --mdc-linear-progress-active-indicator-color: var(--accent-color);
+    --mat-progress-bar-active-indicator-color: var(--accent-color);
   }
 
   mat-spinner, mat-progress-spinner {
-    --mdc-circular-progress-active-indicator-color: var(--accent-color);
+    --mat-progress-spinner-active-indicator-color: var(--accent-color);
   }
 
   .app-toolbar .mat-mdc-button {
-    --mdc-text-button-label-text-color: white;
-    --mat-text-button-state-layer-color: white;
-    --mat-text-button-ripple-color: rgba(255, 255, 255, 0.2);
+    --mat-button-text-label-text-color: white;
+    --mat-button-text-state-layer-color: white;
+    --mat-button-text-ripple-color: rgba(255, 255, 255, 0.2);
   }
 
   .app-toolbar .mat-mdc-icon-button {

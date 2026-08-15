@@ -74,7 +74,7 @@ once.
 | Frontend core             | `frontend-core`           | `frontend/src/app/core/**`                                                                                                                | §10.2, §11, §12                                                  |
 | Frontend features         | `frontend-features`       | `frontend/src/app/features/**`                                                                                                            | §10.1, §10.3, §11, §12                                           |
 | Frontend shared           | `frontend-shared`         | `frontend/src/app/shared/**`                                                                                                              | §1.3, §10.1, §11, §12                                            |
-| Cross-cutting             | `cross-cutting`           | Both sub-projects; no single directory                                                                                                    | §9, §13, §14, delegate-only port/adapter or service pairs (§1.2/§10.2), dependency-direction violations, systemic naming patterns |
+| Cross-cutting             | `cross-cutting`           | Both sub-projects; no single directory                                                                                                    | §9, §13, §14, §18, §19, §20, §21, §22, delegate-only port/adapter or service pairs (§1.2/§10.2), dependency-direction violations, systemic naming patterns |
 
 If only the backend (or only the frontend) is in scope, skip the layers that
 don't apply — e.g. a "review the whole backend" request produces 4 reports
@@ -99,7 +99,7 @@ is what actually keeps the sweep within session limits: each subagent starts
 cold, reads only its own layer's files, writes its own report, and never
 touches the orchestrating conversation's context.
 
-1. Before starting, check `docs/code-review/` for layer report files already
+1. Before starting, check `docs/reports/code-review/` for layer report files already
    dated today. If a sweep was interrupted in an earlier session, resume by
    only dispatching subagents for the layers that don't have a report yet for
    today's date — don't redo layers already completed.
@@ -117,7 +117,7 @@ touches the orchestrating conversation's context.
      Format & Output File" section (§16) — don't restate the whole checklist
      in the prompt, point the subagent at the file.
    - The exact output path to write:
-     `docs/code-review/CODE_REVIEW_FINDINGS_{today's date}_{layer suffix}.md`
+     `docs/reports/code-review/CODE_REVIEW_FINDINGS_{today's date}_{layer suffix}.md`
      (apply the `-2`/`-3` collision rule from §16 itself if the file already
      exists).
    - An explicit instruction to only read/review files under that layer's own
@@ -501,6 +501,33 @@ it. Delete it and repoint any importers to the real service — see the
 🟡 Flag a direct import of a feature component in `app.routes.ts` instead of
 a dynamic import.
 
+### 10.4 Material Component Layout Gotchas
+
+🟡 Flag a `mat-icon` placed inside `mat-card-avatar` with no matching CSS
+rule sizing and centering it (`width`/`height`, `font-size`/`line-height`,
+flex-centered). `mat-card-avatar`'s built-in sizing (`object-fit: cover`,
+`overflow: hidden`) is designed for an `<img>` — left unstyled for a
+`mat-icon`, the glyph renders oversized and gets clipped by the avatar
+circle down to an unrecognizable fragment.
+
+🟢 Flag a `mat-form-field` placed as the very first element in
+`mat-card-content`, directly under a `mat-card-title` with nothing else
+between them, that has no `margin-top` of its own. The field's
+floating-label notch plus `mat-card-header`'s tight bottom padding tends to
+read as the field crowding the title above it.
+
+🟡 Flag the app shell's root `mat-toolbar` if it stays pinned on screen by
+neither of this app's two valid mechanisms: an explicit `position: fixed`/
+`sticky` rule with a matching sibling offset (e.g. a `margin-top` equal to
+the toolbar's height, so taking it out of flow doesn't overlap the content
+below it), *or* — the mechanism `app.component.scss` actually uses — being
+a normal-flow flex-column sibling of a `flex: 1; min-height: 0;`,
+independently-`overflow-y: auto` content container, so only that container
+scrolls and the toolbar (never taken out of flow at all) never moves.
+`<mat-toolbar>` has no built-in pinning of its own — a toolbar with
+neither mechanism applied sits in normal document flow and scrolls out of
+the viewport with page content.
+
 ---
 
 ## 11. Frontend: TypeScript Conventions
@@ -556,6 +583,17 @@ connections must not be opened in component tests.
 `tests/` folder) — test files must be co-located with their source files as
 `*.cy.ts`.
 
+🟡 Flag a test that mutates a component's plain (non-signal) field directly
+(e.g. calling a component method from test code that sets a field, then
+asserting on the resulting DOM state) via only `fixture.detectChanges()`
+— in this zoneless app that needs an explicit
+`fixture.componentRef.injector.get(ChangeDetectorRef).markForCheck()`
+first, or the view is never rechecked.
+
+🟡 Flag `import { mount } from 'cypress/angular'` in a test file — `cy.mount`
+is a global command already registered in `cypress/support/component.ts`;
+a test file should never import `mount` directly.
+
 🟡 Flag a `describe` block with no `beforeEach` that repeats the same
 `cy.mount()` call in every `it` — extract to `beforeEach`.
 
@@ -600,6 +638,11 @@ These have caused real bugs in this codebase and deserve extra attention:
 | Hand-written mapper                        | Entity ↔ domain model or HTTP DTO ↔ domain model conversion done manually instead of with a MapStruct `@Mapper(componentModel = "spring")`      |
 | DTO placed directly in `web/dto/`          | New HTTP DTO added straight to `infrastructure/web/dto/` instead of its `request/`, `response/`, or `shared/` subpackage, or named without the `RequestDto`/`ResponseDto` suffix |
 | Delegate-only port/adapter or service      | A port/adapter (backend) or service (frontend) with no logic of its own, just forwarding to another one for the same capability. The keep-or-delete test is whether it contributes its own logic — **not** whether it currently has callers; existing callers just mean they need repointing to the real implementation, not that the wrapper earns a reprieve. Backend incident: `HashCalculatorPort`/`AssetHashCalculatorAdapter` duplicated `StoragePort.computeHash`'s SHA-256 logic; the first fix made the adapter delegate to `StoragePort` instead of deleting it and migrating callers — the pair was pure pass-through and should have been deleted outright, with any real callers repointed to `StoragePort` directly. Frontend incident: `core/services/audio-player.service.ts` was a bare re-export (`export { MediaPlayerService as AudioPlayerService } from './media-player.service'`) with zero importers anywhere in the codebase — deleted outright |
+| Method/function past the complexity threshold | `mvn pmd:check` (backend) or `npm run complexity` (frontend) reports something over 15 — see §18 |
+| Line coverage below 80%                    | `mvn jacoco:check` (backend) or `npm run coverage:check` (frontend) reports under 80% — see §19 |
+| Untyped (`any`) identifier (frontend)      | `npm run type-coverage:report` lists it — see §20 |
+| Unused export/file/dependency              | `npm run dead-code:report` (frontend) or `mvn dependency:analyze` (backend) lists it — see §21 |
+| Survived mutant (test runs, doesn't assert) | `npm run mutation:report` (frontend) or `bash scripts/mutation-report.sh` (backend) lists it — see §24 |
 
 ---
 
@@ -634,7 +677,7 @@ without re-deriving context.
 
 **Scoped review (single file, PR, feature, or one sub-project) — one file:**
 
-- **Path:** `docs/code-review/CODE_REVIEW_FINDINGS_{YYYY-MM-DD}.md` (repo
+- **Path:** `docs/reports/code-review/CODE_REVIEW_FINDINGS_{YYYY-MM-DD}.md` (repo
   root, today's date, ISO 8601). If a file for that date already exists (e.g.,
   a second review the same day), append `-2`, `-3`, etc. before `.md` rather
   than overwriting the earlier run's report.
@@ -642,7 +685,7 @@ without re-deriving context.
 **Full-codebase sweep (§"Full-Codebase Sweeps: Review by Layer") — one file
 per layer:**
 
-- **Path:** `docs/code-review/CODE_REVIEW_FINDINGS_{YYYY-MM-DD}_{layer}.md`,
+- **Path:** `docs/reports/code-review/CODE_REVIEW_FINDINGS_{YYYY-MM-DD}_{layer}.md`,
   where `{layer}` is the report suffix from the layer table (e.g.
   `backend-domain`, `frontend-features`, `cross-cutting`). Same `-2`, `-3`
   collision rule, applied per date+layer combination.
@@ -681,7 +724,7 @@ tree for the user to review and commit themselves.
 1. If the user names a specific report file, skip straight to §17.2 with that
    file. Otherwise resolve a **date**: the date the user asked for, or
    (default) the most recent date that has any
-   `docs/code-review/CODE_REVIEW_FINDINGS_*.md` file. If none exists, say so
+   `docs/reports/code-review/CODE_REVIEW_FINDINGS_*.md` file. If none exists, say so
    and stop — there is nothing to fix.
 2. List every report file for that date (there may be several `-2`/`-3` reruns
    per layer — treat each filename, suffix included, as a distinct report).
@@ -718,7 +761,8 @@ For the selected scope, work through each unchecked finding one at a time:
    of the surrounding code before changing anything — the report is a
    pointer, not a substitute for reading the code.
 2. Apply the fix. The report tells you what's wrong; the checklist sections
-   above (1–15) tell you what "right" looks like for that category of issue.
+   above (1–15, 18) tell you what "right" looks like for that category of
+   issue.
 3. If a fix hinges on a real design decision rather than just applying a
    known pattern — e.g. a live-data/migration-compatibility risk, a public
    API/contract change, or several equally valid approaches — stop and ask
@@ -768,3 +812,556 @@ checked off.
 Do not run `git add`, `git commit`, or any other state-changing git command as
 part of this workflow, not even implicitly. Leave all changes uncommitted so
 the user can review the diff and commit it themselves.
+
+---
+
+## 18. Cyclomatic Complexity (both sub-projects)
+
+Every reviewed scope — backend, frontend, or both — gets a McCabe cyclomatic
+complexity pass, in addition to the manual checklists above. Complexity is
+measured per method/function (each starts at 1; +1 for each `if`, ternary,
+loop, `catch`/switch-`case`, and short-circuit operator — `&&`, `||`, `??`
+on the frontend; PMD's equivalent counting on the backend). **Max allowed
+complexity is 15 per method/function**, in both sub-projects.
+
+Don't count this by hand — each sub-project has its own checked-in analyzer.
+
+### 18.1 Frontend (TypeScript)
+
+Run from `frontend/`:
+
+```
+npm run complexity
+```
+
+(equivalent to `node scripts/cyclomatic-complexity.js src/app`, which walks
+every non-`.cy.ts` `.ts` file under a given directory via the TypeScript
+compiler API — see `frontend/scripts/cyclomatic-complexity.js`, same
+decision-point rules as ESLint's built-in `complexity` rule). It exits
+non-zero and lists every offending function (file, line, name, complexity)
+when anything exceeds the threshold. For a scoped review, either run it
+against the whole tree and filter the output to the changed files, or pass a
+narrower directory directly, e.g.
+`node scripts/cyclomatic-complexity.js src/app/features/gallery`.
+
+### 18.2 Backend (Java)
+
+Run from `backend/`:
+
+```
+mvn pmd:check
+```
+
+This invokes the `maven-pmd-plugin` (configured in `backend/pom.xml`,
+version 3.28.0, bundling PMD 7.17.0) against `backend/pmd-complexity-ruleset.xml`,
+which enables only PMD's built-in `CyclomaticComplexity` rule with
+`methodReportLevel` set to 16 (PMD reports a violation when complexity is
+**greater than or equal to** the configured level, so 16 is what flags
+"over 15") and `classReportLevel` effectively disabled — this check is
+scoped to individual methods, not a class's combined total. The plugin is
+declared with no `<executions>` binding, so it never runs as part of the
+normal build/test/CI lifecycle (`mvn verify`, `mvn package`, ...) — it's
+opt-in, invoked only when this check is run, the same way the frontend's
+`npm run complexity` isn't part of `npm run build`/`test`. `mvn pmd:check`
+fails the command (non-zero exit) and writes `target/pmd.xml` when anything
+exceeds the threshold — read that file, or the console output, for the
+offending class/method/line.
+
+### 18.3 Flagging
+
+🟡 Flag any method/function reported over complexity 15 — this is a
+maintainability problem (deep, hard-to-test branching), not a correctness
+bug, so it's a WARNING rather than CRITICAL, but it should be fixed: extract
+guard clauses, split the method/function by responsibility, or replace a
+long `if`/`else if` chain with a lookup table/strategy map (backend:
+consider a `switch` on an enum, a `Map<Key, Handler>`, or splitting the
+use-case into smaller collaborators respecting §1.1/§1.2's port boundaries).
+Note the reported complexity number and location in the finding so a fix
+can be verified by re-running the relevant command.
+
+🟢 A method/function in the 10–15 range is worth a passing mention if an
+obvious, low-effort split exists, but isn't required to be flagged — the
+threshold that matters is 15.
+
+### 18.4 Trending snapshots
+
+For a full-codebase sweep, both the pass/fail gates above have a trending
+companion that ranks every function/method by complexity instead of only
+flagging the ones over threshold — useful for spotting something climbing
+toward 15 before it becomes an actual violation.
+
+- **Frontend:** `npm run complexity:report` (`scripts/complexity-report.js`)
+  — dated snapshot under `docs/reports/complexity/`, top 20 functions by
+  complexity plus top 20 files by line count.
+- **Backend:** `bash scripts/complexity-report.sh` (run from `backend/`) —
+  same shape, under `JPPhotoManagerWeb/docs/reports/complexity/`. Uses a
+  second, report-only `maven-pmd-plugin` execution
+  (`pmd-complexity-report-ruleset.xml`, `methodReportLevel=1` so PMD
+  reports every method instead of only violations) — never touches the
+  real gate's `pmd-complexity-ruleset.xml` or its threshold.
+
+---
+
+## 19. Code Coverage (both sub-projects)
+
+Every reviewed scope — backend, frontend, or both — gets a line-coverage
+pass, in addition to the manual checklists above. **Minimum line coverage is
+80%**, in both sub-projects, whether the check runs over the whole project
+or is scoped to just the files a change touched.
+
+Don't estimate this by eye — each sub-project already has a coverage tool
+wired (`cypress-unit-test-developer` §1.3; `java-unit-test-developer` §1);
+this section only adds the enforced threshold and the two ways to scope the
+check.
+
+### 19.1 Frontend (TypeScript)
+
+Run from `frontend/` (collect coverage, then check the threshold):
+
+```
+npm run test:coverage
+npm run coverage:check
+```
+
+`test:coverage` (`cypress run --component --env coverage=true`) re-runs the
+component suite with `babel-plugin-istanbul` instrumentation active and
+writes `html`/`lcov`/text-summary reports to `coverage/` (gitignored).
+`coverage:check` (`nyc check-coverage`) reads the `lines`/`branches`/
+`functions`/`statements` thresholds (80 each) from `.nycrc.json` and fails
+(non-zero exit) if any falls short.
+
+For a **scoped review** (a single component, service, or feature directory
+rather than the whole frontend), don't rely on the whole-project number —
+narrow the check with `--include`, which filters the already-collected
+coverage map down to matching paths before the threshold is evaluated:
+
+```
+npx nyc check-coverage --include "src/app/features/albums/**" --lines 80 --branches 80 --functions 80 --statements 80
+```
+
+(`test:coverage` still needs to have run first — `--include` only filters
+which already-collected files count toward the ratio, it doesn't limit
+which specs execute.)
+
+### 19.2 Backend (Java)
+
+Run from `backend/` (populate `target/jacoco.exec`, then check the threshold):
+
+```
+mvn test
+mvn jacoco:check
+```
+
+This invokes the `jacoco-maven-plugin` (configured in `backend/pom.xml`)
+against its default rule — a `BUNDLE`-level `LINE` `COVEREDRATIO` minimum
+of `${jacoco.check.minimum}` (80%) — reading the exec data `mvn test`
+already produced via the plugin's existing `prepare-agent` execution. Like
+`mvn pmd:check` (§18.2), the `check` goal has no `<executions>` binding in
+the pom, so it never runs as part of the normal build/test lifecycle
+(`mvn test`, `mvn verify`, `mvn package`) — it's opt-in, invoked only when
+this check is run. `mvn jacoco:check` fails the command (non-zero exit) and
+prints the offending counter/ratio when coverage is under threshold;
+`target/site/jacoco/index.html` (from the existing `report` execution)
+shows the breakdown per package/class.
+
+For a **scoped review**, override `jacoco.check.includes` (default `**/*`,
+the whole project) to the package(s) the change touched, so the ratio is
+computed only over those classes instead of the whole backend:
+
+```
+mvn jacoco:check -Djacoco.check.includes=com/jpablodrexler/photomanager/application/usecase/album/**
+```
+
+### 19.3 Flagging
+
+🟡 Flag any coverage run — whole-project or scoped to the reviewed change —
+that reports under 80% line coverage. This is a test-adequacy problem, not
+a correctness bug, so it's a WARNING rather than CRITICAL, matching how
+§18's complexity threshold is treated — but it should be fixed before the
+review is considered clean: add the missing test cases for the uncovered
+lines/branches the report lists (`java-unit-test-developer` for backend
+gaps, `cypress-unit-test-developer` for frontend gaps), then re-run the
+check to confirm it now clears 80%.
+
+🟢 A scope in the 75–80% range is worth a passing mention if the gap is a
+small, easily-covered handful of lines, but isn't required to be flagged —
+the threshold that matters is 80%.
+
+### 19.4 Trending snapshots
+
+For a full-codebase sweep, both `npm run coverage:trend-report`
+(`scripts/code-coverage-report.js`, frontend) and `bash
+scripts/coverage-report.sh` (run from `backend/`, backend) wrap the same
+suite runs the gates above use into a dated snapshot under
+`docs/reports/code-coverage/`/`JPPhotoManagerWeb/docs/reports/code-coverage/`
+— the project-wide percentages plus a table of every file/class still
+below 80%. Unlike `coverage:check`/`jacoco:check`, these do not fail the
+command; they exist purely to leave a written record of the actual number
+over time, so a file that quietly backslid is visible even while the
+project-wide number stays above threshold. The backend script parses
+`target/site/jacoco/jacoco.xml` directly (via an inline Perl snippet, since
+the file is single-line, deeply-nested XML that plain `grep`/`awk` cannot
+reliably disambiguate between method/class/package/report-level counters
+sharing the same tag name) rather than adding a second JaCoCo plugin
+execution the way §18.4's backend complexity report needed — JaCoCo's
+existing `report` execution (bound to the `test` phase) already produces
+everything this needs.
+
+---
+
+## 20. Type Coverage (frontend)
+
+Every reviewed frontend scope also gets a type-coverage pass — how much of
+the TypeScript identifier surface has a real, non-`any` type, as opposed
+to `any` reached via an explicit annotation, an untyped third-party return
+value, or TypeScript inference giving up. This is the quantitative
+backstop for §11's "no `any` unless unavoidable" convention: that rule
+catches an `any` a reviewer happens to read past, this catches one that
+slipped through review entirely.
+
+Run from `frontend/`:
+
+```
+npx type-coverage --project tsconfig.app.json --detail
+```
+
+(or `npm run type-coverage:report` for a dated snapshot under
+`docs/reports/type-coverage/`, listing every uncovered identifier grouped
+by file — better for a full-codebase sweep than a scoped review).
+
+🟡 Flag any identifier the tool reports as untyped that isn't already
+caught by §11's manual `any` check. Same severity as that rule, not a
+separate threshold-based gate — a single untyped identifier is exactly as
+fixable regardless of the project-wide percentage.
+
+🟢 Don't chase the last fraction of a percent in files that are
+overwhelmingly typed already — note the project-wide percentage but only
+flag specific uncovered identifiers actually touched by the reviewed
+change (or, for a full sweep, the files with the most per the report's
+file-grouped table).
+
+---
+
+## 21. Dead Code
+
+Every full-codebase sweep also gets an unused-code pass — the automated
+counterpart to whatever "reuse/simplification" findings a manual read
+would catch, just extended to catch what a single-file read cannot: an
+export or dependency nothing references *anywhere else* in the codebase.
+
+### 21.1 Frontend (knip)
+
+Run from `frontend/`:
+
+```
+npx knip
+```
+
+(or `npm run dead-code:report` for a dated snapshot under
+`docs/reports/dead-code/`, split into unused files/exports/types/
+dependencies/unlisted-dependencies). Configured in `frontend/knip.jsonc` —
+see that file's comments for why Cypress config/spec files and a handful
+of name-resolved devDependencies (`@angular-devkit/build-angular`,
+`babel-plugin-istanbul`) need explicit entries/ignores before the tool's
+findings are trustworthy on this Angular + Cypress project.
+
+### 21.2 Backend (Maven)
+
+Run from `backend/`:
+
+```
+mvn dependency:analyze
+```
+
+(or `bash scripts/dead-code-report.sh` for a dated snapshot under
+`JPPhotoManagerWeb/docs/reports/dead-code/`). Maven's own built-in
+unused/undeclared-dependency detector — the closest backend equivalent to
+knip, though narrower in scope: it only covers dependencies, not unused
+application-source exports/classes, since Maven has no direct analog to
+knip's source-level dead-code detection.
+
+**Known, expected noise:** every `spring-boot-starter-*` "umbrella"
+dependency is reported as "unused declared" because `dependency:analyze`
+works by scanning compiled bytecode for direct class references, and a
+starter POM has no classes of its own — it exists purely to pull in a
+bundle of real dependencies transitively. This is a well-documented
+limitation of bytecode-based analysis for Spring Boot specifically, not a
+real finding — skim past every `spring-boot-starter-*` entry and focus on
+anything else in the "Unused declared dependencies" list.
+
+### 21.3 Flagging
+
+🟡 Flag an unused file, export, or type (frontend) — either it should be
+made module-private or, if nothing in the codebase needs it anymore,
+deleted outright per this project's own "no half-finished implementations"
+convention.
+
+🟡 Flag an unused declared dependency (either sub-project, excluding
+§21.2's Spring Boot starter noise) — dead weight in the build and a wider
+(if unused) attack surface for `security-reviewer` §1 to worry about.
+
+🟢 Flag an `unlisted` dependency (frontend: imported but only present
+transitively; backend: `dependency:analyze`'s "Used undeclared
+dependencies") as a suggestion — it works today only because some other
+direct dependency happens to pull it in, fragile across dependency-tree
+changes.
+
+---
+
+## 22. Performance & Accessibility (Lighthouse, frontend)
+
+Scoped narrowly today: `npm run lighthouse:report` (self-builds the
+production bundle and audits it — see
+`frontend/scripts/lighthouse-report.mjs`) only covers `/login`, the one
+route reachable without an authenticated session (every other route is
+behind `authGuard`, and there is no self-registration flow to also cover —
+accounts are admin-created via `/admin/users`). There is no equivalent to
+the mocked E2E tier's session-fabrication trick for Lighthouse, so this
+does not run against any authenticated route yet.
+
+Run from `frontend/`:
+
+```
+npm run lighthouse:report
+```
+
+Writes a dated snapshot to `docs/reports/lighthouse/` — Performance,
+Accessibility, Best Practices, and SEO scores (0–100), plus every failed
+accessibility audit by name.
+
+🟡 Flag any accessibility audit failure on a route touched by the reviewed
+change — Angular Material does not guarantee WCAG compliance for free,
+and this is the only automated a11y signal this project has.
+
+🟢 A performance/SEO score regression is worth a passing mention (note the
+before/after numbers if both are available) but isn't a hard gate the way
+§18/§19's thresholds are — there is no established baseline yet for either
+score.
+
+---
+
+## 23. Deep Accessibility Audit (cypress-axe, frontend)
+
+§22's Lighthouse accessibility score only ever covers `/login` — the one
+route reachable without an authenticated session — and even there it's a
+single aggregate number, not the actual rule that failed. `npm run
+a11y:report` (`frontend/scripts/a11y-report.js`) is the deep, per-route
+complement: it drives `cypress-axe` (axe-core through Cypress) against every
+authenticated route (`/home`, `/gallery`, `/sync`, `/convert`, `/duplicates`,
+`/admin/users`, `/albums`, `/albums/:id`, `/recycle-bin`, `/analytics`,
+`/profile/sessions`) using the same session-fabrication trick as the mocked
+E2E smoke tier (`visitWithSession()` from
+`cypress/support/mocked/seed-session.ts`, `cy.intercept`-stubbed `/api/**`
+calls — no live backend needed).
+
+Run from `frontend/` (needs the dev server reachable at
+`http://localhost:4200` first, e.g. `npm start` in another terminal):
+
+```
+npm run a11y:report
+```
+
+The underlying spec (`cypress/e2e/a11y/a11y-audit.cy.ts`, driven by its own
+`cypress.a11y.config.ts`) lives outside both existing Cypress tiers —
+excluded from `cypress.config.ts`'s `e2e.excludeSpecPattern` and never
+matched by `cypress.mocked.config.ts`'s narrower `specPattern` — so it never
+runs as part of `npm run test:e2e` or `npm run test:e2e:mocked`. It calls
+`cy.checkA11y(..., skipFailures: true)`, so a real violation is recorded as a
+finding, not a failed test; the report script also tolerates a non-zero
+Cypress exit code rather than crashing.
+
+Writes a dated snapshot to `docs/reports/a11y/` — total violations by
+impact level (critical/serious/moderate/minor), then a per-route breakdown
+of every violated WCAG rule (rule id, impact, affected selector(s), help
+URL).
+
+🔴 Flag any `critical` or `serious` impact violation on a route touched by
+the reviewed change.
+
+🟡 Flag any `moderate` impact violation on a route touched by the reviewed
+change.
+
+🟢 A `minor` impact violation, or any violation on a route the change didn't
+touch, is worth a passing mention but isn't required to be flagged.
+
+---
+
+## 24. Mutation Testing (both sub-projects)
+
+Line coverage (§19) only proves a line *executed* during the test suite —
+it says nothing about whether a test actually *asserts* on that line's
+behavior. Mutation testing closes that gap: a tool systematically changes
+("mutates") small pieces of the code under test — flips a `>` to `>=`,
+negates a condition, swaps a boolean literal — reruns the tests, and checks
+whether anything failed. A "killed" mutant means some test caught the
+change; a "survived" mutant means the whole suite still passed with the
+code's behavior altered, i.e. that line has execution coverage but no real
+assertion behind it. Unlike §18/§19/§21/§22, this is not wired as a
+pass/fail gate anywhere (no CI job, no `npm run *:check` equivalent) — it's
+a trending snapshot only, run on demand, the same way §18.4's complexity
+trend report and the dead-code/dependency-staleness reports are.
+
+### 24.1 Frontend (StrykerJS)
+
+Run from `frontend/`:
+
+```
+npm run mutation:report
+```
+
+(`scripts/mutation-report.js`, driven by `stryker.conf.mjs`). Cypress
+Component Testing has no native Stryker test-runner plugin (only
+Jest/Mocha/Karma/Jasmine/Vitest are supported that way), so this uses
+StrykerJS's generic **command** runner — and the config carries two
+non-obvious things worth knowing before touching it:
+
+- **The browser/`process` bridge.** The command runner's mutant-switch
+  instrumentation reads `process.env.__STRYKER_ACTIVE_MUTANT__` to decide
+  which mutant is "active," but the code under test runs inside a Cypress
+  *browser* iframe, which has no Node `process` global. Without a bridge,
+  every mutant silently "survives" — the switch never activates, the
+  original code always runs, and the mutation score is permanently stuck
+  at 0% regardless of test quality (confirmed empirically while building
+  this: an identical mutation applied by hand and run directly correctly
+  failed its test, while the same mutation via `npx stryker run` did not).
+  The fix lives in `cypress.config.ts`'s component `setupNodeEvents`
+  (forwards the env var into `config.env`) and
+  `cypress/support/component.ts` (reads it via `Cypress.env(...)` and
+  assigns `globalThis.process` before any spec file's own imports
+  evaluate — ES module evaluation order guarantees the support file's
+  top-level code runs first). If a mutation score is ever suspiciously and
+  uniformly ~0% again, check that bridge before assuming the tests
+  themselves are weak.
+- **Narrow, curated scope.** `stryker.conf.mjs`'s `mutate` list is a
+  hand-picked ~8 files under `core/` with genuine branching logic
+  (services/interceptors with real conditionals — not thin HTTP CRUD
+  wrappers), and `commandRunner.command` runs a scoped
+  `cypress run --component --spec` (`npm run test:mutation`) covering only
+  those files' own specs, not the full ~650-test suite. The command runner
+  reruns the whole configured command per mutant — Stryker's live
+  "remaining time" estimate is unreliable in the first few percent (it
+  initially extrapolates from the slow first mutant, which pays a
+  one-time Electron/npx warm-up cost the rest don't), so don't judge
+  whether a run is worth letting finish from an early ETA: the full
+  8-file scope (553 mutants) completed in under 14 minutes end to end at
+  `concurrency: 1`, despite briefly showing an in-run estimate north of 8
+  hours. When reviewing a scope this narrow, treat the resulting score as
+  a sample of core/'s branchiest logic, not a whole-frontend figure —
+  extend `mutate` to a changed file directly (temporarily, for a scoped
+  review) rather than trusting the existing list to already cover it.
+
+Writes a dated snapshot to `docs/reports/mutation/` — overall mutation
+score, killed/survived/timeout/no-coverage counts, a per-file table sorted
+worst-first, and a full list of surviving/uncovered mutants (file, line,
+mutator, replacement).
+
+### 24.2 Backend (PIT)
+
+Run from `backend/`:
+
+```
+bash scripts/mutation-report.sh
+```
+
+Invokes `org.pitest:pitest-maven` (`backend/pom.xml`) via
+`mvn org.pitest:pitest-maven:mutationCoverage@mutation-report` — a
+report-only execution bound to `phase>none<`, mirroring
+`maven-pmd-plugin`'s `complexity-report` execution (§18.2/§18.4), so it
+never runs during `mvn test`/`verify`/`package`. Unlike the frontend, PIT
+runs entirely inside the JVM test process alongside the real JUnit
+suite — no browser boundary to bridge, and far faster than the frontend's
+per-mutant-process command-runner approach for a comparable mutant count
+(the full `application.usecase` scope — 65 classes, 443 mutants — runs in
+about 4 minutes). `targetClasses`/`targetTests` are scoped to
+`com.jpablodrexler.photomanager.application.usecase.*` — the actual
+business-logic layer; `infrastructure.web`/`infrastructure.persistence`
+are thin translation code not worth mutating.
+
+Writes a dated snapshot to `docs/reports/mutation/` — PIT's own Line
+Coverage / Mutation Coverage / Test Strength percentages, killed/survived/
+no-coverage/timed-out counts, a per-class table sorted worst-first, and a
+full list of surviving/uncovered mutants (class, method, line, mutator).
+
+### 24.3 Flagging
+
+🟡 Flag a survived mutant on a line the reviewed change touched — the test
+suite runs and passes even though that line's behavior changed, meaning
+whatever test covers it isn't actually asserting on the behavior a real
+bug there would break. Fix by strengthening the existing test's
+assertions (not by adding a redundant new test) so it would fail against
+the mutant's changed behavior; re-run the relevant report to confirm.
+
+🟡 Flag a "no coverage" mutant on a line the reviewed change touched — no
+test reaches that line at all, a stronger gap than a survived mutant (that
+line has neither execution coverage nor an assertion), and often a
+`java-unit-test-developer`/`cypress-unit-test-developer` gap worth cross-
+referencing against §19's coverage report for the same file.
+
+🟢 Don't chase every survived mutant project-wide in a scoped review —
+both reports' scope is already narrow (frontend: a curated ~8-file list;
+backend: one architectural layer), so treat every surviving mutant inside
+that scope as worth a look, but don't expand the mutation-testing scope
+itself as part of an unrelated review.
+
+---
+
+## 25. Secrets Scanning, License Compliance, and Dependency Vulnerabilities (frontend)
+
+Three more report-only metrics, all frontend-scoped tooling but scanning
+beyond `frontend/` where relevant:
+
+**Secrets scanning** — `npm run secrets:report`
+(`frontend/scripts/secrets-scan-report.js`) scans the whole repository —
+backend Java source, k8s manifests, docs, everything — not just
+`frontend/` — with [secretlint](https://github.com/secretlint/secretlint)
+for accidentally committed API keys, private keys, tokens, and other
+high-confidence secret patterns. Uses secretlint's `unix` output formatter
+deliberately, not `json` — the json formatter dumps every scanned file's
+full unmasked content alongside any findings, both slow and a real
+exposure risk if that output is ever mishandled. Every credential-shaped
+file in this repo (`JPPhotoManagerWeb/.env`, `JPPhotoManagerWeb/k8s/secret.yaml`,
+`JPPhotoManagerWeb/k8s/catalog-volumes.yaml`) is excluded via
+`.secretlintignore` at the repo root, on top of secretlint's own
+`.gitignore` respect. Writes a dated snapshot to
+`docs/reports/secrets-scan/` — file, line, rule, and message per finding.
+
+**License compliance** — `npm run license:report`
+(`frontend/scripts/license-compliance-report.js`, via
+[license-checker-rseidelsohn](https://github.com/RSeidelsohn/license-checker-rseidelsohn))
+checks every resolved npm dependency's declared license, flagging the
+copyleft family (GPL/AGPL/LGPL/SSPL/EUPL/CC-BY-SA/OSL/CPAL) and anything
+unresolvable — this repo is public, so an unnoticed copyleft dependency is
+a real concern. The backend equivalent is `bash backend/scripts/license-report.sh`
+(license-maven-plugin's `add-third-party` goal, invoked ad hoc via its full
+plugin coordinate — no `pom.xml` changes needed). Writes a dated snapshot
+to `docs/reports/license-compliance/`.
+
+**Dependency vulnerabilities (SCA)** — `npm run sca:report`
+(`frontend/scripts/sca-report.js`, via `npm audit`) checks every resolved
+npm dependency against npm's own advisory database. The backend equivalent
+is `bash backend/scripts/sca-report.sh`, which queries
+[OSV.dev](https://osv.dev)'s public batch API against the resolved Maven
+dependency tree — chosen over OWASP Dependency-Check specifically because
+Dependency-Check's first run downloads the full NVD database, rate-limited
+to a multi-hour pull without a personally-requested API key. Both write a
+dated snapshot to `docs/reports/dependency-vulnerabilities/`.
+
+🔴 Any secrets-scan finding that's a real, live secret is a **stop what
+you're doing** situation — rotate/revoke it immediately (git history still
+has it even after removal from the working tree).
+
+🔴 Flag any **critical/high** SCA finding with a fix available and no clear
+reason it hasn't been applied.
+
+🟡 Flag a copyleft or unknown license on a **runtime** dependency (Maven
+compile scope / npm `dependencies`, not devDependencies or test scope) —
+most flagged packages will be build/test tooling never distributed with
+the app, which doesn't need the same scrutiny.
+
+🟡 Flag a critical/high SCA finding with no fix available yet — worth
+checking whether the vulnerable code path is actually reachable (many
+advisories are in build tooling, never shipped or executed against
+untrusted input) before treating it as urgent.
+
+🟢 A secrets-scan false positive, an `UNKNOWN` license, or a moderate/low
+SCA finding is worth a passing mention, not a blocker.

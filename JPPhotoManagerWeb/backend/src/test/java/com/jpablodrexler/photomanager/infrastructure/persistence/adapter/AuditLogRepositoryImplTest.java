@@ -84,4 +84,65 @@ class AuditLogRepositoryImplTest {
         verify(mongoTemplate).count(queryCaptor.capture(), eq(AuditLogDocument.class));
         assertThat(queryCaptor.getValue().getQueryObject()).isEmpty();
     }
+
+    @Test
+    void findByFilters_withEntityIdOnly_buildsRestrictedQuery() {
+        AuditLogFilter filter = new AuditLogFilter(null, "42", null, null, 0, 50);
+        when(mongoTemplate.count(any(Query.class), eq(AuditLogDocument.class))).thenReturn(0L);
+        when(mongoTemplate.find(any(Query.class), eq(AuditLogDocument.class))).thenReturn(List.of());
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+
+        sut.findByFilters(filter);
+
+        verify(mongoTemplate).count(queryCaptor.capture(), eq(AuditLogDocument.class));
+        assertThat(queryCaptor.getValue().getQueryObject()).isNotEmpty();
+    }
+
+    @Test
+    void findByFilters_withFromDateOnly_buildsRestrictedQuery() {
+        Instant from = Instant.now().minusSeconds(3600);
+        AuditLogFilter filter = new AuditLogFilter(null, null, from, null, 0, 50);
+        when(mongoTemplate.count(any(Query.class), eq(AuditLogDocument.class))).thenReturn(0L);
+        when(mongoTemplate.find(any(Query.class), eq(AuditLogDocument.class))).thenReturn(List.of());
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+
+        sut.findByFilters(filter);
+
+        verify(mongoTemplate).count(queryCaptor.capture(), eq(AuditLogDocument.class));
+        assertThat(queryCaptor.getValue().getQueryObject()).isNotEmpty();
+    }
+
+    @Test
+    void findByFilters_withToDateOnly_buildsRestrictedQuery() {
+        Instant to = Instant.now();
+        AuditLogFilter filter = new AuditLogFilter(null, null, null, to, 0, 50);
+        when(mongoTemplate.count(any(Query.class), eq(AuditLogDocument.class))).thenReturn(0L);
+        when(mongoTemplate.find(any(Query.class), eq(AuditLogDocument.class))).thenReturn(List.of());
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+
+        sut.findByFilters(filter);
+
+        verify(mongoTemplate).count(queryCaptor.capture(), eq(AuditLogDocument.class));
+        assertThat(queryCaptor.getValue().getQueryObject()).isNotEmpty();
+    }
+
+    @Test
+    void findByFilters_withAllFilters_combinesCriteriaWithAndOperator() {
+        UUID userId = UUID.randomUUID();
+        Instant from = Instant.now().minusSeconds(7200);
+        Instant to = Instant.now();
+        AuditLogFilter filter = new AuditLogFilter(userId, "7", from, to, 1, 25);
+        when(mongoTemplate.count(any(Query.class), eq(AuditLogDocument.class))).thenReturn(0L);
+        when(mongoTemplate.find(any(Query.class), eq(AuditLogDocument.class))).thenReturn(List.of());
+
+        ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
+
+        sut.findByFilters(filter);
+
+        verify(mongoTemplate).count(queryCaptor.capture(), eq(AuditLogDocument.class));
+        assertThat(queryCaptor.getValue().getQueryObject()).isNotEmpty();
+    }
 }

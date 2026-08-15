@@ -1,0 +1,39 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  // Cypress config files and *.cy.ts/e2e specs are real usage roots (they
+  // import the source they exercise) but aren't Angular's own bootstrap
+  // entry — without listing them, knip can't see e.g. a service's exported
+  // const being consumed only by its sibling .cy.ts test, and reports it as
+  // dead. scripts/*.js is likewise never imported anywhere — each is
+  // invoked standalone via `node <path>`/an npm script.
+  "entry": [
+    "src/main.ts",
+    "src/app/**/*.cy.ts",
+    "cypress.config.ts",
+    "cypress.mocked.config.ts",
+    "cypress.a11y.config.ts",
+    "cypress/support/**/*.ts",
+    "cypress/e2e/**/*.cy.ts",
+    "scripts/*.js"
+  ],
+  "project": ["src/**/*.ts", "cypress/**/*.ts", "scripts/*.js"],
+  "ignoreDependencies": [
+    // Invoked via `npx <tool>` from this project's own report scripts
+    // (chrome-launcher/lighthouse via lighthouse-report.mjs's programmatic
+    // API, type-coverage via type-coverage-report.js's execSync call) or is
+    // knip analyzing itself — none of these are ever require()'d/imported,
+    // so the import-graph analysis this tool does can't see the usage.
+    "chrome-launcher",
+    "lighthouse",
+    "type-coverage",
+    "knip",
+    // Resolved by package NAME, not import, by tooling that isn't part of
+    // this project's own source graph — @angular-devkit/build-angular is
+    // needed only to satisfy Cypress's webpack-based Angular Component
+    // Testing preset (see cypress-unit-test-developer skill §1), and
+    // babel-plugin-istanbul is referenced as a string in cypress.config.ts's
+    // webpack loader config (`plugins: ['babel-plugin-istanbul']`).
+    "@angular-devkit/build-angular",
+    "babel-plugin-istanbul"
+  ]
+}

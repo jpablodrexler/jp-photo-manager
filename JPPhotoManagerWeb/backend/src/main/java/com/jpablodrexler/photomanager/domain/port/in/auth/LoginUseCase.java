@@ -6,5 +6,5 @@ public interface LoginUseCase {
 
     record LoginResult(String username, String jwtToken, Instant jwtExpiresAt, String refreshTokenValue) {}
 
-    LoginResult execute(String username, String password);
+    LoginResult execute(String username, String password, String userAgent);
 }

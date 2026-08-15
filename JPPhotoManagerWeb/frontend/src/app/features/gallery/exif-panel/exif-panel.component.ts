@@ -1,4 +1,4 @@
-import { Component, EventEmitter, HostBinding, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, HostBinding, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -34,6 +34,7 @@ import { ExifMetadata } from '../../../core/models/exif-metadata.model';
     MatInputModule,
   ],
   templateUrl: './exif-panel.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './exif-panel.component.scss'
 })
 export class ExifPanelComponent implements OnChanges, OnInit, OnDestroy {
@@ -46,15 +47,16 @@ export class ExifPanelComponent implements OnChanges, OnInit, OnDestroy {
     return this.visible ? 'flex' : 'none';
   }
 
-  exif: ExifMetadata | null = null;
-  loading = false;
+  readonly exif = signal<ExifMetadata | null>(null);
+  readonly loading = signal(false);
   filterText = '';
-  tagSuggestions: string[] = [];
+  readonly tagSuggestions = signal<string[]>([]);
   tagInputControl = new FormControl<string>('', { nonNullable: true });
   readonly separatorKeysCodes = [ENTER, COMMA] as const;
 
   private cache = new Map<number, ExifMetadata | null>();
   private destroy$ = new Subject<void>();
+  private readonly cdr = inject(ChangeDetectorRef);
 
   constructor(
     private assetService: AssetService,
@@ -69,37 +71,37 @@ export class ExifPanelComponent implements OnChanges, OnInit, OnDestroy {
     ).subscribe(q => {
       if (q && q.length >= 1) {
         this.tagService.searchTags(q).pipe(takeUntil(this.destroy$)).subscribe(tags => {
-          this.tagSuggestions = tags.filter(t => !(this.asset?.tags ?? []).includes(t));
+          this.tagSuggestions.set(tags.filter(t => !(this.asset?.tags ?? []).includes(t)));
         });
       } else {
-        this.tagSuggestions = [];
+        this.tagSuggestions.set([]);
       }
     });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if ('asset' in changes) {
-      this.tagSuggestions = [];
+      this.tagSuggestions.set([]);
       this.tagInputControl.setValue('', { emitEvent: false });
     }
 
     if (this.visible && this.asset?.assetId != null && ('visible' in changes || 'asset' in changes)) {
       const assetId = this.asset.assetId;
       if (this.cache.has(assetId)) {
-        this.exif = this.cache.get(assetId) ?? null;
-        this.loading = false;
+        this.exif.set(this.cache.get(assetId) ?? null);
+        this.loading.set(false);
       } else {
-        this.loading = true;
-        this.exif = null;
+        this.loading.set(true);
+        this.exif.set(null);
         this.assetService.getExifMetadata(assetId).subscribe({
           next: (data) => {
             this.cache.set(assetId, data);
-            this.exif = data;
-            this.loading = false;
+            this.exif.set(data);
+            this.loading.set(false);
           },
           error: () => {
             this.cache.set(assetId, null);
-            this.loading = false;
+            this.loading.set(false);
           }
         });
       }
@@ -120,6 +122,7 @@ export class ExifPanelComponent implements OnChanges, OnInit, OnDestroy {
     this.tagService.addTag(this.asset.assetId, name).subscribe({
       error: () => {
         this.asset.tags = (this.asset.tags ?? []).filter(t => t !== name);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -127,12 +130,13 @@ export class ExifPanelComponent implements OnChanges, OnInit, OnDestroy {
   addTagFromAutocomplete(event: MatAutocompleteSelectedEvent): void {
     const name = event.option.viewValue.toLowerCase();
     this.tagInputControl.setValue('', { emitEvent: false });
-    this.tagSuggestions = [];
+    this.tagSuggestions.set([]);
     if (!name || (this.asset.tags ?? []).includes(name)) return;
     this.asset.tags = [...(this.asset.tags ?? []), name];
     this.tagService.addTag(this.asset.assetId, name).subscribe({
       error: () => {
         this.asset.tags = (this.asset.tags ?? []).filter(t => t !== name);
+        this.cdr.markForCheck();
       }
     });
   }
@@ -143,12 +147,13 @@ export class ExifPanelComponent implements OnChanges, OnInit, OnDestroy {
     this.tagService.removeTag(this.asset.assetId, name).subscribe({
       error: () => {
         this.asset.tags = previousTags;
+        this.cdr.markForCheck();
       }
     });
   }
 
   filteredRawExif(): { key: string; value: string }[] {
-    return Object.entries(this.exif?.rawExif ?? {})
+    return Object.entries(this.exif()?.rawExif ?? {})
       .filter(([k]) => k.toLowerCase().includes(this.filterText.toLowerCase()))
       .map(([key, value]) => ({ key, value }));
   }

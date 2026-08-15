@@ -6,9 +6,10 @@ description: >
   verify E2E behaviour after completing a feature — especially for UI-facing
   changes to the dashboard, gallery, or any user flow. Covers: starting
   prerequisites, API response verification, SSE progress-stream
-  verification, visual screenshot capture via Puppeteer, interactive
-  navigation checks, and an optional multi-replica Kafka/Redis consistency
-  check for changes touching consumer-group or cache-invalidation logic.
+  verification, visual screenshot capture via a throwaway Cypress spec,
+  interactive navigation checks, and an optional multi-replica Kafka/Redis
+  consistency check for changes touching consumer-group or
+  cache-invalidation logic.
 metadata:
   scope: [JPPhotoManagerWeb]
 ---
@@ -141,15 +142,19 @@ receives anything, confirm the *backend* actually started successfully
 against this broker (check `/tmp/backend.log` for `KafkaAdmin` errors)
 before suspecting a missing topic.
 
-**Alternative:** `JPPhotoManagerWeb/docker-compose.yml` defines all four
-infrastructure services (`db`, `kafka`, `redis`, `mongo`) together —
-`docker compose up -d db kafka redis mongo` starts just the infra, not the
-app, and can replace 1.1–1.4 in one command. **Port note:** compose maps
-Postgres to host port `5433` (`"5433:5432"`), not `5432` — if you use
-compose for infra, point `mvn spring-boot:run` at `POSTGRES_PORT=5433`
-rather than reusing §1.1's commands verbatim, or stick to the individual
-`docker run` commands above for a setup that matches this skill's other
-port assumptions exactly.
+**Don't use `docker compose up -d db kafka redis mongo` as a shortcut for
+1.1–1.4.** It was tried as the infra source for this skill's scratch
+verification flow and repeatedly hit a Kafka advertised-listener hostname
+(`kafka`) that can't resolve from the host once the backend runs outside
+the cluster that hostname belongs to — the individual `docker run`
+commands above (each publishing directly to `localhost`) don't have this
+problem and are the supported path for this skill. If you need the full
+application already running rather than individual host-mapped
+containers, redeploy to the local Kubernetes cluster instead (see the
+`e2e-suite` skill §1, `./scripts/build-and-deploy-k8s.sh`) and point at
+`http://photomanager.local` in place of `localhost:8080`/`localhost:4200`
+throughout this skill — backend and Kafka both run in-cluster there, so
+the hostname-resolution problem doesn't come up at all.
 
 ### 1.5 Verify real data exists
 
@@ -357,77 +362,132 @@ completion can't distinguish "progress rendered correctly throughout" from
 
 ---
 
-## 7. Visual Verification via Puppeteer
+## 7. Visual Verification via Cypress
 
-Puppeteer may be available in the npx cache. Locate it first:
+Cypress is a `JPPhotoManagerWeb/frontend/` devDependency (the same one the
+maintained `e2e-suite` uses), so `npx cypress` always resolves to a fixed,
+known install — no separate setup for this skill. Confirm it's present:
 
 ```bash
-PUPPETEER_PATH=$(ls "$HOME/.npm/_npx"/*/node_modules/puppeteer 2>/dev/null | head -1)
-echo "$PUPPETEER_PATH"   # should print a path; empty means not cached
+test -d JPPhotoManagerWeb/frontend/node_modules/cypress && echo "present" || echo "MISSING — run npm install from JPPhotoManagerWeb/frontend/"
 ```
 
-If empty, install it temporarily: `npm install -g puppeteer` and use
-`require('puppeteer')` instead of the explicit path below.
+Write a **throwaway spec file to the session scratchpad directory** (never
+under `JPPhotoManagerWeb/frontend/cypress/e2e/` — that's the maintained
+suite's territory, and this skill's whole point is not persisting
+anything). Import `cypress/support/commands.ts`'s `cy.login`/`cy.logout`
+the same way the maintained suite's specs do — reusing them means the
+admin/admin login flow and its session caching (`cy.session()`) are
+already handled for you, not something to re-solve per session.
 
-Use the following Node.js snippet to:
-1. Log in through the Angular login form
-2. Wait for the home dashboard to fully render (stats load asynchronously)
-3. Capture a screenshot
+Run a scratch spec with:
 
-```javascript
-const puppeteer = require(process.env.PUPPETEER_PATH);
-(async () => {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+```bash
+cd JPPhotoManagerWeb/frontend
+npx cypress run --e2e --spec "<path-to-scratch-spec>.cy.ts" \
+  --config baseUrl=http://localhost:4200,supportFile=cypress/support/e2e.ts
+```
+
+The `supportFile` override is what makes the scratch spec (living outside
+`cypress/e2e/`) still pick up `cy.login`/`cy.logout` — without it, Cypress
+looks for a support file next to the scratch spec's own location and
+won't find one.
+
+Screenshots and videos land under
+`JPPhotoManagerWeb/frontend/cypress/screenshots/`/`videos/` automatically
+on failure — view a screenshot with the Read tool the same way you'd view
+any other image file.
+
+### Interaction pitfalls — read before scripting any click or type
+
+Every pitfall below is a genuine, reproducible Cypress/Angular-Material
+interaction quirk, not an application bug, confirmed by inspecting the
+actual Angular component state directly via `ng.getComponent()` in the
+browser console. Apply these from the start rather than rediscovering the
+same things on the next E2E run:
+
+1. **A `mat-select`'s `open()` can silently no-op even when the select is
+   fully enabled, right after its options load asynchronously.** Confirmed
+   by calling `ng.getComponent(selectEl).open()` directly: MatSelect's
+   internal `_canOpen()` guard checks `this.options?.length > 0` against
+   its `options` `ContentChildren` `QueryList` — which needs one more
+   change-detection cycle to catch up after the options' source data
+   resolves, even though the select's own `aria-disabled` attribute
+   already reads `"false"`. A real user's click always lands well after
+   this narrow window closes; a fast, scripted click can land inside it —
+   and nothing observable in the DOM flips to signal "not ready yet," so
+   waiting on an attribute doesn't fix it. Retrying the click is the only
+   reliable fix — wrap a `mat-select` open in a small retry helper rather
+   than a bare `cy.get(...).click()`.
+2. **A `mat-select`'s `(click)="open()"` binding lives on its inner
+   `.mat-mdc-select-trigger` div, not the `<mat-select>` host element** —
+   click `.mat-mdc-select-trigger` specifically, not the host.
+3. **A `mat-form-field` whose control has a `required` validator needs
+   `{ force: true }` on `.type()`** — already documented in the `e2e-suite`
+   skill §6 step 4 (confirmed on `user-admin.component`'s inline
+   password-change field); the same rule applies here for any ad-hoc
+   scratch spec.
+4. **`mat-checkbox` — click the component element, not its underlying
+   native `<input type="checkbox">`.** The native input is visually hidden
+   (MDC renders its own visual box separately); force-clicking it directly
+   bypasses MDC's foundation layer and doesn't reliably fire Angular's
+   `(change)` binding, so the app never sees the toggle. Click
+   `mat-checkbox` itself: `cy.get('mat-checkbox').click()`.
+5. **A field that already has a value needs `.clear({ force: true })`
+   before `.type()`, or the new text gets appended to the old value
+   instead of replacing it.**
+6. **`cy.get(selector).contains(text).should('not.exist')` throws instead
+   of asserting, if `selector` itself matches zero elements** — Cypress
+   needs `.contains()` to have something to search within. Use
+   `cy.contains(selector, text).should('not.exist')` (contains as the
+   primary command, with an implicit selector argument) for "assert this
+   text is nowhere inside these elements" checks.
+7. **`cy.get(...).then(callback)` does not retry — it snapshots the DOM
+   once, immediately.** For any check that needs to wait for async
+   content (a page that hasn't finished its initial stats fetch yet), use
+   a function-bound `.should(($el) => { ... })` instead of `.then()`; only
+   `.should()`'s callback form retries until the assertion inside it
+   passes or the command times out.
+
+### 7.1 Sign in and verify the home dashboard renders
+
+```typescript
+// <scratchpad>/home-dashboard-check.cy.ts
+describe('ad-hoc: home dashboard renders after login', () => {
+  it('shows stat cards populated from the API', () => {
+    cy.login('admin', 'admin');
+    cy.visit('/home');
+    cy.url().should('include', '/home');
+    cy.get('.stat-value', { timeout: 10000 }).should('have.length.greaterThan', 0);
+    cy.screenshot('home-dashboard-check');
   });
-  const page = await browser.newPage();
-  await page.setViewport({ width: 1280, height: 900 });
-
-  // Log in via the Angular form
-  await page.goto('http://localhost:4200/login');
-  await page.waitForSelector('input[formControlName="username"]', { timeout: 10000 });
-  await page.type('input[formControlName="username"]', 'admin');
-  await page.type('input[formControlName="password"]', 'admin');
-  await page.click('button[type="submit"]');
-  await page.waitForNavigation({ timeout: 10000 });
-
-  // Wait for async stats to load
-  await new Promise(r => setTimeout(r, 3000));
-
-  await page.screenshot({ path: '/tmp/home-dashboard.png' });
-  console.log('Current URL:', page.url());
-  await browser.close();
-})().catch(e => { console.error(e.message); process.exit(1); });
+});
 ```
 
 Run with:
 
 ```bash
-PUPPETEER_PATH=$(ls "$HOME/.npm/_npx"/*/node_modules/puppeteer 2>/dev/null | head -1)
-node -e "<paste script here>" 2>&1
+cd JPPhotoManagerWeb/frontend
+npx cypress run --e2e --spec "<scratchpad>/home-dashboard-check.cy.ts" \
+  --config baseUrl=http://localhost:4200,supportFile=cypress/support/e2e.ts
 ```
 
-Then view the screenshot:
-
-```bash
-# Open with system viewer, or read via Claude's Read tool
-xdg-open /tmp/home-dashboard.png 2>/dev/null
-```
+Then view the screenshot (under `JPPhotoManagerWeb/frontend/cypress/screenshots/`)
+with the Read tool.
 
 **What to check in the screenshot:**
-- Page title and navigation bar visible
-- All expected UI sections are rendered (quick actions, stat cards, photo strip,
-  folder list)
-- Numbers in stat cards match the API response values
-- Badges, icons, and Material components render without layout breaks
+- Page title and navigation bar visible.
+- All expected UI sections are rendered (quick actions, stat cards, photo
+  strip, folder list).
+- Numbers in stat cards match §5's API response values.
+- Badges, icons, and Material components render without layout breaks.
 
-**Pitfall:** The Angular auth guard redirects unauthenticated users to `/login`
-immediately. A headless screenshot of `http://localhost:4200/home` without
-going through the login form will always show the login page, not the
-dashboard. Always log in through the Angular form, not by setting cookies
-directly — the app stores session metadata in `localStorage` in addition to
-the HttpOnly JWT cookie.
+**Pitfall:** the Angular auth guard redirects unauthenticated users to
+`/login` immediately. A screenshot of `http://localhost:4200/home` without
+going through the login form first will always show the login page, not
+the dashboard — always log in through the UI form (`cy.login()`), not by
+setting cookies directly, since the app's `localStorage` session metadata
+alongside the HttpOnly JWT cookie is part of what's being verified.
 
 ---
 
@@ -436,54 +496,33 @@ the HttpOnly JWT cookie.
 Test click-to-navigate behaviour by clicking a UI element and checking the
 resulting URL.
 
-```javascript
-const puppeteer = require(process.env.PUPPETEER_PATH);
-(async () => {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+```typescript
+// <scratchpad>/gallery-navigation-check.cy.ts
+describe('ad-hoc: recent-photo click navigates to gallery', () => {
+  it('opens the gallery pre-filtered to the clicked folder', () => {
+    cy.login('admin', 'admin');
+    cy.visit('/home');
+    cy.get('.strip-item', { timeout: 10000 }).first().click();
+    cy.url().should('include', '/gallery?folder=');
+    cy.screenshot('gallery-after-click');
   });
-  const page = await browser.newPage();
-  await page.setViewport({ width: 1280, height: 900 });
-
-  // Log in
-  await page.goto('http://localhost:4200/login');
-  await page.waitForSelector('input[formControlName="username"]', { timeout: 10000 });
-  await page.type('input[formControlName="username"]', 'admin');
-  await page.type('input[formControlName="password"]', 'admin');
-  await page.click('button[type="submit"]');
-  await page.waitForNavigation({ timeout: 10000 });
-  await new Promise(r => setTimeout(r, 3000));
-
-  // Click the first recent-photo thumbnail
-  await page.click('.strip-item');
-  await new Promise(r => setTimeout(r, 3000));
-
-  await page.screenshot({ path: '/tmp/gallery-after-click.png' });
-  console.log('URL after click:', page.url());
-  await browser.close();
-})().catch(e => { console.error(e.message); process.exit(1); });
+});
 ```
 
 **What to assert:**
-- `URL after click` contains `/gallery?folder=` followed by the encoded folder
-  path of the thumbnail that was clicked
-- The gallery screenshot shows assets from the correct folder pre-loaded
-- The folder nav tree shows the pre-selected folder highlighted
-
-For the enriched dashboard, a successful run prints something like:
-
-```
-URL after click: http://localhost:4200/gallery?folder=%2Fhome%2F<user>%2FPictures%2FVacation
-```
-
-where `<user>` is the OS user who owns the catalogued photo library.
+- The URL after the click contains `/gallery?folder=` followed by the
+  encoded folder path of the thumbnail that was clicked — a successful run
+  looks like
+  `http://localhost:4200/gallery?folder=%2Fhome%2F<user>%2FPictures%2FVacation`,
+  where `<user>` is the OS user who owns the catalogued photo library.
+- The gallery screenshot shows assets from the correct folder pre-loaded.
+- The folder nav tree shows the pre-selected folder highlighted.
 
 ---
 
 ## 9. CSS Selector Reference
 
-These selectors are used for targeting elements with Puppeteer in this project:
+These selectors are used for targeting elements with Cypress in this project:
 
 | Feature                        | Selector                               |
 | ------------------------------ | -------------------------------------- |
@@ -507,7 +546,8 @@ pkill -f "mvn spring-boot:run" 2>/dev/null
 pkill -f "ng serve\|npm start\|angular" 2>/dev/null
 ```
 
-Or kill by PID if you recorded them at startup.
+Or kill by PID if you recorded them at startup. Delete the scratch spec
+file from the scratchpad when done — it was never meant to persist.
 
 ---
 
@@ -523,9 +563,22 @@ Use this as a quick reference for any E2E session:
 - [ ] Login succeeds (`HTTP/1.1 200` from `/api/auth/login`)
 - [ ] API response contains all expected fields with correct values
 - [ ] For SSE-driven features (catalog/sync/convert/upload): intermediate progress events arrive and the terminal event's payload matches DB/filesystem state
-- [ ] Puppeteer screenshot shows all UI sections rendered
+- [ ] Any click/type interaction script follows the patterns under §7's
+      "Interaction pitfalls" (`{ force: true }` on required-field/pre-filled
+      inputs, `mat-checkbox` clicked directly not its native input, a
+      `mat-select` open retried rather than clicked once, function-bound
+      `.should()` instead of `.then()` for anything async) — a click, type,
+      or dropdown that silently no-ops is far more likely to be one of
+      these than an actual application bug; confirm against
+      `ng.getComponent()` state directly in the browser console before
+      concluding otherwise
+- [ ] Cypress screenshot shows all UI sections rendered
 - [ ] Clicking an interactive element produces the correct URL and view
-- [ ] No console errors visible in the Puppeteer session
+- [ ] No uncaught console errors during the session (Cypress fails a test
+      automatically on an uncaught exception by default — a scratch spec
+      that completes without that kind of failure has already cleared
+      this bar)
+- [ ] The scratch spec file was deleted from the scratchpad when done
 
 ---
 

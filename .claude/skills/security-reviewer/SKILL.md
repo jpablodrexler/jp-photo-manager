@@ -95,7 +95,7 @@ is what actually keeps the sweep within session limits: each subagent starts
 cold, reads only its own layer's files, writes its own report, and never
 touches the orchestrating conversation's context.
 
-1. Before starting, check `docs/security-review/` for layer report files
+1. Before starting, check `docs/reports/security-review/` for layer report files
    already dated today. If a sweep was interrupted in an earlier session,
    resume by only dispatching subagents for the layers that don't have a
    report yet for today's date — don't redo layers already completed.
@@ -113,7 +113,7 @@ touches the orchestrating conversation's context.
      Report Format & Output File" section (§8) — don't restate the whole
      checklist in the prompt, point the subagent at the file.
    - The exact output path to write:
-     `docs/security-review/SECURITY_REVIEW_FINDINGS_{today's date}_{layer suffix}.md`
+     `docs/reports/security-review/SECURITY_REVIEW_FINDINGS_{today's date}_{layer suffix}.md`
      (apply the `-2`/`-3` collision rule from §8 itself if the file already
      exists).
    - An explicit instruction to only read/review files under that layer's own
@@ -337,6 +337,24 @@ cookies, CSRF protection via `SameSite=Strict` must be verified.
 🟡 Flag Spring Boot Actuator endpoints (`/actuator/**`) that are exposed
 without authentication in production profiles.
 
+Before doing the endpoint-by-endpoint cross-check above by hand, run
+`bash scripts/auth-coverage-report.sh` from `backend/` — it parses
+`SecurityConfig.java`'s ordered `requestMatchers` rules and every
+`@RestController`'s mapping annotations, then writes a dated table under
+`JPPhotoManagerWeb/docs/reports/auth-coverage/` showing exactly which rule
+governs every endpoint (plus any method-level `@PreAuthorize`, a separate,
+tighter restriction the table doesn't try to merge into the same column).
+It is a factual snapshot, not a judgment call — an endpoint resolving only
+to the `anyRequest` fallback isn't automatically wrong (the fallback
+itself is `permitAll()`, and some endpoints are intentionally public), but
+it's exactly the kind of gap this cross-check is meant to catch: a new
+controller silently inheriting a broader rule than intended because
+`SecurityConfig`'s ordered matcher list is easy to lose track of as
+controllers are added. The regex-based path matching it uses is an
+approximation of Spring's real `PathPattern` matcher, so treat a
+surprising row as a prompt to go read `SecurityConfig.java` directly, not
+as ground truth on its own.
+
 ### 4.3 Password Storage
 
 🔴 Flag any code that stores or compares passwords in plaintext.
@@ -474,7 +492,7 @@ without re-deriving context.
 
 **Scoped review (single file, PR, feature, or one sub-project) — one file:**
 
-- **Path:** `docs/security-review/SECURITY_REVIEW_FINDINGS_{YYYY-MM-DD}.md`
+- **Path:** `docs/reports/security-review/SECURITY_REVIEW_FINDINGS_{YYYY-MM-DD}.md`
   (repo root, today's date, ISO 8601). If a file for that date already exists
   (e.g., a second review the same day), append `-2`, `-3`, etc. before `.md`
   rather than overwriting the earlier run's report.
@@ -483,7 +501,7 @@ without re-deriving context.
 per layer:**
 
 - **Path:**
-  `docs/security-review/SECURITY_REVIEW_FINDINGS_{YYYY-MM-DD}_{layer}.md`,
+  `docs/reports/security-review/SECURITY_REVIEW_FINDINGS_{YYYY-MM-DD}_{layer}.md`,
   where `{layer}` is the report suffix from the layer table (e.g.
   `backend-infrastructure`, `frontend-core`, `cross-cutting`). Same `-2`,
   `-3` collision rule, applied per date+layer combination.
@@ -526,7 +544,7 @@ tree for the user to review and commit themselves.
 1. If the user names a specific report file, skip straight to §9.2 with that
    file. Otherwise resolve a **date**: the date the user asked for, or
    (default) the most recent date that has any
-   `docs/security-review/SECURITY_REVIEW_FINDINGS_*.md` file. If none exists,
+   `docs/reports/security-review/SECURITY_REVIEW_FINDINGS_*.md` file. If none exists,
    say so and stop — there is nothing to fix.
 2. List every report file for that date (there may be several `-2`/`-3`
    reruns per layer — treat each filename, suffix included, as a distinct

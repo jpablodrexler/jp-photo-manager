@@ -4,8 +4,8 @@
   </button>
 
   <div class="overlay-content">
-    <img [src]="track?.thumbnailUrl"
-         [alt]="track?.fileName"
+    <img [src]="$safeNavigationMigration(track?.thumbnailUrl)"
+         [alt]="$safeNavigationMigration(track?.fileName)"
          class="album-art" />
 
     <div class="track-title">{{ track?.fileName }}</div>

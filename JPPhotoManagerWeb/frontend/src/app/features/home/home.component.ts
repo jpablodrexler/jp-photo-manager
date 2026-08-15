@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -28,10 +28,11 @@ import { Asset } from '../../core/models/asset.model';
     FileSizePipe,
   ],
   templateUrl: './home.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './home.component.scss'
 })
 export class HomeComponent implements OnInit {
-  stats: HomeStats | null = null;
+  readonly stats = signal<HomeStats | null>(null);
 
   constructor(
     private homeService: HomeService,
@@ -40,13 +41,15 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.homeService.getStats().subscribe({
-      next: stats => (this.stats = stats)
+      next: stats => this.stats.set(stats),
+      error: () => {}
     });
   }
 
   get maxFolderCount(): number {
-    if (!this.stats?.topFolders?.length) return 1;
-    return this.stats.topFolders[0].assetCount;
+    const stats = this.stats();
+    if (!stats?.topFolders?.length) return 1;
+    return stats.topFolders[0].assetCount;
   }
 
   navigateToGalleryFolder(asset: AssetSummary): void {

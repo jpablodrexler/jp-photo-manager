@@ -19,4 +19,6 @@ public class RefreshToken {
     private Instant expiresAt;
     private boolean revoked;
     private Instant issuedAt;
+    private String userAgent;
+    private Instant lastUsedAt;
 }

@@ -48,7 +48,7 @@ class RefreshTokenIssuerTest {
         when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
         when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        String result = sut.issueRefreshToken("alice");
+        String result = sut.issueRefreshToken("alice", "Mozilla/5.0 (Windows NT 10.0) Chrome/120.0");
 
         assertThat(result).isNotBlank();
         ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
@@ -57,13 +57,30 @@ class RefreshTokenIssuerTest {
         assertThat(saved.getUser()).isEqualTo(user);
         assertThat(saved.isRevoked()).isFalse();
         assertThat(saved.getExpiresAt()).isAfter(Instant.now());
+        assertThat(saved.getUserAgent()).isEqualTo("Mozilla/5.0 (Windows NT 10.0) Chrome/120.0");
+        assertThat(saved.getLastUsedAt()).isEqualTo(saved.getIssuedAt());
+    }
+
+    @Test
+    void issueRefreshToken_userAgentLongerThan512Chars_truncatesToFitColumn() {
+        ReflectionTestUtils.setField(sut, "refreshTokenExpiryDays", 30);
+        User user = buildUser("alice");
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(refreshTokenRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        String oversizedUserAgent = "A".repeat(600);
+
+        sut.issueRefreshToken("alice", oversizedUserAgent);
+
+        ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
+        verify(refreshTokenRepository).save(captor.capture());
+        assertThat(captor.getValue().getUserAgent()).hasSize(512);
     }
 
     @Test
     void issueRefreshToken_unknownUser_throwsIllegalArgumentException() {
         when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> sut.issueRefreshToken("ghost"))
+        assertThatThrownBy(() -> sut.issueRefreshToken("ghost", "some-agent"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

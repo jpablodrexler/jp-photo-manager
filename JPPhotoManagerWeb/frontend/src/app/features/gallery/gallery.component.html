@@ -1,9 +1,9 @@
 <mat-sidenav-container class="gallery-layout full-height">
 
   <mat-sidenav
-    [mode]="isMobile ? 'over' : 'side'"
-    [opened]="sidenavOpen"
-    (closedStart)="sidenavOpen = false"
+    [mode]="isMobile() ? 'over' : 'side'"
+    [opened]="sidenavOpen()"
+    (closedStart)="sidenavOpen.set(false)"
     class="folder-sidenav">
     <app-folder-nav (folderSelected)="onFolderSelected($event)" />
   </mat-sidenav>
@@ -12,7 +12,7 @@
 
     <!-- Toolbar -->
     <mat-toolbar class="gallery-toolbar">
-      @if (isMobile) {
+      @if (isMobile()) {
         <button mat-icon-button (click)="toggleSidenav()" aria-label="Toggle folder panel">
           <mat-icon>menu</mat-icon>
         </button>
@@ -76,7 +76,7 @@
           </mat-menu>
         }
 
-        @if (assets.length > 0) {
+        @if (assets().length > 0) {
           <button mat-icon-button (click)="startSlideshow(0)" title="Start slideshow">
             <mat-icon>slideshow</mat-icon>
           </button>
@@ -88,9 +88,9 @@
       }
 
       @if (viewMode === 'viewer') {
-        @if (!isMobile) {
+        @if (!isMobile()) {
           <button mat-icon-button (click)="zoomOut()" title="Zoom out"><mat-icon>zoom_out</mat-icon></button>
-          <button mat-icon-button (click)="resetZoom()" [disabled]="viewerZoom === 1" title="Reset zoom"><mat-icon>zoom_out_map</mat-icon></button>
+          <button mat-icon-button (click)="resetZoom()" [disabled]="viewerZoom() === 1" title="Reset zoom"><mat-icon>zoom_out_map</mat-icon></button>
           <button mat-icon-button (click)="zoomIn()" title="Zoom in"><mat-icon>zoom_in</mat-icon></button>
           @for (star of [1,2,3,4,5]; track star) {
             <button mat-icon-button (click)="rateCurrentAsset(star)">
@@ -105,7 +105,7 @@
           <button mat-icon-button (click)="toggleExifPanel()" [class.active]="showExifPanel" title="EXIF info">
             <mat-icon>info</mat-icon>
           </button>
-          <button mat-icon-button (click)="startSlideshow(currentViewerIndex)" title="Slideshow">
+          <button mat-icon-button (click)="startSlideshow(currentViewerIndex())" title="Slideshow">
             <mat-icon>slideshow</mat-icon>
           </button>
         } @else {
@@ -116,7 +116,7 @@
             <button mat-menu-item (click)="zoomOut()">
               <mat-icon>zoom_out</mat-icon> Zoom out
             </button>
-            <button mat-menu-item (click)="resetZoom()" [disabled]="viewerZoom === 1">
+            <button mat-menu-item (click)="resetZoom()" [disabled]="viewerZoom() === 1">
               <mat-icon>zoom_out_map</mat-icon> Reset zoom
             </button>
             <button mat-menu-item (click)="zoomIn()">
@@ -136,7 +136,7 @@
             <button mat-menu-item (click)="toggleExifPanel()">
               <mat-icon>info</mat-icon> EXIF info
             </button>
-            <button mat-menu-item (click)="startSlideshow(currentViewerIndex)">
+            <button mat-menu-item (click)="startSlideshow(currentViewerIndex())">
               <mat-icon>slideshow</mat-icon> Slideshow
             </button>
           </mat-menu>
@@ -145,8 +145,8 @@
       }
 
       @if (viewMode === 'slideshow') {
-        <button mat-icon-button (click)="toggleSlideshowPlay()" [title]="slideshowPlaying ? 'Pause' : 'Play'">
-          <mat-icon>{{ slideshowPlaying ? 'pause' : 'play_arrow' }}</mat-icon>
+        <button mat-icon-button (click)="toggleSlideshowPlay()" [title]="slideshowPlaying() ? 'Pause' : 'Play'">
+          <mat-icon>{{ slideshowPlaying() ? 'pause' : 'play_arrow' }}</mat-icon>
         </button>
         <mat-select [(ngModel)]="slideshowInterval" (ngModelChange)="onIntervalChange()" class="interval-select" title="Interval">
           @for (opt of intervalOptions; track opt) {
@@ -192,11 +192,11 @@
           <span class="filter-rating-label">{{ minRating > 0 ? minRating + '★ +' : 'Any rating' }}</span>
         </div>
 
-        <mat-select [(ngModel)]="selectedPresetId"
-                    (ngModelChange)="onPresetSelected($event)"
+        <mat-select [ngModel]="selectedPresetId()"
+                    (ngModelChange)="selectedPresetId.set($event); onPresetSelected($event)"
                     placeholder="Load preset"
                     class="preset-select">
-          @for (preset of presets; track preset.presetId) {
+          @for (preset of presets(); track preset.presetId) {
             <mat-option [value]="preset.presetId">
               {{ preset.name }}
               <button mat-icon-button class="preset-delete-btn"
@@ -242,7 +242,7 @@
           />
         </mat-chip-grid>
         <mat-autocomplete #tagFilterAuto="matAutocomplete" (optionSelected)="addTagFilterFromAutocomplete($event)">
-          @for (suggestion of tagSuggestions; track suggestion) {
+          @for (suggestion of tagSuggestions(); track suggestion) {
             <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
           }
         </mat-autocomplete>
@@ -255,16 +255,16 @@
         @if (currentFolder && authService.isAdmin()) {
           <app-drop-zone [folderPath]="currentFolder" (uploadComplete)="onUploadComplete()" />
         }
-        @if (isLoading) {
+        @if (isLoading()) {
           <div class="loading-row">
             <mat-progress-bar mode="indeterminate" />
           </div>
         }
-        @if (!isLoading && assets.length === 0 && currentFolder) {
+        @if (!isLoading() && assets().length === 0 && currentFolder) {
           <div class="empty-state">No images found in this folder.</div>
         }
         <cdk-virtual-scroll-viewport itemSize="80" class="asset-virtual-viewport">
-          <div *cdkVirtualFor="let asset of assets; trackBy: trackByAssetId; let i = index"
+          <div *cdkVirtualFor="let asset of assets(); trackBy: trackByAssetId; let i = index"
                class="asset-list-row"
                [class.asset-list-row--selected]="isSelected(asset)"
                (click)="toggleSelection(asset)"
@@ -305,7 +305,7 @@
             </button>
           </div>
         </cdk-virtual-scroll-viewport>
-        @if (allLoaded && assets.length > 0) {
+        @if (allLoaded() && assets().length > 0) {
           <div class="end-of-list">All photos loaded</div>
         }
       </div>
@@ -314,13 +314,13 @@
     <!-- Timeline View -->
     @if (viewMode === 'thumbnails' && viewType === 'timeline') {
       <div class="timeline-view-container flex-1">
-        <app-timeline-view [groups]="timelineGroups" (thumbnailClick)="openViewerFromTimeline($event)" />
-        @if (isLoading) {
+        <app-timeline-view [groups]="timelineGroups()" (thumbnailClick)="openViewerFromTimeline($event)" />
+        @if (isLoading()) {
           <div class="loading-row">
             <mat-progress-bar mode="indeterminate" />
           </div>
         }
-        @if (timelineAllLoaded && timelineGroups.length > 0) {
+        @if (timelineAllLoaded() && timelineGroups().length > 0) {
           <div class="end-of-list">All photos loaded</div>
         }
       </div>
@@ -343,7 +343,7 @@
            (touchstart)="onViewerTouchStart($event)"
            (touchmove)="onViewerTouchMove($event)"
            (touchend)="onViewerTouchEnd()">
-          <button mat-icon-button class="viewer-nav viewer-nav--prev" (click)="viewerPrev()" [disabled]="currentViewerIndex === 0">
+          <button mat-icon-button class="viewer-nav viewer-nav--prev" (click)="viewerPrev()" [disabled]="currentViewerIndex() === 0">
             <mat-icon>chevron_left</mat-icon>
           </button>
           @if (currentViewerAsset.fileType === 'AUDIO') {
@@ -368,12 +368,12 @@
             <img
               [src]="currentViewerAsset.imageUrl"
               [alt]="currentViewerAsset.fileName"
-              [style.transform]="'scale(' + viewerZoom + ') translate(' + panX + 'px, ' + panY + 'px)'"
+              [style.transform]="'scale(' + viewerZoom() + ') translate(' + panX + 'px, ' + panY + 'px)'"
               class="viewer-image"
               draggable="false"
             />
           }
-          <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="viewerNext()" [disabled]="currentViewerIndex >= assets.length - 1">
+          <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="viewerNext()" [disabled]="currentViewerIndex() >= assets().length - 1">
             <mat-icon>chevron_right</mat-icon>
           </button>
         </div>
@@ -388,37 +388,37 @@
     <!-- Slideshow -->
     @if (viewMode === 'slideshow' && currentViewerAsset) {
       <div class="image-viewer flex-1">
-        <button mat-icon-button class="viewer-nav viewer-nav--prev" (click)="stepSlideshow(-1)" [disabled]="currentViewerIndex === 0">
+        <button mat-icon-button class="viewer-nav viewer-nav--prev" (click)="stepSlideshow(-1)" [disabled]="currentViewerIndex() === 0">
           <mat-icon>chevron_left</mat-icon>
         </button>
         <img
           [src]="currentViewerAsset.imageUrl"
           [alt]="currentViewerAsset.fileName"
         />
-        <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="stepSlideshow(1)" [disabled]="currentViewerIndex >= assets.length - 1">
+        <button mat-icon-button class="viewer-nav viewer-nav--next" (click)="stepSlideshow(1)" [disabled]="currentViewerIndex() >= assets().length - 1">
           <mat-icon>chevron_right</mat-icon>
         </button>
       </div>
-      @if (slideshowResetTick) {
+      @if (slideshowResetTick()) {
         <div class="slideshow-progress-bar"
              [style.animation-duration]="slideshowInterval + 's'"
-             [style.animation-play-state]="slideshowPlaying ? 'running' : 'paused'">
+             [style.animation-play-state]="slideshowPlaying() ? 'running' : 'paused'">
         </div>
       } @else {
         <div class="slideshow-progress-bar"
              [style.animation-duration]="slideshowInterval + 's'"
-             [style.animation-play-state]="slideshowPlaying ? 'running' : 'paused'">
+             [style.animation-play-state]="slideshowPlaying() ? 'running' : 'paused'">
         </div>
       }
     }
 
     <!-- Status Bar -->
     <div class="status-bar">
-      @if (currentFolder && totalItems > 0) {
+      @if (currentFolder && totalItems() > 0) {
         @if (viewMode === 'viewer' || viewMode === 'slideshow') {
-          <span>{{ currentViewerIndex + 1 }} of {{ totalItems }} photos</span>
+          <span>{{ currentViewerIndex() + 1 }} of {{ totalItems() }} photos</span>
         } @else {
-          <span>{{ totalItems }} photos</span>
+          <span>{{ totalItems() }} photos</span>
         }
       } @else {
         <span>{{ currentFolder }}</span>
@@ -426,8 +426,8 @@
       @if (selectedCount > 0) {
         <span>{{ selectedCount }} selected</span>
       }
-      @if (statusMessage) {
-        <span>{{ statusMessage }}</span>
+      @if (statusMessage()) {
+        <span>{{ statusMessage() }}</span>
       }
     </div>
 

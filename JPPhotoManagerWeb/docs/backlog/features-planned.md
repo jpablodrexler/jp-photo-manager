@@ -21,16 +21,13 @@ This document records all **pending** features to the JPPhotoManagerWeb applicat
 | 35  | `thumbnail-regeneration`    | P2 | No | S | Backend | Add `POST /api/assets/regenerate-thumbnails` (optionally scoped by `folderPath` query param) that deletes existing `.bin` thumbnail files via `ThumbnailPort` and re-generates them through `StoragePort`; covers corrupted thumbnails, thumbnail size changes, and retroactive EXIF-rotation correction; reuses existing infrastructure adapters with no schema change | ✅ Created | ⬜ Pending |
 | 37  | `asset-description`         | P1 | Yes | M | Full-stack | Add a `description` VARCHAR column to `assets` (new Flyway migration); expose `PATCH /api/assets/{id}/description`; display an editable text field in the EXIF panel in the viewer; the description field feeds directly into the `full-text-search` (#31) index once both are in place | ✅ Created | ⬜ Pending |
 | 38  | `folder-stats-in-tree`      | P3 | No | S | Full-stack | Show asset count and total size as a secondary line per folder node in the folder navigation tree; backed by `GET /api/folders/stats?path=...` running a lightweight `SELECT COUNT(*), SUM(file_size)` query per folder; distinct from the full analytics dashboard (#20) — this is inline contextual data in the tree, not a separate page | ✅ Created | ⬜ Pending |
-| 43  | `request-correlation-mdc`   | P0 | No | S | Backend | Add a servlet `Filter` that injects a `requestId` UUID and the authenticated `username` into SLF4J `MDC` at the start of each request and clears it on completion; `logstash-logback-encoder` is already configured in `logback-spring.xml` and will automatically include both fields in every JSON log line; also set `X-Request-ID` on the response so the Angular frontend can log the correlation ID alongside client-side errors from `global-error-handler` (#36) | ✅ Created | ⬜ Pending |
 | 44  | `database-backup`           | P0 | No | L | Backend | Add `DatabaseBackupService` with `@Scheduled` that runs `pg_dump` via `ProcessBuilder`, compresses the output with GZip to a temp file, and uploads it through a new `CloudStoragePort` interface (domain) with swappable infrastructure implementations for AWS S3, Google Cloud Storage, and Azure Blob; enforce a configurable retention policy (delete backups older than N days); expose `POST /api/admin/backup` for on-demand trigger and `GET /api/admin/backups` to list stored backups with timestamps and sizes; schedule, retention, cloud provider, bucket, and prefix are all configurable in `application.yml`; Option B (Docker sidecar using `prodrigestivill/postgres-backup-local` + `rclone`) is documented as a deployment alternative for environments where backup must be decoupled from application health | ✅ Created | ⬜ Pending |
-| 46  | `session-management`        | P0 | No | M | Full-stack | The `refresh_tokens` table already stores `userId`, `tokenHash`, and `expiresAt`; add an optional `user_agent` column and expose `GET /api/auth/sessions` (list active sessions with device hint and last-used time), `DELETE /api/auth/sessions/{id}` (revoke one), and `DELETE /api/auth/sessions` (revoke all others); frontend `/profile/sessions` page lists sessions in a `MatTable` with a revoke button per row and a "sign out everywhere" action | ✅ Created | ⬜ Pending |
 | 47  | `two-factor-authentication` | P0 | Yes | L | Full-stack | TOTP-based 2FA via any RFC 6238-compliant authenticator app (Google Authenticator, Authy, 1Password); backend dependencies: `dev.samstevens.totp:totp` (secret generation, code verification, `otpauth://` URI building) and `com.google.zxing:core` + `com.google.zxing:javase` (QR code PNG encoding returned as base64); new `totp_secret` (AES-encrypted at rest) and `totp_enabled` boolean columns on `users` (Flyway migration); setup flow: `POST /api/auth/2fa/setup` returns a base64 QR code PNG, `POST /api/auth/2fa/verify` validates the first code and commits the secret; login flow: password check passes → if `totp_enabled` return a `202 TOTP_REQUIRED` challenge → `POST /api/auth/2fa/challenge` validates code and sets JWT cookie; generate 10 single-use backup codes (BCrypt-hashed, stored in `totp_backup_codes` table) in case the authenticator device is lost; TOTP verification endpoint must be covered by `api-rate-limiting` (#39) | ✅ Created | ⬜ Pending |
 | 48  | `email-notifications`       | P2 | Yes | M | Full-stack | Spring Mail (`spring-boot-starter-mail`) to send a summary email when long-running operations complete: catalog (N new assets, M updated), sync result, convert result, and backup uploaded; add `email` VARCHAR and `email_notifications_enabled` boolean to `users` (Flyway migration); configurable SMTP host, port, and credentials in `application.yml`; frontend profile page gains an email field and notification toggle; pairs naturally with `notification-center` (#54) as both are triggered by the same operation-completion events | ✅ Created | ⬜ Pending |
 | 49  | `auto-tagging`              | P3 | No | S | Backend | During cataloging, automatically apply tags derived from EXIF data: the year from `dateTaken` and camera make normalised to lowercase (e.g. `canon`, `sony`, `apple`); tags are written through the existing `asset_tags` table and tag infrastructure; auto-applied tags are indistinguishable from manual ones and can be removed by the user; no new schema required beyond what the tag feature already provides | ✅ Created | ⬜ Pending |
 | 50  | `image-comparison-viewer`   | P2 | No | M | Frontend | Select exactly two assets in the gallery → "Compare" action opens a split-screen view showing both images side by side at matched zoom levels, with filename, size, dimensions, and rating displayed beneath each panel; most useful as a companion to the duplicates workflow but available from any multi-selection; no new backend endpoint — both images are served by the existing `GET /api/assets/{id}/image`; new `ComparisonViewerComponent` in `features/gallery/` | ✅ Created | ⬜ Pending |
 | 51  | `folder-bookmarks`          | P3 | Yes | M | Full-stack | A pin icon on each node in the folder navigation tree bookmarks it per authenticated user; bookmarks stored in a new `folder_bookmarks` table (`id`, `userId`, `folderPath`, `createdAt`); bookmarked folders appear as a pinned section above the full tree backed by `GET /api/folders/bookmarks`, `POST /api/folders/bookmarks`, and `DELETE /api/folders/bookmarks/{id}`; frontend inserts a `MatDivider` between the pinned section and the main tree; new Flyway migration | ✅ Created | ⬜ Pending |
 | 52  | `multi-language-i18n`       | P2 | No | L | Full-stack | Angular `@angular/localize` for the frontend starting with English and Spanish (mirrors open desktop issue #140); Spring Boot `MessageSource` for backend validation and error messages; locale preference stored per user as a `locale` column on `users` (or inside a `user_preferences` JSON column shared with dark-mode preference from #15); language toggle in the top navigation bar; Angular build produces one bundle per locale via `ng build --localize` | ✅ Created | ⬜ Pending |
-| 53  | `password-strength-policy`  | P0 | No | S | Full-stack | Enforce minimum password complexity on user creation and password change using the `Passay` library (configurable rules: minimum length 12, at least one uppercase, one digit, one special character); the Angular user-admin form and profile page show a live strength meter powered by the same rule set mirrored client-side; returns a structured `400` with per-rule violation details so the frontend can highlight exactly which rules failed; no schema change | ✅ Created | ⬜ Pending |
 | 54  | `notification-center`       | P2 | Yes | M | Full-stack | In-app notification bell in the top navigation bar showing a history of completed background operations (catalog finished, sync complete, convert complete, backup uploaded); new `notifications` table (`id`, `userId`, `type`, `message`, `read_at`, `created_at`); backend writes a notification row at the end of each SSE stream; `GET /api/notifications` returns unread count and paginated history; `PATCH /api/notifications/read` marks all read; badge count clears when the panel is opened; new Flyway migration | ✅ Created | ⬜ Pending |
 | 55  | `webp-avif-conversion`      | P3 | Yes | M | Full-stack | Extend `ConvertAssetsUseCase` — currently PNG→JPEG only — to support JPEG/PNG→WebP and JPEG/PNG→AVIF; WebP encoding via `cwebp` invoked through `ProcessBuilder` (same pattern as #21 FFmpeg); AVIF encoding via `avifenc` through `ProcessBuilder`; the `convert_assets_directories_definitions` table gains a `target_format` VARCHAR column (Flyway migration); frontend `ConvertComponent` adds a "Target format" dropdown (JPEG / WebP / AVIF) to the directory pair configuration form | ✅ Created | ⬜ Pending |
 | 56  | `asset-image-editor`        | P2 | No | M | Full-stack | Add brightness, contrast, and hue adjustment to the viewer; CSS `filter: brightness() contrast() hue-rotate()` applied to the `<img>` tag drives live preview via three `MatSlider` inputs with zero backend calls; saving dispatches `POST /api/assets/{id}/edit` with the adjustment values; the backend processes the image using Java2D (`java.awt.image`) with no external dependency: `RescaleOp` applies brightness and contrast in a single pass, hue is adjusted by converting RGB→HSB via `Color.RGBtoHSB`, rotating the H component, and converting back; the edited file is saved as a new asset alongside the original (non-destructive by default); an optional "replace original" flag covers the destructive case; no new Maven dependency, no Docker image change | ✅ Created | ⬜ Pending |
@@ -75,10 +72,6 @@ This document records all **pending** features to the JPPhotoManagerWeb applicat
 
 `keyboard-shortcuts` extends the viewer shortcuts already present in `slideshow-mode`. Implementing 8 first avoids re-doing viewer key handling.
 
-**Feature 79 → Feature 46** (prerequisite already implemented)
-
-`redis-refresh-tokens` (#79) is now implemented — every refresh token is mirrored into Redis via a hash at `refresh_token:{token}` with `userId`, `tokenId`, and `issuedAt` fields (dual-write phase; PostgreSQL remains the read source of truth). When implementing `session-management` (#46), store `userAgent` as an additional field on that same Redis hash (`HSET refresh_token:{token} userAgent {ua}`) instead of adding a `user_agent` column to the PostgreSQL `refresh_tokens` table — this makes the V22 migration unnecessary.
-
 ### Recommended implementation order
 
 For the pending dependent clusters:
@@ -90,16 +83,15 @@ For the pending dependent clusters:
 58 (video-from-images)     — prerequisite #21 already implemented; #59 also already implemented
 ```
 
-Features 24 (wallpaper-suggestion), 27 (image-etag-cache), 29 (exif-cache-service), 30 (image-rotation-viewer), 32 (folder-watch-service), 35 (thumbnail-regeneration), 38 (folder-stats-in-tree), 43 (request-correlation-mdc), 50 (image-comparison-viewer), 53 (password-strength-policy), 56 (asset-image-editor), 67 (event-auto-grouping), 68 (photo-quality-scoring), 69 (iptc-xmp-metadata-editing), 70 (dominant-color-palette), 71 (webdav-server) have no hard dependencies and can be delivered in any order.
+Features 24 (wallpaper-suggestion), 27 (image-etag-cache), 29 (exif-cache-service), 30 (image-rotation-viewer), 32 (folder-watch-service), 35 (thumbnail-regeneration), 38 (folder-stats-in-tree), 50 (image-comparison-viewer), 56 (asset-image-editor), 67 (event-auto-grouping), 68 (photo-quality-scoring), 69 (iptc-xmp-metadata-editing), 70 (dominant-color-palette), 71 (webdav-server) have no hard dependencies and can be delivered in any order.
 
 Within dependent clusters:
 
 ```
 37 (asset-description) → 31 (full-text-search)
-36 (global-error-handler, already done) → 43 (request-correlation-mdc)
 33 (role-based-access-control, already done) → 44 (database-backup), 61 (asset-backup)
 39 (api-rate-limiting, already done) → 47 (two-factor-authentication)
-46 (session-management) → 47 (two-factor-authentication)
+46 (session-management, already done) → 47 (two-factor-authentication)
 54 (notification-center) → 48 (email-notifications)
 60 (archive-support) → 61 (asset-backup)
 75 (kafka-catalog-pipeline, already done) → 77 (kafka-catalog-coordination)
@@ -121,7 +113,6 @@ Flyway migration versions must be applied in ascending order. Migrations V7–V1
 | V19       | `email-notifications` — `email`, `email_notifications_enabled` on `users`         |
 | V20       | `folder-bookmarks` — `folder_bookmarks` table                                      |
 | V21       | `notification-center` — `notifications` table                                      |
-| V22       | `session-management` — `user_agent` column on `refresh_tokens`                     |
 | V23       | `webp-avif-conversion` — `target_format` column on `convert_assets_directories_definitions` |
 | V25       | `asset-backup` — `backup_definitions` and `backup_run_log` tables                   |
 | V28       | `photo-quality-scoring` — `quality_score` SMALLINT column on `assets`               |
@@ -129,13 +120,11 @@ Flyway migration versions must be applied in ascending order. Migrations V7–V1
 | V30       | `dominant-color-palette` — `color_palette` JSONB column on `assets`                 |
 | V31       | `event-auto-grouping` — `user_events` table                                          |
 
-Note: `revert-exif-postgres-jsonb` (#84) has been implemented and applied `V33__recreate_asset_exif.sql`, superseding the earlier `V27__drop_asset_exif.sql` — see `features-implemented.md`. This also supersedes the older reservation of "V33 for `search_presets`" mentioned under `mongodb-user-preferences` (#74) below — when #74 is eventually implemented, its `search_presets` drop migration should use the next number available at that time (V34 or later) instead.
+Note: `revert-exif-postgres-jsonb` (#84) has been implemented and applied `V33__recreate_asset_exif.sql`, superseding the earlier `V27__drop_asset_exif.sql` — see `features-implemented.md`. This also supersedes the older reservation of "V33 for `search_presets`" mentioned under `mongodb-user-preferences` (#74) below — when #74 is eventually implemented, its `search_presets` drop migration should use the next number available at that time instead. `V34` has since been applied by `session-management` (#46, implemented) — see `features-implemented.md` — so #74 should use `V35` or later.
 
 Note: `pixel_width` and `pixel_height` are already present on `assets`; only the derived `aspect_ratio` column is new. The backfill (`aspect_ratio = pixel_width / pixel_height`) must be included in the V15 migration to populate existing rows. Assets where either dimension is zero are left as `NULL` and excluded from wallpaper queries.
 
 The V17 migration must run after V16 because the `search_vector` generated column combines `file_name`, `description`, and tag data; the `description` column must exist before the generated column can reference it.
-
-Note on V22 (`session-management`): `redis-refresh-tokens` (#79) has been implemented, so V22 is moot — store the `user_agent` field as a Redis hash field on the existing `refresh_token:{token}` hash instead of adding this PostgreSQL column.
 
 ### MongoDB and Kafka infrastructure provisioning
 
@@ -210,14 +199,6 @@ A full-text search that can only index filename and tags is still useful, but th
 **Features 32, 36, 38 — no dependencies**
 
 `folder-watch-service`, `global-error-handler`, and `folder-stats-in-tree` have no hard dependencies on other pending features and can be delivered in any order.
-
-**Feature 43 → Feature 36**
-
-`request-correlation-mdc` pairs with `global-error-handler` (#36). The Angular `ErrorHandler` can read the `X-Request-ID` response header and include it in the error snackbar or log payload, linking a user-visible error directly to the backend log entries for that request.
-
-**Features 41, 42, 43 — no schema changes** (41 and 42 already implemented)
-
-All three observability features are purely operational: no Flyway migrations, no domain model changes, and no new API endpoints visible to end users.
 
 **Feature 44 → Feature 33** (prerequisite already implemented)
 

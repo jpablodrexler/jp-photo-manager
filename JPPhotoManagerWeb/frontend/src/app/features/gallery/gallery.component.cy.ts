@@ -1,5 +1,6 @@
 import { of, throwError } from 'rxjs';
 import { MatChipInputEvent } from '@angular/material/chips';
+import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
@@ -146,6 +147,104 @@ describe('GalleryComponent', () => {
     cy.get('mat-progress-bar').should('not.exist');
   });
 
+  it('should toggle the sidenav open state', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      const before = component.sidenavOpen();
+      component.toggleSidenav();
+      expect(component.sidenavOpen()).to.equal(!before);
+    });
+  });
+
+  it('should update searchTerm and push to the search subject on search change', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      const input = document.createElement('input');
+      input.value = 'sunset';
+      component.onSearchChange({ target: input } as unknown as Event);
+      expect(component.searchTerm).to.equal('sunset');
+    });
+  });
+
+  it('should rate the currently-viewed asset', () => {
+    const rateAsset = cy.stub().returns(of({ ...mockAssets[0], rating: 4 }));
+    mountGallery({ rateAsset }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets.set(mockAssets);
+      component.openViewer(0);
+      component.rateCurrentAsset(4);
+    });
+    cy.wrap(rateAsset).should('have.been.calledWith', mockAssets[0].assetId, 4);
+  });
+
+  it('should do nothing when rating with no asset open in the viewer', () => {
+    const rateAsset = cy.stub().returns(of(mockAssets[0]));
+    mountGallery({ rateAsset }).then(({ fixture }) => {
+      fixture.componentInstance.rateCurrentAsset(4);
+    });
+    cy.wrap(rateAsset).should('not.have.been.called');
+  });
+
+  it('should open the viewer at the matching asset when opened from the timeline', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.timelineGroups.set([
+        { localDate: '2024-05-10', label: 'May 10, 2024', assets: [mockAssets[0], mockAssets[1]] },
+      ]);
+      component.openViewerFromTimeline(mockAssets[1]);
+      expect(component.viewMode).to.equal('viewer');
+      expect(component.currentViewerIndex()).to.equal(1);
+    });
+  });
+
+  it('should toggle the exif panel', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      expect(component.showExifPanel).to.equal(false);
+      component.toggleExifPanel();
+      expect(component.showExifPanel).to.equal(true);
+    });
+  });
+
+  it('should reload assets when an upload completes', () => {
+    const getAssets = cy.stub().returns(of(emptyPage));
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      fixture.componentInstance.currentFolder = '/photos';
+      fixture.componentInstance.onUploadComplete();
+    });
+    cy.wrap(getAssets).should('have.been.called');
+  });
+
+  it('should start catalog scanning and close the SSE stream on done/error', () => {
+    const eventSource = { addEventListener: cy.stub(), close: cy.stub() };
+    const catalogAssets = cy.stub().returns(eventSource);
+    mountGallery({ catalogAssets }).then(({ fixture }) => {
+      fixture.componentInstance.startCatalog();
+    });
+    cy.wrap(catalogAssets).should('have.been.calledOnce');
+    cy.wrap(eventSource.addEventListener).should('have.been.calledWith', 'done');
+    cy.wrap(eventSource.addEventListener).should('have.been.calledWith', 'error');
+  });
+
+  it('should do nothing when selecting a null preset', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.presets.set([{ presetId: 1, name: 'Test', createdAt: '2024-01-01T00:00:00Z' }]);
+      component.onPresetSelected(null);
+      expect(component.searchTerm).to.equal('');
+    });
+  });
+
+  it('should apply the matching preset when one is selected', () => {
+    const getAssets = cy.stub().returns(of(emptyPage));
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.presets.set([{ presetId: 2, name: 'Birthday', createdAt: '2024-01-01T00:00:00Z', search: 'birthday' }]);
+      component.onPresetSelected(2);
+      expect(component.searchTerm).to.equal('birthday');
+    });
+  });
+
   it('should load assets when a folder is selected', () => {
     const getAssets = cy.stub().returns(of({
       items: mockAssets, pageIndex: 0, totalPages: 1, totalItems: 2,
@@ -200,7 +299,7 @@ describe('GalleryComponent', () => {
   it('should toggle asset selection', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = mockAssets;
+      component.assets.set(mockAssets);
       fixture.detectChanges();
 
       component.toggleSelection(mockAssets[0]);
@@ -214,10 +313,10 @@ describe('GalleryComponent', () => {
   it('should switch to viewer mode when openViewer is called', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = mockAssets;
+      component.assets.set(mockAssets);
       component.openViewer(1);
       expect(component.viewMode).to.equal('viewer');
-      expect(component.currentViewerIndex).to.equal(1);
+      expect(component.currentViewerIndex()).to.equal(1);
     });
   });
 
@@ -233,40 +332,63 @@ describe('GalleryComponent', () => {
   it('should navigate to previous asset in viewer', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = mockAssets;
+      component.assets.set(mockAssets);
       component.openViewer(1);
       component.viewerPrev();
-      expect(component.currentViewerIndex).to.equal(0);
+      expect(component.currentViewerIndex()).to.equal(0);
     });
   });
 
   it('should navigate to next asset in viewer', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = mockAssets;
+      component.assets.set(mockAssets);
       component.openViewer(0);
       component.viewerNext();
-      expect(component.currentViewerIndex).to.equal(1);
+      expect(component.currentViewerIndex()).to.equal(1);
     });
   });
 
   it('should not navigate before first asset in viewer', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = mockAssets;
+      component.assets.set(mockAssets);
       component.openViewer(0);
       component.viewerPrev();
-      expect(component.currentViewerIndex).to.equal(0);
+      expect(component.currentViewerIndex()).to.equal(0);
     });
   });
 
   it('should not navigate past last asset in viewer', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = mockAssets;
+      component.assets.set(mockAssets);
       component.openViewer(1);
       component.viewerNext();
-      expect(component.currentViewerIndex).to.equal(1);
+      expect(component.currentViewerIndex()).to.equal(1);
+    });
+  });
+
+  it('should navigate the viewer with ArrowLeft/ArrowRight keydown events', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets.set(mockAssets);
+      component.openViewer(0);
+      component.onKeyDown(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+      expect(component.currentViewerIndex()).to.equal(1);
+      component.onKeyDown(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+      expect(component.currentViewerIndex()).to.equal(0);
+    });
+  });
+
+  it('should ignore ArrowLeft/ArrowRight keydown events outside slideshow/viewer mode', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.assets.set(mockAssets);
+      expect(component.viewMode).to.equal('thumbnails');
+      component.onKeyDown(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+      component.onKeyDown(new KeyboardEvent('keydown', { key: 'ArrowLeft' }));
+      expect(component.viewMode).to.equal('thumbnails');
     });
   });
 
@@ -274,16 +396,16 @@ describe('GalleryComponent', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.zoomIn();
-      expect(component.viewerZoom).to.equal(1.25);
+      expect(component.viewerZoom()).to.equal(1.25);
     });
   });
 
   it('should decrease zoom within limit', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.viewerZoom = 1;
+      component.viewerZoom.set(1);
       component.zoomOut();
-      expect(component.viewerZoom).to.equal(0.75);
+      expect(component.viewerZoom()).to.equal(0.75);
     });
   });
 
@@ -293,9 +415,9 @@ describe('GalleryComponent', () => {
     mountGallery({ getAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.pageIndex = 3;
+      component.pageIndex.set(3);
       component.onSortChange();
-      expect(component.pageIndex).to.equal(0);
+      expect(component.pageIndex()).to.equal(0);
     });
   });
 
@@ -306,8 +428,8 @@ describe('GalleryComponent', () => {
     mountGallery({ deleteAssets, getAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.selectedAssets.add(1);
-      component.selectedAssets.add(2);
+      component.selectedAssets.update(s => new Set(s).add(1));
+      component.selectedAssets.update(s => new Set(s).add(2));
       component.deleteSelected(false);
       cy.wrap(deleteAssets).should('have.been.calledWith', [1, 2], false);
     });
@@ -361,9 +483,9 @@ describe('GalleryComponent', () => {
 
     mountGallery({ getAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.onFolderSelected('/new-folder');
-      expect(component.assets).to.deep.equal([]);
+      expect(component.assets()).to.deep.equal([]);
       return Promise.resolve().then(() => fixture.detectChanges());
     });
 
@@ -377,10 +499,10 @@ describe('GalleryComponent', () => {
     mountGallery({ getAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.sortCriteria = 'FILE_SIZE';
       component.onSortChange();
-      expect(component.assets).to.deep.equal([]);
+      expect(component.assets()).to.deep.equal([]);
       return Promise.resolve().then(() => fixture.detectChanges());
     });
 
@@ -391,7 +513,7 @@ describe('GalleryComponent', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.isLoading = true;
+      component.isLoading.set(true);
       fixture.detectChanges();
     });
 
@@ -401,8 +523,8 @@ describe('GalleryComponent', () => {
   it('should show the end-of-list indicator when allLoaded is true', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
-      component.allLoaded = true;
+      component.assets.set([...mockAssets]);
+      component.allLoaded.set(true);
       fixture.detectChanges();
     });
 
@@ -418,7 +540,7 @@ describe('GalleryComponent', () => {
 
     mountGallery({ downloadAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.selectedAssets.add(1);
+      component.selectedAssets.update(s => new Set(s).add(1));
       component.downloadSelected();
       cy.wrap(downloadAssets).should('have.been.calledWith', [1]);
     });
@@ -429,7 +551,7 @@ describe('GalleryComponent', () => {
 
     mountGallery({ downloadAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.selectedAssets.add(1);
+      component.selectedAssets.update(s => new Set(s).add(1));
       component.downloadSelected();
     });
 
@@ -442,7 +564,7 @@ describe('GalleryComponent', () => {
     mountGallery({ getAssets }).then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.allLoaded = true;
+      component.allLoaded.set(true);
       component.loadNextPage();
     });
 
@@ -478,31 +600,31 @@ describe('GalleryComponent', () => {
   it('should increment the current viewer index when the slideshow advances', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.startSlideshow(0);
       fixture.detectChanges();
-      expect(component.currentViewerIndex).to.equal(0);
+      expect(component.currentViewerIndex()).to.equal(0);
       component.advanceSlideshow();
-      expect(component.currentViewerIndex).to.equal(1);
+      expect(component.currentViewerIndex()).to.equal(1);
     });
   });
 
   it('should stop advancing when the slideshow is paused while playing', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.startSlideshow(0);
       component.pauseSlideshow();
-      expect(component.slideshowPlaying).to.be.false;
+      expect(component.slideshowPlaying()).to.be.false;
       expect((component as unknown as { slideshowTimer: ReturnType<typeof setInterval> | null }).slideshowTimer).to.be.null;
-      expect(component.currentViewerIndex).to.equal(0);
+      expect(component.currentViewerIndex()).to.equal(0);
     });
   });
 
   it('should return to viewer mode when Escape is pressed during the slideshow', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.startSlideshow(0);
       fixture.detectChanges();
       component.onKeyDown(new KeyboardEvent('keydown', { key: 'Escape' }));
@@ -513,36 +635,36 @@ describe('GalleryComponent', () => {
   it('should toggle play/pause when the space key is pressed during the slideshow', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.startSlideshow(0);
-      expect(component.slideshowPlaying).to.be.true;
+      expect(component.slideshowPlaying()).to.be.true;
       component.onKeyDown(new KeyboardEvent('keydown', { key: ' ' }));
-      expect(component.slideshowPlaying).to.be.false;
+      expect(component.slideshowPlaying()).to.be.false;
       component.onKeyDown(new KeyboardEvent('keydown', { key: ' ' }));
-      expect(component.slideshowPlaying).to.be.true;
+      expect(component.slideshowPlaying()).to.be.true;
     });
   });
 
   it('should stop the slideshow and show a complete message at the last asset', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.startSlideshow(1); // last index
       component.advanceSlideshow(); // at last asset — should stop
-      expect(component.slideshowPlaying).to.be.false;
-      expect(component.statusMessage).to.equal('Slideshow complete');
+      expect(component.slideshowPlaying()).to.be.false;
+      expect(component.statusMessage()).to.equal('Slideshow complete');
     });
   });
 
   it('should keep the same index when starting the slideshow from the viewer toolbar', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.openViewer(1);
       expect(component.viewMode).to.equal('viewer');
-      component.startSlideshow(component.currentViewerIndex);
+      component.startSlideshow(component.currentViewerIndex());
       expect(component.viewMode).to.equal('slideshow');
-      expect(component.currentViewerIndex).to.equal(1);
+      expect(component.currentViewerIndex()).to.equal(1);
     });
   });
 
@@ -615,8 +737,8 @@ describe('GalleryComponent', () => {
   it('should show the toggle button with the sidenav in over mode on a mobile viewport', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.isMobile = true;
-      component.sidenavOpen = false;
+      component.isMobile.set(true);
+      component.sidenavOpen.set(false);
       fixture.detectChanges();
     });
 
@@ -659,14 +781,14 @@ describe('GalleryComponent', () => {
   it('should close the sidenav when a folder is selected on a mobile viewport', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.isMobile = true;
-      component.sidenavOpen = true;
+      component.isMobile.set(true);
+      component.sidenavOpen.set(true);
       fixture.detectChanges();
 
       component.onFolderSelected('/photos');
       fixture.detectChanges();
 
-      expect(component.sidenavOpen).to.be.false;
+      expect(component.sidenavOpen()).to.be.false;
       cy.get('mat-sidenav').should('not.have.class', 'mat-drawer-opened');
     });
   });
@@ -678,7 +800,7 @@ describe('GalleryComponent', () => {
 
     mountGallery({ rateAsset }).then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.rateAsset(mockAssets[0], 4);
       cy.wrap(rateAsset).should('have.been.calledWith', 1, 4);
     });
@@ -690,7 +812,7 @@ describe('GalleryComponent', () => {
 
     mountGallery({ rateAsset }).then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [ratedAsset, mockAssets[1]];
+      component.assets.set([ratedAsset, mockAssets[1]]);
       component.rateAsset(ratedAsset, 4);
       cy.wrap(rateAsset).should('have.been.calledWith', 1, 0);
     });
@@ -790,6 +912,32 @@ describe('GalleryComponent', () => {
     cy.wrap(createPreset).should('have.been.calledWithMatch', { name: 'Birthday 2024', search: 'birthday' });
   });
 
+  it('should include date range and min rating (and omit blank search) when saving a preset', () => {
+    const newPreset: SearchPreset = { presetId: 4, name: 'Summer Trip', createdAt: '2024-07-01T00:00:00Z' };
+    const createPreset = cy.stub().returns(of(newPreset));
+    const listPresets = cy.stub().returns(of([]));
+
+    mountGallery({}, { listPresets, createPreset }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.searchTerm = '   ';
+      component.dateFrom = new Date(2024, 5, 15, 12, 0, 0);
+      component.dateTo = new Date(2024, 6, 20, 12, 0, 0);
+      component.minRating = 5;
+      component.saveCurrentFiltersAsPreset();
+    });
+
+    cy.get('app-save-preset-dialog input[matInput]').type('Summer Trip');
+    cy.get('app-save-preset-dialog button').contains('Save').click();
+
+    cy.wrap(createPreset).should('have.been.calledWithMatch', {
+      name: 'Summer Trip',
+      search: undefined,
+      dateFrom: '2024-06-15',
+      dateTo: '2024-07-20',
+      minRating: 5,
+    });
+  });
+
   it('should call deletePreset and remove it from the list when the close icon is clicked', () => {
     const deletePreset = cy.stub().returns(of(undefined));
     const listPresets = cy.stub().returns(of(mockPresets));
@@ -813,8 +961,9 @@ describe('GalleryComponent', () => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
       component.addTagFilter({ value: 'vacation', chipInput: { clear: () => {} } } as unknown as MatChipInputEvent);
+      component.addTagFilter({ value: undefined, chipInput: { clear: () => {} } } as unknown as MatChipInputEvent);
       expect(component.selectedTags).to.deep.equal(['vacation']);
-      expect(component.pageIndex).to.equal(0);
+      expect(component.pageIndex()).to.equal(0);
     });
 
     cy.wrap(getAssets).should('have.been.called');
@@ -913,7 +1062,7 @@ describe('GalleryComponent', () => {
       return Promise.resolve().then(() => {
         fixture.detectChanges();
         expect(fixture.componentInstance.viewMode).to.equal('viewer');
-        expect(fixture.componentInstance.currentViewerIndex).to.equal(1);
+        expect(fixture.componentInstance.currentViewerIndex()).to.equal(1);
       });
     });
   });
@@ -936,6 +1085,28 @@ describe('GalleryComponent', () => {
     });
 
     cy.wrap(getTimeline).should('have.been.calledWith', '/photos', 0);
+  });
+
+  it('should include date range and min rating filters when loading a timeline page', () => {
+    const mockTimelinePage: PaginatedData<TimelineGroup> = {
+      items: [], pageIndex: 0, totalPages: 1, totalItems: 0,
+    };
+    const getTimeline = cy.stub().returns(of(mockTimelinePage));
+
+    mountGallery({ getTimeline }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.dateFrom = new Date(2024, 5, 15, 12, 0, 0);
+      component.dateTo = new Date(2024, 6, 20, 12, 0, 0);
+      component.minRating = 4;
+      component.loadTimelinePage();
+    });
+
+    cy.wrap(getTimeline).should('have.been.calledWith', '/photos', 0, Cypress.sinon.match({
+      dateFrom: '2024-06-15',
+      dateTo: '2024-07-20',
+      minRating: 4,
+    }));
   });
 
   it('should call getAssets and show the thumbnail grid when switching to grid view', () => {
@@ -979,11 +1150,11 @@ describe('GalleryComponent', () => {
       component.currentFolder = '/photos';
       component.setViewType('timeline');
       return Promise.resolve().then(() => {
-        component.timelineGroups = [{ localDate: '2024-05-10', label: 'May 10, 2024', assets: [] }];
+        component.timelineGroups.set([{ localDate: '2024-05-10', label: 'May 10, 2024', assets: [] }]);
         component.searchTerm = 'beach';
         component.loadAssets();
-        expect(component.timelineGroups).to.deep.equal([]);
-        expect(component.timelinePageIndex).to.equal(0);
+        expect(component.timelineGroups()).to.deep.equal([]);
+        expect(component.timelinePageIndex()).to.equal(0);
       });
     });
   });
@@ -991,7 +1162,7 @@ describe('GalleryComponent', () => {
   it('should switch to thumbnails mode when a folder is selected while in viewer mode', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.openViewer(0);
       expect(component.viewMode).to.equal('viewer');
 
@@ -1004,7 +1175,7 @@ describe('GalleryComponent', () => {
   it('should switch to thumbnails mode when a folder is selected while in slideshow mode', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.startSlideshow(0);
       expect(component.viewMode).to.equal('slideshow');
 
@@ -1020,8 +1191,8 @@ describe('GalleryComponent', () => {
       const component = fixture.componentInstance;
       cy.stub(component['dialog'], 'open').returns({ afterClosed: () => of({ destinationFolder: '/target' }) } as never);
       component.currentFolder = '/photos';
-      component.selectedAssets.add(1);
-      component.selectedAssets.add(2);
+      component.selectedAssets.update(s => new Set(s).add(1));
+      component.selectedAssets.update(s => new Set(s).add(2));
       component.moveSelectedAssets('move');
       return Promise.resolve().then(() => fixture.detectChanges());
     });
@@ -1035,7 +1206,7 @@ describe('GalleryComponent', () => {
       const component = fixture.componentInstance;
       cy.stub(component['dialog'], 'open').returns({ afterClosed: () => of({ destinationFolder: '/target' }) } as never);
       component.currentFolder = '/photos';
-      component.selectedAssets.add(1);
+      component.selectedAssets.update(s => new Set(s).add(1));
       component.moveSelectedAssets('copy');
       return Promise.resolve().then(() => fixture.detectChanges());
     });
@@ -1049,12 +1220,26 @@ describe('GalleryComponent', () => {
       const component = fixture.componentInstance;
       cy.stub(component['dialog'], 'open').returns({ afterClosed: () => of({ destinationFolder: '/target' }) } as never);
       component.currentFolder = '/photos';
-      component.selectedAssets.add(1);
+      component.selectedAssets.update(s => new Set(s).add(1));
       component.moveSelectedAssets('move');
       return Promise.resolve().then(() => fixture.detectChanges());
     });
 
     cy.contains('Failed to move assets').should('be.visible');
+  });
+
+  it('should show an error snackbar when the copy fails', () => {
+    const moveAssets = cy.stub().returns(throwError(() => new Error('Network error')));
+    mountGallery({ moveAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      cy.stub(component['dialog'], 'open').returns({ afterClosed: () => of({ destinationFolder: '/target' }) } as never);
+      component.currentFolder = '/photos';
+      component.selectedAssets.update(s => new Set(s).add(1));
+      component.moveSelectedAssets('copy');
+      return Promise.resolve().then(() => fixture.detectChanges());
+    });
+
+    cy.contains('Failed to copy assets').should('be.visible');
   });
 
   it('should give mat-sidenav-content display flex on mount', () => {
@@ -1215,8 +1400,8 @@ describe('GalleryComponent', () => {
   it('should show position 2 of total in the status bar in slideshow mode at the second asset', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
-      component.totalItems = 2;
+      component.assets.set([...mockAssets]);
+      component.totalItems.set(2);
       component.currentFolder = '/photos';
       component.startSlideshow(1);
       fixture.detectChanges();
@@ -1274,7 +1459,7 @@ describe('GalleryComponent', () => {
 
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [videoAsset];
+      component.assets.set([videoAsset]);
       component.openViewer(0);
       fixture.detectChanges();
     });
@@ -1286,7 +1471,7 @@ describe('GalleryComponent', () => {
   it('should show an img element instead of a video for an image asset in the viewer', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
-      component.assets = [...mockAssets];
+      component.assets.set([...mockAssets]);
       component.openViewer(0);
       fixture.detectChanges();
     });
@@ -1304,7 +1489,7 @@ describe('GalleryComponent', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.selectedAssets = new Set([1, 2]);
+      component.selectedAssets.set(new Set([1, 2]));
       // Replace the injected dialog with the mock after mount
       (component as unknown as { dialog: MatDialog }).dialog = mockDialog as MatDialog;
       component.renameSelectedAssets();
@@ -1321,7 +1506,7 @@ describe('GalleryComponent', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.currentFolder = '/photos';
-      component.selectedAssets = new Set([1]);
+      component.selectedAssets.set(new Set([1]));
       (component as unknown as { dialog: MatDialog }).dialog = mockDialog as MatDialog;
       component.renameSelectedAssets();
       fixture.detectChanges();
@@ -1336,7 +1521,7 @@ describe('GalleryComponent', () => {
     mountGallery().then(({ fixture }) => {
       const component = fixture.componentInstance;
       component.isDragging = true;
-      component.viewerZoom = 1;
+      component.viewerZoom.set(1);
       component.onViewerMouseMove(new MouseEvent('mousemove', { movementX: 30, movementY: 20 }));
       expect(component.panX).to.equal(30);
       expect(component.panY).to.equal(20);
@@ -1348,7 +1533,7 @@ describe('GalleryComponent', () => {
       const component = fixture.componentInstance;
       component.panX = 50;
       component.panY = 30;
-      component.viewerZoom = 2;
+      component.viewerZoom.set(2);
       component.resetZoom();
       expect(component.panX).to.equal(0);
       expect(component.panY).to.equal(0);
@@ -1365,5 +1550,291 @@ describe('GalleryComponent', () => {
   it('should render the catalog button for an admin role', () => {
     mountGallery({}, {}, {}, { isAdmin: cy.stub().returns(true) });
     cy.get('button[title="Run catalog"]').should('exist');
+  });
+
+  // --- Autocomplete tag filter tests ---
+
+  it('should reload assets with the tag param when a tag is selected from autocomplete', () => {
+    const getAssets = cy.stub().returns(of(emptyPage));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.addTagFilterFromAutocomplete({
+        option: { viewValue: 'Vacation' },
+      } as unknown as MatAutocompleteSelectedEvent);
+      expect(component.selectedTags).to.deep.equal(['vacation']);
+      expect(component.tagSuggestions()).to.deep.equal([]);
+    });
+
+    cy.wrap(getAssets).should('have.been.called');
+  });
+
+  it('should not duplicate a tag already selected when chosen again from autocomplete', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.selectedTags = ['vacation'];
+      component.addTagFilterFromAutocomplete({
+        option: { viewValue: 'vacation' },
+      } as unknown as MatAutocompleteSelectedEvent);
+      expect(component.selectedTags).to.deep.equal(['vacation']);
+    });
+  });
+
+  // --- Bulk tag dialog tests ---
+
+  it('should open the bulk tag dialog with the selected asset ids and reload assets when it closes with changes', () => {
+    const getAssets = cy.stub().returns(of(emptyPage));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      component.selectedAssets.set(new Set([1, 2]));
+      const openStub = cy
+        .stub(component['dialog'], 'open')
+        .returns({ afterClosed: () => of(true) } as never);
+      component.openBulkTagDialog();
+      cy.wrap(openStub).then(stub => {
+        const call = (stub as sinon.SinonStub).getCall(0);
+        expect(call.args[1]).to.deep.equal({ width: '440px', data: { assetIds: [1, 2] } });
+      });
+    });
+
+    cy.wrap(getAssets).should('have.been.called');
+  });
+
+  it('should not reload assets when the bulk tag dialog closes without changes', () => {
+    const getAssets = cy.stub().returns(of(emptyPage));
+
+    mountGallery({ getAssets }).then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.selectedAssets.set(new Set([1]));
+      cy.stub(component['dialog'], 'open').returns({ afterClosed: () => of(false) } as never);
+      component.openBulkTagDialog();
+    });
+
+    cy.wrap(getAssets).should('not.have.been.called');
+  });
+
+  it('should not open the bulk tag dialog when no assets are selected', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      const openStub = cy.stub(component['dialog'], 'open');
+      component.openBulkTagDialog();
+      cy.wrap(openStub).should('not.have.been.called');
+    });
+  });
+
+  it('should not open the rename dialog when no assets are selected', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      const openStub = cy.stub(component['dialog'], 'open');
+      component.renameSelectedAssets();
+      cy.wrap(openStub).should('not.have.been.called');
+    });
+  });
+
+  it('should not open the folder picker dialog when no assets are selected for a move', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      const openStub = cy.stub(component['dialog'], 'open');
+      component.moveSelectedAssets('move');
+      cy.wrap(openStub).should('not.have.been.called');
+    });
+  });
+
+  // --- Viewer mouse drag tests ---
+
+  it('should set isDragging to true and prevent default on mouse down in the viewer', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      const event = new MouseEvent('mousedown');
+      const preventDefaultSpy = cy.spy(event, 'preventDefault');
+      component.onViewerMouseDown(event);
+      expect(component.isDragging).to.be.true;
+      cy.wrap(preventDefaultSpy).should('have.been.calledOnce');
+    });
+  });
+
+  it('should not update panX/panY on mouse move when not dragging', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.isDragging = false;
+      component.onViewerMouseMove(new MouseEvent('mousemove', { movementX: 50, movementY: 50 }));
+      expect(component.panX).to.equal(0);
+      expect(component.panY).to.equal(0);
+    });
+  });
+
+  it('should set isDragging to false on mouse up', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.isDragging = true;
+      component.onViewerMouseUp();
+      expect(component.isDragging).to.be.false;
+    });
+  });
+
+  it('should set isDragging to false on mouse leave', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.isDragging = true;
+      component.onViewerMouseLeave();
+      expect(component.isDragging).to.be.false;
+    });
+  });
+
+  // --- Viewer touch drag tests ---
+
+  it('should capture the initial touch position and set isDragging on touch start', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      const touch = { clientX: 100, clientY: 200 } as unknown as Touch;
+      component.onViewerTouchStart({ touches: [touch] } as unknown as TouchEvent);
+      expect(component.isDragging).to.be.true;
+      expect(component['lastTouchX']).to.equal(100);
+      expect(component['lastTouchY']).to.equal(200);
+    });
+  });
+
+  it('should update panX/panY based on the touch delta on touch move', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.viewerZoom.set(1);
+      component['lastTouchX'] = 100;
+      component['lastTouchY'] = 200;
+      const touch = { clientX: 130, clientY: 220 } as unknown as Touch;
+      const event = { touches: [touch], preventDefault: cy.stub() } as unknown as TouchEvent;
+      component.onViewerTouchMove(event);
+      expect(component.panX).to.equal(30);
+      expect(component.panY).to.equal(20);
+      expect(component['lastTouchX']).to.equal(130);
+      expect(component['lastTouchY']).to.equal(220);
+    });
+  });
+
+  it('should set isDragging to false on touch end', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.isDragging = true;
+      component.onViewerTouchEnd();
+      expect(component.isDragging).to.be.false;
+    });
+  });
+
+  // --- Audio playback tests ---
+
+  it('should play a single non-playlist asset directly', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      const playStub = component.audioPlayer.play as unknown as sinon.SinonStub;
+      const event = new Event('click');
+      const stopPropagationSpy = cy.spy(event, 'stopPropagation');
+      component.playAsset(mockAssets[0], event);
+      cy.wrap(playStub).should('have.been.calledWith', [mockAssets[0]]);
+      cy.wrap(stopPropagationSpy).should('have.been.calledOnce');
+    });
+  });
+
+  it('should load and play a playlist asset', () => {
+    const playlistAsset: Asset = { ...mockAssets[0], assetId: 5, fileType: 'PLAYLIST' };
+    const loadPlaylist = cy.stub().returns(of([mockAssets[0], mockAssets[1]]));
+
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      (component.audioPlayer.loadPlaylist as unknown as sinon.SinonStub).callsFake(loadPlaylist);
+      const playStub = component.audioPlayer.play as unknown as sinon.SinonStub;
+      component.playAsset(playlistAsset, new Event('click'));
+      cy.wrap(loadPlaylist).should('have.been.calledWith', 5);
+      cy.wrap(playStub).should('have.been.calledWith', [mockAssets[0], mockAssets[1]], 0);
+    });
+  });
+
+  it('should not call play when a playlist has no assets', () => {
+    const playlistAsset: Asset = { ...mockAssets[0], assetId: 5, fileType: 'PLAYLIST' };
+
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      (component.audioPlayer.loadPlaylist as unknown as sinon.SinonStub).callsFake(() => of([]));
+      const playStub = component.audioPlayer.play as unknown as sinon.SinonStub;
+      component.playAsset(playlistAsset, new Event('click'));
+      cy.wrap(playStub).should('not.have.been.called');
+    });
+  });
+
+  it('should show a failure snackbar when loading a playlist fails', () => {
+    const playlistAsset: Asset = { ...mockAssets[0], assetId: 5, fileType: 'PLAYLIST' };
+
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      (component.audioPlayer.loadPlaylist as unknown as sinon.SinonStub).callsFake(() =>
+        throwError(() => new Error('network error')),
+      );
+      component.playAsset(playlistAsset, new Event('click'));
+    });
+
+    cy.get('.mat-mdc-snack-bar-label').should('contain', 'Failed to load playlist');
+  });
+
+  it('should load and play the folder audio files when playAllAudio is called', () => {
+    const loadFolder = cy.stub().returns(of([mockAssets[0]]));
+
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      (component.audioPlayer.loadFolder as unknown as sinon.SinonStub).callsFake(loadFolder);
+      const playStub = component.audioPlayer.play as unknown as sinon.SinonStub;
+      component.playAllAudio();
+      cy.wrap(loadFolder).should('have.been.calledWith', '/photos');
+      cy.wrap(playStub).should('have.been.calledWith', [mockAssets[0]], 0);
+    });
+  });
+
+  it('should not call loadFolder when playAllAudio is called with no current folder', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '';
+      const loadFolderStub = component.audioPlayer.loadFolder as unknown as sinon.SinonStub;
+      component.playAllAudio();
+      cy.wrap(loadFolderStub).should('not.have.been.called');
+    });
+  });
+
+  it('should show a failure snackbar when loading folder audio fails', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      component.currentFolder = '/photos';
+      (component.audioPlayer.loadFolder as unknown as sinon.SinonStub).callsFake(() =>
+        throwError(() => new Error('network error')),
+      );
+      component.playAllAudio();
+    });
+
+    cy.get('.mat-mdc-snack-bar-label').should('contain', 'Failed to load audio files');
+  });
+
+  // --- isVideoFile tests ---
+
+  it('should identify common video extensions as video files', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      for (const ext of ['clip.mp4', 'clip.MOV', 'clip.mkv', 'clip.avi', 'clip.webm']) {
+        expect(component.isVideoFile({ ...mockAssets[0], fileName: ext })).to.be.true;
+      }
+    });
+  });
+
+  it('should not identify a non-video extension as a video file', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      expect(component.isVideoFile({ ...mockAssets[0], fileName: 'photo.jpg' })).to.be.false;
+    });
+  });
+
+  it('should not identify a file with no extension as a video file', () => {
+    mountGallery().then(({ fixture }) => {
+      const component = fixture.componentInstance;
+      expect(component.isVideoFile({ ...mockAssets[0], fileName: 'noextension' })).to.be.false;
+    });
   });
 });

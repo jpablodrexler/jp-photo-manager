@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ChangeDetectionStrategy } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Asset } from '../../../core/models/asset.model';
@@ -8,6 +8,7 @@ import { Asset } from '../../../core/models/asset.model';
   standalone: true,
   imports: [MatButtonModule, MatIconModule],
   templateUrl: './media-fullscreen-overlay.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './media-fullscreen-overlay.component.scss',
 })
 export class MediaFullscreenOverlayComponent {

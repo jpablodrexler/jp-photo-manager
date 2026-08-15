@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
@@ -58,6 +58,7 @@ import { AlbumFilterJson, EditAlbumFilterDialogData } from '../../../core/models
       <button mat-raised-button color="primary" (click)="confirm()">Save</button>
     </mat-dialog-actions>
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [`
     .filter-fields { display: flex; flex-direction: column; gap: 8px; min-width: 320px; }
     .filter-rating { display: flex; align-items: center; gap: 2px; }

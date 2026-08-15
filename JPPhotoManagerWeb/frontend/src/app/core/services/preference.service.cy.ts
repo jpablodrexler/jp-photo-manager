@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { PreferenceService } from './preference.service';
 import { ThemeService } from './theme.service';
@@ -17,7 +17,7 @@ describe('PreferenceService', () => {
     TestBed.configureTestingModule({
       providers: [
         PreferenceService,
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: ThemeService, useValue: themeServiceStub },
       ],

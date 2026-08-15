@@ -1,15 +1,17 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { AssetService } from './asset.service';
+import { BackgroundSyncService } from './background-sync.service';
 import { ExifMetadata } from '../models/exif-metadata.model';
 import { PaginatedData } from '../models/paginated-data.model';
 import { HttpEventType, HttpResponse } from '@angular/common/http';
-import { Asset, RenameAssetsResponse, UploadAssetResponse } from '../models/asset.model';
+import { Asset, CropAssetRequest, RenameAssetsResponse, UploadAssetResponse } from '../models/asset.model';
 
 describe('AssetService', () => {
   let service: AssetService;
   let httpMock: HttpTestingController;
+  let queueMutation: ReturnType<typeof cy.stub>;
 
   const mockAsset: Asset = {
     assetId: 1,
@@ -28,11 +30,14 @@ describe('AssetService', () => {
   };
 
   beforeEach(() => {
+    queueMutation = cy.stub();
+    queueMutation.resolves(undefined);
     TestBed.configureTestingModule({
       providers: [
         AssetService,
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
+        { provide: BackgroundSyncService, useValue: { queueMutation } },
       ],
     });
     service = TestBed.inject(AssetService);
@@ -62,6 +67,30 @@ describe('AssetService', () => {
     const req = httpMock.expectOne(r => r.url === '/api/assets');
     expect(req.request.params.get('page')).to.equal('0');
     expect(req.request.params.get('sort')).to.equal('FILE_NAME');
+    req.flush({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 });
+  });
+
+  it('should forward all optional filter params when provided', () => {
+    service.getAssets('/photos', 1, 'RATING', 'beach', '2024-01-01', '2024-12-31', 4, ['sunset', 'family']).subscribe();
+
+    const req = httpMock.expectOne(r => r.url === '/api/assets');
+    expect(req.request.params.get('search')).to.equal('beach');
+    expect(req.request.params.get('dateFrom')).to.equal('2024-01-01');
+    expect(req.request.params.get('dateTo')).to.equal('2024-12-31');
+    expect(req.request.params.get('minRating')).to.equal('4');
+    expect(req.request.params.get('tags')).to.equal('sunset,family');
+    req.flush({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 });
+  });
+
+  it('should omit optional filter params when not provided or falsy', () => {
+    service.getAssets('/photos', 0, 'FILE_NAME', undefined, undefined, undefined, 0, []).subscribe();
+
+    const req = httpMock.expectOne(r => r.url === '/api/assets');
+    expect(req.request.params.has('search')).to.be.false;
+    expect(req.request.params.has('dateFrom')).to.be.false;
+    expect(req.request.params.has('dateTo')).to.be.false;
+    expect(req.request.params.has('minRating')).to.be.false;
+    expect(req.request.params.has('tags')).to.be.false;
     req.flush({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 });
   });
 
@@ -240,5 +269,97 @@ describe('AssetService', () => {
     expect(req.request.params.has('dateTo')).to.be.false;
     expect(req.request.params.has('minRating')).to.be.false;
     req.flush({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 });
+  });
+
+  describe('rateAsset', () => {
+    it('should PATCH /api/assets/:id/rating and complete on success', () => {
+      let completed = false;
+
+      service.rateAsset(1, 4).subscribe({ complete: () => (completed = true) });
+
+      const req = httpMock.expectOne('/api/assets/1/rating');
+      expect(req.request.method).to.equal('PATCH');
+      expect(req.request.body).to.deep.equal({ rating: 4 });
+      req.flush(null);
+
+      expect(completed).to.be.true;
+      expect(queueMutation).to.not.have.been.called;
+    });
+
+    it('should queue the mutation for background sync and rethrow when offline (status 0)', () => {
+      let receivedError: unknown;
+
+      service.rateAsset(2, 5).subscribe({ error: err => (receivedError = err) });
+
+      const req = httpMock.expectOne('/api/assets/2/rating');
+      req.error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
+
+      expect(queueMutation).to.have.been.calledWith('/api/assets/2/rating', 'PATCH', { rating: 5 });
+      expect(receivedError).to.not.be.undefined;
+    });
+
+    it('should rethrow without queuing when the server responds with a real error', () => {
+      let receivedError: unknown;
+
+      service.rateAsset(3, 2).subscribe({ error: err => (receivedError = err) });
+
+      const req = httpMock.expectOne('/api/assets/3/rating');
+      req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
+
+      expect(queueMutation).to.not.have.been.called;
+      expect(receivedError).to.not.be.undefined;
+    });
+  });
+
+  describe('downloadAssets', () => {
+    it('should POST /api/assets/download with the asset ids and return a blob', () => {
+      const mockBlob = new Blob(['zip-contents'], { type: 'application/zip' });
+
+      service.downloadAssets([1, 2]).subscribe(blob => {
+        expect(blob).to.be.instanceOf(Blob);
+      });
+
+      const req = httpMock.expectOne('/api/assets/download');
+      expect(req.request.method).to.equal('POST');
+      expect(req.request.body).to.deep.equal({ assetIds: [1, 2] });
+      expect(req.request.responseType).to.equal('blob');
+      req.flush(mockBlob);
+    });
+  });
+
+  describe('cropAsset', () => {
+    it('should POST /api/assets/:id/crop with the crop request and return the updated asset', () => {
+      const request: CropAssetRequest = { formatKey: 'square', x: 0, y: 0, width: 100, height: 100 };
+
+      service.cropAsset(1, request).subscribe(asset => {
+        expect(asset).to.deep.equal(mockAsset);
+      });
+
+      const req = httpMock.expectOne('/api/assets/1/crop');
+      expect(req.request.method).to.equal('POST');
+      expect(req.request.body).to.deep.equal(request);
+      req.flush(mockAsset);
+    });
+  });
+
+  describe('getPlaylist', () => {
+    it('should GET /api/audio/playlist/:id', () => {
+      service.getPlaylist(1).subscribe(assets => {
+        expect(assets).to.deep.equal([mockAsset]);
+      });
+
+      const req = httpMock.expectOne('/api/audio/playlist/1');
+      expect(req.request.method).to.equal('GET');
+      req.flush([mockAsset]);
+    });
+  });
+
+  describe('observeCatalog', () => {
+    it('should return an EventSource for the catalog observe endpoint', () => {
+      const source = service.observeCatalog();
+      expect(source).to.be.instanceOf(EventSource);
+      expect(source.url).to.contain('/api/assets/catalog/observe');
+      source.close();
+    });
   });
 });

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient, withInterceptors, HttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors, HttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { provideRouter, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -22,7 +22,7 @@ describe('authInterceptor', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        provideHttpClient(withInterceptors([authInterceptor])),
+        provideHttpClient(withXhr(), withInterceptors([authInterceptor])),
         provideHttpClientTesting(),
         provideRouter([]),
         {
@@ -100,6 +100,25 @@ describe('authInterceptor', () => {
     cy.wrap(snackBarOpenStub).should(
       'have.been.calledWith',
       'An unexpected error occurred',
+      'Dismiss',
+      { duration: 5000 }
+    );
+  });
+
+  it('should append the request ID to the snackbar message when the X-Request-ID header is present', () => {
+    setup(of(undefined));
+
+    http.get('/api/assets/1').subscribe({ error: () => {} });
+    const req = httpMock.expectOne('/api/assets/1');
+    req.flush({ status: 404, message: 'Asset not found', timestamp: new Date().toISOString() }, {
+      status: 404,
+      statusText: 'Not Found',
+      headers: { 'X-Request-ID': 'abc-123' },
+    });
+
+    cy.wrap(snackBarOpenStub).should(
+      'have.been.calledWith',
+      'Asset not found [Request ID: abc-123]',
       'Dismiss',
       { duration: 5000 }
     );

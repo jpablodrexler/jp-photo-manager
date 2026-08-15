@@ -1,7 +1,7 @@
 <div class="player-bar">
   <div class="player-track-info">
-    <img [src]="audioPlayer.currentTrack()?.thumbnailUrl"
-         [alt]="audioPlayer.currentTrack()?.fileName"
+    <img [src]="$safeNavigationMigration(audioPlayer.currentTrack()?.thumbnailUrl)"
+         [alt]="$safeNavigationMigration(audioPlayer.currentTrack()?.fileName)"
          class="player-thumb" />
     <div class="player-meta">
       <span class="player-title">{{ audioPlayer.currentTrack()?.fileName }}</span>

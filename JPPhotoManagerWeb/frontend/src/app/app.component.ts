@@ -1,5 +1,5 @@
 import { AsyncPipe } from '@angular/common';
-import { Component, DoCheck, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, DoCheck, inject, OnDestroy, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -45,11 +45,12 @@ import { CatalogProgressFooterComponent } from './shared/components/catalog-prog
     CatalogProgressFooterComponent,
   ],
   templateUrl: './app.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './app.component.scss'
 })
 export class AppComponent implements OnInit, OnDestroy, DoCheck {
   title = 'JP Photo Manager';
-  isMobile = false;
+  readonly isMobile = signal(false);
   private bpSub!: Subscription;
   private onlineListener = () => this.replayPendingMutations();
 
@@ -60,10 +61,10 @@ export class AppComponent implements OnInit, OnDestroy, DoCheck {
   readonly isDark$ = this.themeService.isDark$;
   readonly accentColor$ = this.themeService.accentColor$;
 
-  catalogState: CatalogState = 'idle';
-  catalogPercentCompleted = 0;
-  catalogStatusText = '';
-  catalogLastCompletedAt: Date | null = null;
+  readonly catalogState = signal<CatalogState>('idle');
+  readonly catalogPercentCompleted = signal(0);
+  readonly catalogStatusText = signal('');
+  readonly catalogLastCompletedAt = signal<Date | null>(null);
 
   private catalogEventSource?: EventSource;
   private wasLoggedIn = false;
@@ -81,7 +82,7 @@ export class AppComponent implements OnInit, OnDestroy, DoCheck {
   ngOnInit(): void {
     this.themeService.init();
     this.bpSub = this.breakpointObserver.observe([Breakpoints.Handset]).subscribe(result => {
-      this.isMobile = result.matches;
+      this.isMobile.set(result.matches);
     });
     window.addEventListener('online', this.onlineListener);
     if (navigator.onLine) {
@@ -107,31 +108,31 @@ export class AppComponent implements OnInit, OnDestroy, DoCheck {
 
   connectCatalog(): void {
     this.disconnectCatalog();
-    this.catalogState = 'idle';
-    this.catalogPercentCompleted = 0;
-    this.catalogStatusText = '';
+    this.catalogState.set('idle');
+    this.catalogPercentCompleted.set(0);
+    this.catalogStatusText.set('');
 
     this.catalogEventSource = this.assetService.observeCatalog();
 
     this.catalogEventSource.addEventListener('catalog', (event: MessageEvent) => {
-      this.catalogState = 'running';
+      this.catalogState.set('running');
       const notification = JSON.parse(event.data as string) as CatalogNotification;
-      this.catalogPercentCompleted = notification.percentCompleted;
+      this.catalogPercentCompleted.set(notification.percentCompleted);
       if (notification.folderPath) {
-        this.catalogStatusText = notification.folderPath;
+        this.catalogStatusText.set(notification.folderPath);
       } else if (notification.asset?.fileName) {
-        this.catalogStatusText = notification.asset.fileName;
+        this.catalogStatusText.set(notification.asset.fileName);
       }
     });
 
     this.catalogEventSource.addEventListener('catalog-done', () => {
-      this.catalogState = 'idle';
-      this.catalogLastCompletedAt = new Date();
+      this.catalogState.set('idle');
+      this.catalogLastCompletedAt.set(new Date());
     });
 
     this.catalogEventSource.onerror = () => {
-      if (this.catalogState === 'running') {
-        this.catalogState = 'idle';
+      if (this.catalogState() === 'running') {
+        this.catalogState.set('idle');
       }
     };
   }

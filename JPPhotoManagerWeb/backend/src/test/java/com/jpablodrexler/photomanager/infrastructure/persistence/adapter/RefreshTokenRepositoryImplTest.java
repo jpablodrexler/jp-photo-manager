@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -120,6 +121,35 @@ class RefreshTokenRepositoryImplTest {
         when(mapper.toDomain(entity)).thenReturn(domain);
 
         assertThat(sut.findByToken("tok-value")).contains(domain);
+    }
+
+    @Test
+    void findById_present_returnsMappedDomain() {
+        RefreshTokenEntity entity = new RefreshTokenEntity();
+        RefreshToken domain = domainToken(false);
+        when(jpa.findById(1L)).thenReturn(Optional.of(entity));
+        when(mapper.toDomain(entity)).thenReturn(domain);
+
+        assertThat(sut.findById(1L)).contains(domain);
+    }
+
+    @Test
+    void findById_absent_returnsEmpty() {
+        when(jpa.findById(99L)).thenReturn(Optional.empty());
+
+        assertThat(sut.findById(99L)).isEmpty();
+    }
+
+    @Test
+    void findActiveByUserId_delegatesToJpaRepositoryAndMapsResults() {
+        UUID userId = UUID.randomUUID();
+        Instant now = Instant.now();
+        RefreshTokenEntity entity = new RefreshTokenEntity();
+        RefreshToken domain = domainToken(false);
+        when(jpa.findByUser_IdAndRevokedFalseAndExpiresAtAfter(userId, now)).thenReturn(List.of(entity));
+        when(mapper.toDomain(entity)).thenReturn(domain);
+
+        assertThat(sut.findActiveByUserId(userId, now)).containsExactly(domain);
     }
 
     @Test

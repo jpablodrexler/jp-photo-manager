@@ -1,4 +1,4 @@
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { HomeComponent } from './home.component';
@@ -132,6 +132,42 @@ describe('HomeComponent', () => {
   });
 
   // --- Task 8.3: Click thumbnail navigates to gallery ---
+
+  // --- maxFolderCount getter branch coverage ---
+
+  it('should default maxFolderCount to 1 when there are no top folders', () => {
+    mountHome(emptyStats).then(({ fixture }) => {
+      // A synchronous read right after mount can race ngOnInit's subscribe
+      // callback (which is what actually applies the loaded stats) —
+      // force change detection first, matching the pattern used elsewhere
+      // in this file (see "should navigate to the gallery..." below).
+      fixture.detectChanges();
+      expect(fixture.componentInstance.maxFolderCount).to.equal(1);
+    });
+  });
+
+  it('should default maxFolderCount to 1 when stats have not loaded yet', () => {
+    const subject = new Subject<HomeStats>();
+    const homeServiceStub: Partial<HomeService> = { getStats: cy.stub().returns(subject.asObservable()) };
+    cy.mount(HomeComponent, {
+      providers: [
+        { provide: HomeService, useValue: homeServiceStub },
+        provideNoopAnimations(),
+        provideRouter([]),
+      ]
+    }).then(({ fixture }) => {
+      // stats() is still null because the subject hasn't emitted yet.
+      fixture.detectChanges();
+      expect(fixture.componentInstance.maxFolderCount).to.equal(1);
+    });
+  });
+
+  it('should return the top folder asset count as maxFolderCount when stats are rich', () => {
+    mountHome(richStats).then(({ fixture }) => {
+      fixture.detectChanges();
+      expect(fixture.componentInstance.maxFolderCount).to.equal(100);
+    });
+  });
 
   it('should navigate to the gallery with the folder and assetId params when a recent photo is clicked', () => {
     const navigateSpy = cy.stub().as('navigate');

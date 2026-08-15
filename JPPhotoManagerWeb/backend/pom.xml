@@ -22,6 +22,11 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <lombok.version>1.18.46</lombok.version>
         <flyway.version>11.7.2</flyway.version>
+        <!-- mvn jacoco:check defaults (see code-reviewer skill §19.2): whole-project scope,
+             80% minimum line coverage. Override -Djacoco.check.includes=<package/**> to scope
+             a review to just the classes a change touched. -->
+        <jacoco.check.includes>**/*</jacoco.check.includes>
+        <jacoco.check.minimum>0.80</jacoco.check.minimum>
     </properties>
 
     <dependencies>
@@ -80,6 +85,13 @@
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
             <version>${mapstruct.version}</version>
+        </dependency>
+
+        <!-- Password strength/complexity validation -->
+        <dependency>
+            <groupId>org.passay</groupId>
+            <artifactId>passay</artifactId>
+            <version>1.6.6</version>
         </dependency>
 
         <!-- Audio metadata extraction -->
@@ -239,6 +251,27 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.13</version>
+                <!-- Applies to a directly-invoked `mvn jacoco:check` (see code-reviewer skill
+                     §19.2) since that goal has no <execution> binding below, mirroring
+                     maven-pmd-plugin's opt-in `mvn pmd:check` pattern just below: it never
+                     runs as part of `mvn test`/`mvn verify`/`mvn package`. -->
+                <configuration>
+                    <includes>
+                        <include>${jacoco.check.includes}</include>
+                    </includes>
+                    <rules>
+                        <rule>
+                            <element>BUNDLE</element>
+                            <limits>
+                                <limit>
+                                    <counter>LINE</counter>
+                                    <value>COVEREDRATIO</value>
+                                    <minimum>${jacoco.check.minimum}</minimum>
+                                </limit>
+                            </limits>
+                        </rule>
+                    </rules>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -299,6 +332,107 @@
                         <api.version>1.44</api.version>
                     </systemPropertyVariables>
                 </configuration>
+            </plugin>
+            <plugin>
+                <!-- Not bound to any lifecycle phase: invoked on demand via `mvn pmd:check`,
+                     same as the frontend's `npm run complexity` — see the code-reviewer skill §Cyclomatic Complexity. -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <version>3.28.0</version>
+                <configuration>
+                    <targetJdk>${java.version}</targetJdk>
+                    <rulesets>
+                        <ruleset>pmd-complexity-ruleset.xml</ruleset>
+                    </rulesets>
+                    <excludeRoots>
+                        <excludeRoot>target/generated-sources</excludeRoot>
+                    </excludeRoots>
+                </configuration>
+                <executions>
+                    <!-- rulesets is a String[] parameter with no CLI-property binding, so it
+                         can't be overridden with a bare -D — a second, separately-configured
+                         execution is the only way to run PMD with a different ruleset without
+                         touching the real gate's configuration above. Goal is `pmd` (the
+                         underlying analysis/report goal), not `check` — `check` internally
+                         forks its own `pmd:pmd` execution using this plugin's *default*
+                         top-level <configuration> rather than the calling execution's, so a
+                         `check@complexity-report` invocation silently ignores this block's
+                         ruleset override and analyzes with pmd-complexity-ruleset.xml anyway
+                         (confirmed empirically via `mvn -X`). `pmd:pmd` doesn't fork and
+                         doesn't fail the build (no threshold check, just writes target/pmd.xml),
+                         which is all scripts/complexity-report.sh needs. phase=none keeps it
+                         on-demand only, invoked via `mvn pmd:pmd@complexity-report`. -->
+                    <execution>
+                        <id>complexity-report</id>
+                        <phase>none</phase>
+                        <goals>
+                            <goal>pmd</goal>
+                        </goals>
+                        <configuration>
+                            <targetJdk>${java.version}</targetJdk>
+                            <rulesets>
+                                <ruleset>pmd-complexity-report-ruleset.xml</ruleset>
+                            </rulesets>
+                            <excludeRoots>
+                                <excludeRoot>target/generated-sources</excludeRoot>
+                            </excludeRoots>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <!-- Not bound to any lifecycle phase: invoked on demand via
+                     `mvn versions:display-dependency-updates`, same
+                     on-demand pattern as maven-pmd-plugin above — backs the
+                     dependency-staleness metric (see
+                     scripts/dependency-staleness-report.sh). -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.18.0</version>
+            </plugin>
+            <plugin>
+                <!-- Not bound to any lifecycle phase, same report-only on-demand pattern as
+                     maven-pmd-plugin's complexity-report execution above (phase=none — never
+                     runs during mvn test/verify/package). Scoped to application.usecase only
+                     (the actual business-logic layer) via targetClasses/targetTests below —
+                     infrastructure.web/infrastructure.persistence are thin translation code
+                     PIT would just waste time mutating. Invoked on demand via
+                     `mvn org.pitest:pitest-maven:mutationCoverage@mutation-report` (see
+                     scripts/mutation-report.sh). pitest-junit5-plugin is required for PIT to
+                     discover/run JUnit 5 (Jupiter) tests — without it PIT silently finds zero
+                     tests and every mutant reports NO_COVERAGE. -->
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <version>1.25.9</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-junit5-plugin</artifactId>
+                        <version>1.2.3</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <targetClasses>
+                        <param>com.jpablodrexler.photomanager.application.usecase.*</param>
+                    </targetClasses>
+                    <targetTests>
+                        <param>com.jpablodrexler.photomanager.application.usecase.*</param>
+                    </targetTests>
+                    <outputFormats>
+                        <outputFormat>HTML</outputFormat>
+                        <outputFormat>CSV</outputFormat>
+                    </outputFormats>
+                    <timestampedReports>false</timestampedReports>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>mutation-report</id>
+                        <phase>none</phase>
+                        <goals>
+                            <goal>mutationCoverage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

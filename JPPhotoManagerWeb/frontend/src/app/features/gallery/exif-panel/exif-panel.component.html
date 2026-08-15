@@ -29,17 +29,17 @@
       />
     </mat-chip-grid>
     <mat-autocomplete #auto="matAutocomplete" (optionSelected)="addTagFromAutocomplete($event)">
-      @for (suggestion of tagSuggestions; track suggestion) {
+      @for (suggestion of tagSuggestions(); track suggestion) {
         <mat-option [value]="suggestion">{{ suggestion }}</mat-option>
       }
     </mat-autocomplete>
   </div>
 
-  @if (loading) {
+  @if (loading()) {
     <div class="exif-loading">
       <mat-spinner diameter="24"></mat-spinner>
     </div>
-  } @else if (exif) {
+  } @else if (exif(); as exif) {
     <div class="exif-grid">
       @if (exif.cameraMake || exif.cameraModel) {
         <div class="exif-row">
@@ -109,7 +109,7 @@
     <div class="exif-empty">No EXIF data available</div>
   }
 
-  @if (exif?.rawExif) {
+  @if (exif()?.rawExif) {
     <mat-expansion-panel class="exif-raw-panel">
       <mat-expansion-panel-header>
         <mat-panel-title>All EXIF data</mat-panel-title>

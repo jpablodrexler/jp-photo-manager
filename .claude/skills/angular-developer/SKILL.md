@@ -43,11 +43,14 @@ Use the **Angular CLI** (`@angular/cli`) with this core stack:
 
 **Dev dependencies:**
 
-| Package          | Purpose                  |
-| ---------------- | ------------------------ |
-| `jasmine-core`   | Unit test framework      |
-| `karma`          | Test runner              |
-| `@types/jasmine` | Jasmine type definitions |
+| Package                        | Purpose                                                            |
+| ------------------------------- | -------------------------------------------------------------------- |
+| `cypress`                       | Test runner — both component tests (§16) and the E2E suite          |
+| `@angular-devkit/build-angular` | Only for Cypress's webpack-based Angular Component Testing preset — the app itself never uses it for building/serving (see §16) |
+
+There is no Karma/Jasmine in this project — Cypress is the sole test
+runner, for both the component/unit layer and the E2E layer. See §16
+below and the `cypress-unit-test-developer`/`e2e-suite` skills.
 
 **Key npm scripts:**
 
@@ -55,9 +58,13 @@ Use the **Angular CLI** (`@angular/cli`) with this core stack:
 ng serve                         # Dev server (http://localhost:4200)
 ng build                         # Development build
 ng build --configuration production  # Production build
-ng test                          # Run tests with Karma
+npm run test                     # cypress run --component — the unit/component test suite
+npm run test:e2e                 # cypress run --e2e — the maintained E2E suite (backend must already be running)
 ng lint                          # Lint the project
 ```
+
+To run a single test file: `npx cypress run --component --spec
+'src/app/features/gallery/gallery.component.cy.ts'`.
 
 ### Dev Proxy
 
@@ -118,7 +125,7 @@ src/
     app.component.ts       # Root shell (navigation bar)
     app.component.html
     app.component.scss
-    app.component.spec.ts
+    app.component.cy.ts
     core/
       services/            # Application-wide singleton services
       models/              # TypeScript interfaces and type aliases
@@ -127,7 +134,7 @@ src/
         <feature>.component.ts
         <feature>.component.html
         <feature>.component.scss
-        <feature>.component.spec.ts
+        <feature>.component.cy.ts
     shared/
       components/          # Reusable UI components (e.g. thumbnail)
       pipes/               # Custom Angular pipes
@@ -594,71 +601,93 @@ All pipes must be `standalone: true` and declared in the component's `imports: [
 
 ---
 
-## 16. Testing
+## 16. Testing (Cypress Component Testing)
 
-### Unit Tests — Jasmine + Karma
+Unit/component tests run via Cypress Component Testing — real browser
+rendering (Electron, headless by default), not Karma/Jasmine or jsdom.
+`describe`/`it` are Mocha globals, `expect` is Chai's, and stubbing goes
+through `cy.stub()` rather than `jasmine.createSpyObj`. Full conventions,
+worked examples, and the two most important gotchas discovered building
+this suite (zoneless `markForCheck()`, and why
+`cy.wrap(rejectingPromise).then(...)` doesn't work) live in the dedicated
+**`cypress-unit-test-developer`** skill — read that before writing a new
+test. The short version:
 
 ```typescript
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { provideRouter } from "@angular/router";
+import { GalleryComponent } from "./gallery.component";
+import { AssetService } from "../../core/services/asset.service";
+import { of } from "rxjs";
+
 describe("GalleryComponent", () => {
-  let component: GalleryComponent;
-  let fixture: ComponentFixture<GalleryComponent>;
-  let assetServiceSpy: jasmine.SpyObj<AssetService>;
-
-  beforeEach(async () => {
-    assetServiceSpy = jasmine.createSpyObj("AssetService", ["getAssets"]);
-    assetServiceSpy.getAssets.and.returnValue(
-      of({
-        items: [],
-        pageIndex: 0,
-        totalPages: 0,
-        totalItems: 0,
-      }),
-    );
-
-    await TestBed.configureTestingModule({
-      imports: [GalleryComponent],
+  function mountGallery(assetServiceOverrides: Partial<AssetService> = {}) {
+    const assetServiceStub: Partial<AssetService> = {
+      getAssets: cy
+        .stub()
+        .returns(of({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 })),
+      ...assetServiceOverrides,
+    };
+    return cy.mount(GalleryComponent, {
       providers: [
-        { provide: AssetService, useValue: assetServiceSpy },
         provideNoopAnimations(),
         provideRouter([]),
+        { provide: AssetService, useValue: assetServiceStub },
       ],
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(GalleryComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+    });
+  }
 
   it("should create", () => {
-    expect(component).toBeTruthy();
+    mountGallery();
+    cy.get("app-gallery").should("exist");
   });
 
   it("should call getAssets on init", () => {
-    expect(assetServiceSpy.getAssets).toHaveBeenCalled();
+    const getAssets = cy.stub().returns(of({ items: [], pageIndex: 0, totalPages: 0, totalItems: 0 }));
+    mountGallery({ getAssets });
+    cy.wrap(getAssets).should("have.been.called");
   });
 });
 ```
 
 **Testing rules:**
 
-- Use `TestBed.configureTestingModule` with `imports: [StandaloneComponent]` — no module setup.
-- Mock services with `jasmine.createSpyObj`.
-- Use `provideNoopAnimations()` and `provideRouter([])` instead of real providers.
-- Write `beforeEach(async () => { ... })` for async setup; `async/await` throughout.
-- One behaviour per `it` block.
-- Name tests `it('should <expected behaviour>', ...)`.
-- Co-locate spec files: `gallery.component.spec.ts` next to `gallery.component.ts`.
+- `cy.mount(StandaloneComponent, { providers: [...] })` — no module setup,
+  and `cy.mount` is a global command (registered in
+  `cypress/support/component.ts`); never import `mount` directly.
+- Stub services with a `Partial<ServiceType>` object using `cy.stub()` per
+  method (as above), not `jasmine.createSpyObj` or a hand-written class.
+- Always include `provideNoopAnimations()`. Provide `provideRouter([])`
+  whenever the component injects `Router` or uses `RouterLink`.
+- Assertions like `cy.get(...).should(...)`/`cy.contains(...)` auto-retry
+  until they pass or time out — no manual microtask-flushing needed for a
+  component whose `ngOnInit` does async work. Reach for
+  `fixture.detectChanges()` (plus `ChangeDetectorRef.markForCheck()` if
+  mutating a plain field directly from test code — see
+  `cypress-unit-test-developer` §13) only when driving the component
+  through its instance/fixture directly rather than through the DOM.
+- One behaviour per `it` block; name tests `it('should <expected
+  behaviour>', ...)`.
+- Co-locate spec files: `gallery.component.cy.ts` next to
+  `gallery.component.ts`.
 
 ### Service Tests
 
 ```typescript
+import { TestBed } from "@angular/core/testing";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting, HttpTestingController } from "@angular/common/http/testing";
+import { AssetService } from "./asset.service";
+import { PaginatedData } from "../models/paginated-data.model";
+import { Asset } from "../models/asset.model";
+
 describe("AssetService", () => {
   let service: AssetService;
   let httpMock: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [AssetService, provideHttpClientTesting()],
+      providers: [AssetService, provideHttpClient(), provideHttpClientTesting()],
     });
     service = TestBed.inject(AssetService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -674,14 +703,20 @@ describe("AssetService", () => {
       totalItems: 0,
     };
     service.getAssets("/photos", 0, "FILE_NAME").subscribe((data) => {
-      expect(data).toEqual(mockData);
+      expect(data).to.deep.equal(mockData);
     });
     const req = httpMock.expectOne((r) => r.url.includes("/api/assets"));
-    expect(req.request.method).toBe("GET");
+    expect(req.request.method).to.equal("GET");
     req.flush(mockData);
   });
 });
 ```
+
+This project's services are `HttpClient`/`Observable`-based throughout, so
+`HttpTestingController` is the normal way to test them — see
+`cypress-unit-test-developer` §6 for further worked examples. The
+`rejectionOf()` helper in that skill's §11 only matters for the minority of
+methods that genuinely return a `Promise` rather than an `Observable`.
 
 ---
 
@@ -810,6 +845,6 @@ After implementing the requested feature, provide a brief summary covering:
 3. Any new Material modules imported
 4. How to run the tests for the new code:
    ```bash
-   ng test --include='**/your-new.component.spec.ts'
+   npx cypress run --component --spec 'src/app/<path>/your-new.component.cy.ts'
    ```
 5. Any environment or proxy configuration the user should set

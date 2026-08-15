@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Complexity Ruleset"
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        Cyclomatic complexity check used by the code-reviewer skill
+        (.claude/skills/code-reviewer/SKILL.md, Cyclomatic Complexity section).
+        Max allowed complexity is 15 per method — methodReportLevel is set to
+        16 because PMD reports a violation when complexity is greater than or
+        equal to the configured level. classReportLevel (total complexity
+        across a class's methods) is left effectively disabled since this
+        check is scoped to individual methods only.
+    </description>
+
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="16" />
+            <property name="classReportLevel" value="999999" />
+        </properties>
+    </rule>
+</ruleset>

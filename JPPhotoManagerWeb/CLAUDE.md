@@ -75,6 +75,13 @@ cd JPPhotoManagerWeb/backend
 mvn test -Dtest=CatalogAssetsServiceImplTest#methodName
 ```
 
+**Check line coverage against the 80% minimum** (opt-in, not part of `mvn test`/`verify`/`package` — see `code-reviewer` skill §19.2):
+```bash
+cd JPPhotoManagerWeb/backend
+mvn test
+mvn jacoco:check
+```
+
 ### Architecture
 
 Hexagonal (Ports and Adapters) architecture in a single Maven module (`com.jpablodrexler.photo-manager`). Boundaries are enforced by package naming and import discipline.
@@ -108,7 +115,9 @@ infrastructure/
                         see `docs/backend.md` for the full list
     dto/              → HTTP request/response DTOs
     mapper/           → MapStruct domain ↔ HTTP DTO mappers
-    filter/           → JwtAuthenticationFilter, RateLimitFilter (Bucket4j + Redis)
+    filter/           → JwtAuthenticationFilter, RateLimitFilter (Bucket4j + Redis),
+                        RequestCorrelationFilter (tags every request with an MDC
+                        requestId/username and an X-Request-ID response header)
     exception/        → GlobalExceptionHandler and HTTP exceptions
   service/            → Service adapters (StorageServiceAdapter, ThumbnailStorageServiceAdapter,
                         JwtTokenServiceAdapter, RefreshTokenServiceAdapter, CatalogScheduler, …)
@@ -230,10 +239,29 @@ cd JPPhotoManagerWeb/frontend
 npm run build:prod
 ```
 
-**Run tests:**
+**Run component/unit tests** (Cypress Component Testing, headless — what CI runs):
 ```bash
 cd JPPhotoManagerWeb/frontend
 npm test
+```
+
+**Check line coverage against the 80% minimum** (see `code-reviewer` skill §19.1):
+```bash
+cd JPPhotoManagerWeb/frontend
+npm run test:coverage
+npm run coverage:check
+```
+
+**Run the mocked E2E smoke tier** (no backend/infra needed — this is the E2E tier CI runs, on every push/PR):
+```bash
+cd JPPhotoManagerWeb/frontend
+npm run test:e2e:mocked
+```
+
+**Run the maintained real-backend E2E suite** (drives a real browser against a real, locally running backend — not in CI; see `docs/frontend.md#running-the-whole-e2e-test-suite` and the `e2e-suite` skill for full prerequisites — Docker infra, `JWT_SECRET`/`POSTGRES_PORT`, and a login rate-limit interaction to know about):
+```bash
+cd JPPhotoManagerWeb/frontend
+npm run test:e2e
 ```
 
 **Lint:**
@@ -257,7 +285,9 @@ src/app/
     services/                  → Angular services wrapping the backend API
     guards/                    → auth.guard.ts — redirects unauthenticated users to /login
     interceptors/              → auth.interceptor.ts — handles 401 → refresh-and-retry or redirect
-                                 to /login; also shows a MatSnackBar with the backend's error message
+                                 to /login; also shows a MatSnackBar with the backend's error message,
+                                 appending "[Request ID: <id>]" when the response carries an
+                                 X-Request-ID header
     error-handler/             → global-error-handler.ts — Angular ErrorHandler override; shows a
                                  MatSnackBar for unhandled component errors
   features/
@@ -273,8 +303,10 @@ src/app/
     analytics/                  → Storage/format/rating charts (ngx-charts)
     audio-player/                → Playback controls for streamed audio assets
     admin/users/                → UserAdminComponent (/admin/users) — add/change password/delete users
+    profile/sessions/          → SessionsComponent (/profile/sessions) — view/revoke active sessions
   shared/
     components/thumbnail/      → Reusable thumbnail card component
+    components/password-strength/ → Live password strength meter (colour bar + rule checklist)
     pipes/file-size.pipe.ts    → Human-readable file size formatting
 ```
 
@@ -293,6 +325,7 @@ reference:
 | `/recycle-bin` | `RecycleBinComponent` | Yes | Restore or purge soft-deleted assets |
 | `/analytics` | `AnalyticsComponent` | Yes | Storage/format/rating charts |
 | `/admin/users` | `UserAdminComponent` | Yes | User administration |
+| `/profile/sessions` | `SessionsComponent` | Yes | View/revoke active sessions (device hint, last-used time) |
 
 **API communication:**
 - Standard HTTP calls go through Angular's `HttpClient` in the `core/services/` classes.

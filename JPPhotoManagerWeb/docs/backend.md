@@ -25,6 +25,7 @@
 | MongoDB | 8 (via Docker) |
 | JJWT (JWT signing/verification) | 0.12.6 |
 | Bucket4j + Bucket4j Redis (rate limiting) | 8.10.1 |
+| Passay (password complexity validation) | 1.6.6 |
 | springdoc-openapi (Swagger UI) | 2.8.9 |
 | Lombok | 1.18.46 |
 | MapStruct | 1.6.3 |
@@ -44,6 +45,11 @@ The backend follows the same Hexagonal (Ports and Adapters) layout described in 
 application/
   dto/                   → Application DTOs: progress messages (CatalogProgressMessage,
                            SyncProgressMessage, ConvertProgressMessage), AssetFilter, PaginatedResult…
+  exception/              → Domain/application exceptions (AssetNotFoundException,
+                           UserNotFoundException, PasswordPolicyException, …), handled centrally by
+                           `infrastructure/web/exception/GlobalExceptionHandler`
+  service/                → Framework-free application services shared across use cases
+                           (PasswordValidationService, backed by Passay)
   usecase/                → One implementation class per port/in interface, grouped by subdomain:
                            album, analytics, asset, audit, auth, catalog, convert, folder, home,
                            preference, recycle, search, sync, tag, user
@@ -57,7 +63,8 @@ infrastructure/
     controller/          → REST controllers (AssetController, AlbumController, AuthController, …)
     dto/                  → HTTP request/response DTOs
     mapper/               → MapStruct HTTP DTO ↔ domain mappers
-    filter/               → JwtAuthenticationFilter, RateLimitFilter (Bucket4j, backed by Redis)
+    filter/               → JwtAuthenticationFilter, RateLimitFilter (Bucket4j, backed by Redis),
+                            RequestCorrelationFilter (requestId/username MDC + X-Request-ID header)
     exception/            → GlobalExceptionHandler
   persistence/
     entity/               → @Entity JPA classes
@@ -98,6 +105,7 @@ Controllers are thin: they delegate immediately to use-case interfaces and never
 | `ThumbnailStorageServiceAdapter` | Stores and retrieves thumbnails as `{assetId}.bin` files under the configured thumbnails directory, fronted by a Redis L2 cache with a 24-hour TTL. |
 | `JwtTokenServiceAdapter` / `RefreshTokenServiceAdapter` | Issue and validate the JWT access token and the longer-lived refresh token; refresh tokens are dual-written to PostgreSQL and mirrored into Redis (`RedisRefreshTokenStore`). |
 | `RateLimitFilter` | Servlet filter backed by Bucket4j + Redis; throttles requests per client IP (or the trusted `X-Forwarded-For` value behind a reverse proxy). |
+| `RequestCorrelationFilter` | Servlet filter registered at `Ordered.HIGHEST_PRECEDENCE` (ahead of the entire Spring Security chain); generates a UUID `requestId` per request, puts it and `username` (`"anonymous"` until `JwtAuthenticationFilter` corrects it to the real principal) into SLF4J MDC, echoes the `requestId` back as the `X-Request-ID` response header, and clears MDC in a `finally` block. The `logstash-logback-encoder` file appender includes both MDC fields in every JSON log line for the request, so `requestId` and `username` are directly correlatable end to end. See [Authentication → Request correlation & MDC logging](authentication.md#request-correlation--mdc-logging). |
 | `AssetSearchCacheServiceAdapter` | Evicts the Redis-backed `assets`/`tags` query caches per folder via cursor-based `SCAN`/`DEL`, triggered by `AssetSearchCacheInvalidationListener` (Kafka) and directly by the tag-mutation use cases. |
 | `AuditLogKafkaListener` | Consumes `asset.cataloged`/`asset.deleted`/`job.*.progress` events and appends them to the MongoDB `asset_audit_log` collection; tag/rating/view/download actions are logged directly by their use cases. |
 
@@ -210,6 +218,9 @@ All endpoints below except the three under **Auth** marked *Public* require the 
 | `POST` | `/api/auth/refresh` | Public | Rotate the JWT using the refresh-token cookie |
 | `POST` | `/api/auth/logout` | Public | Clears both cookies server-side |
 | `GET` | `/api/auth/me` | Required | Current authenticated user |
+| `GET` | `/api/auth/sessions` | Required | List the caller's active sessions (device hint parsed from `User-Agent`, `lastUsedAt`, `current` flag) |
+| `DELETE` | `/api/auth/sessions/{id}` | Required | Revoke one of the caller's own sessions; `404` if the id doesn't belong to the caller |
+| `DELETE` | `/api/auth/sessions` | Required | Revoke every other active session for the caller ("sign out everywhere else") |
 
 **Assets**
 
@@ -291,6 +302,14 @@ All endpoints below except the three under **Auth** marked *Public* require the 
 | `POST` | `/api/admin/users` | Create a user |
 | `PATCH` | `/api/admin/users/{id}/password` | Change a user's password |
 | `DELETE` | `/api/admin/users/{id}` | Delete a user |
+
+`POST /api/admin/users` and `PATCH /api/admin/users/{id}/password` both enforce a password
+complexity policy (`application/service/PasswordValidationService`, backed by
+[Passay](https://www.passay.org/)): minimum 12 characters, at least one uppercase letter, one
+digit, and one special character. A password failing any rule returns `400 Bad Request` with a
+`violations` array — one entry per failing rule — via a dedicated `PasswordPolicyException` handler
+in `GlobalExceptionHandler`. The frontend mirrors these same four rules client-side in
+`PasswordStrengthComponent` (see `docs/frontend.md`) for live feedback without an API round-trip.
 
 The full interactive contract is served by Swagger UI (`/swagger-ui.html`) — see [Running the backend](#running-the-backend) below.
 

@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MediaPlayerService } from '../../../core/services/media-player.service';
@@ -8,6 +8,7 @@ import { MediaPlayerService } from '../../../core/services/media-player.service'
   standalone: true,
   imports: [MatButtonModule, MatIconModule],
   templateUrl: './video-player.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './video-player.component.scss',
 })
 export class VideoPlayerComponent implements AfterViewInit, OnDestroy {
