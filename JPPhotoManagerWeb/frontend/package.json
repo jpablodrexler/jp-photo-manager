@@ -33,7 +33,8 @@
     "cy:e2e:mocked:report": "node scripts/e2e-run-report.js --mocked",
     "secrets:report": "node scripts/secrets-scan-report.js",
     "license:report": "node scripts/license-compliance-report.js",
-    "sca:report": "node scripts/sca-report.js"
+    "sca:report": "node scripts/sca-report.js",
+    "reports:all": "node scripts/run-all-quality-reports.js"
   },
   "private": true,
   "dependencies": {
