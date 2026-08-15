@@ -13,7 +13,10 @@ export default defineConfig({
     // dedicated cypress.mocked.config.ts, never through this config - but
     // this config's specPattern above would still silently match those files
     // too without this exclude, since '**' covers the mocked/ subdirectory.
-    excludeSpecPattern: 'cypress/e2e/mocked/**/*.cy.ts',
+    // Same reasoning for cypress/e2e/a11y/** and its own dedicated
+    // cypress.a11y.config.ts (see that file) - the a11y audit spec must never
+    // run under the real-backend tier.
+    excludeSpecPattern: ['cypress/e2e/mocked/**/*.cy.ts', 'cypress/e2e/a11y/**/*.cy.ts'],
     supportFile: 'cypress/support/e2e.ts',
     setupNodeEvents(_on, _config) {},
   },
@@ -45,6 +48,11 @@ export default defineConfig({
     indexHtmlFile: 'cypress/support/component-index.html',
     setupNodeEvents(on, config) {
       codeCoverage(on, config);
+      // Forward Stryker's per-mutant env var so cypress/support/component.ts
+      // can bridge it into the browser iframe — see that file's comment.
+      if (process.env.__STRYKER_ACTIVE_MUTANT__) {
+        config.env.STRYKER_ACTIVE_MUTANT = process.env.__STRYKER_ACTIVE_MUTANT__;
+      }
       return config;
     },
   },

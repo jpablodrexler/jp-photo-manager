@@ -271,6 +271,9 @@ JPPhotoManagerWeb/frontend/dist/
 JPPhotoManagerWeb/frontend/coverage/
 JPPhotoManagerWeb/frontend/.nyc_output/
 JPPhotoManagerWeb/frontend/cypress/screenshots/
+JPPhotoManagerWeb/frontend/cypress/a11y-results/
+JPPhotoManagerWeb/frontend/.stryker-tmp/
+JPPhotoManagerWeb/frontend/reports/
 JPPhotoManagerWeb/.env
 JPPhotoManagerWeb/k8s/secret.yaml
 JPPhotoManagerWeb/k8s/catalog-volumes.yaml

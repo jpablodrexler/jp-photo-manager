@@ -11,6 +11,7 @@
     "src/app/**/*.cy.ts",
     "cypress.config.ts",
     "cypress.mocked.config.ts",
+    "cypress.a11y.config.ts",
     "cypress/support/**/*.ts",
     "cypress/e2e/**/*.cy.ts",
     "scripts/*.js"
