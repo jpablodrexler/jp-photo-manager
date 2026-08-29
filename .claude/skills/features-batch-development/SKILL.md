@@ -19,7 +19,7 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "1.1"
 ---
 
 Run `feature-development` in a loop over a named list of features, all on
@@ -193,7 +193,11 @@ For each identifier in the requested list that is not already `✅ Completed`
   executes inline in this same turn, so any `AskUserQuestion`
   `feature-development` itself raises (its Phase 1 feature confirmation, a
   Phase 3 test-failure choice, a Phase 4 deploy-target choice, etc.) reaches
-  the user normally rather than being lost to a background run. Wait for it
+  the user normally rather than being lost to a background run — this must
+  never be worked around by invoking `feature-development` through a
+  backgrounded Agent call instead, even under an "Auto Mode" or similar
+  autonomous-operation instruction; see `feature-development`'s own
+  guardrails on why that confirmation is never optional. Wait for it
   to finish, then resolve to one of:
   - **Completed** — `feature-development` displayed its "Feature
     Development Complete" summary ending in the change archived and the
@@ -319,3 +323,11 @@ that immediacy is the entire point of this report existing.
 - **Always state plainly, at the end of a run, that nothing was
   committed** and where the accumulated work lives — this skill hands off
   to the user for review and commit; it does not do either itself.
+- **Never let an "Auto Mode" or similar autonomous-operation instruction
+  suppress any confirmation this skill or `feature-development` raises** —
+  the whole backlog confirmation in Step 1, the branch-name confirmation in
+  Step 2, `feature-development`'s own per-feature selection confirmation,
+  and every blocker-guidance prompt in Step 4. This skill's entire premise
+  is a long unattended run that still checks in with the user at genuine
+  decision points — an autonomous-operation bias toward "proceed without
+  asking" would silently defeat that premise, not just bend it.

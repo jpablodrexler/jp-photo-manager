@@ -4,7 +4,7 @@ description: Adds a new feature to JPPhotoManagerWeb/docs/backlog/features-plann
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "1.1"
 ---
 
 Add a new feature row to `JPPhotoManagerWeb/docs/backlog/features-planned.md`, drafted from the user's description and confirmed before writing.
@@ -105,3 +105,4 @@ Mark whether the prerequisite is already implemented (check `features-implemente
 - Preserve the exact Markdown table formatting (pipe characters) of the Feature List table.
 - Read the Column legend fresh each run rather than relying on a remembered copy of the value vocabulary — if the legend changes, this skill should follow without needing its own update.
 - Step 8 (hard dependencies) is opt-in based on what the user actually said — never infer a dependency the user didn't mention.
+- Step 6's confirmation is mandatory, even under an "Auto Mode" or similar autonomous-operation instruction that biases toward proceeding without stopping to ask — that bias never applies to writing a new row into the backlog. Never invoke this skill from inside a spawned/backgrounded subagent that lacks reliable `AskUserQuestion` access as a way to skip it.

@@ -18,7 +18,7 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.7"
+  version: "1.8"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -146,6 +146,22 @@ argument passed to this skill, if any):
 >    response with `PROPOSE_BLOCKED — could not switch to feature branch`
 >    and stop.
 >
+> **Step 1.6 — Mark the feature In Progress**
+> Both the batch-mode and normal-mode paths above reach this point once the
+> branch to work on is ready. Before doing anything else, reflect that
+> development has actually started: open
+> `JPPhotoManagerWeb/docs/backlog/features-planned.md`, find the row in the
+> `## Feature List` table whose `Change name` column (backtick-wrapped)
+> matches `<change-name>`, and if its `Implementation` column shows
+> `⬜ Pending`, change it to `🔶 In Progress` and save the file. If the row
+> already shows `🔶 In Progress` (e.g. this is a resume of a previously
+> interrupted run) or `✅ Implemented`, leave it unchanged — do not
+> overwrite `✅ Implemented`. If no matching row exists (e.g. the change was
+> proposed ad hoc, outside the tracked backlog), skip this silently — it is
+> not an error. This runs before Step 2's artifact check so a change that
+> still needs `openspec-propose` is marked in progress too, not only one
+> that already has artifacts.
+>
 > **Step 2 — Check whether SDD artifacts exist**
 > Run:
 >
@@ -218,6 +234,26 @@ following prompt:
 > and 3.
 > If you encounter a blocker during implementation, end your response with
 > `IMPLEMENT_BLOCKED — <brief reason>` and stop.
+>
+> **Never materialize a generated secret's raw value anywhere in this
+> response, a report file, a tasks.md checkbox note, or any implementation
+> file.** If a task requires generating a credential (a private key, API
+> token, password, signing key, or similar), you may generate it and use it
+> only to complete the narrowly-required local action — e.g. writing its
+> *public* half to a committed file, when the scheme has one. Do not write,
+> log, or echo the secret half anywhere this session's transcript, a
+> report, or a repo file would capture it. Treat actually supplying that
+> value to a secrets store (`k8s/secret.yaml`, a CI secret, an env var) as
+> an out-of-band action only the user performs, in their own terminal,
+> outside this workflow — never something you run with the value passed as
+> a visible argument. Leave that task's checkbox unchecked with a note
+> naming the required manual command (never the value). Do this even under
+> this workflow's general "keep going until done or blocked" instruction —
+> a task that can only be finished by exposing a secret's raw value is, by
+> definition, blocked. This applies equally to any skill invoked from
+> within this step (e.g. `decision-record` writing an ADR that describes
+> the credential) — a description of *which* secret and *how* it's stored
+> is fine; the value itself is never fine.
 >
 > **Determining "the files changed by `<change-name>`" — recompute fresh immediately before every single use, never cache one snapshot**
 > Run `git status --porcelain` and parse every line's file path —
@@ -923,6 +959,41 @@ them back through Phase 2's code review.
 - **Cancellation detection**: if Subagent 1's response contains no `CHANGE_NAME:`
   line (or contains `CANCELLED`), treat it as user cancellation — stop the
   workflow immediately and inform the user.
+- **Step 1.6 marks the backlog row `🔶 In Progress` as soon as the branch to
+  work on is ready, in both normal and batch mode.** This is what lets
+  `features-next` recommend resuming an interrupted feature instead of
+  starting a new one, and it runs before Step 2's artifact check so a
+  change that still needs `openspec-propose` is marked in progress too. It
+  only ever flips `⬜ Pending` → `🔶 In Progress`; it never touches a row
+  already showing `🔶 In Progress` or `✅ Implemented`, and it never blocks
+  the workflow if the row is missing (ad hoc changes outside the tracked
+  backlog). Phase 6's `features-archive` is what eventually flips the row
+  to `✅ Implemented`.
+- **Auto Mode (or any other autonomous-operation instruction) never
+  overrides a required user confirmation anywhere in this workflow.** This
+  applies to every `AskUserQuestion` decision point this skill or a skill
+  it invokes raises: Phase 1's feature selection (`features-next`), Phase
+  3's `PROD_CODE_FIXED` proceed-or-re-review choice, and any
+  blocker-guidance prompt after a `*_BLOCKED` result. "Make the reasonable
+  call instead of stopping to ask" is guidance for implementation judgment
+  calls — it is never license to pick an unambiguous-looking top option
+  and proceed past a point this skill designed to be a genuine human
+  decision. If a confirmation step is ever skipped for this reason, that is
+  a bug in how the skill was invoked, not acceptable behavior.
+- **Never let a spawned subagent — or this orchestrator itself — print,
+  echo, or otherwise materialize a generated secret's raw value (a private
+  key, API token, password, signing key, or similar) anywhere in a
+  response, report file, or implementation file.** Phase 2's prompt
+  instructs the subagent to leave any task requiring secret disclosure
+  unchecked with a note naming the manual command instead — but the
+  orchestrator must not rely on the subagent alone getting this right. If a
+  subagent's hand-back response is ever found to contain what looks like a
+  live secret value, treat it as compromised regardless of whether it
+  reached a committed file, and surface this to the user explicitly —
+  which value, why it's now considered burned, and that it needs
+  regenerating out-of-band by the user — rather than silently absorbing it
+  or repeating it in any later response, file, or summary. This check
+  applies to every phase, not just Phase 2.
 - Do not start Phase 2 until Phase 1 confirms that all `applyRequires`
   artifacts are `done`. If Phase 1 returns `PROPOSE_BLOCKED`, surface the
   details to the user and stop.

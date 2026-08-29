@@ -4,7 +4,7 @@ description: Reports feature tracking progress by counting rows in JPPhotoManage
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.4"
+  version: "1.5"
 ---
 
 Report feature-tracking progress by counting rows in `JPPhotoManagerWeb/docs/backlog/features-planned.md`
@@ -22,13 +22,21 @@ list itself, and any data-integrity issues found.
 
 Read `JPPhotoManagerWeb/docs/backlog/features-planned.md`. Count the rows in the `## Feature List` table —
 each row starts with `| <number> ` where `<number>` is the `#` column value.
-Every row in this file is expected to be pending (its Implementation column
-should always show `⬜ Pending`, since `features-archive` moves a row to
-`features-implemented.md` in the same pass it flips the column). Don't just
-assume this — read the Implementation column value for each row and count
-only rows actually showing `⬜ Pending`; if any row shows `✅ Implemented`
-here, it means that pass was interrupted before the row was moved, so report
-it separately rather than silently folding it into the pending count.
+Every row in this file is expected to show `⬜ Pending` or `🔶 In Progress`
+in its Implementation column (`feature-development` flips a row to `🔶 In
+Progress` once it starts work — see that skill's Step 1.6 — and
+`features-archive` moves a row to `features-implemented.md` in the same pass
+it flips the column to `✅ Implemented`, so a row should never sit here
+already showing that). Don't just assume this — read the Implementation
+column value for each row and produce two counts: `pending_strict` (rows
+showing `⬜ Pending`) and `in_progress` (rows showing `🔶 In Progress`).
+Define `pending = pending_strict + in_progress` — this combined figure is
+what step 3's totals/percent math uses (neither state is implemented yet),
+while step 6 displays `pending_strict` and `in_progress` as separate table
+rows, since "in progress" is a materially different state worth surfacing
+on its own. If any row shows `✅ Implemented` here, it means an archive pass
+was interrupted before the row was moved, so report it separately rather
+than folding it into any of the above.
 
 ### 2. Count implemented features
 
@@ -55,21 +63,27 @@ Either way, `percent` above is the exact, display-ready string for the **Progres
 
 ### 4. Priority and effort breakdown, and the pending list itself
 
+This step covers every row from step 1 — both `⬜ Pending` and `🔶 In
+Progress` — not just the strictly-pending ones; "how much is left to do"
+includes work already underway.
+
 Read the **Priority** column value (`P0`/`P1`/`P2`/`P3`) directly from each
-pending row in the `## Feature List` table. Tally how many pending features
-fall under each tier, and how many have the column blank or missing (treat
-as "No explicit tier" rather than erroring). Also count how many pending
-features have `SDD Artifacts` = `✅ Created` (SDD artifacts already exist, ready
-to implement immediately) vs `⬜ Pending`.
+such row in the `## Feature List` table. Tally how many fall under each
+tier, and how many have the column blank or missing (treat as "No explicit
+tier" rather than erroring). Also count how many have `SDD Artifacts` =
+`✅ Created` (SDD artifacts already exist, ready to implement immediately)
+vs `⬜ Pending`.
 
-Read the **Effort** column value (`S`/`M`/`L`) the same way and tally pending
-features per size, plus "No explicit effort" for blank/missing — a bare
-pending *count* doesn't say how much work is actually left, and the column
-is already being read for nothing else.
+Read the **Effort** column value (`S`/`M`/`L`) the same way and tally per
+size, plus "No explicit effort" for blank/missing — a bare pending *count*
+doesn't say how much work is actually left, and the column is already being
+read for nothing else.
 
-Also record, for each pending row, its `#`, `Change name`, and `Priority` —
-step 6's report lists these by name, not just a count, since "3 pending"
-on its own isn't actionable without opening the file to see which ones.
+Also record, for each such row, its `#`, `Change name`, `Priority`, and
+whether it's `🔶 In Progress` — step 6's report lists these by name, not
+just a count, since "3 pending" on its own isn't actionable without opening
+the file to see which ones, and flags the in-progress one(s) distinctly so
+they read as "already underway," not just next in line.
 
 ### 5. Data-integrity checks
 
@@ -138,7 +152,8 @@ report would just be noise; omit the section entirely when clean.
 | -------------------- | ----- |
 | Total features        | <total> |
 | ✅ Implemented         | <implemented> |
-| ⬜ Pending             | <pending> |
+| ⬜ Pending             | <pending_strict> |
+| 🔶 In Progress         | <in_progress> |
 | **Progress**           | **<percent>** |
 
 ### Pending breakdown by priority
@@ -167,7 +182,7 @@ be implemented immediately without a propose step.
 
 ### Pending features
 
-- #<n> `<change-name>` (<priority>)
+- #<n> `<change-name>` (<priority>) [append " — 🔶 In Progress" for a row flagged in_progress in step 4]
 - …
 
 [only if step 5 found something:]
