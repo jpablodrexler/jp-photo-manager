@@ -18,7 +18,7 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.7"
+  version: "1.9"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -39,11 +39,14 @@ normal single-feature use — default behavior (create/resume
 
 ## Overview
 
-Six phases executed by seven dedicated subagents (3a and 3b run in parallel):
+Seven phases: Phase 0 runs directly in the orchestrator's own context
+(never a subagent — see that phase's own rationale below), Phases 1–6 each
+run as a dedicated subagent (3a and 3b run in parallel):
 
 | Phase                        | Subagent   | Skills / actions                                                                                                                                  |
 | ----------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 — Select & Propose          | Subagent 1 | `features-next` (confirm only) → `gitflow` (start feature to create `feature/<change-name>` from `develop`, or sync feature to catch up an existing one) → `openspec-propose` (if artifacts missing) |
+| 0 — Select & Confirm          | *(orchestrator's own context — never a subagent)* | `features-next` (recommend + mandatory `AskUserQuestion` confirmation) |
+| 1 — Propose                   | Subagent 1 | `git fetch origin --prune` to detect a branch/commits pushed from another device → `gitflow` (start feature to create `feature/<change-name>` from `develop`, resume + merge in another device's pushed commits, or sync feature to catch up an existing one) → mark the feature `🔶 In Progress` in `JPPhotoManagerWeb/docs/backlog/features-planned.md` → `openspec-propose` (if artifacts missing) |
 | 2 — Implement & Review        | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `database-reviewer` + `security-reviewer` (conditional, findings fixed before done)          |
 | 3a — Backend tests            | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test` until passing                                                                                     |
 | 3b — Frontend tests           | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                                                    |
@@ -53,29 +56,56 @@ Six phases executed by seven dedicated subagents (3a and 3b run in parallel):
 
 ---
 
-## Phase 1 — Select & Propose (Subagent 1)
+## Phase 0 — Select & Confirm (orchestrator's own context — never a subagent)
+
+**This phase must never be delegated to a spawned subagent, under any
+circumstances — including when an "Auto Mode" or similar
+autonomous-operation instruction is active.** Selecting which feature gets
+built next is always the user's decision, not a "reasonable default" the
+model makes on their behalf to avoid stopping. A spawned subagent (via the
+Agent tool) may run without reliable access to `AskUserQuestion` depending
+on the environment, and even where it nominally has access, a
+backgrounded/async agent's confirmation prompt may not reach the user in
+time for the workflow to actually wait on it. Running this phase directly
+in whatever context is currently executing this skill (the main
+conversation, or `features-batch-development`'s inline loop) is the only
+way to *guarantee* the confirmation happens.
+
+1. Run `openspec --version` yourself. If it fails or is not found, tell the
+   user `PROPOSE_BLOCKED — openspec CLI not found` and stop the whole
+   workflow here — do not proceed to feature selection with a broken
+   toolchain.
+2. Use the Skill tool to invoke the `features-next` skill directly — not
+   wrapped in an Agent call, not inside any subagent — passing the argument
+   given to this skill (feature name/number), if any, or no argument
+   otherwise. Let it present its recommendation and ask for confirmation
+   via `AskUserQuestion` in this same context, exactly as `features-next`
+   is designed to; do not pre-answer or skip that question yourself.
+3. If `features-next` returns without a `CHANGE_NAME:` line (the user
+   cancelled, or `features-next` itself couldn't obtain confirmation — see
+   its own guardrails), stop the entire workflow here and tell the user.
+   Never proceed to Phase 1 without a confirmed change name in hand.
+4. Otherwise, capture the confirmed change name from the `CHANGE_NAME:`
+   line. This is the value substituted for `<change-name>` in every phase
+   below, including Subagent 1's prompt — Subagent 1 is given this name
+   directly and never re-selects or re-confirms a feature on its own.
+
+---
+
+## Phase 1 — Propose (Subagent 1)
 
 Spawn a **general-purpose subagent** via the Agent tool, with
-`run_in_background: false` (this phase's result gates every later phase, and
-it embeds an interactive `AskUserQuestion` confirmation via `features-next`
-that a backgrounded agent cannot reliably surface — see the foreground
-guardrail below), with the following prompt (substitute `<input>` with the
-argument passed to this skill, if any):
+`run_in_background: false` (this phase's result gates every later phase —
+see the foreground guardrail below), with the following prompt (substitute
+`<change-name>` with the value confirmed in Phase 0):
 
 > Perform these steps in sequence. Do NOT skip any step.
 >
-> **Step 0 — Verify openspec CLI is available**
-> Run: `openspec --version`
-> If the command fails or is not found, end your response with
-> `PROPOSE_BLOCKED — openspec CLI not found` and stop.
->
-> **Step 1 — Select the feature**
-> Use the Skill tool to invoke the `features-next` skill (pass the argument
-> `<input>` if one was provided; otherwise invoke with no argument). The skill
-> will present a recommendation, ask for user confirmation, and return a
-> `CHANGE_NAME: <change-name>` line. Capture that value and proceed to Step 2.
-> If the skill returns without a `CHANGE_NAME:` line, the user cancelled —
-> end your response with `CANCELLED` and stop.
+> The change name has already been selected and confirmed with the user by
+> the orchestrator, before you were spawned: `<change-name>`. Do not invoke
+> `features-next` yourself, and do not attempt to select, change, or
+> re-confirm a feature on your own — that decision is final and out of
+> scope for you. Proceed directly to Step 1.5 using this change name.
 >
 > **Step 1.5 — Create the feature branch**
 >
@@ -83,13 +113,14 @@ argument passed to this skill, if any):
 > this step. Run `git branch --show-current` once and confirm it is not
 > `main` or `develop` — if it is, end your response with `PROPOSE_BLOCKED —
 > batch mode requires an existing feature branch already checked out, not
-> main/develop` and stop. Otherwise proceed directly to Step 2 using
-> whatever branch is currently checked out. Do not check for uncommitted
-> changes here — an orchestrator running several features on one branch
-> without committing between them will always have a dirty tree by the
-> second feature onward, and that's expected, not a blocker. Do not create,
-> switch, or sync any branch in this mode; the caller is responsible for
-> branch state.
+> main/develop` and stop. Otherwise proceed to Step 1.6 below (not Step 2
+> directly — marking the feature In Progress applies in batch mode too)
+> using whatever branch is currently checked out. Do not check for
+> uncommitted changes here — an orchestrator running several features on
+> one branch without committing between them will always have a dirty tree
+> by the second feature onward, and that's expected, not a blocker. Do not
+> create, switch, or sync any branch in this mode; the caller is
+> responsible for branch state.
 >
 > **Normal mode (no flag passed):** before creating or modifying any file in
 > the repository (including SDD artifacts in Step 3 below), make sure work
@@ -104,12 +135,35 @@ argument passed to this skill, if any):
 > the already-on-the-right-branch check ever got a chance to short-circuit
 > it.
 >
+> 0. Run: `git fetch origin --prune`. This refreshes remote-tracking refs
+>    (`origin/feature/*`) *before* any of the checks below reason about
+>    branch existence — this repo is worked from more than one device, and
+>    without a fresh fetch a branch (or new commits on a branch) pushed
+>    from another device since this device's last fetch would be invisible
+>    to steps 1 and 3 below, risking either a second, divergent
+>    `feature/<change-name>` branch getting created, or a stale local copy
+>    silently shadowing newer work that already exists on the remote.
+>    `--prune` also drops remote-tracking refs for branches already deleted
+>    on the remote, matching `gitflow`'s own cleanup-branches convention.
 > 1. Run: `git branch --show-current`.
 >    - If the output is already exactly `feature/<change-name>`: we're
 >      already on the target branch — this is a resume. Uncommitted
->      changes here are expected (they're the prior work being resumed),
->      so skip steps 2 and 3 below entirely and proceed straight to Step 2
->      of this prompt.
+>      changes here are expected. Before skipping ahead, check whether
+>      another device has pushed commits to this same branch that this
+>      local checkout doesn't have yet: run
+>      `git rev-list HEAD..origin/feature/<change-name> --count` (if
+>      `origin/feature/<change-name>` doesn't exist — i.e. this branch was
+>      never pushed — treat the count as `0`, nothing to reconcile).
+>      - If the count is `0`: nothing to reconcile — skip steps 2 and 3
+>        below entirely and proceed straight to Step 1.6 of this prompt.
+>      - If the count is greater than `0`: another device has pushed work
+>        to this branch that isn't reflected in this local, uncommitted
+>        checkout. Merging it now risks colliding with those uncommitted
+>        local changes, which is not something to resolve silently. End
+>        your response with `PROPOSE_BLOCKED — origin/feature/<change-name>
+>        has <N> commit(s) not present locally (likely pushed from another
+>        device); commit or stash local changes, then merge/rebase
+>        manually before continuing` and stop.
 >    - Otherwise, continue to step 2 below.
 > 2. Run: `git status --porcelain`
 >    If this prints anything (uncommitted changes present), end your
@@ -121,30 +175,70 @@ argument passed to this skill, if any):
 > 3. Run: `git rev-parse --verify --quiet feature/<change-name>`
 >    - If it prints a commit hash, the branch already exists locally but
 >      isn't currently checked out — this is a resume of a change that's
->      been sitting idle, possibly while other work (including a release)
->      merged into `develop` in the meantime: run
->      `git checkout feature/<change-name>`, then use the Skill tool to
->      invoke `gitflow` with the action "sync feature `<change-name>`" to
->      bring it up to date with `develop` before continuing. `develop` is
->      the *only* branch this may ever be synced from — never `main`, even
->      though right after a release merges into both, they're momentarily
->      identical and it's tempting to treat either as equivalent; see
->      `gitflow`'s guardrails for why that's still wrong. If `gitflow`
->      reports a merge conflict it can't resolve automatically, end your
->      response with `PROPOSE_BLOCKED — feature branch sync conflict with
->      develop, needs manual resolution` and stop. Otherwise, if it reports
->      any other blocker, end your response with `PROPOSE_BLOCKED — <the
->      gitflow blocker>` and stop.
->    - If it fails (branch doesn't exist yet): use the Skill tool to invoke
->      `gitflow` with the action "start feature `<change-name>`". It checks
->      out `develop`, pulls the latest, and creates `feature/<change-name>`
->      from it. If it reports a blocker (e.g. `develop` doesn't fast-forward
->      cleanly), end your response with `PROPOSE_BLOCKED — <the gitflow
->      blocker>` and stop.
+>      been sitting idle, possibly while other work (including a release,
+>      or further commits pushed to this same branch from another device)
+>      landed in the meantime: run `git checkout feature/<change-name>`.
+>      Then, if `git rev-parse --verify --quiet origin/feature/<change-name>`
+>      succeeds, run `git merge origin/feature/<change-name>` to pick up
+>      any commits pushed from another device before this local branch was
+>      checked out — this merges already-pushed history of this same
+>      change, not new uncommitted implementation, so — like a sync-feature
+>      merge from `develop` — it's exempt from this workflow's "no git
+>      commits" guardrail (see the guardrails section). If this merge
+>      doesn't complete cleanly, end your response with
+>      `PROPOSE_BLOCKED — feature branch has diverged from
+>      origin/feature/<change-name>, needs manual resolution` and stop.
+>      Then use the Skill tool to invoke `gitflow` with the action "sync
+>      feature `<change-name>`" to bring it up to date with `develop`
+>      before continuing. `develop` is the *only* branch this may ever be
+>      synced from — never `main`, even though right after a release merges
+>      into both, they're momentarily identical and it's tempting to treat
+>      either as equivalent; see `gitflow`'s guardrails for why that's
+>      still wrong. If `gitflow` reports a merge conflict it can't resolve
+>      automatically, end your response with `PROPOSE_BLOCKED — feature
+>      branch sync conflict with develop, needs manual resolution` and
+>      stop. Otherwise, if it reports any other blocker, end your response
+>      with `PROPOSE_BLOCKED — <the gitflow blocker>` and stop.
+>    - If it fails locally but
+>      `git rev-parse --verify --quiet origin/feature/<change-name>`
+>      succeeds: the branch has never been checked out on this device but
+>      already exists on the remote — this is the case where another
+>      device started (and pushed) this same feature branch first. Do
+>      **not** invoke `gitflow`'s "start feature" action here — that always
+>      branches fresh from `develop` and would silently orphan the work
+>      already sitting on the remote branch. Instead, check it out tracking
+>      the remote directly: `git checkout -b feature/<change-name>
+>      origin/feature/<change-name>`. Then use the Skill tool to invoke
+>      `gitflow` with the action "sync feature `<change-name>`" to bring it
+>      up to date with `develop`, exactly as the "already exists locally"
+>      case above does, applying the same conflict handling.
+>    - If it fails both locally and on the remote (the branch doesn't exist
+>      anywhere yet — the common case, no other device has started this
+>      change): use the Skill tool to invoke `gitflow` with the action
+>      "start feature `<change-name>`". It checks out `develop`, pulls the
+>      latest, and creates `feature/<change-name>` from it. If it reports a
+>      blocker (e.g. `develop` doesn't fast-forward cleanly), end your
+>      response with `PROPOSE_BLOCKED — <the gitflow blocker>` and stop.
 > 4. Run `git branch --show-current` and confirm the output is exactly
 >    `feature/<change-name>` before proceeding. If it is not, end your
 >    response with `PROPOSE_BLOCKED — could not switch to feature branch`
 >    and stop.
+>
+> **Step 1.6 — Mark the feature In Progress**
+> Both the batch-mode and normal-mode paths above reach this point once the
+> branch to work on is ready. Before doing anything else, reflect that
+> development has actually started: open
+> `JPPhotoManagerWeb/docs/backlog/features-planned.md`, find the row in the
+> `## Feature List` table whose `Change name` column (backtick-wrapped)
+> matches `<change-name>`, and if its `Implementation` column shows
+> `⬜ Pending`, change it to `🔶 In Progress` and save the file. If the row
+> already shows `🔶 In Progress` (e.g. this is a resume of a previously
+> interrupted run) or `✅ Implemented`, leave it unchanged — do not
+> overwrite `✅ Implemented`. If no matching row exists (e.g. the change was
+> proposed ad hoc, outside the tracked backlog), skip this silently — it is
+> not an error. This runs before Step 2's artifact check so a change that
+> still needs `openspec-propose` is marked in progress too, not only one
+> that already has artifacts.
 >
 > **Step 2 — Check whether SDD artifacts exist**
 > Run:
@@ -178,24 +272,90 @@ argument passed to this skill, if any):
 > change was proposed ad hoc, outside the tracked backlog), skip this
 > silently — it is not an error.
 >
+> **Step 3.5 — Check for a newly discovered hard dependency**
+> The artifacts just confirmed `done` (proposal.md, and design.md if
+> present) may reveal, only now that the change has actually been designed,
+> that `<change-name>` needs something another *not-yet-implemented* backlog
+> feature provides (a table/column, an endpoint, a service method, a Kafka
+> topic) — a dependency nobody could have known about back when this
+> feature was recommended, because it only became apparent once the design
+> was written. Left undetected, this surfaces later — mid-Phase-2
+> implementation, or worse, after review — as a surprise blocker. Catch it
+> here instead, before any implementation work starts.
+>
+> 1. Read proposal.md (and design.md if it exists) for `<change-name>`.
+> 2. Read `JPPhotoManagerWeb/docs/backlog/features-planned.md`'s
+>    `## Feature List` table and its `### Hard implementation dependencies`
+>    subsection.
+> 3. Determine whether the design depends on something owned by a
+>    *different* feature row that is still `⬜ Pending` or `🔶 In Progress`
+>    (not `<change-name>` itself, and not something already shipped —
+>    shipped prerequisites are fine and not what this step is checking for).
+> 4. **If no such dependency exists, or it's already recorded** in the
+>    `### Hard implementation dependencies` subsection: nothing to do,
+>    continue to Step 4.
+> 5. **If a genuine, not-yet-recorded dependency is found**: add a new
+>    `**Feature <this feature's #> → Feature <prerequisite's #>**
+>    (prerequisite still pending)` block to the
+>    `### Hard implementation dependencies` subsection, mirroring the exact
+>    format of the existing entries there (one short sentence naming what's
+>    needed and why), and save the file. Then end your response with
+>    `PROPOSE_NEEDS_DEPENDENCY_DECISION — <change-name> (#<this feature's #>)
+>    depends on <prerequisite-name> (#<prerequisite's #>), which is not yet
+>    implemented; dependency recorded in
+>    JPPhotoManagerWeb/docs/backlog/features-planned.md` and stop — do not
+>    proceed to Step 4. This is not a `PROPOSE_BLOCKED` failure (nothing
+>    went wrong — proposing surfaced real information); the orchestrator
+>    handles it as a decision point, below.
+>
 > **Step 4 — Return the change name**
 > End your response with exactly this line so the orchestrator can extract it:
 > `CHANGE_NAME: <change-name>`
 
 After the subagent completes:
 
-- If the response contains `CANCELLED`: stop the entire workflow and inform the user.
 - If the response contains `PROPOSE_BLOCKED`: surface the reason to the user and stop.
-- Otherwise: extract the change name from the `CHANGE_NAME:` line. Store this
-  value — it is passed as the argument to every skill invoked in Phases 2, 3, 4, 5, and 6.
+- If the response contains `PROPOSE_NEEDS_DEPENDENCY_DECISION`: this is a
+  decision point, not a failure — handle it here in the orchestrator's own
+  context (never delegate this confirmation to a subagent, for the same
+  reason Phase 0's feature selection never is: reliable `AskUserQuestion`
+  access is only guaranteed in the foreground). Surface the dependency
+  found (which feature, which prerequisite, why) and use
+  **AskUserQuestion** with:
+  - **Question**: "`<change-name>` turned out to depend on
+    `<prerequisite-name>` (#<prerequisite's #>), which isn't implemented
+    yet. How do you want to proceed?"
+  - **Options**:
+    1. "Implement `<prerequisite-name>` first (recommended)" — stop this
+       workflow run here (the dependency is already recorded in
+       `features-planned.md`, so a future `features-next` run will
+       correctly treat `<change-name>` as blocked and can recommend the
+       prerequisite instead); tell the user to re-run `feature-development`
+       once ready, either unnamed or naming the prerequisite directly.
+    2. "Proceed with `<change-name>` anyway" — only if the user judges the
+       dependency isn't actually a hard blocker for a usable first version;
+       continue to Phase 2 and the rest of this workflow as normal. The
+       dependency note stays recorded regardless — it was real, even if
+       not blocking today.
+    3. "Cancel" — stop the entire workflow here.
+  - If the user picks option 1 or 3, stop the whole `feature-development`
+    run now — do not proceed to Phase 2. Do not revert the dependency note
+    just written to `features-planned.md`; it's accurate information
+    regardless of what happens next.
+- Otherwise: confirm the `CHANGE_NAME:` line matches the value Phase 0
+  already confirmed with the user (it should always match, since Subagent 1
+  was given that exact name and never re-selects one — this is a sanity
+  check, not a new decision point). If it somehow doesn't match, treat that
+  as a bug in the workflow: stop and surface both values to the user rather
+  than silently trusting either one.
 
 ---
 
-## Placeholder substitution (Phases 2–6)
+## Placeholder substitution (Phases 1–6)
 
-Before spawning any subagent in Phases 2–6, replace every occurrence of
+Before spawning any subagent in Phases 1–6, replace every occurrence of
 `<change-name>` in that subagent's prompt with the actual change name
-extracted from Phase 1.
+confirmed in Phase 0.
 
 ---
 
@@ -218,6 +378,26 @@ following prompt:
 > and 3.
 > If you encounter a blocker during implementation, end your response with
 > `IMPLEMENT_BLOCKED — <brief reason>` and stop.
+>
+> **Never materialize a generated secret's raw value anywhere in this
+> response, a report file, a tasks.md checkbox note, or any implementation
+> file.** If a task requires generating a credential (a private key, API
+> token, password, signing key, or similar), you may generate it and use it
+> only to complete the narrowly-required local action — e.g. writing its
+> *public* half to a committed file, when the scheme has one. Do not write,
+> log, or echo the secret half anywhere this session's transcript, a
+> report, or a repo file would capture it. Treat actually supplying that
+> value to a secrets store (`k8s/secret.yaml`, a CI secret, an env var) as
+> an out-of-band action only the user performs, in their own terminal,
+> outside this workflow — never something you run with the value passed as
+> a visible argument. Leave that task's checkbox unchecked with a note
+> naming the required manual command (never the value). Do this even under
+> this workflow's general "keep going until done or blocked" instruction —
+> a task that can only be finished by exposing a secret's raw value is, by
+> definition, blocked. This applies equally to any skill invoked from
+> within this step (e.g. `decision-record` writing an ADR that describes
+> the credential) — a description of *which* secret and *how* it's stored
+> is fine; the value itself is never fine.
 >
 > **Determining "the files changed by `<change-name>`" — recompute fresh immediately before every single use, never cache one snapshot**
 > Run `git status --porcelain` and parse every line's file path —
@@ -815,23 +995,56 @@ the following prompt:
 
 > Perform these steps in sequence using the Skill tool:
 >
-> **Step 1** — Invoke `spec-compliance-check` for `<change-name>`. It reads
+> **Step 1 — Verify spec compliance and close every coverage gap.** Invoke
+> `spec-compliance-check` for `<change-name>`. It reads
 > `openspec/changes/<change-name>/specs/**/spec.md` and `tasks.md`
 > (unmodified — this skill is read-only against `openspec/`) and reports
 > each acceptance scenario as Verified, Failing, or Unverified; it does not
 > invoke `openspec-archive-change` itself and does not edit any files.
+>
 > - **If the report has any Failing scenario:** stop immediately — do not
 >   proceed to Step 2. End your response with
 >   `ARCHIVE_BLOCKED: spec-compliance-check found <N> failing scenario(s) — <one-line summary>`.
->   A failing scenario means shipped behavior contradicts the spec; this is
->   not something to route through Steps 2–4 unattended.
-> - **If the report has only Unverified scenarios (no Failing ones):** this
->   is a judgment call for a human, not an automatic block — continue to
->   Step 2, but carry the list of unverified scenarios forward; it must
->   appear as a caveat in the Final Summary (see below), the same way
->   `UNREVIEWED_PROD_FIXES` surfaces from Phase 3.
-> - **If everything is Verified:** continue to Step 2 with nothing to carry
->   forward.
+>   A Failing scenario is a real behavioral gap, not a coverage gap — it
+>   belongs back in Phase 2's implementation/review loop, not fixed here.
+> - **If the report has any Unverified scenario (no Failing ones): close
+>   every one of them before proceeding — never carry an Unverified
+>   scenario forward as a caveat.** An Unverified scenario means the
+>   behavior may well be correct, but nothing actually proves it — that gap
+>   gets closed now, not documented and left open. For each Unverified
+>   scenario:
+>   1. Read the report's explanation of exactly what's missing (e.g. "no
+>      test exercises this compound claim," "no test covers the X branch,"
+>      "no mounted UI test asserts Y is absent").
+>   2. Add the missing test coverage directly — a new backend
+>      (`@SpringBootTest` / `@WebMvcTest` / `@DataJpaTest`) test or a
+>      Cypress component test/assertion extending the relevant existing
+>      spec file (preferred over a new file, matching this project's
+>      conventions — see `java-unit-test-developer` /
+>      `cypress-unit-test-developer`), or an E2E case if that's the layer
+>      the gap sits at.
+>   3. Re-invoke `spec-compliance-check` for `<change-name>` to confirm the
+>      scenario now reports Verified.
+>   4. Repeat for every Unverified scenario from the original report.
+>   - **If closing a gap's test fails** (the scenario turns out to be
+>     genuinely broken, not just untested): treat this exactly like a
+>     Failing scenario — stop and end your response with
+>     `ARCHIVE_BLOCKED: spec-compliance-check found <N> failing scenario(s) — <one-line summary>`.
+>     A coverage gap that turns out to hide a real bug is not something to
+>     paper over by weakening or dropping the new test.
+>   - **If after 3 rounds of add-test-and-re-check a scenario still isn't
+>     Verified** and it's not a genuine behavioral failure either (e.g. you
+>     cannot find any way to exercise it with this project's test tooling):
+>     end your response with `ARCHIVE_BLOCKED — repeated spec-compliance
+>     cycles, <N> scenario(s) still unverified — <one-line summary>` rather
+>     than silently archiving with a gap. This needs a human judgment call
+>     on the testing approach, not indefinite auto-retry.
+>   - Once every scenario reports Verified, run the affected test suite(s)
+>     once more (`cd JPPhotoManagerWeb/backend && mvn test` and/or `cd
+>     JPPhotoManagerWeb/frontend && npm test`) to confirm the newly added
+>     tests pass alongside everything else, then continue to Step 2.
+> - **If everything is already Verified:** continue to Step 2 with nothing
+>   to close.
 >
 > **Step 2** — Invoke `web-docs-sync` in its scoped-sync mode for the
 > current branch's changes (it diffs against `origin/develop` itself — no
@@ -854,17 +1067,21 @@ the following prompt:
 > complete fully (the feature row must be updated to `✅ Implemented` in
 > `JPPhotoManagerWeb/docs/backlog/features-planned.md`).
 >
-> After all four steps complete, end your response with exactly this line
-> (append the `UNVERIFIED_SCENARIOS:` line only if Step 1 found any):
+> After all four steps complete, end your response with exactly this line:
 > `ARCHIVE: DONE`
-> `UNVERIFIED_SCENARIOS: <count> — <one-line summary of which scenarios, from Step 1's report>`
 
 Do not display the Final Summary until this subagent returns `ARCHIVE: DONE`
 or `ARCHIVE_BLOCKED`. An `ARCHIVE_BLOCKED` result means the feature is
-implemented and tested but **not archived** — surface the failing
-scenario(s) to the user and wait for guidance (fix the code, fix the spec
-via the normal `openspec-*` workflow, or override and archive manually)
-rather than proceeding or retrying automatically.
+implemented and tested but **not archived** — Step 1's `spec-compliance-check`
+found a Failing scenario, a test added to close an Unverified scenario
+itself failed (revealing a real bug), or an Unverified scenario survived 3
+rounds of add-test-and-re-check. Surface the scenario(s) to the user and
+wait for guidance (fix the code, fix the spec via the normal `openspec-*`
+workflow, or override and archive manually) rather than proceeding or
+retrying automatically. This workflow never archives a change with a known
+spec-compliance gap: Step 1 closes every Unverified scenario with real test
+coverage (or escalates via `ARCHIVE_BLOCKED` if it genuinely can't) before
+Step 2 ever runs — there is no "archive now, note the gap for later" path.
 
 ---
 
@@ -890,7 +1107,7 @@ them back through Phase 2's code review.
 **E2E verification:** ✓ <one-line summary from Phase 4's `E2E: PASS`> (or
 "N/A — no auth/gallery/migration changes in this change" if `E2E: SKIPPED`)
 **Docker:** ✓ <value from DOCKER signal, e.g. "Deployed — build-and-deploy-k8s.sh (namespace photomanager)", "Deployed — backend, frontend", or "Skipped — Docker not running">
-**Spec compliance:** ✓ All scenarios verified (or, if `UNVERIFIED_SCENARIOS` was recorded in Phase 6: **⚠ <count> scenario(s) unverified:** <the one-line summary> — no automated test or manual check found; consider closing the gap with `spec-compliance-check`)
+**Spec compliance:** ✓ All scenarios verified (any Unverified scenario `spec-compliance-check` found was closed with new test coverage during Phase 6, Step 1, before archiving — never left as a caveat)
 **Docs sync:** ✓ <one-line summary from `web-docs-sync`, e.g. "Updated docs/backend.md REST API table + CLAUDE.md config pointer" or "Nothing to sync">
 **SDD change:** ✓ Archived
 **Feature:** ✓ Marked as implemented
@@ -900,9 +1117,9 @@ them back through Phase 2's code review.
 
 ## Guardrails
 
-- Always capture and propagate the change name from Phase 1 to all later
-  phases. Before spawning any subagent in Phases 2–6, substitute every
-  `<change-name>` occurrence in its prompt with the actual value from Phase 1.
+- Always capture and propagate the change name confirmed in Phase 0 to all
+  later phases. Before spawning any subagent in Phases 1–6, substitute
+  every `<change-name>` occurrence in its prompt with that confirmed value.
 - **`--skip-branch-setup` (batch mode) only ever affects Phase 1 Step 1.5.**
   No other phase's behavior changes — Phases 2–6 already just operate on
   "whatever branch is currently checked out" and never re-derive or assume
@@ -920,9 +1137,54 @@ them back through Phase 2's code review.
   branch state entirely to the caller. Either way, Phases 2–6 must stay on
   whatever branch was current when Phase 1 finished; none of them may run
   their own branch operations.
-- **Cancellation detection**: if Subagent 1's response contains no `CHANGE_NAME:`
-  line (or contains `CANCELLED`), treat it as user cancellation — stop the
-  workflow immediately and inform the user.
+- **Cancellation detection**: if `features-next` (invoked directly in
+  Phase 0) returns without a `CHANGE_NAME:` line, treat it as user
+  cancellation — stop the workflow immediately, before Subagent 1 is ever
+  spawned, and inform the user. Subagent 1 itself is never given the
+  opportunity to cancel feature selection — by the time it runs, the
+  choice is final.
+- **Do not start Phase 2 if Phase 1 returns
+  `PROPOSE_NEEDS_DEPENDENCY_DECISION`**, even though it isn't a failure —
+  this workflow must never barrel into implementing a feature that Step
+  3.5 just discovered depends on something not yet built. Resolve it
+  through the AskUserQuestion decision point described after Phase 1 first;
+  only an explicit "proceed anyway" answer continues to Phase 2.
+- **Step 1.6 marks the backlog row `🔶 In Progress` as soon as the branch to
+  work on is ready, in both normal and batch mode.** This is what lets
+  `features-next` recommend resuming an interrupted feature instead of
+  starting a new one, and it runs before Step 2's artifact check so a
+  change that still needs `openspec-propose` is marked in progress too. It
+  only ever flips `⬜ Pending` → `🔶 In Progress`; it never touches a row
+  already showing `🔶 In Progress` or `✅ Implemented`, and it never blocks
+  the workflow if the row is missing (ad hoc changes outside the tracked
+  backlog). Phase 6's `features-archive` is what eventually flips the row
+  to `✅ Implemented`.
+- **Auto Mode (or any other autonomous-operation instruction) never
+  overrides a required user confirmation anywhere in this workflow.** This
+  applies to every `AskUserQuestion` decision point this skill or a skill
+  it invokes raises: Phase 0's feature selection (`features-next`), the
+  `PROPOSE_NEEDS_DEPENDENCY_DECISION` proceed-or-stop choice after Phase 1,
+  Phase 3's `PROD_CODE_FIXED` proceed-or-re-review choice, and any
+  blocker-guidance prompt after a `*_BLOCKED` result. "Make the reasonable
+  call instead of stopping to ask" is guidance for implementation judgment
+  calls — it is never license to pick an unambiguous-looking top option
+  and proceed past a point this skill designed to be a genuine human
+  decision. If a confirmation step is ever skipped for this reason, that is
+  a bug in how the skill was invoked, not acceptable behavior.
+- **Never let a spawned subagent — or this orchestrator itself — print,
+  echo, or otherwise materialize a generated secret's raw value (a private
+  key, API token, password, signing key, or similar) anywhere in a
+  response, report file, or implementation file.** Phase 2's prompt
+  instructs the subagent to leave any task requiring secret disclosure
+  unchecked with a note naming the manual command instead — but the
+  orchestrator must not rely on the subagent alone getting this right. If a
+  subagent's hand-back response is ever found to contain what looks like a
+  live secret value, treat it as compromised regardless of whether it
+  reached a committed file, and surface this to the user explicitly —
+  which value, why it's now considered burned, and that it needs
+  regenerating out-of-band by the user — rather than silently absorbing it
+  or repeating it in any later response, file, or summary. This check
+  applies to every phase, not just Phase 2.
 - Do not start Phase 2 until Phase 1 confirms that all `applyRequires`
   artifacts are `done`. If Phase 1 returns `PROPOSE_BLOCKED`, surface the
   details to the user and stop.
@@ -942,14 +1204,20 @@ them back through Phase 2's code review.
   `DOCKER: SKIPPED`. If it reports `DOCKER: BLOCKED`, surface the details to
   the user and wait for guidance before continuing.
 - Do not display the Final Summary until Phase 6 subagent returns `ARCHIVE: DONE`.
-  If it returns `ARCHIVE_BLOCKED` instead (Step 1's `spec-compliance-check`
-  found a failing scenario), the change stays unarchived — surface the
-  failing scenario(s) to the user and wait for guidance instead of
-  retrying Phase 6 automatically or treating it as equivalent to
-  `DOCKER: BLOCKED`'s deploy-retry framing; a spec/behavior mismatch isn't
-  something a re-run fixes by itself. If it returns `ARCHIVE: DONE` with an
-  `UNVERIFIED_SCENARIOS:` line, that's not blocking — carry the line into
-  the Final Summary's "Spec compliance" field verbatim.
+  If it returns `ARCHIVE_BLOCKED` instead — Step 1's `spec-compliance-check`
+  found a Failing scenario, a test added to close an Unverified scenario
+  itself failed (revealing a real bug), or an Unverified scenario survived
+  3 rounds of add-test-and-re-check — the change stays unarchived. Surface
+  the scenario(s) to the user and wait for guidance instead of retrying
+  Phase 6 automatically or treating it as equivalent to `DOCKER: BLOCKED`'s
+  deploy-retry framing; a spec/behavior mismatch isn't something a re-run
+  fixes by itself.
+- **This workflow never archives a change with a known spec-compliance
+  gap.** Phase 6 Step 1 closes every Unverified scenario with real,
+  passing test coverage (or escalates via `ARCHIVE_BLOCKED` when it
+  genuinely can't) before Step 2 ever runs. There is no
+  `UNVERIFIED_SCENARIOS` caveat path — a scenario is either Verified
+  before archiving, or the archive doesn't happen.
 - Subagents 3 and 4 must be launched in the same message (parallel). Do not
   launch one before the other.
 - **Phase 4 only starts the backend/frontend locally and reads/writes no
@@ -969,10 +1237,14 @@ them back through Phase 2's code review.
   guidance explicitly warns against. This applies even to Subagents 3 and 4:
   issuing both calls with `run_in_background: false` in the same message
   still runs them concurrently: it means this skill waits for both results
-  before proceeding, rather than defaulting to background execution. Phase
-  1's foreground requirement is doubly important because it embeds
-  `features-next`'s interactive `AskUserQuestion` confirmation, which a
-  backgrounded agent cannot reliably surface to the user.
+  before proceeding, rather than defaulting to background execution.
+  **Never delegate an `AskUserQuestion` decision point to a spawned
+  subagent as a workaround for background-execution uncertainty** — that is
+  what Phase 0 (feature selection) and the `PROPOSE_NEEDS_DEPENDENCY_DECISION`
+  handling after Phase 1 exist to avoid entirely, by running the
+  confirmation directly in the orchestrator's own context (the main
+  conversation, or `features-batch-development`'s inline loop) rather than
+  trying to make a subagent's confirmation reliable.
 - **Missing signal fallback**: if any subagent returns without its expected
   signal, treat it as `BLOCKED`, surface the subagent's raw response to the
   user, and wait for guidance before proceeding to the next phase.
@@ -1025,14 +1297,17 @@ them back through Phase 2's code review.
   `develop`.** Phase 1's Step 1.5 is the only place a branch is created,
   switched, or synced — it invokes the `gitflow` skill (start feature) to
   create `feature/<change-name>` from `develop`, or, if it already exists
-  from a prior run, resumes it (checking it out and, via `gitflow`'s sync
-  feature action, bringing it up to date with `develop`), before any file
-  in the repository is created or modified, including the SDD artifacts
-  written by `openspec-propose`. Phases 2–6 must stay on that branch; none
-  of them may run `git checkout`, `git switch`, `git merge`, invoke
-  `gitflow`, or create another branch. If a subagent finds itself on a
-  different branch, that is a bug in the workflow — surface it to the user
-  rather than silently switching.
+  from a prior run (locally, or only on the remote because another device
+  pushed it first), resumes it (checking it out — from the local branch,
+  or tracking `origin/feature/<change-name>` directly if only the remote
+  copy exists — merging in any commits pushed from another device, and,
+  via `gitflow`'s sync feature action, bringing it up to date with
+  `develop`), before any file in the repository is created or modified,
+  including the SDD artifacts written by `openspec-propose`. Phases 2–6
+  must stay on that branch; none of them may run `git checkout`, `git
+  switch`, `git merge`, invoke `gitflow`, or create another branch. If a
+  subagent finds itself on a different branch, that is a bug in the
+  workflow — surface it to the user rather than silently switching.
 - **The feature branch is never synced from `main`, only `develop`.**
   Step 1.5's resume path uses `gitflow`'s sync feature action exclusively,
   which merges `origin/develop` and nothing else — matching `gitflow`'s own
@@ -1046,12 +1321,16 @@ them back through Phase 2's code review.
   at any point in the workflow. This applies to all phases, including after
   tests pass and during archiving. If a subagent or invoked skill attempts
   to commit, block it and continue without committing. Branch creation and
-  branch sync (`git checkout`, `git checkout -b`, `git merge origin/develop`
-  — all via `gitflow`'s start-feature/sync-feature actions, and only in
-  Phase 1's Step 1.5) are the sole exceptions to this rule. A sync-feature
-  merge commit brings in already-reviewed upstream work from `develop`; it
-  is not uncommitted implementation of this change, so it doesn't conflict
-  with the reason this guardrail exists.
+  branch sync (`git fetch`, `git checkout`, `git checkout -b`, `git merge
+  origin/develop`, and `git merge origin/feature/<change-name>` to pick up
+  commits pushed from another device — all only in Phase 1's Step 1.5, the
+  merges either directly or via `gitflow`'s start-feature/sync-feature
+  actions) are the sole exceptions to this rule. A sync-feature merge
+  commit brings in already-reviewed upstream work from `develop`, and an
+  `origin/feature/<change-name>` merge brings in already-pushed work on
+  this same change from another device; neither is uncommitted
+  implementation of new work, so neither conflicts with the reason this
+  guardrail exists.
 - **No destructive Docker commands.** Do not run `docker compose down`,
   `docker rm`, `docker rmi`, or any command that stops or removes containers
   or images beyond what is strictly required to restart the application
