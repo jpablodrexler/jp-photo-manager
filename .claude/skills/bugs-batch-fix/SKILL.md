@@ -11,8 +11,12 @@ description: >
   session cutoff or crash. TRIGGER when the user asks to batch-fix bugs,
   work through the bug backlog unattended, or fix a list of named
   BUG-NNNs in one run (e.g. "fix BUG-004, BUG-007 and BUG-009 while I'm
-  out", "grind the whole open bug backlog overnight"). This is the
-  bug-family counterpart to features-batch-development.
+  out", "grind the whole open bug backlog overnight"). Also TRIGGER when
+  the user hands over several bugs at once and wants them all fixed in
+  one session (e.g. "plan and fix these few bugs", "here are 3 bugs, sort
+  them out") — file each with bug-report first, then run this skill (or
+  bug-fix per bug) over the new ids rather than hand-rolling a multi-bug
+  fix. This is the bug-family counterpart to features-batch-development.
 license: MIT
 metadata:
   author: Juan Pablo Drexler

@@ -11,7 +11,12 @@ description: >
   closes the bug via bugs-archive. No git commits at any point — hands off
   to the user for review and PR. TRIGGER when the user asks to fix a bug,
   work through the bug backlog one at a time, or address a specific
-  BUG-NNN. This is the bug-family counterpart to feature-development.
+  BUG-NNN — including a bug the user has only just described rather than
+  an existing id: file it with bug-report first, then run this skill on
+  the new BUG-NNN. "Plan and fix a bug" triggers this skill too — the
+  planning happens inside its own reproduce-then-fix workflow and is
+  never a reason to hand-roll the fix outside it. This is the bug-family
+  counterpart to feature-development.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
