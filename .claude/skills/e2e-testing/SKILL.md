@@ -372,10 +372,18 @@ known install — no separate setup for this skill. Confirm it's present:
 test -d JPPhotoManagerWeb/frontend/node_modules/cypress && echo "present" || echo "MISSING — run npm install from JPPhotoManagerWeb/frontend/"
 ```
 
-Write a **throwaway spec file to the session scratchpad directory** (never
-under `JPPhotoManagerWeb/frontend/cypress/e2e/` — that's the maintained
-suite's territory, and this skill's whole point is not persisting
-anything). Import `cypress/support/commands.ts`'s `cy.login`/`cy.logout`
+Write a **throwaway spec file at
+`JPPhotoManagerWeb/frontend/cypress/e2e/zz-scratch-<name>.cy.ts`** —
+**not** the session scratchpad. `cypress.config.ts`'s `e2e.specPattern` is
+`cypress/e2e/**/*.cy.ts` (with `cypress/e2e/mocked/**`/`cypress/e2e/a11y/**`
+excluded); a spec living anywhere else — the scratchpad included — matches
+nothing when passed via `--spec`, and Cypress reports "no spec files were
+found" even though the file exists on disk (confirmed empirically — don't
+try to route around this with a `supportFile` override, that only affects
+shared-command resolution, not spec discovery). The `zz-scratch-` prefix
+keeps it visibly distinct from `e2e-suite`'s real, committed spec files
+while it briefly exists; delete it when done (§10) — it's never
+committed. Import `cypress/support/commands.ts`'s `cy.login`/`cy.logout`
 the same way the maintained suite's specs do — reusing them means the
 admin/admin login flow and its session caching (`cy.session()`) are
 already handled for you, not something to re-solve per session.
@@ -384,19 +392,28 @@ Run a scratch spec with:
 
 ```bash
 cd JPPhotoManagerWeb/frontend
-npx cypress run --e2e --spec "<path-to-scratch-spec>.cy.ts" \
-  --config baseUrl=http://localhost:4200,supportFile=cypress/support/e2e.ts
+npx cypress run --e2e --spec "cypress/e2e/zz-scratch-<name>.cy.ts" \
+  --config baseUrl=http://localhost:4200
 ```
 
-The `supportFile` override is what makes the scratch spec (living outside
-`cypress/e2e/`) still pick up `cy.login`/`cy.logout` — without it, Cypress
-looks for a support file next to the scratch spec's own location and
-won't find one.
+No `supportFile` override needed — placing the spec directly in
+`cypress/e2e/` means the default `supportFile` (`cypress/support/e2e.ts`)
+already resolves normally, the same as any of `e2e-suite`'s own specs.
+
+**Before running, clear any stale entries under
+`JPPhotoManagerWeb/frontend/cypress/screenshots/` left by an earlier
+failed run.** Cypress's `trashAssetsBeforeRuns` step tries to recycle-bin
+the whole folder before each run; a leftover subfolder with `--`/`()`/
+space-heavy filenames (failure screenshots from an old failing spec) can
+make Windows' trash step throw and the run abort. Delete
+`JPPhotoManagerWeb/frontend/cypress/screenshots/` outright if this
+happens — it's gitignored and regenerated every run, never source.
 
 Screenshots and videos land under
 `JPPhotoManagerWeb/frontend/cypress/screenshots/`/`videos/` automatically
-on failure — view a screenshot with the Read tool the same way you'd view
-any other image file.
+on failure (or immediately via an explicit `cy.screenshot()` call) — view
+a screenshot with the Read tool the same way you'd view any other image
+file.
 
 ### Interaction pitfalls — read before scripting any click or type
 
@@ -452,7 +469,7 @@ same things on the next E2E run:
 ### 7.1 Sign in and verify the home dashboard renders
 
 ```typescript
-// <scratchpad>/home-dashboard-check.cy.ts
+// JPPhotoManagerWeb/frontend/cypress/e2e/zz-scratch-home-dashboard-check.cy.ts
 describe('ad-hoc: home dashboard renders after login', () => {
   it('shows stat cards populated from the API', () => {
     cy.login('admin', 'admin');
@@ -468,8 +485,8 @@ Run with:
 
 ```bash
 cd JPPhotoManagerWeb/frontend
-npx cypress run --e2e --spec "<scratchpad>/home-dashboard-check.cy.ts" \
-  --config baseUrl=http://localhost:4200,supportFile=cypress/support/e2e.ts
+npx cypress run --e2e --spec "cypress/e2e/zz-scratch-home-dashboard-check.cy.ts" \
+  --config baseUrl=http://localhost:4200
 ```
 
 Then view the screenshot (under `JPPhotoManagerWeb/frontend/cypress/screenshots/`)
@@ -497,7 +514,7 @@ Test click-to-navigate behaviour by clicking a UI element and checking the
 resulting URL.
 
 ```typescript
-// <scratchpad>/gallery-navigation-check.cy.ts
+// JPPhotoManagerWeb/frontend/cypress/e2e/zz-scratch-gallery-navigation-check.cy.ts
 describe('ad-hoc: recent-photo click navigates to gallery', () => {
   it('opens the gallery pre-filtered to the clicked folder', () => {
     cy.login('admin', 'admin');
@@ -546,8 +563,12 @@ pkill -f "mvn spring-boot:run" 2>/dev/null
 pkill -f "ng serve\|npm start\|angular" 2>/dev/null
 ```
 
-Or kill by PID if you recorded them at startup. Delete the scratch spec
-file from the scratchpad when done — it was never meant to persist.
+Or kill by PID if you recorded them at startup. Delete
+`JPPhotoManagerWeb/frontend/cypress/e2e/zz-scratch-<name>.cy.ts` when
+done — it was never meant to persist — and clear
+`JPPhotoManagerWeb/frontend/cypress/screenshots/` after reading whatever
+images you needed (gitignored, regenerated every run; leaving stale
+entries there is what causes the trash-step failure in §7).
 
 ---
 
@@ -578,7 +599,9 @@ Use this as a quick reference for any E2E session:
       automatically on an uncaught exception by default — a scratch spec
       that completes without that kind of failure has already cleared
       this bar)
-- [ ] The scratch spec file was deleted from the scratchpad when done
+- [ ] The scratch spec file was deleted from `cypress/e2e/` when done, and
+      `cypress/screenshots/` was cleared after reading any images needed
+      from it
 
 ---
 
