@@ -277,5 +277,25 @@ JPPhotoManagerWeb/frontend/reports/
 JPPhotoManagerWeb/.env
 JPPhotoManagerWeb/k8s/secret.yaml
 JPPhotoManagerWeb/k8s/catalog-volumes.yaml
-# Claude Code skill review reports (local working artifacts, not committed history)
-JPPhotoManagerWeb/docs/reports/
+# Claude Code skill review reports. Per-change audit reports (code-review,
+# security-review, spec-compliance, and similar review-skill output) are
+# scoped to one fix/feature and not committed. The periodic quality-metric
+# sweeps below ARE committed so their dated files build a trend history in
+# the repo — see the root README's Quality Metrics section for what each
+# one measures.
+JPPhotoManagerWeb/docs/reports/*
+!JPPhotoManagerWeb/docs/reports/type-coverage/
+!JPPhotoManagerWeb/docs/reports/complexity/
+!JPPhotoManagerWeb/docs/reports/dead-code/
+!JPPhotoManagerWeb/docs/reports/route-coverage/
+!JPPhotoManagerWeb/docs/reports/auth-coverage/
+!JPPhotoManagerWeb/docs/reports/lighthouse/
+!JPPhotoManagerWeb/docs/reports/a11y/
+!JPPhotoManagerWeb/docs/reports/code-coverage/
+!JPPhotoManagerWeb/docs/reports/bundle-size/
+!JPPhotoManagerWeb/docs/reports/dependency-staleness/
+!JPPhotoManagerWeb/docs/reports/e2e-run/
+!JPPhotoManagerWeb/docs/reports/secrets-scan/
+!JPPhotoManagerWeb/docs/reports/license-compliance/
+!JPPhotoManagerWeb/docs/reports/dependency-vulnerabilities/
+!JPPhotoManagerWeb/docs/reports/mutation/
