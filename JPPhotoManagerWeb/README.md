@@ -30,7 +30,7 @@ This README is split into topic-specific files under [`docs/`](docs/):
 
 ## Quality Metrics
 
-Each report below is a dated markdown snapshot written to `JPPhotoManagerWeb/docs/reports/<category>/` (gitignored, regenerated on demand — a fresh run adds a new dated file rather than overwriting the last one, so the directory accumulates a history you can diff over time). Frontend commands run from `frontend/`; backend commands run from `backend/`. A category with both a frontend and backend version writes separate `*_frontend.md` / `*_backend.md` files under the same directory.
+Each report below is a dated markdown snapshot written to `JPPhotoManagerWeb/docs/reports/<category>/` and **committed to the repo** so the directory accumulates a real trend history over time — a fresh run adds a new dated file rather than overwriting the last one (though several report scripts overwrite a same-day file in place rather than adding a `-2` suffix — check each report's own `**Generated:**` timestamp, not its filename, to tell runs apart). Frontend commands run from `frontend/`; backend commands run from `backend/`. A category with both a frontend and backend version writes separate `*_frontend.md` / `*_backend.md` files under the same directory.
 
 | Metric | Report location | Regenerate |
 |---|---|---|
