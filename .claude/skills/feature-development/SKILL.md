@@ -558,7 +558,24 @@ summary of what changed>` note appended to the same line — the same
 > database-review, and security-review findings (including any follow-on
 > code-review findings from the database and security sub-steps) are resolved.
 >
-> **Step 5 — Signal completion**
+> **Step 5 — Mobile viewport check (conditional)**
+> (recompute `CHANGED_FILES`) Check whether any path in the freshly
+> recomputed `CHANGED_FILES` is a component template (`*.html`) or
+> stylesheet (`*.css`/`*.scss`) under `JPPhotoManagerWeb/frontend/src/app/`.
+>
+> - If **none**: skip this step.
+> - If **any**: verify the affected view at the project's standard mobile
+>   check device — Samsung Galaxy S23 Ultra, CSS viewport 384×824 @3.75x
+>   DPR — per `angular-developer`'s standard mobile check device (Chrome
+>   DevTools custom device, or `cy.viewport(384, 824)` in a Cypress
+>   spec/screenshot). Confirm no text overlap between elements, no
+>   clipped/cropped content, and no forced horizontal scroll at that
+>   width. Fix any layout issue the same way as a code-review finding
+>   (recompute `CHANGED_FILES`, re-invoke `code-reviewer` once more over
+>   the fix). Note what was checked, and anything caught, for the Final
+>   Summary.
+>
+> **Step 6 — Signal completion**
 > End your response with exactly this line:
 > `IMPLEMENT: DONE`
 
@@ -1098,6 +1115,7 @@ After all phases complete, display:
 **Code review:** ✓ All findings resolved
 **Database review:** ✓ All findings resolved (or N/A — no schema changes)
 **Security review:** ✓ All findings resolved (or N/A — no security-sensitive changes)
+**Mobile viewport check:** ✓ Verified at Samsung S23 Ultra (384×824) — <what was checked/caught> (or N/A — no template/CSS changes)
 **Backend tests:** ✓ All passing
 **Frontend tests:** ✓ All passing
 [if UNREVIEWED_PROD_FIXES was recorded in Phase 3, insert this line here:]

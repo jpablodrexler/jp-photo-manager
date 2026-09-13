@@ -271,7 +271,19 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 > Do not proceed until all Critical and Warning findings (including
 > follow-on code-review findings from Steps 3–4) are resolved.
 >
-> **Step 5 — Signal completion**
+> **Step 5 — Mobile viewport check (conditional)**
+> (recompute `CHANGED_FILES`) If any changed path is a component template
+> (`*.html`) or stylesheet (`*.css`/`*.scss`) under
+> `JPPhotoManagerWeb/frontend/src/app/`: verify the affected view at
+> `angular-developer`'s standard mobile check device (Chrome DevTools
+> custom device, or `cy.viewport()` at that device's resolution in a
+> Cypress spec/screenshot). Confirm no text overlap between elements, no
+> clipped/cropped content, and no forced horizontal scroll at that width.
+> Fix any layout issue the same way as a code-review finding (recompute
+> `CHANGED_FILES`, re-invoke `code-reviewer` once more over the fix). Note
+> what was checked, and anything caught, for the Final Summary.
+>
+> **Step 6 — Signal completion**
 > End with exactly:
 > `FIX_IMPLEMENTED: DONE`
 
@@ -416,6 +428,7 @@ DONE`.
 **Code review:** ✓ All findings resolved
 **Database review:** ✓ All findings resolved (or N/A)
 **Security review:** ✓ All findings resolved (or N/A)
+**Mobile viewport check:** ✓ Verified at angular-developer's standard mobile check device — <what was checked/caught> (or N/A, no template/CSS change)
 **Backend tests:** ✓ passing
 **Frontend tests:** ✓ passing
 [if UNREVIEWED_PROD_FIXES was recorded in Phase 3:]

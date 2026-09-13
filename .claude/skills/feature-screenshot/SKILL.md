@@ -129,9 +129,12 @@ no-opped) is worse than no screenshot, since it looks correct at a glance.
 
 **Viewport — defaults to desktop, no extra config needed.** Cypress's
 default viewport (1000×660) already renders the desktop layout. Only add
-an explicit `cy.viewport(390, 844)` (or `cy.viewport('iphone-x')`) when
-the request specifically asks for a mobile/phone view, and call it out as
-such in the summary so it's clear which viewport a given screenshot used.
+an explicit `cy.viewport(384, 824)` — the project's standard mobile check
+device, a Samsung Galaxy S23 Ultra (CSS viewport 384×824 @3.75x DPR) —
+when the request specifically asks for a mobile/phone view, and call it
+out as such in the summary so it's clear which viewport a given
+screenshot used. Use a different explicit `cy.viewport(...)` only when
+the request names a different device.
 
 ## 4. Run, then show
 

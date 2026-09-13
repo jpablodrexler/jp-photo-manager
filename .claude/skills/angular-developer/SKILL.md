@@ -502,6 +502,47 @@ moveUp(i: number): void {
 
 This rule applies to every array bound to `[dataSource]`. Existing object references inside the spread array are preserved, so `[(ngModel)]` bindings on row inputs continue to work correctly.
 
+### Outline `mat-form-field` labels — a container must not clip or truncate them
+
+An `appearance="outline"` field's floating `mat-label` sits ~8px *above* the field's own border box, and in its resting state the label occupies the full field width. Two ways that goes wrong:
+
+- **Top clipping.** `mat-dialog-content` (and any `overflow: auto`/`hidden` container) clips at its padding box. A `mat-form-field` placed as the first element inside a scrolling `mat-dialog-content` has the top of its floated label shaved off. Give the first field (or its row) a `margin-top`, or add extra `padding-top` to the scroll container, so the label clears the clip edge.
+- **Label truncation from a fixed width.** A field hard-sized below what its label needs (`width: 7rem` / `flex: 0 0 7rem` under a longer `mat-label`) renders the label truncated with an ellipsis. Don't fixed-width a labelled field — use `min-width` plus a growable `flex`, size it to content, or shorten the label copy.
+
+When you add or touch a narrow numeric/select field inside a dialog, check its label isn't clipped or truncated at the mobile viewport described in §20, and check any *existing* fixed-width field in the same view while you're there.
+
+### Don't surface validation errors before the user attempts a submit
+
+Angular Material's default `ErrorStateMatcher` puts a `mat-form-field` into its error state — red outline, red `mat-label`, and any `<mat-error>` rendered — as soon as its control is `invalid && touched`, and Material marks a control `touched` **on blur**. For a **persistent add-style field** (a catalog dialog's "new item" row, an always-present inline input) or any field the user hasn't tried to submit yet, that means a bare focus-then-blur of a still-empty required field flashes a "required" error the user never provoked — and `MatDialog`'s default `autoFocus: 'first-tabbable'` focuses the first such field on open, so *any* later click (even one that isn't a submit) trips it.
+
+Gate the error on an explicit **attempt flag** instead of `touched`:
+
+```typescript
+addAttempted = false;
+
+// A per-field matcher so the field's own outline/label also stays out of
+// the error state — the <mat-error> @if alone doesn't control that.
+addErrorMatcher: ErrorStateMatcher = {
+  isErrorState: (control) => !!control && control.invalid && this.addAttempted,
+};
+
+addItem(): void {
+  if (this.addControl.invalid) {
+    this.addAttempted = true;
+    this.addControl.markAsTouched();
+    return;
+  }
+  // ...on success:
+  this.addAttempted = false;
+}
+```
+
+- Template: `@if (addControl.invalid && addAttempted) { <mat-error>…</mat-error> }` — never `&& addControl.touched`.
+- Bind the matcher on the field: `<input matInput [formControl]="addControl" [errorStateMatcher]="addErrorMatcher" />` (`ErrorStateMatcher` imports from `@angular/material/core`). Keep it a small object/class in the component — don't `provide` it globally.
+- Reset the attempt flag to `false` after a successful submit so the next entry starts clean.
+
+Whenever you add a dialog or form with a persistent add-row or an optional validated field, verify by focus-then-blur that it doesn't error before a submit is attempted.
+
 ---
 
 ## 13. CDK Tree (Folder Navigation)
@@ -836,6 +877,55 @@ There is no `Authorization` header to add. The cookie is attached by the browser
 
 ---
 
+## 20. Mobile Viewport Verification
+
+Any change that touches a component's template or stylesheet (new UI, a
+layout tweak, a row/card that gains or loses content) must be visually
+checked at a phone-sized viewport before it's considered done. A
+comfortably-wide handset preset (390–430px) is not enough on its own —
+real layout bugs (overlapping text, a squeezed row colliding with a
+sibling element) can hide at that width and only show up on a device
+meaningfully narrower than it.
+
+**Standard check device — Samsung Galaxy S23 Ultra:**
+
+| | value |
+| --- | --- |
+| CSS viewport | 384 × 824 |
+| Device pixel ratio | 3.75x |
+| Physical resolution | 1440 × 3088 (~500ppi) |
+
+Verify at this size (in addition to, not instead of, any other viewport
+the change specifically calls for):
+
+- **Chrome DevTools:** open the device toolbar (Ctrl/Cmd+Shift+M), and
+  either pick "Galaxy S23 Ultra" from the device list if your Chrome
+  version has it, or add a custom device with the dimensions above.
+- **Cypress** (component tests or a scratch/E2E spec): `cy.viewport(384,
+  824)` before asserting on layout.
+
+What to actually look for at this width, not just that the page renders:
+
+- A flex/grid row that packs several pieces (an icon, a name, secondary
+  text, a count/badge, one or more action buttons) with no `flex-wrap` —
+  check whether the squeezed text column wraps cleanly onto its own
+  line(s) rather than colliding with a sibling element. `min-width: 0` on
+  a flex child lets its text wrap internally, but does nothing to stop it
+  visually overlapping a fixed-width sibling if the row itself doesn't
+  wrap or restructure.
+- A non-wrapping action-button group forcing horizontal scroll.
+- A wrapping action-button group whose wrapped buttons have no shared
+  width rule — each one sizes to its own icon+label content, so a short
+  label ends up visibly narrower than a long one once each occupies its
+  own line, producing a ragged column. Give wrapped buttons a uniform
+  width — stacking each one full-width is the simplest correct fix.
+- Any container given a fixed pixel width rather than a relative one.
+
+This check is part of finishing the change, the same way running the
+component test for new code is — not a separate, optional pass.
+
+---
+
 ## Wrap Up
 
 After implementing the requested feature, provide a brief summary covering:
@@ -848,3 +938,6 @@ After implementing the requested feature, provide a brief summary covering:
    npx cypress run --component --spec 'src/app/<path>/your-new.component.cy.ts'
    ```
 5. Any environment or proxy configuration the user should set
+6. For any UI/template/CSS change, confirmation that §20's mobile viewport
+   check (Samsung S23 Ultra, 384×824) was done and what — if anything — it
+   caught

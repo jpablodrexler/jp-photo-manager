@@ -528,6 +528,67 @@ scrolls and the toolbar (never taken out of flow at all) never moves.
 neither mechanism applied sits in normal document flow and scrolls out of
 the viewport with page content.
 
+🟢 Flag a **new** app-shell, dialog, or full-page layout that scrolls the
+whole document under a `position: fixed`/`sticky` header instead of
+confining scroll to a `flex: 1; min-height: 0; overflow-y: auto` content
+container the way `app.component.scss` already does — a document-level
+scrollbar then spans the full viewport height and runs past the header's
+own boundary. Prefer a `height: 100vh`/`100dvh` flex column with the
+header as a normal-flow sibling above the scrolling content region; only
+reach for `position: sticky`/`fixed` plus a compensating offset if
+document-level scroll is genuinely intended elsewhere on the same page.
+This applies to newly-introduced scroll regions and shell restructures —
+the app's existing shell already follows the correct pattern, so don't
+re-flag it on an unrelated change.
+
+🟡 Flag a row-like flex container (a list row, a card's action bar, any
+element packing an icon/name/secondary-text/count/buttons on one line)
+whose CSS gives it `display: flex` with no `flex-wrap` and no
+narrow-viewport fallback (a media query, a container query, or a
+restructure into a two-line layout below a breakpoint). At full width
+this looks fine; at a real phone width the flex children fight over too
+little space, and a shrinking text child can visually overlap a
+fixed-width sibling instead of the row wrapping cleanly. Confirm the
+change was actually checked at `angular-developer` §20's standard mobile
+check device, not just eyeballed at desktop width or a wider handset
+preset.
+
+🟢 Flag a `flex-wrap: wrap` action-button row (a toolbar of several
+buttons) with no shared width rule on its buttons. Wrapping alone stops
+the horizontal-scroll problem, but each button still sizes to its own
+icon+label content by default — once a narrow viewport forces one button
+per line, a short label ends up visibly narrower than a long one, reading
+as a ragged, unpolished column. The buttons should share a uniform width
+once wrapped — stacking each full-width is the simplest correct fix.
+
+🟡 Flag an outline `mat-form-field` whose floating `mat-label` can be
+**clipped or truncated**:
+- Placed as the first element inside a scrollable container (`mat-dialog-
+  content`, or any `overflow: auto`/`hidden` region) with no `margin-top`
+  on the field or its row — the label sits a few pixels above the field's
+  border box, and the container clips it at its padding box once the
+  content scrolls. This is the scroll-clipping counterpart of the
+  `mat-card-content` crowding flag above.
+- Hard-sized narrower than its label needs (`width`/`flex: 0 0 <fixed>`
+  under a longer `mat-label`) — the label renders with an ellipsis. A
+  labelled field should use `min-width` plus a growable `flex`, size to
+  content, or carry a shorter label instead.
+
+🟡 Flag a `mat-form-field` bound to a `FormControl` with validators —
+typically a catalog/dialog **add row** or an otherwise-optional field —
+that surfaces its error state on a bare focus-then-blur, before the user
+has attempted the submit/add. Angular Material's default
+`ErrorStateMatcher` fires on `invalid && touched`, Material marks a
+control `touched` on blur, and `MatDialog` auto-focuses the first field on
+open — so any later click trips a "required" error the user never
+provoked. Look for a template `<mat-error>` gated on `control.touched`
+(rather than an explicit "attempted" signal), and for a validated add-row
+field with **no** custom `[errorStateMatcher]` (the `<mat-error>` `@if`
+alone doesn't keep the field's own red outline/label out of the error
+state). The fix pattern: an `xAttempted` signal set only on an invalid
+submit, reset after success, gating both the `@if` and a per-field
+matcher.
+
 ---
 
 ## 11. Frontend: TypeScript Conventions
@@ -643,6 +704,9 @@ These have caused real bugs in this codebase and deserve extra attention:
 | Untyped (`any`) identifier (frontend)      | `npm run type-coverage:report` lists it — see §20 |
 | Unused export/file/dependency              | `npm run dead-code:report` (frontend) or `mvn dependency:analyze` (backend) lists it — see §21 |
 | Survived mutant (test runs, doesn't assert) | `npm run mutation:report` (frontend) or `bash scripts/mutation-report.sh` (backend) lists it — see §24 |
+| `mat-form-field` errors on blur before any submit attempt | An add-row/optional validated field showing its "required" error on focus-then-blur — gate on an explicit "attempted" signal + per-field `[errorStateMatcher]`, not `control.touched` — see §10.4 |
+| Outline `mat-form-field` label clipped or truncated | First field in a scrollable container with no `margin-top` (label clipped at the container edge), or a field hard-sized narrower than its `mat-label` (label ellipsised) — see §10.4 |
+| Flex row overlaps or a wrapped button row is ragged at mobile width | Not checked at `angular-developer` §20's standard mobile check device — see §10.4 |
 
 ---
 

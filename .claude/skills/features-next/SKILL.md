@@ -1,10 +1,10 @@
 ---
 name: features-next
-description: Recommends which feature to implement next based on JPPhotoManagerWeb/docs/backlog/features-planned.md priorities, dependencies, and its Recommended implementation order, then asks for user confirmation. Returns the confirmed change name to the caller — does NOT invoke opsx:propose or opsx:apply. TRIGGER when the user asks which feature to implement next, what to work on next, or which feature to suggest — including phrases like "recommend the next feature", "suggest the next feature", "what feature should we do next", or any similar request for a next-step recommendation from the features list.
+description: Recommends which feature to implement next based on JPPhotoManagerWeb/docs/backlog/features-planned.md priorities, dependencies, and its Recommended implementation order, then asks for user confirmation. If any in-progress exploration exists under JPPhotoManagerWeb/docs/explorations/, first offers (optionally) to keep exploring one of those ideas instead of picking a feature. Returns the confirmed change name to the caller — does NOT invoke opsx:propose or opsx:apply. TRIGGER when the user asks which feature to implement next, what to work on next, or which feature to suggest — including phrases like "recommend the next feature", "suggest the next feature", "what feature should we do next", or any similar request for a next-step recommendation from the features list.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.4"
+  version: "1.5"
 ---
 
 Recommend the next feature to implement and return the confirmed change name to the caller.
@@ -14,6 +14,24 @@ Recommend the next feature to implement and return the confirmed change name to 
 ---
 
 ## Steps
+
+### 0. Offer an in-progress exploration first (optional off-ramp)
+
+Before recommending a feature, check whether there's an open exploration the user might want to keep developing instead of starting a new feature.
+
+1. List `JPPhotoManagerWeb/docs/explorations/*.md` (skip a `README.md` if present). If the directory doesn't exist or holds no such files, skip this step entirely and go to step 1.
+2. For each file, read its `**Status:**` line near the top and its `# ` H1 title. Treat the exploration as **open** unless the status line marks it finished — i.e. it contains `archived`, `superseded`, `proposed`, `done`, or `dropped`. A file with no `**Status:**` line counts as open. Record each open exploration's title and path.
+3. If there are no open explorations, go to step 1 without mentioning this — it's not worth a line of output when there's nothing to offer.
+4. If there is at least one open exploration, use the **AskUserQuestion tool** — this is a genuine optional off-ramp and must actually reach the user. If `AskUserQuestion` is unavailable in this context, skip this step and proceed to the normal recommendation (do **not** block on it — unlike step 6, choosing to explore is not a prerequisite for anything):
+   - **Question**: "There's an in-progress exploration. Recommend the next feature to implement, or keep working on one of these explorations?"
+   - **Options** (at most 4 total):
+     1. "Recommend the next feature" — the normal path, and this skill's default job
+     2. "`<exploration 1 title>`" — "keep exploring this"
+     3. "`<exploration 2 title>`" (if present)
+     4. "`<exploration 3 title>`" (only if the total stays at or under 4)
+   - If more than 3 open explorations exist, list the 3 most recently modified and let the tool's built-in "Other" cover the rest — resolve a free-text answer to the file whose title or filename matches.
+5. If the user picks "Recommend the next feature" (or the tool was unavailable), continue to step 1.
+6. If the user picks an exploration, **stop here.** Do not collect or score features, and do not emit a `CHANGE_NAME:` line. Point the user at the exploration's file path and tell them to continue it with `/openspec-explore` (naming the topic). This skill's job is done — the caller treats the absence of a `CHANGE_NAME:` line exactly as it treats a step-6 "Cancel".
 
 ### 1. Read features-planned.md
 
@@ -142,7 +160,8 @@ CHANGE_NAME: <change-name>
 ## Guardrails
 
 - Always read the full `JPPhotoManagerWeb/docs/backlog/features-planned.md` before scoring — never guess which feature is next from memory.
-- Do not invoke `opsx:apply`, `opsx:propose`, or any other skill. This skill's sole responsibility is recommendation, confirmation, and returning the change name. The caller decides what to do next.
+- Do not invoke `opsx:apply`, `opsx:propose`, `openspec-explore`, or any other skill. This skill's sole responsibility is recommendation, confirmation, and returning the change name (or, via step 0, surfacing an exploration off-ramp and stopping). The caller decides what to do next.
+- **Step 0's exploration off-ramp never returns a `CHANGE_NAME:` line.** If the user chooses to keep exploring, this skill stops with no recommendation; the caller must treat that identically to a step-6 "Cancel" and not proceed to implement anything. Step 0 is also purely additive — a skipped or unavailable step 0 (no `JPPhotoManagerWeb/docs/explorations/`, no open files, or no `AskUserQuestion`) must never block the normal recommendation flow.
 - **Resolving a feature by number or name**: whenever a specific feature number or name is available — whether it's the skill's initial input, or a free-text answer typed into the "Other" option of step 6's `AskUserQuestion` — look it up directly as the row in `JPPhotoManagerWeb/docs/backlog/features-planned.md` whose `#` or `Change name` column matches, rather than re-running the scoring pass. If it's the skill's initial input, skip steps 2–5 and go directly to step 6 with that feature pre-selected (but still confirm). If it's a step-6 "Other" answer, treat it as the user's final selection (re-confirming isn't necessary — they already answered the confirmation question) — but only once it resolves to a real row: if the typed value matches no row at all, or matches a row already showing `✅ Implemented` (which must never be recommended, per the guardrail below — a manually-typed answer doesn't get an exception), report the mismatch to the user and ask again rather than returning a `CHANGE_NAME:` for something that isn't actually a valid pending feature.
 - A feature already showing `✅ Implemented` in the Implementation column must never be recommended.
 - **A feature already showing `🔶 In Progress` is always preferred over any merely `⬜ Pending` feature, regardless of priority.** `feature-development` marks a feature `🔶 In Progress` as soon as it selects it and sets up its branch (see that skill's Step 1.6); if that run was interrupted before archiving, the row is left `🔶 In Progress` with real work already sitting on `feature/<change-name>`. Resuming that work is almost always better than starting a new feature and leaving the in-progress one to rot — hence Tier 0's dominant score. If more than one row happens to show `🔶 In Progress` at once (e.g. two interrupted runs), Tier 0 puts all of them ahead of every pending feature and the normal Tier 1–4 scoring (plus the usual tie-breaks) picks among just that set.
