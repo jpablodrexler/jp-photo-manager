@@ -51,6 +51,7 @@ const REPORTS = [
   { key: 'secrets-scan', label: 'Secrets scanning', script: 'secrets:report' },
   { key: 'license-compliance', label: 'License compliance', script: 'license:report' },
   { key: 'dependency-vulnerabilities', label: 'Dependency vulnerabilities (SCA)', script: 'sca:report' },
+  { key: 'claude-md-size', label: 'CLAUDE.md size', script: 'claude-md-size:report' },
   {
     key: 'mutation',
     label: 'Mutation testing',

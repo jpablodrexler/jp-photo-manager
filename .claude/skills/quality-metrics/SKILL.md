@@ -1,15 +1,15 @@
 ---
 name: quality-metrics
-description: Runs every periodic quality-metric sweep (bash scripts/run-all-quality-reports.sh from JPPhotoManagerWeb/ — the frontend's npm report scripts plus the backend's bash report scripts — covering type coverage, complexity, dead code, route coverage, auth coverage, lighthouse, accessibility, code coverage, bundle size, dependency staleness, mocked E2E run, secrets scan, license compliance, dependency vulnerabilities, plus opt-in mutation testing and real-backend E2E) and reports trends by reading every committed historical report per category under JPPhotoManagerWeb/docs/reports/<category>/ — not just the immediately preceding one — and comparing the freshly generated value against that whole series. TRIGGER when the user asks for a quality metrics report, how the quality metrics are trending, to run/refresh the quality metrics, or similar — this is the quality-metrics counterpart to bugs-status/features-status, but for the report categories in the root README's Quality Metrics table rather than the backlog files.
+description: Runs every periodic quality-metric sweep (bash scripts/run-all-quality-reports.sh from JPPhotoManagerWeb/ — the frontend's npm report scripts plus the backend's bash report scripts — covering type coverage, complexity, dead code, route coverage, auth coverage, lighthouse, accessibility, code coverage, bundle size, dependency staleness, mocked E2E run, secrets scan, license compliance, dependency vulnerabilities, CLAUDE.md size, plus opt-in mutation testing and real-backend E2E) and reports trends by reading every committed historical report per category under JPPhotoManagerWeb/docs/reports/<category>/ — not just the immediately preceding one — and comparing the freshly generated value against that whole series. TRIGGER when the user asks for a quality metrics report, how the quality metrics are trending, to run/refresh the quality metrics, or similar — this is the quality-metrics counterpart to bugs-status/features-status, but for the report categories in the root README's Quality Metrics table rather than the backlog files.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "1.1"
 ---
 
 Runs the full periodic quality-metric sweep and reports trends — each
 category's newly generated number against **every** committed historical
-value for that category, not just the one immediately before it. These 15
+value for that category, not just the one immediately before it. These 16
 categories are committed to git specifically so this full-history
 comparison is possible — a single previous-vs-current delta can't tell a
 steady drift apart from ordinary day-to-day noise, which is the whole
@@ -56,6 +56,7 @@ the same folder, disambiguated by a `_frontend.md` / `_backend.md` suffix
 | secrets-scan | whole repo | `SECRETS_SCAN_REPORT_*.md` |
 | license-compliance | both | `LICENSE_COMPLIANCE_REPORT_*_frontend.md` / `LICENSE_COMPLIANCE_REPORT_*_backend.md` |
 | dependency-vulnerabilities | both | `SCA_REPORT_*_frontend.md` / `SCA_REPORT_*_backend.md` |
+| claude-md-size | whole repo (frontend script, reads both CLAUDE.md files) | `CLAUDE_MD_SIZE_REPORT_*.md` |
 
 **Order every file by its embedded `**Generated:**` ISO timestamp, never
 by filename or filesystem mtime.** The filename's date fragment doesn't
@@ -188,6 +189,7 @@ at all, so those two need a best-effort line-count instead:
 | license-compliance (backend) | Packages scanned; needing action; previously-accepted count | `**N package(s) scanned, M need action, K previously reviewed and accepted.**` |
 | dependency-vulnerabilities (frontend) | Vulnerable package count; critical/high/moderate/low/info breakdown | `**N vulnerable package(s):** c critical, h high, m moderate, l low, i info` |
 | dependency-vulnerabilities (backend) | Known-vulnerability count (OSV.dev) | `**N known vulnerabilities across the resolved dependency tree.**` |
+| claude-md-size | Line count; word count; size in bytes (headline: `JPPhotoManagerWeb/CLAUDE.md`) | `**Lines:** N` / `**Words:** N` / `**Size:** N bytes` |
 
 ### 5. Describe the trend across the full series
 
@@ -235,7 +237,10 @@ metric:
     scanned, average file size, bundle size in kB vs. its budget (flag
     only if it crosses from "within budget" to "over budget" or vice
     versa), test duration, total dependency count, total endpoints
-    tracked (a growing API surface isn't itself good or bad).
+    tracked (a growing API surface isn't itself good or bad), CLAUDE.md
+    line/word/byte count (a steady climb across several runs with no trim
+    is the signal worth a look, not any single reading — see the report's
+    own note).
 
 Use ▲ for improved, ▼ for regressed, → for flat/unchanged, and — for "not
 enough history yet."
@@ -275,6 +280,7 @@ own row (keeps this scannable across roughly 20 category/side series):
 | Dead code (frontend) | Total findings | … | … | … | breakdown |
 | Dead code (backend) | Unused/undeclared dep lines | … | … | … | spring-boot-starter-* noise excluded |
 | Bundle size | Initial bundle | … | … | … | budget status, total JS/dist |
+| CLAUDE.md size | Lines (JPPhotoManagerWeb/CLAUDE.md) | … | … | … | Words/bytes moved similarly; root CLAUDE.md reported alongside, informational only |
 
 ### Security & dependencies
 

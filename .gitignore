@@ -298,4 +298,5 @@ JPPhotoManagerWeb/docs/reports/*
 !JPPhotoManagerWeb/docs/reports/secrets-scan/
 !JPPhotoManagerWeb/docs/reports/license-compliance/
 !JPPhotoManagerWeb/docs/reports/dependency-vulnerabilities/
+!JPPhotoManagerWeb/docs/reports/claude-md-size/
 !JPPhotoManagerWeb/docs/reports/mutation/

@@ -49,6 +49,7 @@ Each report below is a dated markdown snapshot written to `JPPhotoManagerWeb/doc
 | Secrets scanning | `docs/reports/secrets-scan/` | `npm run secrets:report` |
 | License compliance | `docs/reports/license-compliance/` | `npm run license:report` (frontend) / `bash scripts/license-report.sh` (backend) |
 | Dependency vulnerabilities (SCA) | `docs/reports/dependency-vulnerabilities/` | `npm run sca:report` (frontend) / `bash scripts/sca-report.sh` (backend) |
+| CLAUDE.md size | `docs/reports/claude-md-size/` | `npm run claude-md-size:report` (frontend; headline is `JPPhotoManagerWeb/CLAUDE.md`, root `CLAUDE.md` reported alongside) |
 
 `docs/reports/` also holds the same-shaped output from the review skills (`code-review/`, `security-review/`, `spec-compliance/`, etc.) — not quality metrics, but written the same way.
 
@@ -74,6 +75,7 @@ Every metric is documented inside a skill under `.claude/skills/`, but "document
 | Bundle size (frontend) | *(not yet referenced by any skill)* | No |
 | Dependency staleness | *(not yet referenced by any skill — `dependency-upgrade` runs raw `npm outdated`/`mvn versions:display-dependency-updates` instead of this report)* | No |
 | E2E run/flakiness | *(not yet referenced by any skill)* | No |
+| CLAUDE.md size | *(not yet referenced by any skill)* | No |
 
 ### Running every metric manually
 
@@ -98,6 +100,7 @@ npm run test:e2e:mocked:report   # no backend needed
 npm run secrets:report           # scans the whole repo, not just frontend/
 npm run license:report
 npm run sca:report
+npm run claude-md-size:report
 npm run mutation:report          # by far the slowest — a full Stryker run, expect it to take significantly longer than every other report combined
 ```
 

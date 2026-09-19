@@ -34,6 +34,7 @@
     "secrets:report": "node scripts/secrets-scan-report.js",
     "license:report": "node scripts/license-compliance-report.js",
     "sca:report": "node scripts/sca-report.js",
+    "claude-md-size:report": "node scripts/claude-md-size-report.js",
     "reports:all": "node scripts/run-all-quality-reports.js"
   },
   "private": true,
