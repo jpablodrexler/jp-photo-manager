@@ -4,7 +4,7 @@ description: Runs every periodic quality-metric sweep (bash scripts/run-all-qual
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "1.2"
 ---
 
 Runs the full periodic quality-metric sweep and reports trends — each
@@ -23,6 +23,43 @@ gitignored, scoped to a single change, and have no trend to compute.
 `run-all-quality-reports.sh` skips by default (mutation testing on both
 sides, real-backend E2E on the frontend side) — see step 2. No input
 required otherwise.
+
+---
+
+## Script
+
+`scripts/trend_report.py` owns steps 1 and 3-5's mechanical work across
+all ~23 category/side series (16 category folders, 7 of which split into
+independent `_frontend`/`_backend` series): globbing every committed
+report file per category/side, extracting each one's key metrics —
+including the two Maven-CLI-wrapped backend categories (`dead-code`,
+`dependency-staleness`) that have no clean summary line and need a
+best-effort line count instead, and `auth-coverage`'s raw per-endpoint
+table — ordering by the embedded `**Generated:**` timestamp (never
+filename/mtime), and classifying each series' shape (Flat / Steadily
+improving|declining / Volatile / One-off / First data point / Too little
+history) against its own higher-is-better/lower-is-better direction. Run
+it **after** step 2's sweep has produced fresh report files, and use its
+output for step 6 rather than re-deriving deltas/shapes by hand:
+
+```
+python3 .claude/skills/quality-metrics/scripts/trend_report.py <repo-root> [--full]
+```
+
+Pass `--full` when the sweep also ran with `--with-mutation`/
+`--with-e2e-real`, so the mutation/real-E2E categories are included. Add
+`--json` for the raw per-category series if you need to reason about a
+specific field. The script's shape classification is a fixed heuristic
+(tolerance-banded flat detection, majority-sign-of-diffs for
+"steadily") — it is a starting point for step 6's write-up, not a
+verdict to parrot verbatim: sanity-check an ambiguous or borderline case
+(e.g. a "One-off"/"Volatile" call on a small series, or a regression
+that reads oddly against the category's own Notes) against the
+underlying values before writing the prose. It never decides anything is
+worth fixing, never judges a `permitAll()` count or a
+spring-boot-starter-* dead-code line as good or bad on its own (both
+need the human-judgment guardrails below) — that judgment, and all of
+step 7's guardrails, stay yours.
 
 ---
 
