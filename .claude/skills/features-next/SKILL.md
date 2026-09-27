@@ -4,7 +4,7 @@ description: Recommends which feature to implement next based on JPPhotoManagerW
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.5"
+  version: "1.6"
 ---
 
 Recommend the next feature to implement and return the confirmed change name to the caller.
@@ -12,6 +12,28 @@ Recommend the next feature to implement and return the confirmed change name to 
 **Input**: Optional feature number or name to skip the recommendation step and jump straight to confirmation.
 
 ---
+
+## Script
+
+`scripts/rank_features.py` owns steps 2-4's mechanical work — collecting
+pending/in-progress rows, resolving hard-dependency blocking from each
+candidate's *live* Implementation-column status (never a dependency
+note's own possibly-stale parenthetical), and applying the fixed
+point-tier scoring with its tie-breaks. Run it and use its output for
+steps 2-5 rather than re-deriving the ranking by hand:
+
+```
+python3 .claude/skills/features-next/scripts/rank_features.py <repo-root>
+```
+
+Pass `--select <number-or-name>` to resolve one specific feature
+directly instead of ranking (for the skill's own optional input, or for
+resolving a step-6 "Other" free-text answer) — see "Resolving a feature
+by number or name" in the Guardrails. Add `--json` for the raw
+structured data. The script never calls `AskUserQuestion` and never
+returns a final decision — step 6's mandatory confirmation is still this
+skill's job, not the script's. Steps 2-4 below document exactly what it
+computes, for maintaining it.
 
 ## Steps
 

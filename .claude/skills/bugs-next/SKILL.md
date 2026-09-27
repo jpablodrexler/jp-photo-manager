@@ -4,7 +4,7 @@ description: Recommends which bug to fix next based on JPPhotoManagerWeb/docs/ba
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "1.1"
 ---
 
 Recommend the next bug to fix and return the confirmed Bug ID to the
@@ -15,6 +15,24 @@ caller. Mirrors `features-next`: score, present, confirm via a mandatory
 step and jump straight to confirmation for that bug.
 
 ---
+
+## Script
+
+`scripts/rank_bugs.py` owns steps 2-3's mechanical work — collecting
+Open/In Progress rows and applying the fixed point-tier scoring
+(In Progress > Severity > deployed/both environment > fix-order position >
+no schema change) with its tie-breaks. Run it and use its output for
+steps 2-4 rather than re-deriving the ranking by hand:
+
+```
+python3 .claude/skills/bugs-next/scripts/rank_bugs.py <repo-root>
+```
+
+Pass `--select BUG-NNN` to resolve one specific bug directly instead of
+ranking (for the skill's own optional input, or a step-5 "Other"
+free-text answer). Add `--json` for the raw structured data. The script
+never calls `AskUserQuestion` and never returns a final decision —
+step 5's mandatory confirmation is still this skill's job.
 
 ## Steps
 
