@@ -4,7 +4,7 @@ description: Adds a new feature to JPPhotoManagerWeb/docs/backlog/features-plann
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "1.2"
 ---
 
 Add a new feature row to `JPPhotoManagerWeb/docs/backlog/features-planned.md`, drafted from the user's description and confirmed before writing.
@@ -31,9 +31,7 @@ Both are needed to pick a non-colliding number and name (step 3) and to draft co
 
 **Change name**: if the user gave an explicit one, validate it's kebab-case (lowercase letters, digits, hyphens only, e.g. `wallpaper-rotation-schedule`); if it isn't, convert it. If the user didn't give one, derive a concise kebab-case slug from the feature description, in the same style as existing names (`image-etag-cache`, `folder-watch-service`) — short, descriptive, no filler words.
 
-Check the derived name against the `Change name` column of **both** files' `## Feature List` tables (exact match on the backtick-wrapped value). If it already exists anywhere, tell the user and ask for a different name or confirm they mean something else (do not silently rename or silently proceed with a duplicate).
-
-**Feature number**: scan the `#` column of both files' `## Feature List` tables, take the highest number found across both, and use `max + 1`. Numbers are a single global sequence across both files and are never reused, even for cancelled or reverted features (see `#72`/`#84` in `features-implemented.md` for a precedent).
+Run `python3 .claude/skills/feature-plan/scripts/next_id.py <repo-root> --check-name <derived-name>` — it scans both files' `## Feature List` tables and returns the next free `#` (`max + 1` across both, or `1` for a fresh backlog; numbers are a single global sequence, never reused even for a cancelled/reverted feature — see `#72`/`#84` in `features-implemented.md` for a precedent) plus whether the derived name already collides with an existing row. If `name_collision` is `true`, tell the user and ask for a different name or confirm they mean something else (do not silently rename or silently proceed with a duplicate). Use the returned `next_number` as the feature number.
 
 ### 4. Draft the four attribute columns
 

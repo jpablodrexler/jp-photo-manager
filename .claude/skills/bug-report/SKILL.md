@@ -4,7 +4,7 @@ description: Adds a bug to JPPhotoManagerWeb/docs/backlog/bugs-open.md — draft
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "1.1"
 ---
 
 Add a new bug row + Details block to
@@ -99,11 +99,12 @@ are freshly created and empty.
 ### 3. Derive the Bug ID
 
 Bug ids are `BUG-NNN` with a zero-padded 3-digit sequence
-(`BUG-001`, `BUG-002`, …). Scan the `Bug ID` column of **both** files'
-`## Bug List` tables, take the highest `NNN` found across both, and use
-`max + 1`. If both tables are empty, start at `BUG-001`. Numbers are one
-global sequence across both files and are never reused, even for a
-`🚫 Won't fix` or `❓ Cannot reproduce` entry.
+(`BUG-001`, `BUG-002`, …). Run
+`python3 .claude/skills/bug-report/scripts/next_id.py <repo-root>` — it
+scans both files for every `BUG-NNN` reference, takes the highest `NNN`
+found, and returns `BUG-<max+1>` zero-padded (or `BUG-001` for a fresh
+backlog). Numbers are one global sequence across both files and are
+never reused, even for a `🚫 Won't fix` or `❓ Cannot reproduce` entry.
 
 ### 4. Draft the attribute columns
 

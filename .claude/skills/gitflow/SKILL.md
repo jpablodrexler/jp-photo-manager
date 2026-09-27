@@ -4,7 +4,7 @@ description: Encapsulates the Gitflow branching workflow for this repo (develop 
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.6"
+  version: "1.7"
 ---
 
 Perform one Gitflow action: start a feature/fix/doc/skill/chore/release/hotfix branch, sync an existing topic branch (feature/fix/doc/skill/chore) with develop, finish (open a PR for) a topic branch, finish (open PRs for) a release/hotfix, tag main after a release/hotfix PR has merged, or clean up already-merged feature/fix/doc/skill/chore/release/hotfix branches.
@@ -217,9 +217,8 @@ Steps (the same either way except where noted):
 
 Finds `feature/*`, `fix/*`, `doc/*`, `skill/*`, `chore/*`, `release/*`, and `hotfix/*` branches that have already been merged, and deletes only the ones the user explicitly confirms — never speculatively, never with `-D`/`--force`.
 
-1. `git fetch origin --prune` — sync remote-tracking refs so branches already deleted on GitHub (e.g. auto-deleted on merge) aren't listed as candidates.
-2. Enumerate candidates: local branches via `git branch --list 'feature/*' 'fix/*' 'doc/*' 'skill/*' 'chore/*' 'release/*' 'hotfix/*' --format='%(refname:short)'`, remote via `git branch -r --list 'origin/feature/*' 'origin/fix/*' 'origin/doc/*' 'origin/skill/*' 'origin/chore/*' 'origin/release/*' 'origin/hotfix/*' --format='%(refname:short)'` (strip the `origin/` prefix). Union the two lists by name — note whether each exists locally, remotely, or both.
-3. For each candidate branch, determine merged status with a direct check (per the repo-state guardrail below — never infer this from timing or narrative):
+1-2. Run `python3 .claude/skills/gitflow/scripts/list_merge_candidates.py <repo-root>` — it runs `git fetch origin --prune` (sync remote-tracking refs so branches already deleted on GitHub, e.g. auto-deleted on merge, aren't listed), enumerates every local/remote branch matching the 7 prefixes, and unions them by name with a `where: [local, remote]` flag per branch. This is local-git-only — it never calls `gh`/the GitHub API and never claims a branch is merged; that check is still step 3 below, per branch.
+3. For each candidate branch the script returned, determine merged status with a direct check (per the repo-state guardrail below — never infer this from timing or narrative):
    - `feature/<name>`, `fix/<name>`, `doc/<name>`, `skill/<name>`, or `chore/<name>` (any topic branch): merged if checking merge status per "Checking PR merge status" above (with `head: <branch>`, `base: develop`) returns at least one merged result.
    - `release/<version>` or `hotfix/<version>`: merged if **both** hold — checking merge status per "Checking PR merge status" above (with `head: <branch>`, `base: main`) returns a merged result, **and** `git merge-base --is-ancestor origin/<branch> origin/develop` exits 0 (confirms `develop` also has the commits, whether via its own merged PR or because `develop` already contained them).
    - A branch with no merged PR found this way is **not** a candidate — leave it alone and don't list it, even if it looks stale. This only recognizes merges that went through a PR; branches merged some other way won't be flagged, which is the safe direction to be wrong in.

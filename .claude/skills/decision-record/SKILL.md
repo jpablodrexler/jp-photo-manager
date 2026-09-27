@@ -23,7 +23,7 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "1.1"
 ---
 
 Record a short, numbered Architecture Decision Record (ADR) under
@@ -79,10 +79,11 @@ after a later record supersedes it.
 | - | ----- | ------ | ---- |
 ```
 
-Scan existing filenames for the `NNNN-` prefix (4-digit, zero-padded), take
-the highest number found, and use `max + 1`. If none exist yet, start at
-`0001`. Numbers are a single sequence and are never reused, even for a
-decision later superseded or reversed.
+Run `python3 .claude/skills/decision-record/scripts/next_id.py <repo-root>`
+— it scans existing filenames for the `NNNN-` prefix (4-digit,
+zero-padded), takes the highest number found, and returns `max + 1` (or
+`0001` if none exist yet). Numbers are a single sequence and are never
+reused, even for a decision later superseded or reversed.
 
 ### 3. Derive a short kebab-case title slug
 
