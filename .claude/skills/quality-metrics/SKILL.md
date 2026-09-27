@@ -4,7 +4,7 @@ description: Runs every periodic quality-metric sweep (bash scripts/run-all-qual
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.2"
+  version: "1.3"
 ---
 
 Runs the full periodic quality-metric sweep and reports trends — each
@@ -21,26 +21,27 @@ gitignored, scoped to a single change, and have no trend to compute.
 
 **Input**: optional `--full` to also run the two sweeps
 `run-all-quality-reports.sh` skips by default (mutation testing on both
-sides, real-backend E2E on the frontend side) — see step 2. No input
+sides, real-backend E2E on the frontend side) — see step 1. No input
 required otherwise.
 
 ---
 
 ## Script
 
-`scripts/trend_report.py` owns steps 1 and 3-5's mechanical work across
-all ~23 category/side series (16 category folders, 7 of which split into
-independent `_frontend`/`_backend` series): globbing every committed
-report file per category/side, extracting each one's key metrics —
-including the two Maven-CLI-wrapped backend categories (`dead-code`,
-`dependency-staleness`) that have no clean summary line and need a
-best-effort line count instead, and `auth-coverage`'s raw per-endpoint
-table — ordering by the embedded `**Generated:**` timestamp (never
-filename/mtime), and classifying each series' shape (Flat / Steadily
-improving|declining / Volatile / One-off / First data point / Too little
-history) against its own higher-is-better/lower-is-better direction. Run
-it **after** step 2's sweep has produced fresh report files, and use its
-output for step 6 rather than re-deriving deltas/shapes by hand:
+`scripts/trend_report.py` owns the full mechanical pipeline across all
+~23 category/side series (16 category folders, 7 of which split into
+independent `_frontend`/`_backend` series): globbing **every** committed
+report file per category/side — old and freshly-generated alike, ordered
+by the embedded `**Generated:**` timestamp (never filename/mtime) —
+extracting each one's key metrics, including the two Maven-CLI-wrapped
+backend categories (`dead-code`, `dependency-staleness`) that have no
+clean summary line and need a best-effort line count instead, and
+`auth-coverage`'s raw per-endpoint table, and classifying each series'
+shape (Flat / Steadily improving|declining / Volatile / One-off / First
+data point / Too little history) against its own higher-is-better/
+lower-is-better direction. Run it **after** step 1's sweep has produced
+fresh report files, and use its output for step 2 rather than
+re-deriving deltas/shapes by hand:
 
 ```
 python3 .claude/skills/quality-metrics/scripts/trend_report.py <repo-root> [--full]
@@ -51,7 +52,7 @@ Pass `--full` when the sweep also ran with `--with-mutation`/
 `--json` for the raw per-category series if you need to reason about a
 specific field. The script's shape classification is a fixed heuristic
 (tolerance-banded flat detection, majority-sign-of-diffs for
-"steadily") — it is a starting point for step 6's write-up, not a
+"steadily") — it is a starting point for step 2's write-up, not a
 verdict to parrot verbatim: sanity-check an ambiguous or borderline case
 (e.g. a "One-off"/"Volatile" call on a small series, or a regression
 that reads oddly against the category's own Notes) against the
@@ -59,94 +60,30 @@ underlying values before writing the prose. It never decides anything is
 worth fixing, never judges a `permitAll()` count or a
 spring-boot-starter-* dead-code line as good or bad on its own (both
 need the human-judgment guardrails below) — that judgment, and all of
-step 7's guardrails, stay yours.
+the Guardrails below, stay yours. See the script's own docstring/comments
+(the `CATEGORIES` dict and each `ext_*` extractor) for exactly which
+field pattern it pulls from which file/side — that table used to be
+duplicated here as a manual step and is now the script's source of
+truth, not this file's.
 
 ---
 
 ## Steps
 
-### 1. Read the full committed history — before running anything
-
-For each category below, find **every** existing report file matching its
-pattern under `JPPhotoManagerWeb/docs/reports/<category>/` — not just the
-latest one. A category shared by both halves of the stack (complexity,
-dead code, code coverage, dependency staleness, license compliance,
-dependency vulnerabilities, mutation) writes two independent series in
-the same folder, disambiguated by a `_frontend.md` / `_backend.md` suffix
-— track those as two separate series, never merged into one.
-
-| Category (folder under `JPPhotoManagerWeb/docs/reports/`) | Side(s) | File pattern |
-| --- | --- | --- |
-| type-coverage | frontend only | `TYPE_COVERAGE_REPORT_*.md` |
-| complexity | both | `COMPLEXITY_REPORT_*_frontend.md` / `COMPLEXITY_REPORT_*_backend.md` |
-| dead-code | both | `DEAD_CODE_REPORT_*_frontend.md` / `DEAD_CODE_REPORT_*_backend.md` |
-| route-coverage | frontend only | `ROUTE_COVERAGE_REPORT_*_frontend.md` |
-| auth-coverage | backend only | `AUTH_COVERAGE_REPORT_*_backend.md` |
-| lighthouse | frontend only | `LIGHTHOUSE_REPORT_*_frontend.md` |
-| a11y | frontend only | `A11Y_REPORT_*_frontend.md` |
-| code-coverage | both | `CODE_COVERAGE_REPORT_*_frontend.md` / `CODE_COVERAGE_REPORT_*_backend.md` |
-| bundle-size | frontend only | `BUNDLE_SIZE_REPORT_*.md` |
-| dependency-staleness | both | `DEPENDENCY_STALENESS_REPORT_*_frontend.md` / `DEPENDENCY_STALENESS_REPORT_*_backend.md` |
-| e2e-run (mocked) | frontend only | `E2E_RUN_REPORT_*_mocked.md` |
-| e2e-run (real) — only if `--full` | frontend only | `E2E_RUN_REPORT_*_real.md` |
-| mutation | both | `MUTATION_REPORT_*_frontend.md` / `MUTATION_REPORT_*_backend.md` (both only if `--full`) |
-| secrets-scan | whole repo | `SECRETS_SCAN_REPORT_*.md` |
-| license-compliance | both | `LICENSE_COMPLIANCE_REPORT_*_frontend.md` / `LICENSE_COMPLIANCE_REPORT_*_backend.md` |
-| dependency-vulnerabilities | both | `SCA_REPORT_*_frontend.md` / `SCA_REPORT_*_backend.md` |
-| claude-md-size | whole repo (frontend script, reads both CLAUDE.md files) | `CLAUDE_MD_SIZE_REPORT_*.md` |
-
-**Order every file by its embedded `**Generated:**` ISO timestamp, never
-by filename or filesystem mtime.** The filename's date fragment doesn't
-sort correctly once a same-day rerun adds a `-2`/`-3` suffix (most of
-these scripts actually overwrite a same-day file in place instead — see
-step 3 — but not all of them do, so don't rely on that either way), and
-mtime is actively unreliable here: git does not preserve original file
-modification times, so a fresh clone or a `git checkout` stamps every
-file with the checkout time, making "sort by mtime" meaningless for
-anyone who didn't generate every report in the same uninterrupted working
-copy. Every report template writes a `**Generated:** <ISO timestamp>`
-line near the top specifically because it's the one reliable ordering
-key — use it.
-
-Read each file's metrics per the extraction table in step 4 as you go, so
-each category-and-side ends this step as a chronological list of
-`(generated timestamp, extracted values)` pairs — the series' full trend
-prior to this run. If a pattern matches nothing, that category/side has
-no history yet; say so rather than fabricating a series.
-
-**Efficiency note:** don't `Read` every historical file in full. For a
-category whose headline lives on one `**Label:** value` line, one `Grep`
-call across the whole folder with a pattern alternating `\*\*Generated:\*\*`
-and the headline pattern (e.g. `\*\*Generated:\*\*|\*\*Type coverage:\*\*`)
-returns both fields, one match per line, for every file in a single pass —
-pair each file's two matches back up by its path in the Grep output. For a
-table-based category (lighthouse's/route-coverage's per-route rows,
-a11y's impact-breakdown table, auth-coverage's endpoint table), grep the
-specific row pattern instead of a bold-line pattern — see step 4 for which
-categories need this.
-
-### 2. Run the sweep
-
-Touch a marker file, then run `bash scripts/run-all-quality-reports.sh`
-from `JPPhotoManagerWeb/` (it runs both the frontend's `npm run
-reports:all` and the backend's `bash scripts/run-all-quality-reports.sh`
-in sequence) so every fresh report's mtime can be told apart from the
-history read in step 1 (mtime is fine for this — it only needs to
-distinguish "the file this run just wrote" from "everything older,"
-within one uninterrupted working copy, not to order history across a
-clone or checkout):
+### 1. Run the sweep
 
 ```
 cd JPPhotoManagerWeb
-touch /tmp/quality-metrics-marker  # or the session scratchpad, same effect
 bash scripts/run-all-quality-reports.sh
 ```
 
-This skips two reports by default: mutation testing on both sides (a full
-PIT/Stryker run per mutant — minutes, not seconds) and the frontend's
-real-backend E2E tier (needs the full app already deployed to k8s — see
-the `e2e-suite` skill §1 for that precondition). Budget several minutes
-for the full run (the frontend build, Lighthouse, mocked E2E, and axe-core
+This runs both the frontend's `npm run reports:all` and the backend's
+`bash scripts/run-all-quality-reports.sh` in sequence, and skips two
+reports by default: mutation testing on both sides (a full PIT/Stryker
+run per mutant — minutes, not seconds) and the frontend's real-backend
+E2E tier (needs the full app already deployed to k8s — see the
+`e2e-suite` skill §1 for that precondition). Budget several minutes for
+the full run (the frontend build, Lighthouse, mocked E2E, and axe-core
 are the slow steps on that side; JaCoCo/PMD/dependency-analyze runs add
 more on the backend side); use a generous Bash timeout rather than letting
 it get cut off, and prefer running it in the background and waiting for
@@ -161,7 +98,7 @@ bash scripts/run-all-quality-reports.sh --with-mutation --with-e2e-real
 
 A failing individual report does not stop the run — the script prints an
 `OK`/`FAILED`/`SKIP` summary for each half at the end. Note which
-categories failed; their "current" value in step 6 is really last run's
+categories failed; their "current" value in step 2 is really last run's
 data, not a fresh one, and the report should say so rather than silently
 treating it as current.
 
@@ -175,118 +112,11 @@ step actually failed by checking the script's own final `OK`/`FAILED`/
 `SKIP` summary, or whether the category's report file exists, rather than
 by eyeballing console noise mid-run.
 
-### 3. Capture the fresh snapshot
-
-```
-find JPPhotoManagerWeb/docs/reports -newer /tmp/quality-metrics-marker -name '*.md'
-```
-
-This lists every newly written report file across all categories in one
-shot. Match each one back to its category (and frontend/backend side, by
-filename suffix) and extract its key metrics per the same extraction
-table in step 4, appending it as the newest point on that series from
-step 1. Most of these scripts overwrite a same-day file in place rather
-than adding a `-2`/`-3` suffix — a second same-day run of this skill will
-often show the same filename in this list as step 1's history read, just
-with a newer `**Generated:**` timestamp inside it. That's expected: the
-morning's intermediate value is simply gone from disk once overwritten
-unless it was committed in between.
-
-### 4. Extract each category's key metrics
-
-Applies to every historical file from step 1 and every fresh file from
-step 3 alike — the same fields, the same patterns per category, so each
-file becomes one point on its series. Pull these fields via `Grep`/pattern
-match — most of these report scripts write consistent bold-line phrasing,
-but the backend's Maven-CLI-wrapping scripts (`dead-code` and
-`dependency-staleness`, backend side) don't produce a clean summary line
-at all, so those two need a best-effort line-count instead:
-
-| Category / side | Fields to extract | Where in the file |
-| --- | --- | --- |
-| type-coverage | Type coverage %; untyped (`any`) count | `**Type coverage:** X%` / `**Untyped (\`any\`) identifiers:** N` |
-| complexity (frontend) | Files scanned; functions analyzed; avg complexity; avg file size | `**Files scanned:** N`; `**Functions analyzed:** N (average complexity: X...)`; `**Average file size:** N lines` |
-| complexity (backend) | Files scanned; methods analyzed; avg complexity; avg file size | same shape, `**Methods analyzed:**` instead of `**Functions analyzed:**` |
-| dead-code (frontend) | Total findings + sub-counts | `**Total findings:** N (a unused file(s), b unused export(s), c unused type(s), d unused dependenc(y/ies), e unlisted dependenc(y/ies))` |
-| dead-code (backend) | Unused/undeclared dependency counts (best-effort) | no bold summary — this is raw `mvn dependency:analyze` output; count lines under the "Unused declared dependencies" and "Used undeclared dependencies" sections, and note that every `spring-boot-starter-*` entry is documented as expected noise, not a real finding — don't count those toward a "regression" |
-| route-coverage | Routes-with-no-E2E-coverage count | `**Routes with no E2E coverage in either tier:** ...` (count the comma-separated list, or "none") |
-| auth-coverage | Total endpoints tracked; count resolving to `permitAll()` | no bold summary — this is a raw endpoint table; count table rows (`^\| [A-Z]+ \|`) for the total, and count rows containing `permitAll()` in the Governing rule column for the second figure |
-| lighthouse | Performance/Accessibility/Best Practices/SEO per route | the results table |
-| a11y | Total violations; Critical/Serious/Moderate/Minor breakdown | `**Total violations:** N`; the impact-count table |
-| code-coverage (frontend) | Statements/Branches/Functions/Lines %; files-below-80% count | `**Statements:** X% (a/b)` (same shape for the other 3); `## N file(s) below 80% on at least one metric` |
-| code-coverage (backend) | Lines/Branches/Methods % (JaCoCo) | `**Lines:** X% (a/b)` (same shape for `**Branches:**`/`**Methods:**`) |
-| bundle-size | Initial bundle size (kB); budget status; total JS shipped (kB); total dist size (kB) | the four `**...:**` lines near the top |
-| dependency-staleness (frontend) | Total direct deps; outdated count + major/minor/patch breakdown | `**Total dependencies (direct):** N`; `**Outdated:** N (a major, b minor, c patch behind)` |
-| dependency-staleness (backend) | Outdated dependency count (best-effort) | no bold summary — this is raw `mvn versions:display-dependency-updates` output; count `[INFO]   <groupId>:<artifactId> ... -> ...` lines |
-| e2e-run (mocked/real) | Tests total/passed/failed/skipped; flaky count; total duration | `**Tests:** N (p passed, f failed, s skipped)`; `**Flaky tests...:** N`; `**Total duration:** Xs` |
-| mutation (frontend) | Overall mutation score %; killed/total mutants | `**Overall mutation score:** X% (k/t tested mutants killed)` |
-| mutation (backend) | Line coverage %; mutation coverage %; test strength % (PIT) | `**Line coverage:** X%`; `**Mutation coverage:** X%`; `**Test strength:** X%` |
-| secrets-scan | Findings count | `**Findings:** N potential secret(s)` |
-| license-compliance (frontend) | Packages scanned; flagged count | `**N package(s) scanned, M flagged**` |
-| license-compliance (backend) | Packages scanned; needing action; previously-accepted count | `**N package(s) scanned, M need action, K previously reviewed and accepted.**` |
-| dependency-vulnerabilities (frontend) | Vulnerable package count; critical/high/moderate/low/info breakdown | `**N vulnerable package(s):** c critical, h high, m moderate, l low, i info` |
-| dependency-vulnerabilities (backend) | Known-vulnerability count (OSV.dev) | `**N known vulnerabilities across the resolved dependency tree.**` |
-| claude-md-size | Line count; word count; size in bytes (headline: `JPPhotoManagerWeb/CLAUDE.md`) | `**Lines:** N` / `**Words:** N` / `**Size:** N bytes` |
-
-### 5. Describe the trend across the full series
-
-Each category-and-side now has a chronological list of values (every
-historical report plus the fresh one). Don't collapse this to a single
-previous-vs-current delta — that's exactly the "can't tell a steady drift
-from noise" problem committing the history was meant to fix. For each
-metric:
-
-- **State the most-recent delta** (fresh value vs. the point immediately
-  before it) — still the single most actionable number, and the one that
-  answers "did today's run change anything."
-- **Characterize the shape of the whole series** in one short phrase,
-  judged across every point, not just the last two:
-  - **Flat** — values cluster tightly with no consistent direction (the
-    normal case for a healthy, stable metric).
-  - **Steadily improving / steadily declining** — most consecutive points
-    move the same direction, or the latest point continues a run of
-    several same-direction moves.
-  - **Volatile** — swings both directions across the series with no
-    consistent pattern; a single-point delta here would be misleading
-    either way.
-  - **One-off** — the series was flat/stable and the fresh point is a
-    single outlier that breaks the pattern for the first time — worth
-    flagging even though it's only one data point, precisely *because*
-    the history shows it's a break from an established baseline rather
-    than ordinary noise.
-  - **First data point** / **too little history** — fewer than 3 points
-    total (including the fresh one). Say so plainly rather than
-    describing a "shape" from 1–2 points; a shape claim needs at least 3
-    to distinguish a real pattern from a single delta.
-- **Judge direction** using the same good-thing/bad-thing classification:
-  - **Higher is better:** type coverage %, coverage % (all sides/metrics),
-    lighthouse scores, mutation/line/test-strength %, license packages
-    scanned (informational, not good/bad), E2E tests passed.
-  - **Lower is better (ideally 0):** untyped count, dead-code findings,
-    route-coverage gaps, auth-coverage endpoints with no explicit rule (if
-    tracked that way — judge case by case, since `permitAll()` on a
-    genuinely public endpoint like login isn't a defect), a11y violations,
-    files-below-80%-coverage count, dependency-staleness outdated counts,
-    E2E failed/flaky count, secrets findings, license flagged/needs-action
-    count, vulnerability counts (overall and per severity), average
-    complexity.
-  - **Informational only (track, don't judge):** files/functions/methods
-    scanned, average file size, bundle size in kB vs. its budget (flag
-    only if it crosses from "within budget" to "over budget" or vice
-    versa), test duration, total dependency count, total endpoints
-    tracked (a growing API surface isn't itself good or bad), CLAUDE.md
-    line/word/byte count (a steady climb across several runs with no trim
-    is the signal worth a look, not any single reading — see the report's
-    own note).
-
-Use ▲ for improved, ▼ for regressed, → for flat/unchanged, and — for "not
-enough history yet."
-
-### 6. Display the trend report
+### 2. Display the trend report
 
 One table per category group, headline metric(s) with a compact
 **History** column (every value in the series, oldest→newest) plus the
-most-recent delta, the shape description from step 5, and a trend marker;
+most-recent delta, the shape from the script's output, and a trend marker;
 secondary/breakdown numbers folded into a Notes column rather than their
 own row (keeps this scannable across roughly 20 category/side series):
 
@@ -349,11 +179,12 @@ own row (keeps this scannable across roughly 20 category/side series):
 [List any category/side with fewer than 3 points total — say what IS known (the values that exist) without claiming a shape.]
 ```
 
-### 7. Note next steps — never auto-commit
+### 3. Note next steps — never auto-commit
 
 The freshly generated files are new uncommitted changes under the tracked
-`JPPhotoManagerWeb/docs/reports/<category>/` folders. Point this out and
-suggest committing them (so the trend history in git actually grows), but
+`JPPhotoManagerWeb/docs/reports/<category>/` folders — `git status`/
+`git diff --stat` shows exactly which ones. Point this out and suggest
+committing them (so the trend history in git actually grows), but
 per this project's standing convention (`CLAUDE.md`, and every other
 skill here), **never commit without being asked** — end the turn with the
 trend report and let the user decide.
@@ -376,8 +207,9 @@ trend report and let the user decide.
 - **Always read the full committed history, not just the latest file.**
   Comparing only the immediately preceding value defeats the entire point
   of committing these reports — it can't distinguish a steady multi-run
-  drift from ordinary noise. Every category lookup in step 1 must glob
-  every matching file, not just the newest.
+  drift from ordinary noise. The script globs every matching file per
+  category/side, not just the newest — never narrow that yourself by only
+  checking the latest file.
 - **Order history by the embedded `**Generated:**` timestamp, never by
   filename or filesystem mtime.** Filenames don't sort correctly once a
   same-day rerun adds a `-2`/`-3` suffix (and most of these scripts don't
@@ -385,10 +217,9 @@ trend report and let the user decide.
   original mtimes — a clone or checkout stamps every file with the
   checkout time, silently scrambling any mtime-based ordering for anyone
   who didn't generate the whole history in one uninterrupted working copy.
-  Mtime is still the right tool for step 2–3's marker-file/`find -newer`
-  diff, since that only needs to isolate "the file this run just wrote"
-  within the current session — a different, narrower job than ordering
-  history.
+  This is why the script orders by the embedded timestamp instead of
+  either — never patch around a script bug by re-sorting its output by
+  filename or mtime.
 - **Two independent series share a folder for shared categories.**
   Complexity, dead code, code coverage, dependency staleness, license
   compliance, dependency vulnerabilities, and mutation each have a
