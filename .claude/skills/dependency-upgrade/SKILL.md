@@ -9,7 +9,10 @@ description: >
   code — this skill proactively drives the update-and-regression-test cycle
   itself, on a cadence, whether or not anything is currently flagged as
   vulnerable.
+license: MIT
 metadata:
+  author: Juan Pablo Drexler
+  version: "1.0"
   scope: [JPPhotoManagerWeb]
 ---
 

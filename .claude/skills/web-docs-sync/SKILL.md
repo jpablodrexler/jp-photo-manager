@@ -15,7 +15,10 @@ description: >
   Do not wait to be asked after a feature lands with any of the above
   changes — none of this is re-derived automatically, so it drifts
   silently otherwise.
+license: MIT
 metadata:
+  author: Juan Pablo Drexler
+  version: "1.0"
   scope: [JPPhotoManagerWeb]
 ---
 

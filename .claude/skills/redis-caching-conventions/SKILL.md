@@ -12,7 +12,10 @@ description: >
   polymorphic serializer already broke the `tags` cache once), the fail-open
   error-handling convention, key-prefix/eviction pattern, and where
   cache-invalidation triggers must be wired up.
+license: MIT
 metadata:
+  author: Juan Pablo Drexler
+  version: "1.0"
   scope: [JPPhotoManagerWeb/backend]
 ---
 

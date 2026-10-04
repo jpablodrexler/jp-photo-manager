@@ -10,7 +10,10 @@ description: >
   be asked: apply these conventions proactively whenever new Kafka-backed
   code is written. Encodes topic naming, the consumer-group decision (shared
   vs. per-instance), retry/failure handling, and message-key/ordering rules.
+license: MIT
 metadata:
+  author: Juan Pablo Drexler
+  version: "1.0"
   scope: [JPPhotoManagerWeb/backend]
 ---
 

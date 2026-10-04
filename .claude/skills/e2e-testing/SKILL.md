@@ -10,7 +10,10 @@ description: >
   interactive navigation checks, and an optional multi-replica Kafka/Redis
   consistency check for changes touching consumer-group or
   cache-invalidation logic.
+license: MIT
 metadata:
+  author: Juan Pablo Drexler
+  version: "1.0"
   scope: [JPPhotoManagerWeb]
 ---
 

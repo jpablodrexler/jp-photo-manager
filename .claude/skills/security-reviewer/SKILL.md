@@ -14,7 +14,10 @@ description: >
   consolidated report — see "Full-Codebase Sweeps" below. Also TRIGGERS
   when asked to fix, address, resolve, or work through findings from an
   existing dated SECURITY_REVIEW_FINDINGS report — see "Fix Workflow" below.
+license: MIT
 metadata:
+  author: Juan Pablo Drexler
+  version: "1.0"
   scope: [JPPhotoManagerWeb]
 ---
 
