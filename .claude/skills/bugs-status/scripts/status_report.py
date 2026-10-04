@@ -2,8 +2,9 @@
 """
 Compute the bug-tracker status report for jp-photo-manager: counts, the
 severity/area/environment breakdown, the open-bug list, and the
-data-integrity checks (duplicate Bug IDs, orphaned Details blocks,
-stale "still shows Fixed" rows).
+data-integrity checks (duplicate Bug IDs, rows without a bugs/BUG-NNN.md
+file, files without a row, files with a wrong H1, fixed bugs whose file
+lacks a Resolution line, stale "still shows Fixed" rows).
 
 Pure table-counting and text-pattern arithmetic over
 JPPhotoManagerWeb/docs/backlog/bugs-open.md and
@@ -62,18 +63,19 @@ def read_lines(path):
 
 
 def row_dict(header, row):
-    return {h: (row[idx] if idx < len(row) else "") for idx, h in enumerate(header)}
-
-
-def find_detail_ids(lines):
-    if lines is None:
-        return set()
-    ids = set()
-    for line in lines:
-        m = re.match(r'^### (BUG-\d+)\s', line)
+    d = {h: (row[idx] if idx < len(row) else "") for idx, h in enumerate(header)}
+    if "Bug ID" in d:
+        m = re.match(r'^\[([^\]]+)\]\([^)]*\)$', d["Bug ID"].strip())
         if m:
-            ids.add(m.group(1))
-    return ids
+            d["Bug ID"] = m.group(1)
+    return d
+
+
+def read_bug_file(bugs_dir, bug_id):
+    p = bugs_dir / f"{bug_id}.md"
+    if not p.is_file():
+        return None
+    return p.read_text(encoding="utf-8")
 
 
 def main():
@@ -102,8 +104,10 @@ def main():
         "env_breakdown": {"local": 0, "deployed": 0, "both": 0},
         "active_rows": [],
         "duplicate_ids": [],
-        "orphaned_rows_no_details": [],
-        "orphaned_details_no_row": [],
+        "rows_missing_file": [],
+        "files_without_row": [],
+        "files_bad_h1": [],
+        "fixed_missing_resolution": [],
     }
 
     open_lines = read_lines(open_path)
@@ -185,11 +189,26 @@ def main():
             seen[bug_id] = seen.get(bug_id, 0) + 1
     result["duplicate_ids"] = sorted([b for b, c in seen.items() if c > 1])
 
-    detail_ids = find_detail_ids(open_lines)
-    active_open_ids = {r.get("Bug ID", "").strip() for r in open_rows
-                        if "Open" in r.get("Status", "") or "In Progress" in r.get("Status", "")}
-    result["orphaned_rows_no_details"] = sorted(active_open_ids - detail_ids)
-    result["orphaned_details_no_row"] = sorted(detail_ids - {r.get("Bug ID", "").strip() for r in open_rows})
+    bugs_dir = root / "JPPhotoManagerWeb" / "docs" / "backlog" / "bugs"
+    all_row_ids = {i for i in open_ids if i} | fixed_ids
+    closed_open_ids = {r.get("Bug ID", "").strip() for r in open_rows
+                       if "Won" in r.get("Status", "") or "Cannot reproduce" in r.get("Status", "")}
+    file_ids = set()
+    if bugs_dir.is_dir():
+        for f in bugs_dir.glob("BUG-*.md"):
+            m = re.match(r'^(BUG-\d+)\.md$', f.name)
+            if m:
+                file_ids.add(m.group(1))
+    result["rows_missing_file"] = sorted(i for i in all_row_ids if i not in file_ids)
+    result["files_without_row"] = sorted(file_ids - all_row_ids)
+    for bid in sorted(file_ids):
+        text = read_bug_file(bugs_dir, bid)
+        first = text.lstrip("﻿").splitlines()[0] if text and text.strip() else ""
+        if not re.match(rf'^# {bid}(\s|$)', first):
+            result["files_bad_h1"].append(bid)
+        # A resolved bug (fixed, won't fix, cannot reproduce) always carries a Resolution line.
+        if (bid in fixed_ids or bid in closed_open_ids) and not re.search(r'^\s*-\s*\*\*Resolution:\*\*', text or "", re.M):
+            result["fixed_missing_resolution"].append(bid)
 
     if args.json:
         print(json.dumps(result, indent=2))
@@ -266,10 +285,14 @@ def render_markdown(r):
     integrity = []
     for bug_id in r["duplicate_ids"]:
         integrity.append(f"- ⚠ Duplicate Bug ID {bug_id}.")
-    for bug_id in r["orphaned_rows_no_details"]:
-        integrity.append(f"- ⚠ {bug_id} has a table row but no Details block.")
-    for bug_id in r["orphaned_details_no_row"]:
-        integrity.append(f"- ⚠ {bug_id} has a Details block but no table row.")
+    for bug_id in r["rows_missing_file"]:
+        integrity.append(f"- ⚠ {bug_id} has a table row but no JPPhotoManagerWeb/docs/backlog/bugs/{bug_id}.md file.")
+    for bug_id in r["files_without_row"]:
+        integrity.append(f"- ⚠ JPPhotoManagerWeb/docs/backlog/bugs/{bug_id}.md exists but {bug_id} has no table row in either file.")
+    for bug_id in r["files_bad_h1"]:
+        integrity.append(f"- ⚠ JPPhotoManagerWeb/docs/backlog/bugs/{bug_id}.md does not start with a `# {bug_id}` heading.")
+    for bug_id in r["fixed_missing_resolution"]:
+        integrity.append(f"- ⚠ {bug_id} is resolved but JPPhotoManagerWeb/docs/backlog/bugs/{bug_id}.md has no **Resolution:** line.")
     for bug_id in r["fixed_here"]:
         integrity.append(f"- ⚠ {bug_id} still shows ✅ Fixed in bugs-open.md — run `bugs-archive {bug_id}` to finish the move.")
     if integrity:

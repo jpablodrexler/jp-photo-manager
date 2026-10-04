@@ -75,11 +75,16 @@ surface `AskUserQuestion`.
    couldn't obtain confirmation), stop the whole workflow here and tell
    the user. Never proceed to Phase 1 without a confirmed Bug ID.
 3. Otherwise capture the confirmed Bug ID from the `BUG_ID:` line. This is
-   `<bug-id>` in every phase below. Read that bug's row and Details block
-   from `JPPhotoManagerWeb/docs/backlog/bugs-open.md` now, in the
+   `<bug-id>` in every phase below. Read that bug's row from
+   `JPPhotoManagerWeb/docs/backlog/bugs-open.md` (Severity / Area /
+   Environment / Summary) and its details file
+   `JPPhotoManagerWeb/docs/backlog/bugs/<bug-id>.md` (the H1 plus the
+   Steps / Expected / Actual / Environment / Notes bullets) now, in the
    orchestrator context, so the repro steps / expected / actual can be
    pasted verbatim into Subagent 1's prompt (a subagent shouldn't have to
-   re-hunt for them).
+   re-hunt for them). If the details file is missing (a bug tracked ad
+   hoc, or a broken backlog), fall back to the row's Summary and say so
+   to the user.
 
 **Derive `<slug>`** for the branch: `<bug-id lowercased>-<2–4 kebab words
 from the bug title>`, e.g. `bug-004-gallery-thumbnail-404`. The branch
@@ -407,7 +412,9 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 > **Step 2** — Invoke `bugs-archive <bug-id> fixed "<one-line resolution:
 > what the root cause was and what changed; include the regression test
 > path>"`. Wait for it to move the row to
-> `JPPhotoManagerWeb/docs/backlog/bugs-fixed.md`.
+> `JPPhotoManagerWeb/docs/backlog/bugs-fixed.md` and append the
+> `**Resolution:**` line to `JPPhotoManagerWeb/docs/backlog/bugs/<bug-id>.md`
+> (that file never moves).
 >
 > End with exactly:
 > `CLOSE: DONE`

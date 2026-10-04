@@ -1,17 +1,27 @@
 ---
 name: bug-report
-description: Adds a bug to JPPhotoManagerWeb/docs/backlog/bugs-open.md — drafts the row (Severity, Area, Environment, Status, one-line Summary), assigns the next BUG-NNN id, writes a Details block (repro steps / expected / actual), inserts it into the Recommended fix order, and confirms with the user before writing. Creates the backlog file (with header, legend, and empty table) on first use if it doesn't exist yet — a missing backlog is a reason to run this skill, never a reason to skip it. TRIGGER proactively, without waiting to be asked, whenever the user reports a bug, asks to file/log/capture one, describes something in the app that is broken, misbehaving, or producing a wrong result (a symptom, a stack trace, a console error), or hands over notes from a testing session — this holds mid-task and whether or not JPPhotoManagerWeb/docs/backlog/bugs-open.md already exists. When the user describes one or more fresh bugs and wants them fixed now (including "plan and fix these bugs"), run this skill once per bug FIRST to capture each, THEN hand off to bug-fix (a single bug) or bugs-batch-fix (several) — never hand-roll the fix without filing. This is the bug-family counterpart to feature-plan.
+description: Adds a bug to JPPhotoManagerWeb/docs/backlog/bugs-open.md — drafts the row (Severity, Area, Environment, Status, one-line Summary), assigns the next BUG-NNN id, writes the bug's details file JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md (repro steps / expected / actual), inserts it into the Recommended fix order, and confirms with the user before writing. Creates the backlog files and the bugs/ folder (with header, legend, and empty table) on first use if they don't exist yet — a missing backlog is a reason to run this skill, never a reason to skip it. TRIGGER proactively, without waiting to be asked, whenever the user reports a bug, asks to file/log/capture one, describes something in the app that is broken, misbehaving, or producing a wrong result (a symptom, a stack trace, a console error), or hands over notes from a testing session — this holds mid-task and whether or not JPPhotoManagerWeb/docs/backlog/bugs-open.md already exists. When the user describes one or more fresh bugs and wants them fixed now (including "plan and fix these bugs"), run this skill once per bug FIRST to capture each, THEN hand off to bug-fix (a single bug) or bugs-batch-fix (several) — never hand-roll the fix without filing. This is the bug-family counterpart to feature-plan.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "1.2"
 ---
 
-Add a new bug row + Details block to
-`JPPhotoManagerWeb/docs/backlog/bugs-open.md`, drafted from the user's
-report and confirmed before writing. This is the bug family's analogue of
-`feature-plan` — same shape (draft, confirm, insert, order), different
-backlog file and column vocabulary.
+Add a new bug row to `JPPhotoManagerWeb/docs/backlog/bugs-open.md` and
+create its details file `JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md`,
+drafted from the user's report and confirmed before writing. This is the
+bug family's analogue of `feature-plan` — same shape (draft, confirm,
+insert, order), different backlog file and column vocabulary.
+
+**Layout**: the two backlog files (`bugs-open.md`, `bugs-fixed.md`) hold
+only tables (plus the Column legend and Recommended fix order). Every
+bug's write-up lives in its own file
+`JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md` — a stable path that
+never moves, even when the bug is closed. Severity, Area, Environment,
+and Status live **only** in the table row (single source of truth), never
+in the per-bug file. Each table row's first cell links to the file:
+`[BUG-NNN](bugs/BUG-NNN.md)` (relative to
+`JPPhotoManagerWeb/docs/backlog/`).
 
 **Input**: A description of the bug — as much or as little as the user
 gives (a one-liner, a paragraph, or raw notes from a manual testing
@@ -67,7 +77,9 @@ _No open bugs._
 
 ## Details
 
-<!-- One block per bug, keyed by its Bug ID. `bugs-archive` moves the block to bugs-fixed.md on close. -->
+<!-- Per-bug details live in bugs/BUG-NNN.md (stable path), one file per bug, linked from its row here. `bugs-archive` moves only the table row to bugs-fixed.md and appends the Resolution line to that file. -->
+
+Details for every bug live in `bugs/BUG-NNN.md`, linked from its row.
 
 ## Recommended fix order
 
@@ -88,23 +100,30 @@ has somewhere to write later:
 | Bug ID | Severity | Area | Environment | Fixed | Fix | Summary |
 | ------ | -------- | ---- | ----------- | ----- | --- | ------- |
 
-## Details (Historical)
+## Details
 
-<!-- Detail blocks moved here by bugs-archive, each with a **Resolution:** line appended. -->
+<!-- Per-bug details live in bugs/BUG-NNN.md (stable path). `bugs-archive` moves only the table row between bugs-open.md and bugs-fixed.md and appends the Resolution line to that file. -->
+
+Details for every bug live in `bugs/BUG-NNN.md`, linked from its row.
 ```
 
-Both files are needed to pick a non-colliding id (step 3) even when both
-are freshly created and empty.
+**If the `JPPhotoManagerWeb/docs/backlog/bugs/` folder doesn't exist yet**,
+create it (the first per-bug file in step 7 does this implicitly).
+
+All of these are needed to pick a non-colliding id (step 3) even when
+freshly created and empty.
 
 ### 3. Derive the Bug ID
 
 Bug ids are `BUG-NNN` with a zero-padded 3-digit sequence
 (`BUG-001`, `BUG-002`, …). Run
 `python3 .claude/skills/bug-report/scripts/next_id.py <repo-root>` — it
-scans both files for every `BUG-NNN` reference, takes the highest `NNN`
-found, and returns `BUG-<max+1>` zero-padded (or `BUG-001` for a fresh
-backlog). Numbers are one global sequence across both files and are
-never reused, even for a `🚫 Won't fix` or `❓ Cannot reproduce` entry.
+scans both table files and the filenames in
+`JPPhotoManagerWeb/docs/backlog/bugs/` for every `BUG-NNN`, takes the
+highest `NNN` found, and returns `BUG-<max+1>` zero-padded (or `BUG-001`
+for a fresh backlog), printed as JSON: `{"next_id": "BUG-NNN"}`. Numbers
+are one global sequence across both tables and the folder and are never
+reused, even for a `🚫 Won't fix` or `❓ Cannot reproduce` entry.
 
 ### 4. Draft the attribute columns
 
@@ -122,16 +141,18 @@ so this skill can't drift out of sync with the legend):
   the user was running a local dev stack and didn't say; use `both` only
   if they confirmed it on the deployed stack too.
 
-### 5. Draft the one-line Summary and the Details block
+### 5. Draft the one-line Summary and the per-bug file content
 
 **Summary** (the table cell): one sentence naming the concrete
 symptom — the component/route/endpoint and what visibly goes wrong — not a
 vague restatement of the title.
 
-**Details block** (goes under `## Details`), in this exact shape:
+**Per-bug file** (`JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md`), in
+this exact shape — first line an H1 `# BUG-NNN — <short title>`, one
+blank line, then the bullets:
 
 ```markdown
-### BUG-NNN — <short title>
+# BUG-NNN — <short title>
 
 - **Steps to reproduce:**
   1. <step>
@@ -142,12 +163,14 @@ vague restatement of the title.
 - **Notes:** <suspected cause, related code path, screenshots referenced by filename — omit the line if there's nothing>
 ```
 
-Fill repro/expected/actual from what the user gave; if a step is genuinely
-unknown, write `<unknown — needs repro>` rather than inventing it.
+Do not put Severity, Area, or Status in the file — they live only in the
+table row. Fill repro/expected/actual from what the user gave; if a step
+is genuinely unknown, write `<unknown — needs repro>` rather than
+inventing it.
 
 ### 6. Confirm with the user before writing
 
-Display the fully drafted row and block:
+Display the fully drafted row and file content:
 
 ```
 ## Draft Bug
@@ -156,28 +179,37 @@ Display the fully drafted row and block:
 
 **Severity:** <S?>  **Area:** <area>  **Environment:** <env>  **Status:** ⬜ Open
 
-<Details block as above>
+<per-bug file content as above>
 ```
 
 Use the **AskUserQuestion tool** with a single question — "Add this bug to
 the backlog?" — options: "Yes, add it as drafted", "Let me edit something
 first" (resolve free-text edits against the draft and re-display before
-writing), "Cancel". Do not write anything to `bugs-open.md` until the user
-confirms.
+writing), "Cancel". Do not write anything under
+`JPPhotoManagerWeb/docs/backlog/` (other than the step-2 scaffolding)
+until the user confirms.
 
-### 7. Insert the row, the block, and the order entry
+### 7. Insert the row, create the file, and add the order entry
 
-Once confirmed, in a single edit to `bugs-open.md`:
+Once confirmed:
 
-1. Append the row to the `## Bug List` table (removing the `_No open
-   bugs._` placeholder line if present), preserving the pipe formatting.
-2. Append the Details block to the end of the `## Details` section.
-3. Insert the bug into `## Recommended fix order` (see step 8). This is
-   **not** optional — a backlog with rows missing from the order is worse
-   than one with a slightly-uncertain placement.
+1. Create `JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md` with the step-5
+   content (create the `bugs/` folder if needed). The file name is exactly
+   the Bug ID — it never changes afterwards.
+2. In a single edit to `bugs-open.md`: append the row to the `## Bug List`
+   table (removing the `_No open bugs._` placeholder line if present),
+   preserving the pipe formatting, with the first cell as the link —
+   `| [BUG-NNN](bugs/BUG-NNN.md) | <S?> | <area> | <env> | ⬜ Open | | <summary> |`.
+   The new row goes directly under the last table row (on a fresh table,
+   directly under the `| ------ |` separator row) — no blank line inside
+   the table.
+3. In the same edit, insert the bug into `## Recommended fix order` (see
+   step 8). This is **not** optional — a backlog with rows missing from
+   the order is worse than one with a slightly-uncertain placement.
 
-Do not touch `bugs-fixed.md` beyond the one-time skeleton creation in
-step 2.
+Do not append anything to the `## Details` section — it holds only the
+pointer sentence. Do not touch `bugs-fixed.md` beyond the one-time
+skeleton creation in step 2.
 
 ### 8. Update the recommended fix order
 
@@ -206,25 +238,30 @@ testing of X), and environment where relevant.
 ```
 ## Bug Added
 
-**BUG-NNN — <title>** added to bugs-open.md (Severity <S?>, Area <area>, <env>), inserted at position <N> of the recommended fix order.
+**BUG-NNN — <title>** added to bugs-open.md (Severity <S?>, Area <area>, <env>), details in JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md, inserted at position <N> of the recommended fix order.
 ```
 
 ---
 
 ## Guardrails
 
-- Never write to `bugs-open.md` before the user confirms the drafted row
-  in step 6 — steps 2–5 are draft-only in memory (except the one-time
-  skeleton creation in step 2, which is scaffolding, not a bug row).
+- Never write a bug row or a `bugs/BUG-NNN.md` file before the user
+  confirms the draft in step 6 — steps 2–5 are draft-only in memory
+  (except the one-time skeleton creation in step 2, which is scaffolding,
+  not a bug).
 - Never edit `bugs-fixed.md` beyond creating its initial skeleton — this
-  skill only adds to `bugs-open.md`. Closing a bug is `bugs-archive`'s
-  job.
-- Never reuse a `BUG-NNN` id — the sequence spans both files and is
-  monotonic, including for `🚫 Won't fix` / `❓ Cannot reproduce` entries.
+  skill only adds to `bugs-open.md` and creates the new per-bug file.
+  Closing a bug is `bugs-archive`'s job.
+- Never append a details block to `bugs-open.md` / `bugs-fixed.md` — the
+  details live only in `bugs/BUG-NNN.md`.
+- Never reuse a `BUG-NNN` id — the sequence spans both tables and the
+  `bugs/` folder and is monotonic, including for `🚫 Won't fix` /
+  `❓ Cannot reproduce` entries.
 - Read the Column legend fresh each run rather than relying on a
   remembered copy of the value vocabulary.
 - Preserve the exact Markdown table formatting (pipe characters) of the
-  Bug List table.
+  Bug List table, including the `[BUG-NNN](bugs/BUG-NNN.md)` link in the
+  first cell.
 - Step 6's confirmation is mandatory, even under an "Auto Mode" or similar
   autonomous-operation instruction that biases toward proceeding without
   asking — that bias never applies to writing a new row into the backlog.

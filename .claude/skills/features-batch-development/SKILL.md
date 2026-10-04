@@ -76,7 +76,8 @@ table — by `#` or by its backtick-wrapped `Change name` — the same lookup
   `features-implemented.md`, stop and ask the user to correct it rather
   than guessing which feature they meant.
 - If an identifier resolves to a row already in `features-implemented.md`
-  (`✅ Implemented`), tell the user and ask whether to skip it or genuinely
+  (the implemented table has no status column — being in that table is
+  what "implemented" means), tell the user and ask whether to skip it or genuinely
   re-run it — don't silently skip an item the user explicitly listed.
 
 **If the user asked for the whole backlog** (form (b)): read every row in
@@ -98,6 +99,8 @@ for an explicit list. Order the resulting list as follows:
 
 An empty backlog (no rows) is not an error — tell the user there's nothing
 pending and stop here.
+
+Each planned row's full brief lives in `JPPhotoManagerWeb/docs/backlog/features/NNN-<change-name>.md` (its `Brief` cell links it). Batch mode does not read it here: `feature-development` reads that file itself in its Propose phase and hands it to `openspec-propose` for any feature whose SDD artifacts don't exist yet, and a missing or empty brief file stops that feature with `PROPOSE_BLOCKED` (handled as any other Blocked outcome in Step 4). A feature whose artifacts are already `done` never needs its brief file. When confirming the derived list, it is worth checking that each feature's brief file exists, so a missing one surfaces before a multi-hour run rather than during it.
 
 Because "the whole backlog" is a derived list rather than one the user
 typed out explicitly, **show the resolved, ordered list to the user and
@@ -222,11 +225,13 @@ Continue to the next identifier, unless the user chose to stop.
 ### 5. Writing the ≤2-sentence summary
 
 After a feature completes, read its now-archived `proposal.md` (under
-`openspec/changes/archive/<date>-<change-name>/`) or the row
-`features-archive` just wrote to
-`JPPhotoManagerWeb/docs/backlog/features-implemented.md`, and write a
+`openspec/changes/archive/<date>-<change-name>/`) or the feature's brief
+file `JPPhotoManagerWeb/docs/backlog/features/NNN-<change-name>.md` (the
+row `features-archive` just wrote to
+`JPPhotoManagerWeb/docs/backlog/features-implemented.md` links it in its
+`Details` cell; the row itself holds no description), and write a
 **fresh** summary — condensed, not a verbatim copy of the (intentionally
-much longer) backlog description. State what the feature does and, if
+much longer) brief. State what the feature does and, if
 genuinely notable, one implementation detail. Two sentences, never more.
 
 ### 6. Ending the run

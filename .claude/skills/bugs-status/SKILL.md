@@ -1,10 +1,10 @@
 ---
 name: bugs-status
-description: Reports bug-backlog progress by counting rows in JPPhotoManagerWeb/docs/backlog/bugs-open.md and JPPhotoManagerWeb/docs/backlog/bugs-fixed.md. Returns total, fixed, open, in-progress, and percent-closed counts, plus a severity, area, and environment breakdown of open bugs, the open bug list itself, and any data-integrity issues (duplicate Bug IDs, orphaned Details blocks, stale statuses). TRIGGER when the user asks for a bug status report, how many bugs are open/fixed, a bug backlog summary, or similar. This is the bug-family counterpart to features-status.
+description: Reports bug-backlog progress by counting rows in JPPhotoManagerWeb/docs/backlog/bugs-open.md and JPPhotoManagerWeb/docs/backlog/bugs-fixed.md. Returns total, fixed, open, in-progress, and percent-closed counts, plus a severity, area, and environment breakdown of open bugs, the open bug list itself, and any data-integrity issues (duplicate Bug IDs, rows without a bugs/BUG-NNN.md file, bug files without a row, wrong H1s, resolved bugs without a Resolution line, stale statuses). TRIGGER when the user asks for a bug status report, how many bugs are open/fixed, a bug backlog summary, or similar. This is the bug-family counterpart to features-status.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "1.2"
 ---
 
 Report bug-tracking progress by counting rows in
@@ -24,9 +24,14 @@ files' `## Bug List` tables (from `JPPhotoManagerWeb/docs/backlog/bugs-open.md`
 and `JPPhotoManagerWeb/docs/backlog/bugs-fixed.md`), computing the
 counts/percent/breakdowns (severity/area/environment, over the active —
 `⬜ Open` + `🔶 In Progress` — rows), and finding the data-integrity
-issues (duplicate Bug IDs across both files, a `## Details` block with
-no matching table row or vice versa, a leftover `✅ Fixed` row in
-`bugs-open.md` from an interrupted `bugs-archive` run). Run it and
+issues (duplicate Bug IDs across both files; four folder-based checks
+against `JPPhotoManagerWeb/docs/backlog/bugs/` — a table row with no
+`bugs/BUG-N.md` file, a `bugs/*.md` file with no row in either table, a
+file whose first line doesn't start with `# BUG-N`, and a resolved bug
+(fixed, won't fix, cannot reproduce) whose file lacks a `**Resolution:**`
+line; a leftover `✅ Fixed` row in `bugs-open.md` from an interrupted
+`bugs-archive` run). Table `Bug ID` cells are read through their
+`[BUG-N](bugs/BUG-N.md)` link text. Run it and
 display its output directly rather than re-deriving any of this by hand:
 
 ```

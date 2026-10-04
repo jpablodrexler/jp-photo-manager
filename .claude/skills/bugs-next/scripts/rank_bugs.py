@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Score and rank actionable bugs from JPPhotoManagerWeb/docs/backlog/bugs-open.md per
+Score and rank actionable bugs from JPPhotoManagerWeb/docs/backlog/bugs-open.md
+(schema-change flag read from JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md) per
 bugs-next/SKILL.md's steps 2-3: fixed point-tier scoring (In Progress >
 Severity > deployed/both environment > fix-order position > no schema
 change) with its tie-breaks.
@@ -54,7 +55,12 @@ def find_table(lines, heading):
 
 
 def row_dict(header, row):
-    return {h: (row[idx] if idx < len(row) else "") for idx, h in enumerate(header)}
+    d = {h: (row[idx] if idx < len(row) else "") for idx, h in enumerate(header)}
+    if "Bug ID" in d:
+        m = re.match(r'^\[([^\]]+)\]\([^)]*\)$', d["Bug ID"].strip())
+        if m:
+            d["Bug ID"] = m.group(1)
+    return d
 
 
 def parse_fix_order(lines):
@@ -71,28 +77,19 @@ def parse_fix_order(lines):
     for line in lines[start + 1:]:
         if line.startswith("## "):
             break
-        m = re.match(r'^\s*-\s*(BUG-\d+)', line)
+        m = re.match(r'^\s*(?:-|\d+\.)\s*(?:\[)?(BUG-\d+)', line)
         if m:
             pos += 1
             positions[m.group(1)] = pos
     return positions
 
 
-def find_detail_block(lines, bug_id):
-    """Return the raw text of a bug's '### BUG-NNN — ...' block, or ''."""
-    start = None
-    for i, line in enumerate(lines):
-        if line.startswith(f"### {bug_id} "):
-            start = i
-            break
-    if start is None:
-        return ""
-    end = len(lines)
-    for i in range(start + 1, len(lines)):
-        if lines[i].startswith("### ") or lines[i].startswith("## "):
-            end = i
-            break
-    return "\n".join(lines[start:end])
+def read_bug_file(root, bug_id):
+    """Return the text of JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md, or None if missing."""
+    p = root / "JPPhotoManagerWeb" / "docs" / "backlog" / "bugs" / f"{bug_id}.md"
+    if not p.is_file():
+        return None
+    return p.read_text(encoding="utf-8")
 
 
 def main():
@@ -120,6 +117,7 @@ def main():
 
     candidates = []
     duplicate_ids = set()
+    missing_files = []
     seen = set()
     for r in all_rows:
         status = r.get("Status", "")
@@ -128,7 +126,10 @@ def main():
             if bug_id in seen:
                 duplicate_ids.add(bug_id)
             seen.add(bug_id)
-            detail = find_detail_block(lines, bug_id)
+            detail = read_bug_file(root, bug_id)
+            if detail is None:
+                missing_files.append(bug_id)
+                detail = ""
             schema = bool(re.search(r'Flyway|migration|JPA entity', detail, re.IGNORECASE))
             candidates.append({
                 "id": bug_id,
@@ -182,8 +183,13 @@ def main():
     ))
 
     result = {"top": ranked[0], "runners_up": ranked[1:4]}
+    warnings = []
     if duplicate_ids:
-        result["warning"] = f"Duplicate Bug ID(s) in bugs-open.md: {', '.join(sorted(duplicate_ids))} — run bugs-status for the full integrity report."
+        warnings.append(f"Duplicate Bug ID(s) in bugs-open.md: {', '.join(sorted(duplicate_ids))} — run bugs-status for the full integrity report.")
+    if missing_files:
+        warnings.append(f"No JPPhotoManagerWeb/docs/backlog/bugs/ file for {', '.join(missing_files)} — schema-change flag assumed 'no'; run bugs-status for the full integrity report.")
+    if warnings:
+        result["warning"] = " ".join(warnings)
 
     if args.json:
         print(json.dumps(result, indent=2))

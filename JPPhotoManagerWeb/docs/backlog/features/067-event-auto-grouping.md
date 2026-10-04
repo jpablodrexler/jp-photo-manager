@@ -1,0 +1,3 @@
+# Feature 67 — event-auto-grouping
+
+Automatically cluster photos into events based on configurable time gaps between consecutive shots (default threshold: 2 hours); a new `/events` route lists events as date-range cards showing a cover photo and asset count; users can rename events, set a custom cover photo, and merge or split events manually; ungrouped assets infer their event from `dateTaken` at query time — the `user_events` table (`id`, `userId`, `name`, `startAt`, `endAt`, `coverAssetId`) stores only user overrides, keeping the migration small; `GET /api/events` returns computed events for the authenticated user with asset counts; integrates with `timeline-view` (#18) as an alternate grouping mode selectable from the view toolbar

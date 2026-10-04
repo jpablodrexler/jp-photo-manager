@@ -71,7 +71,8 @@ From the `## Feature List` table, collect every row whose **Implementation** col
 - `area` — the **Area** column value (`Backend`/`Frontend`/`Full-stack`/`Infra`)
 - `artifacts_ready` — `true` if the **SDD Artifacts** column shows `✅ Created`, `false` if `⬜ Pending`
 - `in_progress` — `true` if the **Implementation** column shows `🔶 In Progress` (`feature-development` has already started this one — see `feature-development`'s Step 1.6), `false` if `⬜ Pending`
-- `brief` — the **Brief description** column text
+- `brief` — the **Summary** column text (a short hand-written summary, for display only — never spec input)
+- `brief_file` — the path of the feature's full brief, `JPPhotoManagerWeb/docs/backlog/features/NNN-<change-name>.md` (`NNN` = the `#` zero-padded to 3 digits, `<change-name>` = the backtick content of the `Change name` cell); note whether it exists
 
 ### 3. Determine which features are unblocked
 
@@ -131,7 +132,8 @@ Display:
 ## Recommended Next Feature
 
 **#<number> `<name>`**
-<brief description>
+<summary>
+Full brief: <brief_file>
 
 **Priority:** <priority>  **Effort:** <effort>  **Area:** <area>  **Schema change:** <schema_change>
 
@@ -145,7 +147,11 @@ Display:
 **SDD Artifacts:** <✅ Created / ⬜ Not yet created>
 ```
 
+If the script emitted a missing-brief-file warning for the recommended feature (or a runner-up), repeat it right under that feature's `Full brief:` line: `feature-development` stops with `PROPOSE_BLOCKED` when a planned feature's brief file is missing or empty and its SDD artifacts do not exist yet, so the user should hear about it now rather than mid-run.
+
 Also show the top 3 runners-up (by score) with a one-line reason each so the user can override.
+
+When confirming (step 6), tell the user that the `Full brief:` file (not the one-line Summary) is what `feature-development` will hand to the spec step (`openspec-propose`) as the description of what to build, so an edit to the brief belongs in that file before confirming.
 
 ### 6. Ask for user confirmation
 

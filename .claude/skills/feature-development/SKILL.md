@@ -46,7 +46,7 @@ run as a dedicated subagent (3a and 3b run in parallel):
 | Phase                        | Subagent   | Skills / actions                                                                                                                                  |
 | ----------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0 — Select & Confirm          | *(orchestrator's own context — never a subagent)* | `features-next` (recommend + mandatory `AskUserQuestion` confirmation) |
-| 1 — Propose                   | Subagent 1 | `git fetch origin --prune` to detect a branch/commits pushed from another device → `gitflow` (start feature to create `feature/<change-name>` from `develop`, resume + merge in another device's pushed commits, or sync feature to catch up an existing one) → mark the feature `🔶 In Progress` in `JPPhotoManagerWeb/docs/backlog/features-planned.md` → `openspec-propose` (if artifacts missing) |
+| 1 — Propose                   | Subagent 1 | `git fetch origin --prune` to detect a branch/commits pushed from another device → `gitflow` (start feature to create `feature/<change-name>` from `develop`, resume + merge in another device's pushed commits, or sync feature to catch up an existing one) → mark the feature `🔶 In Progress` in `JPPhotoManagerWeb/docs/backlog/features-planned.md` → `openspec-propose` with the feature's full brief file as its description (if artifacts missing) |
 | 2 — Implement & Review        | Subagent 2 | `openspec-apply-change <name>` + `code-reviewer` + `database-reviewer` + `security-reviewer` (conditional, findings fixed before done)          |
 | 3a — Backend tests            | Subagent 3 | runs `cd JPPhotoManagerWeb/backend && mvn test` until passing                                                                                     |
 | 3b — Frontend tests           | Subagent 4 | runs `cd JPPhotoManagerWeb/frontend && npm test` until passing                                                                                    |
@@ -230,7 +230,10 @@ see the foreground guardrail below), with the following prompt (substitute
 > development has actually started: open
 > `JPPhotoManagerWeb/docs/backlog/features-planned.md`, find the row in the
 > `## Feature List` table whose `Change name` column (backtick-wrapped)
-> matches `<change-name>`, and if its `Implementation` column shows
+> matches `<change-name>` (columns are always addressed by header name,
+> never by position — the planned table's column order is `# | Change name |
+> Priority | Schema Change | Effort | Area | Summary | Brief | SDD Artifacts |
+> Implementation`), and if its `Implementation` column shows
 > `⬜ Pending`, change it to `🔶 In Progress` and save the file. If the row
 > already shows `🔶 In Progress` (e.g. this is a resume of a previously
 > interrupted run) or `✅ Implemented`, leave it unchanged — do not
@@ -255,9 +258,36 @@ see the foreground guardrail below), with the following prompt (substitute
 > - If **any** are not `done`: artifacts are missing — proceed to Step 3.
 >
 > **Step 3 — Create missing artifacts (if needed)**
-> Use the Skill tool to invoke `openspec-propose <change-name>`. Wait for it
-> to complete. If it fails or reports an error, end your response with
-> `PROPOSE_BLOCKED — <brief reason>` and stop.
+> The feature's full brief is the input `openspec-propose` turns into the
+> SDD spec, so hand it over explicitly instead of letting `openspec-propose`
+> ask for a description:
+>
+> 1. Open `JPPhotoManagerWeb/docs/backlog/features-planned.md` and find the
+>    row in the `## Feature List` table whose `Change name` column
+>    (backtick-wrapped) matches `<change-name>`. Columns are read by header
+>    name, never by position.
+> 2. **If a planned row exists**: take its `#` and build the brief file path
+>    `JPPhotoManagerWeb/docs/backlog/features/NNN-<change-name>.md` (`NNN` =
+>    the number zero-padded to three digits, e.g. `054`). Read that file;
+>    everything after the `# Feature N — <change-name>` H1 line, with
+>    surrounding blank lines trimmed, is the brief. If the file is missing
+>    or the brief is empty, end your response with
+>    `PROPOSE_BLOCKED — brief file JPPhotoManagerWeb/docs/backlog/features/NNN-<name>.md missing or empty`
+>    (substituting the real number and name) and stop.
+> 3. Use the Skill tool to invoke `openspec-propose <change-name>`, giving it
+>    the brief verbatim and in full as the description of what to build
+>    (e.g. "Description of what to build for `<change-name>`:" followed by
+>    the brief text), so it never has to ask the user for one. The brief
+>    file is the spec input; never pass the row's one-line `Summary` cell,
+>    which exists only for human skimming and `features-next`'s display.
+> 4. **If no planned row exists** (an ad hoc change proposed outside the
+>    tracked backlog, or one already moved to `features-implemented.md`):
+>    there is no brief to read — skip the file lookup in step 2 and invoke
+>    `openspec-propose <change-name>` exactly as before, with no
+>    description.
+>
+> Wait for it to complete. If it fails or reports an error, end your
+> response with `PROPOSE_BLOCKED — <brief reason>` and stop.
 > After it completes, re-run `openspec status --change "<change-name>" --json`
 > and confirm every artifact ID in `applyRequires` now has `"status": "done"`.
 > If any are still missing, end your response with
@@ -267,10 +297,11 @@ see the foreground guardrail below), with the following prompt (substitute
 > `JPPhotoManagerWeb/docs/backlog/features-planned.md`, find the row in the
 > `## Feature List` table whose `Change name` column (backtick-wrapped)
 > matches `<change-name>`, and if its `SDD Artifacts` column shows `⬜ Pending`,
-> change it to `✅ Created` and save the file. If the row already shows
-> `✅ Created`, leave it unchanged. If no matching row exists (e.g. the
-> change was proposed ad hoc, outside the tracked backlog), skip this
-> silently — it is not an error.
+> change it to `✅ Created` and save the file (again addressing the cell by
+> its header name). If the row already shows `✅ Created`, leave it
+> unchanged. If no matching row exists (e.g. the change was proposed ad hoc,
+> outside the tracked backlog), skip this silently — it is not an error. The
+> brief file never changes; only the row's `SDD Artifacts` cell does.
 >
 > **Step 3.5 — Check for a newly discovered hard dependency**
 > The artifacts just confirmed `done` (proposal.md, and design.md if
@@ -1081,8 +1112,12 @@ the following prompt:
 > archiving workflow.
 >
 > **Step 4** — Invoke `features-archive <change-name>`. Wait for it to
-> complete fully (the feature row must be updated to `✅ Implemented` in
-> `JPPhotoManagerWeb/docs/backlog/features-planned.md`).
+> complete fully (the feature's row must be moved out of
+> `JPPhotoManagerWeb/docs/backlog/features-planned.md` into
+> `JPPhotoManagerWeb/docs/backlog/features-implemented.md` in the
+> implemented-table shape — no `Summary`/`Brief`/`Implementation` cells, a
+> `Details` cell linking the brief file and the archived spec; the brief
+> file under `JPPhotoManagerWeb/docs/backlog/features/` stays untouched).
 >
 > After all four steps complete, end your response with exactly this line:
 > `ARCHIVE: DONE`
@@ -1175,8 +1210,8 @@ them back through Phase 2's code review.
   only ever flips `⬜ Pending` → `🔶 In Progress`; it never touches a row
   already showing `🔶 In Progress` or `✅ Implemented`, and it never blocks
   the workflow if the row is missing (ad hoc changes outside the tracked
-  backlog). Phase 6's `features-archive` is what eventually flips the row
-  to `✅ Implemented`.
+  backlog). Phase 6's `features-archive` is what eventually moves the row
+  to the implemented table.
 - **Auto Mode (or any other autonomous-operation instruction) never
   overrides a required user confirmation anywhere in this workflow.** This
   applies to every `AskUserQuestion` decision point this skill or a skill
