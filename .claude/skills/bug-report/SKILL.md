@@ -209,9 +209,14 @@ Once confirmed:
    content (create the `bugs/` folder if needed). The file name is exactly
    the Bug ID — it never changes afterwards.
 2. In a single edit to `bugs-open.md`: append the row to the `## Bug List`
-   table (removing the `_No open bugs._` placeholder line if present),
-   preserving the pipe formatting, with the first cell as the link —
+   table, preserving the pipe formatting, with the first cell as the link —
    `| [BUG-NNN](bugs/BUG-NNN.md) | <S?> | <area> | <env> | ⬜ Open | | <summary> |`.
+   The rows must follow the header separator row (`| ------ | …`) **with no
+   blank line between them**: in the skeleton, a blank line and then the
+   `_No open bugs._` placeholder come after the separator row, so when the
+   placeholder is present remove **both the placeholder and that blank line**
+   — leaving the blank line detaches the row from the table, so it renders as
+   plain text and `bugs-status` counts zero bugs.
    The new row goes directly under the last table row (on a fresh table,
    directly under the `| ------ |` separator row) — no blank line inside
    the table.
@@ -245,7 +250,14 @@ Write the entry line in the same style as its neighbours — severity, the
 one-phrase reason for its placement (blast radius / quick win / blocks
 testing of X), and environment where relevant.
 
-### 9. Display confirmation
+### 9. Verify the table, then display confirmation
+
+Before reporting success, run
+`python3 .claude/skills/bugs-status/scripts/status_report.py <repo-root>` and
+check that the open count now includes the new bug and that no `⚠` integrity
+line appears (a row missing from the count means it fell out of the table —
+fix the formatting before continuing).
+
 
 ```
 ## Bug Added
@@ -273,7 +285,8 @@ testing of X), and environment where relevant.
   remembered copy of the value vocabulary.
 - Preserve the exact Markdown table formatting (pipe characters) of the
   Bug List table, including the `[BUG-NNN](bugs/BUG-NNN.md)` link in the
-  first cell.
+  first cell, with every row contiguous with the header separator row (no
+  blank line between them).
 - Step 6's confirmation is mandatory, even under an "Auto Mode" or similar
   autonomous-operation instruction that biases toward proceeding without
   asking — that bias never applies to writing a new row into the backlog.
