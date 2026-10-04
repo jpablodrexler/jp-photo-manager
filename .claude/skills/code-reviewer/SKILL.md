@@ -574,6 +574,15 @@ once wrapped — stacking each full-width is the simplest correct fix.
   labelled field should use `min-width` plus a growable `flex`, size to
   content, or carry a shorter label instead.
 
+🟡 Flag a `mat-form-field` that is meant to fill its row or card but has
+no width rule of its own (`width: 100%`, or a growable `flex: 1` with
+`min-width: 0`). Material form fields size to their default intrinsic
+width, so a field inside a flex row or a wrapper that also holds a hint can
+render far narrower than its container; a width cap placed on a wrapper
+that holds both the field and its hint caps the hint too. Check the
+reused-form-class case as well — a width class written for one form that
+silently applies to a second.
+
 🟡 Flag a `mat-form-field` bound to a `FormControl` with validators —
 typically a catalog/dialog **add row** or an otherwise-optional field —
 that surfaces its error state on a bare focus-then-blur, before the user
@@ -657,6 +666,15 @@ a test file should never import `mount` directly.
 
 🟡 Flag a `describe` block with no `beforeEach` that repeats the same
 `cy.mount()` call in every `it` — extract to `beforeEach`.
+
+🟡 Flag a CSS/template fix, or a new multi-field/multi-button UI, with no
+layout regression test in the component's `.cy.ts` — a `cy.viewport(384, 824)`
+**and** a desktop-width `cy.viewport(...)` assertion on measured geometry
+(`getBoundingClientRect`: no overlap, fields filling their container, buttons
+sharing a width once wrapped). A layout test that only checks the element
+exists passes while the real layout is broken. Say the layout is
+**unverified** rather than approving it when the PR or report doesn't state
+it was checked at both widths.
 
 ---
 
