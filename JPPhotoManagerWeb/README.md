@@ -1,6 +1,6 @@
 # JP Photo Manager — Web Edition
 
-A web rewrite of the JP Photo Manager desktop application. It replaces the original WPF/.NET application with a modern client–server architecture: a **Java 21 + Spring Boot 3** REST API backend and an **Angular 19** single-page application frontend.
+A web rewrite of the JP Photo Manager desktop application. It replaces the original WPF/.NET application with a modern client–server architecture: a **Java 21 + Spring Boot 3** REST API backend and an **Angular 22** single-page application frontend.
 
 ---
 
@@ -24,7 +24,7 @@ This README is split into topic-specific files under [`docs/`](docs/):
 
 ## Web Application (this project)
 
-`JPPhotoManagerWeb/` is a Java 21 + Spring Boot 3 backend (`backend/`) and an Angular 19 frontend (`frontend/`). See [Architecture](docs/architecture.md) for the system diagram and [Backend](docs/backend.md) / [Frontend](docs/frontend.md) for how to run each half locally, or [Running with Docker Compose](docs/docker-compose.md) / [Running with Kubernetes](docs/kubernetes.md) to run the full stack.
+`JPPhotoManagerWeb/` is a Java 21 + Spring Boot 3 backend (`backend/`) and an Angular 22 frontend (`frontend/`). See [Architecture](docs/architecture.md) for the system diagram and [Backend](docs/backend.md) / [Frontend](docs/frontend.md) for how to run each half locally, or [Running with Docker Compose](docs/docker-compose.md) / [Running with Kubernetes](docs/kubernetes.md) to run the full stack.
 
 ---
 

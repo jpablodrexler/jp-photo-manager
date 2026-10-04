@@ -7,7 +7,7 @@
 ```mermaid
 graph TB
     subgraph browser["Browser"]
-        Angular["Angular 19 SPA\nGallery · Albums · Sync · Convert · Duplicates · Recycle Bin\nAnalytics · Audio Player"]
+        Angular["Angular 22 SPA\nGallery · Albums · Sync · Convert · Duplicates · Recycle Bin\nAnalytics · Audio Player"]
     end
 
     subgraph backend["Backend — port 8080"]
@@ -236,7 +236,7 @@ JPPhotoManagerWeb/
 ├── backend/            # Java 21 + Spring Boot 3 Maven project
 │   ├── Dockerfile      # Multi-stage build (Maven → JRE Alpine)
 │   └── .dockerignore
-├── frontend/           # Angular 19 npm project
+├── frontend/           # Angular 22 npm project
 │   ├── Dockerfile      # Multi-stage build (Node → Nginx Alpine)
 │   ├── nginx.conf      # Serves SPA + reverse-proxies /api to backend
 │   └── .dockerignore
