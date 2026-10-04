@@ -1,60 +1,74 @@
 ---
 name: architecture-reviewer
 description: >
-  Whole-system architecture health check for the JPPhotoManagerWeb Angular
-  frontend (`JPPhotoManagerWeb/frontend`). Assesses file/folder organization,
-  the `core → features ← shared` layering and inter-layer communication
-  (services wrapping the Spring REST API, never a direct `HttpClient` call
-  from a component), API/data-access patterns (REST + the auth interceptor,
-  HttpOnly-cookie JWT, Server-Sent Events progress streams, pagination),
-  browser-storage (`localStorage`) usage, and state-management patterns —
-  specifically hunting for a shared service or stream being reused past its
-  own name as an undocumented cross-feature coordination bus — against
-  Angular/industry best practice and the project's own documented
-  conventions (`JPPhotoManagerWeb/CLAUDE.md`, `JPPhotoManagerWeb/docs/architecture.md`,
-  `JPPhotoManagerWeb/docs/frontend.md`). A qualitative, whole-system structural
-  review, distinct from `code-reviewer` (per-diff/per-PR correctness and
-  convention checks) and `quality-metrics` (numeric automated sweeps) — run it
-  periodically or whenever something about the app's overall shape is in
-  question, not on every commit. TRIGGER when the user asks for an
-  architecture review or assessment, asks whether the frontend follows
-  good/recommended practice or a particular pattern, asks to "dig deeper"
-  into a specific architectural dimension already raised (state management,
-  data flow, layering, API calls, local storage, etc.), or asks to audit code
-  organization/state management/API-call patterns. Also TRIGGERS when asked to
-  fix, address, resolve, or work through findings from an existing dated
-  ARCHITECTURE_REVIEW report — see "Follow-up Workflow" below.
+  Whole-system architecture health check for JPPhotoManagerWeb — the Angular
+  frontend (`JPPhotoManagerWeb/frontend`) and the Spring Boot backend
+  (`JPPhotoManagerWeb/backend`). Frontend: file/folder organization, the
+  `core → features ← shared` layering (services wrapping the REST API, never
+  a direct `HttpClient` call from a component), API/data-access patterns
+  (auth interceptor, HttpOnly-cookie JWT, Server-Sent Events, pagination),
+  `localStorage` usage, and state management. Backend: the hexagonal
+  dependency rule (`infrastructure/web → application/usecase → domain ←
+  infrastructure/persistence | service`), port/adapter integrity,
+  transactions, persistence across PostgreSQL/MongoDB/Redis and Flyway
+  migrations, Kafka/Spring Batch/SSE async flows, caching, the REST/security
+  surface, and configuration/observability. On both sides it specifically
+  hunts for a shared service, stream, topic or cache-invalidation listener
+  reused past its own name as an undocumented cross-feature coordination
+  channel. Judged against Angular/Spring/industry best practice and the
+  project's own documented conventions (`JPPhotoManagerWeb/CLAUDE.md`,
+  `JPPhotoManagerWeb/docs/architecture.md`, `frontend.md`, `backend.md`). A
+  qualitative, whole-system structural review, distinct from `code-reviewer`
+  (per-diff/per-PR correctness and convention checks), `java-developer` and
+  the Kafka/Redis convention skills (rules for new code), and
+  `quality-metrics` (numeric automated sweeps) — run it periodically or
+  whenever something about the system's overall shape is in question, not on
+  every commit. TRIGGER when the user asks for an architecture review or
+  assessment (of the frontend, the backend, or both), asks whether the code
+  follows good/recommended practice or a particular pattern (hexagonal
+  boundaries, transaction placement, event flow, caching, layering), asks to
+  "dig deeper" into a specific architectural dimension already raised, or
+  asks to audit code organization/state management/API-call patterns/
+  persistence/messaging. Also TRIGGERS when asked to fix, address, resolve,
+  or work through findings from an existing dated ARCHITECTURE_REVIEW report
+  — see "Follow-up Workflow" below.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
-  scope: [frontend]
+  version: "1.1"
+  scope: [frontend, backend]
 ---
 
 # Architecture Reviewer Skill
 
-Assess whether the Angular frontend's overall structure — not a specific diff
-or PR, but the shape of the system as a whole — still follows recommended
-Angular practice and the project's own documented conventions. This skill
-exists because the kind of issue it looks for rarely shows up in a single-PR
-`code-reviewer` pass: it is implicit coupling that accretes gradually, one
-individually-reasonable change at a time, across many separate reviews that
-each only saw their own diff.
+Assess whether the system's overall structure — not a specific diff or PR,
+but the shape of the whole frontend and/or backend — still follows recommended
+Angular and Spring practice and the project's own documented conventions. This
+skill exists because the kind of issue it looks for rarely shows up in a
+single-PR `code-reviewer` pass: it is implicit coupling that accretes
+gradually, one individually-reasonable change at a time, across many separate
+reviews that each only saw their own diff.
 
-The motivating shape: a service that starts as one narrow concern (a
-preference, a playback state, a sync status) and quietly becomes the
-cross-feature "something changed, refetch" broadcast channel for several
-unrelated features. Nothing about the service's name says so, and no single PR
-that added one more call site would have looked wrong in isolation.
+The motivating shape, on either side: a unit that starts as one narrow concern
+(a preference, a playback state, a sync status, a cache-invalidation hook, one
+Kafka topic) and quietly becomes the cross-feature "something changed, react"
+channel for several unrelated features. Nothing about its name says so, and no
+single PR that added one more consumer would have looked wrong in isolation.
+The backend has its own classic drift on top of that: the hexagonal dependency
+rule eroding one convenient import at a time.
 
-**Input**: either "review the architecture" (full review, all dimensions
-below) or a specific dimension to review or dig into further (e.g. "just state
-management", "how does it handle local storage", "look deeper at layering") —
-a deep-dive on one dimension, at higher depth than the full review gives each.
+**Input**: "review the architecture" (full review — frontend and backend, all
+dimensions), "review the backend" / "review the frontend" (all dimensions of
+that side), or a specific dimension to review or dig into further (e.g. "just
+state management", "hexagonal boundaries", "how are transactions placed", "look
+deeper at the Kafka topics") — a deep-dive on one dimension, at higher depth
+than the full review gives each.
 
 ---
 
 ## The dimensions
+
+### Frontend (`JPPhotoManagerWeb/frontend`)
 
 1. **File/folder organization & naming** — the `core → features ← shared`
    structure (`JPPhotoManagerWeb/docs/frontend.md`'s "Application structure"),
@@ -107,25 +121,119 @@ a deep-dive on one dimension, at higher depth than the full review gives each.
    in depth; flag it only if a structural pattern (e.g. a whole feature with no
    tests at all) shows up incidentally while reviewing another dimension.
 
+### Backend (`JPPhotoManagerWeb/backend`)
+
+The backend follows hexagonal (ports and adapters) architecture:
+`infrastructure/web → application/usecase → domain ← infrastructure/persistence | service`
+(`JPPhotoManagerWeb/docs/architecture.md`, "Backend Hexagonal Architecture").
+Base package: `JPPhotoManagerWeb/backend/src/main/java/com/jpablodrexler/photomanager/`
+(abbreviated `<pkg>/` below). The rules for writing new code live in
+`java-developer`, `kafka-events-conventions` and `redis-caching-conventions`;
+this skill checks whether the codebase as a whole still obeys them.
+
+B1. **Layer boundaries & the dependency rule** — verify, don't assume, with
+   these greps (each hit is a finding unless it is a documented exception):
+   - `domain/` importing `org.springframework`, `jakarta.`, or anything from
+     `infrastructure/` (`Grep -rn "import org.springframework\|import jakarta\|import .*\.infrastructure\." <pkg>/domain`);
+   - `application/usecase/` importing `infrastructure/` or Spring Data types
+     (`...infrastructure\.` / `JpaRepository`);
+   - controllers in `infrastructure/web/controller/` importing a repository
+     port, `persistence/`, `@Entity` classes, or a service adapter instead of
+     a `domain/port/in/` use-case interface;
+   - a JPA `@Entity` or Mongo `@Document` returned from, or accepted by, a
+     controller (domain/HTTP DTO boundary leaking);
+   - `application/service/` and `config/` holding logic that belongs in a use
+     case (a non-port "service" class in `application/` is a smell worth a
+     look every time).
+B2. **Port/adapter integrity** — every `domain/port/out/` port has exactly one
+   adapter with the documented naming (`XxxRepository` →
+   `XxxRepositoryImpl`, `XxxPort` → `XxxServiceAdapter`); every
+   `domain/port/in/` interface has one use-case implementation; no adapter
+   calling another adapter directly instead of going through a port; business
+   rules living in adapters, controllers or MapStruct mappers rather than the
+   domain/use case; ports so wide (a god-port with dozens of methods) that they
+   have stopped being a boundary.
+B3. **Transactions & consistency** — `@Transactional` placed on use-case
+   implementations (not controllers, not persistence adapters, not
+   `domain/`); self-invocation that silently bypasses the proxy; `@Async`,
+   Kafka listeners and Spring Batch writers that mutate data with no
+   transaction boundary of their own; read-then-write sequences across a
+   Kafka hop that assume ordering or read-your-writes the system doesn't
+   guarantee; multi-store writes (PostgreSQL + MongoDB + Redis + the file
+   system) with no stated consistency story.
+B4. **Persistence & data model** — which data lives where (PostgreSQL via JPA,
+   MongoDB documents, Redis caches/stores, files on disk) and whether each
+   choice is deliberate and documented rather than accreted; entities vs
+   domain models vs documents kept separate through MapStruct; Flyway
+   discipline in `src/main/resources/db/migration/` (strictly increasing
+   `V<n>__` numbers with no gaps or duplicates, no edit of an already-applied
+   migration, destructive changes called out, the directory `README.md`
+   current); N+1 and unbounded-query risks at repository boundaries; indexes
+   for the query shapes the use cases actually issue.
+B5. **Messaging, async & coordination** — Kafka topics, consumer groups,
+   `@Async`, Spring Batch jobs and SSE progress streaming
+   (`infrastructure/kafka/`, `infrastructure/batch/`,
+   `KafkaProgressRegistry`). **Always run the "hunt the broadcast" technique
+   here**: for every topic (`config/KafkaTopicConfig.java`) grep every
+   producer (`kafkaTemplate.send`) and every consumer (`@KafkaListener`), and
+   for every listener that reacts to another feature's event (for example
+   `AssetSearchCacheInvalidationListener`, `AuditLogKafkaListener`) list what
+   it touches. Flag a topic or listener whose producers/consumers span two or
+   more features with no direct relationship, a topic that is produced but
+   never consumed (or the reverse), a use case that depends on a side effect
+   in a listener it never calls, and an event whose consumers must run in a
+   specific order. Report topic count, producer/consumer counts and the
+   features spanned. Per-topic naming, consumer-group and retry rules belong
+   to `kafka-events-conventions` — cite it rather than restating it.
+B6. **Caching** — where cache logic lives (adapters, not use cases or
+   controllers), whether every named cache has a documented invalidation
+   story and TTL, whether a cache failure is fail-open, and whether two
+   unrelated features share one cache or one key space. Per-cache rules
+   belong to `redis-caching-conventions` — cite it.
+B7. **API surface & security** — consistency across controllers (resource
+   naming, status codes, error body shape via `infrastructure/web/exception`,
+   pagination via the shared paginated models rather than ad hoc shapes);
+   HTTP DTOs vs application DTOs vs domain models; `SecurityConfig` and
+   `JwtAuthenticationFilter` — every endpoint's authorization intent explicit
+   and per-user/admin scoping enforced in the use case or controller rather
+   than assumed; the HttpOnly-cookie/refresh-token flow
+   (`AuthCookieFactory`, `RefreshTokenIssuer`); SSE endpoints' lifecycle
+   (emitter cleanup on completion, timeout and client disconnect).
+B8. **Configuration, observability & testing architecture** — typed
+   configuration properties vs scattered `@Value`; profile handling and
+   secrets never committed (see the repo's secret-handling rules); health
+   indicators, metrics and logging (`logback-spring.xml`, request IDs)
+   covering the flows that actually fail; a light pointer on testing shape
+   (unit vs integration balance, whether ports are what gets mocked). Don't
+   duplicate `java-unit-test-developer`/`quality-metrics` — flag a structural
+   gap (a whole use case or adapter with no tests) only if it shows up
+   incidentally.
+
+Docker Compose, the Kubernetes manifests and the Grafana/Prometheus setup are
+out of scope; mention them only where a backend configuration coupling shows up.
+
 ---
 
 ## Steps
 
 ### 1. Determine scope
 
-- **Full review**: all 8 dimensions, one pass each, at survey depth (2-4
-  concrete evidence points per dimension).
+- **Full review**: both sides — all 8 frontend dimensions and all 8 backend
+  dimensions (B1-B8), one pass each, at survey depth (2-4 concrete evidence
+  points per dimension). A **side review** ("the backend", "the frontend") runs
+  that side's 8 dimensions only.
 - **Single-dimension deep-dive**: the user names one dimension (or one
   already flagged in a previous report — see "Follow-up Workflow"). Go deep:
-  read the actual service/component source in full, `Grep` every consumer,
+  read the actual service/component/use-case/adapter source in full, `Grep`
+  every consumer/producer/call site,
   quantify (counts, which features/components), and cite `file:line` for every
   claim.
 
 ### 2. Read the documented baseline first
 
 Read `JPPhotoManagerWeb/CLAUDE.md` and the relevant sections of
-`JPPhotoManagerWeb/docs/architecture.md`/`JPPhotoManagerWeb/docs/frontend.md`
-for what the project *claims* its architecture does. This is the starting
+`JPPhotoManagerWeb/docs/architecture.md`, `JPPhotoManagerWeb/docs/frontend.md`
+and `JPPhotoManagerWeb/docs/backend.md` for what the project *claims* its architecture does. This is the starting
 hypothesis, not the answer — docs can drift from the code. Verify every claim
 against the actual source in step 3 rather than reporting the docs' own prose
 as a finding.
@@ -150,11 +258,12 @@ don't skip it even on a full-review pass; a quick `Grep` per service is cheap.
 - **🔴 Structural risk** — actively causing, or clearly about to cause, a
   correctness or maintainability problem (e.g. a component calling
   `HttpClient` directly, bypassing its `core/services/` service; an SSE stream
-  that is never closed).
+  that is never closed; a controller importing a repository or `@Entity`; the
+  domain layer importing Spring; a write path with no transaction boundary).
 
 Every 🟡/🔴 finding needs concrete evidence: `file:line`, and for a
-coupling/coordination finding, the consumer count and which
-features/components it spans — never a bare "this could be an issue" without
+coupling/coordination finding, the consumer/producer count and which
+features/components/topics it spans — never a bare "this could be an issue" without
 the grep behind it.
 
 ### 5. Present in chat, then write the dated report
@@ -170,8 +279,9 @@ accumulating in 🟡.
 
 - **Path:** `JPPhotoManagerWeb/docs/reports/architecture-review/ARCHITECTURE_REVIEW_{YYYY-MM-DD}.md`
   for a full review, or
-  `.../ARCHITECTURE_REVIEW_{YYYY-MM-DD}_{dimension-slug}.md` for a
-  single-dimension deep-dive (e.g. `_state-management`). If a file for that
+  `.../ARCHITECTURE_REVIEW_{YYYY-MM-DD}_{scope-slug}.md` for a side review or
+  single-dimension deep-dive (e.g. `_backend`, `_frontend`,
+  `_state-management`, `_hexagonal-boundaries`, `_kafka`). If a file for that
   date/scope already exists, append `-2`, `-3`, etc. rather than overwriting.
 - This directory is gitignored (`JPPhotoManagerWeb/docs/reports/*` catch-all in
   `.gitignore`, not individually un-ignored like the `quality-metrics`
@@ -216,8 +326,8 @@ a fresh review.
    `decision-record` per §6, one at a time, each with its own confirmation).
 3. When a deep-dive on a previously-flagged finding turns up that it's
    unchanged, worse, or resolved since the earlier report, say so explicitly
-   and cite the earlier report's own numbers (e.g. "still 9 consumers,
-   unchanged since the {date} report") rather than silently re-deriving the
+   and cite the earlier report's own numbers (e.g. "still 9 consumers /
+   3 topics, unchanged since the {date} report") rather than silently re-deriving the
    count as if this were the first look.
 
 ---
@@ -233,23 +343,30 @@ a fresh review.
 - **Ground every claim in current, real code — never assess from documentation
   prose alone.** A docs/code mismatch is its own (separate) finding for
   `web-docs-sync`, not evidence for an architecture finding.
-- **Scope is the frontend.** The Spring backend, Docker Compose and Kubernetes
-  layout are out of scope; mention a backend-contract concern only when it
-  shows up as a frontend coupling problem.
+- **Scope is the frontend and the backend application code.** Docker Compose,
+  the Kubernetes manifests and the Grafana/Prometheus provisioning are out of
+  scope; mention them only where they show up as a configuration coupling.
+  A frontend/backend contract concern (an endpoint shape the UI works around)
+  belongs to whichever side is easier to fix, named as such.
 - **Don't duplicate `code-reviewer`'s job.** Per-file naming, signals usage
   within one component, and other per-diff/per-PR conventions stay
   `code-reviewer`'s territory; this skill looks at the system's overall shape.
+- **Don't duplicate the convention skills.** `java-developer`,
+  `java-unit-test-developer`, `kafka-events-conventions` and
+  `redis-caching-conventions` own the rules for *new* backend code; this skill
+  checks the codebase as a whole against them and cites the rule rather than
+  restating it.
 - **Don't duplicate `quality-metrics`' job.** No numeric sweep, no trend table
   across dated reports — this skill's output is qualitative findings.
 - **Don't reach for a state-management library by default.** The default fix
-  for a dimension-5 coordination finding is a small, honestly-named
-  service/stream split (a typed-channel broadcast service, or giving each
-  feature's own service its own state) — recommend NgRx/Akita/etc. only if the
+  for a frontend dimension-5 or backend B5 coordination finding is a small,
+  honestly-named split (a typed-channel broadcast service, a topic or listener
+  per feature, or giving each feature's own service its own state) — recommend NgRx/Akita/etc. only if the
   evidence genuinely shows a complex derived-state graph or a
   time-travel/undo/cross-tab-sync need.
 - **Never commit.** Write the dated report to the gitignored
   `JPPhotoManagerWeb/docs/reports/architecture-review/` folder only; no git
   command runs as part of this skill.
 - Every 🟡/🔴 finding needs `file:line` evidence, and a coupling finding needs
-  its consumer count — a claim without a grep behind it doesn't belong in the
+  its consumer/producer count — a claim without a grep behind it doesn't belong in the
   report.
