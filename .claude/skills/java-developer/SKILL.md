@@ -1,7 +1,7 @@
 ---
 name: java-developer
 description: >
-  Java developer skill for the JPPhotoManager Spring Boot 3.4 / Java 21
+  Java developer skill for the JPPhotoManager Spring Boot 3.5 / Java 21
   backend. TRIGGER whenever work touches JPPhotoManagerWeb/backend — including
   when implementing OpenSpec tasks: adding a new use case, controller, entity,
   repository, DTO, or enum; fixing a bug in any Java class; refactoring or
@@ -18,7 +18,7 @@ metadata:
 # Java Developer Skill
 
 Write Java code that follows the conventions and best practices of the
-JPPhotoManager backend project: a Spring Boot 3.4 / Java 21 application with
+JPPhotoManager backend project: a Spring Boot 3.5 / Java 21 application with
 hexagonal (ports and adapters) architecture, Lombok, MapStruct, Spring Data
 JPA, Flyway, and PostgreSQL.
 

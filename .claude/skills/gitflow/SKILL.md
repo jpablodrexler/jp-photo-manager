@@ -1,6 +1,18 @@
 ---
 name: gitflow
-description: Encapsulates the Gitflow branching workflow for this repo (develop as integration branch, main as production branch). Alongside `feature/` branches, this skill also manages four sibling **topic branch** prefixes for non-feature work — `fix/` (bug fixes), `doc/` (documentation-only changes), `skill/` (Claude Code skill or CLAUDE.md changes), and `chore/` (everything else — dependency bumps, config tweaks, routine maintenance) — all created from `develop` and finished with a single PR into `develop`, mechanically identical to `feature/` in every respect (see "Branch and tag conventions" below). TRIGGER when the user asks to start/create a new feature, fix, doc, skill, chore, release, or hotfix branch, when asking to sync/update any topic branch with develop, when asking to merge/finish a feature, fix, doc, skill, chore, release, or hotfix, when asking to tag a release or hotfix after it has been merged, or when asking to clean up/delete already-merged branches. Phrases like "start a new feature", "start a fix branch", "start a docs branch", "start a skill branch", "start a chore branch", "create a release branch", "start a hotfix", "sync the feature branch", "update my fix branch", "bring the branch up to date", "merge the feature", "finish the fix", "finish the doc change", "finish the skill change", "finish the chore", "merge the release", "finish the hotfix", "tag the release", "clean up the branches", "delete merged branches" all trigger this skill — including a bare request to merge/pull main or develop into any topic branch, which this skill redirects to the Sync action (3b) since main is never a valid source for that. Also drafts CHANGELOG.md release notes on the release/hotfix branch itself, before its PR is opened, so the entry ships through normal PR review instead of landing on main after the tag.
+description: >-
+  Encapsulates the Gitflow workflow for this repo: `develop` is the
+  integration branch, `main` the production branch. Manages topic branches —
+  `feature/`, `fix/` (bug fixes), `doc/` (docs-only), `skill/` (Claude Code
+  skills or CLAUDE.md) and `chore/` (dependency bumps, config, maintenance) —
+  all created from `develop` and finished with a single PR into `develop`,
+  plus `release/` and `hotfix/` branches, which PR into both `main` and
+  `develop`. Also syncs topic branches with develop, tags releases after
+  merge, and cleans up merged branches. On release/hotfix branches it drafts
+  CHANGELOG.md notes before the PR opens. TRIGGER when asked to start, sync,
+  finish or merge any of those branches, create a release or hotfix, tag a
+  release, or clean up merged branches; a bare request to merge/pull main or
+  develop into a topic branch is redirected to the Sync action.
 license: MIT
 metadata:
   author: Juan Pablo Drexler

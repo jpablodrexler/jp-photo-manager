@@ -1,37 +1,20 @@
 ---
 name: architecture-reviewer
-description: >
-  Whole-system architecture health check for JPPhotoManagerWeb — the Angular
-  frontend (`JPPhotoManagerWeb/frontend`) and the Spring Boot backend
-  (`JPPhotoManagerWeb/backend`). Frontend: file/folder organization, the
-  `core → features ← shared` layering (services wrapping the REST API, never
-  a direct `HttpClient` call from a component), API/data-access patterns
-  (auth interceptor, HttpOnly-cookie JWT, Server-Sent Events, pagination),
-  `localStorage` usage, and state management. Backend: the hexagonal
-  dependency rule (`infrastructure/web → application/usecase → domain ←
-  infrastructure/persistence | service`), port/adapter integrity,
-  transactions, persistence across PostgreSQL/MongoDB/Redis and Flyway
-  migrations, Kafka/Spring Batch/SSE async flows, caching, the REST/security
-  surface, and configuration/observability. On both sides it specifically
-  hunts for a shared service, stream, topic or cache-invalidation listener
-  reused past its own name as an undocumented cross-feature coordination
-  channel. Judged against Angular/Spring/industry best practice and the
-  project's own documented conventions (`JPPhotoManagerWeb/CLAUDE.md`,
-  `JPPhotoManagerWeb/docs/architecture.md`, `frontend.md`, `backend.md`). A
-  qualitative, whole-system structural review, distinct from `code-reviewer`
-  (per-diff/per-PR correctness and convention checks), `java-developer` and
-  the Kafka/Redis convention skills (rules for new code), and
-  `quality-metrics` (numeric automated sweeps) — run it periodically or
-  whenever something about the system's overall shape is in question, not on
-  every commit. TRIGGER when the user asks for an architecture review or
-  assessment (of the frontend, the backend, or both), asks whether the code
-  follows good/recommended practice or a particular pattern (hexagonal
-  boundaries, transaction placement, event flow, caching, layering), asks to
-  "dig deeper" into a specific architectural dimension already raised, or
-  asks to audit code organization/state management/API-call patterns/
-  persistence/messaging. Also TRIGGERS when asked to fix, address, resolve,
-  or work through findings from an existing dated ARCHITECTURE_REVIEW report
-  — see "Follow-up Workflow" below.
+description: >-
+  Whole-system architecture health check for JPPhotoManagerWeb: the Angular
+  frontend and the Spring Boot backend. Frontend: `core → features ← shared`
+  layering, REST/SSE data access, `localStorage`, state management. Backend:
+  the hexagonal dependency rule, port/adapter integrity, transactions,
+  PostgreSQL/MongoDB/Redis persistence and Flyway migrations, Kafka/Spring
+  Batch/SSE flows, caching, the REST/security surface, configuration. On both
+  sides it hunts for a service, stream, topic or cache listener reused past
+  its own name as an undocumented cross-feature coordination channel.
+  Qualitative and whole-system, distinct from `code-reviewer` (per-diff), the
+  Java/Kafka/Redis convention skills (rules for new code) and
+  `quality-metrics`. TRIGGER when asked to review the architecture (frontend,
+  backend or both), whether the code follows a good practice or pattern
+  (hexagonal boundaries, transactions, events, caching), or to dig into one
+  dimension. Also TRIGGERS to work through a dated ARCHITECTURE_REVIEW report.
 license: MIT
 metadata:
   author: Juan Pablo Drexler

@@ -2,7 +2,7 @@
 name: e2e-testing
 description: >
   End-to-end testing skill for the JPPhotoManager web application (Spring Boot
-  3.4 / Java 21 backend + Angular 19 frontend). TRIGGER when asked to run or
+  3.4 / Java 21 backend + Angular 22 frontend). TRIGGER when asked to run or
   verify E2E behaviour after completing a feature — especially for UI-facing
   changes to the dashboard, gallery, or any user flow. Covers: starting
   prerequisites, API response verification, SSE progress-stream

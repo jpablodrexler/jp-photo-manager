@@ -1,6 +1,18 @@
 ---
 name: bug-report
-description: Adds a bug to JPPhotoManagerWeb/docs/backlog/bugs-open.md — drafts the row (Severity, Area, Environment, Status, one-line Summary), assigns the next BUG-NNN id, writes the bug's details file JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md (repro steps / expected / actual), inserts it into the Recommended fix order, and confirms with the user before writing. Creates the backlog files and the bugs/ folder (with header, legend, and empty table) on first use if they don't exist yet — a missing backlog is a reason to run this skill, never a reason to skip it. TRIGGER proactively, without waiting to be asked, whenever the user reports a bug, asks to file/log/capture one, describes something in the app that is broken, misbehaving, or producing a wrong result (a symptom, a stack trace, a console error), or hands over notes from a testing session — this holds mid-task and whether or not JPPhotoManagerWeb/docs/backlog/bugs-open.md already exists. When the user describes one or more fresh bugs and wants them fixed now (including "plan and fix these bugs"), run this skill once per bug FIRST to capture each, THEN hand off to bug-fix (a single bug) or bugs-batch-fix (several) — never hand-roll the fix without filing. This is the bug-family counterpart to feature-plan.
+description: >-
+  Adds a bug to JPPhotoManagerWeb/docs/backlog/bugs-open.md: drafts the row
+  (Severity, Area, Environment, Status, Summary), assigns the next BUG-NNN id,
+  writes the details file JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md
+  (repro / expected / actual), inserts it into the Recommended fix order, and
+  confirms with the user before writing. Creates the backlog files on first
+  use — a missing backlog is a reason to run this skill, never to skip it.
+  TRIGGER proactively whenever the user reports a bug, asks to file/log one,
+  describes something broken or producing a wrong result (symptom, stack
+  trace, console error), or hands over testing-session notes, even mid-task.
+  When fresh bugs should also be fixed now ("plan and fix these bugs"), run
+  this once per bug FIRST, THEN hand off to bug-fix (one) or bugs-batch-fix
+  (several). Bug-family counterpart to feature-plan.
 license: MIT
 metadata:
   author: Juan Pablo Drexler

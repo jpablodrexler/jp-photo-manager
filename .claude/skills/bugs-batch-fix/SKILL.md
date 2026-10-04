@@ -1,22 +1,16 @@
 ---
 name: bugs-batch-fix
-description: >
-  Runs bug-fix unattended across a user-given, ordered list of Bug IDs —
-  or the whole open bug backlog — one bug at a time, all on a single
-  shared fix/ branch with zero git commits at any point. Built for
-  leaving Claude grinding through the S3/S4 tail (or a triaged batch)
-  over a long unattended stretch, checking in only when a bug genuinely
-  needs a human decision. Writes a dated, incrementally-updated report to
-  JPPhotoManagerWeb/docs/reports/bug-batch/ so progress survives a
-  session cutoff or crash. TRIGGER when the user asks to batch-fix bugs,
-  work through the bug backlog unattended, or fix a list of named
-  BUG-NNNs in one run (e.g. "fix BUG-004, BUG-007 and BUG-009 while I'm
-  out", "grind the whole open bug backlog overnight"). Also TRIGGER when
-  the user hands over several bugs at once and wants them all fixed in
-  one session (e.g. "plan and fix these few bugs", "here are 3 bugs, sort
-  them out") — file each with bug-report first, then run this skill (or
-  bug-fix per bug) over the new ids rather than hand-rolling a multi-bug
-  fix. This is the bug-family counterpart to features-batch-development.
+description: >-
+  Runs bug-fix unattended across an ordered list of Bug IDs — or the whole
+  open backlog — one bug at a time on a single shared fix/ branch, with zero
+  git commits. Built for long unattended stretches, checking in only when a
+  bug genuinely needs a human decision. Writes a dated, incrementally-updated
+  report to JPPhotoManagerWeb/docs/reports/bug-batch/ so progress survives a
+  cutoff or crash. TRIGGER when asked to batch-fix bugs, work through the bug
+  backlog unattended, or fix a list of named BUG-NNNs in one run (e.g. "fix
+  BUG-004, BUG-007 and BUG-009 while I'm out"), or when several fresh bugs are
+  handed over to fix in one session — file each with bug-report first, then
+  run this skill. Bug-family counterpart to features-batch-development.
 license: MIT
 metadata:
   author: Juan Pablo Drexler

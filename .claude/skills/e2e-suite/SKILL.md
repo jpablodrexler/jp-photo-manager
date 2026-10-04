@@ -1,23 +1,19 @@
 ---
 name: e2e-suite
-description: >
+description: >-
   The maintained, committed end-to-end regression suite for
-  JPPhotoManagerWeb's frontend — Cypress E2E driving a real Chrome/Electron
-  instance against the full application redeployed to the local Kubernetes
-  cluster (`./scripts/build-and-deploy-k8s.sh`), reached through the
-  cluster's own ingress rather than a local `ng serve` dev server. Lives at
-  `JPPhotoManagerWeb/frontend/cypress/e2e/` (excluding `mocked/`), runs via
-  `npm run test:e2e` from `JPPhotoManagerWeb/frontend`. Covers auth
-  (login/logout/guard), albums (full CRUD), admin/users (create/change-
-  password/delete a throwaway user), and profile/sessions (list + revoke).
-  Unlike the `e2e-testing` skill's improvised per-session scripts, this is
-  version-controlled, self-cleaning, and re-runs identically every time. A
-  sibling, `cy.intercept`-mocked golden-path smoke tier lives at
-  `cypress/e2e/mocked/` (its own `cypress.mocked.config.ts`, `npm run
-  test:e2e:mocked`) — needs no running backend and is the one wired into
-  CI; see §9. TRIGGER when asked to run the E2E suite/regression tests, add
-  an E2E test for a new feature, extend E2E coverage, or fix a
-  failing/flaky E2E spec — including a mocked-tier spec.
+  JPPhotoManagerWeb's frontend: Cypress E2E in real Chrome/Electron against
+  the full application redeployed to the local Kubernetes cluster
+  (`./scripts/build-and-deploy-k8s.sh`) and reached through its ingress, not
+  `ng serve`. Lives at `JPPhotoManagerWeb/frontend/cypress/e2e/` (excluding
+  `mocked/`), runs via `npm run test:e2e` from `JPPhotoManagerWeb/frontend`.
+  Covers auth, albums CRUD, admin/users (a throwaway user) and
+  profile/sessions. Unlike `e2e-testing`'s improvised scripts it is
+  version-controlled, self-cleaning and repeatable. A `cy.intercept`-mocked
+  smoke tier at `cypress/e2e/mocked/` (`npm run test:e2e:mocked`) needs no
+  backend and is the one CI runs (§9). TRIGGER when asked to run the E2E
+  suite/regression tests, add or extend E2E coverage for a feature, or fix a
+  failing/flaky E2E spec, including mocked-tier specs.
 license: MIT
 metadata:
   author: Juan Pablo Drexler

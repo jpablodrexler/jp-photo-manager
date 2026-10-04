@@ -1,6 +1,19 @@
 ---
 name: features-status
-description: Reports feature tracking progress by counting rows in JPPhotoManagerWeb/docs/backlog/features-planned.md and JPPhotoManagerWeb/docs/backlog/features-implemented.md. Returns total, implemented, pending, and percent-complete counts, plus a priority-tier, effort, and artifacts-readiness breakdown of pending features, the pending feature names themselves, and any data-integrity issues found (duplicate feature numbers, stale dependency notes claiming a feature is still pending when it's actually already implemented, and brief-file problems: a row without its features/NNN-<name>.md file, a file without a row, a wrong H1, a bad planned Summary, a missing [brief] link, a dangling [spec] link). TRIGGER when the user asks for a feature status report, progress report, "features vs implemented features", how many features are done/pending, or similar summary requests about the feature backlog.
+description: >-
+  Reports feature tracking progress by counting rows in
+  JPPhotoManagerWeb/docs/backlog/features-planned.md and
+  JPPhotoManagerWeb/docs/backlog/features-implemented.md. Returns total,
+  implemented, pending, and percent-complete counts, a priority-tier, effort
+  and artifacts-readiness breakdown of pending features, the pending feature
+  names, and data-integrity issues (duplicate feature numbers, stale
+  dependency notes claiming a feature is still pending when it is already
+  implemented, and brief-file problems such as a row without its
+  features/NNN-<name>.md file, a file without a row, a wrong H1, a bad planned
+  Summary, a missing [brief] link or a dangling [spec] link). TRIGGER when
+  asked for a feature status report, progress report, "features vs implemented
+  features", how many features are done/pending, or similar summary requests
+  about the feature backlog.
 license: MIT
 metadata:
   author: Juan Pablo Drexler

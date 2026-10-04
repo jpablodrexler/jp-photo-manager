@@ -1,8 +1,8 @@
 ---
 name: code-reviewer
 description: >
-  Code review skill for the JPPhotoManager project (Spring Boot 3.4 / Java 21
-  backend + Angular 19 frontend). TRIGGER after implementing any feature, fix,
+  Code review skill for the JPPhotoManager project (Spring Boot 3.5 / Java 21
+  backend + Angular 22 frontend). TRIGGER after implementing any feature, fix,
   or refactor — including after completing an OpenSpec task or a set of tasks.
   Do not wait to be asked: review code proactively after writing it. Also
   triggers when explicitly asked to review a pull request, file, or change.

@@ -17,7 +17,7 @@ metadata:
 # Java Unit Test Developer Skill
 
 Write JUnit 5 tests that follow the conventions and best practices of the
-JPPhotoManager backend project: Spring Boot 3.4 / Java 21, Mockito, AssertJ,
+JPPhotoManager backend project: Spring Boot 3.5 / Java 21, Mockito, AssertJ,
 and clean architecture layering.
 
 ## Workflow

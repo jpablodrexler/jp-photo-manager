@@ -1,7 +1,7 @@
 ---
 name: angular-developer
 description: >
-  Angular developer skill for writing Angular 19 applications following the
+  Angular developer skill for writing Angular 22 applications following the
   JPPhotoManager frontend code style. TRIGGER whenever work touches
   JPPhotoManagerWeb/frontend — including when implementing OpenSpec tasks:
   creating or modifying components, services, models, pipes, or routes in an
@@ -15,7 +15,7 @@ metadata:
 # Angular Developer Skill
 
 Write Angular code that follows the conventions and best practices of the
-JPPhotoManager frontend project: an Angular 19 / TypeScript 5.6 application with
+JPPhotoManager frontend project: an Angular 22 / TypeScript 6 application with
 standalone components, Angular Material, RxJS, and a feature-based clean
 architecture.
 
