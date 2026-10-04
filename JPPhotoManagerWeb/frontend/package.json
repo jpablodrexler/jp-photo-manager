@@ -87,6 +87,10 @@
     "type-coverage": "^2.30.1",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.67.0",
+    "webpack-dev-server": "^5.2.6",
     "zone.js": "^0.15.1"
+  },
+  "overrides": {
+    "webpack-dev-server": "$webpack-dev-server"
   }
 }
