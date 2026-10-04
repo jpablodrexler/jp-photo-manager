@@ -153,7 +153,7 @@ mvn -version
 
 ## 5. Node.js 22 LTS
 
-Node.js is required to build and run the Angular 19 frontend. The project requires **Node.js 22 LTS** (or 20 LTS as a minimum).
+Node.js is required to build and run the Angular 22 frontend. The project requires **Node.js 22 LTS** (or 20 LTS as a minimum).
 
 ### Option A – Install via Chocolatey
 

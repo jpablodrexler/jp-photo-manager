@@ -11,7 +11,10 @@ description: >
   data-affecting action without explicit user confirmation — this skill
   triages and recommends; it does not execute destructive recovery steps
   unsupervised.
+license: MIT
 metadata:
+  author: Juan Pablo Drexler
+  version: "1.0"
   scope: [JPPhotoManagerWeb]
 ---
 

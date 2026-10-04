@@ -10,7 +10,10 @@ description: >
   for mocking, AssertJ for assertions, sut naming, one concept per test, and
   the method_condition_result naming pattern. Invoke this skill proactively —
   do not wait to be asked.
+license: MIT
 metadata:
+  author: Juan Pablo Drexler
+  version: "1.0"
   scope: [JPPhotoManagerWeb/backend]
 ---
 

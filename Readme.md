@@ -47,7 +47,7 @@ Open the solution file `JPPhotoManager/JPPhotoManager.sln` and run the `JPPhotoM
 
 ## Web Application
 
-JPPhotoManager Web is a browser-based rewrite of the desktop application, built with a **Java 21 + Spring Boot 3.4** REST API backend and an **Angular 19** single-page application frontend. See [`JPPhotoManagerWeb/README.md`](JPPhotoManagerWeb/README.md) for full documentation, architecture diagrams, and deployment instructions.
+JPPhotoManager Web is a browser-based rewrite of the desktop application, built with a **Java 21 + Spring Boot 3.5** REST API backend and an **Angular 22** single-page application frontend. See [`JPPhotoManagerWeb/README.md`](JPPhotoManagerWeb/README.md) for full documentation, architecture diagrams, and deployment instructions.
 
 ### Features
 * Visualization of image galleries — paginated thumbnail grid, full-size viewer, search/filter/sort, and star ratings
@@ -93,7 +93,7 @@ A Kubernetes deployment (manifests under `JPPhotoManagerWeb/k8s/`) is also avail
 
 ### Technologies used (web application)
 * [Java 21](https://openjdk.org/)
-* [Spring Boot 3.4](https://spring.io/projects/spring-boot)
+* [Spring Boot 3.5](https://spring.io/projects/spring-boot)
 * [Spring Data JPA](https://spring.io/projects/spring-data-jpa)
 * [Spring Security](https://spring.io/projects/spring-security) + [JJWT](https://github.com/jwtk/jjwt)
 * [Spring Batch](https://spring.io/projects/spring-batch)
@@ -106,7 +106,7 @@ A Kubernetes deployment (manifests under `JPPhotoManagerWeb/k8s/`) is also avail
 * [Lombok](https://projectlombok.org/)
 * [MapStruct](https://mapstruct.org/)
 * [Apache Commons Imaging](https://commons.apache.org/proper/commons-imaging/)
-* [Angular 19](https://angular.dev/)
+* [Angular 22](https://angular.dev/)
 * [Angular Material](https://material.angular.io/)
 * [Cypress](https://www.cypress.io/)
 * [JUnit 5](https://junit.org/junit5/)

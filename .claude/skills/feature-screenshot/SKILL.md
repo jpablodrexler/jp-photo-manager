@@ -12,7 +12,10 @@ description: >
   (a `zz-scratch-` prefix, deleted after use) — `cypress.config.ts`'s
   `specPattern` rejects a spec outside that folder, so it can't live in the
   session scratchpad the way an ad-hoc check might otherwise.
+license: MIT
 metadata:
+  author: Juan Pablo Drexler
+  version: "1.0"
   scope: [JPPhotoManagerWeb]
 ---
 

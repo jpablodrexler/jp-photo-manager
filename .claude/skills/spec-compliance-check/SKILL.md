@@ -11,7 +11,10 @@ description: >
   companion skill — it never edits anything under `openspec/`, and it is
   not part of the `openspec-*` skill family (propose/explore/apply/archive)
   and never modifies those skills or their workflow.
+license: MIT
 metadata:
+  author: Juan Pablo Drexler
+  version: "1.0"
   scope: [repo-root]
 ---
 

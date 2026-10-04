@@ -15,8 +15,8 @@ read instead when documenting or reasoning about their structure.
 
 `JPPhotoManagerWeb` is the web rewrite of the JP Photo Manager desktop application. It is split into two sub-projects:
 
-- **`backend/`** — Java 21 + Spring Boot 3.4 REST API
-- **`frontend/`** — Angular 19 SPA
+- **`backend/`** — Java 21 + Spring Boot 3.5 REST API
+- **`frontend/`** — Angular 22 SPA
 
 ## Documentation
 
@@ -272,7 +272,7 @@ npm run lint
 
 ### Architecture
 
-Angular 19 SPA using **standalone components** and **lazy-loaded routes**. No NgModules.
+Angular 22 SPA using **standalone components** and **lazy-loaded routes**. No NgModules.
 
 ```
 src/app/

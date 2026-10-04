@@ -13,7 +13,10 @@ description: >
   single consolidated report — see "Full-Codebase Sweeps" below. Also TRIGGERS
   when asked to fix, address, resolve, or work through findings from an
   existing dated CODE_REVIEW_FINDINGS report — see "Fix Workflow" below.
+license: MIT
 metadata:
+  author: Juan Pablo Drexler
+  version: "1.0"
   scope: [JPPhotoManagerWeb]
 ---
 
@@ -22,6 +25,11 @@ metadata:
 Review code in the JPPhotoManager project against its documented architecture,
 conventions, and known pitfalls. The project has two sub-projects with distinct
 stacks; apply the relevant checklist(s) based on which files are under review.
+
+This skill reviews a *change*. For the health of the system's overall shape —
+layering, state-management coupling, data-access patterns — use
+`architecture-reviewer`; for a non-technical review of the feature scope, use
+`product-scope-roaster`.
 
 This skill covers two distinct workflows:
 

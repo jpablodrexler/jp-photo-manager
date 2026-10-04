@@ -11,7 +11,10 @@ description: >
   the port-interface / adapter-implementation split for every service and
   repository, and all other coding standards. Invoke this skill proactively —
   do not wait to be asked.
+license: MIT
 metadata:
+  author: Juan Pablo Drexler
+  version: "1.0"
   scope: [JPPhotoManagerWeb/backend]
 ---
 

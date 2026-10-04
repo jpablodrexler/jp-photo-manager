@@ -9,7 +9,10 @@ description: >
   created. Enforces the project's strict TypeScript conventions and
   feature-based architecture. Invoke this skill proactively — do not wait
   to be asked.
+license: MIT
 metadata:
+  author: Juan Pablo Drexler
+  version: "1.0"
   scope: [JPPhotoManagerWeb/frontend]
 ---
 
