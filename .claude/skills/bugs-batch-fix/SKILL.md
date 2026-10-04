@@ -59,7 +59,9 @@ bugs' already-fixed code. Unavoidable without committing between bugs
 
 **Named IDs** (form (a)): parse into an ordered list. Resolve each against
 `JPPhotoManagerWeb/docs/backlog/bugs-open.md`'s `## Bug List` table by
-`Bug ID`.
+`Bug ID` (the first cell is the link `[BUG-NNN](bugs/BUG-NNN.md)` — match
+on the link text; each bug's repro details are in
+`JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md`, which `bug-fix` reads).
 - Resolves to nothing (not in `bugs-open.md` or `bugs-fixed.md`) → stop
   and ask the user to correct it.
 - Resolves to a row in `bugs-fixed.md` (already closed) → tell the user

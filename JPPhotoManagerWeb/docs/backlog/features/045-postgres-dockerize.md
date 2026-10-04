@@ -1,0 +1,3 @@
+# Feature 45 — postgres-dockerize
+
+The application previously connected to a PostgreSQL instance running on the host (`POSTGRES_HOST` defaults to `localhost`); completed the transition by: (1) fixing the volume mount from `pgdata:/var/lib/postgresql` to `pgdata:/var/lib/postgresql/data` to align with the PostgreSQL `PGDATA` default, (2) setting `PGDATA: /var/lib/postgresql/data` explicitly in the `db` service environment, (3) making `docker-compose up` the canonical deployment command and updating `README.md` accordingly, and (4) providing a one-time data migration script (`pg_dump` on host → `pg_restore` into the container) so existing data is not lost on first deployment

@@ -49,9 +49,15 @@ def find_table(lines, heading):
     if i < len(lines) and re.match(r'^\|?[\s:-]+\|', lines[i]):
         i += 1
     rows = []
-    while i < len(lines) and lines[i].lstrip().startswith("|"):
-        rows.append(split_row(lines[i]))
-        i += 1
+    while i < len(lines):
+        if lines[i].lstrip().startswith("|"):
+            rows.append(split_row(lines[i]))
+            i += 1
+        elif (lines[i].strip() == "" and i + 1 < len(lines)
+              and lines[i + 1].lstrip().startswith("|")):
+            i += 1  # a stray blank line inside the table must not truncate it
+        else:
+            break
     return header, rows
 
 
@@ -102,6 +108,15 @@ def parse_hard_dependencies(lines):
         if m:
             deps.append((m.group(1), m.group(2)))
     return deps
+
+
+def brief_file_path(row):
+    """Repo-relative path of the feature's full brief: JPPhotoManagerWeb/docs/backlog/features/NNN-<name>.md."""
+    n = row.get("#", "").strip()
+    name = strip_backticks(row.get("Change name", ""))
+    if not n.isdigit() or not name:
+        return ""
+    return f"JPPhotoManagerWeb/docs/backlog/features/{int(n):03d}-{name}.md"
 
 
 def main():
@@ -159,12 +174,15 @@ def main():
                 "area": r.get("Area", "").strip(),
                 "artifacts_ready": "Created" in r.get("SDD Artifacts", ""),
                 "in_progress": "In Progress" in impl,
-                "brief": r.get("Brief description", "").strip(),
+                "brief": r.get("Summary", "").strip(),
+                "brief_file": brief_file_path(r),
             })
 
     if not candidates:
         print(json.dumps({"error": "no pending or in-progress features in the backlog"}))
         return
+
+    missing_briefs = [c["brief_file"] for c in candidates if not (root / c["brief_file"]).is_file()]
 
     candidates_by_number = {}
     for c in candidates:
@@ -218,6 +236,8 @@ def main():
             "blocked": match["number"] in blocked,
             "blocked_on": blocked_reason.get(match["number"]),
         }
+        if match["brief_file"] in missing_briefs:
+            result["warning"] = f"Brief file {match['brief_file']} is missing — run features-status for the full integrity report."
         print(json.dumps(result, indent=2) if args.json else render_selected(result))
         return
 
@@ -252,8 +272,13 @@ def main():
         "runners_up": ranked[1:4],
         "blocked": blocked_out,
     }
+    warnings = []
     if duplicate_numbers:
-        result["warning"] = f"Duplicate feature number(s) in features-planned.md: {', '.join(sorted(duplicate_numbers))} — run features-status for the full integrity report."
+        warnings.append(f"Duplicate feature number(s) in features-planned.md: {', '.join(sorted(duplicate_numbers))} — run features-status for the full integrity report.")
+    if missing_briefs:
+        warnings.append(f"Brief file(s) missing: {', '.join(missing_briefs)} — run features-status for the full integrity report.")
+    if warnings:
+        result["warning"] = " ".join(warnings)
 
     if args.json:
         print(json.dumps(result, indent=2))
@@ -278,7 +303,9 @@ def reason_bullets(c):
 
 def render_selected(result):
     m = result["selected"]
-    lines = [f"#{m['number']} `{m['name']}`", m["brief"], ""]
+    lines = [f"#{m['number']} `{m['name']}`", m["brief"], f"Full brief: {m['brief_file']}", ""]
+    if result.get("warning"):
+        lines.append(f"⚠ {result['warning']}")
     if result["blocked"]:
         lines.append(f"⚠ BLOCKED on feature {result['blocked_on']}, which is still pending.")
     return "\n".join(lines)
@@ -294,6 +321,7 @@ def render_ranked(result):
         lines.append("")
     lines.append(f"**#{top['number']} `{top['name']}`**")
     lines.append(top["brief"])
+    lines.append(f"Full brief: {top['brief_file']}")
     lines.append("")
     lines.append(f"**Priority:** {top['priority']}  **Effort:** {top['effort']}  **Area:** {top['area']}  "
                   f"**Schema change:** {top['schema_change']}")

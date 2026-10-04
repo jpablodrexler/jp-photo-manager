@@ -43,15 +43,24 @@ actually plots an `infra` row, validate it per that same section.)
 ### 2. Gather shipped features
 
 Read `JPPhotoManagerWeb/docs/backlog/features-implemented.md`'s
-`## Feature List` table in full. For each row you'll need `#`, change
-name, Priority, Schema Change, Effort, Area, and a one-clause summary
-distilled from the Brief description (don't paste the whole paragraph —
-see the `desc` field note in the data schema).
+`## Feature List` table in full, reading cells by header name (the
+implemented table is `# | Change name | Priority | Schema Change | Effort |
+Area | Details | SDD Artifacts` — it carries no description text). For each
+row you'll need `#`, change name, Priority, Schema Change, Effort, Area,
+and a one-clause summary distilled from the feature's full brief: follow
+the `[brief](features/NNN-<name>.md)` link in the row's `Details` cell
+(resolved against `JPPhotoManagerWeb/docs/backlog/`) and read that file
+(don't paste the whole paragraph — see the `desc` field note in the data
+schema). If the brief file is missing, derive the clause from the archived
+`proposal.md` instead and mention it to the user.
 
 **Deriving each row's ship date** (needed for every shipped row, not in the
 table itself):
 1. Primary source: the date prefix on that change's folder under
-   `openspec/changes/archive/YYYY-MM-DD-<name>/`.
+   `openspec/changes/archive/YYYY-MM-DD-<name>/` — the same folder the
+   row's `[spec](../../../openspec/changes/archive/YYYY-MM-DD-<name>/proposal.md)`
+   link in its `Details` cell points at (a row with only a `[brief]` link
+   has no archive folder; see item 3).
 2. Cross-check: `git log --pretty=format:'%ad|%s' --date=short --all | grep -i <name>`
    for the merge-commit date. They should agree; if they don't, prefer the
    archive-folder date and note the discrepancy to the user.
@@ -74,12 +83,16 @@ backlog doc (a prerequisite before its dependent), then by feature number.
 ### 3. Gather planned features, in the backlog's own order
 
 Read `JPPhotoManagerWeb/docs/backlog/features-planned.md`'s `## Feature
-List` table for every row whose Implementation column is `⬜ Pending` or
-`🔶 In Progress` (`feature-development` marks a row `🔶 In Progress` as
+List` table (cells read by header name; its columns are `# | Change name |
+Priority | Schema Change | Effort | Area | Summary | Brief | SDD Artifacts |
+Implementation`) for every row whose Implementation column is `⬜ Pending`
+or `🔶 In Progress` (`feature-development` marks a row `🔶 In Progress` as
 soon as it starts work on it — see that skill's Step 1.6 — so it's still
 unshipped and belongs in this projection, not in the shipped set), and its
 `### Recommended implementation order` subsection under `## Dependencies`
-for their sequence.
+for their sequence. Take each planned row's one-clause `desc` from its
+`Summary` cell (hand-written, plain text); open the linked `Brief` file only
+if the Summary is too thin to distill from.
 
 **The order list is authoritative — use it as given, don't re-derive it.**
 `feature-plan` and `features-next` both keep it in sync as the backlog

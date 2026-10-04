@@ -1,0 +1,3 @@
+# Feature 83 — accent-color-customization
+
+Allow users to pick one of eight predefined accent colours for the top bar; replaces the hardcoded `#2e7d32` in `app.component.scss` with `var(--accent-color)`; `ThemeService` gains `setAccentColor()` and `accentColor$`; choice is persisted to `localStorage` and applied instantly including updating the PWA `<meta name="theme-color">` tag; a new `AccentColorPickerComponent` (swatch row) is embedded in the desktop toolbar as a `MatMenu` behind a palette icon button, and inline in the mobile hamburger menu; predefined palette: Forest Green, Ocean Blue, Deep Purple, Teal, Rust Orange, Slate Grey, Crimson Red, Indigo; no backend changes, no schema migration

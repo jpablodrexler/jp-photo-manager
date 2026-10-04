@@ -1,10 +1,10 @@
 ---
 name: features-archive
-description: Mark features as implemented in JPPhotoManagerWeb/docs/backlog/features-planned.md and move them to JPPhotoManagerWeb/docs/backlog/features-implemented.md. Use when one or more features have been fully implemented and need to be archived.
+description: Mark features as implemented in JPPhotoManagerWeb/docs/backlog/features-planned.md and move them to JPPhotoManagerWeb/docs/backlog/features-implemented.md (rewriting the row to the implemented-table shape, with a Details cell linking the feature's brief file and archived spec). Use when one or more features have been fully implemented and need to be archived.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.5"
+  version: "1.6"
 ---
 
 Archive one or more implemented features from `JPPhotoManagerWeb/docs/backlog/features-planned.md` into `JPPhotoManagerWeb/docs/backlog/features-implemented.md`.
@@ -52,9 +52,16 @@ In the `JPPhotoManagerWeb/docs/backlog/features-planned.md` table find the match
 
 Steps 4–8 below are ordered deliberately: everything is *extracted (read-only)* first, then written to the **destination** file (`JPPhotoManagerWeb/docs/backlog/features-implemented.md`), and only after that save succeeds is the **source** file (`JPPhotoManagerWeb/docs/backlog/features-planned.md`) mutated — once, in a single save. This is a data-safety ordering, not an arbitrary one: if the skill gets interrupted (crash, killed session, disk error) between extraction and the final `JPPhotoManagerWeb/docs/backlog/features-planned.md` save, the worst case is that content is already safely duplicated in `JPPhotoManagerWeb/docs/backlog/features-implemented.md`, never that it existed only in memory and got lost when both files were already mutated. Do not reorder this so that `JPPhotoManagerWeb/docs/backlog/features-planned.md` is edited before `JPPhotoManagerWeb/docs/backlog/features-implemented.md` has been successfully saved.
 
-### 4. Extract the row from JPPhotoManagerWeb/docs/backlog/features-planned.md (read-only) and flip it in that copy
+### 4. Extract the row from JPPhotoManagerWeb/docs/backlog/features-planned.md (read-only) and rewrite it in that copy
 
-Copy the full table row (the `|` delimited line) for each selected feature. **In that copy** — not in the actual file — change the Implementation column (whatever it currently reads, `| ⬜ Pending |` or `| 🔶 In Progress |`) to `| ✅ Implemented |`. This transformed copy is what step 7 writes into `JPPhotoManagerWeb/docs/backlog/features-implemented.md`, so it must already read `✅ Implemented` at that point; do not defer the flip to step 8, since the row `JPPhotoManagerWeb/docs/backlog/features-planned.md` holds is about to be deleted there regardless and any change made to it at that stage has no lasting effect. Do not edit the actual `JPPhotoManagerWeb/docs/backlog/features-planned.md` file yet.
+Copy the full table row (the `|` delimited line) for each selected feature. **In that copy** — not in the actual file — rewrite it from the planned shape (`# | Change name | Priority | Schema Change | Effort | Area | Summary | Brief | SDD Artifacts | Implementation`) to the implemented shape (`# | Change name | Priority | Schema Change | Effort | Area | Details | SDD Artifacts`), reading the planned cells by header name, never by position:
+
+- keep `#`, `Change name`, `Priority`, `Schema Change`, `Effort`, `Area` exactly as they are — plain text, the name still backtick-wrapped, no links;
+- **drop** the `Summary`, `Brief` and `Implementation` cells (an implemented row has no summary and no implementation-status column — "implemented" is decided only by which table holds the row, so there is no `✅ Implemented` text to write);
+- add the `Details` cell: `[brief](features/NNN-<change-name>.md) · [spec](../../../openspec/changes/archive/<archive-dir>/proposal.md)`, paths relative to `JPPhotoManagerWeb/docs/backlog/` (`NNN` = zero-padded feature number). `<archive-dir>` is the directory under the repo-root `openspec/changes/archive/` named `YYYY-MM-DD-<change-name>` — find it by listing that folder and matching the slug after the date prefix (if several match, take the most recent date). If no archive directory exists (the SDD change was never archived — e.g. an ad hoc feature), warn the user and write only the `[brief]` link, with no `[spec]` part. The `[brief]` link is the same one as the planned row's `Brief` cell;
+- keep the `SDD Artifacts` cell (placed after `Details`, as the implemented header defines); it should read `✅ Created`.
+
+The finished row reads `| N | `name` | P | Schema | Effort | Area | [brief](features/NNN-<name>.md) · [spec](../../../openspec/changes/archive/<archive-dir>/proposal.md) | ✅ Created |`. This copy is what step 7 writes into `JPPhotoManagerWeb/docs/backlog/features-implemented.md`; do not defer the rewrite to step 8, since the planned row is about to be deleted there regardless. The feature's brief file under `JPPhotoManagerWeb/docs/backlog/features/` is never moved, copied or changed. Do not edit the actual `JPPhotoManagerWeb/docs/backlog/features-planned.md` file yet.
 
 ### 5. Extract associated dependency / implementation notes (read-only)
 
@@ -91,7 +98,7 @@ In the **Deployment (migration) dependencies** table, find the row(s) mapping a 
 
 ### 7. Write everything to JPPhotoManagerWeb/docs/backlog/features-implemented.md first
 
-At the end of the `## Feature List` table in `JPPhotoManagerWeb/docs/backlog/features-implemented.md`, insert the table row(s) extracted in step 4.
+At the end of the `## Feature List` table in `JPPhotoManagerWeb/docs/backlog/features-implemented.md`, insert the implemented-shape row(s) built in step 4 directly under the last existing row (contiguous — no blank line inside the table).
 
 Under `## Dependencies (Historical)` → `### Implementation notes`, add the note blocks extracted in step 5 (a multi-feature-heading block that also stays in `JPPhotoManagerWeb/docs/backlog/features-planned.md` per step 8 — because not everything its heading references is in `IMPLEMENTED_SET` yet — is still added here too; duplication across the two files is fine, that's not what this step guards against). For each block:
 
@@ -110,7 +117,7 @@ Save `JPPhotoManagerWeb/docs/backlog/features-implemented.md`. **Confirm this sa
 
 With the destination safely written, make all of the following changes to `JPPhotoManagerWeb/docs/backlog/features-planned.md` and save it **once**:
 
-1. Delete each selected feature's table row entirely from the `## Feature List` table (the `✅ Implemented` version of it already landed in `JPPhotoManagerWeb/docs/backlog/features-implemented.md` in step 7 — this row, still showing `⬜ Pending` or `🔶 In Progress`, is simply removed, not flipped).
+1. Delete each selected feature's table row entirely from the `## Feature List` table (the implemented-shape version of it already landed in `JPPhotoManagerWeb/docs/backlog/features-implemented.md` in step 7 — this row, still showing `⬜ Pending` or `🔶 In Progress`, is simply removed, not rewritten; its brief file stays in `features/`).
 2. Delete the dependency/note blocks extracted in step 5 — but **only the ones whose heading numbers are a full subset of `IMPLEMENTED_SET`** (not just this run's selection — see step 5's definition of `IMPLEMENTED_SET`, which also includes features already archived in earlier runs). If a block's heading references any feature number that is in neither `IMPLEMENTED_SET` nor being archived now (e.g. archiving #46 alone out of a `**Features 46, 50, 53 …**` block where 50 and 53 are still pending), leave that block in `JPPhotoManagerWeb/docs/backlog/features-planned.md` untouched — the features still pending there need it.
 2a. For a hard-dependency (`A → B`) block left behind by rule 2 above (A still pending, so the block wasn't deleted) whose prerequisite B *is* in `IMPLEMENTED_SET` as of this run: bring that block's annotation up to date to the project's `(prerequisite already implemented)` convention in place, the same correction step 7 already makes to the copy in `features-implemented.md`. Do not skip this just because the block itself isn't being deleted — leaving the wording stale here is exactly the bug this rule exists to prevent: A's own row can legitimately stay `⬜ Pending`/`🔶 In Progress` in this file for a long time after B ships, and the annotation should reflect "no longer blocking" the whole time, not just from the moment A itself is eventually archived.
 3. Remove the migration rows extracted in step 6 from the **Deployment (migration) dependencies** table.
@@ -137,10 +144,11 @@ Migration rows moved: <count>
 ## Guardrails
 
 - **Destination before source, always.** Never edit or save `JPPhotoManagerWeb/docs/backlog/features-planned.md` (flipping its Implementation column, deleting rows, or removing note/migration content) until the corresponding write to `JPPhotoManagerWeb/docs/backlog/features-implemented.md` in step 7 has been made and confirmed saved. This ordering (steps 4–6 extract read-only, step 7 writes the destination, step 8 is the sole mutation of the source) exists specifically so an interruption mid-run leaves data duplicated rather than lost — do not collapse or reorder it, and do not perform two separate saves to `JPPhotoManagerWeb/docs/backlog/features-planned.md` (one flipping the column, one removing content) — step 8 is one edit, one save.
-- **The flip happens in step 4's in-memory copy, not in `JPPhotoManagerWeb/docs/backlog/features-planned.md`.** Step 4 must produce a copy that already reads `✅ Implemented` before step 7 writes it to `JPPhotoManagerWeb/docs/backlog/features-implemented.md` — flipping later (e.g. deferring it to step 8, against the actual `JPPhotoManagerWeb/docs/backlog/features-planned.md` row) would only mutate a copy that step 8 deletes moments later, leaving the row permanently archived as `⬜ Pending`/`🔶 In Progress` in `JPPhotoManagerWeb/docs/backlog/features-implemented.md`. The row that stays behind in `JPPhotoManagerWeb/docs/backlog/features-planned.md` at step 8 is expected to still show `⬜ Pending` or `🔶 In Progress` right up until it's deleted — it is never itself flipped, only removed.
+- **The rewrite happens in step 4's in-memory copy, not in `JPPhotoManagerWeb/docs/backlog/features-planned.md`.** Step 4 must produce the implemented-shape row (with its `Details` cell, without `Summary`/`Brief`/`Implementation`) before step 7 writes it to `JPPhotoManagerWeb/docs/backlog/features-implemented.md` — rewriting later (e.g. deferring it to step 8, against the actual `JPPhotoManagerWeb/docs/backlog/features-planned.md` row) would only mutate a row that step 8 deletes moments later, leaving a planned-shaped row archived in `features-implemented.md`. The row that stays behind in `JPPhotoManagerWeb/docs/backlog/features-planned.md` at step 8 is expected to still show `⬜ Pending` or `🔶 In Progress` right up until it's deleted — it is never itself rewritten, only removed.
+- **The feature's brief file never moves or changes.** `JPPhotoManagerWeb/docs/backlog/features/NNN-<change-name>.md` stays exactly where it is; archiving only moves the table row and links to it from the `Details` cell.
 - If a selected feature number does not exist in `JPPhotoManagerWeb/docs/backlog/features-planned.md`, report an error for that entry and continue with the rest.
 - Preserve the exact Markdown table formatting (column widths, pipe characters) in both files.
-- The **Priority**, **Schema Change**, **Effort**, and **Area** columns are part of the row copied in step 4 — no special handling needed, they carry over as-is. Older rows already in `features-implemented.md` show `—` for these (they predate this tracking); that's expected and not something to backfill while archiving.
+- The **Priority**, **Schema Change**, **Effort**, and **Area** columns carry over to the implemented row as-is; the planned-only `Summary`, `Brief` and `Implementation` cells are dropped and replaced by one `Details` cell (step 4), while `SDD Artifacts` is kept. Older rows already in `features-implemented.md` show `—` for these (they predate this tracking); that's expected and not something to backfill while archiving.
 - Keep the section headers and structure of both files intact — only add/remove rows and note blocks, never rewrite entire sections.
 - If the **Dependencies** section becomes empty after removals, leave the section header in place rather than deleting it.
 - The auto-detection in step 1 is a convenience heuristic — the user always has the final say on which features to archive.

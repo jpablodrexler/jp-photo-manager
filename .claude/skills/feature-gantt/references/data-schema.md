@@ -74,7 +74,9 @@ order you want top-to-bottom):
 - `effort` — `S`/`M`/`L`
 - `date` — the day it shipped (see SKILL.md step 2 for how to derive this)
 - `desc` — one clause, no trailing period needed (the script adds the rest
-  of the tooltip sentence around it)
+  of the tooltip sentence around it). For a shipped row, distill it from the
+  brief file linked in the row's `Details` cell (the implemented table has
+  no description column); for a planned row, from its `Summary` cell
 
 **`planned[]`** — same shape minus `date`, **in the exact order** of
 `JPPhotoManagerWeb/docs/backlog/features-planned.md`'s own `### Recommended

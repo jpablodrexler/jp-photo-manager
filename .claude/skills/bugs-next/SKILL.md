@@ -48,15 +48,19 @@ From the `## Bug List` table, collect every row whose **Status** is
 `⬜ Open` or `🔶 In Progress`. Skip `✅ Fixed`, `🚫 Won't fix`, and
 `❓ Cannot reproduce`. For each collected row record:
 
-- `id` — the `Bug ID` column value (e.g. `BUG-004`)
+- `id` — the `Bug ID` column value (e.g. `BUG-004`; the cell is the link
+  `[BUG-004](bugs/BUG-004.md)` — take the link text)
 - `severity` — `S1` / `S2` / `S3` / `S4`
 - `area` — the `Area` column value
 - `environment` — `local` / `deployed` / `both`
 - `in_progress` — `true` if Status is `🔶 In Progress` (a `bug-fix` run
   started this and was interrupted before archiving), else `false`
-- `schema` — `true` if the Details block or Notes indicate the fix needs a
-  Flyway migration / JPA entity change, else `false` (best-effort from the
-  text; default `false`)
+- `schema` — `true` if the bug's details file
+  `JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md` (its Notes line in
+  particular) indicates the fix needs a Flyway migration / JPA entity
+  change, else `false` (best-effort from the text; default `false`; also
+  `false` if the file is missing — surface that as a warning pointing at
+  `bugs-status`)
 - `summary` — the `Summary` column text
 
 If the table has zero actionable rows, tell the user the bug backlog is

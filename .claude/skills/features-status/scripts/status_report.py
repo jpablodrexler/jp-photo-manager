@@ -4,7 +4,9 @@ Compute the feature-tracker status report for jp-photo-manager: counts,
 the priority/effort/SDD-readiness breakdown, the pending list, and the
 data-integrity checks (duplicate feature numbers, stale dependency notes
 claiming a feature is still pending when it's actually already
-implemented).
+implemented) and the row <-> JPPhotoManagerWeb/docs/backlog/features/
+NNN-<name>.md file cross-checks (missing/orphan/misnamed brief files, bad
+planned Summaries, missing [brief] links, dangling [spec] targets).
 
 This is pure table-counting and text-pattern arithmetic over
 JPPhotoManagerWeb/docs/backlog/features-planned.md and
@@ -30,6 +32,10 @@ import re
 import json
 import argparse
 from pathlib import Path
+
+SUMMARY_MAX = 250
+BRIEF_LINK_RE = re.compile(r'\[brief\]\(([^)]+)\)')
+SPEC_LINK_RE = re.compile(r'\[spec\]\(([^)]+)\)')
 
 
 def split_row(line):
@@ -63,9 +69,15 @@ def find_table(lines, heading):
     if i < len(lines) and re.match(r'^\|?[\s:-]+\|', lines[i]):
         i += 1
     rows = []
-    while i < len(lines) and lines[i].lstrip().startswith("|"):
-        rows.append(split_row(lines[i]))
-        i += 1
+    while i < len(lines):
+        if lines[i].lstrip().startswith("|"):
+            rows.append(split_row(lines[i]))
+            i += 1
+        elif (lines[i].strip() == "" and i + 1 < len(lines)
+              and lines[i + 1].lstrip().startswith("|")):
+            i += 1  # a stray blank line inside the table must not truncate it
+        else:
+            break
     return header, rows
 
 
@@ -151,6 +163,12 @@ def main():
         "pending_rows": [],
         "duplicate_numbers": [],
         "stale_dependency_notes": [],
+        "missing_feature_files": [],
+        "orphan_feature_files": [],
+        "bad_feature_headings": [],
+        "bad_planned_summaries": [],
+        "missing_brief_links": [],
+        "missing_spec_targets": [],
     }
 
     planned_lines = read_lines(planned_path)
@@ -241,11 +259,65 @@ def main():
         dedup[key] = s
     result["stale_dependency_notes"] = list(dedup.values())
 
+    check_feature_files(root, planned_rows, implemented_rows, result)
+
     if args.json:
         print(json.dumps(result, indent=2))
         return
 
     render_markdown(result)
+
+
+def expected_file_name(row):
+    n = row.get("#", "").strip()
+    name = strip_backticks(row.get("Change name", ""))
+    if not n.isdigit() or not name:
+        return None
+    return f"{int(n):03d}-{name}.md"
+
+
+def check_feature_files(root, planned_rows, implemented_rows, result):
+    """Cross-check table rows against backlog/features/NNN-<name>.md files."""
+    backlog = root / "JPPhotoManagerWeb" / "docs" / "backlog"
+    features_dir = backlog / "features"
+    expected = {}
+    for label, rows in (("planned", planned_rows), ("implemented", implemented_rows)):
+        for r in rows:
+            fname = expected_file_name(r)
+            if fname is None:
+                continue
+            n = r.get("#", "").strip()
+            name = strip_backticks(r.get("Change name", ""))
+            expected[fname] = (n, name)
+            if label == "planned":
+                summary = r.get("Summary", "").strip()
+                if not summary:
+                    result["bad_planned_summaries"].append({"number": n, "name": name, "problem": "empty"})
+                elif len(summary) > SUMMARY_MAX:
+                    result["bad_planned_summaries"].append(
+                        {"number": n, "name": name, "problem": f"{len(summary)} chars (max {SUMMARY_MAX})"})
+                if not BRIEF_LINK_RE.search(r.get("Brief", "")):
+                    result["missing_brief_links"].append({"number": n, "name": name, "file": "features-planned.md"})
+            else:
+                details = r.get("Details", "")
+                if not BRIEF_LINK_RE.search(details):
+                    result["missing_brief_links"].append({"number": n, "name": name, "file": "features-implemented.md"})
+                m = SPEC_LINK_RE.search(details)
+                if m and not (backlog / m.group(1)).is_file():
+                    result["missing_spec_targets"].append({"number": n, "name": name, "target": m.group(1)})
+            if not (features_dir / fname).is_file():
+                result["missing_feature_files"].append(fname)
+
+    if features_dir.is_dir():
+        for f in sorted(features_dir.glob("*.md")):
+            if f.name not in expected:
+                result["orphan_feature_files"].append(f.name)
+                continue
+            n, name = expected[f.name]
+            first = f.read_text(encoding="utf-8").splitlines()[:1]
+            want = f"# Feature {int(n)} — {name}"
+            if not first or first[0].strip() != want:
+                result["bad_feature_headings"].append({"file": f.name, "expected": want})
 
 
 def render_markdown(r):
@@ -320,6 +392,18 @@ def render_markdown(r):
     for d in r["stale_dependency_notes"]:
         integrity.append(f"- ⚠ Stale dependency note: \"{d['claim']}\" asserts feature #{d['number']} is "
                           f"still pending, but it's already implemented. Found in {d['file']}.")
+    for fname in r["missing_feature_files"]:
+        integrity.append(f"- ⚠ {fname} has a table row but no JPPhotoManagerWeb/docs/backlog/features/{fname} file.")
+    for fname in r["orphan_feature_files"]:
+        integrity.append(f"- ⚠ JPPhotoManagerWeb/docs/backlog/features/{fname} exists but its feature has no row in either table.")
+    for b in r["bad_feature_headings"]:
+        integrity.append(f"- ⚠ JPPhotoManagerWeb/docs/backlog/features/{b['file']} does not start with `{b['expected']}`.")
+    for s in r["bad_planned_summaries"]:
+        integrity.append(f"- ⚠ Feature {s['number']} `{s['name']}` has a bad Summary in features-planned.md ({s['problem']}).")
+    for b in r["missing_brief_links"]:
+        integrity.append(f"- ⚠ Feature {b['number']} `{b['name']}` has no `[brief](features/...)` link in {b['file']}.")
+    for s in r["missing_spec_targets"]:
+        integrity.append(f"- ⚠ Feature {s['number']} `{s['name']}`: the [spec] link target {s['target']} does not exist (warning).")
     for n in r["leftover_implemented_in_planned"]:
         integrity.append(f"- ⚠ #{n} still shows ✅ Implemented in features-planned.md — an archive pass "
                           "was interrupted; run features-archive to finish the move.")

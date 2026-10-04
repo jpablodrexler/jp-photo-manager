@@ -1,0 +1,3 @@
+# Feature 74 — mongodb-user-preferences
+
+Move `user_preferences` and `search_presets` from rigid PostgreSQL tables to a single MongoDB `user_configs` collection keyed by `userId`; adding a new UI preference (theme, gallery layout, notification toggle) requires no Flyway migration; search preset payloads grow naturally as new filter fields are added without altering existing rows; only the two persistence adapters (`UserPreferenceRepositoryImpl`, `SearchPresetRepositoryImpl`) change — use cases, domain models, and REST controllers are untouched; the existing PostgreSQL tables are dropped after a one-time data migration
