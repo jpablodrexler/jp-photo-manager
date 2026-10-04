@@ -57,7 +57,7 @@ Before recommending a feature, check whether there's an open exploration the use
 
 ### 1. Read features-planned.md
 
-Read `JPPhotoManagerWeb/docs/backlog/features-planned.md` in full.
+Read `JPPhotoManagerWeb/docs/backlog/features-planned.md` in full. If it doesn't exist yet, there's no backlog to recommend from — tell the user to run `feature-plan` first to add at least one feature, and stop.
 
 ### 2. Collect pending features
 
@@ -73,6 +73,8 @@ From the `## Feature List` table, collect every row whose **Implementation** col
 - `in_progress` — `true` if the **Implementation** column shows `🔶 In Progress` (`feature-development` has already started this one — see `feature-development`'s Step 1.6), `false` if `⬜ Pending`
 - `brief` — the **Summary** column text (a short hand-written summary, for display only — never spec input)
 - `brief_file` — the path of the feature's full brief, `JPPhotoManagerWeb/docs/backlog/features/NNN-<change-name>.md` (`NNN` = the `#` zero-padded to 3 digits, `<change-name>` = the backtick content of the `Change name` cell); note whether it exists
+
+If the table has zero rows, tell the user the backlog is empty and stop — there's nothing to recommend.
 
 ### 3. Determine which features are unblocked
 
@@ -149,7 +151,7 @@ Full brief: <brief_file>
 
 If the script emitted a missing-brief-file warning for the recommended feature (or a runner-up), repeat it right under that feature's `Full brief:` line: `feature-development` stops with `PROPOSE_BLOCKED` when a planned feature's brief file is missing or empty and its SDD artifacts do not exist yet, so the user should hear about it now rather than mid-run.
 
-Also show the top 3 runners-up (by score) with a one-line reason each so the user can override.
+Also show the top 3 runners-up (by score) with a one-line reason each so the user can override, if there are that many unblocked features.
 
 When confirming (step 6), tell the user that the `Full brief:` file (not the one-line Summary) is what `feature-development` will hand to the spec step (`openspec-propose`) as the description of what to build, so an edit to the brief belongs in that file before confirming.
 

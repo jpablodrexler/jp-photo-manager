@@ -21,11 +21,15 @@ Add a new feature to the backlog — its full brief file `JPPhotoManagerWeb/docs
 
 If the user's request is too vague to describe what the feature actually does (e.g. just a one- or two-word title with no hint at the mechanism), ask one clarifying question before drafting — a good row needs the same level of technical specificity as existing rows (endpoints, tables/columns, components, libraries), not a vague restatement of the title. If the user already gave enough to work with, proceed without asking.
 
-### 2. Read both backlog files
+### 2. Read both backlog files, creating them if they don't exist yet
 
 Read:
 - `JPPhotoManagerWeb/docs/backlog/features-planned.md`
 - `JPPhotoManagerWeb/docs/backlog/features-implemented.md`
+
+**If `features-planned.md` doesn't exist yet**, create it before continuing — don't silently invent a different structure: a `# Planned Features` title, a `## Feature List` table with the header `| # | Change name | Priority | Schema Change | Effort | Area | Summary | Brief | SDD Artifacts | Implementation |` and no rows, a `## Column legend` (Priority, Schema Change, Effort, Area, Summary, Brief — same definitions as the existing backlog), and a `## Dependencies` section holding empty `### Hard implementation dependencies` and `### Recommended implementation order` subsections (`_None yet._`).
+
+**If `features-implemented.md` doesn't exist yet either**, create it with the matching implemented-table header (`Details` and `SDD Artifacts` cells, no `Summary`/`Brief`/`Implementation`) so `features-archive` has somewhere to write later.
 
 Both are needed to pick a non-colliding number and name (step 3) and to draft consistent attribute values (step 4).
 
