@@ -1,22 +1,17 @@
 ---
 name: bug-fix
-description: >
-  Orchestrates the full lifecycle of fixing one bug from the backlog:
-  selects the bug, creates a fix/ branch, reproduces the bug with a
-  failing regression test FIRST, implements the fix until that test
-  passes, runs code / database (conditional) / security (conditional)
-  reviews with findings fixed, runs backend and frontend tests, runs
-  e2e-testing's browser checks when the fix touches auth / the gallery /
-  a migration, runs a local build, syncs docs if behaviour changed, then
-  closes the bug via bugs-archive. No git commits at any point — hands off
-  to the user for review and PR. TRIGGER when the user asks to fix a bug,
-  work through the bug backlog one at a time, or address a specific
-  BUG-NNN — including a bug the user has only just described rather than
-  an existing id: file it with bug-report first, then run this skill on
-  the new BUG-NNN. "Plan and fix a bug" triggers this skill too — the
-  planning happens inside its own reproduce-then-fix workflow and is
-  never a reason to hand-roll the fix outside it. This is the bug-family
-  counterpart to feature-development.
+description: >-
+  Runs the full lifecycle of fixing one bug from the backlog: picks the bug,
+  creates a fix/ branch, reproduces it with a failing regression test FIRST,
+  implements the fix, runs code/database/security reviews (database and
+  security conditional) and fixes their findings, runs backend and frontend
+  tests, runs e2e-testing's browser checks when the fix touches auth/the
+  gallery/a migration, runs a local build, syncs docs if behaviour changed,
+  then closes the bug via bugs-archive. No git commits — hands off for review
+  and PR. TRIGGER when asked to fix a bug, work through the bug backlog one at
+  a time, or address a specific BUG-NNN — including a bug only just described
+  (file it with bug-report first, then run this skill). "Plan and fix a bug"
+  also triggers it. Bug-family counterpart to feature-development.
 license: MIT
 metadata:
   author: Juan Pablo Drexler

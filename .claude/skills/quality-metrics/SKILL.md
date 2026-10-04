@@ -1,6 +1,19 @@
 ---
 name: quality-metrics
-description: Runs every periodic quality-metric sweep (bash scripts/run-all-quality-reports.sh from JPPhotoManagerWeb/ — the frontend's npm report scripts plus the backend's bash report scripts — covering type coverage, complexity, dead code, route coverage, auth coverage, lighthouse, accessibility, code coverage, bundle size, dependency staleness, mocked E2E run, secrets scan, license compliance, dependency vulnerabilities, CLAUDE.md size, plus opt-in mutation testing and real-backend E2E) and reports trends by reading every committed historical report per category under JPPhotoManagerWeb/docs/reports/<category>/ — not just the immediately preceding one — and comparing the freshly generated value against that whole series. TRIGGER when the user asks for a quality metrics report, how the quality metrics are trending, to run/refresh the quality metrics, or similar — this is the quality-metrics counterpart to bugs-status/features-status, but for the report categories in the root README's Quality Metrics table rather than the backlog files.
+description: >-
+  Runs every periodic quality-metric sweep (`bash
+  scripts/run-all-quality-reports.sh` from JPPhotoManagerWeb/: the frontend's
+  npm report scripts plus the backend's bash scripts, covering type coverage,
+  complexity, dead code, route and auth coverage, lighthouse, accessibility,
+  code coverage, bundle size, dependency staleness, mocked E2E, secrets scan,
+  license compliance, dependency vulnerabilities, CLAUDE.md size, plus opt-in
+  mutation testing and real-backend E2E) and reports trends by comparing each
+  fresh value against every committed historical report in
+  JPPhotoManagerWeb/docs/reports/<category>/, not just the previous one.
+  TRIGGER when asked for a quality metrics report, how the metrics are
+  trending, or to run/refresh them. Counterpart to
+  bugs-status/features-status, but for the report categories in the root
+  README's Quality Metrics table.
 license: MIT
 metadata:
   author: Juan Pablo Drexler

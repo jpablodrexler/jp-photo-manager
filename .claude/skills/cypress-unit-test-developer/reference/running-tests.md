@@ -9,7 +9,7 @@ _Part of the `cypress-unit-test-developer` skill — see `../SKILL.md` for the t
 npm run cypress:open
 
 # Run headlessly (CI)
-npm run cypress:run
+npm run test
 
 # Run a single spec
 npx cypress run --component --spec "src/app/features/gallery/gallery.component.cy.ts"

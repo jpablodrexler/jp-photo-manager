@@ -1,8 +1,8 @@
 ---
 name: security-reviewer
 description: >
-  Security review skill for the JPPhotoManager project (Spring Boot 3.4 /
-  Java 21 backend + Angular 19 frontend). TRIGGER when code touches
+  Security review skill for the JPPhotoManager project (Spring Boot 3.5 /
+  Java 21 backend + Angular 22 frontend). TRIGGER when code touches
   authentication, authorization, file I/O, user input handling, dependency
   changes, or data persistence — including when implementing OpenSpec tasks
   that affect any of these areas. Do not wait to be asked: run this review

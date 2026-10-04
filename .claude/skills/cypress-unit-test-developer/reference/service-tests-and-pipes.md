@@ -80,7 +80,7 @@ describe("AssetService", () => {
 
 **Key rules:**
 
-- Use `provideHttpClient()` + `provideHttpClientTesting()` (functional providers, Angular 19 style).
+- Use `provideHttpClient()` + `provideHttpClientTesting()` (functional providers).
 - Always call `httpMock.verify()` in `afterEach` to catch unexpected HTTP calls.
 - Use Cypress assertions (`expect(...).to.equal(...)`) — not Jasmine (`toBe`).
 

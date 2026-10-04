@@ -1,29 +1,21 @@
 ---
 name: product-scope-roaster
-description: >
+description: >-
   Critical, non-technical product-management review of JPPhotoManagerWeb's
-  whole feature scope — everything shipped (`JPPhotoManagerWeb/docs/features.md`'s
-  narrative plus `JPPhotoManagerWeb/docs/backlog/features-implemented.md`) and
-  everything planned (`JPPhotoManagerWeb/docs/backlog/features-planned.md`) —
-  judged the way a skeptical senior product owner with zero interest in the
-  implementation would: does this add up to a photo manager a real user enjoys
-  using, or is it an engineer's inventory of technically-buildable
-  capabilities? Looks for features overlapping enough to merge into one
-  clearer concept, features bloated enough to split into smaller shippable
-  slices, missing functionality that would complete an existing area's story,
-  and cross-feature inconsistencies (a delete behavior, an in-place vs.
-  save-as-new edit model, two notification surfaces) that would trip up or
-  frustrate a real user. Deliberately harsh — no praise section, no hedging,
-  no crediting effort; a finding either holds up as a real product problem or
-  it gets cut, never softened. Distinct from `architecture-reviewer`
-  (code/technical structure), `code-reviewer` (per-diff correctness), and
-  `quality-metrics` (numeric sweeps) — this skill never opens a source file
-  and never mentions endpoints, entities, services, or components; it only
-  talks about what a feature does for a user and how that user experiences it.
-  TRIGGER when the user asks for a product review, scope review, feature
-  audit, product-owner critique, "roast the roadmap/backlog," or asks whether
-  features overlap/should merge/should split, or what's missing from the
-  feature set.
+  whole feature scope — shipped (`JPPhotoManagerWeb/docs/features.md`,
+  `.../backlog/features-implemented.md`) and planned
+  (`.../backlog/features-planned.md`) — judged like a skeptical senior product
+  owner who ignores the implementation: is this a photo manager a real user
+  enjoys, or an inventory of buildable capabilities? Looks for features to
+  merge, features to split, gaps in an existing area's story, and
+  cross-feature inconsistencies (delete behaviour, in-place vs save-as-new
+  edits, duplicate notification surfaces). Deliberately harsh: no praise
+  section, no hedging. Never opens source files or mentions endpoints,
+  entities or components. Distinct from `architecture-reviewer`,
+  `code-reviewer` and `quality-metrics`. TRIGGER when asked for a product
+  review, scope review, feature audit or product-owner critique, to "roast the
+  roadmap/backlog", whether features overlap or should merge/split, or what's
+  missing from the feature set.
 license: MIT
 metadata:
   author: Juan Pablo Drexler

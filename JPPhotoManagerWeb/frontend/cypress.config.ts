@@ -18,7 +18,18 @@ export default defineConfig({
     // run under the real-backend tier.
     excludeSpecPattern: ['cypress/e2e/mocked/**/*.cy.ts', 'cypress/e2e/a11y/**/*.cy.ts'],
     supportFile: 'cypress/support/e2e.ts',
-    setupNodeEvents(_on, _config) {},
+    setupNodeEvents(on, config) {
+      // Cypress's Launchpad can switch testing type (E2E -> Component)
+      // mid-session without restarting the Node plugin process. If that
+      // process booted in E2E mode, a component spec's coverage-collecting
+      // cy.task() calls (resetCoverage/combineCoverage/coverageReport) would
+      // fail because they were only registered in the component block below.
+      // codeCoverage() only registers those task handlers — it wires up no
+      // instrumentation or reporting on its own — so calling it here is safe
+      // even though E2E specs never send coverage data.
+      codeCoverage(on, config);
+      return config;
+    },
   },
   component: {
     devServer: {

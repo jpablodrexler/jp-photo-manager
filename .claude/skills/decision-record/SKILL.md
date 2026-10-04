@@ -1,25 +1,18 @@
 ---
 name: decision-record
-description: >
+description: >-
   Records a lightweight Architecture Decision Record (ADR) in
-  JPPhotoManagerWeb/docs/decisions/ whenever a real architectural or
-  technical decision is made — a pattern chosen over an alternative, a
-  library evaluated and rejected, a constraint discovered the hard way
-  (e.g. "Cypress component mounting stays on `cypress/angular`, not
-  `cypress/angular-zoneless`, even after the app itself migrated to
-  zoneless change detection — the Angular Component Testing preset ships
-  no zoneless-specific mount helper for this app's Cypress version").
-  Decisions like these currently only survive as prose footnotes scattered
-  through CLAUDE.md/docs/*.md, discoverable only by reading the whole
-  file — this skill gives each one its own durable, numbered, append-only
-  record instead. TRIGGER when the user asks to record/log a decision,
-  write an ADR, or capture "why did we do X"-style context worth
-  preserving. Also TRIGGER proactively, without being asked, immediately
-  after making or reversing a non-obvious architectural choice during a
-  feature or fix (a library swapped, a pattern rejected, a workaround
-  adopted for a specific bug) — don't wait for the user to ask before the
-  reasoning is lost. Does not replace docs/*.md reference material — see
-  "Relationship to web-docs-sync" below.
+  JPPhotoManagerWeb/docs/decisions/ whenever a real architectural or technical
+  decision is made — a pattern chosen over an alternative, a library rejected,
+  a constraint discovered the hard way (e.g. "Cypress component mounting stays
+  on `cypress/angular`, not `cypress/angular-zoneless`, even after the app
+  migrated to zoneless change detection"). Gives each decision its own
+  durable, numbered, append-only record instead of a footnote buried in
+  CLAUDE.md or docs/*.md. TRIGGER when asked to record/log a decision, write
+  an ADR, or capture "why did we do X" context. Also TRIGGER proactively,
+  right after making or reversing a non-obvious architectural choice during a
+  feature or fix — before the reasoning is lost. Does not replace docs/*.md
+  reference material (see "Relationship to web-docs-sync").
 license: MIT
 metadata:
   author: Juan Pablo Drexler

@@ -1,21 +1,16 @@
 ---
 name: features-batch-development
-description: >
-  Runs `feature-development` unattended across a user-given, ordered list of
-  named features — or the whole pending backlog at once — one feature at a
-  time, all on a single shared branch with zero git commits at any point —
-  built for leaving Claude running for long, unattended stretches over
-  several small features, checking in with the user only when a blocker
-  genuinely needs a human decision. Writes a dated report to
-  `JPPhotoManagerWeb/docs/reports/feature-batch/` (mirroring the
-  code/database/security-review report convention) that is updated
-  incrementally — immediately after each feature completes, not batched at
-  the end — so progress survives a session-limit cutoff, a crash, or a
-  power outage mid-run. TRIGGER when the user asks to batch-develop,
-  unattended-develop, or run feature development across a list of named
-  features or the whole backlog (e.g. "develop features 13, 16, and 19
-  while I'm away", "batch develop duplicate-detection and recycle-bin-ui
-  overnight", "develop the whole planned backlog unattended").
+description: >-
+  Runs `feature-development` unattended across an ordered list of named
+  features — or the whole pending backlog — one feature at a time on a single
+  shared branch, with zero git commits. Built for long unattended stretches
+  over several small features, checking in only when a blocker needs a human
+  decision. Writes a dated report to
+  `JPPhotoManagerWeb/docs/reports/feature-batch/`, updated after each feature
+  completes (not batched at the end), so progress survives a cutoff, crash or
+  power outage. TRIGGER when asked to batch-develop or unattended-develop a
+  list of named features or the whole backlog (e.g. "develop features 13, 16
+  and 19 while I'm away", "develop the whole planned backlog unattended").
 license: MIT
 metadata:
   author: Juan Pablo Drexler
