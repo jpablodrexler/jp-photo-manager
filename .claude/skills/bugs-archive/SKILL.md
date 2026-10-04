@@ -66,8 +66,7 @@ doesn't, warn (the Resolution line can't be recorded — suggest running
 **Disposition `wont-fix` or `cannot-repro`** — the bug stays in
 `bugs-open.md`; it is *not* moved. In a single edit to `bugs-open.md`:
 1. Change the row's **Status** to `🚫 Won't fix` or `❓ Cannot reproduce`.
-2. Remove it from `## Recommended fix order` if listed, and renumber the
-   list.
+2. Remove it from `## Recommended fix order` if listed.
 
 Also append a `- **Resolution:** <note>` bullet to the end of
 `bugs/BUG-NNN.md` (a separate file from `bugs-open.md`; if the file
@@ -106,11 +105,14 @@ before step 6.**
 ### 6. Now mutate bugs-open.md — a single edit, a single save
 
 1. Delete each fixed bug's row from the `## Bug List` table.
-2. Remove each fixed bug from `## Recommended fix order` if listed, and
-   renumber the list.
-3. If the `## Bug List` table is now empty, restore the `_No open
-   bugs._` placeholder line; if `## Recommended fix order` is now empty,
-   restore `_No open bugs to order._`.
+2. Remove each fixed bug from `## Recommended fix order` if listed — it's
+   a plain bullet list, so removing an entry needs no renumbering.
+3. If the `## Bug List` table is now empty, restore the `_No open bugs._`
+   placeholder line **after a blank line** following the header separator row
+   (the skeleton's shape — `bug-report` removes both when it adds a row; a
+   placeholder directly under the separator row would be read as a table
+   row); if `## Recommended fix order` is now empty, restore
+   `_No open bugs to order._`.
 
 Save `bugs-open.md`.
 
