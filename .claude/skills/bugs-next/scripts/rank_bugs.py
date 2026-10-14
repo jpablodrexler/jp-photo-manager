@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Score and rank actionable bugs from JPPhotoManagerWeb/docs/backlog/bugs-open.md
-(schema-change flag read from JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md) per
+Score and rank actionable bugs from <backlog>/bugs-open.md
+(schema-change flag read from <backlog>/bugs/BUG-NNN.md) per
 bugs-next/SKILL.md's steps 2-3: fixed point-tier scoring (In Progress >
-Severity > deployed/both environment > fix-order position > no schema
+Severity > deployed (not local-only) environment > fix-order position > no schema
 change) with its tie-breaks.
 
 This script only computes the ranking — it never calls AskUserQuestion or
@@ -14,9 +14,17 @@ Usage:
     python3 rank_bugs.py <repo-root> [--select BUG-NNN] [--json]
 """
 import re
+import sys
 import json
 import argparse
 from pathlib import Path
+
+_here = Path(__file__).resolve()
+for _cand in (_here.parent, _here.parents[3] / "lib"):
+    if (_cand / "backlog_kit.py").is_file():
+        sys.path.insert(0, str(_cand))
+        break
+import backlog_kit as bk
 
 
 def split_row(line):
@@ -84,9 +92,9 @@ def parse_fix_order(lines):
     return positions
 
 
-def read_bug_file(root, bug_id):
-    """Return the text of JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md, or None if missing."""
-    p = root / "JPPhotoManagerWeb" / "docs" / "backlog" / "bugs" / f"{bug_id}.md"
+def read_bug_file(root, backlog, bug_id):
+    """Return the text of <backlog>/bugs/BUG-NNN.md, or None if missing."""
+    p = root / backlog / "bugs" / f"{bug_id}.md"
     if not p.is_file():
         return None
     return p.read_text(encoding="utf-8")
@@ -100,7 +108,8 @@ def main():
     args = ap.parse_args()
 
     root = Path(args.repo_root)
-    open_path = root / "JPPhotoManagerWeb" / "docs" / "backlog" / "bugs-open.md"
+    backlog = bk.load_config(root)["paths"]["backlog_dir"].strip("/")
+    open_path = root / backlog / "bugs-open.md"
     if not open_path.exists():
         print(json.dumps({"error": "bugs-open.md not found"}))
         return
@@ -126,11 +135,11 @@ def main():
             if bug_id in seen:
                 duplicate_ids.add(bug_id)
             seen.add(bug_id)
-            detail = read_bug_file(root, bug_id)
+            detail = read_bug_file(root, backlog, bug_id)
             if detail is None:
                 missing_files.append(bug_id)
                 detail = ""
-            schema = bool(re.search(r'Flyway|migration|JPA entity', detail, re.IGNORECASE))
+            schema = bool(re.search(r'\*\*Schema change:\*\*\s*yes\b', detail, re.IGNORECASE))
             candidates.append({
                 "id": bug_id,
                 "severity": r.get("Severity", "").strip(),
@@ -150,7 +159,7 @@ def main():
         if c["in_progress"]:
             s += 1000
         s += {"S1": 400, "S2": 300, "S3": 200, "S4": 100}.get(c["severity"], 50)
-        if c["environment"] in ("deployed", "both"):
+        if c["environment"] not in ("", "local"):
             s += 20
         if fix_order.get(c["id"]) is not None:
             s += 10
@@ -187,7 +196,7 @@ def main():
     if duplicate_ids:
         warnings.append(f"Duplicate Bug ID(s) in bugs-open.md: {', '.join(sorted(duplicate_ids))} — run bugs-status for the full integrity report.")
     if missing_files:
-        warnings.append(f"No JPPhotoManagerWeb/docs/backlog/bugs/ file for {', '.join(missing_files)} — schema-change flag assumed 'no'; run bugs-status for the full integrity report.")
+        warnings.append(f"No {backlog}/bugs/ file for {', '.join(missing_files)} — schema-change flag assumed 'no'; run bugs-status for the full integrity report.")
     if warnings:
         result["warning"] = " ".join(warnings)
 
@@ -203,7 +212,7 @@ def reason_bullets(c):
         bullets.append("🔶 Already in progress — a bug-fix run started this; resuming beats starting a new one")
     tier_label = {"S1": "S1 — blocker", "S2": "S2 — major", "S3": "S3 — minor", "S4": "S4 — trivial"}.get(c["severity"], "no explicit severity")
     reason = tier_label
-    if c["environment"] in ("deployed", "both"):
+    if c["environment"] not in ("", "local"):
         reason += f", reproduces on {c['environment']}"
     bullets.append(reason)
     if c["order_position"]:

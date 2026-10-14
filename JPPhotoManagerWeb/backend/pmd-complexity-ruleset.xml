@@ -6,7 +6,7 @@
 
     <description>
         Cyclomatic complexity check used by the code-reviewer skill
-        (.claude/skills/code-reviewer/SKILL.md, Cyclomatic Complexity section).
+        (docs/backend.md, "Code review checks", §18 Cyclomatic Complexity).
         Max allowed complexity is 15 per method — methodReportLevel is set to
         16 because PMD reports a violation when complexity is greater than or
         equal to the configured level. classReportLevel (total complexity

@@ -1,15 +1,17 @@
 ---
 name: bugs-next
-description: Recommends which bug to fix next based on JPPhotoManagerWeb/docs/backlog/bugs-open.md severities, the Recommended fix order, and whether a fix is already in progress, then asks for user confirmation. Returns the confirmed Bug ID to the caller — does NOT start a branch or attempt a fix. TRIGGER when the user asks which bug to fix next, what to work on from the bug backlog, or for a next-bug recommendation. This is the bug-family counterpart to features-next.
+description: Recommends which bug to fix next based on the backlog's bugs-open.md severities, the Recommended fix order, and whether a fix is already in progress, then asks for user confirmation. Returns the confirmed Bug ID to the caller — does NOT start a branch or attempt a fix. TRIGGER when the user asks which bug to fix next, what to work on from the bug backlog, or for a next-bug recommendation. This is the bug-family counterpart to features-next.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "0.1"
 ---
 
 Recommend the next bug to fix and return the confirmed Bug ID to the
 caller. Mirrors `features-next`: score, present, confirm via a mandatory
 `AskUserQuestion`, return an ID line.
+
+`<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`.
 
 **Input**: Optional Bug ID (e.g. `BUG-004`) to skip the recommendation
 step and jump straight to confirmation for that bug.
@@ -20,12 +22,13 @@ step and jump straight to confirmation for that bug.
 
 `scripts/rank_bugs.py` owns steps 2-3's mechanical work — collecting
 Open/In Progress rows and applying the fixed point-tier scoring
-(In Progress > Severity > deployed/both environment > fix-order position >
+(In Progress > Severity > deployed (not local-only) environment > fix-order position >
 no schema change) with its tie-breaks. Run it and use its output for
-steps 2-4 rather than re-deriving the ranking by hand:
+steps 2-4 rather than re-deriving the ranking by hand (run it from this
+skill's base directory):
 
 ```
-python3 .claude/skills/bugs-next/scripts/rank_bugs.py <repo-root>
+python3 scripts/rank_bugs.py <repo-root>
 ```
 
 Pass `--select BUG-NNN` to resolve one specific bug directly instead of
@@ -38,7 +41,7 @@ step 5's mandatory confirmation is still this skill's job.
 
 ### 1. Read bugs-open.md
 
-Read `JPPhotoManagerWeb/docs/backlog/bugs-open.md` in full. If it doesn't
+Read `<backlog>/bugs-open.md` in full. If it doesn't
 exist, there's no backlog to recommend from — tell the user to run
 `bug-report` first, and stop.
 
@@ -52,15 +55,15 @@ From the `## Bug List` table, collect every row whose **Status** is
   `[BUG-004](bugs/BUG-004.md)` — take the link text)
 - `severity` — `S1` / `S2` / `S3` / `S4`
 - `area` — the `Area` column value
-- `environment` — `local` / `deployed` / `both`
+- `environment` — the `Environment` column value (`local` is the only value that
+  means "not deployed"; the backlog's legend defines the others, e.g. `deployed` / `prod` / `both`)
 - `in_progress` — `true` if Status is `🔶 In Progress` (a `bug-fix` run
   started this and was interrupted before archiving), else `false`
 - `schema` — `true` if the bug's details file
-  `JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md` (its Notes line in
-  particular) indicates the fix needs a Flyway migration / JPA entity
-  change, else `false` (best-effort from the text; default `false`; also
-  `false` if the file is missing — surface that as a warning pointing at
-  `bugs-status`)
+  `<backlog>/bugs/BUG-NNN.md` has a `- **Schema change:** yes` line (the
+  fix needs a schema migration or equivalent change), else `false`
+  (default `false`; also `false` if the file is missing — surface that as
+  a warning pointing at `bugs-status`)
 - `summary` — the `Summary` column text
 
 If the table has zero actionable rows, tell the user the bug backlog is
@@ -81,15 +84,16 @@ resumed before a new bug is started — real work is already sitting on a
 - S3 → 200
 - S4 → 100
 
-**Tier 2 — Environment bonus.** Add +20 if `environment` is `deployed` or
-`both` — a bug hitting the deployed stack is hurting users right now.
+**Tier 2 — Environment bonus.** Add +20 if `environment` is anything other
+than `local` (`deployed`, `prod`, `both`, …) — a bug hitting the deployed
+stack is hurting users right now.
 
 **Tier 3 — Recommended fix order bonus.** Add +10 if the bug appears in
 the `## Recommended fix order` list, and record its position (1 = first)
 for the tie-break.
 
 **Tier 4 — No schema change bonus.** Add +5 if `schema` is `false` — no
-Flyway migration to write, sequence, and coordinate.
+migration to write, sequence, and coordinate.
 
 Select the highest-scoring bug. Break ties, in order:
 1. Earlier position in `## Recommended fix order` wins (a bug with a
@@ -165,7 +169,7 @@ BUG_ID: BUG-NNN
 
 ## Guardrails
 
-- Always read the full `JPPhotoManagerWeb/docs/backlog/bugs-open.md` before
+- Always read the full `<backlog>/bugs-open.md` before
   scoring — never guess which bug is next from memory.
 - Do not invoke `bug-fix`, `gitflow`, or any other skill. This skill only
   recommends, confirms, and returns the ID. The caller decides what's
@@ -188,3 +192,4 @@ BUG_ID: BUG-NNN
 - Never substitute an autonomous-operation instruction for step 5's
   confirmation — the scoring produces a *recommendation*, not a licence to
   skip asking.
+- **Never run `git commit`, `git push` or open a PR.**

@@ -27,10 +27,41 @@ authentication flow, the Kafka-driven catalog pipeline, Docker Compose /
 Kubernetes deployment, and a `curl` command per endpoint) lives under
 `JPPhotoManagerWeb/docs/` instead of being duplicated inline here — see
 `JPPhotoManagerWeb/README.md`'s Documentation table for the full index, or
-jump straight to `docs/backend.md`, `docs/authentication.md`,
-`docs/architecture.md`, or `docs/catalog-process.md`. Keeping this split is
-the `web-docs-sync` skill's job — see that skill if either this file or
-`docs/*.md` drifts from the actual code.
+jump straight to `docs/backend.md`, `docs/security.md`,
+`docs/architecture.md`, `docs/database.md` or `docs/catalog-process.md`.
+Keeping this split is the `docs-sync` skill's job — see that skill if either
+this file or `docs/*.md` drifts from the actual code.
+
+Non-obvious architectural decisions (a rejected alternative, a constraint
+discovered the hard way) are recorded as individual, numbered ADRs under
+`docs/decisions/` — see `docs/decisions/README.md` for the index. Recording
+those is the `decision-record` skill's job, not `docs-sync`'s: `docs-sync`
+keeps this file's *current-state* narrative accurate against the code, while
+`docs/decisions/` is an append-only history of *why*.
+
+## Kit conventions
+
+Where the [backlog-kit](https://github.com/jpablodrexler/backlog-kit) skills read and write. The backlog of this repository lives in `JPPhotoManagerWeb/docs/backlog` (`.backlog-kit.toml` at the repository root says so), so `JPPhotoManagerWeb/` is the project root for the skills: every `docs/…` path below is `JPPhotoManagerWeb/docs/…`, and `CLAUDE.md` and `README.md` are this folder's. The WPF application and the `docs/` at the repository root are not covered by the skills. This project keeps the files it needs and four extra reference docs: `docs/catalog-process.md`, `docs/curl-reference.md`, `docs/docker-compose.md` and `docs/kubernetes.md`.
+
+| Path | What it holds | Checked against |
+| ---- | ------------- | --------------- |
+| `docs/backlog/` | the backlog: `features-planned.md`, `features-implemented.md`, `bugs-open.md`, `bugs-fixed.md`, plus one brief per item in `features/` and `bugs/` | — |
+| `docs/decisions/` | architecture decision records, numbered and append-only | — |
+| `docs/explorations/` | notes of ideas still being explored (created when the first one is written) | — |
+| `docs/reports/` | dated reports of the reviewers and the batch runs (gitignored, except the metrics snapshots) | — |
+| `docs/architecture.md` | system diagram, the hexagonal backend, the database schema diagram, the frontend component hierarchy, the project structure, and the `Architecture review checks` section (what `architecture-reviewer` checks in this project) | the backend package structure, the Flyway migrations (for the schema diagram), `frontend/src/app/app.routes.ts` (for the component diagram), the top-level directory tree |
+| `docs/features.md` | what a user can actually reach today (never the planned backlog) | the routes in `app.routes.ts` and the components under `frontend/src/app/` |
+| `docs/product.md` | what the product is for, and the `Product scope review checks` section (the examples `product-scope-roaster` tests) | `docs/features.md` and the backlog tables |
+| `docs/backend.md` | technologies, internal architecture, key services, persistence, caching, observability and custom metrics, the REST API, configuration, running and testing, and the backend's `Code review checks` plus the `Spec compliance checks` and the shared part of the `Dependency upgrade checks` sections | every `@RestController` in `infrastructure/web/controller/` (one table row per mapping, the auth column cross-checked against `SecurityConfig` and any `@PreAuthorize`), every `@Value("${…}")` and the `application.yml` defaults, the `@Entity`, Mongo and Redis classes, `AppConfig.cacheManager()`, every `photomanager_*` metric against `grafana/provisioning/dashboards/photomanager.json`, `backend/pom.xml` |
+| `docs/frontend.md` | technologies, application structure, gallery modes, real-time progress, running, building and testing, and the frontend's `Code review checks` and `Dependency upgrade checks` sections | `frontend/src/app/app.routes.ts` and the `features/` folder, `frontend/angular.json`, `frontend/package.json` |
+| `docs/database.md` | the stores, the Flyway workflow, and the `Database review checks` section (what `database-reviewer` checks in this project) | every Flyway migration in `backend/src/main/resources/db/migration/` in order, and the JPA entities |
+| `docs/security.md` | the JWT and refresh-token flow, cookies, configuration, user administration, and the `Security review checks` section (what `security-reviewer` checks in this project) | `SecurityConfig`, `AuthController`, `JwtTokenServiceAdapter`, `RefreshTokenServiceAdapter`, the cookie names and flags, `backend/pom.xml` and `frontend/package.json` |
+| `docs/catalog-process.md` | the Spring Batch catalog job, its triggers and the Kafka messages | `infrastructure/batch/**`, `infrastructure/kafka/**`, `config/KafkaTopicConfig.java` |
+| `docs/curl-reference.md` | one `curl` example per REST endpoint | the same controllers as the REST API table, with the same endpoint list |
+| `docs/docker-compose.md` | running with Docker Compose, including monitoring | `docker-compose.yml`, `.env.example` |
+| `docs/kubernetes.md` | running with Kubernetes, and the deploy manifest parity rule | `k8s/*.yaml`, `kustomization.yaml`, `scripts/*.sh`, and `docker-compose.yml` (which `k8s/configmap.yaml` mirrors) |
+| `CLAUDE.md` | this file: the lean quick-start for an agent | its commands against `pom.xml` and the `package.json` scripts, its layout against the real package structure |
+| `README.md` | a short intro and the documentation index into `docs/` | which `docs/*.md` exist and what each covers |
 
 ---
 
@@ -174,7 +205,7 @@ endpoint are in `docs/curl-reference.md`. Interactive docs are served at
 JWT stored in an HttpOnly cookie (`SameSite=Strict`, `Path=/`), plus a
 separate longer-lived `refreshToken` HttpOnly cookie. Full flow diagram,
 the SSE/Spring-Security async-dispatch gotcha, `JWT_SECRET` generation, and
-the default admin account are documented in `docs/authentication.md` — read
+the default admin account are documented in `docs/security.md` — read
 that before touching `SecurityConfig`, `JwtAuthenticationFilter`, or
 anything under `infrastructure/service/*Token*`.
 

@@ -1,13 +1,15 @@
 ---
 name: features-next
-description: Recommends which feature to implement next based on JPPhotoManagerWeb/docs/backlog/features-planned.md priorities, dependencies, and its Recommended implementation order, then asks for user confirmation. If any in-progress exploration exists under JPPhotoManagerWeb/docs/explorations/, first offers (optionally) to keep exploring one of those ideas instead of picking a feature. Returns the confirmed change name to the caller — does NOT invoke opsx:propose or opsx:apply. TRIGGER when the user asks which feature to implement next, what to work on next, or which feature to suggest — including phrases like "recommend the next feature", "suggest the next feature", "what feature should we do next", or any similar request for a next-step recommendation from the features list.
+description: Recommends which feature to implement next based on the backlog's features-planned.md priorities, dependencies, and its Recommended implementation order, then asks for user confirmation. If any in-progress exploration exists under the explorations folder, first offers (optionally) to keep exploring one of those ideas instead of picking a feature. Returns the confirmed change name to the caller — does NOT invoke opsx:propose or opsx:apply. TRIGGER when the user asks which feature to implement next, what to work on next, or which feature to suggest — including phrases like "recommend the next feature", "suggest the next feature", "what feature should we do next", or any similar request for a next-step recommendation from the features list.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.6"
+  version: "0.1"
 ---
 
 Recommend the next feature to implement and return the confirmed change name to the caller.
+
+`<backlog>` is `docs/backlog` and `<explorations>` is `docs/explorations`, unless `.backlog-kit.toml` sets `[paths] backlog_dir` / `explorations_dir`.
 
 **Input**: Optional feature number or name to skip the recommendation step and jump straight to confirmation.
 
@@ -19,11 +21,11 @@ Recommend the next feature to implement and return the confirmed change name to 
 pending/in-progress rows, resolving hard-dependency blocking from each
 candidate's *live* Implementation-column status (never a dependency
 note's own possibly-stale parenthetical), and applying the fixed
-point-tier scoring with its tie-breaks. Run it and use its output for
+point-tier scoring with its tie-breaks. Run it from this skill's base directory and use its output for
 steps 2-5 rather than re-deriving the ranking by hand:
 
 ```
-python3 .claude/skills/features-next/scripts/rank_features.py <repo-root>
+python3 scripts/rank_features.py <repo-root>
 ```
 
 Pass `--select <number-or-name>` to resolve one specific feature
@@ -41,7 +43,7 @@ computes, for maintaining it.
 
 Before recommending a feature, check whether there's an open exploration the user might want to keep developing instead of starting a new feature.
 
-1. List `JPPhotoManagerWeb/docs/explorations/*.md` (skip a `README.md` if present). If the directory doesn't exist or holds no such files, skip this step entirely and go to step 1.
+1. List `<explorations>/*.md` (skip a `README.md` if present). If the directory doesn't exist or holds no such files, skip this step entirely and go to step 1.
 2. For each file, read its `**Status:**` line near the top and its `# ` H1 title. Treat the exploration as **open** unless the status line marks it finished — i.e. it contains `archived`, `superseded`, `proposed`, `done`, or `dropped`. A file with no `**Status:**` line counts as open. Record each open exploration's title and path.
 3. If there are no open explorations, go to step 1 without mentioning this — it's not worth a line of output when there's nothing to offer.
 4. If there is at least one open exploration, use the **AskUserQuestion tool** — this is a genuine optional off-ramp and must actually reach the user. If `AskUserQuestion` is unavailable in this context, skip this step and proceed to the normal recommendation (do **not** block on it — unlike step 6, choosing to explore is not a prerequisite for anything):
@@ -53,26 +55,26 @@ Before recommending a feature, check whether there's an open exploration the use
      4. "`<exploration 3 title>`" (only if the total stays at or under 4)
    - If more than 3 open explorations exist, list the 3 most recently modified and let the tool's built-in "Other" cover the rest — resolve a free-text answer to the file whose title or filename matches.
 5. If the user picks "Recommend the next feature" (or the tool was unavailable), continue to step 1.
-6. If the user picks an exploration, **stop here.** Do not collect or score features, and do not emit a `CHANGE_NAME:` line. Point the user at the exploration's file path and tell them to continue it with `/openspec-explore` (naming the topic). This skill's job is done — the caller treats the absence of a `CHANGE_NAME:` line exactly as it treats a step-6 "Cancel".
+6. If the user picks an exploration, **stop here.** Do not collect or score features, and do not emit a `CHANGE_NAME:` line. Point the user at the exploration's file path and tell them to continue it with `/opsx:explore` (or `/openspec-explore`, whichever your OpenSpec install generated) naming the topic. This skill's job is done — the caller treats the absence of a `CHANGE_NAME:` line exactly as it treats a step-6 "Cancel".
 
 ### 1. Read features-planned.md
 
-Read `JPPhotoManagerWeb/docs/backlog/features-planned.md` in full. If it doesn't exist yet, there's no backlog to recommend from — tell the user to run `feature-plan` first to add at least one feature, and stop.
+Read `<backlog>/features-planned.md` in full. If it doesn't exist yet, there's no backlog to recommend from — tell the user to run `feature-plan` first to add at least one feature, and stop.
 
 ### 2. Collect pending features
 
 From the `## Feature List` table, collect every row whose **Implementation** column shows `⬜ Pending` or `🔶 In Progress`. For each row record:
 
 - `number` — the `#` column value (integer)
-- `name` — the backtick-wrapped value in the **Change name** column (e.g. `image-etag-cache`)
+- `name` — the backtick-wrapped value in the **Change name** column (e.g. `task-due-dates`)
 - `priority` — the **Priority** column value (`P0`/`P1`/`P2`/`P3`)
 - `schema_change` — the **Schema Change** column value (`Yes`/`No`)
 - `effort` — the **Effort** column value (`S`/`M`/`L`)
-- `area` — the **Area** column value (`Backend`/`Frontend`/`Full-stack`/`Infra`)
-- `artifacts_ready` — `true` if the **SDD Artifacts** column shows `✅ Created`, `false` if `⬜ Pending`
+- `area` — the **Area** column value (one of the values the backlog's own legend defines)
+- `artifacts_ready` — `true` if the **SDD Artifacts** column shows `✅ Created`, `false` if `⬜ Pending` or if the table has no `SDD Artifacts` column
 - `in_progress` — `true` if the **Implementation** column shows `🔶 In Progress` (`feature-development` has already started this one — see `feature-development`'s Step 1.6), `false` if `⬜ Pending`
-- `brief` — the **Summary** column text (a short hand-written summary, for display only — never spec input)
-- `brief_file` — the path of the feature's full brief, `JPPhotoManagerWeb/docs/backlog/features/NNN-<change-name>.md` (`NNN` = the `#` zero-padded to 3 digits, `<change-name>` = the backtick content of the `Change name` cell); note whether it exists
+- `brief` — the **Summary** column text (a hand-written one-liner of at most 250 characters, for display only)
+- `brief_file` — the repo-relative path of the feature's full brief file, `<backlog>/features/NNN-<name>.md`, taken from the **Brief** column's `[brief](features/NNN-<name>.md)` link. This file, never the Summary, is what the spec step later receives. The script warns when the file does not exist.
 
 If the table has zero rows, tell the user the backlog is empty and stop — there's nothing to recommend.
 
@@ -82,8 +84,8 @@ A feature is **blocked** if it has a hard dependency on another feature that is 
 
 Build a blocked set: for each hard-dependency statement `A → B` found there, look up B's row in the `## Feature List` table you just read:
 - If B's row shows `⬜ Pending` **or** `🔶 In Progress`, mark A as blocked — a prerequisite that's actively being worked on hasn't shipped yet either, so it blocks exactly like a merely-pending one does. Do not treat "not literally `⬜ Pending`" as "safe to recommend"; the only status that clears a dependency is B actually being done.
-- If B has no row at all in the `## Feature List` table, treat the dependency as satisfied (not blocking) — the only way a feature is absent from that table is that `features-archive` already moved it to `features-implemented.md` as `✅ Implemented`. Do not treat a missing row as "unknown, so don't block" by accident; confirm it's genuinely archived (a quick check against `JPPhotoManagerWeb/docs/backlog/features-implemented.md` if there's any doubt) rather than assuming.
-- **Never fall back to the dependency statement's own parenthetical annotation** (e.g. "(prerequisite still pending)" / "(prerequisite already implemented)") to decide blocking — that text is a human-readable summary maintained by `features-archive` and can lag the actual Implementation-column status. Always re-derive from B's live row in the Feature List table itself.
+- If B has no row at all in the `## Feature List` table, treat the dependency as satisfied (not blocking) — the only way a feature is absent from that table is that `features-archive` already moved it to `features-implemented.md` as `✅ Implemented`. Do not treat a missing row as "unknown, so don't block" by accident; confirm it's genuinely archived (a quick check against `<backlog>/features-implemented.md` if there's any doubt) rather than assuming. The script makes that check: a prerequisite that has no row in either `features-planned.md` or `features-implemented.md` is reported as a warning (a mistyped or deleted number), never silently treated as shipped.
+- **Never fall back to the dependency statement's own parenthetical annotation** (e.g. "(still pending)" / "(resolved)") to decide blocking — that text is a human-readable summary maintained by `features-archive` and can lag the actual Implementation-column status (this has happened before). Always re-derive from B's live row in the Feature List table itself.
 
 A feature is **unblocked** if it is not in the blocked set.
 
@@ -114,7 +116,7 @@ Add +20 if `artifacts_ready` is `true` (SDD already created, can apply immediate
 
 **Tier 3 — Recommended implementation order bonus**
 
-The `### Recommended implementation order` subsection lists features in suggested sequence. Add +10 for features that appear in that list (they have been explicitly ordered), and record each such feature's position (1 = first) for the tie-break below — a feature absent from the list has no position.
+The `### Recommended implementation order` subsection lists features in suggested sequence (a bullet list of `` `change-name` (#number) `` entries — list position, not a printed number, encodes order). Add +10 for features that appear in that list (they have been explicitly ordered), and record each such feature's line position (1 = first bullet) for the tie-break below — a feature absent from the list has no position.
 
 **Tier 4 — No schema change bonus**
 
@@ -134,7 +136,7 @@ Display:
 ## Recommended Next Feature
 
 **#<number> `<name>`**
-<summary>
+<brief — the Summary>
 Full brief: <brief_file>
 
 **Priority:** <priority>  **Effort:** <effort>  **Area:** <area>  **Schema change:** <schema_change>
@@ -146,14 +148,12 @@ Full brief: <brief_file>
 - <position in the Recommended implementation order, if listed, e.g. "sequenced first among the P2s in the recommended order" — omit this bullet if the feature isn't in that list>
 - <any relevant note from implementation notes>
 
-**SDD Artifacts:** <✅ Created / ⬜ Not yet created>
+**SDD Artifacts:** <✅ Created / ⬜ Not yet created>   (omit this line when the table has no `SDD Artifacts` column)
 ```
 
 If the script emitted a missing-brief-file warning for the recommended feature (or a runner-up), repeat it right under that feature's `Full brief:` line: `feature-development` stops with `PROPOSE_BLOCKED` when a planned feature's brief file is missing or empty and its SDD artifacts do not exist yet, so the user should hear about it now rather than mid-run.
 
 Also show the top 3 runners-up (by score) with a one-line reason each so the user can override, if there are that many unblocked features.
-
-When confirming (step 6), tell the user that the `Full brief:` file (not the one-line Summary) is what `feature-development` will hand to the spec step (`openspec-propose`) as the description of what to build, so an edit to the brief belongs in that file before confirming.
 
 ### 6. Ask for user confirmation
 
@@ -161,7 +161,7 @@ When confirming (step 6), tell the user that the `Full brief:` file (not the one
 
 If `AskUserQuestion` is not available in the current execution context — e.g. this skill is being invoked from inside a spawned/backgrounded subagent that has no interactive tool access, rather than the orchestrator's own foreground context — do **not** fall back to picking the top-scored recommendation and proceeding. Stop instead: end the response without a `CHANGE_NAME:` line, and state plainly that confirmation could not be obtained in this context because `AskUserQuestion` was unavailable. The caller is responsible for re-invoking this skill from a context that does have it (see `feature-development`'s Phase 0, which exists specifically so this skill is always invoked from the orchestrator's own context, never from inside a subagent).
 
-`AskUserQuestion` only accepts 2–4 options per question — never enumerate the full unblocked list through it. With a large backlog (this repo's `JPPhotoManagerWeb/docs/backlog/features-planned.md` currently has dozens of unblocked pending features), only the recommendation plus its top few runners-up fit; anything beyond that must be a free-text answer.
+`AskUserQuestion` only accepts 2–4 options per question — never enumerate the full unblocked list through it. If the backlog is large, only the recommendation plus its top few runners-up fit; anything beyond that must be a free-text answer.
 
 Use the **AskUserQuestion tool** with a single question:
 
@@ -174,6 +174,8 @@ Use the **AskUserQuestion tool** with a single question:
   - "Cancel" — stop here (use one of the slots above for this; drop the lowest-ranked runner-up if all 4 slots would otherwise be full)
 
 Do not add a separate "Choose a different feature" option that tries to show the rest of the list — the tool's built-in "Other" choice already lets the user type any number or name directly, including one that didn't make the shortlist. Resolve that free-text answer per "Resolving a feature by number or name" in the Guardrails below.
+
+When confirming, tell the user that the `Full brief:` file (not the one-line Summary) is what `feature-development` will hand to the spec step (`openspec-propose`) as the description of what to build, so an edit to the brief belongs in that file before confirming.
 
 If the user selects "Cancel", stop and return without a change name.
 
@@ -189,13 +191,14 @@ CHANGE_NAME: <change-name>
 
 ## Guardrails
 
-- Always read the full `JPPhotoManagerWeb/docs/backlog/features-planned.md` before scoring — never guess which feature is next from memory.
-- Do not invoke `opsx:apply`, `opsx:propose`, `openspec-explore`, or any other skill. This skill's sole responsibility is recommendation, confirmation, and returning the change name (or, via step 0, surfacing an exploration off-ramp and stopping). The caller decides what to do next.
-- **Step 0's exploration off-ramp never returns a `CHANGE_NAME:` line.** If the user chooses to keep exploring, this skill stops with no recommendation; the caller must treat that identically to a step-6 "Cancel" and not proceed to implement anything. Step 0 is also purely additive — a skipped or unavailable step 0 (no `JPPhotoManagerWeb/docs/explorations/`, no open files, or no `AskUserQuestion`) must never block the normal recommendation flow.
-- **Resolving a feature by number or name**: whenever a specific feature number or name is available — whether it's the skill's initial input, or a free-text answer typed into the "Other" option of step 6's `AskUserQuestion` — look it up directly as the row in `JPPhotoManagerWeb/docs/backlog/features-planned.md` whose `#` or `Change name` column matches, rather than re-running the scoring pass. If it's the skill's initial input, skip steps 2–5 and go directly to step 6 with that feature pre-selected (but still confirm). If it's a step-6 "Other" answer, treat it as the user's final selection (re-confirming isn't necessary — they already answered the confirmation question) — but only once it resolves to a real row: if the typed value matches no row at all, or matches a row already showing `✅ Implemented` (which must never be recommended, per the guardrail below — a manually-typed answer doesn't get an exception), report the mismatch to the user and ask again rather than returning a `CHANGE_NAME:` for something that isn't actually a valid pending feature.
+- Always read the full `<backlog>/features-planned.md` before scoring — never guess which feature is next from memory.
+- Do not invoke `opsx:apply`, `opsx:propose`, `opsx:explore`, or any other skill. This skill's sole responsibility is recommendation, confirmation, and returning the change name (or, via step 0, surfacing an exploration off-ramp and stopping). The caller decides what to do next.
+- **Step 0's exploration off-ramp never returns a `CHANGE_NAME:` line.** If the user chooses to keep exploring, this skill stops with no recommendation; the caller must treat that identically to a step-6 "Cancel" and not proceed to implement anything. Step 0 is also purely additive — a skipped or unavailable step 0 (no `<explorations>/`, no open files, or no `AskUserQuestion`) must never block the normal recommendation flow.
+- **Resolving a feature by number or name**: whenever a specific feature number or name is available — whether it's the skill's initial input, or a free-text answer typed into the "Other" option of step 6's `AskUserQuestion` — look it up directly as the row in `<backlog>/features-planned.md` whose `#` or `Change name` column matches, rather than re-running the scoring pass. If it's the skill's initial input, skip steps 2–5 and go directly to step 6 with that feature pre-selected (but still confirm). If it's a step-6 "Other" answer, treat it as the user's final selection (re-confirming isn't necessary — they already answered the confirmation question) — but only once it resolves to a real row: if the typed value matches no row at all, or matches a row already showing `✅ Implemented` (which must never be recommended, per the guardrail below — a manually-typed answer doesn't get an exception), report the mismatch to the user and ask again rather than returning a `CHANGE_NAME:` for something that isn't actually a valid pending feature.
 - A feature already showing `✅ Implemented` in the Implementation column must never be recommended.
 - **A feature already showing `🔶 In Progress` is always preferred over any merely `⬜ Pending` feature, regardless of priority.** `feature-development` marks a feature `🔶 In Progress` as soon as it selects it and sets up its branch (see that skill's Step 1.6); if that run was interrupted before archiving, the row is left `🔶 In Progress` with real work already sitting on `feature/<change-name>`. Resuming that work is almost always better than starting a new feature and leaving the in-progress one to rot — hence Tier 0's dominant score. If more than one row happens to show `🔶 In Progress` at once (e.g. two interrupted runs), Tier 0 puts all of them ahead of every pending feature and the normal Tier 1–4 scoring (plus the usual tie-breaks) picks among just that set.
 - If ALL unblocked features have `artifacts_ready = false`, the recommendation will still be returned — the caller handles artifact creation.
 - If ALL pending features are blocked, inform the user which blocking prerequisites need to be implemented first, and surface those prerequisites as the recommendation instead.
-- **A feature with any hard dependency on a prerequisite that isn't `✅ Implemented` must never be recommended — not as the top pick, not as a runner-up.** Step 3's blocked set exists specifically to enforce this; a feature belongs in the blocked set (and out of scoring/step 4 entirely) whenever its prerequisite is `⬜ Pending` or `🔶 In Progress`, full stop, regardless of how attractive its priority/effort/order-list score would otherwise be. Recommending a feature whose backlog-declared dependency hasn't shipped — because a stale annotation was trusted over the live Implementation column, or because "In Progress" was mistaken for "not blocking" — is exactly what this guardrail exists to prevent.
+- **A feature with any hard dependency on a prerequisite that isn't `✅ Implemented` must never be recommended — not as the top pick, not as a runner-up.** Step 3's blocked set exists specifically to enforce this; a feature belongs in the blocked set (and out of scoring/step 4 entirely) whenever its prerequisite is `⬜ Pending` or `🔶 In Progress`, full stop, regardless of how attractive its priority/effort/order-list score would otherwise be. Recommending a feature whose backlog-declared dependency hasn't shipped — because a stale annotation was trusted over the live Implementation column, or because "In Progress" was mistaken for "not blocking" — has happened before and is exactly what this guardrail exists to prevent.
 - **Never substitute an autonomous-operation instruction (Auto Mode or similar) for step 6's user confirmation.** No matter how unambiguous the top-scored recommendation looks (e.g. a lone P0/P1 among otherwise P2/P3 candidates), this skill must still ask and wait for an actual answer before returning a `CHANGE_NAME:` line. The scoring in steps 3–4 exists to produce a good *recommendation*, not to make the confirmation optional.
+- **Never run `git commit`, `git push` or open a PR.**

@@ -2,27 +2,28 @@
 name: decision-record
 description: >-
   Records a lightweight Architecture Decision Record (ADR) in
-  JPPhotoManagerWeb/docs/decisions/ whenever a real architectural or technical
+  the project's decisions folder whenever a real architectural or technical
   decision is made — a pattern chosen over an alternative, a library rejected,
-  a constraint discovered the hard way (e.g. "Cypress component mounting stays
-  on `cypress/angular`, not `cypress/angular-zoneless`, even after the app
-  migrated to zoneless change detection"). Gives each decision its own
+  a constraint discovered the hard way (e.g. "Library X rejected — its licence
+  changed to a paid one"). Gives each decision its own
   durable, numbered, append-only record instead of a footnote buried in
   CLAUDE.md or docs/*.md. TRIGGER when asked to record/log a decision, write
   an ADR, or capture "why did we do X" context. Also TRIGGER proactively,
   right after making or reversing a non-obvious architectural choice during a
   feature or fix — before the reasoning is lost. Does not replace docs/*.md
-  reference material (see "Relationship to web-docs-sync").
+  reference material (see "Relationship to reference docs").
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "0.1"
 ---
 
 Record a short, numbered Architecture Decision Record (ADR) under
-`JPPhotoManagerWeb/docs/decisions/`, capturing a real decision, the
+`<decisions>/`, capturing a real decision, the
 alternatives it rejected, and its consequences — not a description of
 what the code does.
+
+`<decisions>` is `docs/decisions`: the `decisions` folder next to the backlog folder (so `JPPhotoManagerWeb/docs/decisions` when `.backlog-kit.toml` sets `[paths] backlog_dir = "JPPhotoManagerWeb/docs/backlog"`).
 
 **Input**: A description of the decision (what was decided, and ideally
 what alternative(s) were considered and why they lost). As much or as
@@ -42,7 +43,7 @@ yes — record it. If it's just "how Y was implemented" with no real fork in
 the road (no alternative seriously considered, no non-obvious constraint
 that forced the outcome), it belongs in a code comment or the relevant
 `docs/*.md` file, not an ADR — say so and skip rather than padding
-`JPPhotoManagerWeb/docs/decisions/` with routine choices.
+`<decisions>/` with routine choices.
 
 If the user's request doesn't make clear what was rejected or why, ask one
 clarifying question before drafting rather than inventing a plausible-
@@ -50,20 +51,20 @@ sounding alternative.
 
 ### 2. Read the existing records and determine the next number
 
-Read every file in `JPPhotoManagerWeb/docs/decisions/` (and its
+Read every file in `<decisions>/` (and its
 `README.md` index, if present). **If the directory or index doesn't exist
 yet**, this is the first record — create
-`JPPhotoManagerWeb/docs/decisions/README.md` with this skeleton before
+`<decisions>/README.md` with this skeleton before
 continuing:
 
 ```markdown
 # Architecture Decision Records
 
 Numbered, append-only records of non-obvious technical decisions for
-JPPhotoManagerWeb — what was decided, what alternatives were rejected and
+this project — what was decided, what alternatives were rejected and
 why, and what it costs going forward. This is a decision *history*, not
-current-state reference material (that's `docs/architecture.md`,
-`docs/backend.md`, etc.); a decision recorded here stays as-written even
+current-state reference material (that's the reference docs under
+`docs/`); a decision recorded here stays as-written even
 after a later record supersedes it.
 
 ## Index
@@ -80,9 +81,9 @@ reused, even for a decision later superseded or reversed.
 
 ### 3. Derive a short kebab-case title slug
 
-Short, descriptive, no filler words — e.g. `keep-zone-based-cypress-mount`,
-`kafka-per-instance-consumer-groups`. This becomes
-`JPPhotoManagerWeb/docs/decisions/NNNN-title-slug.md`.
+Short, descriptive, no filler words — e.g. `reject-library-x-licensing`,
+`no-environment-split`. This becomes
+`<decisions>/NNNN-title-slug.md`.
 
 ### 4. Draft the record
 
@@ -128,9 +129,9 @@ confirms.
 
 ### 6. Write the record and update the index
 
-1. Write `JPPhotoManagerWeb/docs/decisions/NNNN-title-slug.md`.
+1. Write `<decisions>/NNNN-title-slug.md`.
 2. Append a row to the `## Index` table in
-   `JPPhotoManagerWeb/docs/decisions/README.md`:
+   `<decisions>/README.md`:
    `| NNNN | <Title> | Accepted | <YYYY-MM-DD> |`.
 
 ### 7. If this decision supersedes an earlier one
@@ -148,7 +149,7 @@ the index table's `Status` column to match.
 ```
 ## Decision Recorded
 
-**#NNNN** `JPPhotoManagerWeb/docs/decisions/NNNN-title-slug.md` — <Title>
+**#NNNN** `<decisions>/NNNN-title-slug.md` — <Title>
 [If superseding:] Marked **#MMMM** as superseded by this record.
 
 If this decision changes what CLAUDE.md/docs/*.md should currently say
@@ -160,15 +161,14 @@ about the topic, sync those files separately — this skill only records
 
 ## Relationship to reference docs
 
-`JPPhotoManagerWeb/docs/decisions/` is out of scope for the reference docs
-under `JPPhotoManagerWeb/docs/*.md` — it's append-only decision history,
+`<decisions>/` is out of scope for the reference docs
+under `docs/*.md` — it's append-only decision history,
 not current-state reference material those files are kept synced against
 the code. The two complement each other but never overlap:
 
 - **This skill** captures *why* a decision was made, once, at the time it
   was made. It never edits `CLAUDE.md`/`docs/*.md`.
-- **The reference docs** (`docs/architecture.md`, `docs/backend.md`,
-  `docs/frontend.md`, etc.) keep the *current-state* narrative accurate
+- **The reference docs** (for example `docs/architecture.md`) keep the *current-state* narrative accurate
   against the code as it exists today. If recording a new decision means
   that narrative needs updating, this skill says so in step 8's
   confirmation but doesn't do it — update those files separately.
@@ -189,7 +189,8 @@ the code. The two complement each other but never overlap:
 - **Never write anything before the user confirms the draft in step 5.**
 - **Never assign a record number that already exists** — numbers are a
   single global sequence, scanned fresh from
-  `JPPhotoManagerWeb/docs/decisions/` each run, never reused even for a
+  `<decisions>/` each run, never reused even for a
   later-superseded decision.
 - Preserve the exact Markdown table formatting of the `## Index` table when
   appending a row.
+- **Never run `git commit`, `git push` or open a PR.**

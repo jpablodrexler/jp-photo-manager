@@ -71,7 +71,7 @@ It checks that `k8s/secret.yaml` and `k8s/catalog-volumes.yaml` exist (failing l
    ```bash
    cp k8s/secret.yaml.example k8s/secret.yaml
    ```
-   Edit `k8s/secret.yaml` and replace every `change-me` placeholder — generate `JWT_SECRET` and `GRAFANA_ADMIN_PASSWORD` the same way as in [Generating JWT_SECRET](authentication.md#generating-jwt_secret).
+   Edit `k8s/secret.yaml` and replace every `change-me` placeholder — generate `JWT_SECRET` and `GRAFANA_ADMIN_PASSWORD` the same way as in [Generating JWT_SECRET](security.md#generating-jwt_secret).
 
 2. **Point the catalog volumes at your photos** — from the template (mirrors step 1, and `.env.example`'s `HOST_IMAGE_DIR`/`HOST_IMAGE_DIR_2`):
    ```bash
@@ -240,5 +240,13 @@ kubectl get svc -n ingress-nginx ingress-nginx-controller   # EXTERNAL-IP should
 kubectl get ingress -n photomanager                          # ADDRESS should be populated
 ```
 If `ingress-nginx-controller` isn't installed at all, or you're relying on `kubectl port-forward` and the terminal it was running in was closed, that tunnel is gone — port-forwards don't survive past the life of the `kubectl` process that started them.
+
+## Deploy manifest parity
+
+`k8s/configmap.yaml` says in its header that it mirrors the plain environment variables of `docker-compose.yml`'s `backend` service. Nothing enforces it, so `docs-sync` checks it whenever `docker-compose.yml`, `k8s/*.yaml`, `.env.example` or an environment variable changes, and on every full sweep: every non-secret variable of the `backend` service has a matching key in `k8s/configmap.yaml` (or a deliberate, in-cluster-appropriate value, as for `KAFKA_BOOTSTRAP`), and every `configmap.yaml` key traces back to a Compose variable or to an explicit Kubernetes-only reason.
+
+Secrets are out of scope: never read `k8s/secret.yaml` or `k8s/catalog-volumes.yaml` (see `CLAUDE.md`); that a secret *key* exists in both `.env.example` and `k8s/secret.yaml.example` can be checked, their values cannot.
+
+A variable added to one manifest and missing from the other is a live bug, not just a doc gap: the Kubernetes deployment silently runs with a stale or default value. The fix is a key in whichever manifest lacks it, in that file's style — a config edit, so call it out apart from prose fixes.
 
 [← Back to README](../README.md)

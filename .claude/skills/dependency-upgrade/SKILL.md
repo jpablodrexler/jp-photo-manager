@@ -1,127 +1,88 @@
 ---
 name: dependency-upgrade
 description: >
-  Routine dependency-upgrade workflow for the JPPhotoManager web application
-  (Maven backend + npm frontend). TRIGGER when asked to upgrade dependencies,
-  bump package versions, check for outdated packages, or do routine
-  dependency maintenance. This is distinct from `security-reviewer` §1,
-  which reactively flags dependencies with a known CVE while reviewing
+  Routine dependency-upgrade workflow. TRIGGER when asked to upgrade
+  dependencies, bump package versions, check for outdated packages, or do
+  routine dependency maintenance. This is distinct from `security-reviewer`
+  §1, which reactively flags a dependency with a known CVE while reviewing
   code — this skill proactively drives the update-and-regression-test cycle
   itself, on a cadence, whether or not anything is currently flagged as
-  vulnerable.
+  vulnerable. The package managers, survey commands, special packages and
+  per-group test commands come from the `Dependency upgrade
+  checks` section of the project's docs.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
-  scope: [JPPhotoManagerWeb]
+  version: "0.1"
 ---
 
 # Dependency Upgrade Skill
 
-Bump outdated Maven and npm dependencies, verify nothing broke, and leave a
-clear record of what changed, what was skipped, and why — without silently
-walking into a major-version breaking change.
+Bump outdated dependencies in every manifest the project has, verify nothing
+broke, and leave a clear record of what changed, what was skipped, and why —
+without silently walking into a major-version breaking change.
+
+`<reports>` below is `docs/reports` unless `.backlog-kit.toml` sets
+`[paths] backlog_dir`, in which case it is the `reports` folder inside that
+directory's parent folder. The reference docs named below (`docs/architecture.md`, `docs/frontend.md`, …) sit in that same `docs` folder: the folder that holds the backlog folder (`app/docs` when `backlog_dir` is `app/docs/backlog`).
+
+**Never run `git commit`, `git push` or open a PR.**
 
 ## Workflow
 
-1. **Scope.** Backend only, frontend only, or both — ask if not specified.
+1. **Scope.** Which part of the project (each package manifest or module the
+   project has) — ask if not specified.
 2. **Branch.** If not already on a dedicated branch, use the `gitflow` skill
    ("start feature") to cut one — name it something like
    `dependency-upgrade-{YYYY-MM-DD}` unless the user gives a different name.
-   Don't run this workflow directly on `develop`.
-3. **Survey.** Run the discovery commands in §1/§2 below and build a list of
+3. **Project checks.** Read the `Dependency upgrade checks` section of the
+   project's `docs/frontend.md` and/or `docs/backend.md` (the kit convention:
+   each of those docs holds the conventions of its side). If the docs have no
+   such section, work from the frame above plus what the project's CLAUDE.md
+   and docs say, and tell the user that no project checks were found.
+4. **Survey.** Run the discovery commands in §1/§2 below and build a list of
    outdated dependencies, each classified **patch**, **minor**, or **major**
    (semver terms — a major bump is any change to the leftmost non-zero
    version component).
-4. **Decide scope of the bump** (§3): patch and minor bumps apply by
+5. **Decide scope of the bump** (§3): patch and minor bumps apply by
    default; major bumps are listed but not applied without the user opting
    in per-package, since they can be breaking.
-5. **Apply in groups, testing after each group** (§4) — not all dependencies
+6. **Apply in groups, testing after each group** (§4) — not all dependencies
    in one shot. If a group's test run fails, bisect within that group rather
    than reverting everything.
-6. **Cross-check against `security-reviewer` §1** (§5) — confirm the bump
+7. **Cross-check against `security-reviewer` §1** (§5) — confirm the bump
    actually resolved any CVE it was meant to address, and re-run the
    vulnerability scan to catch anything the survey step missed.
-7. **Report** (§6): what was bumped, what was left for the user to decide
+8. **Report** (§6): what was bumped, what was left for the user to decide
    (majors), and what broke and how it was resolved.
-8. **Never commit.** Leave everything staged/unstaged in the working tree
+9. **Never commit.** Leave everything staged/unstaged in the working tree
    for the user to review — same convention as the review skills' Fix
-   Workflows. This applies regardless of the branch created in step 2; the
-   branch is where the work happens, not authorization to commit it.
+   Workflows.
 
 ---
 
-## 1. Backend Survey (Maven)
+## 1. First Survey
 
-```bash
-cd JPPhotoManagerWeb/backend
-mvn versions:display-dependency-updates
-mvn versions:display-plugin-updates
-mvn dependency:analyze   # or: bash scripts/dead-code-report.sh for a dated snapshot under docs/reports/dead-code/
-```
+Project-specific: the project's checks give the discovery commands for this
+part of the project (outdated listing, vulnerability scan, unused-dependency
+report) and any flags to raise on a stale tool or dependency.
 
-The `dependency:analyze` run is a useful pre-check, not a strict
-prerequisite: a dependency the survey lists as outdated but
-`dependency:analyze` also reports as genuinely unused is a candidate for
-removal instead of upgrade — no point spending a bump on a package nothing
-references anymore. Ignore every `spring-boot-starter-*` entry under
-"Unused declared dependencies" though — that's expected noise from
-bytecode-based analysis missing umbrella POMs with no classes of their
-own, not a real finding (see `code-reviewer` skill §21.2).
-
-Most library versions in this project are inherited from the
-`spring-boot-starter-parent` BOM (see `java-developer` §1) rather than
-pinned individually — check the parent POM version itself
-(`spring-boot-starter-parent`) as the primary lever; a Spring Boot patch/minor
-bump usually moves every managed dependency's version together in a tested,
-compatible set. Only bump an individual `<dependency>` version directly when
-it's declared outside the BOM (not managed by `spring-boot-starter-parent`).
-
-🟡 Flag any dependency currently overridden to an older version via
-`<dependencyManagement>` that the survey shows is now behind — verify
-whether the override reason (check the POM for a comment) still applies
-before removing it.
+A dependency the outdated listing shows but the unused-dependency report
+also flags as genuinely unused (and that is not one of the documented
+exceptions resolved by name rather than import) is a candidate for removal
+instead of upgrade — no point spending a bump on a package nothing
+references anymore. A dated snapshot of that report, if the project
+produces one, lives under `<reports>/dead-code/`.
 
 ---
 
-## 2. Frontend Survey (npm)
+## 2. Second Survey and Special Packages
 
-```bash
-cd JPPhotoManagerWeb/frontend
-npm outdated
-npm audit --audit-level=high
-npm run dead-code:report   # knip — see docs/reports/dead-code/ for the dated snapshot
-```
-
-Same pre-check reasoning as the backend survey above: a dependency
-`npm outdated` lists but `dead-code:report` reports as genuinely unused
-(and not one of `knip.jsonc`'s documented, name-resolved exceptions like
-`@angular-devkit/build-angular`/`babel-plugin-istanbul`) is a candidate
-for removal instead of upgrade.
-
-**Angular packages are a special case.** Don't bump `@angular/*` packages
-with a raw `npm install <pkg>@latest` — Angular major versions ship
-migration schematics that codemod breaking changes (standalone-components
-migration, control-flow syntax, etc.). Use the Angular CLI's own updater
-instead, which also validates that the whole `@angular/*` family stays on
-matching versions:
-
-```bash
-npx ng update                     # lists available updates, including peer-dependency-safe ordering
-npx ng update @angular/core @angular/cli   # apply one major step at a time
-```
-
-Angular's own guidance is to upgrade one major version at a time (not skip
-versions) — if `npm outdated` shows Angular is more than one major behind,
-plan multiple sequential `ng update` passes, each with its own test run
-(§4), rather than jumping straight to latest.
-
-**`cypress`** is also a plain npm devDependency (not wired through `ng
-update`) — bump it independently and re-run `npm run test` (component
-suite) and `npm run test:e2e` (E2E suite) to confirm both still work; a
-Cypress major can change config/CLI flags, and its Angular Component
-Testing preset (`@angular-devkit/build-angular`, kept only for that
-preset — see `angular-developer` §16) may need a matching bump too.
+Project-specific: the project's checks cover any further manifest to survey and
+the packages that must not be bumped with a plain install (framework
+updaters that codemod breaking changes and keep a package family on matching
+versions, client libraries every service is built directly on top of, test
+tooling with its own upgrade path).
 
 ---
 
@@ -133,64 +94,43 @@ preset — see `angular-developer` §16) may need a matching bump too.
 | Minor (`x.Y.z`) | Apply automatically |
 | Major (`X.y.z`) | List for the user; apply only the ones they explicitly approve |
 
-🔴 Never apply a major-version bump to `spring-boot-starter-parent`,
-`@angular/core`, or any other framework-defining dependency without explicit
-user approval for that specific package — these routinely carry breaking
-changes this project's tests may not fully cover (e.g. a removed
-auto-configuration, a changed default).
+🔴 Never apply a major-version bump to a framework-defining dependency, or
+to any package the project's checks name, without explicit user approval for
+that specific package — these routinely carry breaking changes the
+project's tests may not fully cover.
 
 🟢 A patch/minor bump to a leaf dependency with no direct API usage in this
-codebase (a transitive-only dependency bumped for a CVE fix) is lower risk
-than a direct, heavily-used dependency (Spring Data JPA, MapStruct, Angular
-Material) — note this distinction in the report (§6) but the automatic/
-manual split above still applies uniformly by bump type, not by usage
-weight.
+codebase is lower risk than a direct, heavily-used one — note this
+distinction in the report (§6) but the automatic/manual split above still
+applies uniformly by bump type, not by usage weight.
 
 ---
 
 ## 4. Apply & Test, In Groups
 
-Don't bump every dependency and run the suite once at the end — if it fails,
-you won't know which bump caused it. Group by blast radius instead:
+Don't bump every dependency and run the suite once at the end — if it
+fails, you won't know which bump caused it. Group by blast radius instead.
 
-1. **Group 1 — backend patch/minor**, applied via the parent POM bump plus
-   any individually-managed dependencies from §1. Then:
-   ```bash
-   cd JPPhotoManagerWeb/backend && mvn clean test
-   ```
-2. **Group 2 — frontend patch/minor** (`npm update`, or `ng update` for any
-   `@angular/*` minor). Then:
-   ```bash
-   cd JPPhotoManagerWeb/frontend && npm test && npm run lint && npm run build:prod
-   ```
-3. **Group 3+ — each approved major bump, one at a time**, its own test run
-   immediately after. For a Spring Boot major/minor jump, also skim the
-   official release notes' "breaking changes"/migration guide section before
-   applying — don't rely on the test suite alone to catch a removed
-   auto-configuration the tests don't happen to exercise.
+Project-specific: the project's checks list the groups in order, the command
+that verifies each one, and what to read before applying a major bump of
+each framework-defining dependency. Each approved major bump is its own
+group, applied one at a time with its own test run immediately after.
 
 If a group's test run fails, narrow it down within that group (revert half,
-retest) rather than reverting the whole session's work — the goal is to land
-as much of the safe upgrade as possible, not to give up on the first
-failure.
+retest) rather than reverting the whole session's work.
 
 ---
 
 ## 5. Cross-Check Against Security Findings
 
 After applying bumps, re-run the vulnerability scan from
-`security-reviewer` §1:
-
-```bash
-cd JPPhotoManagerWeb/backend && mvn org.owasp:dependency-check-maven:check
-cd JPPhotoManagerWeb/frontend && npm audit --audit-level=high
-```
+`security-reviewer` §1 (the project's checks give the commands).
 
 If a CVE that motivated this upgrade session is still present, the fix
 either isn't in the version reached yet (may need a further major bump the
 user hasn't approved) or the vulnerable dependency is transitive and needs
-an explicit `<dependencyManagement>`/npm `overrides` entry — don't report
-the upgrade as complete until this is confirmed one way or the other.
+an explicit override entry — don't report the upgrade as complete until this
+is confirmed one way or the other.
 
 ---
 
@@ -199,10 +139,9 @@ the upgrade as complete until this is confirmed one way or the other.
 Summarize:
 
 - **Applied** — each bumped dependency, old → new version, grouped by §4's
-  groups.
+  groups, and which manifest it lives in.
 - **Skipped (major, needs approval)** — every major-version bump found in
-  the survey that wasn't applied, so the user has the full picture even for
-  what they didn't ask for yet.
+  the survey that wasn't applied.
 - **Broke & fixed** — anything a test run caught, and what was changed to
   resolve it (a test expectation update, a config change, or a revert of
   that one specific bump if it couldn't be resolved in-session).

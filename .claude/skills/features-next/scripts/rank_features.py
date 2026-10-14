@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Score and rank pending features from JPPhotoManagerWeb/docs/backlog/features-planned.md per
+Score and rank pending features from <backlog>/features-planned.md per
 features-next/SKILL.md's steps 2-4: resolve hard-dependency blocking from
 each candidate's live Implementation-column status (never from a
 dependency note's own possibly-stale parenthetical), then apply the fixed
@@ -15,9 +15,17 @@ Usage:
     python3 rank_features.py <repo-root> [--select <number-or-name>] [--json]
 """
 import re
+import sys
 import json
 import argparse
 from pathlib import Path
+
+_here = Path(__file__).resolve()
+for _cand in (_here.parent, _here.parents[3] / "lib"):
+    if (_cand / "backlog_kit.py").is_file():
+        sys.path.insert(0, str(_cand))
+        break
+import backlog_kit as bk
 
 
 def split_row(line):
@@ -110,13 +118,13 @@ def parse_hard_dependencies(lines):
     return deps
 
 
-def brief_file_path(row):
-    """Repo-relative path of the feature's full brief: JPPhotoManagerWeb/docs/backlog/features/NNN-<name>.md."""
+def brief_file_path(row, backlog):
+    """Repo-relative path of the feature's full brief: <backlog>/features/NNN-<name>.md."""
     n = row.get("#", "").strip()
     name = strip_backticks(row.get("Change name", ""))
     if not n.isdigit() or not name:
         return ""
-    return f"JPPhotoManagerWeb/docs/backlog/features/{int(n):03d}-{name}.md"
+    return f"{backlog}/features/{int(n):03d}-{name}.md"
 
 
 def main():
@@ -127,8 +135,9 @@ def main():
     args = ap.parse_args()
 
     root = Path(args.repo_root)
-    planned_path = root / "JPPhotoManagerWeb" / "docs" / "backlog" / "features-planned.md"
-    implemented_path = root / "JPPhotoManagerWeb" / "docs" / "backlog" / "features-implemented.md"
+    backlog = bk.load_config(root)["paths"]["backlog_dir"].strip("/")
+    planned_path = root / backlog / "features-planned.md"
+    implemented_path = root / backlog / "features-implemented.md"
 
     if not planned_path.exists():
         print(json.dumps({"error": "features-planned.md not found"}))
@@ -175,7 +184,7 @@ def main():
                 "artifacts_ready": "Created" in r.get("SDD Artifacts", ""),
                 "in_progress": "In Progress" in impl,
                 "brief": r.get("Summary", "").strip(),
-                "brief_file": brief_file_path(r),
+                "brief_file": brief_file_path(r, backlog),
             })
 
     if not candidates:
@@ -191,12 +200,16 @@ def main():
     deps = parse_hard_dependencies(planned_lines)
     blocked = set()
     blocked_reason = {}
+    all_numbers = {r.get("#", "").strip() for r in all_rows}
+    unknown_prereqs = []  # a prerequisite found in neither file: probably a mistyped or deleted number
     for a, b in deps:
         if a not in candidates_by_number:
             continue
         if b in pending_numbers:
             blocked.add(a)
             blocked_reason[a] = b
+        elif b not in implemented_numbers and b not in all_numbers:
+            unknown_prereqs.append(f"Feature {a} → Feature {b}")
         # else: b is implemented (or absent from the pending table) -> resolved, not blocking
 
     order_positions = parse_order_list(planned_lines)
@@ -277,8 +290,12 @@ def main():
         warnings.append(f"Duplicate feature number(s) in features-planned.md: {', '.join(sorted(duplicate_numbers))} — run features-status for the full integrity report.")
     if missing_briefs:
         warnings.append(f"Brief file(s) missing: {', '.join(missing_briefs)} — run features-status for the full integrity report.")
+    if unknown_prereqs:
+        warnings.append("Prerequisite(s) found in neither features-planned.md nor features-implemented.md, treated as shipped: "
+                        + ", ".join(unknown_prereqs) + " — check the number in the Hard implementation dependencies.")
     if warnings:
         result["warning"] = " ".join(warnings)
+    result["has_sdd"] = "SDD Artifacts" in header
 
     if args.json:
         print(json.dumps(result, indent=2))
@@ -330,8 +347,9 @@ def render_ranked(result):
     for b in reason_bullets(top):
         lines.append(f"- {b}")
     lines.append("")
-    lines.append(f"**SDD Artifacts:** {'✅ Created' if top['artifacts_ready'] else '⬜ Not yet created'}")
-    lines.append("")
+    if result.get("has_sdd"):
+        lines.append(f"**SDD Artifacts:** {'✅ Created' if top['artifacts_ready'] else '⬜ Not yet created'}")
+        lines.append("")
 
     if result["runners_up"]:
         lines.append("### Runners-up")

@@ -3,19 +3,20 @@ name: bug-fix
 description: >-
   Runs the full lifecycle of fixing one bug from the backlog: picks the bug,
   creates a fix/ branch, reproduces it with a failing regression test FIRST,
-  implements the fix, runs code/database/security reviews (database and
-  security conditional) and fixes their findings, runs backend and frontend
-  tests, runs e2e-testing's browser checks when the fix touches auth/the
-  gallery/a migration, runs a local build, syncs docs if behaviour changed,
-  then closes the bug via bugs-archive. No git commits — hands off for review
-  and PR. TRIGGER when asked to fix a bug, work through the bug backlog one at
-  a time, or address a specific BUG-NNN — including a bug only just described
-  (file it with bug-report first, then run this skill). "Plan and fix a bug"
-  also triggers it. Bug-family counterpart to feature-development.
+  implements the fix, runs the code review and fixes its findings, then runs
+  the phases that apply to the project — database and security reviews and a
+  viewport check when the fix touches schema, sensitive code or templates,
+  tests, an end-to-end check when a user-facing flow changed, a local build —
+  skipping any that do not apply, syncs docs if behaviour changed, then closes
+  the bug via bugs-archive. No git commits — hands off for review and PR.
+  TRIGGER when asked to fix a bug, work through the bug backlog one at a time,
+  or address a specific BUG-NNN — including a bug only just described (file it
+  with bug-report first, then run this skill). "Plan and fix a bug" also
+  triggers it. Bug-family counterpart to feature-development.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "0.1"
 ---
 
 Orchestrate one bug fix from selection to close, using dedicated subagents
@@ -34,24 +35,32 @@ to confirmation. `--skip-branch-setup` is for orchestrators — the
 run multiple fixes on it without committing between them; omit it for
 normal single-bug use.
 
+`<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`; `<reports>` is the `reports` folder next to the backlog's parent (`docs/reports` by default).
+
+**Never run `git commit`, `git push` or open a PR.**
+
 ---
 
 ## Overview
 
-Seven phases: Phase 0 runs in the orchestrator's own context (never a
-subagent — the confirmation must reliably reach the user); Phases 1–6 each
-run as a `run_in_background: false` subagent, each gated on the prior
-phase's signal.
+Phase 0 runs in the orchestrator's own
+context (never a subagent — the confirmation must reliably reach the
+user); Phases 1–6 each run as a dedicated `run_in_background: false`
+subagent, each gated on the prior phase's signal. **Phases 3, 4 and 5 are
+optional**, and so are the database review, the security review and the
+viewport check inside Phase 2: each one checks whether it applies to the
+project and to this fix, and when it does not it is skipped with a one-line
+reason that appears in the Final Summary.
 
 | Phase | Skills / actions |
 | ----- | ---------------- |
 | 0 — Select & Confirm *(orchestrator's own context)* | `bugs-next` (recommend + mandatory `AskUserQuestion`) |
-| 1 — Branch & Reproduce | `git fetch --prune` → `gitflow` (start/resume/sync `fix/<slug>` from `develop`) → mark bug `🔶 In Progress` → write a **failing** regression test that reproduces the bug |
-| 2 — Fix & Review | implement the fix until the regression test passes → `code-reviewer` + `database-reviewer` (conditional) + `security-reviewer` (conditional), findings fixed |
-| 3 — Tests | `cd JPPhotoManagerWeb/backend && mvn test` and `cd JPPhotoManagerWeb/frontend && npm test` in parallel until both pass, unconditionally |
-| 4 — E2E verification *(conditional)* | `e2e-testing` browser checks when the fix touches auth / the gallery / a Flyway migration |
-| 5 — Build verification | `cd JPPhotoManagerWeb/backend && mvn -q -DskipTests package` and `cd JPPhotoManagerWeb/frontend && npm run build` |
-| 6 — Close | `web-docs-sync` (scoped, best-effort, only if behaviour changed) → `bugs-archive <BUG-ID> fixed "<resolution>"` |
+| 1 — Branch & Reproduce | `git fetch --prune` → `gitflow` (start/resume/sync `fix/<slug>`) → mark bug `🔶 In Progress` → write a **failing** regression test that reproduces the bug |
+| 2 — Fix & Review | implement the fix until the regression test passes → code review; then, only when the fix touches them, a database review, a security review and a mobile/desktop viewport check; findings fixed |
+| 3 — Tests *(optional)* | the project's tests (and its fast smoke tier, if CI runs one) until they pass; skipped if the project has no automated tests |
+| 4 — E2E verification *(optional, conditional)* | the project's end-to-end/browser checks when the fix touches a user-facing flow — test account decided by the orchestrator first; skipped otherwise |
+| 5 — Build verification *(optional)* | the project's build, locally; skipped if there is no build step |
+| 6 — Close | docs sync (scoped, best-effort, only if behaviour changed) → `bugs-archive <BUG-ID> fixed "<resolution>"` |
 
 ---
 
@@ -71,18 +80,14 @@ surface `AskUserQuestion`.
    the user. Never proceed to Phase 1 without a confirmed Bug ID.
 3. Otherwise capture the confirmed Bug ID from the `BUG_ID:` line. This is
    `<bug-id>` in every phase below. Read that bug's row from
-   `JPPhotoManagerWeb/docs/backlog/bugs-open.md` (Severity / Area /
-   Environment / Summary) and its details file
-   `JPPhotoManagerWeb/docs/backlog/bugs/<bug-id>.md` (the H1 plus the
-   Steps / Expected / Actual / Environment / Notes bullets) now, in the
-   orchestrator context, so the repro steps / expected / actual can be
-   pasted verbatim into Subagent 1's prompt (a subagent shouldn't have to
-   re-hunt for them). If the details file is missing (a bug tracked ad
-   hoc, or a broken backlog), fall back to the row's Summary and say so
-   to the user.
+   `<backlog>/bugs-open.md` and its details (steps to reproduce /
+   expected / actual / environment / notes) from
+   `<backlog>/bugs/<bug-id>.md` now, in the orchestrator context, so
+   the repro steps / expected / actual can be pasted verbatim into
+   Subagent 1's prompt (a subagent shouldn't have to re-hunt for them).
 
 **Derive `<slug>`** for the branch: `<bug-id lowercased>-<2–4 kebab words
-from the bug title>`, e.g. `bug-004-gallery-thumbnail-404`. The branch
+from the bug title>`, e.g. `bug-004-expense-chart-dark-mode`. The branch
 will be `fix/<slug>`.
 
 ---
@@ -94,6 +99,10 @@ Before spawning any subagent, replace every `<bug-id>`, `<slug>`, and
 0) in its prompt with the actual values. From Phase 2 onward, also
 substitute `<repro-test-path>` with the path captured from Phase 1's
 `REPRO: DONE — test: <path>` line.
+
+Also append, unchanged, to every one of those subagent prompts:
+
+> **Hand-back.** Your hand-back is the final text of your response, ending with exactly the signal line(s) this prompt asks for. Do not send it as a message through a messaging or hand-back tool, and never send placeholder text: the orchestrator reads only your final response, and a response without its signal is treated as blocked.
 
 ---
 
@@ -117,9 +126,9 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 > or sync any branch — the caller owns branch state. Then go to Step 1.5.
 >
 > **Normal mode (no flag):** check resume status *before* checking for
-> uncommitted changes (a resumed run is typically already on `fix/<slug>`
-> with the in-progress fix sitting there uncommitted — that's expected,
-> not a blocker).
+> uncommitted changes (a resumed run is typically already on
+> `fix/<slug>` with the in-progress fix sitting there uncommitted — that's
+> expected, not a blocker).
 >
 > 0. `git fetch origin --prune`.
 > 1. `git branch --show-current`.
@@ -142,36 +151,31 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 >      `gitflow` with "sync fix `<slug>`" to bring it up to date with
 >      `develop`. On an unresolvable conflict, end with `FIX_BLOCKED — fix
 >      branch sync conflict with develop` and stop.
->    - Fails → invoke `gitflow` with "start fix `<slug>`" (branches from
->      `develop`). If it reports a blocker, end with `FIX_BLOCKED — <the
->      gitflow blocker>` and stop.
+>    - Fails locally but `git rev-parse --verify --quiet origin/fix/<slug>`
+>      succeeds → another device pushed it first: `git checkout -b
+>      fix/<slug> origin/fix/<slug>`, then `gitflow` "sync fix `<slug>`",
+>      same conflict handling.
+>    - Fails both → invoke `gitflow` with "start fix `<slug>`". If it
+>      reports a blocker, end with `FIX_BLOCKED — <the gitflow blocker>`
+>      and stop.
 > 4. `git branch --show-current` must now print exactly `fix/<slug>`. If
 >    not, end with `FIX_BLOCKED — could not switch to fix branch` and stop.
 >
 > **Step 1.5 — Mark the bug In Progress**
-> Open `JPPhotoManagerWeb/docs/backlog/bugs-open.md`, find the `<bug-id>`
-> row, and if its **Status** is `⬜ Open` change it to `🔶 In Progress` and
-> save. Leave it unchanged if it's already `🔶 In Progress`. If there's no
-> matching row (bug tracked ad hoc), skip silently — not an error.
+> Open `<backlog>/bugs-open.md`, find the `<bug-id>` row, and if its
+> **Status** is `⬜ Open` change it to `🔶 In Progress` and save. Leave it
+> unchanged if it's already `🔶 In Progress`. If there's no matching row
+> (bug tracked ad hoc), skip silently — not an error.
 >
 > **Step 2 — Reproduce the bug with a FAILING regression test**
 > Write the smallest test that fails *because of this bug* and will pass
-> once it's fixed. Pick the layer the bug actually lives at:
-> - a backend logic / controller / service bug → a JUnit (or
->   `@SpringBootTest` / `@WebMvcTest`) test under
->   `JPPhotoManagerWeb/backend/src/test/` (see `java-unit-test-developer`);
-> - a JPA query / entity / schema bug → a `@DataJpaTest` or a repository
->   test, or a migration test against a Flyway-migrated schema (see
->   `database-reviewer` for the migration conventions);
-> - a UI / component bug → a Cypress component test or assertion,
->   extending the relevant existing `*.cy.ts` spec (preferred over a new
->   file — see `cypress-unit-test-developer`);
-> - a bug only visible through a full page flow → a Cypress e2e spec (see
->   `e2e-suite`).
+> once it's fixed. Pick the layer the bug actually lives at, following the
+> project's test conventions (see its CLAUDE.md and existing tests), and
+> prefer extending an existing test file over creating a new one.
 >
 > Run just that test and confirm it **fails**, and that the failure is the
 > bug described in `<repro-details>` — not an unrelated error, a typo in
-> the test, or a missing fixture. Quote the failing assertion in your
+> the test, or a missing stub. Quote the failing assertion in your
 > hand-back.
 >
 > **If you cannot make it fail** — the behaviour looks correct, or the
@@ -208,14 +212,11 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 > <repro-details>
 >
 > **Step 1 — Implement the fix**
-> Fix the root cause in the source under `JPPhotoManagerWeb/backend/` or
-> `JPPhotoManagerWeb/frontend/` (or a **new** Flyway migration under
-> `JPPhotoManagerWeb/backend/src/main/resources/db/migration/` for a
-> schema bug — never edit an already-applied migration file; see
-> `database-reviewer` §5). Prefer the narrowest change that addresses the
-> cause, not the symptom. Then run the regression test at
-> `<repro-test-path>` and confirm it now **passes**. If you hit a blocker
-> needing user input, end with `FIX_BLOCKED — <reason>` and stop.
+> Fix the root cause in the source. Prefer the
+> narrowest change that addresses the cause, not the symptom. Then run the
+> regression test at `<repro-test-path>` and confirm it now **passes**. If
+> you hit a blocker needing user input, end with `FIX_BLOCKED — <reason>`
+> and stop.
 >
 > Never materialize a generated secret's raw value anywhere in a response,
 > report, or file (same rule as `feature-development` Phase 2) — leave any
@@ -230,12 +231,15 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 > is committed, so it shows zero).
 >
 > **Step 2 — Code review**
-> (recompute `CHANGED_FILES`) Invoke `code-reviewer` via the Skill tool
+> (recompute `CHANGED_FILES`) If the `code-reviewer` skill is not installed,
+> review the diff of `CHANGED_FILES` yourself as a reviewer who did not write
+> it (correctness, regressions, missing or weak tests, unintended changes) and
+> fix every real finding, up to 3 rounds, then go to Step 3. If it is
+> installed, invoke `code-reviewer` via the Skill tool
 > using its **Review** workflow, passing `CHANGED_FILES` as the explicit
 > scope — a scoped review of one change, not a full-codebase sweep, and
 > not the interactive Fix Workflow. It writes one dated
-> `JPPhotoManagerWeb/docs/reports/code-review/CODE_REVIEW_FINDINGS_*.md`.
-> Then:
+> `<reports>/code-review/CODE_REVIEW_FINDINGS_*.md`. Then:
 > - No 🔴 Critical / 🟡 Warning findings → proceed.
 > - Any → fix each in source, check it off in the report (`- [ ]` →
 >   `- [x]` with a `**Fixed:**` note), then (recompute `CHANGED_FILES`)
@@ -244,44 +248,53 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 >   review cycles` and stop. A finding you can't fix without human input →
 >   `REVIEW_BLOCKED — <reason>` and stop.
 >
+> Do not proceed until all Critical and Warning findings are resolved.
+>
 > **Step 3 — Database review (conditional)**
-> (recompute `CHANGED_FILES`) If any path is under
-> `JPPhotoManagerWeb/backend/src/main/resources/db/migration/`, or touches
-> a JPA entity or a repository `@Query`: invoke `database-reviewer`
-> (Review workflow, scoped, non-interactive) — dated report at
-> `JPPhotoManagerWeb/docs/reports/database-review/DATABASE_REVIEW_FINDINGS_*.md`.
-> Fix every 🔴/🟡 finding (a fix to an already-applied migration is a
-> **new** `V{n}__*.sql` file, never an edit), check each off with a
-> `**Fixed:**` note, re-invoke to confirm clean, 3-round cap →
-> `DATABASE_BLOCKED — …`. Then (recompute `CHANGED_FILES`) re-invoke
-> `code-reviewer` once more over the database fixes.
+> (recompute `CHANGED_FILES`) If any path is a database migration or schema
+> definition: review them (Review workflow, scoped, non-interactive) with the
+> `database-reviewer` skill if it is installed — dated report at
+> `<reports>/database-review/DATABASE_REVIEW_FINDINGS_*.md` — otherwise
+> yourself, for normalization, naming, data types, constraints, index coverage
+> and migration safety, recording the findings in that report. Fix every 🔴/🟡
+> finding (a fix to already-applied schema is a **new** migration, never an
+> edit), check each off with a `**Fixed:**` note, re-review to confirm clean,
+> 3-round cap → `DATABASE_BLOCKED — …`. Then (recompute `CHANGED_FILES`)
+> review once more over the database fixes as in Step 2.
 >
 > **Step 4 — Security review (conditional)**
-> (recompute `CHANGED_FILES`) If any path touches auth
-> (`core/guards/auth.guard.ts`, `core/interceptors/auth.interceptor.ts`,
-> the login component, or backend `SecurityConfig.java` /
-> `@PreAuthorize`), a Flyway migration, user-input handling, or a
-> dependency manifest (`backend/pom.xml`, `frontend/package.json`): invoke
-> `security-reviewer` (Review workflow, scoped, non-interactive) — dated
-> report at
-> `JPPhotoManagerWeb/docs/reports/security-review/SECURITY_REVIEW_FINDINGS_*.md`.
-> Same fix / re-check / 3-round-cap loop → `SECURITY_BLOCKED — …`. Then
-> re-invoke `code-reviewer` once more over the security fixes.
+> (recompute `CHANGED_FILES`) If any path touches authentication or
+> authorization, access-control rules, user-input handling, secrets or
+> configuration, or a dependency manifest: review it (Review workflow, scoped,
+> non-interactive) with the `security-reviewer` skill if it is installed —
+> dated report at `<reports>/security-review/SECURITY_REVIEW_FINDINGS_*.md` —
+> otherwise yourself, for missing authorization checks, injection, unsafe input
+> handling, secrets or tokens in code or logs, and vulnerable or unpinned
+> dependencies. Same fix / re-check / 3-round-cap loop →
+> `SECURITY_BLOCKED — …`. Then review once more over the security fixes.
 >
 > Do not proceed until all Critical and Warning findings (including
 > follow-on code-review findings from Steps 3–4) are resolved.
 >
-> **Step 5 — Mobile viewport check (conditional)**
-> (recompute `CHANGED_FILES`) If any changed path is a component template
-> (`*.html`) or stylesheet (`*.css`/`*.scss`) under
-> `JPPhotoManagerWeb/frontend/src/app/`: verify the affected view at
-> `angular-developer`'s standard mobile check device (Chrome DevTools
-> custom device, or `cy.viewport()` at that device's resolution in a
-> Cypress spec/screenshot). Confirm no text overlap between elements, no
-> clipped/cropped content, and no forced horizontal scroll at that width.
-> Fix any layout issue the same way as a code-review finding (recompute
-> `CHANGED_FILES`, re-invoke `code-reviewer` once more over the fix). Note
-> what was checked, and anything caught, for the Final Summary.
+> **Step 5 — Mobile and desktop viewport check (conditional)**
+> (recompute `CHANGED_FILES`) If any changed path is a user-interface
+> template, markup file or stylesheet: verify the affected view at **every phone
+> viewport and the desktop viewport** from the `[viewports]` table of
+> `.backlog-kit.toml` at the repository root (read the file yourself; with no
+> file or no table, the defaults are phone `Galaxy S23 Ultra 384x824` and
+> desktop `1920x1080`, entries written `Name WIDTHxHEIGHT` in CSS pixels) —
+> with a browser tool, a browser's device emulation, or a component/E2E test
+> that sets the viewport, whichever the project has; if it has no way to render
+> the view, skip this step and say so in the Final Summary. At the phone size,
+> confirm no text overlap between elements, no clipped/cropped content, and no
+> forced horizontal scroll. At desktop, confirm no field/dialog/container
+> collapses to a narrow, phone-sized width while leaving the rest of its space
+> unused, and nothing that was correctly sized for the phone stayed wrongly
+> pinned to that size once the wide layout applies. Fix any layout issue the
+> same way as a code-review finding (recompute `CHANGED_FILES`, review once
+> more over the fix). Note what was checked at each viewport, and anything
+> caught, for the Final Summary.
+> Check **each** configured viewport in turn (a test or a device emulation per size); asserting only the smallest phone and the desktop is not enough. List every configured viewport in your hand-back as `verified` or `skipped — <reason>`; a viewport you did not check is never reported as verified.
 >
 > **Step 6 — Signal completion**
 > End with exactly:
@@ -292,74 +305,101 @@ On any `*_BLOCKED`, surface the details and wait for user guidance.
 
 ---
 
-## Phase 3 — Backend & Frontend Tests (Subagents 3 & 4, parallel)
+## Phase 3 — Tests (Subagent 3, optional)
 
-Runs unconditionally, regardless of what the fix touched. Spawn **two
-general-purpose subagents in a single message** (both Agent tool calls in
-the same response), both `run_in_background: false`.
+Skip this phase when the project has no automated tests: find out yourself
+(orchestrator) from its `CLAUDE.md`, `README` and build manifest which command
+runs them — and a faster end-to-end smoke tier, if CI runs one. If you cannot
+tell, ask the user once (**AskUserQuestion**, with "skip this phase" as an
+option); if there are no tests, record `TESTS: SKIPPED — no automated tests`
+and go to Phase 4.
 
-**Subagent 3 — Backend tests:**
+Runs unconditionally otherwise, regardless of what the fix touched — a tier CI
+gates every PR on can still be broken by a fix that looks unrelated.
 
-> Validate the fix for `<bug-id>`. Only modify files under
-> `JPPhotoManagerWeb/backend/`.
-> 1. `cd JPPhotoManagerWeb/backend && mvn test`.
-> 2. On failure: diagnose (compilation error, assertion mismatch, missing
->    mock setup), fix — preferring test code over production source; if
->    you must touch production source note it `PROD_CODE_FIXED: <file> —
->    <reason>` — re-run until green.
-> End with `BACKEND_TESTS: PASS (<n> tests)` or `BACKEND_TESTS: BLOCKED —
-> <reason>`.
+Spawn a **general-purpose subagent** (`run_in_background: false`) with
+(substitute the commands you found; delete Step 2 if there is no smoke tier):
 
-**Subagent 4 — Frontend tests:**
+> Validate the fix for `<bug-id>`. Both suites are local-only.
+>
+> **Step 1 — Tests**
+> `<TEST_COMMAND>`. On failure: diagnose (type error, missing stub,
+> assertion mismatch, …), fix — preferring test code over production source;
+> if you must touch production source note it `PROD_CODE_FIXED: <file> —
+> <reason>` — re-run until green.
+>
+> **Step 2 — Smoke tier**
+> `<SMOKE_COMMAND>` (allow ~5 min). Most failures here are a stale assertion in
+> the spec itself (a hardcoded string / fixture that no longer matches what the
+> component renders), not a real regression — check the rendered output before
+> changing any production file. Fix, preferring the spec over production source
+> (same `PROD_CODE_FIXED:` rule), re-run until green.
+>
+> End with one of:
+> - `TESTS: PASS (<n> tests, <m> smoke tests)`
+> - `TESTS: BLOCKED — <reason, noting which tier>`
 
-> Validate the fix for `<bug-id>`. Only modify files under
-> `JPPhotoManagerWeb/frontend/`.
-> 1. `cd JPPhotoManagerWeb/frontend && npm test`.
-> 2. On failure: diagnose (type error, missing stub, assertion mismatch,
->    missing `provideNoopAnimations()` — see `cypress-unit-test-developer`),
->    fix — preferring test code over production source (same
->    `PROD_CODE_FIXED:` rule) — re-run until green.
-> End with `FRONTEND_TESTS: PASS (<n> tests)` or `FRONTEND_TESTS: BLOCKED
-> — <reason>`.
-
-Wait for **both**. On any `BLOCKED`, stop and surface the failure. On one
-or more `PROD_CODE_FIXED:` lines, surface them to the user (those
-production changes weren't covered by Phase 2's review) and ask:
-**Proceed** (record `UNREVIEWED_PROD_FIXES:` for the Final Summary) or
-**Re-run Phase 2** (new Subagent 2 over the fixes, then new Subagents 3
-& 4).
+On `BLOCKED`, stop and surface the failure. On one or more
+`PROD_CODE_FIXED:` lines, surface them to the user (those production
+changes weren't covered by Phase 2's review) and ask: **Proceed** (record
+`UNREVIEWED_PROD_FIXES:` for the Final Summary) or **Re-run Phase 2** (new
+Subagent 2 over the fixes, then new Subagent 3).
 
 ---
 
-## Phase 4 — E2E Verification (Subagent 5, conditional)
+## Phase 4 — E2E Verification (Subagent 4, optional, conditional)
 
-Spawn a **general-purpose subagent** (`run_in_background: false`) with:
+Skip this phase — recording `E2E: SKIPPED — <reason>` — when the project has no
+end-to-end or browser suite (its `CLAUDE.md`, `README` and build manifest say),
+or when the fix touches no user-facing flow.
+
+**Before spawning — resolve the test account** (orchestrator step; needs
+`AskUserQuestion`):
+
+1. Run `git status --porcelain` yourself. If no changed path falls under a
+   user-facing flow the suite covers (screens, routes, endpoints, or a schema
+   change that changes what they render) — skip straight to spawning Subagent
+   4; its own Step 1 will land on `E2E: SKIPPED`.
+2. If a flow was touched and the suite needs a test account or live services,
+   ask the user (**AskUserQuestion**) whether to run it and how the account is
+   provided (a credentials file they maintain, environment variables, or a
+   fresh registration if the app allows it). Never read a credentials file
+   yourself and never put credentials in a prompt; set
+   `CREDENTIAL_SOURCE: <the answer>`. If they decline, record
+   `E2E: SKIPPED — user chose not to run it` and go to Phase 5.
+3. Substitute `<CREDENTIAL_SOURCE>` into the prompt.
+
+Spawn a **general-purpose subagent** (`run_in_background: false`) with
+(substitute the suite's command for `<E2E_COMMAND>`):
 
 > **Step 1 — Does E2E verification apply?**
 > `git status --porcelain` → parse all paths (incl. `??`) into
-> `CHANGED_FILES`. Check whether any falls under: authentication
-> (`core/guards/auth.guard.ts`, `core/interceptors/auth.interceptor.ts`,
-> the login component, backend `SecurityConfig.java`), the gallery
-> (`features/gallery/`, the app's primary photo-browsing flow), or a
-> Flyway migration under `db/migration/`. If none, end with `E2E: SKIPPED
-> — no auth/gallery/migration changes` and stop.
+> `CHANGED_FILES`. If none fall under a user-facing flow the suite covers,
+> end with `E2E: SKIPPED — no user-facing flow changed` and stop.
 >
-> **Step 2 — Prerequisites** — follow `e2e-testing` §1 (PostgreSQL,
-> MongoDB, Redis reachable; real data present). On failure → `E2E_BLOCKED
-> — <reason>` and stop.
+> **Step 2 — Environment** — confirm what the suite needs is reachable (the
+> backend or database it talks to, required configuration, migrations applied
+> if one was touched). On failure → `E2E_BLOCKED — <reason>` and stop.
 >
-> **Step 3 — Start backend + frontend** — per `e2e-testing` §2. On
-> failure → `E2E_BLOCKED — services did not start`.
+> **Step 3 — Dev server** — if the suite needs the application running, kill
+> any stale instance, start a fresh one, confirm it answers. On failure →
+> `E2E_BLOCKED — dev server did not start`.
 >
-> **Step 4 — Browser checks** — sign in with `e2e-testing`'s standard
-> local test account. Confirm the app shell renders, no console errors.
-> If the fix touched the gallery, exercise the specific browse/view/edit
-> flow the bug was about, once, through the real UI — confirm the bug is
-> actually gone here, not just in the unit test. If the fix touched auth
-> or a migration, run `e2e-testing`'s auth / RLS-equivalent scoping checks.
-> Screenshot the final state and read it back for layout breaks.
+> **Step 4 — Browser checks** — credential source: `<CREDENTIAL_SOURCE>`
+> (already decided; do not re-ask, do not decide yourself; never log or echo
+> credentials; if the source is unusable now, `E2E_BLOCKED — <source> unusable
+> at read time`, never silently fall back).
+> 1. Run `<E2E_COMMAND>` — the narrowest command that covers the changed flow.
+> 2. If the fix touched a specific flow, exercise the specific flow the bug was
+>    about, once, through the real UI against the real backend — confirm the
+>    bug is actually gone here, not just in the unit test — with no console
+>    errors.
+> 3. A cross-user data-scoping check — only if the fix touched data access
+>    **and** a real second account is available; otherwise skip it and say so
+>    via `PASS_PARTIAL`.
+> 4. Screenshot the final state and read it back for layout breaks.
 >
-> **Step 5 — Tear down** — per `e2e-testing` §6.
+> **Step 5 — Tear down** — stop any server you started.
 >
 > End with one of:
 > - `E2E: PASS — <one-line summary>`
@@ -367,38 +407,44 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 > - `E2E_BLOCKED — <reason>`
 
 Do not start Phase 5 until `E2E: PASS`, `PASS_PARTIAL`, or `SKIPPED`. On
-`E2E_BLOCKED`, surface and wait — a failure against a live local stack may
-be environment/data, not a code defect; don't assume it belongs back in
-Phase 2 without the user confirming.
+`E2E_BLOCKED`, surface and wait — a failure against a live environment may be
+environment/data, not a code defect; don't assume it belongs back in Phase 2
+without the user confirming.
 
 ---
 
-## Phase 5 — Build Verification (Subagent 6)
+## Phase 5 — Build Verification (Subagent 5, optional)
 
-Spawn a **general-purpose subagent** (`run_in_background: false`) with:
+Skip this phase — recording `BUILD: SKIPPED — no build step` — when the project
+has no build, compile or type-check step (find out yourself from its
+`CLAUDE.md`, `README` and build manifest; if unsure, ask once with "skip" as an
+option). This skill never deploys anything; the build runs locally only so a
+failure is caught before CI or the host would.
 
-> **Step 1** — `cd JPPhotoManagerWeb/backend && mvn -q -DskipTests
-> package` (allow up to 10 min) and `cd JPPhotoManagerWeb/frontend && npm
-> run build` (allow up to 5 min).
-> **Step 2** — On failure: read the compiler / esbuild error (it names the
-> file and cause), fix under the relevant module prioritising files
-> related to the fix, re-run until it succeeds or you hit a blocker
-> needing human input.
-> **Step 3** — Confirm each build produced its expected artifact (backend
-> `target/*.jar`, frontend `dist/`), non-empty.
+Spawn a **general-purpose subagent** (`run_in_background: false`) with
+(substitute the command for `<BUILD_COMMAND>`):
+
+> **Step 1** — `<BUILD_COMMAND>` (allow up to 5 min; if it can take longer, poll
+> with repeated foreground calls in this same turn — never end your response
+> while it still runs in the background).
+> **Step 2** — On failure: read the error (it names the file and cause), fix
+> prioritising files related to the fix, re-run until it succeeds or you hit a
+> blocker needing human input.
+> **Step 3** — If the build produces an output directory or artifact, confirm
+> it exists and is non-empty — empty or missing after a "successful" build is
+> itself a failure.
 >
 > End with `BUILD: PASS` or `BUILD: BLOCKED — <reason>`.
 
-Do not start Phase 6 until `BUILD: PASS`. This phase never deploys — it
-only confirms the fix compiles and packages.
+Do not start Phase 6 until `BUILD: PASS` (or the phase was skipped).
 
 ---
 
-## Phase 6 — Close (Subagent 7)
+## Phase 6 — Close (Subagent 6)
 
 Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 
-> **Step 1** — Invoke `web-docs-sync` in its scoped-sync mode for the
+> **Step 1** — Invoke `docs-sync` in its scoped-sync mode for the
 > current branch's changes (it diffs against the branch base itself).
 > **Best-effort, not blocking**: a bug fix usually changes no documented
 > behaviour, so "nothing to sync" is the common and fine outcome. Only
@@ -406,10 +452,8 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 >
 > **Step 2** — Invoke `bugs-archive <bug-id> fixed "<one-line resolution:
 > what the root cause was and what changed; include the regression test
-> path>"`. Wait for it to move the row to
-> `JPPhotoManagerWeb/docs/backlog/bugs-fixed.md` and append the
-> `**Resolution:**` line to `JPPhotoManagerWeb/docs/backlog/bugs/<bug-id>.md`
-> (that file never moves).
+> path>"`. Wait for it to move the row to `<backlog>/bugs-fixed.md` and append the
+> Resolution line to `<backlog>/bugs/<bug-id>.md`.
 >
 > End with exactly:
 > `CLOSE: DONE`
@@ -428,15 +472,13 @@ DONE`.
 **Regression test:** <path> (failed before the fix, passes now)
 **Root cause / fix:** <one or two sentences>
 **Code review:** ✓ All findings resolved
-**Database review:** ✓ All findings resolved (or N/A)
-**Security review:** ✓ All findings resolved (or N/A)
-**Mobile viewport check:** ✓ Verified at angular-developer's standard mobile check device — <what was checked/caught> (or N/A, no template/CSS change)
-**Backend tests:** ✓ passing
-**Frontend tests:** ✓ passing
-[if UNREVIEWED_PROD_FIXES was recorded in Phase 3:]
-**⚠ Unreviewed production fixes:** <the PROD_CODE_FIXED lines> — fixed while chasing test failures in Phase 3; the user chose to proceed without routing them back through Phase 2.
-**E2E verification:** ✓ <Phase 4 summary> (or N/A, or ⚠ Partial: <what wasn't covered>)
-**Build:** ✓ backend package + frontend build succeeded locally
+[if the viewport check ran:]
+**Viewport check:** ✓ <each configured phone viewport and the desktop viewport: verified, or ⚠ skipped — reason> — <what was checked/caught>
+**Tests:** ✓ <summary> (or N/A — <reason> if skipped)
+**E2E:** ✓ <summary> (or N/A — <reason> if skipped, or ⚠ Partial: <what wasn't covered>)
+**Build:** ✓ <summary> (or N/A — <reason> if skipped)
+[if UNREVIEWED_PROD_FIXES was recorded:]
+**⚠ Unreviewed production fixes:** <the PROD_CODE_FIXED lines> — fixed while chasing test failures; the user chose to proceed without routing them back through Phase 2.
 **Docs sync:** ✓ <one-line summary, or "Nothing to sync">
 **Bug:** ✓ Closed — moved to bugs-fixed.md
 
@@ -448,8 +490,8 @@ Nothing was committed. The fix (and its regression test) is on `fix/<slug>`, ent
 ## Guardrails
 
 - Always capture the Bug ID confirmed in Phase 0 and propagate it to every
-  later phase. Substitute `<bug-id>` / `<slug>` / `<repro-details>` /
-  `<repro-test-path>` before spawning each subagent.
+  later phase. Substitute `<bug-id>` / `<slug>` / `<repro-details>` before
+  spawning each subagent.
 - **Cancellation**: if `bugs-next` returns without a `BUG_ID:` line, stop
   immediately, before Subagent 1 is spawned.
 - **The regression test is written before the fix, in Phase 1, and must
@@ -458,20 +500,19 @@ Nothing was committed. The fix (and its regression test) is on `fix/<slug>`, ent
   reproduce the bug, that's a `FIX_BLOCKED — cannot reproduce`, resolved
   through the AskUserQuestion decision point, never worked around by
   skipping straight to a speculative fix.
-- Do not start a phase until the prior phase's subagent(s) return their
-  expected signal. On any `*_BLOCKED`, surface details and wait for user
+- Do not start a phase until the prior phase's subagent returns its
+  expected signal (`TESTS`/`E2E`/`BUILD`: `PASS` or `SKIPPED` for the optional phases). On any `*_BLOCKED`, surface details and wait for user
   guidance — never retry automatically.
 - **Missing signal fallback**: a subagent that returns without its
   expected signal is treated as `BLOCKED`; surface its raw response and
   wait.
-- **Phase 3 always runs**, on every invocation — never conditional on what
-  the fix touched, unlike Phase 4.
-- **`code-reviewer` / `database-reviewer` / `security-reviewer` always use
-  their Review workflow, scoped to `CHANGED_FILES`, never the interactive
-  Fix Workflow and never a full-codebase sweep.** `database-reviewer`
-  only runs when a `db/migration/**` file, a JPA entity, or a repository
-  `@Query` changed; a fix to an already-applied migration is a **new**
-  `V{n}__*.sql`, never an edit.
+  Before re-running a phase whose signal is missing, look at the working tree
+  for what the subagent actually did (for example `git status`, the backlog
+  row, the test file) and tell the user; whether to accept that evidence in
+  place of the signal or to re-run the phase is the user's decision.
+- **`code-reviewer` (and the DB/security reviewers when they run) always uses its
+  Review workflow, scoped to `CHANGED_FILES`, never the interactive Fix
+  Workflow and never a full-codebase sweep.**
 - **No git commits at any point.** Neither this skill nor any subagent may
   run `git commit` / `git push` / any git write. The sole exceptions are
   Phase 1 Step 1's branch creation and sync (`git fetch`, `git checkout`,
@@ -484,12 +525,9 @@ Nothing was committed. The fix (and its regression test) is on `fix/<slug>`, ent
 - **`--skip-branch-setup` (batch mode) only affects Phase 1 Step 1.** No
   other phase changes — Phases 2–6 already operate on "whatever branch is
   checked out". This flag is only ever passed by `bugs-batch-fix`.
-- **Phase 5 never deploys** — it runs `mvn package` / `npm run build` as a
-  local compile check only; it never invokes `build-and-deploy-k8s.sh`,
-  Docker Compose, or `kubectl`.
 - **Auto Mode never overrides a required confirmation** — Phase 0's bug
-  selection, the cannot-reproduce decision point, Phase 3's
-  `PROD_CODE_FIXED` choice, and any post-`*_BLOCKED` guidance prompt all
-  still stop and wait for a real answer.
+  selection, the cannot-reproduce decision point, the
+  `PROD_CODE_FIXED` choice, the E2E credential-source question, and any post-`*_BLOCKED` guidance prompt all still stop and wait for a real
+  answer.
 - **Never let a subagent print a generated secret's raw value** anywhere
   in a response, report, or file (same standard as `feature-development`).

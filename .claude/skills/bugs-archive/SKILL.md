@@ -1,18 +1,18 @@
 ---
 name: bugs-archive
-description: Marks bugs resolved in JPPhotoManagerWeb/docs/backlog/bugs-open.md and moves them to JPPhotoManagerWeb/docs/backlog/bugs-fixed.md (or records them as 🚫 Won't fix / ❓ Cannot reproduce). Appends a Resolution line to the bug's details file JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md — the file itself never moves. TRIGGER when a bug has been fixed (by bug-fix, bugs-batch-fix, or by hand) and needs closing, or when the user decides not to fix one. This is the bug-family counterpart to features-archive.
+description: Marks bugs resolved in the backlog's bugs-open.md and moves them to bugs-fixed.md (or records them as 🚫 Won't fix / ❓ Cannot reproduce). Appends a Resolution line to the bug's details file bugs/BUG-NNN.md — the file itself never moves. TRIGGER when a bug has been fixed (by bug-fix, bugs-batch-fix, or by hand) and needs closing, or when the user decides not to fix one. This is the bug-family counterpart to features-archive.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "0.1"
 ---
 
 Close one or more bugs: move the table row from
-`JPPhotoManagerWeb/docs/backlog/bugs-open.md` to
-`JPPhotoManagerWeb/docs/backlog/bugs-fixed.md` (for a real fix), or update
+`<backlog>/bugs-open.md` to
+`<backlog>/bugs-fixed.md` (for a real fix), or update
 the row's Status in place to `🚫 Won't fix` / `❓ Cannot reproduce` (for a
 resolution without a code change). In every case the bug's details file
-`JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md` stays where it is — only
+`<backlog>/bugs/BUG-NNN.md` stays where it is — only
 a `- **Resolution:**` bullet is appended to it.
 
 **Input**: One or more Bug IDs (e.g. `BUG-004 BUG-007`), plus optionally a
@@ -41,8 +41,8 @@ Present them:
 
 ### 2. Read both files
 
-Read `JPPhotoManagerWeb/docs/backlog/bugs-open.md` (source) and
-`JPPhotoManagerWeb/docs/backlog/bugs-fixed.md` (destination). If either
+Read `<backlog>/bugs-open.md` (source) and
+`<backlog>/bugs-fixed.md` (destination). If either
 doesn't exist, there's nothing to archive — report and stop.
 
 The write ordering below is deliberate and must not be reordered:
@@ -56,7 +56,7 @@ case is content duplicated across both files, never lost.
 Find the row in `bugs-open.md`'s `## Bug List` table whose `Bug ID`
 matches (the first cell is the link `[BUG-NNN](bugs/BUG-NNN.md)`). If it's
 not there (already archived, or never existed), warn and skip that ID.
-Check that `JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md` exists; if it
+Check that `<backlog>/bugs/BUG-NNN.md` exists; if it
 doesn't, warn (the Resolution line can't be recorded — suggest running
 `bugs-status`) and ask whether to create it with just the H1
 `# BUG-NNN — <title from the row's Summary>` or skip that ID.
@@ -94,7 +94,7 @@ reopen. They're excluded from `bugs-next`'s candidate set.) Skip steps 5–6.
    table).
 3. Append a `- **Resolution:** <note — what the fix changed, and the
    PR/commit reference>` bullet to the end of each bug's
-   `JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md` (replace an existing
+   `<backlog>/bugs/BUG-NNN.md` (replace an existing
    `**Resolution:**` bullet instead of duplicating it, in case a previous
    run was interrupted). The file stays in `bugs/`; nothing is copied or
    moved.
@@ -152,3 +152,4 @@ Resolution lines appended to bugs/BUG-NNN.md: <count>
   final say on which bugs to close and with what disposition.
 - This skill never writes code, runs tests, or touches git. It records an
   outcome that a fix (or a decision) already produced.
+- **Never run `git commit`, `git push` or open a PR.**

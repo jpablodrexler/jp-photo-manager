@@ -2,17 +2,23 @@
 
 _Part of the `feature-development` skill — see `../SKILL.md` for the overview, Phase 0, placeholder substitution, final summary and the cross-phase guardrails. Read this file in full before starting this phase._
 
-## Phase 6 — Archive (Subagent 7)
+## Phase 6 — Archive (Subagent 6)
 
 Spawn a **general-purpose subagent** via the Agent tool, with
-`run_in_background: false` (the Final Summary cannot be displayed until this
-subagent returns `ARCHIVE: DONE` — see the foreground guardrail in `../SKILL.md`), with
-the following prompt:
+`run_in_background: false` (the Final Summary cannot be displayed until
+this subagent returns `ARCHIVE: DONE` — see the foreground guardrail
+below), with the following prompt:
 
 > Perform these steps in sequence using the Skill tool:
 >
-> **Step 1 — Verify spec compliance and close every coverage gap.** Invoke
-> `spec-compliance-check` for `<change-name>`. It reads
+> **Step 1 — Verify spec compliance and close every coverage gap.** If the
+> project uses OpenSpec (an `openspec/` folder exists) and the
+> `spec-compliance-check` skill is installed, invoke it for `<change-name>`.
+> Otherwise do the same yourself, with the feature's brief
+> (`<backlog>/features/NNN-<change-name>.md`) and the `ACCEPTANCE:` lines
+> Phase 2 returned as the spec: list every requirement and report each as
+> Verified (a test that currently passes, or a manual check you performed),
+> Failing, or Unverified, with the same rules below. (The skill reads
 > `openspec/changes/<change-name>/specs/**/spec.md` and `tasks.md`
 > (unmodified — this skill is read-only against `openspec/`) and reports
 > each acceptance scenario as Verified, Failing, or Unverified; it does not
@@ -32,13 +38,10 @@ the following prompt:
 >   1. Read the report's explanation of exactly what's missing (e.g. "no
 >      test exercises this compound claim," "no test covers the X branch,"
 >      "no mounted UI test asserts Y is absent").
->   2. Add the missing test coverage directly — a new backend
->      (`@SpringBootTest` / `@WebMvcTest` / `@DataJpaTest`) test or a
->      Cypress component test/assertion extending the relevant existing
->      spec file (preferred over a new file, matching this project's
->      conventions — see `java-unit-test-developer` /
->      `cypress-unit-test-developer`), or an E2E case if that's the layer
->      the gap sits at.
+>   2. Add the missing test coverage directly — a new test or
+>      assertion extending the relevant existing test file (preferred over a
+>      new file, matching this project's test conventions), at whichever layer
+>      the gap sits.
 >   3. Re-invoke `spec-compliance-check` for `<change-name>` to confirm the
 >      scenario now reports Verified.
 >   4. Repeat for every Unverified scenario from the original report.
@@ -55,49 +58,40 @@ the following prompt:
 >     cycles, <N> scenario(s) still unverified — <one-line summary>` rather
 >     than silently archiving with a gap. This needs a human judgment call
 >     on the testing approach, not indefinite auto-retry.
->   - Once every scenario reports Verified, run the affected test suite(s)
->     once more (`cd JPPhotoManagerWeb/backend && mvn test` and/or `cd
->     JPPhotoManagerWeb/frontend && npm test`) to confirm the newly added
->     tests pass alongside everything else, then continue to Step 2.
+>   - Once every scenario reports Verified, run the project's tests
+>     once more (the commands its project phases use) to confirm the newly added tests pass alongside
+>     everything else, then continue to Step 2.
 > - **If everything is already Verified:** continue to Step 2 with nothing
 >   to close.
 >
-> **Step 2** — Invoke `web-docs-sync` in its scoped-sync mode for the
-> current branch's changes (it diffs against `origin/develop` itself — no
-> need to pass a file list). This keeps `JPPhotoManagerWeb/CLAUDE.md` and
-> `JPPhotoManagerWeb/docs/*.md` from drifting behind whatever this feature
-> just shipped (a new endpoint, config property, cache, Kafka topic, route,
-> deploy-manifest env var, or custom metric). This step is **best-effort,
-> not blocking**: if the skill reports nothing to sync, or the diff is
-> outside its scope (e.g. a WPF-only or tooling-only change), continue to
-> Step 3 regardless. Only stop and surface details to the user if the skill
+> **Step 2** — If the `docs-sync` skill is installed, invoke it in its scoped-sync mode for the
+> current branch's changes (it diffs against the branch's base itself — no
+> need to pass a file list); otherwise check yourself whether the change makes
+> anything the project documents stale (a command, a configuration option, a
+> route, the schema, setup steps) and update those passages briefly. This keeps the project's reference docs from
+> drifting behind whatever this feature just shipped. This step is **best-effort,
+> not blocking**: if the skill reports nothing to sync, continue to Step 3
+> regardless. Only stop and surface details to the user if the skill
 > itself errors out in a way that leaves files in a broken state.
 >
-> **Step 3** — Invoke `openspec-archive-change <change-name>`. Wait for it to
+> **Step 3** — OpenSpec projects only: invoke `openspec-archive-change <change-name>`. Wait for it to
 > complete fully (the SDD change directory must be moved to
 > `openspec/changes/archive/`). This skill may prompt you about delta spec sync
-> or incomplete tasks — respond to those prompts normally; they are part of the
-> archiving workflow.
+> or incomplete tasks — respond to those prompts normally.
 >
 > **Step 4** — Invoke `features-archive <change-name>`. Wait for it to
-> complete fully (the feature's row must be moved out of
-> `JPPhotoManagerWeb/docs/backlog/features-planned.md` into
-> `JPPhotoManagerWeb/docs/backlog/features-implemented.md` in the
-> implemented-table shape — no `Summary`/`Brief`/`Implementation` cells, a
-> `Details` cell linking the brief file and the archived spec; the brief
-> file under `JPPhotoManagerWeb/docs/backlog/features/` stays untouched).
+> complete fully (the feature row must be moved from the planned table in
+> `<backlog>/features-planned.md` to the implemented table in
+> `<backlog>/features-implemented.md`, with its `Details` cell linking
+> the brief file and the archived spec).
 >
 > After all four steps complete, end your response with exactly this line:
 > `ARCHIVE: DONE`
 
-Do not display the Final Summary until this subagent returns `ARCHIVE: DONE`
-or `ARCHIVE_BLOCKED`. An `ARCHIVE_BLOCKED` result means the feature is
-implemented and tested but **not archived** — Step 1's `spec-compliance-check`
-found a Failing scenario, a test added to close an Unverified scenario
-itself failed (revealing a real bug), or an Unverified scenario survived 3
-rounds of add-test-and-re-check. Surface the scenario(s) to the user and
-wait for guidance (fix the code, fix the spec via the normal `openspec-*`
-workflow, or override and archive manually) rather than proceeding or
+Do not display the Final Summary until this subagent returns `ARCHIVE:
+DONE` or `ARCHIVE_BLOCKED`. An `ARCHIVE_BLOCKED` result means the feature is
+implemented and tested but **not archived** — surface the failing/unverified
+scenario(s) to the user and wait for guidance rather than proceeding or
 retrying automatically. This workflow never archives a change with a known
 spec-compliance gap: Step 1 closes every Unverified scenario with real test
 coverage (or escalates via `ARCHIVE_BLOCKED` if it genuinely can't) before

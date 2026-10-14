@@ -4,32 +4,36 @@ description: >-
   Runs `feature-development` unattended across an ordered list of named
   features — or the whole pending backlog — one feature at a time on a single
   shared branch, with zero git commits. Built for long unattended stretches
-  over several small features, checking in only when a blocker needs a human
-  decision. Writes a dated report to
-  `JPPhotoManagerWeb/docs/reports/feature-batch/`, updated after each feature
-  completes (not batched at the end), so progress survives a cutoff, crash or
-  power outage. TRIGGER when asked to batch-develop or unattended-develop a
-  list of named features or the whole backlog (e.g. "develop features 13, 16
-  and 19 while I'm away", "develop the whole planned backlog unattended").
+  over several small features, checking in only when a
+  blocker needs a human decision. Writes a dated report to
+  `<reports>/feature-batch/`, updated after each feature completes (not
+  batched at the end), so progress survives a cutoff, crash or power outage.
+  TRIGGER when asked to batch-develop or unattended-develop a list of named
+  features or the whole backlog (e.g. "develop features 13, 16 and 19 while
+  I'm away", "develop the whole planned backlog unattended").
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.1"
+  version: "0.1"
 ---
+
+`<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`; `<reports>` is the `reports` folder next to the backlog's parent (`docs/reports` by default).
+
+**Never run `git commit`, `git push` or open a PR.**
 
 Run `feature-development` in a loop over a named list of features, all on
 one shared branch, never committing, writing progress to a resumable report
 as each feature finishes.
 
 **Input**: Either (a) an ordered list of feature identifiers (names or `#`
-numbers from `JPPhotoManagerWeb/docs/backlog/features-planned.md`), as
-given by the user — e.g. "13, 16, 19" or "duplicate-detection,
-recycle-bin-ui" — or (b) a request for **the whole planned backlog** (e.g.
-"develop the whole backlog", "everything that's pending", "all planned
-features") when the user wants every currently-pending row processed
-without naming each one — see Step 1 for how (b) resolves into a concrete
-list. Optionally, a branch name to use or resume; if omitted, one is
-proposed and confirmed (see Step 2).
+numbers from `<backlog>/features-planned.md`), as given by the user —
+e.g. "13, 16, 19" or "task-postpone, expense-dashboard-charts" — or (b) a
+request for **the whole planned backlog** (e.g. "develop the whole
+backlog", "everything that's pending", "all planned features") when the
+user wants every currently-pending row processed without naming each one —
+see Step 1 for how (b) resolves into a concrete list. Optionally, a branch
+name to use or resume; if omitted, one is proposed and confirmed (see
+Step 2).
 
 ---
 
@@ -40,12 +44,12 @@ end-to-end and already never commits. Its Phase 1, though, always creates a
 *fresh* `feature/<change-name>` branch per feature and hard-blocks if the
 working tree is dirty when it tries — which is exactly what a second
 feature's uncommitted first-feature work would trigger. `feature-development`
-accepts an optional `--skip-branch-setup` flag for exactly this reason (see
-its Phase 1 Step 1.5's batch-mode branch) — this skill is the only intended
-caller of that flag. Every step below exists to satisfy the two constraints
-the user set for this workflow: **one shared branch across every feature in
-the run**, and **zero commits, ever, at any point** — not even between
-features.
+now accepts an optional `--skip-branch-setup` flag for exactly this reason
+(see its Phase 1 Step 1.5's batch-mode branch) — this skill is the only
+intended caller of that flag. Every step below exists to satisfy the two
+constraints the user set for this workflow: **one shared branch across every
+feature in the run**, and **zero commits, ever, at any point** — not even
+between features.
 
 One accepted consequence of the no-commit constraint, worth knowing before
 a long run: `feature-development`'s Phase 2 reviews scope themselves to
@@ -63,23 +67,22 @@ ruled out), not a bug to fix here.
 
 **If the user named specific identifiers** (form (a)): parse the input into
 an ordered list of feature identifiers. For each one, resolve it against
-`JPPhotoManagerWeb/docs/backlog/features-planned.md`'s `## Feature List`
-table — by `#` or by its backtick-wrapped `Change name` — the same lookup
+`<backlog>/features-planned.md`'s `## Feature List` table — by `#` or by
+its backtick-wrapped `Change name` — the same lookup
 `features-next`/`feature-plan` already use.
 
 - If an identifier resolves to nothing in either `features-planned.md` or
   `features-implemented.md`, stop and ask the user to correct it rather
   than guessing which feature they meant.
 - If an identifier resolves to a row already in `features-implemented.md`
-  (the implemented table has no status column — being in that table is
-  what "implemented" means), tell the user and ask whether to skip it or genuinely
+  (an implemented row has no status column any more — holding the row is what makes it implemented), tell the user and ask whether to skip it or genuinely
   re-run it — don't silently skip an item the user explicitly listed.
 
 **If the user asked for the whole backlog** (form (b)): read every row in
-`JPPhotoManagerWeb/docs/backlog/features-planned.md`'s `## Feature List`
-table — this file by construction only ever holds pending (not-yet-
-implemented) rows, so no `✅ Implemented` filtering is needed the way it is
-for an explicit list. Order the resulting list as follows:
+`<backlog>/features-planned.md`'s `## Feature List` table — this file by
+construction only ever holds pending (not-yet-implemented) rows, so no
+implemented-row filtering is needed the way it is for an explicit list.
+Order the resulting list as follows:
 
 1. If the file's `## Dependencies` → `### Recommended implementation order`
    subsection has actual content (not `_None yet._`), follow that order
@@ -92,10 +95,10 @@ for an explicit list. Order the resulting list as follows:
 3. For anything not covered by 1 or 2, fall back to the table's own row
    order.
 
+Each planned row's full brief lives in `<backlog>/features/NNN-<change-name>.md` (its `Brief` cell links it). Batch mode does not read it here: `feature-development` reads that file itself in its Propose phase and hands it to `openspec-propose` for any feature whose SDD artifacts don't exist yet, and a missing or empty brief file stops that feature with `PROPOSE_BLOCKED` (handled as any other Blocked outcome in Step 4). A feature whose artifacts are already `done` never needs its brief file. When confirming the derived list, it is worth checking that each feature's brief file exists, so a missing one surfaces before a multi-hour run rather than during it.
+
 An empty backlog (no rows) is not an error — tell the user there's nothing
 pending and stop here.
-
-Each planned row's full brief lives in `JPPhotoManagerWeb/docs/backlog/features/NNN-<change-name>.md` (its `Brief` cell links it). Batch mode does not read it here: `feature-development` reads that file itself in its Propose phase and hands it to `openspec-propose` for any feature whose SDD artifacts don't exist yet, and a missing or empty brief file stops that feature with `PROPOSE_BLOCKED` (handled as any other Blocked outcome in Step 4). A feature whose artifacts are already `done` never needs its brief file. When confirming the derived list, it is worth checking that each feature's brief file exists, so a missing one surfaces before a multi-hour run rather than during it.
 
 Because "the whole backlog" is a derived list rather than one the user
 typed out explicitly, **show the resolved, ordered list to the user and
@@ -110,10 +113,9 @@ the list every later step refers to as "the requested list."
 
 ### 2. Determine the shared branch, and detect a resumable run
 
-Check `JPPhotoManagerWeb/docs/reports/feature-batch/` for a
-`FEATURE_BATCH_REPORT_*.md` file (any date) whose recorded "Requested
-features" list overlaps substantially with the newly requested list from
-Step 1.
+Check `<reports>/feature-batch/` for a `FEATURE_BATCH_REPORT_*.md` file (any
+date) whose recorded "Requested features" list overlaps substantially with
+the newly requested list from Step 1.
 
 - **Exact or near-exact match found, and it isn't fully checked off**: this
   is a resume. Read which features it already marks `✅ Completed`; those
@@ -189,14 +191,13 @@ For each identifier in the requested list that is not already `✅ Completed`
   skill via the **Skill** tool, passing `<change-name> --skip-branch-setup`.
   This is a direct Skill invocation, not a backgrounded Agent call — it
   executes inline in this same turn, so any `AskUserQuestion`
-  `feature-development` itself raises (its Phase 1 feature confirmation, a
-  Phase 3 test-failure choice, a Phase 4 deploy-target choice, etc.) reaches
-  the user normally rather than being lost to a background run — this must
-  never be worked around by invoking `feature-development` through a
-  backgrounded Agent call instead, even under an "Auto Mode" or similar
-  autonomous-operation instruction; see `feature-development`'s own
-  guardrails on why that confirmation is never optional. Wait for it
-  to finish, then resolve to one of:
+  `feature-development` itself raises (its Phase 0 feature confirmation, a
+  a project phase's `PROD_CODE_FIXED` choice, etc.) reaches the user normally rather
+  than being lost to a background run — this must never be worked around by
+  invoking `feature-development` through a backgrounded Agent call instead,
+  even under an "Auto Mode" or similar autonomous-operation instruction; see
+  `feature-development`'s own guardrails on why that confirmation is never
+  optional. Wait for it to finish, then resolve to one of:
   - **Completed** — `feature-development` displayed its "Feature
     Development Complete" summary ending in the change archived and the
     feature marked implemented. Write a fresh ≤2-sentence summary (see
@@ -220,14 +221,13 @@ Continue to the next identifier, unless the user chose to stop.
 ### 5. Writing the ≤2-sentence summary
 
 After a feature completes, read its now-archived `proposal.md` (under
-`openspec/changes/archive/<date>-<change-name>/`) or the feature's brief
-file `JPPhotoManagerWeb/docs/backlog/features/NNN-<change-name>.md` (the
-row `features-archive` just wrote to
-`JPPhotoManagerWeb/docs/backlog/features-implemented.md` links it in its
-`Details` cell; the row itself holds no description), and write a
-**fresh** summary — condensed, not a verbatim copy of the (intentionally
-much longer) brief. State what the feature does and, if
-genuinely notable, one implementation detail. Two sentences, never more.
+`openspec/changes/archive/<date>-<change-name>/`) or the brief
+file the row's `Details` cell links (`<backlog>/features/NNN-<change-name>.md`;
+the row `features-archive` just wrote to `<backlog>/features-implemented.md`
+holds only the links, not the text), and write a **fresh** summary —
+condensed, not a verbatim copy of the (intentionally much longer) brief. State what the feature
+does and, if genuinely notable, one implementation detail. Two sentences,
+never more.
 
 ### 6. Ending the run
 
@@ -238,23 +238,19 @@ skipped / not reached) and an end timestamp.
 Tell the user plainly, in the chat response as well as the report: **nothing
 was committed at any point.** The branch now holds every completed (and any
 partially-attempted) feature's work, entirely uncommitted. Point them at
-`git status`/`git diff` to review it, and at `gitflow`'s finish-feature
-action once they're ready to commit and open a PR — this skill does not do
+`git status`/`git diff` to review it, and at `gitflow`'s finish action once they're ready to commit and open a PR — this skill does not do
 either.
 
 ---
 
 ## The report
 
-**Path**:
-`JPPhotoManagerWeb/docs/reports/feature-batch/FEATURE_BATCH_REPORT_{YYYY-MM-DD}.md`
-— this directory is gitignored, same as `JPPhotoManagerWeb/docs/reports/code-review/`,
-`JPPhotoManagerWeb/docs/reports/database-review/`, and
-`JPPhotoManagerWeb/docs/reports/security-review/`; these are local working
-artifacts, not committed history. On a genuinely new (non-resume) run
-started the same day a report already exists for, append `-2`, `-3`, etc.
-rather than overwriting — same collision rule `code-reviewer` uses. This
-does not apply when resuming an existing report (Step 2) — that case
+**Path**: `<reports>/feature-batch/FEATURE_BATCH_REPORT_{YYYY-MM-DD}.md` — this
+directory holds local working artifacts, like the review
+reports next to it — not committed history. On a genuinely new (non-resume)
+run started the same day a report already exists for, append `-2`, `-3`,
+etc. rather than overwriting — same collision rule `code-reviewer` uses.
+This does not apply when resuming an existing report (Step 2) — that case
 continues the same file, it never creates a new one.
 
 **Format**:
@@ -263,14 +259,14 @@ continues the same file, it never creates a new one.
 # Feature Batch Development Report — {YYYY-MM-DD}
 
 **Branch:** feature/batch-2026-08-11
-**Requested features:** duplicate-detection, recycle-bin-ui, admin-audit-log
+**Requested features:** task-postpone, finance-modules-test-coverage, expense-dashboard-charts
 **Started:** {timestamp}
 
 ## Progress
 
-- [x] **duplicate-detection** — Completed {HH:MM}. <one or two sentence summary of what shipped.>
-- [ ] recycle-bin-ui — 🔄 In progress
-- [ ] admin-audit-log — ⬜ Not started
+- [x] **task-postpone** — Completed {HH:MM}. <one or two sentence summary of what shipped.>
+- [ ] finance-modules-test-coverage — 🔄 In progress
+- [ ] expense-dashboard-charts — ⬜ Not started
 
 ## Run Summary
 <!-- appended once the run ends (Step 6) -->
@@ -302,9 +298,9 @@ that immediacy is the entire point of this report existing.
   wrapped in a backgrounded Agent call.** A background agent can't reliably
   surface an interactive `AskUserQuestion` back to the user — and
   `feature-development` itself raises several (feature confirmation,
-  blocker guidance, test/deploy choices). This skill's entire "leave it
-  running, answer occasional questions" model depends on those reaching the
-  user in real time.
+  blocker guidance, the `PROD_CODE_FIXED` choice). This skill's entire
+  "leave it running, answer occasional questions" model depends on those
+  reaching the user in real time.
 - **Write the report incrementally, never batched.** The full requested
   list is written up front with every entry `⬜ Not started` (Step 3), and
   each entry's status changes the moment its outcome is known (Step 4) —
@@ -326,8 +322,9 @@ that immediacy is the entire point of this report existing.
 - **Never let an "Auto Mode" or similar autonomous-operation instruction
   suppress any confirmation this skill or `feature-development` raises** —
   the whole backlog confirmation in Step 1, the branch-name confirmation in
-  Step 2, `feature-development`'s own per-feature selection confirmation,
-  and every blocker-guidance prompt in Step 4. This skill's entire premise
-  is a long unattended run that still checks in with the user at genuine
-  decision points — an autonomous-operation bias toward "proceed without
-  asking" would silently defeat that premise, not just bend it.
+  Step 2, `feature-development`'s own per-feature selection confirmation
+  (its Phase 0), and every blocker-guidance prompt in Step 4. This skill's
+  entire premise is a long unattended run that still checks in with the
+  user at genuine decision points — an autonomous-operation bias toward
+  "proceed without asking" would silently defeat that premise, not just
+  bend it.
