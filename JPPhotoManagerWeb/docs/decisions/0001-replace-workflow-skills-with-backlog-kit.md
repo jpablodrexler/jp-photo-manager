@@ -1,7 +1,7 @@
 # 0001. Replace the project's workflow skills with backlog-kit's and keep the project-specific checks in the reference docs
 
 **Date:** 2026-10-14
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 
