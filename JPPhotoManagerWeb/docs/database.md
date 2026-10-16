@@ -110,12 +110,26 @@ is a breaking, multi-migration change, not a quick fix.
 
 #### 2.2 Data types
 
-🔴 Flag `TIMESTAMP` (no time zone) on a **new** table when every other
-recently-added table uses `TIMESTAMPTZ` (`refresh_tokens`, `user_preferences`,
-`albums`, `album_assets` all use `TIMESTAMPTZ NOT NULL DEFAULT NOW()`).
-**Known drift:** `assets.*_date_time` and `folders`/early tables predate this
-convention and use bare `TIMESTAMP` — don't require a data migration to fix
-retroactively, but never add a new `TIMESTAMP` column going forward.
+🔴 Flag a timestamp column whose SQL type disagrees with its entity's Java
+type. The convention in this schema follows the Java type: an `Instant` field
+(an exact moment: `created_at`, `issued_at`, `expires_at`, `last_used_at`,
+`updated_at`) maps to `TIMESTAMPTZ NOT NULL DEFAULT NOW()` where it has a
+default (`users`, `albums`, `album_assets`, `search_presets`,
+`refresh_tokens`, `user_preferences` all do); a `LocalDateTime` field (a wall
+clock value with no zone) maps to `TIMESTAMP`. The `LocalDateTime` columns are
+`assets.*_date_time` (file system times), `asset_exif.date_taken` (EXIF
+`DateTimeOriginal` carries no zone, V7 and V33) and the pipeline's
+`assets.*_completed_at` (V32). Spring Batch's `BATCH_*` tables (V16) use the
+framework's own `TIMESTAMP(9)` and are not reviewed.
+
+🟡 Flag a new column that records *when something happened* (created, updated,
+issued, expired, completed) declared `TIMESTAMP` with a `LocalDateTime` field:
+prefer `TIMESTAMPTZ` with an `Instant`, because the value is a moment and a
+zone-less column cannot be compared across servers. Known cases to verify
+rather than assume: the V32 `*_completed_at` columns are zone-less, and
+`assets.deleted_at` is `TIMESTAMPTZ` (V10) while `AssetEntity.deletedAt` is a
+`LocalDateTime`. Neither needs a data migration to fix retroactively; decide
+the type before the next column of that kind, not after.
 
 🟡 Flag `VARCHAR` without an explicit length (`VARCHAR(255)` etc.) when the
 column has a genuine natural bound (usernames, enum-backed status columns,
@@ -261,11 +275,15 @@ here because it's the single most consequential mistake in this area.)
 `lower_snake_case` matching the existing files — e.g.
 `V14__add_file_type_to_assets.sql`, not `V14_addFileTypeToAssets.sql`).
 
-🟡 Flag a new version number that isn't the next sequential integer after the
-highest existing `V{n}` in `db/migration/` — check the actual highest version
-present (not just the highest-numbered file matching a guess), since this
-schema's versions are not contiguous by *filename sort* alone (e.g. `V1` sorts
-after `V10`–`V19` alphabetically; always compare the numeric value).
+🟡 Flag a new migration whose version number is not one above the highest
+existing `V{n}` in `db/migration/` — compare the numeric value, never the
+filename sort (`V1` sorts after `V10`–`V19` alphabetically) — or that reuses a
+number already present or one abandoned earlier. The version sequence has
+documented gaps (`V20`–`V25` and `V28`–`V31`, see the directory's
+`README.md`): they are migrations abandoned before merge, not findings, and
+they are never filled or renumbered. A migration abandoned from now on should
+leave a no-op placeholder (like `V5__no_op.sql`) or a line in that `README.md`
+instead of a silent gap.
 
 🔴 Flag a new `@Column(nullable = false)` on an entity with no matching
 `NOT NULL` (or a `NOT NULL` added via a follow-up `ALTER TABLE ... SET NOT
@@ -385,6 +403,6 @@ After finishing the selected scope, run the widest verification available
 (`mvn clean test` at minimum; `mvn verify -Pintegration-tests` if any
 migration file changed, since only the Testcontainers-backed integration
 suite actually exercises Flyway against real PostgreSQL) once before asking
-what's next. Then:
+what's next.
 
 [← Back to README](../README.md)
