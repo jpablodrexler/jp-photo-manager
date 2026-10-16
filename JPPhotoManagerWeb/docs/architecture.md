@@ -17,7 +17,7 @@ graph TB
     end
 
     subgraph messaging["Messaging — port 9092"]
-        Kafka["Apache Kafka\n(KRaft, apache/kafka:3.9.0)\njob.catalog.progress · job.sync.progress\njob.convert.progress · asset.cataloged · asset.deleted"]
+        Kafka["Apache Kafka\n(KRaft, apache/kafka:3.9.0)\njob.catalog.progress · job.sync.progress\njob.convert.progress · job.upload.progress\nasset.cataloged · asset.deleted · asset.uploaded"]
     end
 
     subgraph persistence["Persistence"]
@@ -50,19 +50,19 @@ graph LR
         C["Controllers\n(primary adapters)"]
         WDTO["HTTP DTOs\n+ MapStruct mappers"]
     end
-    subgraph APP["application/usecase/"]
-        UC["Use-case Impls\n(one class per interface\n@Service @Transactional)"]
-        ADTO["Application DTOs\n(AssetFilter,\nPaginatedResult…)"]
+    subgraph APP["application/"]
+        UC["usecase/\nUse-case Impls\n(one class per interface\n@Service @Transactional)"]
+        ADTO["dto/\nApplication DTOs\n(progress messages,\nevents, results,\nPaginatedData…)"]
     end
     subgraph D["domain/"]
         PI["port/in/\n(use-case interfaces)"]
         PO["port/out/\n(repository + service ports)"]
-        M["model/\n(pure POJOs)"]
+        M["model/\n(pure POJOs, incl.\nAssetFilter,\nPaginatedResult)"]
         E["enums/"]
     end
     subgraph INFRA["infrastructure/persistence/ + service/"]
         PA["Persistence Adapters\n(XxxRepositoryImpl)"]
-        SA["Service Adapters\n(StorageServiceAdapter,\nJwtTokenAdapter…)"]
+        SA["Service Adapters\n(StorageServiceAdapter,\nJwtTokenServiceAdapter…)"]
         JPA["Spring Data JPA\n+ @Entity classes"]
         EM["MapStruct entity\nmappers"]
     end
@@ -97,27 +97,37 @@ Controllers in `infrastructure/web/controller/` delegate directly to use-case in
 erDiagram
     folders {
         bigserial folder_id PK
-        text path UK
+        text path
     }
     assets {
         bigserial asset_id PK
         bigint folder_id FK
         text file_name
         bigint file_size
+        varchar file_type
+        boolean is_video
         integer pixel_width
         integer pixel_height
+        integer thumbnail_pixel_width
+        integer thumbnail_pixel_height
         text image_rotation
+        timestamp thumbnail_creation_date_time
         text hash
-        integer rating
+        smallint rating
         timestamp file_creation_date_time
-        timestamp deleted_at
+        timestamp file_modification_date_time
+        timestamptz deleted_at
+        varchar processing_status
+        timestamp hash_completed_at
+        timestamp exif_completed_at
+        timestamp thumbnail_completed_at
     }
     asset_exif {
         bigint asset_id PK, FK
-        text camera_make
-        text camera_model
-        text lens_model
-        text exposure_time
+        varchar camera_make
+        varchar camera_model
+        varchar lens_model
+        varchar exposure_time
         double f_number
         integer iso_speed
         double focal_length
@@ -128,38 +138,52 @@ erDiagram
         double gps_longitude
         jsonb raw_exif
     }
+    asset_audio {
+        bigserial id PK
+        bigint asset_id UK, FK
+        varchar title
+        varchar artist
+        varchar album
+        integer duration_seconds
+        integer bitrate_kbps
+        integer sample_rate_hz
+    }
     users {
         uuid id PK
         varchar username UK
-        text password_hash
+        varchar password_hash
         varchar role
-        timestamp created_at
+        timestamptz created_at
     }
     albums {
         bigserial album_id PK
         uuid user_id FK
-        text name
+        varchar name
         text description
-        timestamp created_at
+        jsonb filter_json
+        timestamptz created_at
     }
     album_assets {
-        bigint album_id FK
-        bigint asset_id FK
+        bigint album_id PK, FK
+        bigint asset_id PK, FK
+        timestamptz added_at
     }
     refresh_tokens {
-        bigserial id PK
+        bigserial token_id PK
         uuid user_id FK
-        text token_hash
-        timestamp expires_at
+        text token UK
+        timestamptz expires_at
+        boolean revoked
+        timestamptz issued_at
         varchar user_agent
         timestamptz last_used_at
     }
     search_presets {
         bigserial preset_id PK
         uuid user_id FK
-        text name
-        text search_criteria
-        timestamp created_at
+        varchar name
+        text filter_json
+        timestamptz created_at
     }
     sync_assets_directories_definitions {
         bigserial id PK
@@ -167,6 +191,7 @@ erDiagram
         text destination_directory
         boolean include_sub_folders
         boolean delete_assets_not_in_source
+        integer sort_order
     }
     convert_assets_directories_definitions {
         bigserial id PK
@@ -174,14 +199,19 @@ erDiagram
         text destination_directory
         boolean include_sub_folders
         boolean delete_assets_not_in_source
+        integer sort_order
+    }
+    recent_target_paths {
+        bigserial id PK
+        text path
     }
     tags {
         serial tag_id PK
         varchar name UK
     }
     asset_tags {
-        bigint asset_id FK
-        bigint tag_id FK
+        bigint asset_id PK, FK
+        bigint tag_id PK, FK
     }
     user_preferences {
         uuid user_id PK, FK
@@ -191,6 +221,7 @@ erDiagram
 
     folders ||--o{ assets : "contains"
     assets ||--o| asset_exif : "has EXIF"
+    assets ||--o| asset_audio : "has audio metadata"
     users ||--o{ albums : "owns"
     users ||--o{ refresh_tokens : "has"
     users ||--o{ search_presets : "owns"
@@ -199,7 +230,7 @@ erDiagram
     assets }o--o{ tags : "asset_tags"
 ```
 
-The `asset_audit_log` collection (user-action history) lives in MongoDB, not PostgreSQL, so it isn't part of this diagram — see [Persistence](backend.md#persistence).
+The `asset_audit_log` collection (user-action history) lives in MongoDB, not PostgreSQL, so it isn't part of this diagram — see [Persistence](backend.md#persistence). The Spring Batch metadata tables (`BATCH_*`, created by V16 from the framework's own schema) are left out too. The diagram is the schema after the latest Flyway migration; the migration history, including the gaps in the version numbers, is in the migration directory's `README.md`.
 
 ## Frontend Component Hierarchy
 
@@ -219,6 +250,7 @@ graph TD
     App --> RecycleBin["RecycleBinComponent\n/recycle-bin"]
     App --> UserAdmin["UserAdminComponent\n/admin/users"]
     App --> Analytics["AnalyticsComponent\n/analytics"]
+    App --> Sessions["SessionsComponent\n/profile/sessions"]
 
     Gallery --> FolderNav["FolderNavComponent\n(folder tree sidebar)"]
     Gallery --> Thumbnail["ThumbnailComponent\n(shared card)"]
@@ -266,6 +298,7 @@ JPPhotoManagerWeb/
 └── scripts/               # Helper shell scripts (all cd to JPPhotoManagerWeb/ on their own)
     ├── build-and-deploy-k8s.sh # Builds images and applies the Kubernetes stack end-to-end
     ├── cleanup-k8s.sh          # Tears down the Kubernetes stack and locally built images
+    ├── run-all-quality-reports.sh # Runs every report-only quality metric script
     ├── port-forward-k8s.sh     # Starts background port-forwards for Grafana/PostgreSQL/MongoDB/Kafka
     └── migrate-db.sh           # One-time migration of a host PostgreSQL catalog into Docker Compose
 ```
