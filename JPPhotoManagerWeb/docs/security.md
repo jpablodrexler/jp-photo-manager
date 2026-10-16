@@ -6,7 +6,7 @@ Authentication and what the `security-reviewer` skill checks in this project.
 
 ## Authentication
 
-The application uses **JWT stored in an HttpOnly cookie** (`SameSite=Strict`, `Path=/`), alongside a longer-lived `refreshToken` HttpOnly cookie used only to obtain a new JWT. All `/api/**` endpoints require the `jwt` cookie except the three under `/api/auth/` below. Because the browser attaches cookies automatically to every same-origin request — including `<img src="...">` image loads and the native `EventSource` API — no custom `Authorization` header is needed and there is no risk of token theft via JavaScript.
+The application uses **JWT stored in an HttpOnly cookie** (`SameSite=Strict`, `Path=/`), alongside a longer-lived `refreshToken` HttpOnly cookie (`SameSite=Strict`, `Path=/api/auth`, so the browser sends it only to the auth endpoints) used only to obtain a new JWT. All `/api/**` endpoints require the `jwt` cookie except the three under `/api/auth/` below (`SecurityConfig` also permits Swagger UI and `/v3/api-docs/**`, `/actuator/health` and `/actuator/prometheus` without it). Because the browser attaches cookies automatically to every same-origin request — including `<img src="...">` image loads and the native `EventSource` API — no custom `Authorization` header is needed and there is no risk of token theft via JavaScript.
 
 ## Public endpoints
 
@@ -424,11 +424,15 @@ two files specifically rather than skipping the whole directory.
 Tokens in URLs appear in server logs and browser history. The project uses
 HttpOnly cookies — see `java-developer` skill §15.1 for the correct pattern.
 
-🔴 Flag any `ResponseCookie` that is missing `.httpOnly(true)`, `.sameSite("Strict")`,
-or `.path("/")`.
+🔴 Flag any `ResponseCookie` that is missing `.httpOnly(true)`, `.sameSite("Strict")`
+or an explicit `.path(...)`. The path is deliberate per cookie: `/` for the JWT
+cookie and `REFRESH_COOKIE_PATH` (`/api/auth`) for the refresh cookie, both in
+`AuthCookieFactory`; flag a cookie whose path is wider than that.
 
-🟡 Flag any `ResponseCookie` that sets `secure: false` when the app is deployed
-over HTTPS.
+🟡 Flag any `ResponseCookie` built without `.secure(true)` (or with
+`secure: false`) when the app is deployed over HTTPS. `AuthCookieFactory`
+currently never sets `Secure`: verify whether that is still true and whether
+TLS terminates in front of the app.
 
 #### 4.2 Spring Security Filter Chain
 

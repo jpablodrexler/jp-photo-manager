@@ -155,7 +155,7 @@ of thousands) and has no supporting index. Concretely check every `@Query` in
 `JpaAssetRepository`/`JpaFolderRepository` against the indexes actually
 created by migrations, not against what `@Table(indexes=...)` claims (§3.4).
 Known example to verify hasn't regressed: `AssetEntity.hash` is queried by
-`findByHash` (`WHERE a.hash = :hash`) and by the duplicate-detection queries
+`findByHashNotDeleted` (`WHERE a.hash = :hash` on non-deleted assets) and by the duplicate-detection queries
 (`GROUP BY a.hash HAVING COUNT(a) > 1`, and the correlated subquery in
 `countDuplicates`) but as of this schema has **no index** — flag this as 🔴 if
 still true, since duplicate detection runs a full sequential scan of `assets`
@@ -306,8 +306,8 @@ the migration if it deviates.
 🟡 Flag `ON DELETE CASCADE` on a relationship where cascading would silently
 destroy data the user would expect to survive (e.g. cascading an asset
 delete into audit/history data) — cross-check against
-`java-developer`/`CLAUDE.md`'s note that MongoDB `asset_exif`/
-`asset_audit_log` deletion is handled explicitly in application code
+`java-developer`/`CLAUDE.md`'s note that MongoDB `asset_audit_log`
+deletion is handled explicitly in application code
 precisely *because* Postgres cascade can't reach them; a new Postgres-side
 cascade that duplicates or conflicts with an existing explicit-delete code
 path is worth flagging.

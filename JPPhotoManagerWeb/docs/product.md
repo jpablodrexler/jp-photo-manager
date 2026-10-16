@@ -60,8 +60,9 @@ defensible, the sum of them a trap:
   planned deleting feature (a WebDAV mount's deletes, an auto-resolve cleanup)
   do. A user who has restored one deleted photo will assume the same safety net
   exists everywhere, and find out otherwise only by losing a file.
-- **Edit models that differ.** Shipped Crop saves in place; planned
-  `asset-image-editor` (#56) saves a new asset with an optional replace. A user
+- **Edit models that differ.** Shipped Crop (#62) hands the cropped image to
+  the browser as a download; planned `asset-image-editor` (#56) saves a new
+  asset with an optional replace of the original. A user
   who learns one will be surprised by the other.
 - **Scattered "where do I do X"** — where background operations (catalog,
   sync, convert, any future backup or video job) are started, where their

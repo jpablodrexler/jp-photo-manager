@@ -315,8 +315,9 @@ P5. **State management** — RxJS and/or signals in `core/services/`, no
    parent/child relationship to each other, and whose name doesn't describe a
    broadcast role, is the exact shape this skill exists to catch — flag it
    with the full consumer count and the list of features it spans. Start with
-   services that already look cross-cutting (`background-sync.service.ts`,
-   `media-player.service.ts`, `theme.service.ts`) but check every service.
+   services that already look cross-cutting (`media-player.service.ts`,
+   `theme.service.ts`; `background-sync.service.ts` is an IndexedDB queue, not
+   a signal or subject, so it is a different kind of check) but check every service.
 P6. **Routing & guards** — lazy-loading coverage in `app.routes.ts`,
    functional guard usage (`authGuard`), whether route-level concerns (auth
    gating) stay out of feature components.
@@ -343,8 +344,12 @@ P9. **Layer boundaries & the dependency rule** — verify, don't assume, with
    these greps (each hit is a finding unless it is a documented exception):
    - `domain/` importing `org.springframework`, `jakarta.`, or anything from
      `infrastructure/` (`Grep -rn "import org.springframework\|import jakarta\|import .*\.infrastructure\." <pkg>/domain`);
-   - `application/usecase/` importing `infrastructure/` or Spring Data types
-     (`...infrastructure\.` / `JpaRepository`);
+   - `application/usecase/` importing `infrastructure/`, Spring Data types
+     (`...infrastructure\.` / `JpaRepository`) or any other framework or HTTP
+     type (`KafkaTemplate`, `SecurityContextHolder`, `PasswordEncoder`, Spring
+     Batch, Spring MVC): `JPPhotoManagerWeb/CLAUDE.md` says use cases hold no
+     Spring MVC, Spring Data or HTTP types, and a use case that talks to Kafka
+     should go through a `domain/port/out` port;
    - controllers in `infrastructure/web/controller/` importing a repository
      port, `persistence/`, `@Entity` classes, or a service adapter instead of
      a `domain/port/in/` use-case interface;
