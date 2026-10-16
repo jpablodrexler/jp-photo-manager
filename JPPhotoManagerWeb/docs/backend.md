@@ -44,7 +44,7 @@ The backend follows the same Hexagonal (Ports and Adapters) layout described in 
 ```
 application/
   dto/                   → Application DTOs: progress messages (CatalogProgressMessage,
-                           SyncProgressMessage, ConvertProgressMessage), AssetFilter, PaginatedResult…
+                           SyncProgressMessage, ConvertProgressMessage), domain events, results…
   exception/              → Domain/application exceptions (AssetNotFoundException,
                            UserNotFoundException, PasswordPolicyException, …), handled centrally by
                            `infrastructure/web/exception/GlobalExceptionHandler`
@@ -63,7 +63,7 @@ infrastructure/
     controller/          → REST controllers (AssetController, AlbumController, AuthController, …)
     dto/                  → HTTP request/response DTOs
     mapper/               → MapStruct HTTP DTO ↔ domain mappers
-    filter/               → JwtAuthenticationFilter, RateLimitFilter (Bucket4j, backed by Redis),
+    filter/               → RateLimitFilter (Bucket4j, backed by Redis),
                             RequestCorrelationFilter (requestId/username MDC + X-Request-ID header)
     exception/            → GlobalExceptionHandler
   persistence/
@@ -75,7 +75,7 @@ infrastructure/
     document/              → AuditLogDocument (Mongo document)
     redis/                 → RedisRefreshTokenStore (refresh-token mirror)
   service/                → Service adapters: StorageServiceAdapter, ThumbnailStorageServiceAdapter,
-                           JwtTokenServiceAdapter, RefreshTokenServiceAdapter, CatalogScheduler,
+                           JwtTokenServiceAdapter, RefreshTokenServiceAdapter, JwtAuthenticationFilter, CatalogScheduler,
                            AssetSearchCacheServiceAdapter (Redis query-cache eviction),
                            KafkaProgressRegistry (runId → SseEmitter + CompletableFuture map)
   kafka/                  → KafkaProgressListener (SSE bridge), AuditLogKafkaListener,

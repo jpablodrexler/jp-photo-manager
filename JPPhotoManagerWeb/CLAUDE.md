@@ -119,7 +119,8 @@ Hexagonal (Ports and Adapters) architecture in a single Maven module (`com.jpabl
 
 ```
 domain/
-  model/              → Pure POJO domain objects (no framework imports)
+  model/              → Pure POJO domain objects (no framework imports), including
+                        AssetFilter and PaginatedResult
   port/
     in/               → Use-case interfaces (one interface, one method each), grouped by
                         subdomain: album, analytics, asset, audit, auth, catalog, convert,
@@ -128,8 +129,8 @@ domain/
   enums/              → ImageRotation, SortCriteria, WallpaperStyle, ReasonEnum
 
 application/
-  dto/                → Framework-free application DTOs (AssetFilter, PaginatedResult,
-                        CatalogProgressMessage, SyncProgressMessage, ConvertProgressMessage, …)
+  dto/                → Framework-free application DTOs (CatalogProgressMessage,
+                        SyncProgressMessage, ConvertProgressMessage, domain events, …)
   usecase/            → One implementation class per use-case interface (@Service @Transactional),
                         grouped the same way as port/in/
 
@@ -146,12 +147,13 @@ infrastructure/
                         see `docs/backend.md` for the full list
     dto/              → HTTP request/response DTOs
     mapper/           → MapStruct domain ↔ HTTP DTO mappers
-    filter/           → JwtAuthenticationFilter, RateLimitFilter (Bucket4j + Redis),
+    filter/           → RateLimitFilter (Bucket4j + Redis),
                         RequestCorrelationFilter (tags every request with an MDC
                         requestId/username and an X-Request-ID response header)
     exception/        → GlobalExceptionHandler and HTTP exceptions
   service/            → Service adapters (StorageServiceAdapter, ThumbnailStorageServiceAdapter,
-                        JwtTokenServiceAdapter, RefreshTokenServiceAdapter, CatalogScheduler, …)
+                        JwtTokenServiceAdapter, RefreshTokenServiceAdapter, JwtAuthenticationFilter,
+                        CatalogScheduler, …)
   kafka/              → KafkaProgressListener (SSE bridge), AuditLogKafkaListener,
                         AssetSearchCacheInvalidationListener, upload-pipeline processors —
                         see `kafka-events-conventions` skill and `docs/catalog-process.md`
@@ -174,7 +176,7 @@ infrastructure/
 **Key service ports** (interfaces in `domain/port/out/`, adapters in `infrastructure/service/`):
 - `StoragePort` / `StorageServiceAdapter` — file I/O, thumbnail generation, EXIF rotation (Apache Commons Imaging), SHA-256
 - `ThumbnailPort` / `ThumbnailStorageServiceAdapter` — thumbnail read/write/delete on disk, fronted by a Redis L2 cache (`redis-thumbnail-cache`)
-- `JwtTokenPort` / `JwtTokenAdapter` — JWT generation and validation (delegates to `JwtUtil`)
+- `JwtTokenPort` / `JwtTokenServiceAdapter` — JWT generation and validation (delegates to `JwtUtil`)
 
 **Persistence, caching, thumbnails, and real-time progress:** covered in
 detail in `docs/backend.md` (Persistence, key services) and
