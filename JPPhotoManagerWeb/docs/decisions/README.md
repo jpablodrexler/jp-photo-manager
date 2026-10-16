@@ -15,4 +15,4 @@ for the workflow and template.
 
 | # | Title | Status | Date |
 | - | ----- | ------ | ---- |
-| 0001 | Replace the project's workflow skills with backlog-kit's and keep the project-specific checks in the reference docs | Proposed | 2026-10-14 |
+| 0001 | Replace the project's workflow skills with backlog-kit's and keep the project-specific checks in the reference docs | Accepted | 2026-10-14 |
