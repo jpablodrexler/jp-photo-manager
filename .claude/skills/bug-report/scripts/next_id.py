@@ -1,18 +1,26 @@
 #!/usr/bin/env python3
 """
-Scan JPPhotoManagerWeb/docs/backlog/bugs-open.md, bugs-fixed.md (their
-`Bug ID` cells, plain or linked as `[BUG-NNN](bugs/BUG-NNN.md)`) and the
-filenames in JPPhotoManagerWeb/docs/backlog/bugs/ for the next free BUG-NNN
-id — bug-report/SKILL.md step 3's mechanical numbering rule (take max+1,
-zero-padded to 3 digits; one global sequence, never reused).
+Scan <backlog>/bugs-open.md, bugs-fixed.md (their `Bug ID` cells,
+plain or linked as `[BUG-NNN](bugs/BUG-NNN.md)`) and the filenames in
+<backlog>/bugs/ for the next free BUG-NNN id — bug-report/SKILL.md
+step 3's mechanical numbering rule (take max+1, zero-padded to 3 digits;
+one global sequence, never reused).
 
 Usage:
     python3 next_id.py <repo-root>
 """
 import re
+import sys
 import json
 import argparse
 from pathlib import Path
+
+_here = Path(__file__).resolve()
+for _cand in (_here.parent, _here.parents[3] / "lib"):
+    if (_cand / "backlog_kit.py").is_file():
+        sys.path.insert(0, str(_cand))
+        break
+import backlog_kit as bk
 
 
 def collect_numbers(path):
@@ -41,7 +49,7 @@ def main():
     args = ap.parse_args()
 
     root = Path(args.repo_root)
-    backlog = root / "JPPhotoManagerWeb" / "docs" / "backlog"
+    backlog = root / bk.load_config(root)["paths"]["backlog_dir"].strip("/")
     nums = (collect_numbers(backlog / "bugs-open.md")
             + collect_numbers(backlog / "bugs-fixed.md")
             + collect_filenames(backlog / "bugs"))

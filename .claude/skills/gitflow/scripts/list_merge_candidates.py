@@ -19,15 +19,15 @@ Usage:
 """
 import json
 import argparse
-import subprocess
 from pathlib import Path
+
+from gitread import GitError, git
 
 PREFIXES = ["feature", "fix", "doc", "skill", "chore", "release", "hotfix"]
 
 
 def run(root, *args):
-    out = subprocess.run(["git", *args], cwd=str(root), capture_output=True, text=True)
-    return out.stdout.strip()
+    return git(root, *args, check=False).strip()
 
 
 def main():
@@ -40,17 +40,18 @@ def main():
     root = Path(args.repo_root)
 
     if not args.no_fetch:
-        fetch_out = subprocess.run(["git", "fetch", "origin", "--prune"], cwd=str(root),
-                                    capture_output=True, text=True)
-        if fetch_out.returncode != 0:
-            print(json.dumps({"error": f"git fetch origin --prune failed: {fetch_out.stderr.strip()}"}))
+        try:
+            git(root, "fetch", "origin", "--prune")
+        except GitError as e:
+            print(json.dumps({"error": f"git fetch origin --prune failed: {e}"}))
             return
 
-    local_patterns = [f"{p}/*" for p in PREFIXES]
-    remote_patterns = [f"origin/{p}/*" for p in PREFIXES]
+    local_patterns = [f"refs/heads/{p}/" for p in PREFIXES]
+    remote_patterns = [f"refs/remotes/origin/{p}/" for p in PREFIXES]
 
-    local_raw = run(root, "branch", "--list", *local_patterns, "--format=%(refname:short)")
-    remote_raw = run(root, "branch", "-r", "--list", *remote_patterns, "--format=%(refname:short)")
+    # for-each-ref instead of `git branch --list <patterns>`: the allowlisted reader does not take patterns.
+    local_raw = run(root, "for-each-ref", "--format=%(refname:short)", *local_patterns)
+    remote_raw = run(root, "for-each-ref", "--format=%(refname:short)", *remote_patterns)
 
     local_branches = {b for b in local_raw.splitlines() if b.strip()}
     remote_branches = {b[len("origin/"):] for b in remote_raw.splitlines() if b.strip() and b.startswith("origin/")}

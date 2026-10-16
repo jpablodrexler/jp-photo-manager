@@ -20,4 +20,4 @@ Target frameworks, nullability, code style enforcement, logging, DI registration
 
 ## Web Application
 
-The web rewrite under `JPPhotoManagerWeb/` is a separate sub-project with its own `JPPhotoManagerWeb/CLAUDE.md` — see that file for its commands, architecture, and conventions.
+The web rewrite under `JPPhotoManagerWeb/` is a separate sub-project with its own `JPPhotoManagerWeb/CLAUDE.md` — see that file for its commands, architecture, and conventions, and for the `Kit conventions` table that tells the backlog-kit skills (installed in `.claude/skills/`, configured by `.backlog-kit.toml`) where its backlog and docs are. The skills do not cover the WPF application.

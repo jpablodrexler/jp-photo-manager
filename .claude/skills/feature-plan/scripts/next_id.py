@@ -1,19 +1,26 @@
 #!/usr/bin/env python3
 """
-Scan JPPhotoManagerWeb/docs/backlog/features-planned.md and
-features-implemented.md for the next free feature number and check a
-candidate change-name for a collision — feature-plan/SKILL.md step 3's
-mechanical numbering rule (scan both files' `#` columns and the
-JPPhotoManagerWeb/docs/backlog/features/NNN-<name>.md filenames, take
-max+1; numbers are one global sequence, never reused).
+Scan <backlog>/features-planned.md and features-implemented.md for the
+next free feature number and check a candidate change-name for a
+collision — feature-plan/SKILL.md step 3's mechanical numbering rule
+(scan both files' `#` columns and the <backlog>/features/NNN-<name>.md
+filenames, take max+1; numbers are one global sequence, never reused).
 
 Usage:
     python3 next_id.py <repo-root> [--check-name <kebab-case-name>]
 """
 import re
+import sys
 import json
 import argparse
 from pathlib import Path
+
+_here = Path(__file__).resolve()
+for _cand in (_here.parent, _here.parents[3] / "lib"):
+    if (_cand / "backlog_kit.py").is_file():
+        sys.path.insert(0, str(_cand))
+        break
+import backlog_kit as bk
 
 
 def split_row(line):
@@ -48,7 +55,7 @@ def collect_numbers_and_names(path):
 
 
 def collect_file_numbers_and_names(features_dir):
-    """Numbers/names from backlog/features/NNN-<change-name>.md filenames."""
+    """Numbers/names from <backlog>/features/NNN-<change-name>.md filenames."""
     numbers, names = [], []
     d = Path(features_dir)
     if not d.is_dir():
@@ -68,7 +75,7 @@ def main():
     args = ap.parse_args()
 
     root = Path(args.repo_root)
-    backlog = root / "JPPhotoManagerWeb" / "docs" / "backlog"
+    backlog = root / bk.load_config(root)["paths"]["backlog_dir"].strip("/")
     planned = backlog / "features-planned.md"
     implemented = backlog / "features-implemented.md"
 

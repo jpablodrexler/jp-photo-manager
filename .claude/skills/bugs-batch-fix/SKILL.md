@@ -5,17 +5,21 @@ description: >-
   open backlog — one bug at a time on a single shared fix/ branch, with zero
   git commits. Built for long unattended stretches, checking in only when a
   bug genuinely needs a human decision. Writes a dated, incrementally-updated
-  report to JPPhotoManagerWeb/docs/reports/bug-batch/ so progress survives a
-  cutoff or crash. TRIGGER when asked to batch-fix bugs, work through the bug
-  backlog unattended, or fix a list of named BUG-NNNs in one run (e.g. "fix
-  BUG-004, BUG-007 and BUG-009 while I'm out"), or when several fresh bugs are
-  handed over to fix in one session — file each with bug-report first, then
-  run this skill. Bug-family counterpart to features-batch-development.
+  report to <reports>/bug-batch/ so progress survives a cutoff or crash.
+  TRIGGER when asked to batch-fix bugs, work through the bug backlog
+  unattended, or fix a list of named BUG-NNNs in one run (e.g. "fix BUG-004,
+  BUG-007 and BUG-009 while I'm out"), or when several fresh bugs are handed
+  over to fix in one session — file each with bug-report first, then run this
+  skill. Bug-family counterpart to features-batch-development.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "0.1"
 ---
+
+`<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`; `<reports>` is the `reports` folder next to the backlog's parent (`docs/reports` by default).
+
+**Never run `git commit`, `git push` or open a PR.**
 
 Run `bug-fix` in a loop over a list of Bug IDs, all on one shared `fix/`
 branch, never committing, writing progress to a resumable report as each
@@ -42,8 +46,8 @@ branch across the whole run**, and **zero commits, ever**.
 One accepted consequence of no-commit: `bug-fix`'s Phase 2 reviews scope
 to `git status --porcelain`, which — from bug #2 onward — includes every
 earlier bug's still-uncommitted files. Later bugs' reviews re-scan earlier
-bugs' already-fixed code. Unavoidable without committing between bugs
-(which the user has ruled out), not a defect to fix here.
+bugs' already-fixed code. Unavoidable without committing between bugs (which
+the user has ruled out), not a defect to fix here.
 
 ---
 
@@ -51,11 +55,9 @@ bugs' already-fixed code. Unavoidable without committing between bugs
 
 ### 1. Resolve the bug list
 
-**Named IDs** (form (a)): parse into an ordered list. Resolve each against
-`JPPhotoManagerWeb/docs/backlog/bugs-open.md`'s `## Bug List` table by
-`Bug ID` (the first cell is the link `[BUG-NNN](bugs/BUG-NNN.md)` — match
-on the link text; each bug's repro details are in
-`JPPhotoManagerWeb/docs/backlog/bugs/BUG-NNN.md`, which `bug-fix` reads).
+**Named IDs** (form (a)): parse into an ordered list (each bug's write-up
+is `<backlog>/bugs/<bug-id>.md`; `bug-fix` Phase 0 reads it). Resolve each against
+`<backlog>/bugs-open.md`'s `## Bug List` table by `Bug ID`.
 - Resolves to nothing (not in `bugs-open.md` or `bugs-fixed.md`) → stop
   and ask the user to correct it.
 - Resolves to a row in `bugs-fixed.md` (already closed) → tell the user
@@ -79,9 +81,8 @@ Build the final ordered list of Bug IDs — "the requested list".
 
 ### 2. Determine the shared branch, and detect a resumable run
 
-Check `JPPhotoManagerWeb/docs/reports/bug-batch/` for a
-`BUG_BATCH_REPORT_*.md` whose recorded "Requested bugs" list overlaps
-substantially with the new one.
+Check `<reports>/bug-batch/` for a `BUG_BATCH_REPORT_*.md` whose
+recorded "Requested bugs" list overlaps substantially with the new one.
 
 - **Exact / near-exact match, not fully checked off** → resume. Read which
   bugs it marks `✅ Closed`; skip those in Step 4. Use the branch name in
@@ -153,9 +154,10 @@ Continue to the next Bug ID unless the user chose to stop.
 ### 5. Writing the ≤2-sentence summary
 
 After a bug closes, read the row `bugs-archive` just wrote to
-`JPPhotoManagerWeb/docs/backlog/bugs-fixed.md` (and its Resolution line)
-and write a fresh, condensed summary — what the root cause was and what
-the fix changed. Two sentences, never more.
+`<backlog>/bugs-fixed.md` and the Resolution line `bugs-archive` appended
+to `<backlog>/bugs/<bug-id>.md`, and write a fresh,
+condensed summary — what the root cause was and what the fix changed. Two
+sentences, never more.
 
 ### 6. Ending the run
 
@@ -166,20 +168,18 @@ and an end timestamp.
 Tell the user plainly, in chat and in the report: **nothing was committed
 at any point.** The branch holds every closed bug's fix and regression
 test, entirely uncommitted. Point them at `git status` / `git diff` to
-review, and at `gitflow`'s finish-fix action to commit and open a PR —
+review, and at `gitflow`'s finish action to commit and open a PR —
 this skill does neither.
 
 ---
 
 ## The report
 
-**Path**: `JPPhotoManagerWeb/docs/reports/bug-batch/BUG_BATCH_REPORT_{YYYY-MM-DD}.md`
-— this directory is under the gitignored `JPPhotoManagerWeb/docs/reports/`
-tree, like the review-report and `feature-batch` directories; local
-working artifacts, not committed history. On a genuinely new (non-resume)
-run the same day a report already exists for, append `-2`, `-3`, …
-rather than overwriting. Resuming (Step 2) continues the same file, never
-creating a new one.
+**Path**: `<reports>/bug-batch/BUG_BATCH_REPORT_{YYYY-MM-DD}.md` — this
+directory holds local working artifacts, like the review
+reports and the `feature-batch` directory next to it — not committed history. On a genuinely new (non-resume) run the same day a
+report already exists for, append `-2`, `-3`, … rather than overwriting.
+Resuming (Step 2) continues the same file, never creating a new one.
 
 **Format**:
 

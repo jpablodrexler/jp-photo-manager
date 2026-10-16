@@ -22,8 +22,8 @@ The fastest way to run the full stack. No local Java, Maven, Node.js, or Postgre
    | Variable | Description |
    |---|---|
    | `HOST_IMAGE_DIR` | **Required.** Absolute path on your machine to the directory containing images to catalogue (e.g. `/home/yourname/Pictures`). Mounted read-write so all write features work on your actual files. |
-   | `HOST_IMAGE_DIR_2` … `HOST_IMAGE_DIR_N` | *Optional.* Additional directories to catalogue. See [Configuring multiple catalog root folders](authentication.md#configuring-multiple-catalog-root-folders). |
-   | `JWT_SECRET` | **Required.** HS256 signing secret. See [Generating JWT_SECRET](authentication.md#generating-jwt_secret) below. |
+   | `HOST_IMAGE_DIR_2` … `HOST_IMAGE_DIR_N` | *Optional.* Additional directories to catalogue. See [Configuring multiple catalog root folders](security.md#configuring-multiple-catalog-root-folders). |
+   | `JWT_SECRET` | **Required.** HS256 signing secret. See [Generating JWT_SECRET](security.md#generating-jwt_secret) below. |
    | `POSTGRES_DB` | Database name (default: `photomanager`). |
    | `POSTGRES_USERNAME` | Database user (default: `postgres`). |
    | `POSTGRES_PASSWORD` | Database password (default: `postgres`). |

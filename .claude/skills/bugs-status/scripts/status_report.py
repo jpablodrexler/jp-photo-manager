@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-Compute the bug-tracker status report for jp-photo-manager: counts, the
+Compute the bug-tracker status report: counts, the
 severity/area/environment breakdown, the open-bug list, and the
 data-integrity checks (duplicate Bug IDs, rows without a bugs/BUG-NNN.md
 file, files without a row, files with a wrong H1, fixed bugs whose file
 lacks a Resolution line, stale "still shows Fixed" rows).
 
 Pure table-counting and text-pattern arithmetic over
-JPPhotoManagerWeb/docs/backlog/bugs-open.md and
-JPPhotoManagerWeb/docs/backlog/bugs-fixed.md — see
+<backlog>/bugs-open.md and
+<backlog>/bugs-fixed.md — see
 bugs-status/SKILL.md for the full rules this implements (steps 1-6).
 
 Usage:
@@ -19,6 +19,15 @@ import re
 import json
 import argparse
 from pathlib import Path
+
+_here = Path(__file__).resolve()
+for _cand in (_here.parent, _here.parents[3] / "lib"):
+    if (_cand / "backlog_kit.py").is_file():
+        sys.path.insert(0, str(_cand))
+        break
+import backlog_kit as bk
+
+BACKLOG = "docs/backlog"  # replaced in main() by [paths] backlog_dir
 
 
 def split_row(line):
@@ -85,8 +94,10 @@ def main():
     args = ap.parse_args()
 
     root = Path(args.repo_root)
-    open_path = root / "JPPhotoManagerWeb" / "docs" / "backlog" / "bugs-open.md"
-    fixed_path = root / "JPPhotoManagerWeb" / "docs" / "backlog" / "bugs-fixed.md"
+    global BACKLOG
+    BACKLOG = bk.load_config(root)["paths"]["backlog_dir"].strip("/")
+    open_path = root / BACKLOG / "bugs-open.md"
+    fixed_path = root / BACKLOG / "bugs-fixed.md"
 
     result = {
         "open_available": False,
@@ -101,7 +112,7 @@ def main():
         "percent": None,
         "severity_breakdown": {"S1": 0, "S2": 0, "S3": 0, "S4": 0, "none": 0},
         "area_breakdown": {},
-        "env_breakdown": {"local": 0, "deployed": 0, "both": 0},
+        "env_breakdown": {"local": 0},
         "active_rows": [],
         "duplicate_ids": [],
         "rows_missing_file": [],
@@ -172,7 +183,7 @@ def main():
         result["area_breakdown"][area] = result["area_breakdown"].get(area, 0) + 1
 
         env = r.get("Environment", "").strip()
-        ekey = env if env in ("local", "deployed", "both") else env or "(blank)"
+        ekey = env or "(blank)"
         result["env_breakdown"][ekey] = result["env_breakdown"].get(ekey, 0) + 1
 
         result["active_rows"].append({
@@ -189,7 +200,7 @@ def main():
             seen[bug_id] = seen.get(bug_id, 0) + 1
     result["duplicate_ids"] = sorted([b for b, c in seen.items() if c > 1])
 
-    bugs_dir = root / "JPPhotoManagerWeb" / "docs" / "backlog" / "bugs"
+    bugs_dir = root / BACKLOG / "bugs"
     all_row_ids = {i for i in open_ids if i} | fixed_ids
     closed_open_ids = {r.get("Bug ID", "").strip() for r in open_rows
                        if "Won" in r.get("Status", "") or "Cannot reproduce" in r.get("Status", "")}
@@ -224,9 +235,9 @@ def render_markdown(r):
     if r["total"] is None:
         missing = []
         if not r["open_available"]:
-            missing.append("JPPhotoManagerWeb/docs/backlog/bugs-open.md")
+            missing.append(f"{BACKLOG}/bugs-open.md")
         if not r["fixed_available"]:
-            missing.append("JPPhotoManagerWeb/docs/backlog/bugs-fixed.md")
+            missing.append(f"{BACKLOG}/bugs-fixed.md")
         lines.append(f"**Total/Progress unavailable** — missing or table-less: {', '.join(missing)}")
         lines.append("")
     else:
@@ -267,9 +278,8 @@ def render_markdown(r):
     lines.append("")
     lines.append("| Environment | Count |")
     lines.append("| ----------- | ----- |")
-    lines.append(f"| local | {r['env_breakdown'].get('local', 0)} |")
-    lines.append(f"| deployed | {r['env_breakdown'].get('deployed', 0)} |")
-    lines.append(f"| both  | {r['env_breakdown'].get('both', 0)} |")
+    for env_name, env_count in r["env_breakdown"].items():
+        lines.append(f"| {env_name} | {env_count} |")
     lines.append("")
 
     lines.append("### Open bugs")
@@ -286,13 +296,13 @@ def render_markdown(r):
     for bug_id in r["duplicate_ids"]:
         integrity.append(f"- ⚠ Duplicate Bug ID {bug_id}.")
     for bug_id in r["rows_missing_file"]:
-        integrity.append(f"- ⚠ {bug_id} has a table row but no JPPhotoManagerWeb/docs/backlog/bugs/{bug_id}.md file.")
+        integrity.append(f"- ⚠ {bug_id} has a table row but no {BACKLOG}/bugs/{bug_id}.md file.")
     for bug_id in r["files_without_row"]:
-        integrity.append(f"- ⚠ JPPhotoManagerWeb/docs/backlog/bugs/{bug_id}.md exists but {bug_id} has no table row in either file.")
+        integrity.append(f"- ⚠ {BACKLOG}/bugs/{bug_id}.md exists but {bug_id} has no table row in either file.")
     for bug_id in r["files_bad_h1"]:
-        integrity.append(f"- ⚠ JPPhotoManagerWeb/docs/backlog/bugs/{bug_id}.md does not start with a `# {bug_id}` heading.")
+        integrity.append(f"- ⚠ {BACKLOG}/bugs/{bug_id}.md does not start with a `# {bug_id}` heading.")
     for bug_id in r["fixed_missing_resolution"]:
-        integrity.append(f"- ⚠ {bug_id} is resolved but JPPhotoManagerWeb/docs/backlog/bugs/{bug_id}.md has no **Resolution:** line.")
+        integrity.append(f"- ⚠ {bug_id} is resolved but {BACKLOG}/bugs/{bug_id}.md has no **Resolution:** line.")
     for bug_id in r["fixed_here"]:
         integrity.append(f"- ⚠ {bug_id} still shows ✅ Fixed in bugs-open.md — run `bugs-archive {bug_id}` to finish the move.")
     if integrity:

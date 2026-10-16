@@ -1,9 +1,8 @@
 ---
 name: features-status
 description: >-
-  Reports feature tracking progress by counting rows in
-  JPPhotoManagerWeb/docs/backlog/features-planned.md and
-  JPPhotoManagerWeb/docs/backlog/features-implemented.md. Returns total,
+  Reports feature tracking progress by counting rows in the backlog's
+  features-planned.md and features-implemented.md. Returns total,
   implemented, pending, and percent-complete counts, a priority-tier, effort
   and artifacts-readiness breakdown of pending features, the pending feature
   names, and data-integrity issues (duplicate feature numbers, stale
@@ -17,11 +16,13 @@ description: >-
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.7"
+  version: "0.1"
 ---
 
-Report feature-tracking progress by counting rows in `JPPhotoManagerWeb/docs/backlog/features-planned.md`
-(pending) and `JPPhotoManagerWeb/docs/backlog/features-implemented.md` (implemented).
+Report feature-tracking progress by counting rows in `<backlog>/features-planned.md`
+(pending) and `<backlog>/features-implemented.md` (implemented).
+
+`<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`.
 
 **Input**: None required. The report always includes the priority-tier,
 effort, and artifacts-readiness breakdown of pending features, the pending
@@ -37,13 +38,13 @@ table-counting and text-pattern arithmetic — reading both backlog files'
 (priority tier, effort, SDD-artifacts readiness, over the pending +
 in-progress rows), and finding the data-integrity issues: duplicate
 feature numbers across both files, and a stale dependency-note claim —
-covering both this project's annotation forms (a rare heading annotation
+covering both annotation forms (a rare heading annotation
 naming an explicit still-pending state, and the actually-common prose
 aside — "#N is still pending", "#N and #M are still pending", "(#N,
 still pending)" — used to explain why a Dependencies block is duplicated
 across both backlog files) — whose referenced feature is actually already
 implemented; plus six checks of the rows against the one-file-per-feature
-briefs under `JPPhotoManagerWeb/docs/backlog/features/` (rows are read by
+briefs under `<backlog>/features/` (rows are read by
 header name, since the planned and implemented tables have different
 column sets): a table row with no `features/NNN-<name>.md` file; a
 `features/*.md` file with no row in either table; a file whose first line
@@ -51,11 +52,11 @@ is not `# Feature N — <name>`; a planned `Summary` that is empty or longer
 than 250 characters; a row missing its `[brief](features/…)` link (the
 `Brief` cell on planned rows, the `Details` cell on implemented rows); and
 an implemented row whose `[spec](…)` target does not exist (reported as a
-warning — e.g. the SDD change was never archived). Run it and display its
+warning — e.g. the SDD change was never archived). Run it (from this skill's base directory) and display its
 output directly rather than re-deriving any of this by hand:
 
 ```
-python3 .claude/skills/features-status/scripts/status_report.py <repo-root>
+python3 scripts/status_report.py <repo-root>
 ```
 
 Prints the finished `## Feature Tracker Status` report (summary table,
@@ -75,8 +76,8 @@ this skill's behavior now, not this file.
 
 ## Guardrails
 
-- Read-only skill — never modify `JPPhotoManagerWeb/docs/backlog/features-planned.md` or
-  `JPPhotoManagerWeb/docs/backlog/features-implemented.md`, including the
+- Read-only skill — never modify `<backlog>/features-planned.md` or
+  `<backlog>/features-implemented.md`, including the
   data-integrity issues the script finds — this skill only reports them.
   Fixing a stale dependency note or a duplicate number is a manual edit,
   or in the dependency-note case, `features-archive`'s job at the source
@@ -86,3 +87,4 @@ this skill's behavior now, not this file.
 - If either file is missing or has no `## Feature List` table, the
   script reports that file as unavailable rather than guessing a count —
   don't override that by reading the file by hand instead.
+- **Never run `git commit`, `git push` or open a PR.**

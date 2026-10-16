@@ -17,7 +17,9 @@ This README is split into topic-specific files under [`docs/`](docs/):
 | [Running with Docker Compose](docs/docker-compose.md) | Prerequisites, setup, first-time migration, services, monitoring (Grafana + Prometheus), common commands, running without Docker |
 | [Running with Kubernetes](docs/kubernetes.md) | Manifests, architecture differences from Docker Compose, prerequisites, setup, accessing services, common commands, troubleshooting |
 | [Catalog Process](docs/catalog-process.md) | The Spring Batch catalog job, lifecycle/triggers, job structure, Kafka messages, configuration |
-| [Authentication](docs/authentication.md) | JWT flow, configuration, generating `JWT_SECRET`, multiple catalog root folders, default admin user, user administration |
+| [Security](docs/security.md) | Authentication (JWT flow, configuration, generating `JWT_SECRET`, multiple catalog root folders, default admin user, user administration) and the security review checks |
+| [Database](docs/database.md) | The stores (PostgreSQL, MongoDB, Redis), the Flyway workflow, and the database review checks |
+| [Product](docs/product.md) | What the product is for, and the product scope review checks |
 | [curl Command Reference](docs/curl-reference.md) | Example `curl` commands for every REST endpoint, grouped by resource |
 
 ---
@@ -55,7 +57,7 @@ Each report below is a dated markdown snapshot written to `JPPhotoManagerWeb/doc
 
 ### Where each metric is calculated, and whether it's automatic
 
-Every metric is documented inside a skill under `.claude/skills/`, but "documented in a skill" and "runs automatically when you use `feature-development`" are not the same thing. `feature-development` invokes `code-reviewer` (and, conditionally, `security-reviewer`) in their **scoped Review workflow** at the end of a feature — not a full-codebase sweep, and not every report script that skill's `SKILL.md` documents. Only a metric whose checklist section says outright "run this every time" actually executes as part of that scoped review; everything else is documented (with a flagging rule for if you happen to have a report in hand) but is on-demand only, run by hand or scheduled separately.
+Every metric is documented in the `Code review checks` (and `Security review checks`) sections of [Backend](docs/backend.md), [Frontend](docs/frontend.md) and [Security](docs/security.md), but "documented" and "runs automatically when you use `feature-development`" are not the same thing. `feature-development` invokes `code-reviewer` (and, conditionally, `security-reviewer`) in their **scoped Review workflow** at the end of a feature — not a full-codebase sweep, and not every report script those sections document. Only a metric whose checklist section says outright "run this every time" actually executes as part of that scoped review; everything else is documented (with a flagging rule for if you happen to have a report in hand) but is on-demand only, run by hand or scheduled separately.
 
 | Metric | Owning skill | Runs automatically during `feature-development`? |
 |---|---|---|

@@ -14,11 +14,12 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
-  scope: [repo-root]
+  version: "0.1"
 ---
 
 # Spec Compliance Check Skill
+
+`<reports>` is `docs/reports` unless `.backlog-kit.toml` sets `[paths] backlog_dir` (then it is the `reports` folder next to the backlog's parent). The reference docs named below (`docs/architecture.md`, `docs/frontend.md`, …) sit in that same `docs` folder: the folder that holds the backlog folder (`app/docs` when `backlog_dir` is `app/docs/backlog`).
 
 `tasks.md` tracks whether the implementation *steps* happened. It does not
 tell you whether the resulting *behavior* matches what the spec promised —
@@ -33,6 +34,12 @@ This skill **produces a report and a verdict. It does not fix code, does
 not edit specs or tasks, and does not archive the change.** Those remain
 separate, human-directed decisions — this skill's only job is to tell you
 honestly whether a change is ready for that decision.
+
+**Never run `git commit`, `git push` or open a PR.**
+
+## Project checks
+
+Read the `Spec compliance checks` section of the project's `docs/frontend.md` and/or `docs/backend.md` (the kit convention: each of those docs holds the conventions of its side). It says which kinds of test file exist, how to run a single test and how to verify a scenario by hand. If the docs have no such section, work from the frame above plus what the project's CLAUDE.md and docs say, and tell the user that no project checks were found.
 
 ## Workflow
 
@@ -73,8 +80,8 @@ means, without needing to touch that skill.
 
 Read every file under `openspec/changes/<name>/specs/**/spec.md` (a change
 can touch more than one capability — e.g. a change that both adds a new
-capability and modifies an existing one, like `asset-tagging`'s change also
-touching `search-and-filter`'s spec). Each file follows a fixed structure:
+capability and modifies an existing one). Each file follows a
+fixed structure:
 
 ```
 ### Requirement: <normative statement, usually with SHALL>
@@ -84,16 +91,16 @@ touching `search-and-filter`'s spec). Each file follows a fixed structure:
 #### Scenario: <name>
 
 - **GIVEN** <preconditions>
-- **WHEN** <action — usually a specific API call or UI interaction>
+- **WHEN** <action — usually a specific request or UI interaction>
 - **THEN** <expected outcome, usually a specific, checkable assertion>
 ```
 
 Build a flat list of every Scenario across every spec file for this change,
-each carrying its parent Requirement's text for context. A typical feature
-change has 5–15 scenarios across 5–10 requirements — treat each scenario as
-one independently checkable unit, not the requirement as a whole (a
-requirement can be partially satisfied — e.g. the happy path works but a
-validation-error scenario under the same requirement doesn't).
+each carrying its parent Requirement's text for context. Treat each
+scenario as one independently checkable unit, not the requirement as a
+whole (a requirement can be partially satisfied — e.g. the happy path
+works but a validation-error or access-denial scenario under the same
+requirement doesn't).
 
 ## 4. Match Each Scenario to Verification Evidence
 
@@ -103,41 +110,38 @@ one found:
 ### 4.1 An automated test written for this change
 
 `tasks.md`'s test-writing tasks are usually worded closely enough to a
-scenario to match directly — this project's own archived changes show the
-pattern consistently (e.g. `star-ratings`' task *"Add test: `PATCH
-.../rating` with `{"rating":6}` returns `400 Bad Request`"* maps 1:1 to its
-spec's *"Scenario: Rating above 5 is rejected"*). To match:
+scenario to match directly (e.g. a task *"Add test: a signed-out request
+is rejected"* maps 1:1 to a spec's *"Scenario: Unauthenticated request is
+denied"*). To match:
 
 1. Scan `tasks.md`'s "Tests" section(s) for a task whose described
    input/action and expected outcome matches the scenario's `WHEN`/`THEN`.
-2. If found, open the test file/class that task's section header names
-   (e.g. `AssetControllerTest`, or the relevant `*.cy.ts` spec) and locate
-   the actual test method — don't just trust the task description; read
-   the test body and confirm it really asserts the `THEN` outcome, not
+2. If found, open the test file that task's section header names
+   (a component test or end-to-end spec — the project's checks say which kinds
+   of test files exist) and locate the actual
+   test — don't just trust the task description;
+   read the test body and confirm it really asserts the `THEN` outcome, not
    something adjacent to it.
-3. Record the test's fully-qualified name (class#method, or spec file +
-   `it(...)` description) as the evidence.
+3. Record the test's fully-qualified name (test file + test
+   description) as the evidence.
 
 ### 4.2 A pre-existing test not written specifically for this change
 
 Sometimes a scenario is already covered by a broader existing test (e.g. a
-general auth test that happens to also cover this endpoint). Search test
-files for the endpoint/component/behavior the scenario describes even if
-`tasks.md` didn't call out a dedicated test task for it.
+general auth-guard test that happens to also cover the route this change
+added). Search the test files for the component/service/behavior the
+scenario describes even if `tasks.md` didn't call out a dedicated test
+task for it.
 
 ### 4.3 Manual verification (fallback)
 
 For scenarios with no automated coverage — commonly true-visual claims
-("the toolbar SHALL display 5 clickable star icon buttons") or scenarios
-genuinely awkward to unit-test — perform the check directly:
+("the task card SHALL show a checkbox for marking it done") or scenarios
+genuinely awkward to unit-test — perform the check directly, following the
+project's manual-verification recipes (how to start a running instance,
+issue a real request, or drive the UI), and compare the real result to the
+scenario's `THEN`.
 
-- **API-level scenarios:** issue the actual request with `curl`, following
-  the patterns in `docs/curl-reference.md`, against a running backend
-  (start one per `e2e-testing` skill §1–§4 if none is running), and compare
-  the real response to the scenario's `THEN`.
-- **UI-level scenarios:** use the Cypress scratch-spec approach from
-  `e2e-testing` §7 (start the stack per its §1–§4, sign in per its §7.1) to
-  drive the actual interaction and observe the actual result.
 - Record exactly what was run and what was observed as the evidence — not
   "looks correct," a specific command/action and its specific output.
 
@@ -152,18 +156,16 @@ as a failing one; don't conflate the two in the report (§6).
 
 Matching a test to a scenario isn't the same as confirming it passes *now*:
 
-- For a matched automated test (§4.1/§4.2), **run it** — the single test
-  method if the test framework supports that granularity (`mvn test
-  -Dtest=ClassName#method`, `npx cypress run --spec ...`), otherwise the
-  narrowest containing suite. A test that exists but is currently failing,
-  skipped, or was silently broken by a later refactor is a compliance gap,
-  not a pass — report it as failing, not as verified, and say so
-  explicitly since "a test exists" and "the test passes" are easy to
-  conflate.
+- For a matched automated test (§4.1/§4.2), **run it** — the single spec
+  file (the project's checks say how) if the runner supports that granularity,
+  otherwise
+  the narrowest containing suite. A test that exists but is currently
+  failing, skipped, or was silently broken by a later refactor is a
+  compliance gap, not a pass — report it as failing, not as verified.
 - For a manual check (§4.3), the check **is** the verification — there's
   nothing further to run, but be honest if the check was only partially
   performed (e.g. you confirmed the happy path but not the exact error
-  message the scenario specifies).
+  the scenario specifies for the denied case).
 
 ## 6. Report
 
@@ -173,12 +175,12 @@ Structure the in-chat summary as follows, one row per scenario:
 ## Spec Compliance: <change-name>
 
 ### ✅ Verified (<N>)
-- **<Requirement title>** → *<Scenario title>* — `ClassName#testMethod` (passing)
-- **<Requirement title>** → *<Scenario title>* — manual check: `curl ...` → <observed result matched THEN>
+- **<Requirement title>** → *<Scenario title>* — `<test file> > it('...')` (passing)
+- **<Requirement title>** → *<Scenario title>* — manual check: signed in as a second test account → <observed result matched THEN>
 
 ### ❌ Failing (<N>)
-- **<Requirement title>** → *<Scenario title>* — `ClassName#testMethod` currently fails: <why>
-- **<Requirement title>** → *<Scenario title>* — manual check: `curl ...` → <observed result, and how it diverges from THEN>
+- **<Requirement title>** → *<Scenario title>* — `<test file> > it('...')` currently fails: <why>
+- **<Requirement title>** → *<Scenario title>* — manual check: <what was run> → <observed result, and how it diverges from THEN>
 
 ### ⚠️ Unverified (<N>)
 - **<Requirement title>** → *<Scenario title>* — no automated test found, not manually checked
@@ -197,10 +199,11 @@ convention as the project's other reviewer skills).
 
 ### Write the report to a dated file
 
-`docs/reports/spec-compliance/SPEC_COMPLIANCE_{change-name}_{YYYY-MM-DD}.md` (repo
-root, gitignored — a local working artifact, not committed history, same
-convention as `docs/reports/code-review/`, `docs/reports/security-review/`,
-`docs/reports/database-review/`). If a file for that change+date already exists,
+`<reports>/spec-compliance/SPEC_COMPLIANCE_{change-name}_{YYYY-MM-DD}.md`
+(repo root, gitignored — a local working artifact, not committed history,
+same convention as `<reports>/code-review/`,
+`<reports>/security-review/`, `<reports>/database-review/`). If a
+file for that change+date already exists,
 append `-2`, `-3`, etc. rather than overwriting.
 
 ---
@@ -221,7 +224,7 @@ append `-2`, `-3`, etc. rather than overwriting.
   `openspec-archive-change` itself (e.g. eventually calling this skill as
   a built-in gate), that's a decision for the user to make explicitly, not
   something to do unprompted from here.
-- **Running a test is read-only** (`mvn test`, `npx cypress run`) — this
+- **Running a test is read-only** — this
   skill never writes application code, test code, or fixtures to make a
   failing/missing scenario pass. Finding a gap is the deliverable; closing
   it is separate follow-up work.
@@ -229,3 +232,4 @@ append `-2`, `-3`, etc. rather than overwriting.
   like it would satisfy this scenario" is not evidence — either an
   actually-passing test or an actually-performed manual check is required
   before marking a scenario ✅ Verified.
+- **Never run `git commit`, `git push` or open a PR.**

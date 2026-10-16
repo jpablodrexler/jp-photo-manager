@@ -105,7 +105,7 @@ Controllers are thin: they delegate immediately to use-case interfaces and never
 | `ThumbnailStorageServiceAdapter` | Stores and retrieves thumbnails as `{assetId}.bin` files under the configured thumbnails directory, fronted by a Redis L2 cache with a 24-hour TTL. |
 | `JwtTokenServiceAdapter` / `RefreshTokenServiceAdapter` | Issue and validate the JWT access token and the longer-lived refresh token; refresh tokens are dual-written to PostgreSQL and mirrored into Redis (`RedisRefreshTokenStore`). |
 | `RateLimitFilter` | Servlet filter backed by Bucket4j + Redis; throttles requests per client IP (or the trusted `X-Forwarded-For` value behind a reverse proxy). |
-| `RequestCorrelationFilter` | Servlet filter registered at `Ordered.HIGHEST_PRECEDENCE` (ahead of the entire Spring Security chain); generates a UUID `requestId` per request, puts it and `username` (`"anonymous"` until `JwtAuthenticationFilter` corrects it to the real principal) into SLF4J MDC, echoes the `requestId` back as the `X-Request-ID` response header, and clears MDC in a `finally` block. The `logstash-logback-encoder` file appender includes both MDC fields in every JSON log line for the request, so `requestId` and `username` are directly correlatable end to end. See [Authentication → Request correlation & MDC logging](authentication.md#request-correlation--mdc-logging). |
+| `RequestCorrelationFilter` | Servlet filter registered at `Ordered.HIGHEST_PRECEDENCE` (ahead of the entire Spring Security chain); generates a UUID `requestId` per request, puts it and `username` (`"anonymous"` until `JwtAuthenticationFilter` corrects it to the real principal) into SLF4J MDC, echoes the `requestId` back as the `X-Request-ID` response header, and clears MDC in a `finally` block. The `logstash-logback-encoder` file appender includes both MDC fields in every JSON log line for the request, so `requestId` and `username` are directly correlatable end to end. See [Authentication → Request correlation & MDC logging](security.md#request-correlation--mdc-logging). |
 | `AssetSearchCacheServiceAdapter` | Evicts the Redis-backed `assets`/`tags` query caches per folder via cursor-based `SCAN`/`DEL`, triggered by `AssetSearchCacheInvalidationListener` (Kafka) and directly by the tag-mutation use cases. |
 | `AuditLogKafkaListener` | Consumes `asset.cataloged`/`asset.deleted`/`job.*.progress` events and appends them to the MongoDB `asset_audit_log` collection; tag/rating/view/download actions are logged directly by their use cases. |
 
@@ -197,7 +197,7 @@ unit suffix (`_total` for counters, `_seconds` for timers) and a
 
 All three have panels in the custom `JP Photo Manager` Grafana dashboard
 (`grafana/provisioning/dashboards/photomanager.json`) — a new custom metric
-with no matching panel is a gap the `web-docs-sync` skill checks for.
+with no matching panel is a gap the `docs-sync` skill checks for: every `photomanager_*` metric registered in code (`Counter.builder("photomanager_`, `Timer.builder(...)`, `Gauge.builder(...)`) has a panel whose `expr` queries it, and every panel queries a metric that still exists. Re-derive the list from the code rather than trusting the table above. Flag a metric with no panel (collected and scraped, but nobody can see it) and a panel for a metric that no longer exists (a dead panel); the fix is a panel in `photomanager.json` following the existing panels' structure, or removing the dead one — a config edit, so call it out apart from prose fixes.
 
 **Health indicators:** `ThumbnailStorageHealthIndicator` and
 `GeocodingHealthIndicator` extend the default `/actuator/health` set with
@@ -328,7 +328,7 @@ All settings live in `src/main/resources/application.yml`:
 | `photomanager.thumbnails-directory` | `~/.photomanager/thumbnails` | Thumbnail storage path — overridden by `THUMBNAILS_DIR` env var |
 | `photomanager.thumbnail-cache.enabled` | `true` | Enables the Redis L2 thumbnail cache — overridden by `THUMBNAIL_CACHE_ENABLED` |
 | `photomanager.thumbnail-cache.ttl-seconds` | `86400` | TTL for cached thumbnail bytes — overridden by `THUMBNAIL_CACHE_TTL_SECONDS` |
-| `photomanager.jwt-secret` | *(empty — must be set)* | HS256 signing secret (≥ 32 bytes); see [Authentication](authentication.md#authentication) |
+| `photomanager.jwt-secret` | *(empty — must be set)* | HS256 signing secret (≥ 32 bytes); see [Authentication](security.md#authentication) |
 | `photomanager.jwt-expiry-hours` | `24` | JWT access-token validity in hours |
 | `photomanager.refresh-token-expiry-days` | `30` | Refresh-token validity in days |
 | `photomanager.cors-allowed-origins` | `http://localhost:4200` | Allowed CORS origin(s), e.g. the Angular dev server |
@@ -377,7 +377,7 @@ docker run -d --name photomanager-kafka \
   apache/kafka:3.9.0
 ```
 
-You'll also need `photomanager.jwt-secret` set — see [Setup (local development)](authentication.md#setup-local-development) under Authentication.
+You'll also need `photomanager.jwt-secret` set — see [Setup (local development)](security.md#setup-local-development) under Authentication.
 
 ```bash
 cd JPPhotoManagerWeb/backend
@@ -447,5 +447,763 @@ Logs rotate **daily**. Rotated files are compressed and stored alongside the act
 ### Configuration
 
 Logging is configured entirely via `src/main/resources/logback-spring.xml`. The `logging.*` properties in `application.yml` have no effect while `logback-spring.xml` is present — all tuning must happen in that file.
+
+## Code review checks
+
+What the `code-reviewer` skill checks in this project, on top of its generic frame. This doc holds the backend subsections and the ones that apply to both sides (§14, §15, and the shared parts of §18, §19, §21 and §24); the frontend subsections are in `docs/frontend.md`. §15 (known pitfalls) and §14 apply to every review. The section numbers (§N) are the ones the review reports cite, so they stay stable: each lives in exactly one of `docs/backend.md` and `docs/frontend.md`.
+
+### 1. Architecture & Layering (both sub-projects)
+
+#### 1.1 Backend dependency flow
+
+The backend uses **hexagonal (ports and adapters)** architecture. Allowed imports:
+
+```
+infrastructure/web/      → may import application/usecase/, domain/
+application/usecase/     → may import domain/ only
+domain/                  → must NOT import application/, infrastructure/
+infrastructure/persistence/
+infrastructure/service/  → may import domain/ only
+```
+
+🔴 Flag any class in `domain/` that imports from `application/`, `infrastructure/`,
+or any Spring / JPA annotation.
+
+🔴 Flag any controller that contains business logic instead of delegating
+immediately to a use-case interface from `domain/port/in/`.
+
+🔴 Flag any JPA `@Entity` class placed in `domain/` — entities belong in
+`infrastructure/persistence/entity/`; domain has pure POJOs in `domain/model/`.
+
+🟡 Flag any use-case implementation that injects a Spring Data JPA interface
+directly — it must go through a `domain/port/out/` repository interface.
+
+#### 1.2 Backend port / adapter split
+
+The project has three port/adapter pairs; all must follow the naming rules:
+
+| Role | Interface location | Naming | Adapter location | Naming |
+|------|--------------------|--------|-----------------|--------|
+| Use case (driving) | `domain/port/in/<pkg>/` | `FooUseCase` | `application/usecase/<pkg>/` | `FooUseCaseImpl` |
+| Service port (driven) | `domain/port/out/` | `FooPort` | `infrastructure/service/` | `FooServiceAdapter` |
+| Repository port (driven) | `domain/port/out/` | `FooRepository` | `infrastructure/persistence/adapter/` | `FooRepositoryImpl` |
+
+🔴 Flag any adapter class that is injected directly instead of its port interface.
+
+🔴 Flag any use-case implementation that injects another use-case implementation
+directly — use-cases must be composed via port interfaces only.
+
+🟡 Flag any port interface that lives outside `domain/port/in/` or `domain/port/out/`.
+
+🟡 Flag a port/adapter pair whose adapter does nothing but delegate to
+*another* port for the same capability (e.g. `FooAdapter.doThing()` just
+calls `barPort.doThing()`) — that's not a real abstraction, it's a
+pass-through. The test for whether it should exist is whether the adapter
+contributes any logic of its own — **not** whether something currently calls
+it. Having production callers doesn't save a pure-delegation wrapper: delete
+the port and adapter, and repoint every caller to depend on the port/adapter
+that actually implements the behavior instead. Only keep the pair if the
+adapter does real, non-trivial work beyond forwarding the call. This is a
+cross-cutting antipattern, not backend-specific — the same test applies to
+any delegate-only wrapper in either sub-project (see §10.2 for the frontend
+form) — see the `HashCalculatorPort` / `AssetHashCalculatorAdapter` and
+`AudioPlayerService` entries in §15.
+
+### 2. Backend: Spring Proxy Pitfalls
+
+This is the most commonly misunderstood area in the codebase.
+
+#### 2.1 `@Transactional` / `@Async` self-invocation
+
+Spring applies `@Transactional` and `@Async` via a proxy. Calling a method on
+`this` bypasses the proxy — the annotation has **no effect**.
+
+🔴 Flag any method annotated `@Transactional` or `@Async` that is called from
+another method in the **same class** (i.e., via `this.foo()` or just `foo()`).
+
+The fix is always to extract the callee into a separate `@Service` bean and
+inject it.
+
+**Wrong:**
+
+```java
+@Service
+public class FooServiceImpl implements FooService {
+    @Async
+    public CompletableFuture<Void> doWork() {
+        processItem(); // self-invocation — @Transactional on processItem is ignored
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Transactional
+    protected void processItem() { ... } // never fires
+}
+```
+
+**Right:**
+
+```java
+@Service
+public class FooServiceImpl implements FooService {
+    private final BarService barService; // separate bean
+
+    @Async
+    public CompletableFuture<Void> doWork() {
+        barService.processItem(); // proxy intercepts → @Transactional fires
+        return CompletableFuture.completedFuture(null);
+    }
+}
+```
+
+#### 2.2 Detached entities from missing transactions
+
+When `@Transactional` is missing (often due to self-invocation), each
+repository call runs in its own micro-transaction. Entities returned from one
+call are **detached** before the next call starts. Persisting a new entity
+that references a detached entity may cause silent failures or
+`DetachedObjectException`.
+
+🔴 Flag patterns where repository calls are made in sequence without a
+wrapping transaction and entities from one call are passed to another.
+
+---
+
+### 3. Backend: Annotations & Boilerplate
+
+#### 3.1 Lombok
+
+🟡 Flag any manually written getter, setter, constructor, or `toString` that
+Lombok could generate:
+
+| Anti-pattern                               | Replacement                |
+| ------------------------------------------ | -------------------------- |
+| Hand-written getters/setters on entity/DTO | `@Data`                    |
+| Explicit no-args constructor on entity     | `@NoArgsConstructor`       |
+| Explicit all-args constructor on service   | `@RequiredArgsConstructor` |
+| `private static final Logger log = ...`    | `@Slf4j`                   |
+
+#### 3.2 Dependency injection
+
+🔴 Flag `@Autowired` on a field — use constructor injection via
+`@RequiredArgsConstructor` instead.
+
+🟡 Flag `@Autowired` on a constructor that Lombok's `@RequiredArgsConstructor`
+could generate.
+
+#### 3.3 Logging
+
+🔴 Flag any `System.out.println` or `System.err.println`.
+
+🟡 Flag log statements that don't include enough context (entity ID, file
+path, etc.) to diagnose a production failure.
+
+🟡 Flag `e.printStackTrace()` — use `log.error("...", e)` instead.
+
+#### 3.4 OpenAPI controller annotations
+
+Every `@RestController` in this project **must** carry OpenAPI annotations.
+`springdoc-openapi-starter-webmvc-ui` is on the classpath and Swagger UI is
+served at `/swagger-ui.html`.
+
+🟡 Flag any `@RestController` class that is missing a class-level
+`@Tag(name = "...", description = "...")` annotation.
+
+🟡 Flag any `@GetMapping` / `@PostMapping` / `@PutMapping` / `@PatchMapping`
+/ `@DeleteMapping` method that is missing `@Operation(summary = "...")`.
+
+🟡 Flag any endpoint method that is missing `@ApiResponses` with at least one
+`@ApiResponse` per reachable HTTP status code.
+
+Expected import block for every annotated controller:
+
+```java
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+```
+
+---
+
+### 4. Backend: Transactions
+
+🔴 Flag write operations (save, delete, update) in a facade or service method
+that lacks `@Transactional`.
+
+🟡 Flag read-only facade methods that lack `@Transactional(readOnly = true)`.
+
+🟡 Flag `open-in-view` set to `true` in `application.yml` — it must stay
+`false`; load lazy associations within transactions.
+
+🔴 Flag any lazy association (`@ManyToOne(fetch = LAZY)`, `@OneToMany`) that
+is accessed outside a transaction — this causes `LazyInitializationException`.
+
+🟡 Flag `@OneToMany` or `@ManyToOne` without `fetch = FetchType.LAZY`.
+
+---
+
+### 5. Backend: JPA Entities
+
+🔴 Flag any entity that is missing `@NoArgsConstructor` (Hibernate requires
+a no-args constructor).
+
+🟡 Flag bean-validation annotations (`@NotBlank`, `@NotEmpty`, `@Size`) on an
+entity field — they belong on API DTOs, not entities.
+
+🟡 Flag any `CascadeType.ALL` or `CascadeType.REMOVE` on a `@ManyToOne`
+relationship — cascading deletes up to a parent is almost never correct.
+
+🟡 Flag any `@Column(nullable = false)` that doesn't have a corresponding
+`NOT NULL` in the Flyway migration, or vice versa.
+
+---
+
+### 6. Backend: Database Migrations
+
+🔴 Flag any modification to an existing Flyway migration file (those in
+`src/main/resources/db/migration/`). Applied migrations must never change;
+create a new `V{n+1}__*.sql` instead.
+
+🔴 Flag a new `@Column` added to an entity that has no corresponding column
+in the migrations (schema will drift if `ddl-auto` is `none` or `validate`).
+
+🟡 Flag migration filenames that don't follow `V{n}__{Description}.sql`
+(two underscores, sequential version number).
+
+### 7. Backend: Async & SSE
+
+🔴 Flag an `@Async` method that does **not** return `CompletableFuture<T>` —
+the async execution machinery needs the future to report completion or errors.
+
+🟡 Flag a long-running operation that blocks a web thread instead of using
+`@Async` + `SseEmitter`.
+
+🟡 Flag any `SseEmitter` usage that doesn't call `emitter.complete()` or
+`emitter.completeWithError()` at the end of the operation — the connection
+will hang open.
+
+🔴 Flag any `SecurityFilterChain` that does **not** include
+`.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()` as the first
+authorisation rule. Without it, Tomcat's async dispatch thread (used by
+`SseEmitter`) re-runs the Spring Security filter chain without a
+`SecurityContext` and throws `AuthorizationDeniedException` — "response is
+already committed". This must come before all other `requestMatchers` rules.
+
+---
+
+### 8. Backend: Naming Conventions
+
+| Element              | Expected                                                          | Example                              |
+| -------------------- | ----------------------------------------------------------------- | ------------------------------------ |
+| Class                | PascalCase                                                        | `CatalogAssetsUseCaseImpl`           |
+| Method               | camelCase                                                         | `execute()`, `findByFolder()`        |
+| Field / variable     | camelCase                                                         | `folderRepository`, `storagePort`    |
+| Constant             | UPPER_SNAKE_CASE                                                  | `THUMBNAIL_MAX_WIDTH`                |
+| Enum value           | UPPER_SNAKE_CASE                                                  | `ASSET_CREATED`                      |
+| Test class           | `{Class}Test` or `{Class}Tests`                                   | `CatalogAssetsUseCaseImplTest`       |
+| Test method          | `method_condition_expected`                                       | `execute_folderExists_returnsAssets` |
+| Migration            | `V{n}__{Description}.sql`                                         | `V2__Add_hash_column.sql`            |
+| Use-case interface   | `FooUseCase` in `domain/port/in/<pkg>/`                           | `CatalogAssetsUseCase`               |
+| Use-case impl        | `FooUseCaseImpl` in `application/usecase/<pkg>/`                  | `CatalogAssetsUseCaseImpl`           |
+| Service port         | `FooPort` in `domain/port/out/`                                   | `StoragePort`, `ThumbnailPort`       |
+| Service adapter      | `FooServiceAdapter` in `infrastructure/service/`                  | `StorageServiceAdapter`              |
+| Repository port      | `FooRepository` in `domain/port/out/`                             | `AssetRepository`, `FolderRepository`|
+| Repository adapter   | `FooRepositoryImpl` in `infrastructure/persistence/adapter/`      | `AssetRepositoryImpl`                |
+| JPA repository       | `JpaFooRepository` in `infrastructure/persistence/jpa/`           | `JpaAssetRepository`                 |
+| JPA entity           | `FooEntity` in `infrastructure/persistence/entity/`               | `AssetEntity`, `FolderEntity`        |
+| Domain model         | Plain class in `domain/model/`                                    | `Asset`, `Folder`                    |
+| HTTP request DTO     | `FooRequestDto` in `infrastructure/web/dto/request/`              | `CreateAlbumRequestDto`              |
+| HTTP response DTO    | `FooResponseDto` in `infrastructure/web/dto/response/`            | `AssetResponseDto`                   |
+| HTTP shared DTO      | Unchanged name in `infrastructure/web/dto/shared/`                | `UserPreferenceDto`                  |
+
+🟡 Flag any violation of the above.
+
+🔴 Flag any class placed directly in `infrastructure/web/dto/` instead of one of
+its `request/`, `response/`, or `shared/` subpackages.
+
+🟡 Flag a request DTO (used only as `@RequestBody`/`@RequestParam`) that isn't
+named `{BaseName}RequestDto`, or a response DTO (used only as a `ResponseEntity<...>`/
+return-type payload, including nested inside another response DTO) that isn't named
+`{BaseName}ResponseDto`. A DTO belongs in `shared/` only if the exact same class is
+verified to appear as both a request and a response payload across every controller
+method that references it — don't place it there just because the name is ambiguous.
+
+---
+
+### 9. Backend: Testing
+
+🔴 Flag unit tests that use `@SpringBootTest` — unit tests must use
+`@ExtendWith(MockitoExtension.class)` only.
+
+🟡 Flag tests that don't name the system under test `sut`.
+
+🟡 Flag tests that use JUnit's `assertEquals` / `assertTrue` — use AssertJ's
+`assertThat(...)` instead.
+
+🟡 Flag integration tests that don't carry `@ActiveProfiles("test")` — they
+may run against the real database.
+
+🟡 Flag test methods with more than one `assertThat` that tests a different
+concept — split into separate test methods.
+
+### 14. Cross-cutting: Comments & Code Style
+
+🟢 Flag comments that restate what the code does (e.g., `// increment counter`
+before `counter++`). Only comments explaining **why** (a non-obvious
+constraint, workaround, or invariant) are kept.
+
+🟢 Flag multi-line comment blocks or Javadoc on internal methods — terse
+single-line comments are preferred, and only when necessary.
+
+🟢 Flag large imperative loops that could be replaced by a stream or array
+method.
+
+---
+
+### 15. Known Project-Specific Pitfalls
+
+These have caused real bugs in this codebase and deserve extra attention:
+
+| Pitfall                                    | What to look for                                                                                                                                 |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@Transactional` self-invocation           | Method annotated `@Transactional` called from same class without going through proxy                                                             |
+| JPA entity in `domain/`                    | `@Entity` class placed under `domain/model/` or `domain/port/` — entities belong in `infrastructure/persistence/entity/`                        |
+| Adapter injected directly                  | Caller injects `FooRepositoryImpl` or `FooServiceAdapter` instead of the `domain/port/out/` interface                                           |
+| Use case bypassing port interface          | Use-case impl injects another use-case impl directly instead of its `domain/port/in/` interface                                                  |
+| Missing catalog directory                  | `root-catalog-folders` pointing to a directory that may not exist on all machines; should use `application-local.yml` for machine-specific paths |
+| Lazy association outside transaction       | Accessing `asset.getFolder()` or similar after the session is closed                                                                             |
+| SSE emitter not completed                  | `SseEmitter` left open after the async operation finishes                                                                                        |
+| `@Async` without `@EnableAsync`            | `@Async` has no effect if `@EnableAsync` is missing from the application class                                                                   |
+| Cypress Jasmine matchers                   | Using `toBe` / `toEqual` instead of Chai `to.equal` / `to.deep.equal`                                                                            |
+| `*ngIf` / `*ngFor` in new templates        | Angular 17+ control flow must be used; directives are legacy                                                                                     |
+| SSE + Spring Security async dispatch       | `SecurityFilterChain` missing `.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()` → `AuthorizationDeniedException` on the async thread   |
+| Token in URL for SSE / image endpoints     | `EventSource` and `<img>` do not send `Authorization` headers; tokens in query params appear in logs — use HttpOnly cookies instead              |
+| SecurityConfig circular dependency         | `@Bean UserDetailsService` defined in `SecurityConfig` while `SecurityConfig` injects a filter that depends on it — extract to separate config   |
+| JPA delete-then-insert with stale IDs      | `deleteAll()` + `saveAll(incoming)` when incoming entities still have old IDs → Hibernate merges against deleted rows; use `deleteAllInBatch()` + `setId(null)` |
+| CORS missing `PATCH`                       | `AppConfig.corsFilter()` `allowedMethods` omitting `"PATCH"` when `@PatchMapping` endpoints exist → 403 on preflight                            |
+| Missing OpenAPI annotations on controller  | New `@RestController` added without `@Tag` / `@Operation` / `@ApiResponses` — controller appears in Swagger UI under "default" with no documentation |
+| Hand-written mapper                        | Entity ↔ domain model or HTTP DTO ↔ domain model conversion done manually instead of with a MapStruct `@Mapper(componentModel = "spring")`      |
+| DTO placed directly in `web/dto/`          | New HTTP DTO added straight to `infrastructure/web/dto/` instead of its `request/`, `response/`, or `shared/` subpackage, or named without the `RequestDto`/`ResponseDto` suffix |
+| Delegate-only port/adapter or service      | A port/adapter (backend) or service (frontend) with no logic of its own, just forwarding to another one for the same capability. The keep-or-delete test is whether it contributes its own logic — **not** whether it currently has callers; existing callers just mean they need repointing to the real implementation, not that the wrapper earns a reprieve. Backend incident: `HashCalculatorPort`/`AssetHashCalculatorAdapter` duplicated `StoragePort.computeHash`'s SHA-256 logic; the first fix made the adapter delegate to `StoragePort` instead of deleting it and migrating callers — the pair was pure pass-through and should have been deleted outright, with any real callers repointed to `StoragePort` directly. Frontend incident: `core/services/audio-player.service.ts` was a bare re-export (`export { MediaPlayerService as AudioPlayerService } from './media-player.service'`) with zero importers anywhere in the codebase — deleted outright |
+| Method/function past the complexity threshold | `mvn pmd:check` (backend) or `npm run complexity` (frontend) reports something over 15 — see §18 |
+| Line coverage below 80%                    | `mvn jacoco:check` (backend) or `npm run coverage:check` (frontend) reports under 80% — see §19 |
+| Untyped (`any`) identifier (frontend)      | `npm run type-coverage:report` lists it — see §20 |
+| Unused export/file/dependency              | `npm run dead-code:report` (frontend) or `mvn dependency:analyze` (backend) lists it — see §21 |
+| Survived mutant (test runs, doesn't assert) | `npm run mutation:report` (frontend) or `bash scripts/mutation-report.sh` (backend) lists it — see §24 |
+| `mat-form-field` errors on blur before any submit attempt | An add-row/optional validated field showing its "required" error on focus-then-blur — gate on an explicit "attempted" signal + per-field `[errorStateMatcher]`, not `control.touched` — see §10.4 |
+| Outline `mat-form-field` label clipped or truncated | First field in a scrollable container with no `margin-top` (label clipped at the container edge), or a field hard-sized narrower than its `mat-label` (label ellipsised) — see §10.4 |
+| Flex row overlaps or a wrapped button row is ragged at mobile width | Not checked at `angular-developer` §20's standard mobile check device — see §10.4 |
+
+### 18. Cyclomatic Complexity (both sub-projects)
+
+Every reviewed scope — backend, frontend, or both — gets a McCabe cyclomatic
+complexity pass, in addition to the manual checklists above. Complexity is
+measured per method/function (each starts at 1; +1 for each `if`, ternary,
+loop, `catch`/switch-`case`, and short-circuit operator — `&&`, `||`, `??`
+on the frontend; PMD's equivalent counting on the backend). **Max allowed
+complexity is 15 per method/function**, in both sub-projects.
+
+Don't count this by hand — each sub-project has its own checked-in analyzer.
+
+#### 18.2 Backend (Java)
+
+Run from `backend/`:
+
+```
+mvn pmd:check
+```
+
+This invokes the `maven-pmd-plugin` (configured in `backend/pom.xml`,
+version 3.28.0, bundling PMD 7.17.0) against `backend/pmd-complexity-ruleset.xml`,
+which enables only PMD's built-in `CyclomaticComplexity` rule with
+`methodReportLevel` set to 16 (PMD reports a violation when complexity is
+**greater than or equal to** the configured level, so 16 is what flags
+"over 15") and `classReportLevel` effectively disabled — this check is
+scoped to individual methods, not a class's combined total. The plugin is
+declared with no `<executions>` binding, so it never runs as part of the
+normal build/test/CI lifecycle (`mvn verify`, `mvn package`, ...) — it's
+opt-in, invoked only when this check is run, the same way the frontend's
+`npm run complexity` isn't part of `npm run build`/`test`. `mvn pmd:check`
+fails the command (non-zero exit) and writes `target/pmd.xml` when anything
+exceeds the threshold — read that file, or the console output, for the
+offending class/method/line.
+
+#### 18.3 Flagging
+
+🟡 Flag any method/function reported over complexity 15 — this is a
+maintainability problem (deep, hard-to-test branching), not a correctness
+bug, so it's a WARNING rather than CRITICAL, but it should be fixed: extract
+guard clauses, split the method/function by responsibility, or replace a
+long `if`/`else if` chain with a lookup table/strategy map (backend:
+consider a `switch` on an enum, a `Map<Key, Handler>`, or splitting the
+use-case into smaller collaborators respecting §1.1/§1.2's port boundaries).
+Note the reported complexity number and location in the finding so a fix
+can be verified by re-running the relevant command.
+
+🟢 A method/function in the 10–15 range is worth a passing mention if an
+obvious, low-effort split exists, but isn't required to be flagged — the
+threshold that matters is 15.
+
+#### 18.4 Trending snapshots
+
+For a full-codebase sweep, both the pass/fail gates above have a trending
+companion that ranks every function/method by complexity instead of only
+flagging the ones over threshold — useful for spotting something climbing
+toward 15 before it becomes an actual violation.
+
+- **Frontend:** `npm run complexity:report` (`scripts/complexity-report.js`)
+  — dated snapshot under `docs/reports/complexity/`, top 20 functions by
+  complexity plus top 20 files by line count.
+- **Backend:** `bash scripts/complexity-report.sh` (run from `backend/`) —
+  same shape, under `JPPhotoManagerWeb/docs/reports/complexity/`. Uses a
+  second, report-only `maven-pmd-plugin` execution
+  (`pmd-complexity-report-ruleset.xml`, `methodReportLevel=1` so PMD
+  reports every method instead of only violations) — never touches the
+  real gate's `pmd-complexity-ruleset.xml` or its threshold.
+
+---
+
+### 19. Code Coverage (both sub-projects)
+
+Every reviewed scope — backend, frontend, or both — gets a line-coverage
+pass, in addition to the manual checklists above. **Minimum line coverage is
+80%**, in both sub-projects, whether the check runs over the whole project
+or is scoped to just the files a change touched.
+
+Don't estimate this by eye — each sub-project already has a coverage tool
+wired (`cypress-unit-test-developer` §1.3; `java-unit-test-developer` §1);
+this section only adds the enforced threshold and the two ways to scope the
+check.
+
+#### 19.2 Backend (Java)
+
+Run from `backend/` (populate `target/jacoco.exec`, then check the threshold):
+
+```
+mvn test
+mvn jacoco:check
+```
+
+This invokes the `jacoco-maven-plugin` (configured in `backend/pom.xml`)
+against its default rule — a `BUNDLE`-level `LINE` `COVEREDRATIO` minimum
+of `${jacoco.check.minimum}` (80%) — reading the exec data `mvn test`
+already produced via the plugin's existing `prepare-agent` execution. Like
+`mvn pmd:check` (§18.2), the `check` goal has no `<executions>` binding in
+the pom, so it never runs as part of the normal build/test lifecycle
+(`mvn test`, `mvn verify`, `mvn package`) — it's opt-in, invoked only when
+this check is run. `mvn jacoco:check` fails the command (non-zero exit) and
+prints the offending counter/ratio when coverage is under threshold;
+`target/site/jacoco/index.html` (from the existing `report` execution)
+shows the breakdown per package/class.
+
+For a **scoped review**, override `jacoco.check.includes` (default `**/*`,
+the whole project) to the package(s) the change touched, so the ratio is
+computed only over those classes instead of the whole backend:
+
+```
+mvn jacoco:check -Djacoco.check.includes=com/jpablodrexler/photomanager/application/usecase/album/**
+```
+
+#### 19.3 Flagging
+
+🟡 Flag any coverage run — whole-project or scoped to the reviewed change —
+that reports under 80% line coverage. This is a test-adequacy problem, not
+a correctness bug, so it's a WARNING rather than CRITICAL, matching how
+§18's complexity threshold is treated — but it should be fixed before the
+review is considered clean: add the missing test cases for the uncovered
+lines/branches the report lists (`java-unit-test-developer` for backend
+gaps, `cypress-unit-test-developer` for frontend gaps), then re-run the
+check to confirm it now clears 80%.
+
+🟢 A scope in the 75–80% range is worth a passing mention if the gap is a
+small, easily-covered handful of lines, but isn't required to be flagged —
+the threshold that matters is 80%.
+
+#### 19.4 Trending snapshots
+
+For a full-codebase sweep, both `npm run coverage:trend-report`
+(`scripts/code-coverage-report.js`, frontend) and `bash
+scripts/coverage-report.sh` (run from `backend/`, backend) wrap the same
+suite runs the gates above use into a dated snapshot under
+`docs/reports/code-coverage/`/`JPPhotoManagerWeb/docs/reports/code-coverage/`
+— the project-wide percentages plus a table of every file/class still
+below 80%. Unlike `coverage:check`/`jacoco:check`, these do not fail the
+command; they exist purely to leave a written record of the actual number
+over time, so a file that quietly backslid is visible even while the
+project-wide number stays above threshold. The backend script parses
+`target/site/jacoco/jacoco.xml` directly (via an inline Perl snippet, since
+the file is single-line, deeply-nested XML that plain `grep`/`awk` cannot
+reliably disambiguate between method/class/package/report-level counters
+sharing the same tag name) rather than adding a second JaCoCo plugin
+execution the way §18.4's backend complexity report needed — JaCoCo's
+existing `report` execution (bound to the `test` phase) already produces
+everything this needs.
+
+### 21. Dead Code
+
+Every full-codebase sweep also gets an unused-code pass — the automated
+counterpart to whatever "reuse/simplification" findings a manual read
+would catch, just extended to catch what a single-file read cannot: an
+export or dependency nothing references *anywhere else* in the codebase.
+
+#### 21.2 Backend (Maven)
+
+Run from `backend/`:
+
+```
+mvn dependency:analyze
+```
+
+(or `bash scripts/dead-code-report.sh` for a dated snapshot under
+`JPPhotoManagerWeb/docs/reports/dead-code/`). Maven's own built-in
+unused/undeclared-dependency detector — the closest backend equivalent to
+knip, though narrower in scope: it only covers dependencies, not unused
+application-source exports/classes, since Maven has no direct analog to
+knip's source-level dead-code detection.
+
+**Known, expected noise:** every `spring-boot-starter-*` "umbrella"
+dependency is reported as "unused declared" because `dependency:analyze`
+works by scanning compiled bytecode for direct class references, and a
+starter POM has no classes of its own — it exists purely to pull in a
+bundle of real dependencies transitively. This is a well-documented
+limitation of bytecode-based analysis for Spring Boot specifically, not a
+real finding — skim past every `spring-boot-starter-*` entry and focus on
+anything else in the "Unused declared dependencies" list.
+
+#### 21.3 Flagging
+
+🟡 Flag an unused file, export, or type (frontend) — either it should be
+made module-private or, if nothing in the codebase needs it anymore,
+deleted outright per this project's own "no half-finished implementations"
+convention.
+
+🟡 Flag an unused declared dependency (either sub-project, excluding
+§21.2's Spring Boot starter noise) — dead weight in the build and a wider
+(if unused) attack surface for `security-reviewer` §1 to worry about.
+
+🟢 Flag an `unlisted` dependency (frontend: imported but only present
+transitively; backend: `dependency:analyze`'s "Used undeclared
+dependencies") as a suggestion — it works today only because some other
+direct dependency happens to pull it in, fragile across dependency-tree
+changes.
+
+---
+
+### 24. Mutation Testing (both sub-projects)
+
+Line coverage (§19) only proves a line *executed* during the test suite —
+it says nothing about whether a test actually *asserts* on that line's
+behavior. Mutation testing closes that gap: a tool systematically changes
+("mutates") small pieces of the code under test — flips a `>` to `>=`,
+negates a condition, swaps a boolean literal — reruns the tests, and checks
+whether anything failed. A "killed" mutant means some test caught the
+change; a "survived" mutant means the whole suite still passed with the
+code's behavior altered, i.e. that line has execution coverage but no real
+assertion behind it. Unlike §18/§19/§21/§22, this is not wired as a
+pass/fail gate anywhere (no CI job, no `npm run *:check` equivalent) — it's
+a trending snapshot only, run on demand, the same way §18.4's complexity
+trend report and the dead-code/dependency-staleness reports are.
+
+#### 24.2 Backend (PIT)
+
+Run from `backend/`:
+
+```
+bash scripts/mutation-report.sh
+```
+
+Invokes `org.pitest:pitest-maven` (`backend/pom.xml`) via
+`mvn org.pitest:pitest-maven:mutationCoverage@mutation-report` — a
+report-only execution bound to `phase>none<`, mirroring
+`maven-pmd-plugin`'s `complexity-report` execution (§18.2/§18.4), so it
+never runs during `mvn test`/`verify`/`package`. Unlike the frontend, PIT
+runs entirely inside the JVM test process alongside the real JUnit
+suite — no browser boundary to bridge, and far faster than the frontend's
+per-mutant-process command-runner approach for a comparable mutant count
+(the full `application.usecase` scope — 65 classes, 443 mutants — runs in
+about 4 minutes). `targetClasses`/`targetTests` are scoped to
+`com.jpablodrexler.photomanager.application.usecase.*` — the actual
+business-logic layer; `infrastructure.web`/`infrastructure.persistence`
+are thin translation code not worth mutating.
+
+Writes a dated snapshot to `docs/reports/mutation/` — PIT's own Line
+Coverage / Mutation Coverage / Test Strength percentages, killed/survived/
+no-coverage/timed-out counts, a per-class table sorted worst-first, and a
+full list of surviving/uncovered mutants (class, method, line, mutator).
+
+#### 24.3 Flagging
+
+🟡 Flag a survived mutant on a line the reviewed change touched — the test
+suite runs and passes even though that line's behavior changed, meaning
+whatever test covers it isn't actually asserting on the behavior a real
+bug there would break. Fix by strengthening the existing test's
+assertions (not by adding a redundant new test) so it would fail against
+the mutant's changed behavior; re-run the relevant report to confirm.
+
+🟡 Flag a "no coverage" mutant on a line the reviewed change touched — no
+test reaches that line at all, a stronger gap than a survived mutant (that
+line has neither execution coverage nor an assertion), and often a
+`java-unit-test-developer`/`cypress-unit-test-developer` gap worth cross-
+referencing against §19's coverage report for the same file.
+
+🟢 Don't chase every survived mutant project-wide in a scoped review —
+both reports' scope is already narrow (frontend: a curated ~8-file list;
+backend: one architectural layer), so treat every surviving mutant inside
+that scope as worth a look, but don't expand the mutation-testing scope
+itself as part of an unrelated review.
+
+---
+
+### Full-codebase sweep layers
+
+**The layers:**
+
+| Layer key                | Report suffix          | Directory scope                                                                                                    | Primary checklist sections                                    |
+| ------------------------ | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Backend domain           | `backend-domain`         | `backend/.../domain/**`                                                                                                                   | §1.1, §5, §8 (domain-model rows)                                 |
+| Backend application      | `backend-application`    | `backend/.../application/usecase/**`                                                                                                      | §1.1, §1.2, §2, §4, §7, §8 (use-case rows)                       |
+| Backend api               | `backend-api`             | `backend/.../infrastructure/web/**` (controllers, request/response DTOs)                                                                  | §1.1 (controller delegation), §3.4, §6 (DTO/entity drift), §8 (DTO rows) |
+| Backend infrastructure   | `backend-infrastructure` | `backend/.../infrastructure/persistence/**`, `infrastructure/service/**`, `infrastructure/kafka/**`, `infrastructure/batch/**`, `infrastructure/config/**` | §1.2, §3.1–3.3, §5, §6, §7                                       |
+| Frontend core             | `frontend-core`           | `frontend/src/app/core/**`                                                                                                                | §10.2, §11, §12                                                  |
+| Frontend features         | `frontend-features`       | `frontend/src/app/features/**`                                                                                                            | §10.1, §10.3, §11, §12                                           |
+| Frontend shared           | `frontend-shared`         | `frontend/src/app/shared/**`                                                                                                              | §1.3, §10.1, §11, §12                                            |
+| Cross-cutting             | `cross-cutting`           | Both sub-projects; no single directory                                                                                                    | §9, §13, §14, §18, §19, §20, §21, §22, delegate-only port/adapter or service pairs (§1.2/§10.2), dependency-direction violations, systemic naming patterns |
+
+If only the backend (or only the frontend) is in scope, skip the layers that
+don't apply — e.g. a "review the whole backend" request produces 4 reports
+(domain, application, api, infrastructure) plus a backend-scoped
+cross-cutting report, not all 8.
+
+**What goes in the cross-cutting report:** findings that don't belong to one
+file's home layer — backend testing conventions (§9) and Cypress conventions
+(§13), comment/code-style patterns (§14) that recur across many files, and
+anything whose root cause spans two layers at once (e.g. a delegate-only
+port/adapter pair, where the finding is really about the port *and* the
+adapter *and* the callers, not just one of them). A naming or architecture
+violation that's local to a single file still goes in that file's own layer
+report, even if the rule itself is defined in a "cross-cutting" section like
+§8/§12.
+
+## Spec compliance checks
+
+What `spec-compliance-check` reads for this project, for both sub-projects: how a scenario is matched to an automated test (JUnit or Cypress) and run, and the manual fallback. The section numbers (§N) are the ones its reports cite, so they stay stable.
+
+### 3. Scale and example
+
+- Example of the §3 multi-capability change: `asset-tagging`'s change also touching `search-and-filter`'s spec.
+- A typical feature change has 5–15 scenarios across 5–10 requirements.
+- Example of a `WHEN` in this project: usually a specific API call or UI interaction.
+- Example of a partially satisfied requirement: the happy path works but a validation-error scenario under the same requirement doesn't.
+
+### 4.1 / 4.2 Test-file kinds
+
+- Example of a task-to-scenario match (this project's own archived changes show the pattern consistently): `star-ratings`' task *"Add test: `PATCH .../rating` with `{"rating":6}` returns `400 Bad Request`"* maps 1:1 to its spec's *"Scenario: Rating above 5 is rejected"*.
+- The test file/class a task's section header names is e.g. `AssetControllerTest`, or the relevant `*.cy.ts` spec.
+- Test's fully-qualified name: class#method, or spec file + `it(...)` description (e.g. `ClassName#testMethod`).
+- §4.2: a general auth test that happens to also cover this endpoint; search test files for the endpoint/component/behavior the scenario describes.
+
+### 5. Running one test
+
+- Run the single test method if the test framework supports that granularity (`mvn test -Dtest=ClassName#method`, `npx cypress run --spec ...`), otherwise the narrowest containing suite.
+- "A test exists" and "the test passes" are easy to conflate — say so explicitly when reporting a failing one.
+- Running a test is read-only (`mvn test`, `npx cypress run`).
+- Partial manual check example: you confirmed the happy path but not the exact error message the scenario specifies.
+
+### 4.3 Manual verification (fallback)
+
+- Commonly true-visual claims, e.g. "the toolbar SHALL display 5 clickable star icon buttons".
+- **API-level scenarios:** issue the actual request with `curl`, following the patterns in `docs/curl-reference.md`, against a running backend (start one per `e2e-testing` skill §1–§4 if none is running), and compare the real response to the scenario's `THEN`.
+- **UI-level scenarios:** use the Cypress scratch-spec approach from `e2e-testing` §7 (start the stack per its §1–§4, sign in per its §7.1) to drive the actual interaction and observe the actual result.
+- Record exactly what was run and what was observed as the evidence — a specific command/action and its specific output (e.g. `curl ...`).
+
+## Dependency upgrade checks
+
+What `dependency-upgrade` reads for this project. This doc holds the backend survey (§1) and the parts shared by both sub-projects (§3–§6); the frontend survey (§2) is in `docs/frontend.md`. The section numbers (§N) are the ones its reports cite, so they stay stable.
+
+### 1. Backend Survey (Maven)
+
+```bash
+cd JPPhotoManagerWeb/backend
+mvn versions:display-dependency-updates
+mvn versions:display-plugin-updates
+mvn dependency:analyze   # or: bash scripts/dead-code-report.sh for a dated snapshot under docs/reports/dead-code/
+```
+
+The `dependency:analyze` run is a useful pre-check, not a strict
+prerequisite: a dependency the survey lists as outdated but
+`dependency:analyze` also reports as genuinely unused is a candidate for
+removal instead of upgrade — no point spending a bump on a package nothing
+references anymore. Ignore every `spring-boot-starter-*` entry under
+"Unused declared dependencies" though — that's expected noise from
+bytecode-based analysis missing umbrella POMs with no classes of their
+own, not a real finding (see `code-reviewer` skill §21.2).
+
+Most library versions in this project are inherited from the
+`spring-boot-starter-parent` BOM (see `java-developer` §1) rather than
+pinned individually — check the parent POM version itself
+(`spring-boot-starter-parent`) as the primary lever; a Spring Boot patch/minor
+bump usually moves every managed dependency's version together in a tested,
+compatible set. Only bump an individual `<dependency>` version directly when
+it's declared outside the BOM (not managed by `spring-boot-starter-parent`).
+
+🟡 Flag any dependency currently overridden to an older version via
+`<dependencyManagement>` that the survey shows is now behind — verify
+whether the override reason (check the POM for a comment) still applies
+before removing it.
+
+---
+
+
+### 3. Classify & Decide
+
+🔴 Never apply a major-version bump to `spring-boot-starter-parent`,
+`@angular/core`, or any other framework-defining dependency without explicit
+user approval for that specific package — these routinely carry breaking
+changes this project's tests may not fully cover (e.g. a removed
+auto-configuration, a changed default).
+
+🟢 A patch/minor bump to a leaf dependency with no direct API usage in this
+codebase (a transitive-only dependency bumped for a CVE fix) is lower risk
+than a direct, heavily-used dependency (Spring Data JPA, MapStruct, Angular
+Material) — note this distinction in the report (§6) but the automatic/
+manual split above still applies uniformly by bump type, not by usage
+weight.
+
+### 4. Apply & Test, In Groups
+
+1. **Group 1 — backend patch/minor**, applied via the parent POM bump plus
+   any individually-managed dependencies from §1. Then:
+   ```bash
+   cd JPPhotoManagerWeb/backend && mvn clean test
+   ```
+2. **Group 2 — frontend patch/minor** (`npm update`, or `ng update` for any
+   `@angular/*` minor). Then:
+   ```bash
+   cd JPPhotoManagerWeb/frontend && npm test && npm run lint && npm run build:prod
+   ```
+3. **Group 3+ — each approved major bump, one at a time**, its own test run
+   immediately after. For a Spring Boot major/minor jump, also skim the
+   official release notes' "breaking changes"/migration guide section before
+   applying — don't rely on the test suite alone to catch a removed
+   auto-configuration the tests don't happen to exercise.
+
+If a group's test run fails, narrow it down within that group — the goal is
+to land as much of the safe upgrade as possible, not to give up on the first
+failure.
+
+### 5. Cross-Check Against Security Findings
+
+```bash
+cd JPPhotoManagerWeb/backend && mvn org.owasp:dependency-check-maven:check
+cd JPPhotoManagerWeb/frontend && npm audit --audit-level=high
+```
+
+The vulnerable dependency, if transitive, needs an explicit
+`<dependencyManagement>`/npm `overrides` entry.
+
+### 6. Report
+
+- **Applied** — each bumped dependency, old → new version, grouped by §4's
+  groups.
 
 [← Back to README](../README.md)

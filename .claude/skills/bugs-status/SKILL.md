@@ -1,16 +1,18 @@
 ---
 name: bugs-status
-description: Reports bug-backlog progress by counting rows in JPPhotoManagerWeb/docs/backlog/bugs-open.md and JPPhotoManagerWeb/docs/backlog/bugs-fixed.md. Returns total, fixed, open, in-progress, and percent-closed counts, plus a severity, area, and environment breakdown of open bugs, the open bug list itself, and any data-integrity issues (duplicate Bug IDs, rows without a bugs/BUG-NNN.md file, bug files without a row, wrong H1s, resolved bugs without a Resolution line, stale statuses). TRIGGER when the user asks for a bug status report, how many bugs are open/fixed, a bug backlog summary, or similar. This is the bug-family counterpart to features-status.
+description: Reports bug-backlog progress by counting rows in the backlog's bugs-open.md and bugs-fixed.md. Returns total, fixed, open, in-progress, and percent-closed counts, plus a severity, area, and environment breakdown of open bugs, the open bug list itself, and any data-integrity issues (duplicate Bug IDs, rows without a bugs/BUG-NNN.md file, bug files without a row, wrong H1s, resolved bugs without a Resolution line, stale statuses). TRIGGER when the user asks for a bug status report, how many bugs are open/fixed, a bug backlog summary, or similar. This is the bug-family counterpart to features-status.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.2"
+  version: "0.1"
 ---
 
 Report bug-tracking progress by counting rows in
-`JPPhotoManagerWeb/docs/backlog/bugs-open.md` (open) and
-`JPPhotoManagerWeb/docs/backlog/bugs-fixed.md` (fixed). Read-only — this
+`<backlog>/bugs-open.md` (open) and
+`<backlog>/bugs-fixed.md` (fixed). Read-only — this
 skill never edits either file.
+
+`<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`.
 
 **Input**: None required.
 
@@ -20,27 +22,27 @@ skill never edits either file.
 
 `scripts/status_report.py` owns every part of this skill that is pure
 table-counting and text-pattern arithmetic — reading both backlog
-files' `## Bug List` tables (from `JPPhotoManagerWeb/docs/backlog/bugs-open.md`
-and `JPPhotoManagerWeb/docs/backlog/bugs-fixed.md`), computing the
+files' `## Bug List` tables (from `<backlog>/bugs-open.md`
+and `<backlog>/bugs-fixed.md`), computing the
 counts/percent/breakdowns (severity/area/environment, over the active —
 `⬜ Open` + `🔶 In Progress` — rows), and finding the data-integrity
 issues (duplicate Bug IDs across both files; four folder-based checks
-against `JPPhotoManagerWeb/docs/backlog/bugs/` — a table row with no
+against `<backlog>/bugs/` — a table row with no
 `bugs/BUG-N.md` file, a `bugs/*.md` file with no row in either table, a
 file whose first line doesn't start with `# BUG-N`, and a resolved bug
 (fixed, won't fix, cannot reproduce) whose file lacks a `**Resolution:**`
 line; a leftover `✅ Fixed` row in `bugs-open.md` from an interrupted
 `bugs-archive` run). Table `Bug ID` cells are read through their
-`[BUG-N](bugs/BUG-N.md)` link text. Run it and
+`[BUG-N](bugs/BUG-N.md)` link text. Run it (from this skill's base directory) and
 display its output directly rather than re-deriving any of this by hand:
 
 ```
-python3 .claude/skills/bugs-status/scripts/status_report.py <repo-root>
+python3 scripts/status_report.py <repo-root>
 ```
 
 Prints the finished `## Bug Tracker Status` report (summary table,
-per-category breakdowns — including the `local`/`deployed`/`both`
-environment split — the open-bug list, and a **Data integrity** section
+per-category breakdowns — including the environment split
+(`local` and whatever other values the backlog uses) — the open-bug list, and a **Data integrity** section
 only when it found something) straight to stdout — display it as-is.
 Add `--json` for the raw structured data instead of the rendered
 markdown. If either backlog file is missing or has no `## Bug List`
@@ -62,3 +64,4 @@ not this file.
 - If either file is missing or has no `## Bug List` table, the script
   reports that file as unavailable rather than guessing a count — don't
   override that by reading the file by hand instead.
+- **Never run `git commit`, `git push` or open a PR.**

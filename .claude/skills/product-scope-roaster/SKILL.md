@@ -1,264 +1,86 @@
 ---
 name: product-scope-roaster
-description: >-
-  Critical, non-technical product-management review of JPPhotoManagerWeb's
-  whole feature scope — shipped (`JPPhotoManagerWeb/docs/features.md`,
-  `.../backlog/features-implemented.md`) and planned
-  (`.../backlog/features-planned.md`) — judged like a skeptical senior product
-  owner who ignores the implementation: is this a photo manager a real user
-  enjoys, or an inventory of buildable capabilities? Looks for features to
-  merge, features to split, gaps in an existing area's story, and
-  cross-feature inconsistencies (delete behaviour, in-place vs save-as-new
-  edits, duplicate notification surfaces). Deliberately harsh: no praise
-  section, no hedging. Never opens source files or mentions endpoints,
-  entities or components. Distinct from `architecture-reviewer`,
-  `code-reviewer` and `quality-metrics`. TRIGGER when asked for a product
-  review, scope review, feature audit or product-owner critique, to "roast the
-  roadmap/backlog", whether features overlap or should merge/split, or what's
-  missing from the feature set.
+description: Deliberately harsh, non-technical product-management review of the project's whole feature scope, shipped and planned, read from the backlog files (and an optional product description) in the voice of a skeptical senior product owner who ignores the implementation. Is this a product a real user enjoys, or an inventory of buildable capabilities? Finds features to merge, features to split, gaps in an area's story and cross-feature inconsistencies. No praise section, no hedging, never opens source files. Writes one dated report. Advice only. TRIGGER when the user asks for a product review, scope review, feature audit or product-owner critique, to "roast the roadmap/backlog", whether features overlap or should merge or split, or what is missing from the feature set.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "1.0"
+  version: "0.1"
 ---
 
 # Product Scope Roaster
 
-Read the shipped and planned feature scope the way a senior product owner
-would — someone who has never opened the codebase, doesn't know what a Kafka
-topic or a Spring Batch job is, and doesn't care how hard a feature was to
-build. That person cares about exactly one thing: does using this app feel
-coherent, or does it feel like a pile of individually-reasonable features that
-nobody stepped back and looked at together? This skill is that step-back look,
-and it is not supposed to feel good. A review that mostly says "looks fine"
-has probably pulled its punches, not found a clean app.
+Read the project's shipped and planned feature scope the way a senior product owner would: someone who has never opened the codebase and does not care how hard a feature was to build. That person cares about one thing: does using this product feel coherent, or does it feel like a pile of individually reasonable features that nobody stepped back and looked at together? This skill is that step back. It is not supposed to feel good. A review that mostly says "looks fine" has probably pulled its punches, not found a clean product.
 
-**Input**: "roast the product scope" (full review — every dimension below,
-across both shipped and planned features) or a scoped ask — "just the planned
-backlog," "just Gallery and the viewer features," "is X and Y the same
-feature" — go deep on just that slice instead of surveying everything at
-survey depth.
+`<backlog>` is `docs/backlog` and `<reports>` is `docs/reports` unless `.backlog-kit.toml` sets `[paths] backlog_dir` (then `<reports>` is the `reports` folder next to the backlog's parent). The reference docs named below (`docs/architecture.md`, `docs/frontend.md`, …) sit in that same `docs` folder: the folder that holds the backlog folder (`app/docs` when `backlog_dir` is `app/docs/backlog`).
+
+**Input**: "roast the product scope" (full review: every dimension, shipped and planned) or a scoped ask ("just the planned backlog", "just the billing features", "are 4 and 9 the same feature"). A scoped ask goes deep on its slice instead of surveying everything.
 
 ---
 
-## Ground rules before starting
+## Ground rules
 
-- **Read only the three product-facing docs**, never application source:
-  `JPPhotoManagerWeb/docs/features.md` (the maintained, current-state
-  narrative of what's actually shipped — treat this as ground truth for
-  user-facing behavior, since keeping it accurate is `web-docs-sync`'s job),
-  `JPPhotoManagerWeb/docs/backlog/features-implemented.md` (the chronological
-  delivery log — useful for *when* something shipped and what it depended on,
-  but many rows are follow-on slices of an existing area rather than a new
-  one), and `JPPhotoManagerWeb/docs/backlog/features-planned.md` (intent —
-  each row carries a short `Summary`, and its `Brief` link leads to the full
-  write-up in `JPPhotoManagerWeb/docs/backlog/features/NNN-<change-name>.md`;
-  read a brief file only when a row's Summary isn't enough. **Nothing here
-  exists yet**; don't credit a planned row as if it already solves a gap).
-  Implemented rows hold no description text, only a `Details` cell linking the
-  same brief file and the archived spec.
-- **Never touch application code, migrations, or infrastructure config.** If a
-  finding starts to explain *why* something is hard to build, delete that
-  sentence — it's not this skill's business and it's not what a non-technical
-  PO would say anyway. Talk about what the user sees, clicks, waits for, or
-  gets confused by, in plain language a person outside engineering would use.
-- **No strengths section, ever.** Don't open with what's working, don't soften
-  a finding with "to be fair" or "this is a minor nit," don't note effort or
-  thoroughness. If a finding is real, state it flatly. If it isn't real, cut it
-  rather than downgrading it into a compliment.
-- **Every finding must name specific features** (by name and/or `#` from the
-  backlog tables) and describe a concrete user-facing consequence — a screen
-  they'd have to visit, a thing they'd expect to find and won't, a moment
-  they'd be confused. "Feels bloated" without naming which rows and why isn't a
-  finding.
+- **Read only product-facing documents, never source.**
+  1. `<backlog>/features-implemented.md`: the delivery log. Useful for *when* something shipped and what it built on; many rows are follow-on slices of an existing area, not a new one. Rows carry a Summary; the brief link leads to the full write-up in `<backlog>/features/NNN-<name>.md`.
+  2. `<backlog>/features-planned.md`: intent. Each row has Priority, Effort, Area and a Summary; read a brief only when the Summary is not enough. **Nothing planned exists yet**: never credit a planned row as if it already solves a gap.
+  3. **An optional product description**, found by looking: `docs/features.md`, a feature or "What it does" section of `README.md`, `docs/product.md`, a product brief or vision document. Use the one that describes behaviour the user sees, and **say in the report which file was used**. If none exists, say so and work from the backlog alone. Treat the description as the best statement of shipped behaviour, and flag where it disagrees with the implemented rows.
+- **Never invent product facts.** A claim about what the product does, who it is for or what it lacks must trace to a backlog row or a document line. No "products like this usually also have X" checklists.
+- **Never open application code, migrations, configuration or tests**, and never mention schema, components, services, endpoints or source-file paths in a finding. Naming the backlog rows and documents you cite as evidence is not a source-file path and is required. If a sentence explains why something is hard to build, delete it. Talk about what the user sees, taps, waits for or gets confused by, in words someone outside engineering would use.
+- **No strengths section, ever.** Do not open with what works, do not soften a finding with "to be fair" or "minor nit", do not praise effort or thoroughness. If a finding is real, state it flatly. If it is not real, cut it rather than downgrade it into a compliment.
+- **Every finding cites evidence and names features**: the feature name and `#` (or the row's ID), plus the row or document line it rests on (for example `features-planned.md #12 Summary`, `docs/features.md "Billing", line 40`), and a concrete user-facing consequence: a screen they must visit, a thing they expect to find and will not, a moment of confusion. "Feels bloated" without named rows and a reason is not a finding.
 
 ---
 
 ## The dimensions
 
 ### 1. Merge candidates
-Two or more features (shipped, planned, or one of each) that are close enough
-in purpose or interaction shape that a user would reasonably expect one
-screen, one concept, one place to look — not two entry points they have to
-learn are actually different things. Look for a near-mirror pair across the
-whole scope. Patterns already visible in this backlog worth testing: planned
-`database-backup` (#44) and `asset-backup` (#61) — a user hears "backup" once;
-two features with two different meanings of it is a naming and discovery
-problem before it is anything else. Planned `email-notifications` (#48) and
-`notification-center` (#54) both tell a user that the same background
-operations (catalog, sync, convert, backup) finished — two notification
-surfaces for the same events, with no stated relationship between them.
-Planned `image-comparison-viewer` (#50) next to the shipped duplicate-group
-side-by-side comparison. Judge each on its merits; don't assume they hold.
+Two or more features (shipped, planned, or one of each) so close in purpose or interaction shape that a user would expect one screen, one concept, one place to look, not two entries to learn apart. A near-mirror pair is the strongest signal: a second feature described as "like X, but for Y" is two surfaces, two things to discover and two sets of habits for what a user thinks of as one idea with a toggle. Look across the whole scope, not just one Area: shared shape, separate surface, no unifying concept.
 
 ### 2. Split candidates
-A feature (shipped or planned) whose scope has grown, or is proposed to grow,
-past what a user would recognize as "one thing" — usually visible as a single
-area quietly accumulating unrelated sub-capabilities. The shipped Gallery
-section is the first place to look: thumbnail grid, viewer, folder tree,
-timeline, search/filter/sort, rating, tagging, EXIF, move/copy/rename, crop,
-upload, ZIP download, add-to-album, soft delete — would a new user recognize
-all of that as "browsing my photos," or has it become several products sharing
-one screen? Also flag a single planned row whose own description reads as
-multiple unrelated deliverables bolted together — a row-level split candidate,
-not just an area-level one.
+A feature whose scope has grown, or is proposed to grow, past what a user would recognise as one thing, usually visible as one Area quietly accumulating unrelated capabilities over several rows. Ask of each such Area: would a new user recognise all of this as one product, or has it become three or four products sharing one entry point? Also flag a single planned row whose own Summary or brief reads as several unrelated deliverables bolted together: a split candidate at the row level.
 
-### 3. Missing functionality — gaps in an existing story
-Somewhere an area tells half a story: it solves the "find it" half but not the
-"and fix it" half, or it covers every sibling case but one. Ground each gap in
-the feature's own stated non-goals and deferrals where possible — if a doc says
-something is deliberately out of scope, ask "was that the right call, or is
-that the thing a real user will ask for first?" Look for it in the planned
-backlog too: a planned row that exists *because* a shipped feature is
-incomplete (`image-rotation-viewer` (#30) — portrait photos showing sideways in
-the shipped viewer — is a fix to a shipped area, not a new capability) tells
-you where the shipped story has a hole. Ask what a person would reasonably
-expect to do next after each shipped capability and whether the scope lets them.
+### 3. Missing functionality: gaps in an area's story
+An area that tells half a story: it solves "remember this exists" but not "and here is what to do about it", or it covers every sibling case but one. Ground each gap in the feature's own stated non-goals and deferrals where the briefs and the description have them ("out of scope", "later", "not included"), and ask: was that the right call, or is that what a real user asks for first? Look for an area that reuses every convention its siblings follow (reminders, export, recovery, linking to related records) except the one that would have made it useful day to day.
 
-### 4. Cross-feature consistency & everyday friction
-Patterns a user would learn once and then expect to hold everywhere, that
-instead quietly differ feature to feature — each instance individually
-defensible, the sum of them a trap:
-- **Delete reversibility with no visible signal.** Gallery deletes land in the
-  Recycle Bin and can be restored; check what Albums, Duplicates, Sync, and any
-  planned deleting feature (a WebDAV mount's deletes, an auto-resolve cleanup)
-  do. A user who has restored one deleted photo will assume the same safety net
-  exists everywhere, and find out otherwise only by losing a file.
-- **Edit models that differ.** Shipped Crop saves in place; planned
-  `asset-image-editor` (#56) saves a new asset with an optional replace. A user
-  who learns one will be surprised by the other.
-- **Scattered "where do I do X"** — where background operations (catalog,
-  sync, convert, any future backup or video job) are started, where their
-  progress and history are seen, and where related settings live. Count the
-  places a user has to look.
-- Any other "I learned the pattern here, it's different two features over"
-  case surfaced while reading — name the two features and the exact behavioral
-  difference.
+### 4. Cross-feature consistency and everyday friction
+Patterns a user learns once and then expects to hold everywhere, that quietly differ from feature to feature. Each instance defensible; the sum a trap. Look for:
+- **Reversibility with no visible signal**: some things can be restored after deletion and others vanish for good, behind the same confirmation wording.
+- **A fragmented "who or what is this about" model**: the same real-world thing (a person, a place, a contact, an account) re-modelled separately by several features that do not know about each other, so the user asks "didn't I already enter this?".
+- **Scattered configuration**: preferences living sometimes in one settings page and sometimes behind a button on an unrelated screen, with no rule to find them.
+- **Any other "I learned the pattern here and it differs two features over"**: name the two features and the exact behavioural difference.
 
-### 5. Scope coherence — what is this product actually for?
-Step back from individual features and ask whether the backlog as a whole is
-still one coherent thing or is drifting into "whatever seemed buildable next."
-Compare the user-facing rows (rating, tagging, comparison, event grouping,
-quality scoring) against the rows a user would never see or choose — planned
-`kafka-catalog-coordination` (#77) and `mongodb-user-preferences` (#74) change
-nothing a photo-manager user can observe — and against the large new product
-surfaces (`video-from-images` (#58), `webdav-server` (#71), `archive-support`
-(#60)). Say plainly whether the roadmap still reads as "help me find, organize
-and protect my photos" or has started reading as "build a media platform," and
-name which specific planned rows are the evidence either way.
+### 5. Scope coherence: what is this product actually for?
+Step back and ask whether the backlog is still one coherent thing or is drifting into "whatever seemed buildable next". Weigh the top-priority tier of the planned list as the sharpest evidence, and the proportion of planned rows that are platform-flavoured (generic engines, builders, cross-cutting layers) against rows that serve the everyday job the shipped features establish. Say plainly whether the roadmap still reads as the product the shipped rows describe, or has started reading as something else, and name the rows that are the evidence either way. Skip this dimension for a narrow scoped ask.
 
 ---
 
 ## Steps
 
-### 1. Determine scope
-Full roast (all 5 dimensions, both shipped and planned) unless the user names a
-slice — a feature area, "just planned," "just shipped," or a specific pair to
-compare. A scoped ask still applies whichever dimensions are relevant to it (a
-"just Albums" ask skips dimension 5 entirely, for instance) but goes deeper on
-the ones that apply than the full-roast survey depth would.
-
-### 2. Read the scope documents
-`JPPhotoManagerWeb/docs/features.md` in full (or the relevant sections for a
-scoped ask), `JPPhotoManagerWeb/docs/backlog/features-planned.md`'s Feature
-List table in full, and `JPPhotoManagerWeb/docs/backlog/features-implemented.md`'s
-Feature List table for historical/dependency context. Build a working list of
-every distinct user-facing capability — not every row, since many implemented
-rows are incremental slices of one capability already counted. The examples
-named in the dimensions above are starting points taken from the backlog as it
-stood when this skill was written; re-verify each against the current docs
-before using it, and drop any that no longer hold.
-
-### 3. Work each in-scope dimension
-Look for the specific patterns each dimension above describes. A finding needs:
-which feature(s) (name + `#` where it has one), the concrete user-facing
-symptom, and why a real user would notice or be bothered by it. Discard
-anything that only reads as a problem once you start thinking about the
-implementation — that's not this skill's finding to make.
-
-### 4. Present in chat, then write the dated report
-In-chat: group findings under `### 🔀 Merge candidates`, `### ✂️ Split
-candidates`, `### 🕳️ Missing functionality`, `### 😖 Friction &
-inconsistency`, `### 🎯 Scope coherence` — omit any heading with nothing under
-it, never pad one out to avoid an empty section. Each finding is a bullet: the
-claim, the feature(s) it's about, the concrete user-facing consequence. Close
-with a **Bottom line** — two or three blunt sentences naming the single most
-damaging pattern in the whole scope, no hedge. If the honest answer is that the
-scope holds together, say that in one flat sentence and stop — don't
-manufacture findings to fill out every dimension.
-
-**Write the report to a dated file** (every run, full or scoped):
-
-- **Path:** `JPPhotoManagerWeb/docs/reports/product-scope-roast/PRODUCT_SCOPE_ROAST_{YYYY-MM-DD}.md`
-  for a full roast, or `PRODUCT_SCOPE_ROAST_{YYYY-MM-DD}_{scope-slug}.md` for a
-  scoped one (e.g. `_planned-only`, `_gallery`). If a file for that date/scope
-  already exists, append `-2`, `-3`, etc. — never overwrite an earlier run's
-  report.
-- This directory is gitignored (`JPPhotoManagerWeb/docs/reports/*` catch-all in
-  `.gitignore`) — reports are local working output, not committed history.
-  Create the directory if it doesn't exist yet.
-- Content: the same grouping and tone as the in-chat summary, using GitHub
-  task-list checkboxes (`- [ ]`) per finding so a follow-up pass can track
-  which were acted on. Include a short header noting the scope and which
-  commit/state the review was run against.
-
-### 5. Candidate follow-ups — never auto-file
-End the report with a `### Candidate follow-ups` list: for each finding, name
-which skill would record it if the user wants it acted on —
-
-- **`feature-plan`** for a missing-functionality finding (dimension 3) or a
-  genuine merge/split that reshapes a *planned* row before it's ever built
-  (cheapest time to fix it).
-- **`bug-report`** for a friction/inconsistency finding (dimension 4) on
-  something already **shipped** — a real user hits this today, so it's a defect
-  in the live product, not a future feature idea.
-- **`decision-record`** if a scope-coherence finding (dimension 5) reaches a
-  real "should we keep building in this direction" call worth recording either
-  way it's decided.
-
-List the candidates; do not invoke any of them automatically. Ask the user
-which findings, if any, they want filed now.
+1. **Determine scope.** Full review (all five dimensions, shipped and planned) unless the user names a slice. A scoped ask applies the relevant dimensions in more depth.
+2. **Find and read the inputs.** Resolve `<backlog>` and `<reports>` from `.backlog-kit.toml` (defaults above). Read both feature tables in full, then briefs where a Summary is not enough, then look for the optional product description and read it. If the planned or implemented file is missing or empty, say so and review what exists; do not fabricate the other half. Build a working list of distinct user-facing capabilities: several implemented rows are slices of one capability already counted.
+3. **Read the project's scope examples.** Read the `Product scope review checks` section of the project's `docs/product.md` (the kit convention: that doc says what the product is for and who uses it). It holds this project's own examples for the dimensions (near-mirror pairs, areas that grew, gaps, inconsistent patterns): treat each as a hypothesis to test on its merits, never as a finding. Without that doc or section, work from the dimensions below and the backlog alone, and say so in the report.
+   Then **work each in-scope dimension.** A finding needs the feature(s), the cited evidence, the user-facing symptom, and why a real user would be bothered. Discard anything that only looks like a problem once you start thinking about the implementation.
+4. **Write the report**, then present it.
+   - **Path:** `<reports>/product-scope-roast/PRODUCT_SCOPE_ROAST_<YYYY-MM-DD>.md` (add `_<scope-slug>` for a scoped run). If it exists, use `-2`, `-3`, and so on; never overwrite an earlier run. Create the directory if needed.
+   - **Header:** date, scope, the backlog snapshot reviewed (counts of implemented and planned rows), and the product-description file used (or "none found").
+   - **Sections**, each omitted if empty, never padded: `### Merge candidates`, `### Split candidates`, `### Missing functionality`, `### Friction and inconsistency`, `### Scope coherence`. Each finding is a checkbox bullet (`- [ ]`) so a follow-up pass can track what was acted on: the claim, the feature(s) with `#`, the cited evidence, the user-facing consequence.
+   - **Bottom line**: two or three blunt sentences naming the single most damaging pattern, no hedge and no "overall this is solid but". If the honest answer is that the scope holds together, say so in one flat sentence and stop; do not manufacture findings.
+   - **Recommended actions**: for each finding, the concrete move ("merge features 4 and 9", "split feature 12 into ...", "add a planned feature for ..."). These are advice.
+5. **End with a short summary in chat**: the report path, finding counts per dimension, the bottom line, and which product description was used.
+6. **Offer, never apply.** Offer to carry out recommendations: `feature-plan` for a missing-functionality finding or to reshape a *planned* row before it is built (the cheapest time), `features-archive` where shipped rows should be consolidated in the log, `bug-report` for friction in something already shipped that a user hits today, `decision-record` if a scope-coherence finding is a real "keep building in this direction?" call. Ask which, if any, the user wants, and run one at a time with that skill's own confirmation.
 
 ---
 
-## Follow-up Workflow
+## Follow-up
 
-Use this when asked to revisit an **existing** dated report instead of running
-a fresh roast.
-
-1. Resolve which report: one the user names directly, or (default) the most
-   recent `PRODUCT_SCOPE_ROAST_*.md` for the scope in question, or the most
-   recent full roast if none is named. If none exists, say so and suggest
-   running a fresh one.
-2. Read it in full, then ask whether the user wants to dig deeper into one
-   still-open (`- [ ]`) finding, or file one or more of its `Candidate
-   follow-ups` now (→ hand off to `feature-plan`/`bug-report`/
-   `decision-record`, one at a time, each with its own confirmation).
-3. If the scope has changed since (new features shipped or planned), re-check
-   whether an earlier finding is now stale — say so explicitly rather than
-   silently repeating it.
+Asked to revisit an existing report: resolve the one named, or the most recent `PRODUCT_SCOPE_ROAST_*.md` for that scope. Read it in full, re-check each open (`- [ ]`) finding against the current backlog, and say explicitly which are now stale (rows shipped, merged or removed) rather than repeating them. Then offer to dig deeper into one, or to hand one to the skills in step 6.
 
 ---
 
 ## Guardrails
 
-- **Report-only — never edit `features.md` or either backlog file.** This skill
-  assesses and writes a report; filing an actual change to the backlog only
-  happens through a separate, explicit follow-up
-  (`feature-plan`/`bug-report`/`decision-record`).
-- **Never auto-file a finding.** §5 lists candidates and asks; it never invokes
-  another skill on its own initiative mid-run.
-- **No technical content, ever.** No endpoints, entities, services, components,
-  message brokers, or file paths in a finding — if a sentence needs one of
-  those to make sense, it belongs in `architecture-reviewer` or
-  `code-reviewer`, not here.
-- **No strengths section and no softened findings.** Don't compliment what's
-  built or planned, don't hedge a real finding to be polite, don't pad the
-  report with minor items to look thorough. A short report with three findings
-  that actually hold up beats a long one where half are filler.
-- **Ground every finding in the actual scope docs**, not a generic "photo
-  managers usually also have X" template — a finding has to name real features
-  from this app's real backlog.
-- **Never commit.** Write the dated report to the gitignored
-  `JPPhotoManagerWeb/docs/reports/product-scope-roast/` folder only; no git
-  command runs as part of this skill.
+- **Never run `git commit`, `git push` or open a PR.**
+- **Read-only except for the report.** Never edit a backlog file, the product description, or any other document. Merges, splits and additions happen only through the skills in step 6, only on the user's explicit yes, and never automatically.
+- **No technical content, ever.** A finding that needs schema, components or source-file paths to make sense belongs in a code or architecture review, not here.
+- **No strengths section and no softened findings.** Do not compliment what is built or planned, do not hedge a real finding to be polite, do not pad the report to look thorough. Three findings that hold up beat a long list where half are filler.
+- **Evidence or silence.** No finding without a cited backlog row or document line; no invented facts about the product or its users.
+- **Name the product description used**, or state that none was found.

@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """
-Compute the feature-tracker status report for jp-photo-manager: counts,
+Compute the feature-tracker status report: counts,
 the priority/effort/SDD-readiness breakdown, the pending list, and the
 data-integrity checks (duplicate feature numbers, stale dependency notes
 claiming a feature is still pending when it's actually already
-implemented) and the row <-> JPPhotoManagerWeb/docs/backlog/features/
+implemented) and the row <-> <backlog>/features/
 NNN-<name>.md file cross-checks (missing/orphan/misnamed brief files, bad
 planned Summaries, missing [brief] links, dangling [spec] targets).
 
 This is pure table-counting and text-pattern arithmetic over
-JPPhotoManagerWeb/docs/backlog/features-planned.md and
-JPPhotoManagerWeb/docs/backlog/features-implemented.md — see
+<backlog>/features-planned.md and
+<backlog>/features-implemented.md — see
 features-status/SKILL.md for the full rules this implements (steps 1-6).
 The skill's job is reading this script's output and presenting it; this
 script owns none of the judgment, only the counting.
 
-The stale-dependency-note check covers this project's two annotation
+The stale-dependency-note check covers two annotation
 forms (see SKILL.md step 5): a rare heading annotation naming an explicit
 still-pending state, and the actually-common prose aside ("#N is still
 pending", "#N and #M are still pending", "(#N, still pending)") used to
@@ -32,6 +32,15 @@ import re
 import json
 import argparse
 from pathlib import Path
+
+_here = Path(__file__).resolve()
+for _cand in (_here.parent, _here.parents[3] / "lib"):
+    if (_cand / "backlog_kit.py").is_file():
+        sys.path.insert(0, str(_cand))
+        break
+import backlog_kit as bk
+
+BACKLOG = "docs/backlog"  # replaced in main() by [paths] backlog_dir
 
 SUMMARY_MAX = 250
 BRIEF_LINK_RE = re.compile(r'\[brief\]\(([^)]+)\)')
@@ -145,8 +154,10 @@ def main():
     args = ap.parse_args()
 
     root = Path(args.repo_root)
-    planned_path = root / "JPPhotoManagerWeb" / "docs" / "backlog" / "features-planned.md"
-    implemented_path = root / "JPPhotoManagerWeb" / "docs" / "backlog" / "features-implemented.md"
+    global BACKLOG
+    BACKLOG = bk.load_config(root)["paths"]["backlog_dir"].strip("/")
+    planned_path = root / BACKLOG / "features-planned.md"
+    implemented_path = root / BACKLOG / "features-implemented.md"
 
     result = {
         "planned_available": False,
@@ -278,7 +289,7 @@ def expected_file_name(row):
 
 def check_feature_files(root, planned_rows, implemented_rows, result):
     """Cross-check table rows against backlog/features/NNN-<name>.md files."""
-    backlog = root / "JPPhotoManagerWeb" / "docs" / "backlog"
+    backlog = root / BACKLOG
     features_dir = backlog / "features"
     expected = {}
     for label, rows in (("planned", planned_rows), ("implemented", implemented_rows)):
@@ -327,9 +338,9 @@ def render_markdown(r):
     if r["total"] is None:
         missing = []
         if not r["planned_available"]:
-            missing.append("JPPhotoManagerWeb/docs/backlog/features-planned.md")
+            missing.append(f"{BACKLOG}/features-planned.md")
         if not r["implemented_available"]:
-            missing.append("JPPhotoManagerWeb/docs/backlog/features-implemented.md")
+            missing.append(f"{BACKLOG}/features-implemented.md")
         lines.append(f"**Total/Progress unavailable** — missing or table-less: {', '.join(missing)}")
         lines.append("")
         if r["implemented_available"]:
@@ -393,11 +404,11 @@ def render_markdown(r):
         integrity.append(f"- ⚠ Stale dependency note: \"{d['claim']}\" asserts feature #{d['number']} is "
                           f"still pending, but it's already implemented. Found in {d['file']}.")
     for fname in r["missing_feature_files"]:
-        integrity.append(f"- ⚠ {fname} has a table row but no JPPhotoManagerWeb/docs/backlog/features/{fname} file.")
+        integrity.append(f"- ⚠ {fname} has a table row but no {BACKLOG}/features/{fname} file.")
     for fname in r["orphan_feature_files"]:
-        integrity.append(f"- ⚠ JPPhotoManagerWeb/docs/backlog/features/{fname} exists but its feature has no row in either table.")
+        integrity.append(f"- ⚠ {BACKLOG}/features/{fname} exists but its feature has no row in either table.")
     for b in r["bad_feature_headings"]:
-        integrity.append(f"- ⚠ JPPhotoManagerWeb/docs/backlog/features/{b['file']} does not start with `{b['expected']}`.")
+        integrity.append(f"- ⚠ {BACKLOG}/features/{b['file']} does not start with `{b['expected']}`.")
     for s in r["bad_planned_summaries"]:
         integrity.append(f"- ⚠ Feature {s['number']} `{s['name']}` has a bad Summary in features-planned.md ({s['problem']}).")
     for b in r["missing_brief_links"]:

@@ -1,0 +1,4 @@
+# backlog-kit settings for this project (see the kit's backlog-kit.example.toml).
+# The product lives in JPPhotoManagerWeb/, so that is where the backlog, the decisions and the reference docs are.
+[paths]
+backlog_dir = "JPPhotoManagerWeb/docs/backlog"

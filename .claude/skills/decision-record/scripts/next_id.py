@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Scan JPPhotoManagerWeb/docs/decisions/ for the next free ADR number —
+Scan <decisions> (the `decisions` folder next to the backlog folder) for the next free ADR number —
 decision-record/SKILL.md step 2's mechanical numbering rule (scan
 filenames for the 4-digit `NNNN-` prefix, take max+1; one global
 sequence, never reused even for a later-superseded record).
@@ -9,9 +9,17 @@ Usage:
     python3 next_id.py <repo-root>
 """
 import re
+import sys
 import json
 import argparse
 from pathlib import Path
+
+_here = Path(__file__).resolve()
+for _cand in (_here.parent, _here.parents[3] / "lib"):
+    if (_cand / "backlog_kit.py").is_file():
+        sys.path.insert(0, str(_cand))
+        break
+import backlog_kit as bk
 
 
 def main():
@@ -19,7 +27,8 @@ def main():
     ap.add_argument("repo_root")
     args = ap.parse_args()
 
-    decisions_dir = Path(args.repo_root) / "JPPhotoManagerWeb" / "docs" / "decisions"
+    root = Path(args.repo_root)
+    decisions_dir = (root / bk.load_config(root)["paths"]["backlog_dir"].strip("/")).parent / "decisions"
     nums = []
     if decisions_dir.exists():
         for f in decisions_dir.glob("*.md"):
