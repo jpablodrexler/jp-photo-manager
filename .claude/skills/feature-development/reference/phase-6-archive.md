@@ -74,10 +74,24 @@ below), with the following prompt:
 > regardless. Only stop and surface details to the user if the skill
 > itself errors out in a way that leaves files in a broken state.
 >
-> **Step 3** — OpenSpec projects only: invoke `openspec-archive-change <change-name>`. Wait for it to
-> complete fully (the SDD change directory must be moved to
-> `openspec/changes/archive/`). This skill may prompt you about delta spec sync
-> or incomplete tasks — respond to those prompts normally.
+> **Step 3** — OpenSpec projects only. The change's delta specs must reach the
+> main specs through the `openspec-sync-specs` skill — never by editing
+> `openspec/specs/**` by hand, and never skipped.
+> 1. If `openspec/changes/<change-name>/specs/` holds any delta spec, invoke
+>    `openspec-sync-specs <change-name>` via the Skill tool first and wait for it
+>    to finish. A hand-written merge is not a substitute, even for an
+>    ADDED-only delta.
+> 2. Then invoke `openspec-archive-change <change-name>` and wait for it to
+>    complete fully (the SDD change directory must be moved to
+>    `openspec/changes/archive/`). When it offers the delta spec sync, answer
+>    "Sync now" (or "Archive now" if step 1 already synced and it reports the
+>    specs as already in sync) — never "Archive without syncing". Answer its
+>    incomplete-task prompts normally.
+> 3. Report in your hand-back whether `openspec-sync-specs` ran
+>    (`SPECS SYNCED: via openspec-sync-specs` or `SPECS SYNCED: n/a — no delta
+>    specs`). If you could not run the skill, end your response with
+>    `ARCHIVE_BLOCKED — openspec-sync-specs unavailable` instead of merging by
+>    hand.
 >
 > **Step 4** — Invoke `features-archive <change-name>`. Wait for it to
 > complete fully (the feature row must be moved from the planned table in
