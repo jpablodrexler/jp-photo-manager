@@ -72,7 +72,7 @@ project with a schema, an end-to-end suite and a build runs them all.
 | 3 — Tests *(optional)*        | Subagent 3 | runs the project's tests (and its fast smoke tier, if CI runs one) until they pass; skipped if the project has no automated tests |
 | 4 — E2E verification *(optional, conditional)* | Subagent 4 | runs the project's end-to-end/browser checks when the change touches a user-facing flow — skipped otherwise, or if the project has no such suite; how the test account is provided is decided by the orchestrator itself, before spawning Subagent 4, since that decision needs `AskUserQuestion` |
 | 5 — Build verification *(optional)* | Subagent 5 | runs the project's build locally to catch build failures before CI or the host would; skipped if the project has no build step |
-| 6 — Archive                   | Subagent 6 | proves each requirement, syncs the docs, `openspec-archive-change <name>` (OpenSpec projects), `features-archive <name>` |
+| 6 — Archive                   | Subagent 6 | proves each requirement, syncs the docs, `openspec-sync-specs <name>` then `openspec-archive-change <name>` (OpenSpec projects), `features-archive <name>` |
 | 7 — Commit *(only with `--commit`)* | orchestrator | `gitflow` commit action: one local commit holding the implementation, its tests and the backlog move |
 
 ---
@@ -341,10 +341,16 @@ If `--commit` was not passed, say plainly that nothing was committed and that th
   `E2E: PASS_PARTIAL`. Credentials files are never read by the orchestrator and
   their contents never appear in a prompt, a response or a report.
 - **Phase 4 only starts the application locally and reads/writes no repository
-  files.** It never runs a migration or any other write against a shared
-  database — Step 2 only confirms the environment is ready. Any schema fix
-  needed to make Phase 4 pass belongs back in Phase 2's conditional database
-  review.
+  files.** The one write it makes to a shared database is applying *this
+  change's own* pending migrations, and only after a dry run shows nothing else
+  pending (see Phase 4 Step 2) — it never stops to ask the user to do that
+  themselves. It starts a stopped container runtime (Docker) itself too. It
+  makes no other write against a shared database. Any schema fix needed to
+  make Phase 4 pass belongs back in Phase 2's conditional database review.
+- **Docker is started by the workflow, never reported as a blocker.** Any
+  phase whose tooling needs a local container runtime (a local database test
+  suite in Phase 3 or 6, Phase 4's environment) starts it and waits for it
+  before running, and only blocks if it never comes up.
 - **Step 1.6 marks the backlog row `🔶 In Progress` as soon as the branch to
   work on is ready, in both normal and batch mode.** This is what lets
   `features-next` recommend resuming an interrupted feature instead of

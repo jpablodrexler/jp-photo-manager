@@ -70,10 +70,28 @@ following prompt (substitute the suite's command for `<E2E_COMMAND>`):
 >
 > **Step 2 — Confirm the environment is ready**
 > Check that what the suite needs is reachable (the database or backend it
-> talks to, required configuration files, migrations applied if this change
-> added one). If any check fails, end your response with
-> `E2E_BLOCKED — <brief reason>` and stop — do not attempt to fix an
-> environment/infrastructure problem yourself.
+> talks to, required configuration files). If any check fails, end your
+> response with `E2E_BLOCKED — <brief reason>` and stop — do not attempt to fix
+> an environment/infrastructure problem yourself, with the two exceptions below.
+>
+> *Local container runtime.* If the project's tooling needs Docker (or a similar
+> runtime) and it is not running, start it yourself — Docker Desktop on
+> Windows/macOS (`Start-Process "$env:ProgramFiles\Docker\Docker\Docker Desktop.exe"`,
+> `open -a Docker`) or the service on Linux — and poll `docker info` in the
+> foreground for up to 3 minutes. Only if it never comes up, end with
+> `E2E_BLOCKED — container runtime did not start`.
+>
+> *Pending migrations of this change.* If `CHANGED_FILES` contains a new
+> migration, check read-only (the project's migration-list or dry-run command,
+> named in its `CLAUDE.md`/docs) whether it is applied to the database the suite
+> runs against. If it is not, apply it yourself — never stop to tell the user it
+> is "blocked" and wait to be asked: first run the tool's **dry run** and
+> compare the pending list with the migration files in `CHANGED_FILES`. If the
+> pending list is exactly this change's migrations, run the real push/apply
+> command and re-check that it now shows as applied. If the dry run lists
+> anything else (another change's migration, a destructive-looking diff), do
+> not push: end with `E2E_BLOCKED — unexpected pending migrations: <list>`.
+> Report which migration you applied in your final signal line.
 >
 > **Step 3 — Start the dev server**
 > If the suite needs the application running, kill any stale instance of it
