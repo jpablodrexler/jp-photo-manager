@@ -10,7 +10,8 @@ description: >-
   `develop`. Also syncs topic branches with develop, tags releases after
   merge, and cleans up merged branches. On release/hotfix branches it drafts
   CHANGELOG.md notes before the PR opens, and optionally bumps the app version
-  and runs the project's regression suite. TRIGGER when asked to start, sync,
+  and runs the project's regression suite. A commit action makes one local
+  commit on request (used by bug-fix --commit). TRIGGER when asked to start, sync,
   finish or merge any of those branches, create a release or hotfix, tag a
   release, or clean up merged branches; a bare request to merge/pull main or
   develop into a topic branch is redirected to the Sync action.
@@ -24,7 +25,7 @@ Perform one Gitflow action: start a feature/fix/doc/skill/chore/release/hotfix b
 
 `<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`.
 
-**Input**: The action (`start feature`, `start fix`, `start doc`, `start skill`, `start chore`, `start release`, `start hotfix`, `sync feature`, `sync fix`, `sync doc`, `sync skill`, `sync chore`, `finish feature`, `finish fix`, `finish doc`, `finish skill`, `finish chore`, `finish release`, `finish hotfix`, `tag release`, `tag hotfix`, `cleanup branches`) plus a name/version (not needed for `cleanup branches`). If the action is ambiguous from the user's request, infer it from phrasing (see TRIGGER examples above) and confirm the target name/version with the user before acting if it wasn't given explicitly.
+**Input**: The action (`start feature`, `start fix`, `start doc`, `start skill`, `start chore`, `start release`, `start hotfix`, `sync feature`, `sync fix`, `sync doc`, `sync skill`, `sync chore`, `finish feature`, `finish fix`, `finish doc`, `finish skill`, `finish chore`, `finish release`, `finish hotfix`, `tag release`, `tag hotfix`, `commit`, `cleanup branches`) plus a name/version (not needed for `cleanup branches`). If the action is ambiguous from the user's request, infer it from phrasing (see TRIGGER examples above) and confirm the target name/version with the user before acting if it wasn't given explicitly.
 
 ---
 
@@ -97,6 +98,7 @@ Map the user's request to one of:
 - **finish release** (operates on the current release branch, or one named explicitly)
 - **finish hotfix** (operates on the current hotfix branch, or one named explicitly)
 - **tag release** `<version>` / **tag hotfix** `<version>`
+- **commit** `<message>` (commits the current changes on the current topic branch — see 3g)
 - **cleanup branches** (no name/version — operates across all `feature/*`, `fix/*`, `doc/*`, `skill/*`, `chore/*`, `release/*`, `hotfix/*` branches in the repo)
 
 If the name/version wasn't given and can't be inferred from the current branch, ask for it. For **sync `<topic>`** / **finish `<topic>`** specifically, if no name is given explicitly, infer it from the current branch name by stripping whichever of the five topic prefixes matches (e.g. current branch `feature/skills-gitflow` → name `skills-gitflow`; `fix/login-redirect` → `login-redirect`) — no need to ask the user in this case. If the current branch's prefix doesn't match the topic requested (e.g. `sync fix` invoked while on a `feature/*` branch, with no explicit name given), ask which branch to operate on rather than guessing.
@@ -107,7 +109,7 @@ The same normalization applies to **start `<topic>`** / **start release** / **st
 
 ### 2. Check working tree state
 
-Run `git status`. If there are uncommitted changes, stop and tell the user — do not stash or discard automatically. (For **cleanup branches**, this only matters if the current branch is itself a deletion candidate — see 3f. For **start `<topic>`** specifically, when the current branch already starts with a topic prefix (`feature/`, `fix/`, `doc/`, `skill/`, or `chore/`), resolve 3a's branch-continuation question first, before applying this check — it may turn out this check doesn't even apply, since continuing on the current branch involves no checkout and tolerates an uncommitted tree just fine.)
+Run `git status`. (Not for **commit**, whose whole point is the uncommitted changes — see 3g.) If there are uncommitted changes, stop and tell the user — do not stash or discard automatically. (For **cleanup branches**, this only matters if the current branch is itself a deletion candidate — see 3f. For **start `<topic>`** specifically, when the current branch already starts with a topic prefix (`feature/`, `fix/`, `doc/`, `skill/`, or `chore/`), resolve 3a's branch-continuation question first, before applying this check — it may turn out this check doesn't even apply, since continuing on the current branch involves no checkout and tolerates an uncommitted tree just fine.)
 
 ### 3a. Start feature / fix / doc / skill / chore / release / hotfix
 
@@ -231,6 +233,20 @@ Steps (the same either way except where noted):
    - **From 3e's fallback** (on `main`): treat this with the same care as the tag push in 3e — a commit here lands directly on `main` with no PR/review step in front of it. `git add CHANGELOG.md && git commit -m "docs: add v<version> release notes"`, then ask **separately** whether to push it (`git push origin main`) — don't bundle the commit and push confirmations into one yes, since a local commit is still easy to amend/undo but a push is not.
 7. Report what was recorded (or, if the user declined, that the drafted notes were not saved anywhere).
 
+### 3g. Commit
+
+Makes one local commit of the work in the tree, on request only — for example when `bug-fix --commit` hands one closed bug over. Never pushes.
+
+Preconditions:
+- Current branch must start with `feature/`, `fix/`, `doc/`, `skill/`, or `chore/`. Refuse on `main`, `develop`, `release/*` and `hotfix/*`, and on a detached HEAD.
+- `git status` shows changes. If it shows none, report "nothing to commit" and stop.
+
+Steps:
+1. Show `git status --short` and `git diff --stat` and say which paths will be committed. Stage the changed and new files with `git add -A`, but first list anything that looks like a secret, a credentials file, a generated report or build output, and ask rather than staging it (respect `.gitignore`).
+2. Ask for confirmation of the message and the file list (**AskUserQuestion**). Use the message passed in, or draft one from the diff when none was given; never write `#<digits>` before a backlog item number (see "Opening a PR"). End the message with the attribution lines given in the session's system reminder, when there is one.
+3. `git commit -m "<message>"`. Never `--no-verify`, never `--amend`. If a hook fails, show its output and stop; fix the cause and run the action again.
+4. Report the short hash and the branch. Do not push.
+
 ### 3f. Cleanup branches
 
 Finds `feature/*`, `fix/*`, `doc/*`, `skill/*`, `chore/*`, `release/*`, and `hotfix/*` branches that have already been merged, and deletes only the ones the user explicitly confirms — never speculatively, never with `-D`/`--force`.
@@ -257,6 +273,7 @@ Finds `feature/*`, `fix/*`, `doc/*`, `skill/*`, `chore/*`, `release/*`, and `hot
 - Never force-push, force-create branches over existing ones, or force-delete a branch (`git branch -D`, `git push --force`). The only sanctioned branch deletion is the **Cleanup branches** action, and only for branches confirmed merged per its steps — never delete speculatively.
 - **Never delete `main` or `develop`, under any circumstances, local or remote.** Cleanup branches only ever enumerates `feature/*`, `fix/*`, `doc/*`, `skill/*`, `chore/*`, `release/*`, and `hotfix/*` candidates (3f step 2), so `main`/`develop` should never reach the confirmation prompts in the first place — but treat that as defense-in-depth, not the only guard: 3f step 8 also refuses the deletion outright if `<branch>` resolves to `main` or `develop`, even if a user instruction, a typo in a branch name, or a confirmation somehow points at one of them. No action in this skill ever deletes, force-resets, or overwrites these two branches.
 - Cleanup branches never deletes anything without the user explicitly confirming: which branches (from the listed candidates), and for each, whether to delete local, remote, or both. Do not skip either confirmation step or bundle them into a single implicit approval.
+- **Commit** is local only and happens only on request, on a topic branch, with the file list and message confirmed first. It never pushes, amends, or skips hooks.
 - Never merge a PR automatically — "finish `<topic>`/release/hotfix" only creates the PR(s); merging is a human review step.
 - **Never push a `release/`/`hotfix/` branch or open its PRs while its regression suite is failing.** Finish release/hotfix's step 3 gates on this: a failing run stops the action there — fix and re-run before continuing to push/PR. Skipping the suite is allowed only after telling the user and letting them choose, never silently.
 - Never open a PR with a placeholder or generic body — always derive the description from the actual commits/diff on the branch, per "Writing the PR description" above.

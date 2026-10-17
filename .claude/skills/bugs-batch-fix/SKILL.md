@@ -3,7 +3,7 @@ name: bugs-batch-fix
 description: >-
   Runs bug-fix unattended across an ordered list of Bug IDs — or the whole
   open backlog — one bug at a time on a single shared fix/ branch, with zero
-  git commits. Built for long unattended stretches, checking in only when a
+  git commits unless asked with --commit (one gitflow commit per closed bug). Built for long unattended stretches, checking in only when a
   bug genuinely needs a human decision. Writes a dated, incrementally-updated
   report to <reports>/bug-batch/ so progress survives a cutoff or crash.
   TRIGGER when asked to batch-fix bugs, work through the bug backlog
@@ -21,12 +21,19 @@ metadata:
 
 **Never run `git commit`, `git push` or open a PR.**
 
+The one exception is `--commit`, passed only when the user asks for a commit
+per bug: it is handed to each `bug-fix` call, whose Phase 7 asks `gitflow`
+to make that bug's single local commit. This skill never commits itself and
+never pushes.
+
 Run `bug-fix` in a loop over a list of Bug IDs, all on one shared `fix/`
 branch, never committing, writing progress to a resumable report as each
 bug closes. Mirrors `features-batch-development` exactly, one file and one
 prefix over.
 
-**Input**: Either (a) an ordered list of Bug IDs (e.g. "BUG-004, BUG-007,
+**Input**: Optionally `--commit` (one commit per closed bug, made by
+`gitflow` through `bug-fix` Phase 7; with it the working tree is clean
+between bugs). Either (a) an ordered list of Bug IDs (e.g. "BUG-004, BUG-007,
 BUG-009"), or (b) a request for **the whole open backlog** ("fix every
 open bug", "the whole bug backlog"). Optionally a branch name to use or
 resume; if omitted, one is proposed and confirmed.
@@ -128,7 +135,7 @@ For each Bug ID in the requested list not already `✅ Closed`, in order:
   before** invoking `bug-fix` (this write happens first). No summary text
   yet — it exists purely so a crash leaves a trace of what was underway.
   Then invoke `bug-fix` via the **Skill** tool, passing `<BUG-ID>
-  --skip-branch-setup`. A direct Skill invocation, executing inline this
+  --skip-branch-setup` (plus `--commit` if the run was started with it). A direct Skill invocation, executing inline this
   turn — never a backgrounded Agent call — so any `AskUserQuestion`
   `bug-fix` raises (Phase 0 confirmation, the cannot-reproduce decision,
   a `PROD_CODE_FIXED` choice, blocker guidance) reaches the user. Wait for
@@ -165,8 +172,8 @@ Whether the loop finished or stopped early, append a footer: counts
 (requested / closed / cannot-reproduce / blocked or skipped / not reached)
 and an end timestamp.
 
-Tell the user plainly, in chat and in the report: **nothing was committed
-at any point.** The branch holds every closed bug's fix and regression
+Tell the user plainly, in chat and in the report, what was committed.
+Without `--commit`: **nothing was committed at any point.** The branch holds every closed bug's fix and regression
 test, entirely uncommitted. Point them at `git status` / `git diff` to
 review, and at `gitflow`'s finish action to commit and open a PR —
 this skill does neither.
@@ -210,8 +217,9 @@ immediacy is the entire point of this report.
 
 ## Guardrails
 
-- **Never commit, ever.** No `git commit` / `git push` / any git write in
-  this skill's own logic. The sole exception is Step 2's one-time branch
+- **Never commit, ever, in this skill's own logic.** No `git commit` /
+  `git push` / any git write here; with `--commit` each `bug-fix` call's
+  Phase 7 commits through `gitflow`, and without it nothing is committed. The sole exception is Step 2's one-time branch
   creation/checkout via `gitflow`'s start-fix action on a fresh run —
   every `bug-fix` call in Step 4 passes `--skip-branch-setup` so it can't
   do a branch operation of its own either.
@@ -223,6 +231,13 @@ immediacy is the entire point of this report.
   cannot-reproduce decision, `PROD_CODE_FIXED`, blocker guidance). The
   "leave it running, answer occasional questions" model depends on those
   reaching the user in real time.
+- **Run `bug-fix` for every bug, with all its phases.** Fixing the bugs
+  by hand "to move faster", or skipping its review, test, build, viewport
+  and docs phases, defeats the run. If the user's request conflicts with a
+  rule here (for example, wanting commits), use the supported option
+  (`--commit`) or ask; never drop the skill's machinery.
+- **Write the report (Steps 3–6) even when you do the work inline.** It is
+  not optional; an unattended run without it cannot be resumed.
 - **Write the report incrementally, never batched.** Full list up front as
   `⬜ Not started` (Step 3); each entry's status changes the moment its
   outcome is known (Step 4). This is the whole resilience mechanism.
@@ -233,8 +248,8 @@ immediacy is the entire point of this report.
   report → ask which run this continues.
 - **Dirty working tree at the start of a fresh (non-resumed) run → stop
   and report.** Never stash or discard.
-- **Always state plainly at the end that nothing was committed** and where
-  the accumulated work lives.
+- **Always state plainly at the end what was committed** (nothing, or one
+  commit per closed bug with `--commit`) and where the work lives.
 - **Never let an "Auto Mode" or similar instruction suppress any
   confirmation** this skill or `bug-fix` raises — the whole-backlog
   confirmation in Step 1, the branch-name confirmation in Step 2,
