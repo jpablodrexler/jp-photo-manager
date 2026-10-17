@@ -8,7 +8,8 @@ description: >-
   viewport check when the fix touches schema, sensitive code or templates,
   tests, an end-to-end check when a user-facing flow changed, a local build —
   skipping any that do not apply, syncs docs if behaviour changed, then closes
-  the bug via bugs-archive. No git commits — hands off for review and PR.
+  the bug via bugs-archive. No git commits unless asked with --commit (then one
+  commit, made by gitflow) — otherwise hands off for review and PR.
   TRIGGER when asked to fix a bug, work through the bug backlog one at a time,
   or address a specific BUG-NNN — including a bug only just described (file it
   with bug-report first, then run this skill). "Plan and fix a bug" also
@@ -28,16 +29,30 @@ doesn't have: **a failing regression test is written before the fix**, and
 it's the durable artifact the fix leaves behind.
 
 **Input**: Optional Bug ID (e.g. `BUG-004`), optionally followed by
-`--skip-branch-setup` (e.g. `BUG-004 --skip-branch-setup`). The Bug ID, if
+`--skip-branch-setup` (e.g. `BUG-004 --skip-branch-setup`) and/or `--commit`.
+The Bug ID, if
 given, is passed to `bugs-next` to skip recommendation and jump straight
 to confirmation. `--skip-branch-setup` is for orchestrators — the
 `bugs-batch-fix` skill — that have already checked out a shared branch and
 run multiple fixes on it without committing between them; omit it for
-normal single-bug use.
+normal single-bug use. `--commit` is an explicit opt-in that the user (or an
+orchestrator acting on their request) passes to get one commit for this bug
+after it closes (Phase 7); without it nothing is committed.
 
 `<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`; `<reports>` is the `reports` folder next to the backlog's parent (`docs/reports` by default).
 
 **Never run `git commit`, `git push` or open a PR.**
+
+The one exception is `--commit`: Phase 7 asks `gitflow`'s commit action to
+make a single local commit, and only when the flag was passed. Never push,
+and never commit any other way.
+
+**Every phase runs, or is skipped under its own stated skip condition and
+the reason recorded.** Running a phase inline in the orchestrator's context
+instead of in a subagent is fine; merging phases, dropping one, or calling
+one "optional" when its skip condition is not met is not. The Final Summary
+lists a status for every phase (see its table) and a bug with a missing row
+is not closed.
 
 ---
 
@@ -61,6 +76,7 @@ reason that appears in the Final Summary.
 | 4 — E2E verification *(optional, conditional)* | the project's end-to-end/browser checks when the fix touches a user-facing flow — test account decided by the orchestrator first; skipped otherwise |
 | 5 — Build verification *(optional)* | the project's build, locally; skipped if there is no build step |
 | 6 — Close | docs sync (scoped, best-effort, only if behaviour changed) → `bugs-archive <BUG-ID> fixed "<resolution>"` |
+| 7 — Commit *(only with `--commit`)* | `gitflow` commit action: one local commit holding the fix, the regression test and the backlog move |
 
 ---
 
@@ -175,8 +191,11 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 >
 > Run just that test and confirm it **fails**, and that the failure is the
 > bug described in `<repro-details>` — not an unrelated error, a typo in
-> the test, or a missing stub. Quote the failing assertion in your
-> hand-back.
+> the test, or a missing stub. **Quote the failing assertion or error
+> output verbatim in your hand-back** (a compile error is acceptable only
+> when the fix adds the API the test uses, and say so). A test you never
+> saw fail is not a regression test; the hand-back without that quote is
+> treated as blocked.
 >
 > **If you cannot make it fail** — the behaviour looks correct, or the
 > recorded steps are too vague to reproduce — do not invent a fix. End
@@ -186,6 +205,7 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 >
 > **Step 3 — Hand back**
 > End with exactly:
+> `RED: <the verbatim failing assertion or error line>`
 > `REPRO: DONE — test: <path to the test file>`
 > `BUG_ID: <bug-id>`
 
@@ -198,7 +218,8 @@ After the subagent completes:
   (stop the workflow, leave the row `🔶 In Progress`), "Cancel". Do not
   proceed to Phase 2.
 - Contains any other `FIX_BLOCKED`: surface the reason and stop.
-- Otherwise: capture the `REPRO: DONE — test: <path>` line and proceed.
+- No `RED:` line quoting real failing output → treat as blocked; do not proceed to Phase 2.
+- Otherwise: capture the `REPRO: DONE — test: <path>` and `RED:` lines and proceed.
 
 ---
 
@@ -463,6 +484,17 @@ DONE`.
 
 ---
 
+## Phase 7 — Commit (only when `--commit` was passed)
+
+Skip with `COMMIT: SKIPPED — not requested` when the flag is absent.
+Otherwise invoke `gitflow` with "commit `Fix <bug-id>: <one-line resolution>`"
+(a direct Skill call in the orchestrator's context). It shows what will be
+committed, confirms with the user, makes one local commit on the current fix
+branch and does not push. On a refusal or a failure, surface it and stop;
+the bug stays closed in the backlog, uncommitted.
+
+---
+
 ## Final Summary
 
 ```
@@ -481,14 +513,30 @@ DONE`.
 **⚠ Unreviewed production fixes:** <the PROD_CODE_FIXED lines> — fixed while chasing test failures; the user chose to proceed without routing them back through Phase 2.
 **Docs sync:** ✓ <one-line summary, or "Nothing to sync">
 **Bug:** ✓ Closed — moved to bugs-fixed.md
+**Commit:** ✓ <short hash> (or N/A — not requested)
 
-Nothing was committed. The fix (and its regression test) is on `fix/<slug>`, entirely uncommitted. Review with `git status` / `git diff`, then use `gitflow`'s finish-fix action to commit and open a PR.
+| Phase | Status |
+| ----- | ------ |
+| 1 Reproduce (red test, quoted failure) | ✓ / ✗ |
+| 2 Fix & code review | ✓ / ✗ |
+| 2 DB / security review / viewport check | ✓ / N/A — <reason> |
+| 3 Tests | ✓ / N/A — <reason> |
+| 4 E2E | ✓ / N/A — <reason> |
+| 5 Build | ✓ / N/A — <reason> |
+| 6 Docs sync + archive | ✓ / ✗ |
+| 7 Commit | ✓ / N/A — not requested |
+
+If `--commit` was not passed: nothing was committed. The fix (and its regression test) is on `fix/<slug>`, entirely uncommitted. Review with `git status` / `git diff`, then use `gitflow`'s finish-fix action to commit and open a PR.
 ```
 
 ---
 
 ## Guardrails
 
+- **Never collapse the phases to save effort.** Written-in-one-go fix and
+  test, "just the touched specs", no review, no build and a lean summary
+  are exactly what this skill exists to prevent. A skip needs its stated
+  condition and a recorded reason.
 - Always capture the Bug ID confirmed in Phase 0 and propagate it to every
   later phase. Substitute `<bug-id>` / `<slug>` / `<repro-details>` before
   spawning each subagent.
@@ -513,8 +561,10 @@ Nothing was committed. The fix (and its regression test) is on `fix/<slug>`, ent
 - **`code-reviewer` (and the DB/security reviewers when they run) always uses its
   Review workflow, scoped to `CHANGED_FILES`, never the interactive Fix
   Workflow and never a full-codebase sweep.**
-- **No git commits at any point.** Neither this skill nor any subagent may
-  run `git commit` / `git push` / any git write. The sole exceptions are
+- **No git commits unless `--commit` was passed, and then only through
+  `gitflow`'s commit action in Phase 7.** Neither this skill nor any subagent
+  may run `git commit` / `git push` / any git write itself. The sole other
+  exceptions are
   Phase 1 Step 1's branch creation and sync (`git fetch`, `git checkout`,
   `git checkout -b`, `git merge origin/develop` via `gitflow`'s
   start-fix/sync-fix, and `git merge origin/fix/<slug>` to pick up

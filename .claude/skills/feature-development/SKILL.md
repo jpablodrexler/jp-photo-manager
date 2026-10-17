@@ -11,7 +11,8 @@ description: >
   (not just that tasks are checked off) before archiving, syncs the
   documentation, and marks the feature as implemented. Works with or without
   OpenSpec. Use when you want a fully automated feature development cycle
-  with minimal manual steps. TRIGGER when the user asks to develop a feature.
+  with minimal manual steps. No git commits unless asked with --commit (then one
+  commit, made by gitflow). TRIGGER when the user asks to develop a feature.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
@@ -22,7 +23,8 @@ Orchestrate the full feature lifecycle from selection to archive using
 dedicated subagents for each phase.
 
 **Input**: Optional feature name or number, optionally followed by
-`--skip-branch-setup` (e.g. `task-postpone --skip-branch-setup`). The
+`--skip-branch-setup` (e.g. `task-postpone --skip-branch-setup`) and/or
+`--commit`. The
 feature name/number, if provided, is passed to `features-next` to skip the
 recommendation step and jump straight to confirmation for that feature.
 `--skip-branch-setup` is for orchestrators — e.g. the `features-batch-development`
@@ -30,11 +32,24 @@ skill — that have already checked out a shared branch and are running
 multiple features on it without committing between them; see Phase 1 Step
 1.5's batch-mode branch below. Omit it for normal single-feature use —
 default behavior (create/resume `feature/<change-name>` from `develop`) is
-unchanged.
+unchanged. `--commit` is an explicit opt-in that the user (or an orchestrator
+acting on their request) passes to get one commit for this feature after it
+is archived (Phase 7); without it nothing is committed.
 
 `<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`; `<reports>` is the `reports` folder next to the backlog's parent (`docs/reports` by default).
 
 **Never run `git commit`, `git push` or open a PR.**
+
+The one exception is `--commit`: Phase 7 asks `gitflow`'s commit action to
+make a single local commit, and only when the flag was passed. Never push,
+and never commit any other way.
+
+**Every phase runs, or is skipped under its own stated skip condition and
+the reason recorded.** Running a phase inline in the orchestrator's context
+instead of in a subagent is fine; merging phases, dropping one, or calling
+one "optional" when its skip condition is not met is not. The Final Summary
+ends with a status table for every phase and a feature with a missing row is
+not done.
 
 ---
 
@@ -58,6 +73,7 @@ project with a schema, an end-to-end suite and a build runs them all.
 | 4 — E2E verification *(optional, conditional)* | Subagent 4 | runs the project's end-to-end/browser checks when the change touches a user-facing flow — skipped otherwise, or if the project has no such suite; how the test account is provided is decided by the orchestrator itself, before spawning Subagent 4, since that decision needs `AskUserQuestion` |
 | 5 — Build verification *(optional)* | Subagent 5 | runs the project's build locally to catch build failures before CI or the host would; skipped if the project has no build step |
 | 6 — Archive                   | Subagent 6 | proves each requirement, syncs the docs, `openspec-archive-change <name>` (OpenSpec projects), `features-archive <name>` |
+| 7 — Commit *(only with `--commit`)* | orchestrator | `gitflow` commit action: one local commit holding the implementation, its tests and the backlog move |
 
 ---
 
@@ -164,7 +180,21 @@ them back through Phase 2's code review.
 **Docs sync:** ✓ <one-line summary from `docs-sync`, or "Nothing to sync">
 **SDD change:** ✓ Archived (OpenSpec projects)
 **Feature:** ✓ Marked as implemented
+**Commit:** ✓ <short hash> (or N/A — not requested)
+
+| Phase | Status |
+| ----- | ------ |
+| 1 Propose / branch | ✓ / ✗ |
+| 2 Implement & code review | ✓ / ✗ |
+| 2 DB / security review / viewport check | ✓ / N/A — <reason> |
+| 3 Tests | ✓ / N/A — <reason> |
+| 4 E2E | ✓ / N/A — <reason> |
+| 5 Build | ✓ / N/A — <reason> |
+| 6 Spec proof, docs sync, archive | ✓ / ✗ |
+| 7 Commit | ✓ / N/A — not requested |
 ```
+
+If `--commit` was not passed, say plainly that nothing was committed and that the work is on `feature/<change-name>` for review.
 
 ---
 
@@ -216,6 +246,8 @@ them back through Phase 2's code review.
   If it reports `BUILD: BLOCKED`, surface the details to the user and wait for
   guidance before continuing.
 - Do not display the Final Summary until Phase 6 subagent returns `ARCHIVE: DONE`.
+- **Phase 7 (only with `--commit`):** after `ARCHIVE: DONE`, invoke `gitflow` with "commit `Feature <change-name>: <one-line summary>`" directly in the orchestrator's context. It shows what will be committed, confirms with the user, makes one local commit and does not push. Without the flag record `COMMIT: SKIPPED — not requested`. A refusal or failure is surfaced and stops there; the feature stays archived, uncommitted.
+- **Never collapse the phases to save effort.** Implementing and testing in one go, running only the touched specs, skipping review or build, and giving a lean summary are what this skill exists to prevent. A skip needs its stated condition and a recorded reason.
   If it returns `ARCHIVE_BLOCKED` instead — Step 1's `spec-compliance-check`
   found a Failing scenario, a test added to close an Unverified scenario
   itself failed (revealing a real bug), or an Unverified scenario survived
@@ -359,9 +391,10 @@ them back through Phase 2's code review.
   and `develop` and the two look momentarily interchangeable. No phase in
   this workflow may merge, rebase, or pull `main` into the feature branch
   under any circumstance.
-- **No git commits at any point.** Neither this skill nor any subagent it
-  spawns may run `git commit`, `git push`, or any other git write command
-  at any point in the workflow. Branch creation and branch sync
+- **No git commits unless `--commit` was passed, and then only through
+  `gitflow`'s commit action in Phase 7.** Neither this skill nor any
+  subagent it spawns may run `git commit`, `git push`, or any other git
+  write command itself at any point in the workflow. Branch creation and branch sync
   (`git fetch`, `git checkout`, `git checkout -b`, `git merge
   origin/develop`, and `git merge origin/feature/<change-name>` to pick up
   commits pushed from another device — all only in Phase 1's Step 1.5, the

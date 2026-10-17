@@ -3,7 +3,7 @@ name: features-batch-development
 description: >-
   Runs `feature-development` unattended across an ordered list of named
   features — or the whole pending backlog — one feature at a time on a single
-  shared branch, with zero git commits. Built for long unattended stretches
+  shared branch, with zero git commits unless asked with --commit. Built for long unattended stretches
   over several small features, checking in only when a
   blocker needs a human decision. Writes a dated report to
   `<reports>/feature-batch/`, updated after each feature completes (not
@@ -21,11 +21,17 @@ metadata:
 
 **Never run `git commit`, `git push` or open a PR.**
 
+The one exception is `--commit`, passed only when the user asks for a commit
+per feature: it is handed to each `feature-development` call, whose Phase 7
+asks `gitflow` to make that feature's single local commit. This skill never
+commits itself and never pushes.
+
 Run `feature-development` in a loop over a named list of features, all on
 one shared branch, never committing, writing progress to a resumable report
 as each feature finishes.
 
-**Input**: Either (a) an ordered list of feature identifiers (names or `#`
+**Input**: Optionally `--commit` (one commit per completed feature, made by
+`gitflow` through `feature-development` Phase 7). Either (a) an ordered list of feature identifiers (names or `#`
 numbers from `<backlog>/features-planned.md`), as given by the user —
 e.g. "13, 16, 19" or "task-postpone, expense-dashboard-charts" — or (b) a
 request for **the whole planned backlog** (e.g. "develop the whole
@@ -188,7 +194,7 @@ For each identifier in the requested list that is not already `✅ Completed`
   text accompanies this status — there's nothing to summarize yet; it exists
   purely so a crash or session cutoff mid-feature leaves a trace of what was
   being worked on, not just silence. Then invoke the `feature-development`
-  skill via the **Skill** tool, passing `<change-name> --skip-branch-setup`.
+  skill via the **Skill** tool, passing `<change-name> --skip-branch-setup` (plus `--commit` if the run was started with it).
   This is a direct Skill invocation, not a backgrounded Agent call — it
   executes inline in this same turn, so any `AskUserQuestion`
   `feature-development` itself raises (its Phase 0 feature confirmation, a
@@ -235,8 +241,8 @@ Whether the loop finished the whole list or stopped early by user choice,
 append a footer to the report: counts (requested / completed / blocked or
 skipped / not reached) and an end timestamp.
 
-Tell the user plainly, in the chat response as well as the report: **nothing
-was committed at any point.** The branch now holds every completed (and any
+Tell the user plainly, in the chat response as well as the report, what was
+committed. Without `--commit`: **nothing was committed at any point.** The branch now holds every completed (and any
 partially-attempted) feature's work, entirely uncommitted. Point them at
 `git status`/`git diff` to review it, and at `gitflow`'s finish action once they're ready to commit and open a PR — this skill does not do
 either.
@@ -282,7 +288,7 @@ that immediacy is the entire point of this report existing.
 
 ## Guardrails
 
-- **Never commit, ever.** No `git commit`, `git push`, or any other git
+- **Never commit, ever, in this skill's own logic** (with `--commit` each `feature-development` call's Phase 7 commits through `gitflow`; without it nothing is committed). No `git commit`, `git push`, or any other git
   write command at any point in this skill's own logic. The sole exception
   is Step 2's one-time branch creation/checkout via `gitflow`'s start-feature
   action on a fresh run — nothing else, including every `feature-development`
@@ -301,6 +307,13 @@ that immediacy is the entire point of this report existing.
   blocker guidance, the `PROD_CODE_FIXED` choice). This skill's entire
   "leave it running, answer occasional questions" model depends on those
   reaching the user in real time.
+- **Run `feature-development` for every feature, with all its phases.**
+  Developing the features by hand "to move faster", or skipping its review,
+  test, build, viewport and docs phases, defeats the run. If the user's
+  request conflicts with a rule here (for example, wanting commits), use
+  the supported option (`--commit`) or ask; never drop the skill's machinery.
+- **Write the report (Steps 3–6) even when you do the work inline.** It is
+  not optional; an unattended run without it cannot be resumed.
 - **Write the report incrementally, never batched.** The full requested
   list is written up front with every entry `⬜ Not started` (Step 3), and
   each entry's status changes the moment its outcome is known (Step 4) —
@@ -316,8 +329,8 @@ that immediacy is the entire point of this report existing.
 - **If the working tree is dirty at the start of a genuinely fresh (not
   resumed) run, stop and report — never stash or discard**, matching every
   other skill in this repo.
-- **Always state plainly, at the end of a run, that nothing was
-  committed** and where the accumulated work lives — this skill hands off
+- **Always state plainly, at the end of a run, what was committed**
+  (nothing, or one commit per completed feature with `--commit`) and where the accumulated work lives — this skill hands off
   to the user for review and commit; it does not do either itself.
 - **Never let an "Auto Mode" or similar autonomous-operation instruction
   suppress any confirmation this skill or `feature-development` raises** —
