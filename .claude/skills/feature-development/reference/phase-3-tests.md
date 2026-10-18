@@ -85,8 +85,8 @@ were not covered by Phase 2's review. Ask the user whether to:
 - **Proceed** — continue to Phase 4 without additional review. If chosen,
   record this (e.g. `UNREVIEWED_PROD_FIXES: <the PROD_CODE_FIXED lines>`) —
   the Final Summary in `../SKILL.md` must surface it.
-- **Re-run Phase 2** — spawn a new Subagent 2 with the same prompt to review
-  and code-review the production fixes, then re-run Phase 3 (spawn a new
+- **Re-run the review gate** — run the Phase 2R review gate (`reference/review-gate.md`) again over
+  the production fixes, then re-run Phase 3 (spawn a new
   Subagent 3) to confirm all tests still pass before continuing to Phase 4.
   If this path is taken, there is nothing left to caveat in the Final
   Summary.

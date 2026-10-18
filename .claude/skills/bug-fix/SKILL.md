@@ -63,7 +63,7 @@ context (never a subagent — the confirmation must reliably reach the
 user); Phases 1–6 each run as a dedicated `run_in_background: false`
 subagent, each gated on the prior phase's signal. **Phases 3, 4 and 5 are
 optional**, and so are the database review, the security review and the
-viewport check inside Phase 2: each one checks whether it applies to the
+viewport check inside Phase 2R: the orchestrator (never the fix subagent) checks whether each applies to the
 project and to this fix, and when it does not it is skipped with a one-line
 reason that appears in the Final Summary.
 
@@ -71,7 +71,8 @@ reason that appears in the Final Summary.
 | ----- | ---------------- |
 | 0 — Select & Confirm *(orchestrator's own context)* | `bugs-next` (recommend + mandatory `AskUserQuestion`) |
 | 1 — Branch & Reproduce | `git fetch --prune` → `gitflow` (start/resume/sync `fix/<slug>`) → mark bug `🔶 In Progress` → write a **failing** regression test that reproduces the bug |
-| 2 — Fix & Review | implement the fix until the regression test passes → code review; then, only when the fix touches them, a database review, a security review and a mobile/desktop viewport check; findings fixed |
+| 2 — Fix | implement the fix until the regression test passes; reviews are not its job |
+| 2R — Review gate *(orchestrator + one subagent per review)* | the orchestrator computes `CHANGED_FILES`, decides which conditional reviews apply and verifies every report; separate subagents run `code-reviewer`, then — only when the fix touches them — `database-reviewer`, `security-reviewer` and the mobile/desktop viewport check; findings fixed (`reference/review-gate.md`) |
 | 3 — Tests *(optional)* | the project's tests (and its fast smoke tier, if CI runs one) until they pass; skipped if the project has no automated tests |
 | 4 — E2E verification *(optional, conditional)* | the project's end-to-end/browser checks when the fix touches a user-facing flow — test account decided by the orchestrator first; skipped otherwise |
 | 5 — Build verification *(optional)* | the project's build, locally; skipped if there is no build step |
@@ -223,7 +224,7 @@ After the subagent completes:
 
 ---
 
-## Phase 2 — Fix & Review (Subagent 2)
+## Phase 2 — Fix (Subagent 2) and Phase 2R — Review gate
 
 Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 
@@ -244,84 +245,17 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 > task that would require it unchecked with a note naming the manual
 > command.
 >
-> **Determining `CHANGED_FILES`** — run `git status --porcelain` and parse
-> every path, including untracked (`??`) entries; recompute it fresh
-> immediately before every review step below, never cache one snapshot
-> (Step 2's fix rounds keep changing the tree). Do not use `git diff
-> --name-only HEAD` (misses new files) or a branch-to-branch diff (nothing
-> is committed, so it shows zero).
->
-> **Step 2 — Code review**
-> (recompute `CHANGED_FILES`) If the `code-reviewer` skill is not installed,
-> review the diff of `CHANGED_FILES` yourself as a reviewer who did not write
-> it (correctness, regressions, missing or weak tests, unintended changes) and
-> fix every real finding, up to 3 rounds, then go to Step 3. If it is
-> installed, invoke `code-reviewer` via the Skill tool
-> using its **Review** workflow, passing `CHANGED_FILES` as the explicit
-> scope — a scoped review of one change, not a full-codebase sweep, and
-> not the interactive Fix Workflow. It writes one dated
-> `<reports>/code-review/CODE_REVIEW_FINDINGS_*.md`. Then:
-> - No 🔴 Critical / 🟡 Warning findings → proceed.
-> - Any → fix each in source, check it off in the report (`- [ ]` →
->   `- [x]` with a `**Fixed:**` note), then (recompute `CHANGED_FILES`)
->   re-invoke `code-reviewer` to confirm nothing new. Repeat until clean.
->   After 3 rounds still not clean → end with `REVIEW_BLOCKED — repeated
->   review cycles` and stop. A finding you can't fix without human input →
->   `REVIEW_BLOCKED — <reason>` and stop.
->
-> Do not proceed until all Critical and Warning findings are resolved.
->
-> **Step 3 — Database review (conditional)**
-> (recompute `CHANGED_FILES`) If any path is a database migration or schema
-> definition: review them (Review workflow, scoped, non-interactive) with the
-> `database-reviewer` skill if it is installed — dated report at
-> `<reports>/database-review/DATABASE_REVIEW_FINDINGS_*.md` — otherwise
-> yourself, for normalization, naming, data types, constraints, index coverage
-> and migration safety, recording the findings in that report. Fix every 🔴/🟡
-> finding (a fix to already-applied schema is a **new** migration, never an
-> edit), check each off with a `**Fixed:**` note, re-review to confirm clean,
-> 3-round cap → `DATABASE_BLOCKED — …`. Then (recompute `CHANGED_FILES`)
-> review once more over the database fixes as in Step 2.
->
-> **Step 4 — Security review (conditional)**
-> (recompute `CHANGED_FILES`) If any path touches authentication or
-> authorization, access-control rules, user-input handling, secrets or
-> configuration, or a dependency manifest: review it (Review workflow, scoped,
-> non-interactive) with the `security-reviewer` skill if it is installed —
-> dated report at `<reports>/security-review/SECURITY_REVIEW_FINDINGS_*.md` —
-> otherwise yourself, for missing authorization checks, injection, unsafe input
-> handling, secrets or tokens in code or logs, and vulnerable or unpinned
-> dependencies. Same fix / re-check / 3-round-cap loop →
-> `SECURITY_BLOCKED — …`. Then review once more over the security fixes.
->
-> Do not proceed until all Critical and Warning findings (including
-> follow-on code-review findings from Steps 3–4) are resolved.
->
-> **Step 5 — Mobile and desktop viewport check (conditional)**
-> (recompute `CHANGED_FILES`) If any changed path is a user-interface
-> template, markup file or stylesheet: verify the affected view at **every phone
-> viewport and the desktop viewport** from the `[viewports]` table of
-> `.backlog-kit.toml` at the repository root (read the file yourself; with no
-> file or no table, the defaults are phone `Galaxy S23 Ultra 384x824` and
-> desktop `1920x1080`, entries written `Name WIDTHxHEIGHT` in CSS pixels) —
-> with a browser tool, a browser's device emulation, or a component/E2E test
-> that sets the viewport, whichever the project has; if it has no way to render
-> the view, skip this step and say so in the Final Summary. At the phone size,
-> confirm no text overlap between elements, no clipped/cropped content, and no
-> forced horizontal scroll. At desktop, confirm no field/dialog/container
-> collapses to a narrow, phone-sized width while leaving the rest of its space
-> unused, and nothing that was correctly sized for the phone stayed wrongly
-> pinned to that size once the wide layout applies. Fix any layout issue the
-> same way as a code-review finding (recompute `CHANGED_FILES`, review once
-> more over the fix). Note what was checked at each viewport, and anything
-> caught, for the Final Summary.
-> Check **each** configured viewport in turn (a test or a device emulation per size); asserting only the smallest phone and the desktop is not enough. List every configured viewport in your hand-back as `verified` or `skipped — <reason>`; a viewport you did not check is never reported as verified.
->
-> **Step 6 — Signal completion**
-> End with exactly:
+> **Step 2 — Signal completion**
+> List what you changed in plain words (no verdict on whether any review applies; reviews are run by the orchestrator's review gate, each in its own subagent — do not run `code-reviewer`, `database-reviewer`, `security-reviewer` or the viewport check yourself). End with exactly:
 > `FIX_IMPLEMENTED: DONE`
 
-Do not start Phase 3 until this subagent returns `FIX_IMPLEMENTED: DONE`.
+Do not start Phase 2R until this subagent returns `FIX_IMPLEMENTED: DONE`.
+
+### Phase 2R — Review gate (orchestrator)
+
+Read `reference/review-gate.md` in full and run it, with `<work-id>` = `<bug-id>`: the orchestrator computes `CHANGED_FILES` itself, spawns one subagent each for the code review, the database review, the security review and the viewport check (deciding itself, from `git status --porcelain`, which of the last three apply), verifies every report file and its checkboxes before accepting a signal, and ends with `REVIEW_GATE: DONE`. Its ledger lines feed the Final Summary.
+
+Do not start Phase 3 until the gate returns `REVIEW_GATE: DONE`.
 On any `*_BLOCKED`, surface the details and wait for user guidance.
 
 ---
@@ -363,8 +297,7 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with
 On `BLOCKED`, stop and surface the failure. On one or more
 `PROD_CODE_FIXED:` lines, surface them to the user (those production
 changes weren't covered by Phase 2's review) and ask: **Proceed** (record
-`UNREVIEWED_PROD_FIXES:` for the Final Summary) or **Re-run Phase 2** (new
-Subagent 2 over the fixes, then new Subagent 3).
+`UNREVIEWED_PROD_FIXES:` for the Final Summary) or **Re-run the review gate** (Phase 2R over the fixes, then new Subagent 3).
 
 ---
 
@@ -518,8 +451,9 @@ the bug stays closed in the backlog, uncommitted.
 | Phase | Status |
 | ----- | ------ |
 | 1 Reproduce (red test, quoted failure) | ✓ / ✗ |
-| 2 Fix & code review | ✓ / ✗ |
-| 2 DB / security review / viewport check | ✓ / N/A — <reason> |
+| 2 Fix | ✓ / ✗ |
+| 2R Code review (report path) | ✓ / ✗ |
+| 2R DB review / security review / viewport check (report paths) | ✓ / N/A — <the orchestrator's reason> |
 | 3 Tests | ✓ / N/A — <reason> |
 | 4 E2E | ✓ / N/A — <reason> |
 | 5 Build | ✓ / N/A — <reason> |
@@ -558,6 +492,7 @@ If `--commit` was not passed: nothing was committed. The fix (and its regression
   for what the subagent actually did (for example `git status`, the backlog
   row, the test file) and tell the user; whether to accept that evidence in
   place of the signal or to re-run the phase is the user's decision.
+- **The reviews are never run inside the fix subagent.** Phase 2R runs each in its own subagent; the orchestrator decides which conditional reviews apply (from its own `git status --porcelain`) and verifies each report file and its checkboxes before accepting a signal (`reference/review-gate.md`, G6).
 - **`code-reviewer` (and the DB/security reviewers when they run) always uses its
   Review workflow, scoped to `CHANGED_FILES`, never the interactive Fix
   Workflow and never a full-codebase sweep.**

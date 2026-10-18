@@ -50,7 +50,7 @@ uncommitted first-bug work would trigger. `bug-fix` accepts
 caller. Every step below satisfies the two constraints: **one shared
 branch across the whole run**, and **zero commits, ever**.
 
-One accepted consequence of no-commit: `bug-fix`'s Phase 2 reviews scope
+One accepted consequence of no-commit: `bug-fix`'s Phase 2R reviews scope
 to `git status --porcelain`, which — from bug #2 onward — includes every
 earlier bug's still-uncommitted files. Later bugs' reviews re-scan earlier
 bugs' already-fixed code. Unavoidable without committing between bugs (which
