@@ -58,7 +58,7 @@ feature in the run**, and **zero commits, ever, at any point** — not even
 between features.
 
 One accepted consequence of the no-commit constraint, worth knowing before
-a long run: `feature-development`'s Phase 2 reviews scope themselves to
+a long run: `feature-development`'s Phase 2R reviews scope themselves to
 `git status --porcelain`, which — once feature #2 starts — includes every
 earlier feature's still-uncommitted files too, not just the current one.
 Later features' reviews re-scan earlier features' already-fixed code. This

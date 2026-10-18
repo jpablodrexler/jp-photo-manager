@@ -2,16 +2,15 @@
 
 _Part of the `feature-development` skill — see `../SKILL.md` for the overview, Phase 0, placeholder substitution, final summary and the cross-phase guardrails. Read this file in full before starting this phase._
 
-## Phase 6 — Archive (Subagent 6)
+## Phase 6S — Spec proof (Subagent 6), then Phase 6 — Archive (Subagent 7)
 
-Spawn a **general-purpose subagent** via the Agent tool, with
+**Phase 6S — Spec proof.** Spawn a **general-purpose subagent** via the Agent tool, with
 `run_in_background: false` (the Final Summary cannot be displayed until
-this subagent returns `ARCHIVE: DONE` — see the foreground guardrail
-below), with the following prompt:
+this subagent returns `SPEC_PROOF: PASS` — see the foreground guardrail
+below), with the following prompt. Archiving is a separate subagent (below): proving the spec and archiving used to share one context, and the proof was the step that got shortened.
 
-> Perform these steps in sequence using the Skill tool:
 >
-> **Step 1 — Verify spec compliance and close every coverage gap.** If the
+> **Verify spec compliance and close every coverage gap.** If the
 > project uses OpenSpec (an `openspec/` folder exists) and the
 > `spec-compliance-check` skill is installed, invoke it for `<change-name>`.
 > Otherwise do the same yourself, with the feature's brief
@@ -25,7 +24,7 @@ below), with the following prompt:
 > invoke `openspec-archive-change` itself and does not edit any files.
 >
 > - **If the report has any Failing scenario:** stop immediately — do not
->   proceed to Step 2. End your response with
+>   finish. End your response with
 >   `ARCHIVE_BLOCKED: spec-compliance-check found <N> failing scenario(s) — <one-line summary>`.
 >   A Failing scenario is a real behavioral gap, not a coverage gap — it
 >   belongs back in Phase 2's implementation/review loop, not fixed here.
@@ -60,21 +59,38 @@ below), with the following prompt:
 >     on the testing approach, not indefinite auto-retry.
 >   - Once every scenario reports Verified, run the project's tests
 >     once more (the commands its project phases use) to confirm the newly added tests pass alongside
->     everything else, then continue to Step 2.
-> - **If everything is already Verified:** continue to Step 2 with nothing
+>     everything else, then finish.
+> - **If everything is already Verified:** finish with nothing
 >   to close.
 >
-> **Step 2** — If the `docs-sync` skill is installed, invoke it in its scoped-sync mode for the
+>
+> End your response with exactly these lines:
+> `SKILL_USED: spec-compliance-check` (or `SKILL_USED: none — manual proof`)
+> `SPEC_PROOF: PASS <path of the last spec-compliance report, or the manual proof list>`
+
+**Orchestrator check before Phase 6.** Do not trust the signal alone:
+
+- `ls` the report named in the signal (`<reports>/spec-compliance/SPEC_COMPLIANCE_<change-name>_*.md`); for a manual proof, the hand-back must list every requirement as Verified.
+- Read its summary: `Failing` and `Unverified` must both be `0`. Any other count means the subagent stopped short: re-spawn this subagent once with the counts quoted; a second miss is `ARCHIVE_BLOCKED — spec proof incomplete`.
+- If `openspec/` exists and the `spec-compliance-check` skill is installed, `SKILL_USED: none — manual proof` is a failed run: re-spawn once. Without the skill (or without OpenSpec) the manual proof is legitimate; carry `⚠ spec proof done manually` into the Final Summary.
+- `ARCHIVE_BLOCKED` from this subagent stops the workflow as described below.
+
+**Phase 6 — Archive.** Only after the check above passes, spawn a second **general-purpose subagent** (`run_in_background: false`) with this prompt:
+
+> Perform these steps in sequence using the Skill tool:
+>
+
+> **Step 1** — If the `docs-sync` skill is installed, invoke it in its scoped-sync mode for the
 > current branch's changes (it diffs against the branch's base itself — no
 > need to pass a file list); otherwise check yourself whether the change makes
 > anything the project documents stale (a command, a configuration option, a
 > route, the schema, setup steps) and update those passages briefly. This keeps the project's reference docs from
 > drifting behind whatever this feature just shipped. This step is **best-effort,
-> not blocking**: if the skill reports nothing to sync, continue to Step 3
+> not blocking**: if the skill reports nothing to sync, continue to Step 2
 > regardless. Only stop and surface details to the user if the skill
 > itself errors out in a way that leaves files in a broken state.
 >
-> **Step 3** — OpenSpec projects only. The change's delta specs must reach the
+> **Step 2** — OpenSpec projects only. The change's delta specs must reach the
 > main specs through the `openspec-sync-specs` skill — never by editing
 > `openspec/specs/**` by hand, and never skipped.
 > 1. If `openspec/changes/<change-name>/specs/` holds any delta spec, invoke
@@ -93,13 +109,13 @@ below), with the following prompt:
 >    `ARCHIVE_BLOCKED — openspec-sync-specs unavailable` instead of merging by
 >    hand.
 >
-> **Step 4** — Invoke `features-archive <change-name>`. Wait for it to
+> **Step 3** — Invoke `features-archive <change-name>`. Wait for it to
 > complete fully (the feature row must be moved from the planned table in
 > `<backlog>/features-planned.md` to the implemented table in
 > `<backlog>/features-implemented.md`, with its `Details` cell linking
 > the brief file and the archived spec).
 >
-> After all four steps complete, end your response with exactly this line:
+> After all three steps complete, end your response with exactly this line:
 > `ARCHIVE: DONE`
 
 Do not display the Final Summary until this subagent returns `ARCHIVE:
@@ -107,8 +123,8 @@ DONE` or `ARCHIVE_BLOCKED`. An `ARCHIVE_BLOCKED` result means the feature is
 implemented and tested but **not archived** — surface the failing/unverified
 scenario(s) to the user and wait for guidance rather than proceeding or
 retrying automatically. This workflow never archives a change with a known
-spec-compliance gap: Step 1 closes every Unverified scenario with real test
+spec-compliance gap: Phase 6S closes every Unverified scenario with real test
 coverage (or escalates via `ARCHIVE_BLOCKED` if it genuinely can't) before
-Step 2 ever runs — there is no "archive now, note the gap for later" path.
+archiving ever runs — there is no "archive now, note the gap for later" path.
 
 ---
