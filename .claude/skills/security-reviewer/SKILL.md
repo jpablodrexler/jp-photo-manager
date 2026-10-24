@@ -216,6 +216,8 @@ Every time this skill runs — full-codebase sweep, single file, or PR
 review — also write the findings to a new markdown file so work can be
 resumed later without re-deriving context.
 
+**Stamp (every report file):** The file's first line is the stamp `<!-- backlog-kit: security-reviewer -->`, written by this skill and by no other route: the orchestrator of a pipeline reads it to confirm the report came from this skill and not from a hand-written substitute.
+
 **Scoped review (single file, PR, or feature) — one file:**
 
 - **Path:** `<reports>/security-review/SECURITY_REVIEW_FINDINGS_{YYYY-MM-DD}.md`

@@ -45,6 +45,9 @@ BACKLOG = "docs/backlog"  # replaced in main() by [paths] backlog_dir
 SUMMARY_MAX = 250
 BRIEF_LINK_RE = re.compile(r'\[brief\]\(([^)]+)\)')
 SPEC_LINK_RE = re.compile(r'\[spec\]\(([^)]+)\)')
+EFFORTS = ("S", "M", "L", "XL")
+STORY_RE = re.compile(r'^\*\*As an?\*\*', re.M)   # a brief written as a user story
+AC_RE = re.compile(r'^\s*[-*]\s*AC\d+\s*:', re.M)
 
 
 def split_row(line):
@@ -169,7 +172,7 @@ def main():
         "total": None,
         "percent": None,
         "priority_breakdown": {"P0": 0, "P1": 0, "P2": 0, "P3": 0, "none": 0},
-        "effort_breakdown": {"S": 0, "M": 0, "L": 0, "none": 0},
+        "effort_breakdown": {"S": 0, "M": 0, "L": 0, "XL": 0, "none": 0},
         "sdd_ready": 0,
         "pending_rows": [],
         "duplicate_numbers": [],
@@ -180,6 +183,8 @@ def main():
         "bad_planned_summaries": [],
         "missing_brief_links": [],
         "missing_spec_targets": [],
+        "stories_without_acceptance_criteria": [],
+        "definition_of_done": False,
     }
 
     planned_lines = read_lines(planned_path)
@@ -241,7 +246,7 @@ def main():
         result["priority_breakdown"][key] += 1
 
         effort = r.get("Effort", "").strip()
-        ekey = effort if effort in ("S", "M", "L") else "none"
+        ekey = effort if effort in EFFORTS else "none"
         result["effort_breakdown"][ekey] += 1
 
         if "Created" in r.get("SDD Artifacts", ""):
@@ -271,6 +276,7 @@ def main():
     result["stale_dependency_notes"] = list(dedup.values())
 
     check_feature_files(root, planned_rows, implemented_rows, result)
+    result["definition_of_done"] = (root / BACKLOG / "definition-of-done.md").is_file()
 
     if args.json:
         print(json.dumps(result, indent=2))
@@ -325,10 +331,15 @@ def check_feature_files(root, planned_rows, implemented_rows, result):
                 result["orphan_feature_files"].append(f.name)
                 continue
             n, name = expected[f.name]
-            first = f.read_text(encoding="utf-8").splitlines()[:1]
+            text = f.read_text(encoding="utf-8")
+            first = text.splitlines()[:1]
             want = f"# Feature {int(n)} — {name}"
             if not first or first[0].strip() != want:
                 result["bad_feature_headings"].append({"file": f.name, "expected": want})
+            # Only a brief written as a user story is held to the story shape; an older
+            # single-paragraph brief stays valid.
+            if STORY_RE.search(text) and not AC_RE.search(text):
+                result["stories_without_acceptance_criteria"].append({"number": n, "name": name, "file": f.name})
 
 
 def render_markdown(r):
@@ -377,6 +388,7 @@ def render_markdown(r):
     lines.append(f"| S      | {r['effort_breakdown']['S']} |")
     lines.append(f"| M      | {r['effort_breakdown']['M']} |")
     lines.append(f"| L      | {r['effort_breakdown']['L']} |")
+    lines.append(f"| XL     | {r['effort_breakdown']['XL']} |")
     lines.append(f"| No explicit effort | {r['effort_breakdown']['none']} |")
     lines.append("")
 
@@ -415,6 +427,11 @@ def render_markdown(r):
         integrity.append(f"- ⚠ Feature {b['number']} `{b['name']}` has no `[brief](features/...)` link in {b['file']}.")
     for s in r["missing_spec_targets"]:
         integrity.append(f"- ⚠ Feature {s['number']} `{s['name']}`: the [spec] link target {s['target']} does not exist (warning).")
+    for b in r["stories_without_acceptance_criteria"]:
+        integrity.append(f"- ⚠ Feature {b['number']} `{b['name']}` is written as a user story but "
+                          f"{BACKLOG}/features/{b['file']} lists no acceptance criteria (`- AC1: …`) (advisory).")
+    if not r["definition_of_done"]:
+        integrity.append(f"- ℹ No {BACKLOG}/definition-of-done.md yet; feature-plan offers to write one (advisory).")
     for n in r["leftover_implemented_in_planned"]:
         integrity.append(f"- ⚠ #{n} still shows ✅ Implemented in features-planned.md — an archive pass "
                           "was interrupted; run features-archive to finish the move.")

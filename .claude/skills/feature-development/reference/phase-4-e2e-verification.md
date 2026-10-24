@@ -55,7 +55,7 @@ following prompt (substitute the suite's command for `<E2E_COMMAND>`):
 > **Step 1 — Determine whether E2E verification applies to this change**
 > Run `git status --porcelain` and parse every line's file path — including
 > untracked (`??`) entries — into a concrete list; call it `CHANGED_FILES`.
-> This is the same recompute-fresh convention Phase 2 uses — never assume a
+> This is the same recompute-fresh convention the Phase 2R review gate uses — never assume a
 > list from an earlier phase is still accurate.
 >
 > Check whether any path in `CHANGED_FILES` falls under a user-facing flow
@@ -140,7 +140,7 @@ Do not start Phase 5 until this subagent reports `E2E: PASS`,
 `E2E: PASS_PARTIAL`, or `E2E: SKIPPED`. If it reports `E2E_BLOCKED`,
 surface the details to the user and wait for guidance before continuing —
 a failure here may equally be an environment/data problem as a code defect;
-don't assume it belongs back in Phase 2's code review without the user
+don't assume it belongs back in the Phase 2R review gate without the user
 confirming that.
 
 ---

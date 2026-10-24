@@ -15,7 +15,7 @@ below), with the following prompt. Archiving is a separate subagent (below): pro
 > `spec-compliance-check` skill is installed, invoke it for `<change-name>`.
 > Otherwise do the same yourself, with the feature's brief
 > (`<backlog>/features/NNN-<change-name>.md`) and the `ACCEPTANCE:` lines
-> Phase 2 returned as the spec: list every requirement and report each as
+> Phase 2 listed as the spec: list every requirement and report each as
 > Verified (a test that currently passes, or a manual check you performed),
 > Failing, or Unverified, with the same rules below. (The skill reads
 > `openspec/changes/<change-name>/specs/**/spec.md` and `tasks.md`
@@ -27,7 +27,7 @@ below), with the following prompt. Archiving is a separate subagent (below): pro
 >   finish. End your response with
 >   `ARCHIVE_BLOCKED: spec-compliance-check found <N> failing scenario(s) — <one-line summary>`.
 >   A Failing scenario is a real behavioral gap, not a coverage gap — it
->   belongs back in Phase 2's implementation/review loop, not fixed here.
+>   belongs back in the Phase 2 implementation and Phase 2R review gate loop, not fixed here.
 > - **If the report has any Unverified scenario (no Failing ones): close
 >   every one of them before proceeding — never carry an Unverified
 >   scenario forward as a caveat.** An Unverified scenario means the
@@ -71,7 +71,8 @@ below), with the following prompt. Archiving is a separate subagent (below): pro
 **Orchestrator check before Phase 6.** Do not trust the signal alone:
 
 - `ls` the report named in the signal (`<reports>/spec-compliance/SPEC_COMPLIANCE_<change-name>_*.md`); for a manual proof, the hand-back must list every requirement as Verified.
-- Read its summary: `Failing` and `Unverified` must both be `0`. Any other count means the subagent stopped short: re-spawn this subagent once with the counts quoted; a second miss is `ARCHIVE_BLOCKED — spec proof incomplete`.
+- The report's first line must be the stamp `<!-- backlog-kit: spec-compliance-check -->`, written by the skill; a report without it, in a project where the skill is installed, is hand-written and is a failed run: re-spawn once with the skill's own report format. The run is also a failed run when the report names no test or manual check for a scenario.
+- Read its summary line (`Verified N · Failing N · Unverified N`): `Failing` and `Unverified` must both be `0`. Any other count means the subagent stopped short: re-spawn this subagent once with the counts quoted; a second miss is `ARCHIVE_BLOCKED — spec proof incomplete`.
 - If `openspec/` exists and the `spec-compliance-check` skill is installed, `SKILL_USED: none — manual proof` is a failed run: re-spawn once. Without the skill (or without OpenSpec) the manual proof is legitimate; carry `⚠ spec proof done manually` into the Final Summary.
 - `ARCHIVE_BLOCKED` from this subagent stops the workflow as described below.
 

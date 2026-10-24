@@ -51,10 +51,12 @@ caller. Every step below satisfies the two constraints: **one shared
 branch across the whole run**, and **zero commits, ever**.
 
 One accepted consequence of no-commit: `bug-fix`'s Phase 2R reviews scope
-to `git status --porcelain`, which — from bug #2 onward — includes every
-earlier bug's still-uncommitted files. Later bugs' reviews re-scan earlier
-bugs' already-fixed code. Unavoidable without committing between bugs (which
-the user has ruled out), not a defect to fix here.
+to the uncommitted files (review gate G0), which — from bug #2 onward —
+include every earlier bug's still-uncommitted files. Later bugs' reviews
+re-scan earlier bugs' already-fixed code. Unavoidable without committing
+between bugs (which the user has ruled out), not a defect to fix here. With
+`--commit`, G0 uses the files differing from `develop` plus the uncommitted
+ones, so earlier bugs' committed files are re-scanned in the same way.
 
 ---
 

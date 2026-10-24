@@ -41,11 +41,22 @@ after it closes (Phase 7); without it nothing is committed.
 
 `<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`; `<reports>` is the `reports` folder next to the backlog's parent (`docs/reports` by default).
 
+**The user talks, the skill reads flags.** `--skip-branch-setup` and `--commit` are shorthand for orchestrators; a user never needs to type them or to phrase a request in any special way. "Fix BUG-004", "fix BUG-004, stay on this branch", "fix BUG-004 and commit as you go" are complete requests: map what the user said to the behaviour below, state in one line how it was understood (branch handling, commit cadence), and run every phase regardless of how short the request was. Every phase runs by default; only a skip condition written in this skill may skip one.
+
+**Working on a branch the user is already on.** When the user is on a topic branch (not `main`/`develop`) and says to stay on it, treat the run as `--skip-branch-setup` even if the flag was not typed: Phase 1 Step 1 only confirms the branch and never creates or syncs one. Say so in the first line of the run.
+
+**Committing as you go.** `--commit` means one commit, at Phase 7. When the user asks instead to commit as the work goes, that request is the opt-in for a commit after each phase that changed files (Phase 1, Phase 2, the fixes of each review gate, Phases 3 to 5, Phase 6), each one made by `gitflow`'s commit action with the message `Fix <bug-id>: <phase> — <one-line summary>`; Phase 7 then commits only what is left, or records `COMMIT: nothing left`. The user's request stands in for the per-commit confirmation of the file list and message, but `gitflow` still makes every commit: no phase or subagent runs `git commit` itself. The review gate's scope follows the commit mode (see `reference/review-gate.md`, G0).
+
+**Phase ledger.** Right after Phase 0, create a task list with one entry per phase and gate that applies (1, 2, 2R: G1 to G5, 3, 4, 5, 6, 7) and keep it current: an entry is completed when its signal was verified, or when it was skipped under its own stated condition with the reason written on the entry. The Final Summary is built from this list and is not shown while an entry is open.
+
+**Skills run as written, by whoever performs the phase.** A phase that names a skill (`code-reviewer`, `database-reviewer`, `security-reviewer`, `docs-sync`, `bugs-archive`) invokes that skill; doing the same checks by hand, or writing its report by hand, is a failed phase even when the content looks right. Reports carry the stamp the reviewer skills write (`<!-- backlog-kit: <skill> -->`), and the orchestrator checks it (review gate G6).
+
 **Never run `git commit`, `git push` or open a PR.**
 
-The one exception is `--commit`: Phase 7 asks `gitflow`'s commit action to
-make a single local commit, and only when the flag was passed. Never push,
-and never commit any other way.
+The one exception is a commit the user asked for: `--commit` (Phase 7 asks
+`gitflow`'s commit action for a single local commit) or a request to commit
+as the work goes (one `gitflow` commit after each phase that changed files).
+Never push, and never commit any other way.
 
 **Every phase runs, or is skipped under its own stated skip condition and
 the reason recorded.** Running a phase inline in the orchestrator's context
@@ -138,7 +149,7 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 > **Batch mode (`--skip-branch-setup` was passed):** run `git branch
 > --show-current` once; if it is `main` or `develop`, end with
 > `FIX_BLOCKED — batch mode requires an existing fix branch already
-> checked out` and stop. Otherwise proceed to Step 2 on the current
+> checked out` and stop. Otherwise continue on the current
 > branch. Do not check for uncommitted changes, and do not create, switch,
 > or sync any branch — the caller owns branch state. Then go to Step 1.5.
 >
@@ -147,18 +158,18 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 > `fix/<slug>` with the in-progress fix sitting there uncommitted — that's
 > expected, not a blocker).
 >
-> 0. `git fetch origin --prune`.
-> 1. `git branch --show-current`.
+> B0. `git fetch origin --prune`.
+> B1. `git branch --show-current`.
 >    - If it is already exactly `fix/<slug>`: this is a resume. Run
 >      `git rev-list HEAD..origin/fix/<slug> --count` (treat a missing
 >      `origin/fix/<slug>` as `0`). If `0`, skip to Step 1.5. If `>0`, end
 >      with `FIX_BLOCKED — origin/fix/<slug> has <N> commit(s) not present
 >      locally; reconcile manually` and stop.
->    - Otherwise continue to step 2.
-> 2. `git status --porcelain`. If it prints anything, end with
+>    - Otherwise continue to B2.
+> B2. `git status --porcelain`. If it prints anything, end with
 >    `FIX_BLOCKED — uncommitted changes present, cannot create fix branch`
 >    and stop.
-> 3. `git rev-parse --verify --quiet fix/<slug>`:
+> B3. `git rev-parse --verify --quiet fix/<slug>`:
 >    - Prints a hash → the branch exists locally but isn't checked out:
 >      `git checkout fix/<slug>`, then if `origin/fix/<slug>` exists
 >      `git merge origin/fix/<slug>` (already-pushed history of this same
@@ -175,7 +186,7 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 >    - Fails both → invoke `gitflow` with "start fix `<slug>`". If it
 >      reports a blocker, end with `FIX_BLOCKED — <the gitflow blocker>`
 >      and stop.
-> 4. `git branch --show-current` must now print exactly `fix/<slug>`. If
+> B4. `git branch --show-current` must now print exactly `fix/<slug>`. If
 >    not, end with `FIX_BLOCKED — could not switch to fix branch` and stop.
 >
 > **Step 1.5 — Mark the bug In Progress**
@@ -296,7 +307,7 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with
 
 On `BLOCKED`, stop and surface the failure. On one or more
 `PROD_CODE_FIXED:` lines, surface them to the user (those production
-changes weren't covered by Phase 2's review) and ask: **Proceed** (record
+changes weren't covered by the Phase 2R review gate) and ask: **Proceed** (record
 `UNREVIEWED_PROD_FIXES:` for the Final Summary) or **Re-run the review gate** (Phase 2R over the fixes, then new Subagent 3).
 
 ---
@@ -388,9 +399,15 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with
 > it exists and is non-empty — empty or missing after a "successful" build is
 > itself a failure.
 >
-> End with `BUILD: PASS` or `BUILD: BLOCKED — <reason>`.
+> If you must modify a production source file (not a test or build
+> configuration file), note it `PROD_CODE_FIXED: <file> — <reason>`.
+>
+> End with `BUILD: PASS` (after any `PROD_CODE_FIXED:` lines) or `BUILD: BLOCKED — <reason>`.
 
-Do not start Phase 6 until `BUILD: PASS` (or the phase was skipped).
+Do not start Phase 6 until `BUILD: PASS` (or the phase was skipped). On one or
+more `PROD_CODE_FIXED:` lines, handle them as Phase 3's: ask the user to
+**proceed** (record `UNREVIEWED_PROD_FIXES:` for the Final Summary) or to
+**re-run the review gate** (Phase 2R over the fixes, then Phases 3 and 5 again).
 
 ---
 
@@ -419,7 +436,7 @@ DONE`.
 
 ## Phase 7 — Commit (only when `--commit` was passed)
 
-Skip with `COMMIT: SKIPPED — not requested` when the flag is absent.
+Skip with `COMMIT: SKIPPED — not requested` when the flag is absent and the user did not ask to commit as the work goes.
 Otherwise invoke `gitflow` with "commit `Fix <bug-id>: <one-line resolution>`"
 (a direct Skill call in the orchestrator's context). It shows what will be
 committed, confirms with the user, makes one local commit on the current fix
@@ -443,7 +460,7 @@ the bug stays closed in the backlog, uncommitted.
 **E2E:** ✓ <summary> (or N/A — <reason> if skipped, or ⚠ Partial: <what wasn't covered>)
 **Build:** ✓ <summary> (or N/A — <reason> if skipped)
 [if UNREVIEWED_PROD_FIXES was recorded:]
-**⚠ Unreviewed production fixes:** <the PROD_CODE_FIXED lines> — fixed while chasing test failures; the user chose to proceed without routing them back through Phase 2.
+**⚠ Unreviewed production fixes:** <the PROD_CODE_FIXED lines> — fixed while chasing test or build failures; the user chose to proceed without routing them back through the Phase 2R review gate.
 **Docs sync:** ✓ <one-line summary, or "Nothing to sync">
 **Bug:** ✓ Closed — moved to bugs-fixed.md
 **Commit:** ✓ <short hash> (or N/A — not requested)
@@ -460,7 +477,7 @@ the bug stays closed in the backlog, uncommitted.
 | 6 Docs sync + archive | ✓ / ✗ |
 | 7 Commit | ✓ / N/A — not requested |
 
-If `--commit` was not passed: nothing was committed. The fix (and its regression test) is on `fix/<slug>`, entirely uncommitted. Review with `git status` / `git diff`, then use `gitflow`'s finish-fix action to commit and open a PR.
+If no commit was requested: nothing was committed. The fix (and its regression test) is on `fix/<slug>`, entirely uncommitted. Review with `git status` / `git diff`, then use `gitflow`'s finish-fix action to commit and open a PR.
 ```
 
 ---
@@ -496,8 +513,8 @@ If `--commit` was not passed: nothing was committed. The fix (and its regression
 - **`code-reviewer` (and the DB/security reviewers when they run) always uses its
   Review workflow, scoped to `CHANGED_FILES`, never the interactive Fix
   Workflow and never a full-codebase sweep.**
-- **No git commits unless `--commit` was passed, and then only through
-  `gitflow`'s commit action in Phase 7.** Neither this skill nor any subagent
+- **No git commits unless `--commit` was passed or the user asked to commit as the work goes, and then only through
+  `gitflow`'s commit action (in Phase 7, or after each phase when the user asked to commit as the work goes).** Neither this skill nor any subagent
   may run `git commit` / `git push` / any git write itself. The sole other
   exceptions are
   Phase 1 Step 1's branch creation and sync (`git fetch`, `git checkout`,

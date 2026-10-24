@@ -225,6 +225,7 @@ re-deriving context.
   (today's date, ISO 8601). If a file for that date already
   exists, append `-2`, `-3`, etc. rather than overwriting the earlier run's
   report.
+- **Stamp:** The file's first line is the stamp `<!-- backlog-kit: database-reviewer -->`, written by this skill and by no other route: the orchestrator of a pipeline reads it to confirm the report came from this skill and not from a hand-written substitute.
 - This directory is gitignored — reports are local working artifacts, not
   committed history. Create the directory if it doesn't exist yet.
 - **Content:** the same Critical/Warnings/Suggestions grouping as the

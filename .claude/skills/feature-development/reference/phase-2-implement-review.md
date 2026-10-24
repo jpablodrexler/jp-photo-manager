@@ -15,9 +15,10 @@ following prompt:
 > **OpenSpec project** (an `openspec/` folder exists): use the Skill tool to
 > invoke `openspec-apply-change <change-name>`. Work through all pending
 > tasks until implementation is complete. Do not stop until all tasks show
-> `[x]` or you encounter a blocker that requires user guidance. When
+> `[x]` or you encounter a blocker that requires user guidance (end with
+> `IMPLEMENT_BLOCKED — <brief reason>` and stop). When
 > `openspec-apply-change` completes, do NOT invoke `code-reviewer`
-> proactively — it is handled explicitly in Step 2.
+> or any other review — the orchestrator runs them in Phase 2R.
 >
 > **Otherwise**, the feature's brief file
 > (`<backlog>/features/NNN-<change-name>.md`, everything after the H1; `NNN`
@@ -26,7 +27,9 @@ following prompt:
 > short list of tasks it implies and what must be true when the feature is
 > done, implement the tasks, and add or update tests so that what must be true
 > is covered by tests where the project's test setup allows it. List those
-> checks in your hand-back as `ACCEPTANCE: <check>` lines; Phase 6 uses them.
+> checks in your hand-back as `ACCEPTANCE: <check>` lines; Phase 6S uses them.
+> When the brief lists acceptance criteria (`- AC1: …`), the tasks and the
+> `ACCEPTANCE:` lines follow them: one line per criterion, named `AC1`, `AC2`, ….
 > If you encounter a blocker during implementation, end your response with
 > `IMPLEMENT_BLOCKED — <brief reason>` and stop.
 >
@@ -54,7 +57,7 @@ following prompt:
 >
 >
 > **Step 2 — Signal completion**
-> List what you changed in plain words (no verdict on whether any review applies). End your response with exactly this line:
+> List what you changed in plain words (no verdict on whether any review applies). Without OpenSpec, then list the `ACCEPTANCE: <check>` lines. The last line of your response is exactly:
 > `IMPLEMENT: DONE`
 
 Do not start Phase 2R until this subagent returns `IMPLEMENT: DONE`.
