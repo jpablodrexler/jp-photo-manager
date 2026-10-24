@@ -18,7 +18,7 @@ field below is **required** unless marked optional. Dates are `YYYY-MM-DD`.
       "area": "fullstack",
       "priority": "P2",
       "schema": true,
-      "effort": "M",
+      "effort": "3",
       "date": "2026-06-14",
       "desc": "User-defined albums backed by an albums table and an album-membership join."
     }
@@ -31,7 +31,7 @@ field below is **required** unless marked optional. Dates are `YYYY-MM-DD`.
       "area": "fullstack",
       "priority": "P1",
       "schema": true,
-      "effort": "L",
+      "effort": "5",
       "desc": "TOTP enrolment and challenge flow, a user_totp table, and a SecurityConfig filter."
     }
   ],
@@ -71,7 +71,7 @@ order you want top-to-bottom):
   fifth value ever appears)
 - `priority` — `P0`–`P3` (display only for shipped rows; not scored)
 - `schema` — `true`/`false`, drives the `DB` badge and the schema-touched stat
-- `effort` — `S`/`M`/`L`
+- `effort` — story points: `1`/`2`/`3`/`5`/`8`/`13` (a string; an old `S`/`M`/`L`/`XL` is read as 1/3/5/8)
 - `date` — the day it shipped (see SKILL.md step 2 for how to derive this)
 - `desc` — one clause, no trailing period needed (the script adds the rest
   of the tooltip sentence around it). For a shipped row, distill it from the
