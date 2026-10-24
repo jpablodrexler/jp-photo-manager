@@ -25,14 +25,14 @@ see the foreground guardrail in `../SKILL.md`), with the following prompt (subst
 > this step. Run `git branch --show-current` once and confirm it is not
 > `main` or `develop` — if it is, end your response with `PROPOSE_BLOCKED —
 > batch mode requires an existing feature branch already checked out, not
-> main/develop` and stop. Otherwise proceed directly to Step 2 using
-> whatever branch is currently checked out. Do not check for uncommitted
+> main/develop` and stop. Otherwise continue on whatever branch is
+> currently checked out. Do not check for uncommitted
 > changes here — an orchestrator running several features on one branch
 > without committing between them will always have a dirty tree by the
 > second feature onward, and that's expected, not a blocker. Do not create,
 > switch, or sync any branch in this mode; the caller is responsible for
-> branch state. Proceed to Step 1.6 below (not Step 2 directly) — marking
-> the feature In Progress applies in batch mode too.
+> branch state. Then go to Step 1.6 below — marking the feature In Progress
+> applies in batch mode too.
 >
 > **Normal mode (no flag passed):** check resume status *before* checking
 > for uncommitted changes — not the other way around: a resumed session
@@ -44,17 +44,17 @@ see the foreground guardrail in `../SKILL.md`), with the following prompt (subst
 > misfire on exactly that state and block the resume before the
 > already-on-the-right-branch check ever got a chance to short-circuit it.
 >
-> 0. Run: `git fetch origin --prune`. This refreshes remote-tracking refs
+> B0. Run: `git fetch origin --prune`. This refreshes remote-tracking refs
 >    (`origin/feature/*`) *before* any of the checks below reason about
 >    branch existence — this repo may be worked from more than one device, and
 >    without a fresh fetch a branch (or new commits on a branch) pushed
 >    from another device since this device's last fetch would be invisible
->    to steps 1 and 3 below, risking either a second, divergent
+>    to B1 and B3 below, risking either a second, divergent
 >    `feature/<change-name>` branch getting created, or a stale local copy
 >    silently shadowing newer work that already exists on the remote.
 >    `--prune` also drops remote-tracking refs for branches already deleted
 >    on GitHub, matching `gitflow`'s own cleanup-branches convention.
-> 1. Run: `git branch --show-current`.
+> B1. Run: `git branch --show-current`.
 >    - If the output is already exactly `feature/<change-name>`: we're
 >      already on the target branch — this is a resume. Uncommitted
 >      changes here are expected. Before skipping ahead, check whether
@@ -63,7 +63,7 @@ see the foreground guardrail in `../SKILL.md`), with the following prompt (subst
 >      `git rev-list HEAD..origin/feature/<change-name> --count` (if
 >      `origin/feature/<change-name>` doesn't exist — i.e. this branch was
 >      never pushed — treat the count as `0`, nothing to reconcile).
->      - If the count is `0`: nothing to reconcile — skip steps 2 and 3
+>      - If the count is `0`: nothing to reconcile — skip B2 and B3
 >        below entirely and proceed straight to Step 1.6 of this prompt.
 >      - If the count is greater than `0`: another device has pushed work
 >        to this branch that isn't reflected in this local, uncommitted
@@ -73,12 +73,12 @@ see the foreground guardrail in `../SKILL.md`), with the following prompt (subst
 >        has <N> commit(s) not present locally (likely pushed from another
 >        device); commit or stash local changes, then merge/rebase
 >        manually before continuing` and stop.
->    - Otherwise, continue to step 2 below.
-> 2. Run: `git status --porcelain`
+>    - Otherwise, continue to B2 below.
+> B2. Run: `git status --porcelain`
 >    If this prints anything (uncommitted changes present), end your
 >    response with `PROPOSE_BLOCKED — uncommitted changes present, cannot
 >    create feature branch` and stop.
-> 3. Run: `git rev-parse --verify --quiet feature/<change-name>`
+> B3. Run: `git rev-parse --verify --quiet feature/<change-name>`
 >    - If it prints a commit hash, the branch already exists locally but
 >      isn't currently checked out — this is a resume of a change that's
 >      been sitting idle, possibly while other work (including a release,
@@ -128,7 +128,7 @@ see the foreground guardrail in `../SKILL.md`), with the following prompt (subst
 >      from `main` on first use — this skill doesn't need to special-case
 >      that. If it reports a blocker, end your response with
 >      `PROPOSE_BLOCKED — <the gitflow blocker>` and stop.
-> 4. Run `git branch --show-current` and confirm the output is exactly
+> B4. Run `git branch --show-current` and confirm the output is exactly
 >    `feature/<change-name>` before proceeding. If it is not, end your
 >    response with `PROPOSE_BLOCKED — could not switch to feature branch`
 >    and stop.
@@ -188,9 +188,15 @@ see the foreground guardrail in `../SKILL.md`), with the following prompt (subst
 >    the brief text), so it never has to ask the user for one. The brief
 >    file is the spec input; never pass the row's one-line `Summary` cell,
 >    which exists only for human skimming and `features-next`'s display.
+>    When the brief is written as a user story (it opens with
+>    `**As a** … **I want** … **so that** …` and has an `## Acceptance
+>    Criteria` list), add one instruction to the description: every
+>    acceptance criterion becomes at least one requirement scenario
+>    (`WHEN`/`THEN`) in the spec, `## Technical notes` guide the design, and
+>    `## Definition of Done` is a completion checklist, not a requirement.
 > 4. **If no planned row exists** (an ad hoc change proposed outside the
 >    tracked backlog, or one already moved to `features-implemented.md`):
->    skip steps 2 and 3's brief and invoke
+>    skip the brief reading above and invoke
 >    `openspec-propose <change-name>` exactly as before.
 >
 > Wait for it to complete. If it fails or reports an error, end your response

@@ -197,6 +197,13 @@ unilaterally — that decision belongs to the user, not this skill.>
 If there are no findings in a category, omit that category entirely (same
 convention as the project's other reviewer skills).
 
+### Acceptance criteria and Definition of Done
+
+When the feature's brief (`<backlog>/features/NNN-<name>.md`) is written as a user story, two more checks come with the scenarios:
+
+- **Acceptance criteria.** Every `- ACn:` line of the brief must be covered by at least one scenario of the change's specs (or, in a project without OpenSpec, by an `ACCEPTANCE:` line of the implementation hand-back). An AC with no scenario and no evidence is listed under ⚠️ Unverified as *AC n — <text>* and counts in the `Unverified` total like any scenario; one whose evidence currently fails is ❌ Failing.
+- **Definition of Done.** Read `<backlog>/definition-of-done.md` and the brief's own `## Definition of Done` section, if either exists. Add a `### Definition of Done` block to the report with each item marked met, unmet or not checkable yet, with the evidence for those it can see (a passing suite, a clean build, a report file). Items that depend on a later phase (docs synced, feature archived) are marked "not checkable yet", not unmet. This block is advisory: it never changes the `Verified · Failing · Unverified` totals, and a missing file is not an error.
+
 ### Write the report to a dated file
 
 `<reports>/spec-compliance/SPEC_COMPLIANCE_{change-name}_{YYYY-MM-DD}.md`
@@ -205,6 +212,9 @@ same convention as `<reports>/code-review/`,
 `<reports>/security-review/`, `<reports>/database-review/`). If a
 file for that change+date already exists,
 append `-2`, `-3`, etc. rather than overwriting.
+
+The report's first line is the stamp `<!-- backlog-kit: spec-compliance-check -->`, written by this skill and by no other route: the orchestrator of a pipeline reads it to confirm the report came from this skill and not from a hand-written substitute.
+The report states, per scenario, the test or manual check that proves it, and ends with a summary line `Verified N · Failing N · Unverified N` that the orchestrator reads.
 
 ---
 

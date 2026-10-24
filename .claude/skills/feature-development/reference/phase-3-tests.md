@@ -80,7 +80,7 @@ until it reports `PASS` (or the phase was skipped).
 
 If the subagent's response contains one or more `PROD_CODE_FIXED:` lines,
 surface them to the user with a note that those production source changes
-were not covered by Phase 2's review. Ask the user whether to:
+were not covered by the Phase 2R review gate. Ask the user whether to:
 
 - **Proceed** — continue to Phase 4 without additional review. If chosen,
   record this (e.g. `UNREVIEWED_PROD_FIXES: <the PROD_CODE_FIXED lines>`) —

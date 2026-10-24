@@ -11,7 +11,7 @@ description: >-
   merge, and cleans up merged branches. On release/hotfix branches it drafts
   CHANGELOG.md notes before the PR opens, and optionally bumps the app version
   and runs the project's regression suite. A commit action makes one local
-  commit on request (used by bug-fix --commit). TRIGGER when asked to start, sync,
+  commit on request (used by bug-fix and feature-development with --commit or when asked to commit as the work goes). TRIGGER when asked to start, sync,
   finish or merge any of those branches, create a release or hotfix, tag a
   release, or clean up merged branches; a bare request to merge/pull main or
   develop into a topic branch is redirected to the Sync action.
@@ -235,7 +235,7 @@ Steps (the same either way except where noted):
 
 ### 3g. Commit
 
-Makes one local commit of the work in the tree, on request only — for example when `bug-fix --commit` hands one closed bug over. Never pushes.
+Makes one local commit of the work in the tree, on request only — for example when `bug-fix --commit` or `feature-development --commit` hands one closed item over, or after each phase when the user asked to commit as the work goes. Never pushes.
 
 Preconditions:
 - Current branch must start with `feature/`, `fix/`, `doc/`, `skill/`, or `chore/`. Refuse on `main`, `develop`, `release/*` and `hotfix/*`, and on a detached HEAD.

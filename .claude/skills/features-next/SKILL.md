@@ -69,7 +69,7 @@ From the `## Feature List` table, collect every row whose **Implementation** col
 - `name` — the backtick-wrapped value in the **Change name** column (e.g. `task-due-dates`)
 - `priority` — the **Priority** column value (`P0`/`P1`/`P2`/`P3`)
 - `schema_change` — the **Schema Change** column value (`Yes`/`No`)
-- `effort` — the **Effort** column value (`S`/`M`/`L`)
+- `effort` — the **Effort** column value (`S`/`M`/`L`/`XL`)
 - `area` — the **Area** column value (one of the values the backlog's own legend defines)
 - `artifacts_ready` — `true` if the **SDD Artifacts** column shows `✅ Created`, `false` if `⬜ Pending` or if the table has no `SDD Artifacts` column
 - `in_progress` — `true` if the **Implementation** column shows `🔶 In Progress` (`feature-development` has already started this one — see `feature-development`'s Step 1.6), `false` if `⬜ Pending`

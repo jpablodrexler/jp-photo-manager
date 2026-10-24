@@ -34,6 +34,7 @@ resumed later without re-deriving context.
 
 **Scoped review (single file, PR, or feature) — one file:**
 
+- **Stamp:** The file's first line is the stamp `<!-- backlog-kit: code-reviewer -->`, written by this skill and by no other route: the orchestrator of a pipeline reads it to confirm the report came from this skill and not from a hand-written substitute.
 - **Path:** `<reports>/code-review/CODE_REVIEW_FINDINGS_{YYYY-MM-DD}.md` (today's
   date, ISO 8601). If a file for that date already exists,
   append `-2`, `-3`, etc. rather than overwriting the earlier run's report.

@@ -59,11 +59,13 @@ between features.
 
 One accepted consequence of the no-commit constraint, worth knowing before
 a long run: `feature-development`'s Phase 2R reviews scope themselves to
-`git status --porcelain`, which — once feature #2 starts — includes every
-earlier feature's still-uncommitted files too, not just the current one.
-Later features' reviews re-scan earlier features' already-fixed code. This
-is unavoidable without committing between features (which the user has
-ruled out), not a bug to fix here.
+the uncommitted files (review gate G0), which — once feature #2 starts —
+include every earlier feature's still-uncommitted files too, not just the
+current one. Later features' reviews re-scan earlier features' already-fixed
+code. This is unavoidable without committing between features (which the
+user has ruled out), not a bug to fix here. With `--commit`, G0 uses the
+files differing from `develop` plus the uncommitted ones, so the earlier
+features' committed files are re-scanned in the same way.
 
 ---
 
