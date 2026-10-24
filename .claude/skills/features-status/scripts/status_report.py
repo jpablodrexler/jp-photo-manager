@@ -45,7 +45,8 @@ BACKLOG = "docs/backlog"  # replaced in main() by [paths] backlog_dir
 SUMMARY_MAX = 250
 BRIEF_LINK_RE = re.compile(r'\[brief\]\(([^)]+)\)')
 SPEC_LINK_RE = re.compile(r'\[spec\]\(([^)]+)\)')
-EFFORTS = ("S", "M", "L", "XL")
+POINTS = ("1", "2", "3", "5", "8", "13")             # story points, Fibonacci scale
+LEGACY_POINTS = {"S": "1", "M": "3", "L": "5", "XL": "8"}   # t-shirt sizes of a backlog not migrated yet
 STORY_RE = re.compile(r'^\*\*As an?\*\*', re.M)   # a brief written as a user story
 AC_RE = re.compile(r'^\s*[-*]\s*AC\d+\s*:', re.M)
 
@@ -172,7 +173,8 @@ def main():
         "total": None,
         "percent": None,
         "priority_breakdown": {"P0": 0, "P1": 0, "P2": 0, "P3": 0, "none": 0},
-        "effort_breakdown": {"S": 0, "M": 0, "L": 0, "XL": 0, "none": 0},
+        "effort_breakdown": {**{k: 0 for k in POINTS}, "none": 0},
+        "pending_points": 0,
         "sdd_ready": 0,
         "pending_rows": [],
         "duplicate_numbers": [],
@@ -246,8 +248,11 @@ def main():
         result["priority_breakdown"][key] += 1
 
         effort = r.get("Effort", "").strip()
-        ekey = effort if effort in EFFORTS else "none"
+        effort = LEGACY_POINTS.get(effort, effort)
+        ekey = effort if effort in POINTS else "none"
         result["effort_breakdown"][ekey] += 1
+        if ekey != "none":
+            result["pending_points"] += int(ekey)
 
         if "Created" in r.get("SDD Artifacts", ""):
             result["sdd_ready"] += 1
@@ -381,15 +386,14 @@ def render_markdown(r):
     lines.append(f"| No explicit tier              | {r['priority_breakdown']['none']} |")
     lines.append("")
 
-    lines.append("### Pending breakdown by effort")
+    lines.append("### Pending breakdown by effort (story points)")
     lines.append("")
-    lines.append("| Effort | Count |")
-    lines.append("| ------ | ----- |")
-    lines.append(f"| S      | {r['effort_breakdown']['S']} |")
-    lines.append(f"| M      | {r['effort_breakdown']['M']} |")
-    lines.append(f"| L      | {r['effort_breakdown']['L']} |")
-    lines.append(f"| XL     | {r['effort_breakdown']['XL']} |")
-    lines.append(f"| No explicit effort | {r['effort_breakdown']['none']} |")
+    lines.append("| Story points | Count |")
+    lines.append("| ------------ | ----- |")
+    for k in POINTS:
+        lines.append(f"| {k:<12} | {r['effort_breakdown'][k]} |")
+    lines.append(f"| No explicit points | {r['effort_breakdown']['none']} |")
+    lines.append(f"| **Total pending points** | **{r['pending_points']}** |")
     lines.append("")
 
     pending_count = r["pending_strict"] + r["in_progress"]

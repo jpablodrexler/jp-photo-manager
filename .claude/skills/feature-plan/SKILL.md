@@ -41,7 +41,7 @@ Read:
 
 - **Priority**: `P0` (production-safety/security/data-loss gap) · `P1` (high-impact) · `P2` (scalability) · `P3` (operational convenience)
 - **Schema Change**: `Yes` if the feature adds or alters a database migration, a schema definition or an access policy; `No` otherwise
-- **Effort**: `S` / `M` / `L` / `XL` (`XL` is too large for one story: a candidate for splitting into several features)
+- **Effort**: story points on the Fibonacci scale `1` / `2` / `3` / `5` / `8` / `13`; `8` or more is too large for one story: a candidate for splitting into several features
 - **Area**: `Backend` · `Frontend` · `Full-stack` (touches both) · `Infra` (deployment/provisioning-only, no application code)
 - **SDD Artifacts**: (only meaningful in projects that use OpenSpec; otherwise it stays `⬜ Pending`) `⬜ Pending` until `openspec-propose` has generated proposal/specs/tasks for the change; `✅ Created` once it has
 - **Implementation**: `⬜ Pending` until work starts; `🔶 In Progress` once `feature-development` has selected the feature and set up its branch, until shipped; `✅ Implemented` once `features-archive` has moved the row to `features-implemented.md`
@@ -99,12 +99,12 @@ Using the **Column legend** immediately below the Feature List table in `feature
 
 - **Priority** (`P0`–`P3`)
 - **Schema Change** (`Yes`/`No`)
-- **Effort** (`S`/`M`/`L`/`XL`)
+- **Effort** (story points: `1`/`2`/`3`/`5`/`8`/`13`; `1` is a small, well-understood change, `3` a typical feature, `5` a large one, and `8` or more should be split)
 - **Area** (one of the values the legend defines)
 
 If the user explicitly gave a value for any of these, use it as-is (still sanity-check it's one of the valid values from the legend). Otherwise infer it from the feature description — e.g. a security/data-loss gap is `P0`; a feature naming a new table/column/policy is `Schema Change: Yes`; a change touching both backend and frontend code is `Full-stack`.
 
-If the Effort comes out `XL` (given or inferred), the feature is a candidate for splitting: say so in one sentence and, in step 6's question, offer "Split into several features" alongside the other options. Splitting means drafting one feature per independently valuable story (each with its own row, brief and number, and a hard dependency between them where one needs the other), shown together for one confirmation. Keeping the `XL` is allowed; never force the split.
+If the Effort comes out `8` or `13` (given or inferred), the feature is a candidate for splitting: say so in one sentence and, in step 6's question, offer "Split into several features" alongside the other options. Splitting means drafting one feature per independently valuable story (each with its own row, brief and number, and a hard dependency between them where one needs the other), shown together for one confirmation. Keeping the `8` or `13` is allowed; never force the split.
 
 Both `SDD Artifacts` and `Implementation` are always `⬜ Pending` for a brand-new row — this skill only plans a feature, it never creates SDD artifacts (that's `openspec-propose`, invoked later by `feature-development`) or implements it.
 
@@ -135,7 +135,7 @@ Rules for drafting it:
 - **Acceptance criteria**: numbered `AC1`…`ACn`, each in Given/When/Then form, each binary and testable and describing behaviour, never implementation. Cover the main path, the main failure or empty case, and any permission or data-ownership rule the user mentioned. They are the checklist `spec-compliance-check` later verifies, and the scenarios `openspec-propose` turns into WHEN/THEN requirements.
 - **Technical notes**: keep the specificity the old one-paragraph brief carried (names a spec step needs); reuse whatever technical detail the user gave and fill gaps with reasonable, clearly-inferable choices consistent with the project's documented conventions (`CLAUDE.md`, the README, decision records) rather than inventing an unrelated approach.
 - **Definition of Done**: if `<backlog>/definition-of-done.md` does not exist, write "No project-level Definition of Done defined yet." instead of the first sentence. Never copy the project-level items into the brief.
-- **One story per brief.** If the description holds several independently valuable behaviours, say so and offer to split (the same offer as for an `XL`).
+- **One story per brief.** If the description holds several independently valuable behaviours, say so and offer to split (the same offer as for an Effort of `8` or more).
 
 This brief is the exact text `feature-development` later hands to `openspec-propose` as the description of what to build, so give it all the specificity the spec step will need; it goes in the feature's own file (step 7), not in the table.
 
@@ -150,7 +150,7 @@ Display the fully drafted row:
 
 **#<number> `<change-name>`**
 
-**Priority:** <priority>  **Schema Change:** <schema_change>  **Effort:** <effort>  **Area:** <area>
+**Priority:** <priority>  **Schema Change:** <schema_change>  **Effort:** <points> points  **Area:** <area>
 
 **Summary:** <summary>
 
@@ -161,7 +161,7 @@ Display the fully drafted row:
 **SDD Artifacts:** ⬜ Pending   **Implementation:** ⬜ Pending
 ```
 
-Use the **AskUserQuestion tool** with a single question — "Add this feature to the backlog?" — options: "Yes, add it as drafted", "Split into several features" (only when the Effort is `XL` or the description holds several stories; see step 4), "Let me edit something first" (resolve free-text edits against the draft and re-display for confirmation before writing), "Cancel". Do not write anything to `features-planned.md` or `<backlog>/features/` until the user confirms.
+Use the **AskUserQuestion tool** with a single question — "Add this feature to the backlog?" — options: "Yes, add it as drafted", "Split into several features" (only when the Effort is `8` or more, or the description holds several stories; see step 4), "Let me edit something first" (resolve free-text edits against the draft and re-display for confirmation before writing), "Cancel". Do not write anything to `features-planned.md` or `<backlog>/features/` until the user confirms.
 
 ### 7. Write the brief file, then insert the row
 

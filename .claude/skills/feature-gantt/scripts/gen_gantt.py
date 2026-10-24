@@ -33,14 +33,18 @@ AREA_META = {
     "infra":     "Infra",
 }
 
-# Illustrative only for shipped bars — S/M/L just needs to read as
+# Illustrative only for shipped bars — Story points just need to read as
 # "denser effort = visually heavier"; the bar width is not a real
 # elapsed-time measurement (see the footnote copy for the actual caveat).
-SHIPPED_DUR = {"S": 0.62, "M": 1.15, "L": 1.85}
+SHIPPED_DUR = {"1": 0.62, "2": 0.9, "3": 1.15, "5": 1.85, "8": 2.5, "13": 3.2}
+
+# Story points on the Fibonacci scale. A t-shirt size from an unconverted backlog is read as S=1, M=3, L=5, XL=8.
+POINTS = tuple(SHIPPED_DUR)
+LEGACY_POINTS = {"S": "1", "M": "3", "L": "5", "XL": "8"}
 
 # Literal workday estimate for planned bars, stacked back-to-back with
 # no parallelism and no days off starting the day after "today".
-PLANNED_DUR = {"S": 1, "M": 2, "L": 3}
+PLANNED_DUR = {"1": 1, "2": 2, "3": 3, "5": 5, "8": 8, "13": 13}   # 1 story point = 1 workday
 
 LEFT_FALLBACK_THRESHOLD = 88.0  # % — past this, put the label before the bar, not after
 
@@ -618,8 +622,9 @@ def main():
                     "chart surfaces with the dataviz skill's scripts/validate_palette.js before "
                     "generating; do not invent an unvalidated hex here."
                 )
-            if row["effort"] not in ("S", "M", "L"):
-                sys.exit(f"invalid effort {row['effort']!r} on {label} #{row['num']} — must be S, M, or L")
+            row["effort"] = LEGACY_POINTS.get(str(row["effort"]), str(row["effort"]))
+            if row["effort"] not in POINTS:
+                sys.exit(f"invalid effort {row['effort']!r} on {label} #{row['num']} — must be story points: 1, 2, 3, 5, 8 or 13")
 
     DAY0 = min(parse_date(r["date"]) for r in shipped)
 
@@ -746,9 +751,9 @@ def main():
         left, width = g["start"] / TOTAL_DAYS * 100, (g["end"] - g["start"]) / TOTAL_DAYS * 100
         dow = g["date_obj"].strftime("%a")
         date_str = fmt_short(g["date_obj"])
-        show_label = g["effort"] in ("M", "L")
+        show_label = g["effort"] in ("3", "5", "8", "13")
         label_html = label_span(date_str, left, width) if show_label else ""
-        title = f'{esc(g["name"])} — {esc(g["desc"])} Shipped {date_str}, {dow}. Effort: {g["effort"]}.'
+        title = f'{esc(g["name"])} — {esc(g["desc"])} Shipped {date_str}, {dow}. Effort: {g["effort"]} points.'
         row_html.append(row_block(g, left, width, title, label_html, "shipped", projected=False))
         table_rows.append(table_row(g, "Shipped", f"{date_str} ({dow})"))
 
@@ -758,7 +763,7 @@ def main():
         end_date_ = DAY0 + datetime.timedelta(days=int(g["end"]) - 1)
         range_str = fmt_short(start_date) if start_date == end_date_ else f"{fmt_short(start_date)}–{fmt_short(end_date_)}"
         short_label = fmt_short(end_date_)
-        title = (f'{esc(g["name"])} — {esc(g["desc"])} Projected {range_str}. Effort: {g["effort"]}. '
+        title = (f'{esc(g["name"])} — {esc(g["desc"])} Projected {range_str}. Effort: {g["effort"]} points. '
                   'Not yet started — order and dates are a priority/dependency-based projection, not a commitment.')
         label_html = label_span(short_label, left, width, extra_cls="is-projected-label")
         row_html.append(row_block(g, left, width, title, label_html, "planned", projected=True))
@@ -889,7 +894,7 @@ def main():
     <div class="legend-group">
       <div class="legend-item"><span class="legend-note-schema">DB</span>schema changed</div>
       <div class="legend-item">P0&ndash;P3 &nbsp;priority</div>
-      <div class="legend-item">bar length &asymp; relative effort (S/M/L)</div>
+      <div class="legend-item">bar length &asymp; relative effort (story points)</div>
     </div>
   </div>
 
@@ -945,13 +950,13 @@ def main():
     <strong>Shipped bars:</strong> dates are the archive date of each change's <code>openspec/changes/archive/YYYY-MM-DD-&lt;name&gt;/</code>
     folder, cross-checked against merge-commit dates in <code>git log</code>. Every shipped change in this project's history has
     landed within the single day it was branched, so bar <em>length</em> there doesn't encode a measured multi-day duration
-    &mdash; it's a relative stand-in for effort (S/M/L) so denser changes read visually heavier; the exact ship day is always
+    &mdash; it's a relative stand-in for effort (story points) so denser changes read visually heavier; the exact ship day is always
     the bar's right edge.{footnote_extra_html}
   </p>
   <p class="footnote">
     <strong>Projected bars:</strong> the {planned_count} rows in <code>docs/backlog/features-planned.md</code>, in the order
     listed under that file's own <code>### Recommended implementation order</code> section. Duration is a literal
-    S/M/L&nbsp;=&nbsp;1/2/3 workday estimate, stacked back-to-back with no parallelism and no days off, starting the day
+    1&nbsp;story&nbsp;point&nbsp;=&nbsp;1&nbsp;workday estimate, stacked back-to-back with no parallelism and no days off, starting the day
     after today ({fmt_short(today)}). Treat the hatched bars as relative sequencing and scale, not a delivery date.
   </p>
 </div>

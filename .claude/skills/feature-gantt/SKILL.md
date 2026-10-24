@@ -202,9 +202,9 @@ meant to have one durable URL across regenerations, not a new one per run.
   regenerate. The script exists precisely so that geometry/label/tagging
   math never needs doing by hand.
 - The effort→duration mapping is fixed by design, not a per-run choice:
-  shipped bars use S/M/L = 0.62/1.15/1.85 illustrative days (visual weight
+  shipped bars use 1/2/3/5/8/13 points = 0.62/0.9/1.15/1.85/2.5/3.2 illustrative days (visual weight
   only — the bar width is not a real elapsed-time measurement); planned
-  bars use a literal S/M/L = 1/2/3 workday estimate, stacked with no
+  bars use a literal 1 point = 1 workday estimate, stacked with no
   parallelism. Don't invent different multipliers for a "more accurate"
   look — the footnote text explains the real caveat instead.
 - Keep the "shape, not a schedule" framing in the projected-bars copy

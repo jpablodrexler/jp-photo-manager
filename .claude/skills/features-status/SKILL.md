@@ -60,7 +60,7 @@ python3 scripts/status_report.py <repo-root>
 ```
 
 Prints the finished `## Feature Tracker Status` report (summary table,
-priority/effort/SDD-readiness breakdowns, the pending-feature list, and a
+priority/effort (story points, with the pending total; t-shirt sizes of an unmigrated backlog count as S=1, M=3, L=5, XL=8)/SDD-readiness breakdowns, the pending-feature list, and a
 **Data integrity** section only when it found something) straight to
 stdout — display it as-is. Add `--json` for the raw structured data
 instead, if you need to reason about a specific field rather than just

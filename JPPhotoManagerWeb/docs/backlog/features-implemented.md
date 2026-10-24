@@ -55,10 +55,10 @@ The **Priority**, **Schema Change**, **Effort**, and **Area** columns were intro
 | 84  | `revert-exif-postgres-jsonb`      | — | — | — | — | [brief](features/084-revert-exif-postgres-jsonb.md) · [spec](../../../openspec/changes/archive/2026-07-18-revert-exif-postgres-jsonb/proposal.md) | ✅ Created |
 | 81  | `redis-thumbnail-cache`           | — | — | — | — | [brief](features/081-redis-thumbnail-cache.md) · [spec](../../../openspec/changes/archive/2026-07-18-redis-thumbnail-cache/proposal.md) | ✅ Created |
 | 82  | `redis-search-tag-cache`          | — | — | — | — | [brief](features/082-redis-search-tag-cache.md) · [spec](../../../openspec/changes/archive/2026-07-18-redis-search-tag-cache/proposal.md) | ✅ Created |
-| 36  | `global-error-handler`      | P0 | No | M | Full-stack | [brief](features/036-global-error-handler.md) · [spec](../../../openspec/changes/archive/2026-07-22-global-error-handler/proposal.md) | ✅ Created |
-| 43  | `request-correlation-mdc`   | P0 | No | S | Backend | [brief](features/043-request-correlation-mdc.md) · [spec](../../../openspec/changes/archive/2026-07-22-request-correlation-mdc/proposal.md) | ✅ Created |
-| 53  | `password-strength-policy`  | P0 | No | S | Full-stack | [brief](features/053-password-strength-policy.md) · [spec](../../../openspec/changes/archive/2026-07-24-password-strength-policy/proposal.md) | ✅ Created |
-| 46  | `session-management`        | P0 | No | M | Full-stack | [brief](features/046-session-management.md) · [spec](../../../openspec/changes/archive/2026-07-25-session-management/proposal.md) | ✅ Created |
+| 36  | `global-error-handler`      | P0 | No | 3 | Full-stack | [brief](features/036-global-error-handler.md) · [spec](../../../openspec/changes/archive/2026-07-22-global-error-handler/proposal.md) | ✅ Created |
+| 43  | `request-correlation-mdc`   | P0 | No | 1 | Backend | [brief](features/043-request-correlation-mdc.md) · [spec](../../../openspec/changes/archive/2026-07-22-request-correlation-mdc/proposal.md) | ✅ Created |
+| 53  | `password-strength-policy`  | P0 | No | 1 | Full-stack | [brief](features/053-password-strength-policy.md) · [spec](../../../openspec/changes/archive/2026-07-24-password-strength-policy/proposal.md) | ✅ Created |
+| 46  | `session-management`        | P0 | No | 3 | Full-stack | [brief](features/046-session-management.md) · [spec](../../../openspec/changes/archive/2026-07-25-session-management/proposal.md) | ✅ Created |
 
 ---
 
