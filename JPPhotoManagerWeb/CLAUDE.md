@@ -45,7 +45,7 @@ Where the [backlog-kit](https://github.com/jpablodrexler/backlog-kit) skills rea
 
 | Path | What it holds | Checked against |
 | ---- | ------------- | --------------- |
-| `docs/backlog/` | the backlog: `features-planned.md`, `features-implemented.md`, `bugs-open.md`, `bugs-fixed.md`, plus one brief per item in `features/` and `bugs/` | — |
+| `docs/backlog/` | the backlog: `features-planned.md`, `features-implemented.md`, `bugs-open.md`, `bugs-fixed.md`, plus one brief per item in `features/` and `bugs/` (a feature brief is a user story with acceptance criteria), and `definition-of-done.md`, the checklist every feature meets | — |
 | `docs/decisions/` | architecture decision records, numbered and append-only | — |
 | `docs/explorations/` | notes of ideas still being explored (created when the first one is written) | — |
 | `docs/reports/` | dated reports of the reviewers and the batch runs (gitignored, except the metrics snapshots) | — |
