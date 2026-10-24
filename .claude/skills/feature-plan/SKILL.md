@@ -93,18 +93,17 @@ Both files are needed to pick a non-colliding number and name (step 3) and to dr
 
 Run (from this skill's base directory) `python3 scripts/next_id.py <repo-root> --check-name <derived-name>` — it scans both files' `## Feature List` tables plus the filenames under `<backlog>/features/` and returns the next free `#` (`max + 1` across both, or `1` for a fresh backlog; numbers are a single global sequence, never reused even for a cancelled/reverted feature) plus whether the derived name already collides with an existing row. If `name_collision` is `true`, tell the user and ask for a different name or confirm they mean something else (do not silently rename or silently proceed with a duplicate). Use the returned `next_number` as the feature number.
 
-### 4. Draft the four attribute columns
+### 4. Draft the attribute columns
 
 Using the **Column legend** immediately below the Feature List table in `features-planned.md` as the source of truth for the value vocabulary (don't hardcode a copy of the definitions here — read them fresh each run so this skill can't drift out of sync with the legend):
 
 - **Priority** (`P0`–`P3`)
 - **Schema Change** (`Yes`/`No`)
-- **Effort** (story points: `1`/`2`/`3`/`5`/`8`/`13`; `1` is a small, well-understood change, `3` a typical feature, `5` a large one, and `8` or more should be split)
 - **Area** (one of the values the legend defines)
 
-If the user explicitly gave a value for any of these, use it as-is (still sanity-check it's one of the valid values from the legend). Otherwise infer it from the feature description — e.g. a security/data-loss gap is `P0`; a feature naming a new table/column/policy is `Schema Change: Yes`; a change touching both backend and frontend code is `Full-stack`.
+**Effort** is not drafted here: it is the user's decision, asked in step 5b once the brief exists.
 
-If the Effort comes out `8` or `13` (given or inferred), the feature is a candidate for splitting: say so in one sentence and, in step 6's question, offer "Split into several features" alongside the other options. Splitting means drafting one feature per independently valuable story (each with its own row, brief and number, and a hard dependency between them where one needs the other), shown together for one confirmation. Keeping the `8` or `13` is allowed; never force the split.
+If the user explicitly gave a value for any of these, use it as-is (still sanity-check it's one of the valid values from the legend). Otherwise infer it from the feature description — e.g. a security/data-loss gap is `P0`; a feature naming a new table/column/policy is `Schema Change: Yes`; a change touching both backend and frontend code is `Full-stack`.
 
 Both `SDD Artifacts` and `Implementation` are always `⬜ Pending` for a brand-new row — this skill only plans a feature, it never creates SDD artifacts (that's `openspec-propose`, invoked later by `feature-development`) or implements it.
 
@@ -141,6 +140,15 @@ This brief is the exact text `feature-development` later hands to `openspec-prop
 
 **Summary.** Also hand-write a plain-text summary of that brief, built from its "I want … so that …" clause — at most 250 characters (target about 160), one or two sentences, no pipe characters, no Markdown links. It is only for humans skimming the table and for `features-next`'s display; it is never spec input, so it may drop detail the brief keeps.
 
+### 5b. Ask for the story points
+
+The size of a feature is the user's call, so always ask for it, with your own estimate as the suggestion. Never write a value the user has not seen, and never skip the question because you are confident.
+
+1. **Calculate the suggestion** from the brief you just drafted, on the Fibonacci scale `1` / `2` / `3` / `5` / `8` / `13`: `1` a trivial, well-understood change in one place; `2` a small change with a couple of acceptance criteria; `3` a typical feature in one layer; `5` a large one (several layers, a schema change plus UI, or a new dependency); `8` very large or uncertain; `13` an epic. Weigh the number of acceptance criteria, how many layers and modules the technical notes touch, whether the schema changes, and how much is new to the project. If the user gave a value in the request, that value is the suggestion.
+2. **Ask** with the **AskUserQuestion tool**, one question — "How many story points for `<change-name>`?" — with the suggested value as the first option, labelled "<N> (Recommended)" and its description naming the one or two reasons for it, followed by the next lower and the next higher value on the scale (fewer at the ends of the scale, never more than three options). The user can always pick another value of the scale through the free-text "Other" answer; a reply that is not on the scale is asked once more, not rounded silently.
+3. **Use the answer** as the Effort of the row, whatever it is. A value of `8` or `13` makes the feature a candidate for splitting: say so in one sentence and, in step 6's question, offer "Split into several features" alongside the other options. Splitting means drafting one feature per independently valuable story (each with its own row, brief and number, and a hard dependency between them where one needs the other), shown together for one confirmation; each part gets its own question here. Keeping the `8` or `13` is allowed; never force the split.
+4. If the question cannot be asked (no interactive tool, no usable answer), use the suggestion and mark it in the draft as `<N> (suggested, not confirmed)`, so the confirmation in step 6 still puts the number in front of the user.
+
 ### 6. Confirm with the user before writing
 
 Display the fully drafted row:
@@ -150,7 +158,7 @@ Display the fully drafted row:
 
 **#<number> `<change-name>`**
 
-**Priority:** <priority>  **Schema Change:** <schema_change>  **Effort:** <points> points  **Area:** <area>
+**Priority:** <priority>  **Schema Change:** <schema_change>  **Effort:** <points> points <(suggested, not confirmed) only when step 5b could not ask>  **Area:** <area>
 
 **Summary:** <summary>
 
@@ -214,6 +222,7 @@ If genuinely ambiguous where a same-priority feature should land relative to its
 ## Guardrails
 
 - Never edit `features-implemented.md` beyond creating its initial skeleton (step 2) if it doesn't exist — this skill only adds rows to `features-planned.md` (plus the new feature's brief file under `<backlog>/features/`).
+- The story points are asked for in step 5b every run, with a calculated suggestion the user can always override; they are never silently taken from the estimate, and a value off the scale is never rounded.
 - The row's `Summary` is at most 250 characters with no pipes, and its `Brief` cell always links the file written in step 7; never put the full brief in the table.
 - Never write to `features-planned.md` or `<backlog>/features/` before the user has confirmed the drafted row in step 6 — all of steps 2–5 are draft-only, in memory (except the one-time skeleton creation in step 2, which is scaffolding, not a feature row).
 - Never assign a feature number or change name that already exists in either file or in a `features/` filename (checked across all of them, not just the planned file).
