@@ -16,7 +16,10 @@ following prompt:
 > invoke `openspec-apply-change <change-name>`. Work through all pending
 > tasks until implementation is complete. Do not stop until all tasks show
 > `[x]` or you encounter a blocker that requires user guidance (end with
-> `IMPLEMENT_BLOCKED — <brief reason>` and stop). When
+> `IMPLEMENT_BLOCKED — <brief reason>` and stop). Run only the tests of
+> the files you touched (the project's single-file form): the whole suite
+> is Phase 3's job, and it can outlast the Bash tool's cap. Never end your
+> response while a command you started is still running in the background. When
 > `openspec-apply-change` completes, do NOT invoke `code-reviewer`
 > or any other review — the orchestrator runs them in Phase 2R.
 >
