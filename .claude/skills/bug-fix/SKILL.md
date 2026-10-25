@@ -166,7 +166,11 @@ Spawn a **general-purpose subagent** (`run_in_background: false`) with:
 >      with `FIX_BLOCKED — origin/fix/<slug> has <N> commit(s) not present
 >      locally; reconcile manually` and stop.
 >    - Otherwise continue to B2.
-> B2. `git status --porcelain`. If it prints anything, end with
+> B2. `git status --porcelain`. Ignore every entry whose path is under
+>    `<backlog>/`: `bug-report` leaves the new row and details file
+>    uncommitted on purpose, and the new branch carries them along (create
+>    it with `git checkout -b` when `gitflow` stops on them, and say so in
+>    your hand-back). If it prints anything else, end with
 >    `FIX_BLOCKED — uncommitted changes present, cannot create fix branch`
 >    and stop.
 > B3. `git rev-parse --verify --quiet fix/<slug>`:

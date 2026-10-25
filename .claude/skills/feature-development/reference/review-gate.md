@@ -24,7 +24,7 @@ Never use `git diff --name-only HEAD` on its own (it misses new files), and neve
 
 **G2 — Database review.** Applies when `CHANGED_FILES` (fresh) holds a database migration or schema definition: a migrations folder, a schema/DDL file, an ORM model that generates migrations. If it applies, spawn the database-review subagent. If it does not, record `DATABASE_REVIEW: skipped — no migration or schema path in CHANGED_FILES`. The reason is yours, from your own list.
 
-**G3 — Security review.** Applies when `CHANGED_FILES` (fresh) holds a path under authentication or authorization, access-control rules or policies, user-input handling, secrets or configuration, or a dependency manifest or lockfile. If it applies, spawn the security-review subagent; otherwise record `SECURITY_REVIEW: skipped — no security-sensitive path in CHANGED_FILES`.
+**G3 — Security review.** Applies when `CHANGED_FILES` (fresh) holds a path under authentication or authorization, access-control rules or policies, user-input handling, secrets or configuration, or a dependency manifest or lockfile. A migration counts when it adds or changes a policy, grant, role or privileged (`SECURITY DEFINER`-style) function, or backfills or rewrites rows that belong to users; a purely additive column or index does not count on its own. If it applies, spawn the security-review subagent; otherwise record `SECURITY_REVIEW: skipped — no security-sensitive path in CHANGED_FILES`.
 
 **G4 — Viewport check.** Applies when `CHANGED_FILES` (fresh) holds a user-interface template, markup file or stylesheet. If it applies, spawn the viewport subagent; otherwise record `VIEWPORTS: skipped — no template, markup or stylesheet in CHANGED_FILES`.
 

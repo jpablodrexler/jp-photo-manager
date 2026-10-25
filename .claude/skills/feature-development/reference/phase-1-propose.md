@@ -75,7 +75,11 @@ see the foreground guardrail in `../SKILL.md`), with the following prompt (subst
 >        manually before continuing` and stop.
 >    - Otherwise, continue to B2 below.
 > B2. Run: `git status --porcelain`
->    If this prints anything (uncommitted changes present), end your
+>    Ignore every entry whose path is under `<backlog>/`: `feature-plan` and
+>    `bug-report` leave their new row and brief uncommitted on purpose, and
+>    the new branch carries them along (create it with `git checkout -b`
+>    when `gitflow` stops on them, and say so in your hand-back). If this
+>    prints anything else (uncommitted changes present), end your
 >    response with `PROPOSE_BLOCKED — uncommitted changes present, cannot
 >    create feature branch` and stop.
 > B3. Run: `git rev-parse --verify --quiet feature/<change-name>`
