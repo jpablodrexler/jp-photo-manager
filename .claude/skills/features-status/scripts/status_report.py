@@ -97,7 +97,7 @@ def find_table(lines, heading):
 def read_lines(path):
     if not path.exists():
         return None
-    return path.read_text(encoding="utf-8").splitlines()
+    return path.read_text(encoding="utf-8", errors="replace").splitlines()
 
 
 def row_dict(header, row):
@@ -191,6 +191,11 @@ def main():
 
     planned_lines = read_lines(planned_path)
     implemented_lines = read_lines(implemented_path)
+    result["invalid_encoding"] = [
+        {"file": p.name, "lines": bad}
+        for p in (planned_path, implemented_path)
+        if (bad := bk.invalid_utf8_lines(p))
+    ]
 
     planned_rows = []
     if planned_lines is not None:
@@ -336,7 +341,7 @@ def check_feature_files(root, planned_rows, implemented_rows, result):
                 result["orphan_feature_files"].append(f.name)
                 continue
             n, name = expected[f.name]
-            text = f.read_text(encoding="utf-8")
+            text = f.read_text(encoding="utf-8", errors="replace")
             first = text.splitlines()[:1]
             want = f"# Feature {int(n)} — {name}"
             if not first or first[0].strip() != want:
@@ -439,6 +444,10 @@ def render_markdown(r):
     for n in r["leftover_implemented_in_planned"]:
         integrity.append(f"- ⚠ #{n} still shows ✅ Implemented in features-planned.md — an archive pass "
                           "was interrupted; run features-archive to finish the move.")
+    for e in r["invalid_encoding"]:
+        shown = ", ".join(str(n) for n in e["lines"][:10]) + (", …" if len(e["lines"]) > 10 else "")
+        integrity.append(f"- ⚠ {BACKLOG}/{e['file']} is not valid UTF-8 at line(s) {shown} — a tool saved it in the "
+                         f"system codepage; re-save those lines as UTF-8.")
     if integrity:
         lines.append("### Data integrity")
         lines.append("")

@@ -7,7 +7,7 @@ Where the backlog-kit skills read and write. Every project that uses the kit loo
 
 | Path | What it holds | Checked against |
 | ---- | ------------- | --------------- |
-| `docs/backlog/` | the backlog: `features-planned.md`, `features-implemented.md`, `bugs-open.md`, `bugs-fixed.md`, plus one brief per item in `features/` and `bugs/`, and the optional `definition-of-done.md` checklist (the folder is the one setting: `[paths] backlog_dir` in `.backlog-kit.toml`) | — |
+| `docs/backlog/` | the backlog: `features-planned.md`, `features-implemented.md`, `bugs-open.md`, `bugs-fixed.md`, plus one brief per item in `features/` and `bugs/`, the optional `definition-of-done.md` checklist and the optional `estimation-anchors.md` (finished features as examples of each story-point value) (the folder is the one setting: `[paths] backlog_dir` in `.backlog-kit.toml`) | — |
 | `docs/decisions/` | architecture decision records, numbered and append-only (`decision-record`) | — |
 | `docs/explorations/` | notes of ideas still being explored, offered by `features-next` | — |
 | `docs/reports/` | dated reports of the reviewers and the batch runs; usually gitignored | — |

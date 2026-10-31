@@ -68,7 +68,7 @@ def find_table(lines, heading):
 def read_lines(path):
     if not path.exists():
         return None
-    return path.read_text(encoding="utf-8").splitlines()
+    return path.read_text(encoding="utf-8", errors="replace").splitlines()
 
 
 def row_dict(header, row):
@@ -123,6 +123,11 @@ def main():
 
     open_lines = read_lines(open_path)
     fixed_lines = read_lines(fixed_path)
+    result["invalid_encoding"] = [
+        {"file": p.name, "lines": bad}
+        for p in (open_path, fixed_path)
+        if (bad := bk.invalid_utf8_lines(p))
+    ]
 
     open_rows = []
     if open_lines is not None:
@@ -293,6 +298,10 @@ def render_markdown(r):
     lines.append("")
 
     integrity = []
+    for e in r["invalid_encoding"]:
+        shown = ", ".join(str(n) for n in e["lines"][:10]) + (", …" if len(e["lines"]) > 10 else "")
+        integrity.append(f"- ⚠ {BACKLOG}/{e['file']} is not valid UTF-8 at line(s) {shown} — a tool saved it in the "
+                         f"system codepage; re-save those lines as UTF-8.")
     for bug_id in r["duplicate_ids"]:
         integrity.append(f"- ⚠ Duplicate Bug ID {bug_id}.")
     for bug_id in r["rows_missing_file"]:

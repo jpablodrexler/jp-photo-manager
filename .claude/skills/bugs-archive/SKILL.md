@@ -152,4 +152,5 @@ Resolution lines appended to bugs/BUG-NNN.md: <count>
   final say on which bugs to close and with what disposition.
 - This skill never writes code, runs tests, or touches git. It records an
   outcome that a fix (or a decision) already produced.
+- **Write the backlog files as UTF-8, and check it.** They hold characters outside ASCII (`✅`, `⬜`, `—`, `·`). Whatever writes them (the editor tool, a shell command, a script) must write UTF-8 explicitly and must never fall back to the system's default text encoding: on some systems that is a single-byte codepage, and it turns one such character into a byte that is not valid UTF-8 and stops every script that reads the file. Prefer the editor tool to an ad-hoc script. After writing, read each file you changed back as UTF-8 (for example `python3 -c "open(p, encoding='utf-8').read()"`); a decoding error is a failed write, to fix before going on.
 - **Never run `git commit`, `git push` or open a PR.**
