@@ -148,8 +148,26 @@ def row_dict(header, row, id_column=None):
 
 
 def read_lines(path):
+    """Lines of `path`, or None when it is missing. A byte that is not valid UTF-8
+    reads as U+FFFD instead of raising, so one badly saved row cannot stop a script;
+    `invalid_utf8_lines` names such lines so a report can flag them."""
     p = Path(path)
-    return p.read_text(encoding="utf-8").splitlines() if p.is_file() else None
+    return p.read_text(encoding="utf-8", errors="replace").splitlines() if p.is_file() else None
+
+
+def invalid_utf8_lines(path):
+    """1-based numbers of the lines of `path` whose bytes are not valid UTF-8, typically
+    a file saved in the system codepage instead of UTF-8. Empty for a missing file."""
+    p = Path(path)
+    if not p.is_file():
+        return []
+    bad = []
+    for n, raw in enumerate(p.read_bytes().split(b"\n"), 1):
+        try:
+            raw.decode("utf-8")
+        except UnicodeDecodeError:
+            bad.append(n)
+    return bad
 
 
 def strip_backticks(s):
