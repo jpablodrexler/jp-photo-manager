@@ -4,7 +4,6 @@ description: Recommends which bug to fix next based on the backlog's bugs-open.m
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "0.1"
 ---
 
 Recommend the next bug to fix and return the confirmed Bug ID to the

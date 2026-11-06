@@ -17,7 +17,6 @@ description: >-
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "0.1"
 ---
 
 Orchestrate one bug fix from selection to close, using dedicated subagents
@@ -41,11 +40,15 @@ after it closes (Phase 7); without it nothing is committed.
 
 `<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`; `<reports>` is the `reports` folder next to the backlog's parent (`docs/reports` by default).
 
+`<integration>` is `develop` and `<production>` is `main` unless `.backlog-kit.toml` sets `[git] integration_branch` / `production_branch`.
+
 **The user talks, the skill reads flags.** `--skip-branch-setup` and `--commit` are shorthand for orchestrators; a user never needs to type them or to phrase a request in any special way. "Fix BUG-004", "fix BUG-004, stay on this branch", "fix BUG-004 and commit as you go" are complete requests: map what the user said to the behaviour below, state in one line how it was understood (branch handling, commit cadence), and run every phase regardless of how short the request was. Every phase runs by default; only a skip condition written in this skill may skip one.
 
-**Working on a branch the user is already on.** When the user is on a topic branch (not `main`/`develop`) and says to stay on it, treat the run as `--skip-branch-setup` even if the flag was not typed: Phase 1 Step 1 only confirms the branch and never creates or syncs one. Say so in the first line of the run.
+**Working on a branch the user is already on.** When the user is on a topic branch (not `<production>`/`<integration>`) and says to stay on it, treat the run as `--skip-branch-setup` even if the flag was not typed: Phase 1 Step 1 only confirms the branch and never creates or syncs one. Say so in the first line of the run.
 
-**Committing as you go.** `--commit` means one commit, at Phase 7. When the user asks instead to commit as the work goes, that request is the opt-in for a commit after each phase that changed files (Phase 1, Phase 2, the fixes of each review gate, Phases 3 to 5, Phase 6), each one made by `gitflow`'s commit action with the message `Fix <bug-id>: <phase> — <one-line summary>`; Phase 7 then commits only what is left, or records `COMMIT: nothing left`. The user's request stands in for the per-commit confirmation of the file list and message, but `gitflow` still makes every commit: no phase or subagent runs `git commit` itself. The review gate's scope follows the commit mode (see `reference/review-gate.md`, G0).
+**Committing as you go.** `--commit` means one commit, at Phase 7. When the user asks instead to commit as the work goes, that request is the opt-in for a commit after each phase that changed files (Phase 1, Phase 2, the fixes of each review gate, Phases 3 to 5, Phase 6), each one made by `gitflow`'s commit action with the message `Fix <bug-id>: <phase> — <one-line summary>`;
+Phase 7 then commits only what is left, or records `COMMIT: nothing left`. The user's request stands in for the per-commit confirmation of the file list and message, but `gitflow` still makes every commit: no phase or subagent runs `git commit` itself.
+The review gate's scope follows the commit mode (see `reference/review-gate.md`, G0).
 
 **Phase ledger.** Right after Phase 0, create a task list with one entry per phase and gate that applies (1, 2, 2R: G1 to G5, 3, 4, 5, 6, 7) and keep it current: an entry is completed when its signal was verified, or when it was skipped under its own stated condition with the reason written on the entry. The Final Summary is built from this list and is not shown while an entry is open.
 
@@ -122,7 +125,7 @@ will be `fix/<slug>`.
 
 ## Placeholder substitution (Phases 1–6)
 
-Before spawning any subagent, replace every `<bug-id>`, `<slug>`, and
+Before spawning any subagent, replace every `<bug-id>`, `<slug>`, `<integration>`, `<production>` and
 `<repro-details>` (the pasted Steps / Expected / Actual / Notes from Phase
 0) in its prompt with the actual values. From Phase 2 onward, also
 substitute `<repro-test-path>` with the path captured from Phase 1's
@@ -134,307 +137,30 @@ Also append, unchanged, to every one of those subagent prompts:
 
 ---
 
-## Phase 1 — Branch & Reproduce (Subagent 1)
+## Phase reference index
 
-Spawn a **general-purpose subagent** (`run_in_background: false`) with:
+Phases 1–6 run as dedicated subagents. Each phase's full text — the exact
+prompt to hand its subagent, plus the orchestrator's own steps before and
+after the call — lives in its own file under `reference/`, so a run loads only
+the phase it is about to execute instead of the whole lifecycle at once.
+**Before starting Phase N, read its file in full**, then follow it exactly:
+apply the placeholder substitution above, spawn the subagent with the prompt it
+contains, and handle the result as the file says. Never reconstruct a prompt
+from memory or from this index. The guardrails at the end of this file apply
+across every phase, and other skills cite these phases by number
+("`bug-fix` Phase 2"), so the numbering is stable.
 
-> The bug to fix has already been selected and confirmed with the user:
-> `<bug-id>`. Do not invoke `bugs-next` or re-select a bug. Its recorded
-> repro:
->
-> <repro-details>
->
-> **Step 1 — Set up the fix branch**
->
-> **Batch mode (`--skip-branch-setup` was passed):** run `git branch
-> --show-current` once; if it is `main` or `develop`, end with
-> `FIX_BLOCKED — batch mode requires an existing fix branch already
-> checked out` and stop. Otherwise continue on the current
-> branch. Do not check for uncommitted changes, and do not create, switch,
-> or sync any branch — the caller owns branch state. Then go to Step 1.5.
->
-> **Normal mode (no flag):** check resume status *before* checking for
-> uncommitted changes (a resumed run is typically already on
-> `fix/<slug>` with the in-progress fix sitting there uncommitted — that's
-> expected, not a blocker).
->
-> B0. `git fetch origin --prune`.
-> B1. `git branch --show-current`.
->    - If it is already exactly `fix/<slug>`: this is a resume. Run
->      `git rev-list HEAD..origin/fix/<slug> --count` (treat a missing
->      `origin/fix/<slug>` as `0`). If `0`, skip to Step 1.5. If `>0`, end
->      with `FIX_BLOCKED — origin/fix/<slug> has <N> commit(s) not present
->      locally; reconcile manually` and stop.
->    - Otherwise continue to B2.
-> B2. `git status --porcelain`. Ignore every entry whose path is under
->    `<backlog>/`: `bug-report` leaves the new row and details file
->    uncommitted on purpose, and the new branch carries them along (create
->    it with `git checkout -b` when `gitflow` stops on them, and say so in
->    your hand-back). If it prints anything else, end with
->    `FIX_BLOCKED — uncommitted changes present, cannot create fix branch`
->    and stop.
-> B3. `git rev-parse --verify --quiet fix/<slug>`:
->    - Prints a hash → the branch exists locally but isn't checked out:
->      `git checkout fix/<slug>`, then if `origin/fix/<slug>` exists
->      `git merge origin/fix/<slug>` (already-pushed history of this same
->      fix — exempt from the no-commits rule, like a sync merge; if it
->      doesn't merge cleanly, end with `FIX_BLOCKED — fix branch diverged
->      from origin, needs manual resolution` and stop). Then invoke
->      `gitflow` with "sync fix `<slug>`" to bring it up to date with
->      `develop`. On an unresolvable conflict, end with `FIX_BLOCKED — fix
->      branch sync conflict with develop` and stop.
->    - Fails locally but `git rev-parse --verify --quiet origin/fix/<slug>`
->      succeeds → another device pushed it first: `git checkout -b
->      fix/<slug> origin/fix/<slug>`, then `gitflow` "sync fix `<slug>`",
->      same conflict handling.
->    - Fails both → invoke `gitflow` with "start fix `<slug>`". If it
->      reports a blocker, end with `FIX_BLOCKED — <the gitflow blocker>`
->      and stop.
-> B4. `git branch --show-current` must now print exactly `fix/<slug>`. If
->    not, end with `FIX_BLOCKED — could not switch to fix branch` and stop.
->
-> **Step 1.5 — Mark the bug In Progress**
-> Open `<backlog>/bugs-open.md`, find the `<bug-id>` row, and if its
-> **Status** is `⬜ Open` change it to `🔶 In Progress` and save. Leave it
-> unchanged if it's already `🔶 In Progress`. If there's no matching row
-> (bug tracked ad hoc), skip silently — not an error.
->
-> **Step 2 — Reproduce the bug with a FAILING regression test**
-> Write the smallest test that fails *because of this bug* and will pass
-> once it's fixed. Pick the layer the bug actually lives at, following the
-> project's test conventions (see its CLAUDE.md and existing tests), and
-> prefer extending an existing test file over creating a new one.
->
-> Run just that test and confirm it **fails**, and that the failure is the
-> bug described in `<repro-details>` — not an unrelated error, a typo in
-> the test, or a missing stub. **Quote the failing assertion or error
-> output verbatim in your hand-back** (a compile error is acceptable only
-> when the fix adds the API the test uses, and say so). A test you never
-> saw fail is not a regression test; the hand-back without that quote is
-> treated as blocked.
->
-> **If you cannot make it fail** — the behaviour looks correct, or the
-> recorded steps are too vague to reproduce — do not invent a fix. End
-> with `FIX_BLOCKED — cannot reproduce <bug-id>: <what you tried and what
-> you observed>` and stop. Do not change the bug's Status beyond the
-> `🔶 In Progress` set in Step 1.5.
->
-> **Step 3 — Hand back**
-> End with exactly:
-> `RED: <the verbatim failing assertion or error line>`
-> `REPRO: DONE — test: <path to the test file>`
-> `BUG_ID: <bug-id>`
+| Phase | Subagent | Read before… | File |
+| ----- | -------- | ------------ | ---- |
+| 1 — Branch & Reproduce | Subagent 1 | choosing the branch/resume mode and writing the failing regression test | `reference/phase-1-reproduce.md` |
+| 2 — Fix | Subagent 2 | implementing the fix | `reference/phase-2-fix.md` |
+| 2R — Review gate | orchestrator + review subagents | the code review and the conditional database/security/viewport steps, with the orchestrator's own checks; Phase 3 starts only after it ends with `REVIEW_GATE: DONE` | `reference/review-gate.md` (started from `reference/phase-2-fix.md`) |
+| 3 — Tests *(optional)* | Subagent 3 | running the project's tests | `reference/phase-3-tests.md` |
+| 4 — E2E Verification *(optional)* | Subagent 4 (conditional) | deciding whether the end-to-end check applies and running it | `reference/phase-4-e2e-verification.md` |
+| 5 — Build Verification *(optional)* | Subagent 5 | the local build | `reference/phase-5-build-verification.md` |
+| 6 — Close | Subagent 6 | docs sync and archiving the bug | `reference/phase-6-close.md` |
 
-After the subagent completes:
-- Contains `FIX_BLOCKED — cannot reproduce`: surface it to the user and
-  ask (**AskUserQuestion**, in the orchestrator's own context): "Mark
-  `<bug-id>` as ❓ Cannot reproduce?" — options: "Yes — mark it Cannot
-  reproduce" (invoke `bugs-archive <bug-id> cannot-repro "<subagent's
-  note>"` and stop the workflow), "Keep it open — I'll add repro detail"
-  (stop the workflow, leave the row `🔶 In Progress`), "Cancel". Do not
-  proceed to Phase 2.
-- Contains any other `FIX_BLOCKED`: surface the reason and stop.
-- No `RED:` line quoting real failing output → treat as blocked; do not proceed to Phase 2.
-- Otherwise: capture the `REPRO: DONE — test: <path>` and `RED:` lines and proceed.
-
----
-
-## Phase 2 — Fix (Subagent 2) and Phase 2R — Review gate
-
-Spawn a **general-purpose subagent** (`run_in_background: false`) with:
-
-> The bug `<bug-id>` has a failing regression test at `<repro-test-path>`.
-> Recorded repro:
->
-> <repro-details>
->
-> **Step 1 — Implement the fix**
-> Fix the root cause in the source. Prefer the
-> narrowest change that addresses the cause, not the symptom. Then run the
-> regression test at `<repro-test-path>` and confirm it now **passes**. If
-> you hit a blocker needing user input, end with `FIX_BLOCKED — <reason>`
-> and stop.
->
-> Never materialize a generated secret's raw value anywhere in a response,
-> report, or file (same rule as `feature-development` Phase 2) — leave any
-> task that would require it unchecked with a note naming the manual
-> command.
->
-> **Step 2 — Signal completion**
-> List what you changed in plain words (no verdict on whether any review applies; reviews are run by the orchestrator's review gate, each in its own subagent — do not run `code-reviewer`, `database-reviewer`, `security-reviewer` or the viewport check yourself). End with exactly:
-> `FIX_IMPLEMENTED: DONE`
-
-Do not start Phase 2R until this subagent returns `FIX_IMPLEMENTED: DONE`.
-
-### Phase 2R — Review gate (orchestrator)
-
-Read `reference/review-gate.md` in full and run it, with `<work-id>` = `<bug-id>`: the orchestrator computes `CHANGED_FILES` itself, spawns one subagent each for the code review, the database review, the security review and the viewport check (deciding itself, from `git status --porcelain`, which of the last three apply), verifies every report file and its checkboxes before accepting a signal, and ends with `REVIEW_GATE: DONE`. Its ledger lines feed the Final Summary.
-
-Do not start Phase 3 until the gate returns `REVIEW_GATE: DONE`.
-On any `*_BLOCKED`, surface the details and wait for user guidance.
-
----
-
-## Phase 3 — Tests (Subagent 3, optional)
-
-Skip this phase when the project has no automated tests: find out yourself
-(orchestrator) from its `CLAUDE.md`, `README` and build manifest which command
-runs them — and a faster end-to-end smoke tier, if CI runs one. If you cannot
-tell, ask the user once (**AskUserQuestion**, with "skip this phase" as an
-option); if there are no tests, record `TESTS: SKIPPED — no automated tests`
-and go to Phase 4.
-
-Runs unconditionally otherwise, regardless of what the fix touched — a tier CI
-gates every PR on can still be broken by a fix that looks unrelated.
-
-Spawn a **general-purpose subagent** (`run_in_background: false`) with
-(substitute the commands you found; delete Step 2 if there is no smoke tier):
-
-> Validate the fix for `<bug-id>`. Both suites are local-only.
->
-> **Step 1 — Tests**
-> `<TEST_COMMAND>`. On failure: diagnose (type error, missing stub,
-> assertion mismatch, …), fix — preferring test code over production source;
-> if you must touch production source note it `PROD_CODE_FIXED: <file> —
-> <reason>` — re-run until green.
->
-> **Step 2 — Smoke tier**
-> `<SMOKE_COMMAND>` (allow ~5 min). Most failures here are a stale assertion in
-> the spec itself (a hardcoded string / fixture that no longer matches what the
-> component renders), not a real regression — check the rendered output before
-> changing any production file. Fix, preferring the spec over production source
-> (same `PROD_CODE_FIXED:` rule), re-run until green.
->
-> End with one of:
-> - `TESTS: PASS (<n> tests, <m> smoke tests)`
-> - `TESTS: BLOCKED — <reason, noting which tier>`
-
-On `BLOCKED`, stop and surface the failure. On one or more
-`PROD_CODE_FIXED:` lines, surface them to the user (those production
-changes weren't covered by the Phase 2R review gate) and ask: **Proceed** (record
-`UNREVIEWED_PROD_FIXES:` for the Final Summary) or **Re-run the review gate** (Phase 2R over the fixes, then new Subagent 3).
-
----
-
-## Phase 4 — E2E Verification (Subagent 4, optional, conditional)
-
-Skip this phase — recording `E2E: SKIPPED — <reason>` — when the project has no
-end-to-end or browser suite (its `CLAUDE.md`, `README` and build manifest say),
-or when the fix touches no user-facing flow.
-
-**Before spawning — resolve the test account** (orchestrator step; needs
-`AskUserQuestion`):
-
-1. Run `git status --porcelain` yourself. If no changed path falls under a
-   user-facing flow the suite covers (screens, routes, endpoints, or a schema
-   change that changes what they render) — skip straight to spawning Subagent
-   4; its own Step 1 will land on `E2E: SKIPPED`.
-2. If a flow was touched and the suite needs a test account or live services,
-   ask the user (**AskUserQuestion**) whether to run it and how the account is
-   provided (a credentials file they maintain, environment variables, or a
-   fresh registration if the app allows it). Never read a credentials file
-   yourself and never put credentials in a prompt; set
-   `CREDENTIAL_SOURCE: <the answer>`. If they decline, record
-   `E2E: SKIPPED — user chose not to run it` and go to Phase 5.
-3. Substitute `<CREDENTIAL_SOURCE>` into the prompt.
-
-Spawn a **general-purpose subagent** (`run_in_background: false`) with
-(substitute the suite's command for `<E2E_COMMAND>`):
-
-> **Step 1 — Does E2E verification apply?**
-> `git status --porcelain` → parse all paths (incl. `??`) into
-> `CHANGED_FILES`. If none fall under a user-facing flow the suite covers,
-> end with `E2E: SKIPPED — no user-facing flow changed` and stop.
->
-> **Step 2 — Environment** — confirm what the suite needs is reachable (the
-> backend or database it talks to, required configuration, migrations applied
-> if one was touched). On failure → `E2E_BLOCKED — <reason>` and stop.
->
-> **Step 3 — Dev server** — if the suite needs the application running, kill
-> any stale instance, start a fresh one, confirm it answers. On failure →
-> `E2E_BLOCKED — dev server did not start`.
->
-> **Step 4 — Browser checks** — credential source: `<CREDENTIAL_SOURCE>`
-> (already decided; do not re-ask, do not decide yourself; never log or echo
-> credentials; if the source is unusable now, `E2E_BLOCKED — <source> unusable
-> at read time`, never silently fall back).
-> 1. Run `<E2E_COMMAND>` — the narrowest command that covers the changed flow.
-> 2. If the fix touched a specific flow, exercise the specific flow the bug was
->    about, once, through the real UI against the real backend — confirm the
->    bug is actually gone here, not just in the unit test — with no console
->    errors.
-> 3. A cross-user data-scoping check — only if the fix touched data access
->    **and** a real second account is available; otherwise skip it and say so
->    via `PASS_PARTIAL`.
-> 4. Screenshot the final state and read it back for layout breaks.
->
-> **Step 5 — Tear down** — stop any server you started.
->
-> End with one of:
-> - `E2E: PASS — <one-line summary>`
-> - `E2E: PASS_PARTIAL — <what passed> — NOT COVERED: <what was skipped and why>`
-> - `E2E_BLOCKED — <reason>`
-
-Do not start Phase 5 until `E2E: PASS`, `PASS_PARTIAL`, or `SKIPPED`. On
-`E2E_BLOCKED`, surface and wait — a failure against a live environment may be
-environment/data, not a code defect; don't assume it belongs back in Phase 2
-without the user confirming.
-
----
-
-## Phase 5 — Build Verification (Subagent 5, optional)
-
-Skip this phase — recording `BUILD: SKIPPED — no build step` — when the project
-has no build, compile or type-check step (find out yourself from its
-`CLAUDE.md`, `README` and build manifest; if unsure, ask once with "skip" as an
-option). This skill never deploys anything; the build runs locally only so a
-failure is caught before CI or the host would.
-
-Spawn a **general-purpose subagent** (`run_in_background: false`) with
-(substitute the command for `<BUILD_COMMAND>`):
-
-> **Step 1** — `<BUILD_COMMAND>` (allow up to 5 min; if it can take longer, poll
-> with repeated foreground calls in this same turn — never end your response
-> while it still runs in the background).
-> **Step 2** — On failure: read the error (it names the file and cause), fix
-> prioritising files related to the fix, re-run until it succeeds or you hit a
-> blocker needing human input.
-> **Step 3** — If the build produces an output directory or artifact, confirm
-> it exists and is non-empty — empty or missing after a "successful" build is
-> itself a failure.
->
-> If you must modify a production source file (not a test or build
-> configuration file), note it `PROD_CODE_FIXED: <file> — <reason>`.
->
-> End with `BUILD: PASS` (after any `PROD_CODE_FIXED:` lines) or `BUILD: BLOCKED — <reason>`.
-
-Do not start Phase 6 until `BUILD: PASS` (or the phase was skipped). On one or
-more `PROD_CODE_FIXED:` lines, handle them as Phase 3's: ask the user to
-**proceed** (record `UNREVIEWED_PROD_FIXES:` for the Final Summary) or to
-**re-run the review gate** (Phase 2R over the fixes, then Phases 3 and 5 again).
-
----
-
-## Phase 6 — Close (Subagent 6)
-
-Spawn a **general-purpose subagent** (`run_in_background: false`) with:
-
-> **Step 1** — Invoke `docs-sync` in its scoped-sync mode for the
-> current branch's changes (it diffs against the branch base itself).
-> **Best-effort, not blocking**: a bug fix usually changes no documented
-> behaviour, so "nothing to sync" is the common and fine outcome. Only
-> stop and surface details if the skill errors out leaving files broken.
->
-> **Step 2** — Invoke `bugs-archive <bug-id> fixed "<one-line resolution:
-> what the root cause was and what changed; include the regression test
-> path>"`. Wait for it to move the row to `<backlog>/bugs-fixed.md` and append the
-> Resolution line to `<backlog>/bugs/<bug-id>.md`.
->
-> End with exactly:
-> `CLOSE: DONE`
-
-Do not display the Final Summary until this subagent returns `CLOSE:
-DONE`.
+Phase 7 (Commit) is short and stays below.
 
 ---
 
@@ -522,11 +248,11 @@ If no commit was requested: nothing was committed. The fix (and its regression t
   may run `git commit` / `git push` / any git write itself. The sole other
   exceptions are
   Phase 1 Step 1's branch creation and sync (`git fetch`, `git checkout`,
-  `git checkout -b`, `git merge origin/develop` via `gitflow`'s
+  `git checkout -b`, `git merge origin/<integration>` via `gitflow`'s
   start-fix/sync-fix, and `git merge origin/fix/<slug>` to pick up
   another device's already-pushed commits on this same fix).
-- **The fix branch is synced from `develop` only, never `main`** — via
-  `gitflow`'s sync-fix action, which merges `origin/develop` and nothing
+- **The fix branch is synced from `<integration>` only, never `<production>`** — via
+  `gitflow`'s sync-fix action, which merges `origin/<integration>` and nothing
   else. This holds even right after a release merges into both.
 - **`--skip-branch-setup` (batch mode) only affects Phase 1 Step 1.** No
   other phase changes — Phases 2–6 already operate on "whatever branch is

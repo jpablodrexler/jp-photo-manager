@@ -16,7 +16,6 @@ description: >
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "0.1"
 ---
 
 Orchestrate the full feature lifecycle from selection to archive using
@@ -31,20 +30,27 @@ recommendation step and jump straight to confirmation for that feature.
 skill — that have already checked out a shared branch and are running
 multiple features on it without committing between them; see Phase 1 Step
 1.5's batch-mode branch below. Omit it for normal single-feature use —
-default behavior (create/resume `feature/<change-name>` from `develop`) is
+default behavior (create/resume `feature/<change-name>` from `<integration>`) is
 unchanged. `--commit` is an explicit opt-in that the user (or an orchestrator
 acting on their request) passes to get one commit for this feature after it
 is archived (Phase 7); without it nothing is committed.
 
 `<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`; `<reports>` is the `reports` folder next to the backlog's parent (`docs/reports` by default).
 
-**The user talks, the skill reads flags.** `--skip-branch-setup` and `--commit` are shorthand for orchestrators; a user never needs to type them or to phrase a request in any special way. "Develop the feature X", "develop X, stay on this branch", "develop X and commit as you go" are complete requests: map what the user said to the behaviour below, state in one line how it was understood (branch handling, commit cadence), and run every phase regardless of how short the request was. Every phase runs by default; nothing in the request needs to ask for it, and only a skip condition written in this skill may skip one.
+`<integration>` is `develop` and `<production>` is `main` unless `.backlog-kit.toml` sets `[git] integration_branch` / `production_branch`.
 
-**Working on a branch the user is already on.** When the user is on a topic branch (not `main`/`develop`) and says to stay on it, treat the run as `--skip-branch-setup` even if the flag was not typed: Phase 1 Step 1.5 only confirms the branch and never creates or syncs one. Say so in the first line of the run.
+**The user talks, the skill reads flags.** `--skip-branch-setup` and `--commit` are shorthand for orchestrators;
+a user never needs to type them or to phrase a request in any special way. "Develop the feature X", "develop X, stay on this branch", "develop X and commit as you go" are complete requests: map what the user said to the behaviour below, state in one line how it was understood (branch handling, commit cadence), and run every phase regardless of how short the request was.
+Every phase runs by default; nothing in the request needs to ask for it, and only a skip condition written in this skill may skip one.
 
-**Committing as you go.** `--commit` means one commit, at Phase 7. When the user asks instead to commit as the work goes, that request is the opt-in for a commit after each phase that changed files (Phase 1, Phase 2, the fixes of each review gate, Phases 3 to 6S, Phase 6), each one made by `gitflow`'s commit action with the message `Feature <change-name>: <phase> — <one-line summary>`; Phase 7 then commits only what is left, or records `COMMIT: nothing left`. The user's request stands in for the per-commit confirmation of the file list and message, but `gitflow` still makes every commit: no phase or subagent runs `git commit` itself.
+**Working on a branch the user is already on.** When the user is on a topic branch (not `<production>`/`<integration>`) and says to stay on it, treat the run as `--skip-branch-setup` even if the flag was not typed: Phase 1 Step 1.5 only confirms the branch and never creates or syncs one. Say so in the first line of the run.
 
-**Phase ledger.** Right after Phase 0, create a task list with one entry per phase and gate that applies (1, 2, 2R: G1 to G5, 3, 4, 5, 6S, 6, 7) and keep it current: an entry is completed when its signal was verified, or when it was skipped under its own stated condition with the reason written on the entry. The Final Summary is built from this list and is not shown while an entry is open. The order is fixed: archiving (Phase 6, including `openspec-sync-specs` and `openspec-archive-change`) comes after the review gate, the tests and the spec proof, never before; a change archived early, or archived with the `openspec` command instead of those skills, is a deviation to report, not to hide.
+**Committing as you go.** `--commit` means one commit, at Phase 7. When the user asks instead to commit as the work goes, that request is the opt-in for a commit after each phase that changed files (Phase 1, Phase 2, the fixes of each review gate, Phases 3 to 6S, Phase 6), each one made by `gitflow`'s commit action with the message `Feature <change-name>: <phase> — <one-line summary>`;
+Phase 7 then commits only what is left, or records `COMMIT: nothing left`. The user's request stands in for the per-commit confirmation of the file list and message, but `gitflow` still makes every commit: no phase or subagent runs `git commit` itself.
+
+**Phase ledger.** Right after Phase 0, create a task list with one entry per phase and gate that applies (1, 2, 2R: G1 to G5, 3, 4, 5, 6S, 6, 7) and keep it current: an entry is completed when its signal was verified, or when it was skipped under its own stated condition with the reason written on the entry.
+The Final Summary is built from this list and is not shown while an entry is open. The order is fixed: archiving (Phase 6, including `openspec-sync-specs` and `openspec-archive-change`) comes after the review gate, the tests and the spec proof, never before;
+a change archived early, or archived with the `openspec` command instead of those skills, is a deviation to report, not to hide.
 
 **Never run `git commit`, `git push` or open a PR.**
 
@@ -76,7 +82,7 @@ project with a schema, an end-to-end suite and a build runs them all.
 | Phase                        | Subagent   | Skills / actions                                                                                                                                  |
 | ----------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0 — Select & Confirm          | *(orchestrator's own context — never a subagent)* | `features-next` (recommend + mandatory `AskUserQuestion` confirmation) |
-| 1 — Propose                   | Subagent 1 | `git fetch origin --prune` to detect a branch/commits pushed from another device → `gitflow` (start feature to create `feature/<change-name>`, resume + merge in another device's pushed commits, or sync feature to catch up an existing one with `develop`) → mark the feature `🔶 In Progress` in `<backlog>/features-planned.md` → `openspec-propose` (if artifacts missing) |
+| 1 — Propose                   | Subagent 1 | `git fetch origin --prune` to detect a branch/commits pushed from another device → `gitflow` (start feature to create `feature/<change-name>`, resume + merge in another device's pushed commits, or sync feature to catch up an existing one with `<integration>`) → mark the feature `🔶 In Progress` in `<backlog>/features-planned.md` → `openspec-propose` (if artifacts missing) |
 | 2 — Implement                 | Subagent 2 | implement from the brief (`openspec-apply-change <name>` in an OpenSpec project); reviews are not its job |
 | 2R — Review gate              | orchestrator + one subagent per review | the orchestrator computes `CHANGED_FILES`, decides which conditional reviews apply and verifies every report; separate subagents run `code-reviewer`, then — only when the change touches them — `database-reviewer`, `security-reviewer` and the mobile/desktop viewport check; findings fixed before done (`reference/review-gate.md`) |
 | 3 — Tests *(optional)*        | Subagent 3 | runs the project's tests (and its fast smoke tier, if CI runs one) until they pass; skipped if the project has no automated tests |
@@ -90,21 +96,11 @@ project with a schema, an end-to-end suite and a build runs them all.
 
 ## Phase 0 — Select & Confirm (orchestrator's own context — never a subagent)
 
-**This phase must never be delegated to a spawned subagent, under any
-circumstances — including when an "Auto Mode" or similar autonomous-operation
-instruction is active.** Selecting which feature gets built next is always
-the user's decision, not a "reasonable default" the model makes on their
-behalf to avoid stopping — that bias, wherever it comes from, applies to
-implementation judgment calls, never to this decision. A spawned subagent
-(via the Agent tool) may run without reliable access to `AskUserQuestion`
-depending on the environment, and even where it nominally has access, a
-backgrounded/async agent's confirmation prompt may not reach the user in
-time for the workflow to actually wait on it. Running this phase directly in
-whatever context is currently executing this skill (the main conversation,
-or `features-batch-development`'s inline loop) is the only way to
-*guarantee* the confirmation happens — it sidesteps the question of what a
-given subagent call can or can't surface entirely, rather than relying on a
-flag or an assumption about subagent behavior.
+**Never delegate this phase to a subagent, even under "Auto Mode" or a similar autonomous-operation
+instruction.** Which feature gets built next is the user's decision, not a default to pick in order to avoid
+stopping. A spawned or backgrounded subagent may lack reliable `AskUserQuestion` access, or its prompt may not
+reach the user in time, so only running the phase in the context that executes this skill (the main conversation,
+or `features-batch-development`'s inline loop) guarantees the confirmation happens.
 
 1. **OpenSpec is optional.** If the repo has an `openspec/` folder, run
    `openspec --version` yourself; if it fails or is not found, tell the
@@ -155,7 +151,7 @@ across every phase, and other skills cite these phases by number
 ---
 ## Placeholder substitution (Phases 1–6)
 
-Before spawning any subagent in Phases 1–6, replace every occurrence of
+Before spawning any subagent in Phases 1–6, replace every `<integration>` / `<production>` with the branch names above, and every occurrence of
 `<change-name>` in that subagent's prompt with the actual change name
 confirmed in Phase 0, and every `<backlog>` / `<reports>` with the folder
 named above.
@@ -216,240 +212,55 @@ If `--commit` was not passed, say plainly that nothing was committed and that th
 
 ## Guardrails
 
-- Always capture and propagate the change name confirmed in Phase 0 to all
-  later phases. Before spawning any subagent in Phases 1–6, substitute every
-  `<change-name>` occurrence in its prompt with that confirmed value.
-- **Cancellation detection**: if `features-next` (invoked directly in Phase 0)
-  returns without a `CHANGE_NAME:` line, treat it as user cancellation —
-  stop the workflow immediately, before Subagent 1 is ever spawned, and
-  inform the user. Subagent 1 itself is never given the opportunity to
-  cancel feature selection — by the time it runs, the choice is final.
-- Do not start Phase 2 until Phase 1 confirms the branch is ready and, in an
-  OpenSpec project, that all `applyRequires` artifacts are `done`. If Phase 1 returns `PROPOSE_BLOCKED`, surface the
-  details to the user and stop.
-- **Do not start Phase 2 if Phase 1 returns `PROPOSE_NEEDS_DEPENDENCY_DECISION`
-  either**, even though it isn't a failure — this workflow must never barrel
-  into implementing a feature that Step 3.5 just discovered depends on
-  something not yet built. Resolve it through the AskUserQuestion decision
-  point described under Phase 1 first; only an explicit "proceed anyway"
-  answer continues to Phase 2. This is what closes the gap that previously
-  let a feature's missing dependency surface as a surprise mid-implementation
-  instead of being caught, recorded, and decided on right after design.
-- **The reviews are never run inside the implementation subagent.** Phase 2R runs each in its own subagent, and the orchestrator — not Subagent 2 — decides which conditional reviews apply (from its own `git status --porcelain`) and verifies each report file and its checkboxes before accepting a signal (`reference/review-gate.md`, G6). A skip is recorded with the orchestrator's reason; a review signal without its report is treated as `BLOCKED`.
-- Do not start Phase 2R until Phase 2 returns `IMPLEMENT: DONE`, and do not start Phase 3 until the gate returns `REVIEW_GATE: DONE`. If Phase 2 or the gate
-  returns `IMPLEMENT_BLOCKED`, `REVIEW_BLOCKED`, `DATABASE_BLOCKED`, or
-  `SECURITY_BLOCKED`, surface the details to the user and wait for guidance
-  before continuing.
-- Do not start Phase 4 until Phase 3 reports `PASS` — meaning **both** tiers
-  passed (the tests and, if the project has one, the smoke tier), not just the
-  first of the two — or was skipped (`TESTS: SKIPPED`). If it reports `BLOCKED`,
-  surface the details to the user and wait for guidance before continuing. If
-  it reports `PROD_CODE_FIXED:` lines, surface them to the user and confirm
-  whether to proceed or re-run the Phase 2R review gate.
-- **A smoke tier that CI runs on every PR always runs in Phase 3, on every
-  invocation of the phase — it is never conditional on what `<change-name>`
-  touched.** Unlike Phase 4's end-to-end check, which only runs when the change
-  touches a user-facing flow, CI runs that tier unconditionally, so this
-  workflow must mirror that rather than trying to predict which changes could
-  affect it — a change that looks entirely unrelated can still break one.
-- Do not start Phase 5 until Phase 4 reports `E2E: PASS`, `E2E: PASS_PARTIAL`,
-  or `E2E: SKIPPED`. If it reports `E2E_BLOCKED`, surface the details to the
-  user and wait for guidance before continuing — do not assume it belongs
-  back in the Phase 2R review gate without the user confirming that (a failure
-  here can equally be an environment/data problem, not a code defect). If it
-  reports `E2E: PASS_PARTIAL`, that's not blocking — carry the caveat into the
-  Final Summary's "E2E verification" field.
-- Do not start Phase 6S until Phase 5 reports `BUILD: PASS` or `BUILD: SKIPPED`.
-  If it reports `BUILD: BLOCKED`, surface the details to the user and wait for
-  guidance before continuing. If it reports `PROD_CODE_FIXED:` lines (the build
-  subagent had to edit production source), handle them exactly as Phase 3's
-  (proceed and carry `UNREVIEWED_PROD_FIXES` into the Final Summary, or re-run
-  the Phase 2R review gate and then Phases 3 and 5 again).
-- Do not start Phase 6 until Phase 6S returned `SPEC_PROOF: PASS` **and the orchestrator opened its report** (`Failing` = 0, `Unverified` = 0). The proof runs in its own subagent, never in the archiving one.
-- Do not display the Final Summary until Phase 6 subagent returns `ARCHIVE: DONE`.
-  If Phase 6S or Phase 6 returns `ARCHIVE_BLOCKED` instead — Phase 6S's
-  `spec-compliance-check` found a Failing scenario, a test added to close an
-  Unverified scenario itself failed (revealing a real bug), or an Unverified
-  scenario survived 3 rounds of add-test-and-re-check — the change stays
-  unarchived. Surface the scenario(s) to the user and wait for guidance
-  instead of retrying Phase 6 automatically.
+**Order and signals**
+- Substitute the change name confirmed in Phase 0 for every `<change-name>` in every subagent prompt of Phases 1–6.
+- If `features-next` (Phase 0) returns without a `CHANGE_NAME:` line, treat it as cancellation: stop before Subagent 1 is spawned and tell the user. Subagent 1 never selects or cancels a feature.
+- Do not start a phase until the one before it returned its signal:
+  - Phase 2: Phase 1 confirmed the branch is ready (in an OpenSpec project, all `applyRequires` artifacts `done`). `PROPOSE_BLOCKED` is surfaced and stops the run. `PROPOSE_NEEDS_DEPENDENCY_DECISION` is not a failure but also blocks Phase 2: resolve it through the decision point under Phase 1; only an explicit "proceed anyway" continues. This catches a missing dependency right after design instead of mid-implementation.
+  - Phase 2R: `IMPLEMENT: DONE`. Phase 3: the gate returned `REVIEW_GATE: DONE`. An `IMPLEMENT_BLOCKED`, `REVIEW_BLOCKED`, `DATABASE_BLOCKED` or `SECURITY_BLOCKED` is surfaced, and the run waits for the user.
+  - Phase 4: Phase 3 reported `PASS` (both tiers, the tests and the smoke tier if the project has one) or `TESTS: SKIPPED`. `BLOCKED` is surfaced and waits. `PROD_CODE_FIXED:` lines are surfaced with the choice to proceed (carry `UNREVIEWED_PROD_FIXES` into the Final Summary) or re-run the Phase 2R gate.
+  - Phase 5: Phase 4 reported `E2E: PASS`, `E2E: PASS_PARTIAL` (not blocking; carry the caveat into the Final Summary) or `E2E: SKIPPED`. On `E2E_BLOCKED`, surface and wait: the cause may be environment or data, so do not send it back to the review gate without the user confirming.
+  - Phase 6S: Phase 5 reported `BUILD: PASS` or `BUILD: SKIPPED`. `BUILD: BLOCKED` is surfaced and waits. `PROD_CODE_FIXED:` lines are handled as in Phase 3 (proceed, or re-run the gate and then Phases 3 and 5).
+  - Phase 6: Phase 6S returned `SPEC_PROOF: PASS` **and the orchestrator opened its report** (`Failing` = 0, `Unverified` = 0). The proof runs in its own subagent, never in the archiving one.
+  - Final Summary: Phase 6 returned `ARCHIVE: DONE`. If Phase 6S or 6 returns `ARCHIVE_BLOCKED` (a Failing scenario, a test added for an Unverified scenario that itself failed, or an Unverified scenario left after 3 add-test-and-re-check rounds), the change stays unarchived: surface the scenarios and wait; never retry Phase 6 on your own.
 - **Phase 7 (only with `--commit`):** after `ARCHIVE: DONE`, invoke `gitflow` with "commit `Feature <change-name>: <one-line summary>`" directly in the orchestrator's context. It shows what will be committed, confirms with the user, makes one local commit and does not push. Without the flag (and without a request to commit as the work goes) record `COMMIT: SKIPPED — not requested`. A refusal or failure is surfaced and stops there; the feature stays archived, uncommitted.
-- **Never collapse the phases to save effort.** Implementing and testing in one go, running only the touched specs, skipping review or build, and giving a lean summary are what this skill exists to prevent. A skip needs its stated condition and a recorded reason.
-- **This workflow never archives a change with a known spec-compliance
-  gap.** Phase 6S closes every Unverified scenario with real,
-  passing test coverage (or escalates via `ARCHIVE_BLOCKED` when it
-  genuinely can't) before Step 2 ever runs. There is no
-  `UNVERIFIED_SCENARIOS` caveat path anymore — a scenario is either
-  Verified before archiving, or the archive doesn't happen.
-- **Foreground guardrail**: every Agent tool call in this skill (Subagents
-  1–7) must pass `run_in_background: false` where the tool implementation
-  in use actually supports that parameter. Every phase in this workflow is
-  gated on the prior phase's subagent actually finishing ("do not start
-  Phase N until Subagent M returns ..."); some Agent tool implementations
-  spawn every call asynchronously regardless of any such flag (in which
-  case there is no synchronous option to request — the orchestrator must
-  instead genuinely wait for that subagent's completion notification before
-  advancing, never assume or fabricate a result), so don't treat the
-  presence of a `run_in_background: false`-equivalent parameter as
-  something to rely on for correctness — always wait for a real result
-  either way. **Never delegate an `AskUserQuestion` decision point to a
-  spawned subagent as a workaround for this** — that is what Phase 0 (and
-  Phase 4's credential-source pre-step below) exist to avoid entirely, by
-  running the confirmation directly in the orchestrator's own context
-  instead of trying to make a subagent's confirmation reliable.
-- **Auto Mode (or any other autonomous-operation instruction) never
-  overrides a required user confirmation anywhere in this workflow.** This
-  applies to every `AskUserQuestion` decision point this skill or a skill it
-  invokes raises: Phase 0's feature selection (`features-next`), Phase 3's
-  `PROD_CODE_FIXED` proceed-or-re-review choice, Phase 4's test-account
-  choice, a question about which command runs a phase, and any
-  blocker-guidance prompt
-  after a `*_BLOCKED` result. "Make the reasonable call instead of stopping
-  to ask" is guidance for implementation judgment calls (which helper to
-  use, how to phrase something) — it is never license to pick an
-  unambiguous-looking top option and proceed past a point this skill
-  designed to be a genuine human decision. If a confirmation step is ever
-  skipped for this reason, that is a bug in how the skill was invoked, not
-  acceptable behavior.
-- **Missing signal fallback**: if any subagent returns without its expected
-  signal, treat it as `BLOCKED`, surface the subagent's raw response to the
-  user, and wait for guidance before proceeding to the next phase.
-  Before re-running a phase whose signal is missing, look at the working tree
-  for what the subagent actually did (for example `git status`, the backlog
-  row, the test file) and tell the user; whether to accept that evidence in
-  place of the signal or to re-run the phase is the user's decision.
-- **Nested backgrounding guardrail**: any subagent in this workflow that
-  backgrounds a long-running shell command (via the Bash tool's
-  `run_in_background: true`) and then ends its response is making a mistake,
-  regardless of which phase it's in. Ending a turn after backgrounding work
-  resolves that subagent's own `run_in_background: false` Agent-tool call back
-  to whichever agent spawned it — with the response text as-is, not with the
-  eventual result — because nothing automatically wakes an already-finished
-  subagent back up when its background child completes; only an explicit
-  `SendMessage` from a still-live parent can resume it, and nothing in this
-  workflow does that automatically. Any subagent step whose real duration can
-  exceed the Bash tool's 10-minute blocking cap must poll for completion with
-  repeated **foreground** Bash calls within the same, uninterrupted turn —
-  never end the response and rely on being notified later.
-- **`code-reviewer` has two workflows; Phase 2R always uses Review, never
-  Fix.** The skill's interactive Fix Workflow asks the user which
-  category/finding to work on next and is meant to be steered turn-by-turn
-  across a conversation — it does not fit an unattended subagent. Phase 2R
-  always invokes the plain Review workflow and fixes findings itself,
-  updating the resulting report's checkboxes directly.
-- **Phase 2R's code review is always scoped, never a full-codebase sweep.**
-  `code-reviewer` splits into one report per architecture layer only when
-  asked to review the entire codebase. Phase 2R reviews a single change's
-  files, so it must stay on the single-report path.
-- **`database-reviewer` follows the same conditional-trigger, scoped-Review,
-  never-Fix pattern as `code-reviewer`.** It only runs when the orchestrator's gate G2 detects a
-  migration or schema file changed; its own review subagent fixes findings itself (a new
-  migration for any fix to an already-applied one, never an edit of the existing
-  file) and updates the resulting report's checkboxes directly. **`security-reviewer`**
-  has the same two-workflow and scoped-vs-sweep split; Phase 2R always uses
-  Review, scoped, never Fix or a full sweep. Either skill, if not installed, is
-  replaced by the review subagent's own review of the same concerns, flagged `SKILL_USED: none — fallback` and carried into the Final Summary.
-- **Phase 5 never deploys anything.** The build is run purely as a local check;
-  this skill never invokes a deployment tool, never pushes to trigger a deploy,
-  and never touches the host's settings.
-- **Phase 4's test-account choice is decided once, by the orchestrator, before
-  Subagent 4 is ever spawned — never by Subagent 4 itself.** The orchestrator
-  asks the user (`AskUserQuestion`) in its own context (main conversation, or
-  `features-batch-development`'s inline loop) and passes the answer into
-  Subagent 4 as `<CREDENTIAL_SOURCE>`; Subagent 4 cannot reliably access
-  `AskUserQuestion`. A second account for a cross-user check is used only if one
-  genuinely exists; otherwise the check is reported as not covered via
-  `E2E: PASS_PARTIAL`. Credentials files are never read by the orchestrator and
-  their contents never appear in a prompt, a response or a report.
-- **Phase 4 only starts the application locally and reads/writes no repository
-  files.** The one write it makes to a shared database is applying *this
-  change's own* pending migrations, and only after a dry run shows nothing else
-  pending (see Phase 4 Step 2) — it never stops to ask the user to do that
-  themselves. It starts a stopped container runtime (Docker) itself too. It
-  makes no other write against a shared database. Any schema fix needed to
-  make Phase 4 pass belongs back in the Phase 2R database review (re-run the gate after fixing it).
-- **Docker is started by the workflow, never reported as a blocker.** Any
-  phase whose tooling needs a local container runtime (a local database test
-  suite in Phase 3 or 6, Phase 4's environment) starts it and waits for it
-  before running, and only blocks if it never comes up.
-- **Step 1.6 marks the backlog row `🔶 In Progress` as soon as the branch to
-  work on is ready, in both normal and batch mode.** This is what lets
-  `features-next` recommend resuming an interrupted feature instead of
-  starting a new one, and it runs before Step 2's artifact check so a
-  change that still needs `openspec-propose` is marked in progress too, not
-  only one that already has artifacts. It only ever flips `⬜ Pending` →
-  `🔶 In Progress`; it never touches a row already showing `🔶 In Progress`
-  or `✅ Implemented`, and it never blocks the workflow if the row is
-  missing (ad hoc changes outside the tracked backlog). Phase 6's
-  `features-archive` is what eventually moves the row to the implemented table.
-- **`--skip-branch-setup` (batch mode) only ever affects Phase 1 Step 1.5.**
-  No other phase's behavior changes — Phases 2–6 already just operate on
-  "whatever branch is currently checked out" and never re-derive or assume
-  `feature/<change-name>` as the literal branch name outside that one step.
-  This flag exists solely for orchestrators like `features-batch-development`
-  that run several features on one shared branch without committing between
-  them; it is never passed by a normal, single-feature invocation of this
-  skill.
-- **Work always happens on a `feature/<change-name>` branch — except in
-  batch mode, where it's whatever branch the orchestrator already
-  established.** In normal mode, Phase 1's Step 1.5 is the only place a
-  branch is created, switched, or synced — it invokes the `gitflow` skill
-  (start feature) to create `feature/<change-name>`, or, if it already
-  exists from a prior run (locally, or only on the remote because another
-  device pushed it first), resumes it (checking it out — from the local
-  branch, or tracking `origin/feature/<change-name>` directly if only the
-  remote copy exists — merging in any commits pushed from another device,
-  and, via `gitflow`'s sync feature action, bringing it up to date with
-  `develop`), before any file in the repository is created or modified,
-  including the SDD artifacts written by `openspec-propose`. In batch mode
-  (`--skip-branch-setup`), Step 1.5 performs none of that — it only
-  confirms the current branch isn't `main`/`develop` and otherwise leaves
-  branch state entirely to the caller. Either way, Phases 2–6 must stay on
-  whatever branch was current when Phase 1 finished; none of them may run
-  `git checkout`, `git switch`, `git merge`, invoke `gitflow`, or create
-  another branch. If a subagent finds itself on a different branch, that is
-  a bug in the workflow — surface it to the user rather than silently
-  switching.
-- **The feature branch is never synced from `main`, only `develop`.**
-  Step 1.5's resume path uses `gitflow`'s sync feature action exclusively,
-  which merges `origin/develop` and nothing else — matching `gitflow`'s own
-  guardrail that `main` is never a valid source for a feature branch's
-  content, even right after a release/hotfix has merged into both `main`
-  and `develop` and the two look momentarily interchangeable. No phase in
-  this workflow may merge, rebase, or pull `main` into the feature branch
-  under any circumstance.
+- **Never collapse the phases to save effort.** Implementing and testing in one go, running only the touched specs, skipping review or build and giving a lean summary are what this skill exists to prevent. A skip needs its stated condition and a recorded reason.
+- **Never archive a change with a known spec-compliance gap.** Phase 6S closes every Unverified scenario with real, passing test coverage, or escalates with `ARCHIVE_BLOCKED`, before Phase 6 runs. There is no caveat path: a scenario is Verified before archiving, or the archive does not happen.
+- **Missing signal fallback:** a subagent that returns without its expected signal is treated as `BLOCKED`: surface its raw response and wait. Before re-running a phase whose signal is missing, look at the working tree for what the subagent actually did (for example `git status`, the backlog row, the test file) and tell the user; whether to accept that evidence in place of the signal or to re-run the phase is the user's decision.
+
+**Subagents and confirmations**
+- **Foreground:** pass `run_in_background: false` on every Agent call (Subagents 1–7) where the tool supports it. Phases are gated on the previous subagent finishing; if the tool spawns every call asynchronously anyway, wait for the real completion notification before advancing, and never assume or fabricate a result. Never delegate an `AskUserQuestion` decision to a subagent to work around this: Phase 0 and Phase 4's credential-source pre-step run in the orchestrator's own context for exactly that reason.
+- **Nested backgrounding:** a subagent that backgrounds a shell command (`run_in_background: true`) and then ends its response is wrong in every phase: nothing wakes a finished subagent when its background child completes, so the hand-back would carry the response text, not the result. A step that can outlast the Bash tool's 10-minute cap must poll with repeated **foreground** Bash calls within the same uninterrupted turn.
+- **Auto Mode (or any autonomous-operation instruction) never overrides a required confirmation:** Phase 0's feature selection (`features-next`), Phase 3's `PROD_CODE_FIXED` choice, Phase 4's test-account choice, a question about which command runs a phase, and any guidance prompt after a `*_BLOCKED` result. "Make the reasonable call" applies to implementation judgment (which helper, how to phrase something), never to a point this skill designed as a human decision. A confirmation skipped for this reason is a bug in how the skill was invoked.
+- **Phase 4's test account is decided once, by the orchestrator, before Subagent 4 is spawned.** The orchestrator asks (`AskUserQuestion`) in its own context (main conversation, or `features-batch-development`'s inline loop) and passes the answer in as `<CREDENTIAL_SOURCE>`. A second account for a cross-user check is used only if one exists; otherwise the check is reported as not covered via `E2E: PASS_PARTIAL`. Credentials files are never read by the orchestrator and their contents never appear in a prompt, response or report.
 - **Skills run as written, by whoever performs the phase.** A phase that names a skill (`code-reviewer`, `database-reviewer`, `security-reviewer`, `spec-compliance-check`, `docs-sync`, `openspec-sync-specs`, `openspec-archive-change`, `features-archive`) invokes that skill; doing the same checks by hand, or writing its report by hand, is a failed phase even when the content looks right. Reports carry the stamp the reviewer skills write (`<!-- backlog-kit: <skill> -->`), and the orchestrator checks it (review gate G6, Phase 6S check).
-- **No git commits unless `--commit` was passed or the user asked to commit as the work goes, and then only through
-  `gitflow`'s commit action (in Phase 7, or after each phase when the user asked to commit as the work goes).** Neither this skill nor any
-  subagent it spawns may run `git commit`, `git push`, or any other git
-  write command itself at any point in the workflow. Branch creation and branch sync
-  (`git fetch`, `git checkout`, `git checkout -b`, `git merge
-  origin/develop`, and `git merge origin/feature/<change-name>` to pick up
-  commits pushed from another device — all only in Phase 1's Step 1.5, the
-  latter two either directly or via `gitflow`'s start-feature/sync-feature
-  actions) are the sole exceptions. A sync-feature merge commit brings in
-  already-reviewed upstream work from `develop`, and an
-  `origin/feature/<change-name>` merge brings in already-pushed work on
-  this same change from another device; neither is uncommitted
-  implementation of new work, so neither conflicts with the reason this
-  guardrail exists.
-- **Never let a spawned subagent — or this orchestrator itself — print,
-  echo, or otherwise materialize a generated secret's raw value (a private
-  key, API token, password, signing key, or similar) anywhere in a
-  response, report file, or implementation file.** This has actually
-  happened: a Phase 2 subagent generated a signing keypair and printed the
-  live private key value in its hand-back summary, landing it in the
-  orchestrator's own transcript even though it was never committed to the
-  repo. Phase 2's prompt now instructs the subagent to leave any task
-  requiring secret disclosure unchecked with a note naming the manual
-  command instead (see that phase's own guidance) — but the orchestrator
-  must not rely on the subagent alone getting this right. If a subagent's
-  hand-back response is ever found to contain what looks like a live secret
-  value, treat it as compromised regardless of whether it reached a
-  committed file, and surface this to the user explicitly — which value,
-  why it's now considered burned, and that it needs regenerating
-  (out-of-band, by the user, never by re-running the same generation step
-  through this workflow) — rather than silently absorbing it or repeating
-  it in any later response, file, or summary. This check applies to every
-  phase, not just Phase 2 — any subagent could in principle encounter a
-  task that generates a credential.
+
+**Reviews**
+- **The reviews are never run inside the implementation subagent.** Phase 2R runs each in its own subagent. The orchestrator, not Subagent 2, decides which conditional reviews apply (from its own `git status --porcelain`) and verifies each report file and its checkboxes before accepting a signal (`reference/review-gate.md`, G6). A skip is recorded with the orchestrator's reason; a review signal without its report is treated as `BLOCKED`.
+- **Phase 2R uses each reviewer's Review workflow, scoped to the change, never its interactive Fix workflow and never a full-codebase sweep.** The Fix workflow asks the user which finding to work on next and does not fit an unattended subagent;
+  a full sweep splits `code-reviewer` into one report per layer. The review subagent fixes findings itself and updates the report's checkboxes directly.
+  `database-reviewer` runs only when gate G2 detects a migration or schema file change, and fixes an already-applied migration with a new migration, never by editing it.
+  A reviewer skill that is not installed is replaced by the review subagent's own review of the same concerns, flagged `SKILL_USED: none — fallback` and carried into the Final Summary.
+
+**What the phases may touch**
+- **Phase 5 never deploys anything:** the build is a local check only. The skill never invokes a deployment tool, never pushes to trigger a deploy and never touches the host's settings.
+- **Phase 3's smoke tier always runs.** A smoke tier that CI runs on every PR runs on every invocation of Phase 3, whatever `<change-name>` touched: unlike Phase 4's end-to-end check, which depends on a user-facing flow, CI does not predict which changes could break it.
+- **Phase 4 only starts the application locally and reads/writes no repository files.** Its one write to a shared database is applying this change's own pending migrations, and only after a dry run shows nothing else pending (Phase 4 Step 2); it never asks the user to do that. It starts a stopped container runtime (Docker) itself. A schema fix needed to make Phase 4 pass goes back to the Phase 2R database review (re-run the gate after fixing it).
+- **Docker is started by the workflow, never reported as a blocker.** A phase whose tooling needs a local container runtime (a local database test suite in Phase 3 or 6, Phase 4's environment) starts it and waits, and blocks only if it never comes up.
+- **Step 1.6 marks the backlog row `🔶 In Progress` as soon as the branch is ready, in normal and batch mode,** before Step 2's artifact check, so a change that still needs `openspec-propose` is marked too. This is what lets `features-next` recommend resuming an interrupted feature. It only flips `⬜ Pending` → `🔶 In Progress`, never touches a row already `🔶 In Progress` or `✅ Implemented`, and never blocks when the row is missing (an ad hoc change). `features-archive` moves the row in Phase 6.
+
+**Branches and git**
+- **Work happens on `feature/<change-name>`, except in batch mode, where it is the branch the orchestrator already set up.** In normal mode Phase 1 Step 1.5 is the only place a branch is created, switched or synced, before any file is created or modified (the SDD artifacts of `openspec-propose` included).
+  It invokes `gitflow` (start feature) to create the branch, or resumes an existing one: checkout (from the local branch, or tracking `origin/feature/<change-name>` when only the remote copy exists), merging commits pushed from another device, and `gitflow`'s sync feature action to catch up with `<integration>`.
+  In batch mode (`--skip-branch-setup`) Step 1.5 only confirms the current branch is not `<production>` or `<integration>` and leaves branch state to the caller;
+  that flag affects nothing else, and a normal single-feature invocation never passes it. Phases 2–6 never re-derive or assume `feature/<change-name>` as the literal branch name; they use whatever is checked out. Phases 2–6 stay on the branch current when Phase 1 finished: none may run `git checkout`, `git switch` or `git merge`, invoke `gitflow` or create a branch.
+  A subagent found on another branch is a workflow bug: surface it, never switch silently.
+- **The feature branch is synced from `<integration>` only, never `<production>`.** The resume path uses `gitflow`'s sync feature action, which merges `origin/<integration>` and nothing else, even right after a release or hotfix merged into both. No phase may merge, rebase or pull `<production>` into the feature branch.
+- **No git commits unless `--commit` was passed or the user asked to commit as the work goes, and then only through `gitflow`'s commit action** (in Phase 7, or after each phase when the user asked to commit as the work goes).
+  Neither this skill nor any subagent runs `git commit`, `git push` or another git write itself. The sole exceptions are Phase 1 Step 1.5's branch creation and sync (`git fetch`, `git checkout`, `git checkout -b`, `git merge origin/<integration>`, and `git merge origin/feature/<change-name>` to pick up commits pushed from another device, directly or via `gitflow`'s start-feature and sync-feature actions).
+  Those merges bring in already-reviewed or already-pushed work, not new uncommitted implementation.
+
+**Secrets**
+- **Never let a subagent, or this orchestrator, print, echo or materialize a generated secret's raw value** (a private key, API token, password, signing key) in a response, report or file.
+  A Phase 2 subagent once generated a signing keypair and printed the live private key in its hand-back. Phase 2's prompt tells the subagent to leave any task that needs secret disclosure unchecked, with a note naming the manual command, but the orchestrator does not rely on that alone, in any phase.
+  If a hand-back appears to contain a live secret, treat it as compromised even if it never reached a committed file: tell the user which value it is, why it is burned and that it must be regenerated out-of-band by the user (never by re-running the generation step through this workflow), and do not repeat it in any later response, file or summary.

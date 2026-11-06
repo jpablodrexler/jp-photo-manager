@@ -3,28 +3,32 @@
 
 The review gate is shared by `feature-development` (Phase 2R) and `bug-fix` (Phase 2R). It runs right after the implementation subagent returns its `IMPLEMENT: DONE` / `FIX_IMPLEMENTED: DONE` signal, and **it is run by the orchestrator, not by the implementation subagent**.
 
-Why it is separate: the reviewers (`code-reviewer`, `database-reviewer`, `security-reviewer`) used to run inside the implementation subagent, at the tail of a context already full of implementation work. That is where they got shortened, replaced by a self-review, or skipped on a wrong "not applicable" call, and nothing checked afterwards. So now:
+Why it is separate: a reviewer (`code-reviewer`, `database-reviewer`, `security-reviewer`) that runs inside the implementation subagent works at the tail of a context already full of implementation work, where reviews get shortened, replaced by a self-review, or skipped on a wrong "not applicable" call, with nothing checking afterwards. So:
 
 1. **Each review runs in its own subagent** with a clean context and one job.
 2. **The orchestrator decides which conditional reviews apply**, from its own G0 computation, never from the implementation subagent's word.
 3. **The orchestrator verifies the artifacts** (report files and their checkboxes) before it accepts a signal. A signal without a matching report is not accepted.
 
-`<work-id>` below is the change name (`feature-development`) or the Bug ID (`bug-fix`); substitute it, and `<reports>`, in every prompt before spawning. Append the standard **Hand-back** paragraph of the calling skill to every prompt, unchanged.
+`<work-id>` below is the change name (`feature-development`) or the Bug ID (`bug-fix`); substitute it, and `<reports>`, `<integration>`, in every prompt before spawning. Append the standard **Hand-back** paragraph of the calling skill to every prompt, unchanged.
 
 ## Orchestrator procedure
 
 **G0 — Compute the scope yourself.** The rule depends on whether this run commits (`--commit`, or the user asked to commit as the work goes; the same fact `gitflow`'s commit action is called on):
 
 - **Not committing (the default):** `CHANGED_FILES` is the uncommitted files. Run `git status --porcelain` and parse every path, untracked (`??`) entries included.
-- **Committing:** `CHANGED_FILES` is the files that differ between the work branch and `develop`, plus the uncommitted files. Take the first with `git diff --name-only develop...HEAD` (three dots: from the merge base, so `develop`'s own newer commits are not counted; use `origin/develop` when there is no local `develop`, and `main` in a repository that has no `develop`), take the second as above, and merge the two lists without duplicates. A shared batch branch therefore includes the files of the batch's earlier committed work as well.
+- **Committing:** `CHANGED_FILES` is the files that differ between the work branch and `<integration>`, plus the uncommitted files. Take the first with `git diff --name-only <integration>...HEAD` (three dots: from the merge base, so `<integration>`'s own newer commits are not counted; use `origin/<integration>` when there is no local `<integration>`, and `<production>` in a repository that has no `<integration>`), take the second as above, and merge the two lists without duplicates. A shared batch branch therefore includes the files of the batch's earlier committed work as well.
 
-Never use `git diff --name-only HEAD` on its own (it misses new files), and never conclude from an empty list that nothing needs review before you have applied the rule for the mode you are in. Recompute `CHANGED_FILES` fresh before every gate below, and pass the list into each subagent prompt as an explicit argument, together with the rule that produced it, which replaces `<G0 MODE>` in the prompts below (`uncommitted files, untracked included` or `files differing from develop, plus uncommitted files, untracked included`). Also note whether each reviewer skill is installed (a folder `code-reviewer`, `database-reviewer` or `security-reviewer` under `.claude/skills/` or the plugin's skills).
+Never use `git diff --name-only HEAD` on its own (it misses new files), and never conclude from an empty list that nothing needs review before you have applied the rule for the mode you are in.
+Recompute `CHANGED_FILES` fresh before every gate below, and pass the list into each subagent prompt as an explicit argument, together with the rule that produced it, which replaces `<G0 MODE>` in the prompts below (`uncommitted files, untracked included` or `files differing from <integration>, plus uncommitted files, untracked included`).
+Also note whether each reviewer skill is installed (a folder `code-reviewer`, `database-reviewer` or `security-reviewer` under `.claude/skills/` or the plugin's skills).
 
 **G1 — Code review.** Always applies. Spawn the code-review subagent.
 
 **G2 — Database review.** Applies when `CHANGED_FILES` (fresh) holds a database migration or schema definition: a migrations folder, a schema/DDL file, an ORM model that generates migrations. If it applies, spawn the database-review subagent. If it does not, record `DATABASE_REVIEW: skipped — no migration or schema path in CHANGED_FILES`. The reason is yours, from your own list.
 
-**G3 — Security review.** Applies when `CHANGED_FILES` (fresh) holds a path under authentication or authorization, access-control rules or policies, user-input handling, secrets or configuration, or a dependency manifest or lockfile. A migration counts when it adds or changes a policy, grant, role or privileged (`SECURITY DEFINER`-style) function, or backfills or rewrites rows that belong to users; a purely additive column or index does not count on its own. If it applies, spawn the security-review subagent; otherwise record `SECURITY_REVIEW: skipped — no security-sensitive path in CHANGED_FILES`.
+**G3 — Security review.** Applies when `CHANGED_FILES` (fresh) holds a path under authentication or authorization, access-control rules or policies, user-input handling, secrets or configuration, or a dependency manifest or lockfile.
+A migration counts when it adds or changes a policy, grant, role or privileged (`SECURITY DEFINER`-style) function, or backfills or rewrites rows that belong to users;
+a purely additive column or index does not count on its own. If it applies, spawn the security-review subagent; otherwise record `SECURITY_REVIEW: skipped — no security-sensitive path in CHANGED_FILES`.
 
 **G4 — Viewport check.** Applies when `CHANGED_FILES` (fresh) holds a user-interface template, markup file or stylesheet. If it applies, spawn the viewport subagent; otherwise record `VIEWPORTS: skipped — no template, markup or stylesheet in CHANGED_FILES`.
 
@@ -51,7 +55,10 @@ Spawn each as a **general-purpose subagent** via the Agent tool with `run_in_bac
 >
 > <CHANGED_FILES, one per line>
 >
-> **Step 1.** If the `code-reviewer` skill is installed, invoke it via the Skill tool using its **Review** workflow, with that list as the explicit scope. This subagent runs unattended: do not use the interactive Fix Workflow, and do not run a full-codebase sweep (one scoped review writes one dated `<reports>/code-review/CODE_REVIEW_FINDINGS_*.md`). If the skill is not installed, review the diff of those files yourself — correctness and edge cases, regressions in what calls the changed code, missing or weak tests, unintended changes, consistency with the project's conventions — and record the findings in that same dated report. Never skip the report.
+> **Step 1.** If the `code-reviewer` skill is installed, invoke it via the Skill tool using its **Review** workflow, with that list as the explicit scope.
+> This subagent runs unattended: do not use the interactive Fix Workflow, and do not run a full-codebase sweep (one scoped review writes one dated `<reports>/code-review/CODE_REVIEW_FINDINGS_*.md`).
+> If the skill is not installed, review the diff of those files yourself — correctness and edge cases, regressions in what calls the changed code, missing or weak tests, unintended changes, consistency with the project's conventions — and record the findings in that same dated report.
+> Never skip the report.
 >
 > **Step 2.** Fix every 🔴 Critical and 🟡 Warning finding in the source. Check each off in the report (`- [ ]` → `- [x]`) with a `**Fixed:** <one sentence>` note on the same line. Recompute the file list by the same rule (`<G0 MODE>`), then review again (a fresh dated report) to confirm nothing new. Repeat until a re-check report is clean, at most 3 rounds; after that end with `REVIEW_BLOCKED — repeated review cycles`. A finding you cannot fix without human input ends the response with `REVIEW_BLOCKED — <reason>`.
 >
@@ -96,7 +103,11 @@ Spawn each as a **general-purpose subagent** via the Agent tool with `run_in_bac
 >
 > <the template, markup and stylesheet paths of CHANGED_FILES>
 >
-> Verify the affected view at **every phone viewport and the desktop viewport** from the `[viewports]` table of `.backlog-kit.toml` at the repository root (read the file yourself; with no file or no table, the defaults are phone `Galaxy S23 Ultra 384x824` and desktop `1920x1080`, entries written `Name WIDTHxHEIGHT` in CSS pixels) — with a browser tool, a browser's device emulation, or a component/E2E test that sets the viewport, whichever the project has. If the project has no way to render the view, say so and skip. At each phone size, confirm no text overlap between elements, no clipped/cropped content, and no forced horizontal scroll. At desktop, confirm no field/dialog/container collapses to a narrow, phone-sized width while leaving the rest of its space unused, and nothing correctly sized for the phone stayed wrongly pinned to that size once the wide layout applies. Fix any layout issue as a code-review finding would be fixed.
+> Verify the affected view at **every phone viewport and the desktop viewport** from the `[viewports]` table of `.backlog-kit.toml` at the repository root (read the file yourself;
+> with no file or no table, the defaults are phone `Galaxy S23 Ultra 384x824` and desktop `1920x1080`, entries written `Name WIDTHxHEIGHT` in CSS pixels) — with a browser tool, a browser's device emulation, or a component/E2E test that sets the viewport, whichever the project has.
+> If the project has no way to render the view, say so and skip. At each phone size, confirm no text overlap between elements, no clipped/cropped content, and no forced horizontal scroll.
+> At desktop, confirm no field/dialog/container collapses to a narrow, phone-sized width while leaving the rest of its space unused, and nothing correctly sized for the phone stayed wrongly pinned to that size once the wide layout applies.
+> Fix any layout issue as a code-review finding would be fixed.
 >
 > Check **each** configured viewport in turn (a test or a device emulation per size); asserting only the smallest phone and the desktop is not enough. List every configured viewport in your hand-back as `verified` or `skipped — <reason>`; a viewport you did not check is never reported as verified.
 >

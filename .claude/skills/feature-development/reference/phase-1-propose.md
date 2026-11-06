@@ -23,9 +23,9 @@ see the foreground guardrail in `../SKILL.md`), with the following prompt (subst
 >
 > **Batch mode (`--skip-branch-setup` was passed):** skip everything else in
 > this step. Run `git branch --show-current` once and confirm it is not
-> `main` or `develop` — if it is, end your response with `PROPOSE_BLOCKED —
+> `<production>` or `<integration>` — if it is, end your response with `PROPOSE_BLOCKED —
 > batch mode requires an existing feature branch already checked out, not
-> main/develop` and stop. Otherwise continue on whatever branch is
+> <production>/<integration>` and stop. Otherwise continue on whatever branch is
 > currently checked out. Do not check for uncommitted
 > changes here — an orchestrator running several features on one branch
 > without committing between them will always have a dirty tree by the
@@ -93,21 +93,21 @@ see the foreground guardrail in `../SKILL.md`), with the following prompt (subst
 >      any commits pushed from another device before this local branch was
 >      checked out — this merges already-pushed history of this same
 >      change, not new uncommitted implementation, so — like a sync-feature
->      merge from `develop` — it's exempt from this workflow's "no git
+>      merge from `<integration>` — it's exempt from this workflow's "no git
 >      commits" guardrail (see the guardrails section). If this merge
 >      doesn't complete cleanly, end your response with
 >      `PROPOSE_BLOCKED — feature branch has diverged from
 >      origin/feature/<change-name>, needs manual resolution` and stop.
 >      Then use the Skill tool to
 >      invoke `gitflow` with the action "sync feature `<change-name>`" to
->      bring it up to date with `develop` before continuing. `develop` is
->      the *only* branch this may ever be synced from — never `main`, even
+>      bring it up to date with `<integration>` before continuing. `<integration>` is
+>      the *only* branch this may ever be synced from — never `<production>`, even
 >      though right after a release merges into both, they're momentarily
 >      identical and it's tempting to treat either as equivalent; see
 >      `gitflow`'s guardrails for why that's still wrong. If `gitflow`
 >      reports a merge conflict it can't resolve automatically, end your
 >      response with `PROPOSE_BLOCKED — feature branch sync conflict with
->      develop, needs manual resolution` and stop. Otherwise, if it reports
+>      <integration>, needs manual resolution` and stop. Otherwise, if it reports
 >      any other blocker, end your response with `PROPOSE_BLOCKED — <the
 >      gitflow blocker>` and stop.
 >    - If it fails locally but
@@ -116,20 +116,20 @@ see the foreground guardrail in `../SKILL.md`), with the following prompt (subst
 >      already exists on the remote — this is the case where another
 >      device started (and pushed) this same feature branch first. Do
 >      **not** invoke `gitflow`'s "start feature" action here — that always
->      branches fresh from `develop` and would silently orphan the work
+>      branches fresh from `<integration>` and would silently orphan the work
 >      already sitting on the remote branch. Instead, check it out tracking
 >      the remote directly: `git checkout -b feature/<change-name>
 >      origin/feature/<change-name>`. Then use the Skill tool to invoke
 >      `gitflow` with the action "sync feature `<change-name>`" to bring it
->      up to date with `develop`, exactly as the "already exists locally"
+>      up to date with `<integration>`, exactly as the "already exists locally"
 >      case above does, applying the same conflict handling.
 >    - If it fails both locally and on the remote (the branch doesn't exist
 >      anywhere yet — the common case, no other device has started this
 >      change): use the Skill tool to invoke
 >      `gitflow` with the action "start feature `<change-name>`". Per that
->      skill, this normally branches from `develop`; if `develop` doesn't
+>      skill, this normally branches from `<integration>`; if `<integration>` doesn't
 >      exist yet in this repo, `gitflow` itself handles bootstrapping it
->      from `main` on first use — this skill doesn't need to special-case
+>      from `<production>` on first use — this skill doesn't need to special-case
 >      that. If it reports a blocker, end your response with
 >      `PROPOSE_BLOCKED — <the gitflow blocker>` and stop.
 > B4. Run `git branch --show-current` and confirm the output is exactly
