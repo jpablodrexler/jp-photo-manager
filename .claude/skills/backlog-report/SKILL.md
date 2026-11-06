@@ -32,20 +32,35 @@ Report what the backlog delivered over a period, from `<backlog>/features-implem
 python3 scripts/backlog_report.py <repo-root> [--weeks N | --since YYYY-MM-DD]
 ```
 
-It prints the finished `## Backlog Report`: a table per week (features, points, bugs fixed), the totals, the velocity (average points per week over the last four complete weeks), the pending features and points with the weeks they would take at that pace, and the list of what was delivered. Add `--json` for the structured data when you need one field, for example to draft release notes.
+It prints the finished `## Backlog Report`: a table per week (features, points, bugs fixed), the totals, the velocity (the average points per week over the last four complete weeks, with those four numbers and how many of the weeks had deliveries), the bug fixes per week over the same weeks, the pending features and points with the weeks they would take at that pace, a **Reliability** section when the data is doubtful, and the list of what was delivered.
+Add `--json` for the structured data when you need one field, for example to draft release notes; its `warnings` list holds the same reliability notes with a `code` each.
 
 How the dates are found, so you can explain a number when asked:
 
 - **Bugs** use the `Fixed` date written by `bugs-archive`.
-- **Features** have no date column in `features-implemented.md`. The date is the day of the first commit that added the feature's row. A feature archived but not committed yet counts as today and the report says so.
+- **Features** have no date column in `features-implemented.md`. The report takes the date from, in this order:
+  1. **The archived SDD change** the row links: the date in the folder name of `[spec](…/openspec/changes/archive/YYYY-MM-DD-<name>/…)` in the `Details` cell, which `features-archive` writes in OpenSpec projects. It is written in the file, so a table loaded in one go or a shallow clone cannot change it, and the change is archived at the end of `feature-development`, close to the end of the work. It is the local date of the machine that ran the archive, so it can be a day off.
+  2. **The first commit that added the row** to `features-implemented.md`: the day it was archived into the file, not the day the work ended. Rows loaded in one go, archived in one batch or squashed together share a date, and a shallow clone gives every row the date of its only commit.
+  3. **Today,** for a row not committed yet that links no spec.
+
+  The "Feature dates" line says how many came from each source. The reliability checks about a shared date and a shallow clone concern only the dates taken from git.
 - Weeks start on Monday; the current week is shown but left out of the velocity.
 - A feature without story points is listed under "Without points" and counts as zero points; suggest estimating it with `feature-plan` rather than guessing a value.
+- Bugs have no story points, so the velocity leaves their work out; the report gives them as a separate rate.
 
 If a file is missing or has no table, the report names it as unavailable. Do not fall back to reading the file by hand, and do not invent dates.
 
 ## Reading the result
 
-Say what the numbers do and do not support. A projection from one or two complete weeks is a guess, and the story-point scale is ordinal, not proportional; present "about N weeks" as an order of magnitude. When the period has fewer than two complete weeks, say there is not enough history instead of quoting a velocity.
+Say what the numbers do and do not support.
+
+- **Say where the dates come from.** Figures built on archived-SDD dates are as good as those dates; figures built on git dates inherit every limit above. When both sources are mixed, the line says how many of each.
+- **Start with the Reliability section when there is one.** Each note names a reason the weekly figures may not mean what they seem: a date shared by most features (the pace before it is unknown), features without points (the points understate the work), pending features without points (the projection is optimistic), a shallow clone, or features not committed yet. Say which apply before quoting any velocity, and do not present a number the notes undermine as a measurement.
+- **A velocity of "none" is an answer, not a gap to fill.** It means no feature was archived in the last four complete weeks, and the report gives the date of the last one. Do not replace it with an average over a longer span, and do not read it as a slow pace: the work may have continued without being archived.
+- **A projection from one or two complete weeks is a guess,** and the story-point scale is ordinal, not proportional; present "about N weeks" as an order of magnitude. When the period has fewer than two complete weeks, say there is not enough history instead of quoting a velocity.
+- **Look at the four weekly numbers, not only their average.** One batch week and three empty ones average to the same figure as four steady weeks.
+- **Mention the bug fixes** when they are a large share of the work, since the velocity does not count them.
+- **For a shallow clone,** suggest `git fetch --unshallow` and a second run before trusting the dates.
 
 ---
 
