@@ -485,7 +485,7 @@ The PostgreSQL `asset_exif` table is intentionally **not** dropped in this imple
 
 **Feature 79 — coordination with `session-management` (#46)**
 
-`session-management` (#46, still pending) originally planned to add a `user_agent` column to the PostgreSQL `refresh_tokens` table (Flyway V22). Since #79 is implemented first, V22 is no longer needed: when #46 is implemented, `userAgent` should be stored as an additional field on the existing Redis hash (`HSET refresh_token:{token} userAgent {ua}`) rather than as a PostgreSQL column that would be immediately superseded by the Redis migration.
+`session-management` (#46, now implemented) originally planned to add a `user_agent` column to the PostgreSQL `refresh_tokens` table (Flyway V22). Since #79 was implemented first, V22 was no longer needed and the recommendation was to store `userAgent` as an additional field on the existing Redis hash (`HSET refresh_token:{token} userAgent {ua}`) rather than as a PostgreSQL column that would be immediately superseded by the Redis migration. #46 was then implemented with a real migration instead (`V34`, added directly to PostgreSQL) — see "Feature 46 — actual migration diverged from the V22/Redis plan" below.
 
 **Feature 73 — MongoDB document design**
 
