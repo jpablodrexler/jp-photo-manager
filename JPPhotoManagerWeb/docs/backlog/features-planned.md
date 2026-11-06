@@ -76,6 +76,44 @@ This document records all **pending** features to the JPPhotoManagerWeb applicat
 
 ### Recommended implementation order
 
+Priority tier first (P1 before P2 before P3), then hard dependencies, then feature number. Not a schedule — a reasoning aid for `features-next` and for whoever is picking up the next feature by hand. Re-derive this whenever priorities, dependencies, or the feature set change; don't let it silently drift. A plain bullet list — list position (not a printed number) is what encodes order, so inserting an entry never touches any other line.
+
+- `database-backup` (#44) — P0, unblocked (`role-based-access-control` #33 is implemented)
+- `two-factor-authentication` (#47) — P0, unblocked (`api-rate-limiting` #39 and `session-management` #46 are implemented)
+- `duplicate-auto-resolve` (#22) — P1, unblocked (`soft-delete-recycle-bin` #9 is implemented)
+- `on-push-change-detection` (#25) — P1, no dependencies recorded
+- `image-rotation-viewer` (#30) — P1, no hard dependencies
+- `asset-description` (#37) — P1, no hard dependencies; before `full-text-search` (#31)
+- `full-text-search` (#31) — P1, after `asset-description` (#37)
+- `keyboard-shortcuts` (#16) — P2, unblocked (`slideshow-mode` #8 is implemented; soft dependency)
+- `shareable-album-links` (#19) — P2, unblocked (`virtual-albums` #4 is implemented)
+- `image-etag-cache` (#27) — P2, no hard dependencies
+- `folder-watch-service` (#32) — P2, no hard dependencies
+- `thumbnail-regeneration` (#35) — P2, no hard dependencies
+- `image-comparison-viewer` (#50) — P2, no hard dependencies
+- `multi-language-i18n` (#52) — P2, no dependencies recorded
+- `notification-center` (#54) — P2, no hard dependencies; before `email-notifications` (#48)
+- `email-notifications` (#48) — P2, after `notification-center` (#54)
+- `asset-image-editor` (#56) — P2, no hard dependencies
+- `archive-support` (#60) — P2, no hard dependencies; before `asset-backup` (#61)
+- `asset-backup` (#61) — P1, after `archive-support` (#60), which keeps it behind that P2 feature; `role-based-access-control` #33 is implemented
+- `photo-quality-scoring` (#68) — P2, no hard dependencies
+- `webdav-server` (#71) — P2, no hard dependencies
+- `wallpaper-suggestion` (#24) — P3, no hard dependencies
+- `exif-cache-service` (#29) — P3, no hard dependencies
+- `folder-stats-in-tree` (#38) — P3, no hard dependencies
+- `auto-tagging` (#49) — P3, no dependencies recorded
+- `folder-bookmarks` (#51) — P3, no dependencies recorded
+- `webp-avif-conversion` (#55) — P3, no dependencies recorded
+- `video-from-images` (#58) — P3, unblocked (`video-file-support` #21 and `audio-asset-support` #59 are implemented)
+- `event-auto-grouping` (#67) — P3, no hard dependencies
+- `iptc-xmp-metadata-editing` (#69) — P3, no hard dependencies
+- `dominant-color-palette` (#70) — P3, no hard dependencies
+- `mongodb-user-preferences` (#74) — P3, no hard dependencies; standalone, and most useful now that MongoDB is provisioned (#72, #73)
+- `kafka-catalog-coordination` (#77) — P3, unblocked (`kafka-catalog-pipeline` #75 is implemented); lower urgency when running a single instance
+
+The notes below are the previous form of this section, kept for the dependent clusters they describe.
+
 For the pending dependent clusters:
 
 ```
