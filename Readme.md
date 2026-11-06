@@ -120,7 +120,7 @@ A Kubernetes deployment (manifests under `JPPhotoManagerWeb/k8s/`) is also avail
 
 ## Branching Strategy
 
-This project follows a [Gitflow](https://nvie.com/posts/a-successful-git-branching-model/)-based branching model, encapsulated in the project's [`gitflow` Claude Code skill](.claude/skills/gitflow/SKILL.md):
+This project follows a [Gitflow](https://nvie.com/posts/a-successful-git-branching-model/)-based branching model, encapsulated in the [`gitflow` Claude Code skill](.claude/skills/gitflow/SKILL.md) from [backlog-kit](https://github.com/jpablodrexler/backlog-kit):
 
 * `main` — always reflects production-ready code. Every commit on `main` is tagged with a version (`vX.Y.Z`).
 * `develop` — integration branch where finished features accumulate between releases.
@@ -167,3 +167,14 @@ gitGraph
 6. **Hotfixes** follow the same finish/tag steps as releases, but branch from `main` instead of `develop`, for fixes that can't wait for the next scheduled release.
 
 All of the above is automated by the `gitflow` skill, which handles branch creation, derives pull request descriptions from the actual commits/diff, and only tags `main` after confirming the corresponding pull request has merged — merging pull requests themselves always remains a human decision.
+
+---
+
+## Backlog and development workflow
+
+The web application's backlog, and the way its features and bugs are worked from idea to merged pull request, use [backlog-kit](https://github.com/jpablodrexler/backlog-kit): a set of Claude Code skills (MIT) that was extracted from this project and one other. This project replaced its own workflow skills with the kit's on 2026-10-14 ([decision 0001](JPPhotoManagerWeb/docs/decisions/0001-replace-workflow-skills-with-backlog-kit.md)) and keeps them up to date in [`.claude/skills/`](.claude/skills/).
+
+* **The backlog is plain markdown** under [`JPPhotoManagerWeb/docs/backlog/`](JPPhotoManagerWeb/docs/backlog/): the planned and implemented feature tables, the open bugs, and one brief per item (a user story with acceptance criteria). [`.backlog-kit.toml`](.backlog-kit.toml) tells the skills where it lives.
+* **Requests to Claude Code** such as "plan a feature: …", "what should I work on next?", "develop the next feature", "fix BUG-004" or "finish the feature and open the PR" are handled by `feature-plan`, `features-next`, `feature-development`, `bug-fix` and `gitflow`.
+* **The reviews** (code, database, security, architecture, spec compliance) read this project's own checks from the `… review checks` sections of the reference docs under `JPPhotoManagerWeb/docs/`.
+* **Nothing is committed unless asked**: the skills leave their result uncommitted on a branch for review, and merging pull requests stays a human decision.
