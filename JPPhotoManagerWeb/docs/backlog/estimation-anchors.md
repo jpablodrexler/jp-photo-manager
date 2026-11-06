@@ -2,7 +2,7 @@
 
 Finished features that show what each story-point value means in this project. When planning, compare the new story with these (the rubric is in the backlog-kit `feature-plan` skill). The scale is ordinal: a `5` is several times the size of a `3`.
 
-Only a few finished features carry points so far; add examples as more are finished.
+The features finished before points were introduced were estimated afterwards, from their briefs and with the rubric; the examples below are the ones that were estimated when they were planned. Add examples as more are finished.
 
 ## 1
 - Feature 43 `request-correlation-mdc`: backend only, no schema change, 4 acceptance criteria.
