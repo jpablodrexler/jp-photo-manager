@@ -14,10 +14,11 @@ description: >-
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "0.1"
 ---
 
 `<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`; `<reports>` is the `reports` folder next to the backlog's parent (`docs/reports` by default).
+
+`<integration>` is `develop` and `<production>` is `main` unless `.backlog-kit.toml` sets `[git] integration_branch` / `production_branch`.
 
 **Never run `git commit`, `git push` or open a PR.**
 
@@ -55,7 +56,7 @@ to the uncommitted files (review gate G0), which — from bug #2 onward —
 include every earlier bug's still-uncommitted files. Later bugs' reviews
 re-scan earlier bugs' already-fixed code. Unavoidable without committing
 between bugs (which the user has ruled out), not a defect to fix here. With
-`--commit`, G0 uses the files differing from `develop` plus the uncommitted
+`--commit`, G0 uses the files differing from `<integration>` plus the uncommitted
 ones, so earlier bugs' committed files are re-scanned in the same way.
 
 ---

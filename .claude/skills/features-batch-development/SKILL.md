@@ -14,10 +14,11 @@ description: >-
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "0.1"
 ---
 
 `<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`; `<reports>` is the `reports` folder next to the backlog's parent (`docs/reports` by default).
+
+`<integration>` is `develop` and `<production>` is `main` unless `.backlog-kit.toml` sets `[git] integration_branch` / `production_branch`.
 
 **Never run `git commit`, `git push` or open a PR.**
 
@@ -64,7 +65,7 @@ include every earlier feature's still-uncommitted files too, not just the
 current one. Later features' reviews re-scan earlier features' already-fixed
 code. This is unavoidable without committing between features (which the
 user has ruled out), not a bug to fix here. With `--commit`, G0 uses the
-files differing from `develop` plus the uncommitted ones, so the earlier
+files differing from `<integration>` plus the uncommitted ones, so the earlier
 features' committed files are re-scanned in the same way.
 
 ---
@@ -103,7 +104,8 @@ Order the resulting list as follows:
 3. For anything not covered by 1 or 2, fall back to the table's own row
    order.
 
-Each planned row's full brief lives in `<backlog>/features/NNN-<change-name>.md` (its `Brief` cell links it). Batch mode does not read it here: `feature-development` reads that file itself in its Propose phase and hands it to `openspec-propose` for any feature whose SDD artifacts don't exist yet, and a missing or empty brief file stops that feature with `PROPOSE_BLOCKED` (handled as any other Blocked outcome in Step 4). A feature whose artifacts are already `done` never needs its brief file. When confirming the derived list, it is worth checking that each feature's brief file exists, so a missing one surfaces before a multi-hour run rather than during it.
+Each planned row's full brief lives in `<backlog>/features/NNN-<change-name>.md` (its `Brief` cell links it). Batch mode does not read it here: `feature-development` reads that file itself in its Propose phase and hands it to `openspec-propose` for any feature whose SDD artifacts don't exist yet, and a missing or empty brief file stops that feature with `PROPOSE_BLOCKED` (handled as any other Blocked outcome in Step 4).
+A feature whose artifacts are already `done` never needs its brief file. When confirming the derived list, it is worth checking that each feature's brief file exists, so a missing one surfaces before a multi-hour run rather than during it.
 
 An empty backlog (no rows) is not an error — tell the user there's nothing
 pending and stop here.
@@ -155,7 +157,7 @@ the newly requested list from Step 1.
     that it already exists — and ask (**AskUserQuestion**) whether to
     continue anyway (this run uses that existing branch as-is, via
     `gitflow`'s start-feature action, which resumes an existing branch by
-    checking it out and syncing it with `develop`) or stop this run here so
+    checking it out and syncing it with `<integration>`) or stop this run here so
     they can supply a different name or clean up the stale branch
     themselves. "Continue anyway" is itself the confirmation — do not ask a
     second time.

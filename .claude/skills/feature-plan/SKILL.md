@@ -1,10 +1,11 @@
 ---
 name: feature-plan
-description: Adds a new feature to the backlog's features-planned.md — drafts the row (Priority, Schema Change, Effort, Area, Summary), writes the feature's full brief to features/NNN-<name>.md as a user story with acceptance criteria, offers to write the project's Definition of Done when it has none, assigns the next feature number, inserts it into the Recommended implementation order, and confirms with the user before writing. Creates the backlog file (with header, legend, and empty table) on first use if it doesn't exist yet. TRIGGER when the user asks to plan a new feature, add a feature to the backlog, or file a feature idea/request.
+description: >-
+  Adds a new feature to the backlog's features-planned.md — drafts the row (Priority, Schema Change, Effort, Area, Summary), writes the feature's full brief to features/NNN-<name>.md as a user story with acceptance criteria, offers to write the project's Definition of Done when it has none, assigns the next feature number, inserts it into the Recommended implementation order, and confirms with the user before writing.
+  Creates the backlog file (with header, legend, and empty table) on first use if it doesn't exist yet. TRIGGER when the user asks to plan a new feature, add a feature to the backlog, or file a feature idea/request.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "0.1"
 ---
 
 Add a new feature to the backlog — its full brief file `<backlog>/features/NNN-<change-name>.md` plus a row in `<backlog>/features-planned.md` — drafted from the user's description and confirmed before writing.
@@ -85,13 +86,20 @@ _None yet._
 
 Both files are needed to pick a non-colliding number and name (step 3) and to draft consistent attribute values (step 4), even when both are freshly created and empty.
 
-**Definition of Done.** Check whether `<backlog>/definition-of-done.md` exists. If it does, read it: the brief's own `## Definition of Done` section (step 5) lists only what is extra for this feature. If it does not, ask one question with the **AskUserQuestion tool**, every time this skill runs while the file is missing — "This project has no Definition of Done yet. Write one now?" — options: "Write it now" (ask the user for the checklist items, or take them from what they paste), "Draft a starter for me to edit" (propose a checklist drawn from the project's own docs and the phases its workflow already runs, show it, and write it only after the user confirms), "Not now". Whatever the answer, **never block planning**: "Not now" (or no usable answer) continues to step 3 with no side effects, and a missing file is never an error. The file is a plain markdown checklist (`- [ ] …` items) that applies to every feature; it is written only when the user chose one of the first two options.
+**Definition of Done.** Check whether `<backlog>/definition-of-done.md` exists. If it does, read it: the brief's own `## Definition of Done` section (step 5) lists only what is extra for this feature.
+If it does not, ask one question with the **AskUserQuestion tool**, every time this skill runs while the file is missing — "This project has no Definition of Done yet.
+Write one now?" — options: "Write it now" (ask the user for the checklist items, or take them from what they paste), "Draft a starter for me to edit" (propose a checklist drawn from the project's own docs and the phases its workflow already runs, show it, and write it only after the user confirms), "Not now".
+Whatever the answer, **never block planning**: "Not now" (or no usable answer) continues to step 3 with no side effects, and a missing file is never an error.
+The file is a plain markdown checklist (`- [ ] …` items) that applies to every feature; it is written only when the user chose one of the first two options.
 
 ### 3. Derive the change name and the next feature number
 
 **Change name**: if the user gave an explicit one, validate it's kebab-case (lowercase letters, digits, hyphens only, e.g. `task-due-dates`); if it isn't, convert it. If the user didn't give one, derive a concise kebab-case slug from the feature description — short, descriptive, no filler words (e.g. `task-search`, `task-completion-toggle`).
 
-Run (from this skill's base directory) `python3 scripts/next_id.py <repo-root> --check-name <derived-name>` — it scans both files' `## Feature List` tables plus the filenames under `<backlog>/features/` and returns the next free `#` (`max + 1` across both, or `1` for a fresh backlog; numbers are a single global sequence, never reused even for a cancelled/reverted feature) plus whether the derived name already collides with an existing row. If `name_collision` is `true`, tell the user and ask for a different name or confirm they mean something else (do not silently rename or silently proceed with a duplicate). Use the returned `next_number` as the feature number.
+Run (from this skill's base directory) `python3 scripts/next_id.py <repo-root> --check-name <derived-name>` — it scans both files' `## Feature List` tables plus the filenames under `<backlog>/features/` and returns the next free `#` (`max + 1` across both, or `1` for a fresh backlog;
+numbers are a single global sequence, never reused even for a cancelled/reverted feature) plus whether the derived name already collides with an existing row.
+If `name_collision` is `true`, tell the user and ask for a different name or confirm they mean something else (do not silently rename or silently proceed with a duplicate).
+Use the returned `next_number` as the feature number.
 
 ### 4. Draft the attribute columns
 
@@ -246,5 +254,8 @@ If genuinely ambiguous where a same-priority feature should land relative to its
 - Step 8 (hard dependencies) is opt-in based on what the user actually said — never infer a dependency the user didn't mention.
 - Step 9 (recommended implementation order) is **not** opt-in — unlike step 8, always insert the new feature into that list; a backlog with rows missing from the order is worse than one with a slightly-uncertain placement. If the list doesn't exist yet under `## Dependencies` (an older backlog file predating this section), add it with the intro line shown in step 9 before inserting the new feature.
 - Step 6's confirmation is mandatory, even under an "Auto Mode" or similar autonomous-operation instruction that biases toward proceeding without stopping to ask — that bias never applies to writing a new row into the backlog. Never invoke this skill from inside a spawned/backgrounded subagent that lacks reliable `AskUserQuestion` access as a way to skip it.
-- **Write the backlog files as UTF-8, and check it.** They hold characters outside ASCII (`✅`, `⬜`, `—`, `·`). Whatever writes them (the editor tool, a shell command, a script) must write UTF-8 explicitly and must never fall back to the system's default text encoding: on some systems that is a single-byte codepage, and it turns one such character into a byte that is not valid UTF-8 and stops every script that reads the file. Prefer the editor tool to an ad-hoc script. After writing, read each file you changed back as UTF-8 (for example `python3 -c "open(p, encoding='utf-8').read()"`); a decoding error is a failed write, to fix before going on.
+- **Write the backlog files as UTF-8, and check it.** They hold characters outside ASCII (`✅`, `⬜`, `—`, `·`). Whatever writes them (the editor tool, a shell command, a script) must write UTF-8 explicitly and must never fall back to the system's default text encoding:
+  on some systems that is a single-byte codepage, and it turns one such character into a byte that is not valid UTF-8 and stops every script that reads the file.
+  Prefer the editor tool to an ad-hoc script. After writing, read each file you changed back as UTF-8 (for example `python3 -c "open(p, encoding='utf-8').read()"`);
+  a decoding error is a failed write, to fix before going on.
 - **Never run `git commit`, `git push` or open a PR.**

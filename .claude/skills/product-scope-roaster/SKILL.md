@@ -1,10 +1,12 @@
 ---
 name: product-scope-roaster
-description: Deliberately harsh, non-technical product-management review of the project's whole feature scope, shipped and planned, read from the backlog files (and an optional product description) in the voice of a skeptical senior product owner who ignores the implementation. Is this a product a real user enjoys, or an inventory of buildable capabilities? Finds features to merge, features to split, gaps in an area's story and cross-feature inconsistencies. No praise section, no hedging, never opens source files. Writes one dated report. Advice only. TRIGGER when the user asks for a product review, scope review, feature audit or product-owner critique, to "roast the roadmap/backlog", whether features overlap or should merge or split, or what is missing from the feature set.
+description: >-
+  Deliberately harsh, non-technical product-management review of the project's whole feature scope, shipped and planned, read from the backlog files (and an optional product description) in the voice of a skeptical senior product owner who ignores the implementation.
+  Is this a product a real user enjoys, or an inventory of buildable capabilities? Finds features to merge, features to split, gaps in an area's story and cross-feature inconsistencies.
+  No praise section, no hedging, never opens source files. Writes one dated report. Advice only. TRIGGER when the user asks for a product review, scope review, feature audit or product-owner critique, to "roast the roadmap/backlog", whether features overlap or should merge or split, or what is missing from the feature set.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "0.1"
 ---
 
 # Product Scope Roaster
@@ -49,7 +51,10 @@ Patterns a user learns once and then expects to hold everywhere, that quietly di
 - **Any other "I learned the pattern here and it differs two features over"**: name the two features and the exact behavioural difference.
 
 ### 5. Scope coherence: what is this product actually for?
-Step back and ask whether the backlog is still one coherent thing or is drifting into "whatever seemed buildable next". Weigh the top-priority tier of the planned list as the sharpest evidence, and the proportion of planned rows that are platform-flavoured (generic engines, builders, cross-cutting layers) against rows that serve the everyday job the shipped features establish. Say plainly whether the roadmap still reads as the product the shipped rows describe, or has started reading as something else, and name the rows that are the evidence either way. Skip this dimension for a narrow scoped ask.
+Step back and ask whether the backlog is still one coherent thing or is drifting into "whatever seemed buildable next".
+Weigh the top-priority tier of the planned list as the sharpest evidence, and the proportion of planned rows that are platform-flavoured (generic engines, builders, cross-cutting layers) against rows that serve the everyday job the shipped features establish.
+Say plainly whether the roadmap still reads as the product the shipped rows describe, or has started reading as something else, and name the rows that are the evidence either way.
+Skip this dimension for a narrow scoped ask.
 
 ---
 

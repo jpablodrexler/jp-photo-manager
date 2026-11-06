@@ -7,7 +7,7 @@ _Part of the `feature-development` skill — see `../SKILL.md` for the overview,
 **Phase 6S — Spec proof.** Spawn a **general-purpose subagent** via the Agent tool, with
 `run_in_background: false` (the Final Summary cannot be displayed until
 this subagent returns `SPEC_PROOF: PASS` — see the foreground guardrail
-below), with the following prompt. Archiving is a separate subagent (below): proving the spec and archiving used to share one context, and the proof was the step that got shortened.
+below), with the following prompt. Archiving is a separate subagent (below): when proof and archiving share one context, the proof is the step that gets shortened.
 
 >
 > **Verify spec compliance and close every coverage gap.** If the

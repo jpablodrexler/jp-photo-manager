@@ -1,10 +1,11 @@
 ---
 name: bugs-status
-description: Reports bug-backlog progress by counting rows in the backlog's bugs-open.md and bugs-fixed.md. Returns total, fixed, open, in-progress, and percent-closed counts, plus a severity, area, and environment breakdown of open bugs, the open bug list itself, and any data-integrity issues (duplicate Bug IDs, rows without a bugs/BUG-NNN.md file, bug files without a row, wrong H1s, resolved bugs without a Resolution line, stale statuses). TRIGGER when the user asks for a bug status report, how many bugs are open/fixed, a bug backlog summary, or similar. This is the bug-family counterpart to features-status.
+description: >-
+  Reports bug-backlog progress by counting rows in the backlog's bugs-open.md and bugs-fixed.md. Returns total, fixed, open, in-progress, and percent-closed counts, plus a severity, area, and environment breakdown of open bugs, the open bug list itself, and any data-integrity issues (duplicate Bug IDs, rows without a bugs/BUG-NNN.md file, bug files without a row, wrong H1s, resolved bugs without a Resolution line, stale statuses).
+  TRIGGER when the user asks for a bug status report, how many bugs are open/fixed, a bug backlog summary, or similar. This is the bug-family counterpart to features-status.
 license: MIT
 metadata:
   author: Juan Pablo Drexler
-  version: "0.1"
 ---
 
 Report bug-tracking progress by counting rows in
