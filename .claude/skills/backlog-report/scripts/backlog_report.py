@@ -7,9 +7,10 @@ story points per week (velocity), and how long the pending points would take at 
 
 Read-only. Dates come from two places:
   * bugs: the `Fixed` column of `bugs-fixed.md` (written by bugs-archive);
-  * features: `features-implemented.md` has no date column, so a feature's date is the day of the
-    first commit that added its row (one `git log -p` over the file). A row that is not committed
-    yet counts as today and is marked "uncommitted". Without git, features are reported as undated.
+  * features: `features-implemented.md` has no date column. A feature's date is the `archived YYYY-MM-DD`
+    in the Details cell of its row (written by features-archive), else the date of the archived SDD change
+    its row links, else the day of the first commit that added the row (one `git log -p` over the file).
+    A row that is not committed yet counts as today and is marked "uncommitted".
 Weeks start on Monday. Exit code is always 0 unless the repo root is bad.
 """
 import argparse
@@ -56,7 +57,7 @@ def build(root, start, today):
             severity[i["severity"] or "none"] = severity.get(i["severity"] or "none", 0) + 1
 
     feature_items = [i for i in items if i["kind"] == "feature"]
-    sources = {k: sum(1 for i in feature_items if i["source"] == k) for k in ("sdd", "git", "uncommitted")}
+    sources = {k: sum(1 for i in feature_items if i["source"] == k) for k in ("archived", "sdd", "git", "uncommitted")}
     warnings = bh.reliability(root, impl_ok, in_range, sources["git"] > 0, pending_unestimated, pending_points)
 
     return {
@@ -93,7 +94,8 @@ def render(r):
             + (f" ({', '.join(f'{k}: {v}' for k, v in r['bugs_by_severity'].items())})" if r["bugs_by_severity"] else "")]
     d = r["dates"]
     if any(d.values()):
-        parts = [f"{d['sdd']} from the archived SDD change" if d["sdd"] else "",
+        parts = [f"{d['archived']} from the archived date written in the row" if d["archived"] else "",
+                 f"{d['sdd']} from the archived SDD change" if d["sdd"] else "",
                  f"{d['git']} from the git history of features-implemented.md" if d["git"] else "",
                  f"{d['uncommitted']} not committed yet (counted as today)" if d["uncommitted"] else ""]
         out.append("**Feature dates:** " + ", ".join(x for x in parts if x))
