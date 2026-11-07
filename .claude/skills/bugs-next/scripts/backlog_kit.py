@@ -41,6 +41,10 @@ DEFAULTS = {
         "production_branch": "main",
         "host": "auto",                  # auto | github | gitlab | other
     },
+    # How long a cycle is, in weeks: backlog-forecast and backlog-cycle plan and calibrate in cycles of this length.
+    "cycles": {
+        "weeks": 2,
+    },
     # Devices the viewport check of feature-development / bug-fix verifies, as "Name WIDTHxHEIGHT"
     # (CSS pixels). The skills read this table themselves; no script uses it.
     "viewports": {
@@ -80,6 +84,12 @@ def load_config(root):
         return _derive_paths(_merge(DEFAULTS, tomllib.load(fh)))
 
 
+def cycle_weeks(cfg):
+    """The configured cycle length in weeks, at least 1 (a value that is not a whole number falls back to the default)."""
+    value = cfg.get("cycles", {}).get("weeks", DEFAULTS["cycles"]["weeks"])
+    return max(value, 1) if isinstance(value, int) and not isinstance(value, bool) else DEFAULTS["cycles"]["weeks"]
+
+
 class Paths:
     """Resolved locations of every backlog-kit file, from a config."""
 
@@ -93,6 +103,7 @@ class Paths:
         self.bugs_open = self.backlog / "bugs-open.md"
         self.bugs_fixed = self.backlog / "bugs-fixed.md"
         self.bugs_dir = self.backlog / "bugs"
+        self.cycles_dir = self.backlog / "cycles"
         self.decisions = self.root / cfg["paths"]["decisions_dir"]
         self.explorations = self.root / cfg["paths"]["explorations_dir"]
         self.reports = self.root / cfg["paths"]["reports_dir"]

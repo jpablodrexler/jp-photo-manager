@@ -21,7 +21,7 @@ Forecast what the backlog can still deliver and by when, from `<backlog>/feature
 
 `<backlog>` is `docs/backlog` unless `.backlog-kit.toml` sets `[paths] backlog_dir`.
 
-**Input**: Optionally what the user wants to know and how to look at it. Map their words to the script's options: "in two-week cycles" is `--cycle-weeks 2`; "how long would #19 and #22 take" is `--features 19,22`; "the pace since I changed plan" is `--since YYYY-MM-DD`; "assume 15 points a week" is `--capacity 15`. With nothing given, use the defaults: one-week cycles, the last 12 complete weeks as history, a plan of six cycles.
+**Input**: Optionally what the user wants to know and how to look at it. Map their words to the script's options: "in one-week cycles" is `--cycle-weeks 1`; "how long would #19 and #22 take" is `--features 19,22`; "the pace since I changed plan" is `--since YYYY-MM-DD`; "assume 15 points a week" is `--capacity 15`. With nothing given, use the defaults: cycles of the length in `.backlog-kit.toml` (`[cycles] weeks`, 2 by default), the last 12 complete weeks as history, a plan of six cycles.
 
 ---
 
@@ -42,6 +42,8 @@ It learns the pace from the points and the features delivered in each complete w
 It prints the history, the pace of one cycle, the **next cycle** (a prudent and a likely set of features), the **set** you asked about, a **cycle-by-cycle table** with the date each group of features is reached (typical and prudent), the **finish of the known backlog** by points and by number of features, a **Read this first** list of warnings and a **What this does not say** list.
 The order of the work is the one `features-next` recommends, with a feature placed after the pending prerequisite it is blocked on.
 The history and the dates behind it come from the same code as `backlog-report`, including the date of the archived SDD change.
+
+When the project keeps cycle files (see `backlog-cycle`), the output also says what the closed cycles show: how often the forecast capacity was reached, the share of the commitment that was delivered, and which sizes slip. From 4 closed cycles that delivered less than they committed, the next-cycle sets are scaled by that share (`--no-calibration` shows them unscaled); say so when it applies. To record a cycle, point to `backlog-cycle`.
 
 How the subscription enters: the kit cannot read the limit of the user's plan and does not need to. The weekly pace already holds it, together with the time spent on bugs, the interruptions and how fast Claude worked. The price is that the forecast assumes the next weeks look like the window. If the plan, its limits or the way of working changed, start the window after the change with `--since`.
 
