@@ -114,7 +114,7 @@ below), with the following prompt. Archiving is a separate subagent (below): whe
 > complete fully (the feature row must be moved from the planned table in
 > `<backlog>/features-planned.md` to the implemented table in
 > `<backlog>/features-implemented.md`, with its `Details` cell linking
-> the brief file and the archived spec).
+> the brief file and the archived spec, and ending with its `archived YYYY-MM-DD` date).
 >
 > After all three steps complete, end your response with exactly this line:
 > `ARCHIVE: DONE`

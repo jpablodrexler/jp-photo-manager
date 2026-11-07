@@ -4,6 +4,8 @@ What the backlog says about its own history: when each feature and bug was deliv
 each feature was worth, and the weekly series built from them. Shared by backlog-report and backlog-forecast.
 
 Dates of a feature come, in this order, from:
+  * the `archived YYYY-MM-DD` date in the Details cell of its row, which features-archive writes: no OpenSpec and no git
+    history needed;
   * the archive folder of the SDD change its row links (`[spec](…/openspec/changes/archive/YYYY-MM-DD-name/…)`),
     which is written in the file and does not depend on how the commits look;
   * the day of the first commit that added the row to features-implemented.md (one `git log -p` over the file);
@@ -20,6 +22,7 @@ import gitread
 LEGACY_POINTS = {"S": 1, "M": 3, "L": 5, "XL": 8}     # t-shirt sizes of a backlog not migrated yet
 DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
 SDD_RE = re.compile(r"openspec/changes/archive/(\d{4}-\d{2}-\d{2})-")   # the archive folder of a change is named YYYY-MM-DD-<name>
+ARCHIVED_RE = re.compile(r"\barchived (\d{4}-\d{2}-\d{2})\b", re.I)         # `archived YYYY-MM-DD` in the Details cell, written by features-archive
 BULK_MIN = 5                                           # features on one date that make a bulk load worth a warning
 BULK_SHARE = 0.5                                       # ...when that date holds at least this share of the period's features
 UNESTIMATED_SHARE = 0.25                               # delivered features without points that make the points unreliable
@@ -58,6 +61,18 @@ def sdd_date(details):
     or None. features-archive writes that link; with several, the latest date, as it does."""
     found = []
     for m in SDD_RE.finditer(details or ""):
+        try:
+            found.append(date.fromisoformat(m.group(1)))
+        except ValueError:
+            pass
+    return max(found) if found else None
+
+
+def archived_date(details):
+    """The date a row says it was archived on (`archived YYYY-MM-DD` in its Details cell, written by features-archive), or None.
+    It needs no OpenSpec and no git history, so it is the most reliable date a feature can have."""
+    found = []
+    for m in ARCHIVED_RE.finditer(details or ""):
         try:
             found.append(date.fromisoformat(m.group(1)))
         except ValueError:
@@ -124,19 +139,23 @@ def load_history(root, today):
 
     Returns the folder, which of the three files had their table, the pending rows of features-planned.md and `items`:
     one dict per delivered feature or fixed bug (`kind`, `id`, `name`, `points`, `date`, `source`, `uncommitted`).
-    A feature's `source` is "sdd", "git" or "uncommitted"; a bug's is "fixed column"."""
+    A feature's `source` is "archived", "sdd", "git" or "uncommitted"; a bug's is "fixed column"."""
     cfg = bk.load_config(root)
     backlog = cfg["paths"]["backlog_dir"].strip("/")
     b = Path(root) / backlog
     impl_ok, impl = bk.table_rows(b / "features-implemented.md", "## Feature List")
     plan_ok, plan = bk.table_rows(b / "features-planned.md", "## Feature List")
     bugs_ok, fixed = bk.table_rows(b / "bugs-fixed.md", "## Bug List", id_column="Bug ID")
-    sdd = {}                                            # the date of the archived SDD change, when the row links one
+    explicit = {}                                       # dates the row itself carries: its `archived` date, else its SDD change's
     for r in impl:
         num = bk.strip_backticks(r.get("#", ""))
-        if num.isdigit() and sdd_date(r.get("Details")):
-            sdd[int(num)] = sdd_date(r.get("Details"))
-    needs_git = any(bk.strip_backticks(r.get("#", "")).isdigit() and int(bk.strip_backticks(r.get("#", ""))) not in sdd for r in impl)
+        if not num.isdigit():
+            continue
+        if archived_date(r.get("Details")):
+            explicit[int(num)] = (archived_date(r.get("Details")), "archived")
+        elif sdd_date(r.get("Details")):
+            explicit[int(num)] = (sdd_date(r.get("Details")), "sdd")
+    needs_git = any(bk.strip_backticks(r.get("#", "")).isdigit() and int(bk.strip_backticks(r.get("#", ""))) not in explicit for r in impl)
     dates = feature_dates(root, f"{backlog}/features-implemented.md") if impl_ok and needs_git else {}
 
     items = []
@@ -144,8 +163,8 @@ def load_history(root, today):
         num = bk.strip_backticks(r.get("#", ""))
         if not num.isdigit():
             continue
-        if int(num) in sdd:                             # explicit: written in the row, whatever the commits look like
-            d, source = sdd[int(num)], "sdd"
+        if int(num) in explicit:                        # explicit: written in the row, whatever the commits look like
+            d, source = explicit[int(num)]
         elif dates.get(int(num)):
             d, source = dates[int(num)], "git"
         else:

@@ -39,9 +39,10 @@ How the dates are found, so you can explain a number when asked:
 
 - **Bugs** use the `Fixed` date written by `bugs-archive`.
 - **Features** have no date column in `features-implemented.md`. The report takes the date from, in this order:
-  1. **The archived SDD change** the row links: the date in the folder name of `[spec](…/openspec/changes/archive/YYYY-MM-DD-<name>/…)` in the `Details` cell, which `features-archive` writes in OpenSpec projects. It is written in the file, so a table loaded in one go or a shallow clone cannot change it, and the change is archived at the end of `feature-development`, close to the end of the work. It is the local date of the machine that ran the archive, so it can be a day off.
-  2. **The first commit that added the row** to `features-implemented.md`: the day it was archived into the file, not the day the work ended. Rows loaded in one go, archived in one batch or squashed together share a date, and a shallow clone gives every row the date of its only commit.
-  3. **Today,** for a row not committed yet that links no spec.
+  1. **The date written in the row:** `archived YYYY-MM-DD` in the `Details` cell, which `features-archive` writes for every feature it archives. It needs neither OpenSpec nor the git history, so it is the most reliable date.
+  2. **The archived SDD change** the row links: the date in the folder name of `[spec](…/openspec/changes/archive/YYYY-MM-DD-<name>/…)` in the `Details` cell, which `features-archive` writes in OpenSpec projects. It is written in the file, so a table loaded in one go or a shallow clone cannot change it, and the change is archived at the end of `feature-development`, close to the end of the work. It is the local date of the machine that ran the archive, so it can be a day off.
+  3. **The first commit that added the row** to `features-implemented.md`: the day it was archived into the file, not the day the work ended. Rows loaded in one go, archived in one batch or squashed together share a date, and a shallow clone gives every row the date of its only commit.
+  4. **Today,** for a row not committed yet that links no spec.
 
   The "Feature dates" line says how many came from each source. The reliability checks about a shared date and a shallow clone concern only the dates taken from git.
 - Weeks start on Monday; the current week is shown but left out of the velocity.
